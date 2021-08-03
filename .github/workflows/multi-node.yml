@@ -17,31 +17,55 @@ jobs:
       #   with:
       #     fetch-depth: 0
 
-      - name: Generate SSH key
-        run: |
-          ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
-
-      - name: Setup SSH Keys and known_hosts
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-            ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-            ssh-add - <<< "$(cat ${HOME}/.ssh/id_rsa)"
-
-      - name: Setup tmate session
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        uses: mxschmitt/action-tmate@v3
-
       - name: Debug
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
+          mkdir -p ~/.ssh
+
+          ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
           sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
           sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
-          
-          echo "Now the truth"
-          ssh -o StrictHostKeyChecking=no $(whoami)@127.0.0.1 uptime
+
+          sudo chmod go-w ~/
+          sudo chmod 700 ~/.ssh
+          sudo chmod 600 ~/.ssh/authorized_keys
+
+          sudo echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+          sudo echo "AuthorizedKeysFile      .ssh/authorized_keys" >> /etc/ssh/sshd_config
+
+          sudo service sshd restart
+
+          ssh runner@127.0.0.1 uptime
+
+      # - name: Setup SSH Keys and known_hosts
+      #   env:
+      #     SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      #   run: |
+      #       ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+      #       ssh-add - <<< "$(cat ${HOME}/.ssh/id_rsa)"
+
+      # - name: Setup tmate session
+      #   env:
+      #     SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      #   uses: mxschmitt/action-tmate@v3
+
+      # - name: Debug
+      #   env:
+      #     SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      #   run: |
+      #     sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
+      #     sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
+
+
+      #     chmod g-w /home/runner
+      #     chmod 700 /home/runner/.ssh
+      #     chmod 600 /home/runner/.ssh/authorized_keys
+
+      #     sudo echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+      #     sudo echo "AuthorizedKeysFile      .ssh/authorized_keys" >> /etc/ssh/sshd_config
+
+      #     echo "Now the truth"
+      #     ssh -o StrictHostKeyChecking=no $(whoami)@127.0.0.1 uptime
+
 
 
       # - name: Set up JDK 11
