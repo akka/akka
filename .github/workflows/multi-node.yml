@@ -22,8 +22,8 @@ jobs:
           ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
 
       - uses: webfactory/ssh-agent@5f066a372ec13036ab7cb9a8adf18c936f8d2043
-        with:
-            ssh-private-key: $(cat ${HOME}/.ssh/id_rsa)
+        # with:
+        #     ssh-private-key: $(cat ${HOME}/.ssh/id_rsa)
 
       - name: Debug
         run: |
