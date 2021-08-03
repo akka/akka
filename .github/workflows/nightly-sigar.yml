@@ -1,9 +1,8 @@
 name: Akka Nightly Sigar Build
 
 on:
-  push:
-  #schedule:
-  #  - cron: '0 0 * * *'
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   sbt:
