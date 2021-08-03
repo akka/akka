@@ -16,7 +16,7 @@ jobs:
       - name: Set up JDK 8
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0
       - name: Test
         run: |-
           cp .sbtopts-nightly-sigar .sbtopts
