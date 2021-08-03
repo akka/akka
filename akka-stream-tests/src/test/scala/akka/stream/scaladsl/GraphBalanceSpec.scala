@@ -51,7 +51,7 @@ class GraphBalanceSpec extends StreamSpec("""
     "support waiting for demand from all downstream subscriptions" in {
       val s1 = TestSubscriber.manualProbe[Int]()
       val p2 = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.asPublisher[Int](false)) { implicit b => p2Sink =>
+        .fromGraph(GraphDSL.createGraph(Sink.asPublisher[Int](false)) { implicit b => p2Sink =>
           val balance = b.add(Balance[Int](2, waitForAllDownstreams = true))
           Source(List(1, 2, 3)) ~> balance.in
           balance.out(0) ~> Sink.fromSubscriber(s1)
@@ -83,7 +83,7 @@ class GraphBalanceSpec extends StreamSpec("""
       val s1 = TestSubscriber.manualProbe[Int]()
 
       val (p2, p3) = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) {
+        .fromGraph(GraphDSL.createGraph(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) {
           implicit b => (p2Sink, p3Sink) =>
             val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
             Source(List(1, 2, 3)) ~> balance.in
@@ -134,15 +134,16 @@ class GraphBalanceSpec extends StreamSpec("""
 
       val sink = Sink.head[Seq[Int]]
       val (s1, s2, s3, s4, s5) = RunnableGraph
-        .fromGraph(GraphDSL.create(sink, sink, sink, sink, sink)(Tuple5.apply) { implicit b => (f1, f2, f3, f4, f5) =>
-          val balance = b.add(Balance[Int](5, waitForAllDownstreams = true))
-          Source(0 to 14) ~> balance.in
-          balance.out(0).grouped(15) ~> f1
-          balance.out(1).grouped(15) ~> f2
-          balance.out(2).grouped(15) ~> f3
-          balance.out(3).grouped(15) ~> f4
-          balance.out(4).grouped(15) ~> f5
-          ClosedShape
+        .fromGraph(GraphDSL.createGraph(sink, sink, sink, sink, sink)(Tuple5.apply) {
+          implicit b => (f1, f2, f3, f4, f5) =>
+            val balance = b.add(Balance[Int](5, waitForAllDownstreams = true))
+            Source(0 to 14) ~> balance.in
+            balance.out(0).grouped(15) ~> f1
+            balance.out(1).grouped(15) ~> f2
+            balance.out(2).grouped(15) ~> f3
+            balance.out(3).grouped(15) ~> f4
+            balance.out(4).grouped(15) ~> f5
+            ClosedShape
         })
         .run()
 
@@ -154,7 +155,7 @@ class GraphBalanceSpec extends StreamSpec("""
       val outputs = Sink.fold[Int, Int](0)(_ + _)
 
       val results = RunnableGraph
-        .fromGraph(GraphDSL.create(outputs, outputs, outputs)(List(_, _, _)) { implicit b => (o1, o2, o3) =>
+        .fromGraph(GraphDSL.createGraph(outputs, outputs, outputs)(List(_, _, _)) { implicit b => (o1, o2, o3) =>
           val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
           Source.repeat(1).take(numElementsForSink * 3) ~> balance.in
           balance.out(0) ~> o1
@@ -175,7 +176,7 @@ class GraphBalanceSpec extends StreamSpec("""
     "fairly balance between three outputs" in {
       val probe = TestSink.probe[Int]
       val (p1, p2, p3) = RunnableGraph
-        .fromGraph(GraphDSL.create(probe, probe, probe)(Tuple3.apply) { implicit b => (o1, o2, o3) =>
+        .fromGraph(GraphDSL.createGraph(probe, probe, probe)(Tuple3.apply) { implicit b => (o1, o2, o3) =>
           val balance = b.add(Balance[Int](3))
           Source(1 to 7) ~> balance.in
           balance.out(0) ~> o1

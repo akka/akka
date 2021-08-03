@@ -48,7 +48,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
 
     "support broadcast - merge layouts" in {
       val resultFuture = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b => (sink) =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => (sink) =>
           import GraphDSL.Implicits._
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -67,7 +67,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
     "support balance - merge (parallelization) layouts" in {
       val elements = 0 to 10
       val out = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b => (sink) =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => (sink) =>
           import GraphDSL.Implicits._
           val balance = b.add(Balance[Int](5))
           val merge = b.add(Merge[Int](5))
@@ -89,43 +89,44 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
       val seqSink = Sink.head[Seq[Int]]
 
       val (resultFuture2, resultFuture9, resultFuture10) = RunnableGraph
-        .fromGraph(GraphDSL.create(seqSink, seqSink, seqSink)(Tuple3.apply) { implicit b => (sink2, sink9, sink10) =>
-          import GraphDSL.Implicits._
-          val b3 = b.add(Broadcast[Int](2))
-          val b7 = b.add(Broadcast[Int](2))
-          val b11 = b.add(Broadcast[Int](3))
-          val m8 = b.add(Merge[Int](2))
-          val m9 = b.add(Merge[Int](2))
-          val m10 = b.add(Merge[Int](2))
-          val m11 = b.add(Merge[Int](2))
-          val in3 = Source(List(3))
-          val in5 = Source(List(5))
-          val in7 = Source(List(7))
+        .fromGraph(GraphDSL.createGraph(seqSink, seqSink, seqSink)(Tuple3.apply) {
+          implicit b => (sink2, sink9, sink10) =>
+            import GraphDSL.Implicits._
+            val b3 = b.add(Broadcast[Int](2))
+            val b7 = b.add(Broadcast[Int](2))
+            val b11 = b.add(Broadcast[Int](3))
+            val m8 = b.add(Merge[Int](2))
+            val m9 = b.add(Merge[Int](2))
+            val m10 = b.add(Merge[Int](2))
+            val m11 = b.add(Merge[Int](2))
+            val in3 = Source(List(3))
+            val in5 = Source(List(5))
+            val in7 = Source(List(7))
 
-          // First layer
-          in7 ~> b7.in
-          b7.out(0) ~> m11.in(0)
-          b7.out(1) ~> m8.in(0)
+            // First layer
+            in7 ~> b7.in
+            b7.out(0) ~> m11.in(0)
+            b7.out(1) ~> m8.in(0)
 
-          in5 ~> m11.in(1)
+            in5 ~> m11.in(1)
 
-          in3 ~> b3.in
-          b3.out(0) ~> m8.in(1)
-          b3.out(1) ~> m10.in(0)
+            in3 ~> b3.in
+            b3.out(0) ~> m8.in(1)
+            b3.out(1) ~> m10.in(0)
 
-          // Second layer
-          m11.out ~> b11.in
-          b11.out(0).grouped(1000) ~> sink2.in // Vertex 2 is omitted since it has only one in and out
-          b11.out(1) ~> m9.in(0)
-          b11.out(2) ~> m10.in(1)
+            // Second layer
+            m11.out ~> b11.in
+            b11.out(0).grouped(1000) ~> sink2.in // Vertex 2 is omitted since it has only one in and out
+            b11.out(1) ~> m9.in(0)
+            b11.out(2) ~> m10.in(1)
 
-          m8.out ~> m9.in(1)
+            m8.out ~> m9.in(1)
 
-          // Third layer
-          m9.out.grouped(1000) ~> sink9.in
-          m10.out.grouped(1000) ~> sink10.in
+            // Third layer
+            m9.out.grouped(1000) ~> sink9.in
+            m10.out.grouped(1000) ~> sink10.in
 
-          ClosedShape
+            ClosedShape
         })
         .run()
 
@@ -138,7 +139,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
     "allow adding of flows to sources and sinks to flows" in {
 
       val resultFuture = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b => (sink) =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => (sink) =>
           import GraphDSL.Implicits._
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -177,7 +178,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
       val shuffler = Shuffle(Flow[Int].map(_ + 1))
 
       val f: Future[Seq[Int]] = RunnableGraph
-        .fromGraph(GraphDSL.create(shuffler, shuffler, shuffler, Sink.head[Seq[Int]])((_, _, _, fut) => fut) {
+        .fromGraph(GraphDSL.createGraph(shuffler, shuffler, shuffler, Sink.head[Seq[Int]])((_, _, _, fut) => fut) {
           implicit b => (s1, s2, s3, sink) =>
             import GraphDSL.Implicits._
             val merge = b.add(Merge[Int](2))

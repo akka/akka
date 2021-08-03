@@ -876,7 +876,7 @@ object TestSubscriber {
 /**
  * INTERNAL API
  */
-private[testkit] object StreamTestKit {
+private[stream] object StreamTestKit {
   import TestPublisher._
 
   final case class CompletedSubscription[T](subscriber: Subscriber[T]) extends Subscription {

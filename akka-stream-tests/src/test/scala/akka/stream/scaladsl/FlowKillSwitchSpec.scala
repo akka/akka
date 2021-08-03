@@ -277,7 +277,7 @@ class FlowKillSwitchSpec extends StreamSpec {
       val switch2 = KillSwitches.shared("switch")
 
       val downstream = RunnableGraph
-        .fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b => snk =>
+        .fromGraph(GraphDSL.createGraph(TestSink.probe[Int]) { implicit b => snk =>
           import GraphDSL.Implicits._
           val merge = b.add(Merge[Int](2))
 

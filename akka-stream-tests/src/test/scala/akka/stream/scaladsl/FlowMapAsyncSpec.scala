@@ -193,7 +193,6 @@ class FlowMapAsyncSpec extends StreamSpec {
               probe.expectNextOrError() match {
                 case Left(ex)       => ex.getMessage should ===("Boom at C") // fine, error can over-take elements
                 case Right(element) => fail(s"Got [$element] yet it caused an exception, should not have happened!")
-                case unexpected     => fail(s"unexpected $unexpected")
               }
             case unexpected => fail(s"unexpected $unexpected")
           }
@@ -401,7 +400,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       val flow = Flow[Int].mapAsync[String](2) {
         case 2 =>
           Future {
-            Await.ready(latch, 10 seconds)
+            Await.ready(latch, 10.seconds)
             null
           }
         case x =>

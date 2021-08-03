@@ -18,8 +18,10 @@ class RunnableGraphSpec extends StreamSpec {
       val r: RunnableGraph[NotUsed] =
         RunnableGraph.fromGraph(Source.empty.to(Sink.ignore)).async.addAttributes(none).named("useless")
 
-      r.traversalBuilder.attributes.get[Name] shouldEqual Some(Name("useless"))
-      r.traversalBuilder.attributes.get[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+      val name = r.traversalBuilder.attributes.get[Name]
+      name shouldEqual Some(Name("useless"))
+      val boundary = r.traversalBuilder.attributes.get[AsyncBoundary.type]
+      boundary shouldEqual (Some(AsyncBoundary))
     }
 
     "allow conversion from scala to java" in {

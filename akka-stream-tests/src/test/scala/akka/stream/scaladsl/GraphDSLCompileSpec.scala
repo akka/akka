@@ -410,8 +410,10 @@ class GraphDSLCompileSpec extends StreamSpec {
         .addAttributes(none)
         .named("useless")
 
-      ga.traversalBuilder.attributes.getFirst[Name] shouldEqual Some(Name("useless"))
-      ga.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+      val name = ga.traversalBuilder.attributes.getFirst[Name]
+      name shouldEqual Some(Name("useless"))
+      val boundary = ga.traversalBuilder.attributes.getFirst[AsyncBoundary.type]
+      boundary shouldEqual (Some(AsyncBoundary))
     }
 
     "support mapMaterializedValue" in {

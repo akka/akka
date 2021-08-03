@@ -90,7 +90,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val out = TestSubscriber.manualProbe[Int]()
 
       val s = Source
-        .fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) {
+        .fromGraph(GraphDSL.createGraph(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) {
           implicit b => (i0, i1, i2, i3, i4) =>
             import GraphDSL.Implicits._
             val m = b.add(Merge[Int](5))

@@ -251,7 +251,8 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         .to(Sink.ignore)
         .run()
 
-      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
     }
   }
 
@@ -427,7 +428,8 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         .to(Sink.ignore)
         .run()
 
-      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
     }
   }
 

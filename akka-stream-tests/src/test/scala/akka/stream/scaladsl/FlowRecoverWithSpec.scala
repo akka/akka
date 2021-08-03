@@ -95,7 +95,8 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "finish stream if it's empty" in assertAllStagesStopped {
-      Source.empty
+      Source
+        .empty[Int]
         .map(identity)
         .recoverWith { case _: Throwable => Source.single(0) }
         .runWith(TestSink.probe[Int])

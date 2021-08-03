@@ -27,7 +27,7 @@ class BidiFlowSpec extends StreamSpec {
     Flow[Long].map(x => x.toInt + 2).withAttributes(name("top")),
     Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
 
-  val bidiMat = BidiFlow.fromGraph(GraphDSL.create(Sink.head[Int]) { implicit b => s =>
+  val bidiMat = BidiFlow.fromGraph(GraphDSL.createGraph(Sink.head[Int]) { implicit b => s =>
     Source.single(42) ~> s
 
     val top = b.add(Flow[Int].map(x => x.toLong + 2))
@@ -42,7 +42,7 @@ class BidiFlowSpec extends StreamSpec {
 
     "work top/bottom in isolation" in {
       val (top, bottom) = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b => (st, sb) =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b => (st, sb) =>
           val s = b.add(bidi)
 
           Source.single(1) ~> s.in1; s.out1 ~> st
@@ -82,7 +82,7 @@ class BidiFlowSpec extends StreamSpec {
 
     "materialize to its value" in {
       val f = RunnableGraph
-        .fromGraph(GraphDSL.create(bidiMat) { implicit b => bidi =>
+        .fromGraph(GraphDSL.createGraph(bidiMat) { implicit b => bidi =>
           Flow[String].map(Integer.valueOf(_).toInt) <~> bidi <~> Flow[Long].map(x => ByteString(s"Hello $x"))
           ClosedShape
         })
@@ -91,7 +91,7 @@ class BidiFlowSpec extends StreamSpec {
     }
 
     "combine materialization values" in assertAllStagesStopped {
-      val left = Flow.fromGraph(GraphDSL.create(Sink.head[Int]) { implicit b => sink =>
+      val left = Flow.fromGraph(GraphDSL.createGraph(Sink.head[Int]) { implicit b => sink =>
         val bcast = b.add(Broadcast[Int](2))
         val merge = b.add(Merge[Int](2))
         val flow = b.add(Flow[String].map(Integer.valueOf(_).toInt))
@@ -100,7 +100,7 @@ class BidiFlowSpec extends StreamSpec {
         flow ~> merge
         FlowShape(flow.in, merge.out)
       })
-      val right = Flow.fromGraph(GraphDSL.create(Sink.head[immutable.Seq[Long]]) { implicit b => sink =>
+      val right = Flow.fromGraph(GraphDSL.createGraph(Sink.head[immutable.Seq[Long]]) { implicit b => sink =>
         val flow = b.add(Flow[Long].grouped(10))
         flow ~> sink
         FlowShape(flow.in, b.add(Source.single(ByteString("10"))).out)
@@ -115,8 +115,10 @@ class BidiFlowSpec extends StreamSpec {
       import Attributes._
       val b: BidiFlow[Int, Long, ByteString, String, NotUsed] = bidi.async.addAttributes(none).named("name")
 
-      b.traversalBuilder.attributes.getFirst[Name] shouldEqual Some(Name("name"))
-      b.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
+      val name = b.traversalBuilder.attributes.getFirst[Name]
+      name shouldEqual Some(Name("name"))
+      val boundary = b.traversalBuilder.attributes.getFirst[AsyncBoundary.type]
+      boundary shouldEqual Some(AsyncBoundary)
     }
 
     "short circuit identity in atop" in {
