@@ -5,8 +5,8 @@ language: scala
 sudo: false
 
 scala:
-  - "2.12.11"
-  - "2.13.3"
+  - "2.12.14"
+  - "2.13.6"
 
 before_install: curl -Ls https://git.io/jabba | bash && . ~/.jabba/jabba.sh
 install: jabba install "adopt@~1.$TRAVIS_JDK.0-0" && jabba use "$_" && java -Xmx32m -version
