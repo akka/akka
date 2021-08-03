@@ -28,7 +28,7 @@ jobs:
           sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
 
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
+          ssh-add - <<< "$(cat ${HOME}/.ssh/id_rsa)"
 
           sudo chmod go-w ~/
           sudo chmod 700 ~/.ssh
