@@ -1,4 +1,4 @@
-name: Akka Nightly Sigar Build
+name: Nightly Akka Cluster Metrics Test with Sigar
 
 on:
   schedule:
