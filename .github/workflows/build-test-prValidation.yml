@@ -25,12 +25,40 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
+#    ghtag "$ghprbPullId" akka akka '["validating"]' "tested needs-attention"
+
       - name: Code style check
         run: |-
-          cp .sbtopts-ghactions-prValidation .sbtopts
-          sbt scalafmtCheckAll scalafmtSbtCheck test:compile
+          # MiMa is disabled in GHActions because it's already covered in Travis builds (travis runs for multiple scala versions)
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.ci-server=true \
+          -Dakka.test.tags.exclude=performance,timing,long-running \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.timefactor=1 \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dakka.test.multi-node=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+          scalafmtCheckAll scalafmtSbtCheck test:compile
 
       - name: Akka validatePR
         run: |-
-          cp .sbtopts-ghactions-prValidation .sbtopts
-          sbt publishLocal publishM2 validatePullRequest
+          # MiMa is disabled in GHActions because it's already covered in Travis builds (travis runs for multiple scala versions)
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.mima.enabled=false \
+          -Dakka.ci-server=true \
+          -Dakka.test.tags.exclude=performance,timing,long-running \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.timefactor=1 \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dakka.test.multi-node=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+           publishLocal publishM2 validatePullRequest
+
+## if success
+#    ghtag "$ghprbPullId" akka akka '["tested"]' "validating needs-attention"
+## if aborted or unstable
+#    ghtag "$ghprbPullId" akka akka '["needs-attention"]' "tested validating"
