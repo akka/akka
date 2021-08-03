@@ -1,11 +1,11 @@
 name: Multi node test
 
 on:
-  # pull_request:
+  pull_request:
   push:
-    # branches:
-    #   - master
-    # tags-ignore: [ v.* ]
+    branches:
+      - master
+    tags-ignore: [ v.* ]
 
 jobs:
   run-multi-node-tests:
