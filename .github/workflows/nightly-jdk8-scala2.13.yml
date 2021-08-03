@@ -24,7 +24,12 @@ jobs:
       - name: Compile and test for JDK8 (scala2.13)
         run: |-
           # TODO: restore -Dakka.test.multi-node.java=/usr/lib/jvm/jdk8u192-b12/bin/java
-          sbt -Dakka.ci-server=true  -Dakka.build.scalaVersion=2.13.3 -Dakka.test.timefactor=1 -Dakka.cluster.assert=on clean compile test doc
+          sbt -jvm-opts .jvmopts-ci \
+            -Dakka.ci-server=true \
+            -Dakka.build.scalaVersion=2.13.3 \
+            -Dakka.test.timefactor=1 \
+            -Dakka.cluster.assert=on \
+            clean compile test doc
 
       - name: Email on failure
         if: ${{ failure() }}
@@ -34,7 +39,7 @@ jobs:
           server_port: 465
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
-          subject: PRValidation Failed (Akka)
+          subject: Nightly jdk8/scala2.13 Failed (Akka)
           to: akka.official@gmail.com
           from: Akka CI (GHActions)
           body: |

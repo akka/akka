@@ -24,8 +24,17 @@ jobs:
 
       - name: Compile and test for JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}
         run: |-
-          cp .sbtopts-ghactions-nightly-jdk8 .sbtopts
-          sbt clean update whitesourceUpdate whitesourceCheckPolicies test:compile test publishLocal publishM2
+          ## TODO: restore the multi-node tests 
+          sbt -jvm-opts .jvmopts-ci \
+            -Dakka.ci-server=true \
+            -Dakka.test.timefactor=1 \
+            -Dakka.cluster.assert=on \
+            -Dakka.test.metrics.reporters.0=console \
+            -Dakka.test.metrics.reporters.1=graphit \
+            -Dakka.test.metrics.reporter.graphite.prefix=jenkins \
+            -Dakka.test.metrics.reporter.graphite.host=54.72.154.120 \
+            -Dakka.sbt.statsd=false \
+            clean update whitesourceUpdate whitesourceCheckPolicies test:compile test publishLocal publishM2
 
       - name: Email on failure
         if: ${{ failure() }}
@@ -35,7 +44,7 @@ jobs:
           server_port: 465
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
-          subject: PRValidation Failed (Akka)
+          subject: Nightly jdk8 Failed (Akka)
           to: akka.official@gmail.com
           from: Akka CI (GHActions)
           body: |
