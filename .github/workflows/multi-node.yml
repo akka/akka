@@ -32,8 +32,8 @@ jobs:
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
-          ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
-          cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
+          sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
+          sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
           
           echo "Now the truth"
           ssh -o StrictHostKeyChecking=no $(whoami)@127.0.0.1 uptime
