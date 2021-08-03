@@ -40,7 +40,7 @@ class DistributedData(system: ExtendedActorSystem) extends Extension {
    */
   val replicator: ActorRef =
     if (isTerminated) {
-      val log = Logging(system, getClass)
+      val log = Logging(system, classOf[DistributedData])
       if (Cluster(system).isTerminated)
         log.warning("Replicator points to dead letters, because Cluster is terminated.")
       else
