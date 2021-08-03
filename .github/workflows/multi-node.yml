@@ -63,6 +63,4 @@ jobs:
             -Dmultinode.host=127.0.0.1 \
             clean \
             test:compile \
-            akka-cluster-tools/multiNodeTest
-
-            # test
+            test
