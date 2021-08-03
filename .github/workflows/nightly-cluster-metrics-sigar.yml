@@ -21,9 +21,8 @@ jobs:
           java-version: adopt@1.8.0
       - name: Test
         run: |-
-          cp .jvmopts-nightly-cluster-metrics-sigar .jvmopts
           cp .sbtopts-nightly-cluster-metrics-sigar .sbtopts
-          sbt clean akka-cluster-metrics/test
+          sbt -jvmopts .jvmopts-nightly-cluster-metrics-sigar clean akka-cluster-metrics/test
       - name: Email on failure
         if: ${{ failure() }}
         uses: dawidd6/action-send-mail@v3
