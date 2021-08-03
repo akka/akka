@@ -17,39 +17,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      # - name: Setup SSH to local
-      #   run: |
-      #     mkdir -p ~/.ssh
-
-      #     # setup the authorized key
-      #     ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
-      #     sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
-      #     sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
-
-      #     # fix the filesystem permissions
-      #     sudo chmod go-w ~/
-      #     sudo chmod 700 ~/.ssh
-      #     sudo chmod 600 ~/.ssh/authorized_keys
-
-      #     # restart the ssh daemon
-      #     sudo service sshd restart
-
-      #     ssh runner@127.0.0.1 uptime
-
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11.0-9
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
-
-      - name: Multi node test
-        env:
-          JOB_ID: ${{ github.run_id }}
+      - name: Setup SSH to local
         run: |
-
-          # DEBUG
           mkdir -p ~/.ssh
 
           # setup the authorized key
@@ -66,8 +35,22 @@ jobs:
           sudo service sshd restart
 
           ssh runner@127.0.0.1 uptime
-          # END DEBUG
 
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11.0-9
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
+      - name: Multi node test
+        env:
+          JOB_ID: ${{ github.run_id }}
+        run: |
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.test.timefactor=1 \
             -Dakka.cluster.assert=on \
