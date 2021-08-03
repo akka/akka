@@ -24,7 +24,7 @@ jobs:
           ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts
 
           echo "Now the truth"
-          ssh $(whoami)@127.0.0.1
+          ssh -o StrictHostKeyChecking=no $(whoami)@127.0.0.1 uptime
 
 
       # - name: Set up JDK 11
