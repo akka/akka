@@ -10,7 +10,7 @@ on:
 
 jobs:
   setup-runner:
-    name: Compile and test with Scala 3
+    name: Setup runner
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout
@@ -27,7 +27,7 @@ jobs:
         uses: coursier/cache-action@v6.2
 
   test:
-    needs: setup-runner
+    name: Compile and run tests on Scala 3
     runs-on: ubuntu-18.04
     strategy:
       matrix:
@@ -53,6 +53,18 @@ jobs:
           - akka-remote-tests/test
           - akka-testkit/test
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11.0-9
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
       - name: Compile and test selected modules on Scala 3
         run: |
           sbt -jvm-opts .jvmopts-ci \
