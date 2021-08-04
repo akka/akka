@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorRef
 import akka.testkit.AkkaSpec
-import akka.testkit.GHExcludeTest
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.testkit.TestProbe
@@ -126,8 +125,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     }
 
     // #26903
-    // Excluded in GH Actions: https://github.com/akka/akka/issues/30462
-    "be able to send and receive when server goes away (and comes back)" taggedAs GHExcludeTest in {
+    "be able to send and receive when server goes away (and comes back)" in {
       val addresses = temporaryServerAddresses(2, udp = true)
       val serverAddress = addresses(0)
       val serverHandler = TestProbe()
