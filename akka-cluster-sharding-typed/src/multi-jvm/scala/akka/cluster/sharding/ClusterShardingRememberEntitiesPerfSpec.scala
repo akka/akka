@@ -177,7 +177,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       enterBarrier(s"after-start-stop-${testRun}")
     }
 
-    "test when starting new entity" in {
+    "test when starting new entity" taggedAs GHExcludeTest in {
       val numberOfMessages = 200 * NrOfMessagesFactor
       runBench("start new entities") { (iteration, region, histogram) =>
         (1 to numberOfMessages).foreach { n =>

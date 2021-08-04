@@ -51,6 +51,7 @@ jobs:
             -Dakka.test.timefactor=1 \
             -Dakka.cluster.assert=on \
             -Dsbt.override.build.repos=false \
+            -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.test.multi-node=true \
             -Dakka.test.multi-node.targetDirName=${PWD}/target/${JOB_ID} \
             -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
