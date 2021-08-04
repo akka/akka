@@ -54,5 +54,5 @@ jobs:
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=3.0 \
             -Dakka.test.multi-in-test=false \
-            -Dakka.test.tags.exclude=performance,timing,long-running \
+            -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
             ${{ matrix.command }}
