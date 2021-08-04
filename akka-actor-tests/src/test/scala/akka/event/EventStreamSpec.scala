@@ -315,6 +315,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
+    // Excluded in GH Actions: https://github.com/akka/akka/issues/30460
     "unsubscribe the actor, when it subscribes already in terminated state" taggedAs GHExcludeTest in {
       val sys = ActorSystem("EventStreamSpecUnsubscribeTerminated", configUnhandledWithDebug)
 

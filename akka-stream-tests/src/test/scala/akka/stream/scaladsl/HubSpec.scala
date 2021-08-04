@@ -199,6 +199,7 @@ class HubSpec extends StreamSpec {
       downstream.expectComplete()
     }
 
+    // Excluded in GH Actions: https://github.com/akka/akka/issues/30464
     "immediately cancel new producers while draining" taggedAs GHExcludeTest in assertAllStagesStopped {
       val downstream = TestSubscriber.probe[Int]()
       val (sink, draining) =

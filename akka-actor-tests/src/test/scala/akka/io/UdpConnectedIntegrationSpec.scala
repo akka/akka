@@ -126,6 +126,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     }
 
     // #26903
+    // Excluded in GH Actions: https://github.com/akka/akka/issues/30462
     "be able to send and receive when server goes away (and comes back)" taggedAs GHExcludeTest in {
       val addresses = temporaryServerAddresses(2, udp = true)
       val serverAddress = addresses(0)

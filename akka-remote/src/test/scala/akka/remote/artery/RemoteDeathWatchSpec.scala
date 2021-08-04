@@ -56,7 +56,7 @@ class RemoteDeathWatchSpec
 
   override def expectedTestDuration: FiniteDuration = 120.seconds
 
-  "receive Terminated when system of de-serialized ActorRef is not running" taggedAs GHExcludeTest in {
+  "receive Terminated when system of de-serialized ActorRef is not running" in {
     val probe = TestProbe()
     system.eventStream.subscribe(probe.ref, classOf[QuarantinedEvent])
     val rarp = RARP(system).provider

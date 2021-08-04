@@ -18,6 +18,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
 
   "A pub-sub topic running locally" must {
 
+    // Excluded in GH Actions: https://github.com/akka/akka/issues/30466
     "publish to all local subscriber actors of a topic" taggedAs GHExcludeTest in {
       val fruitTopic =
         LoggingTestKit.debug("Topic list updated").withCheckExcess(false).expect {
