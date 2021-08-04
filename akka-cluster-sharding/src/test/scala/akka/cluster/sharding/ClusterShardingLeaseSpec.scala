@@ -12,7 +12,7 @@ import akka.actor.Props
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.coordination.lease.TestLease
 import akka.coordination.lease.TestLeaseExt
-import akka.testkit.{ AkkaSpec, ImplicitSender, WithLogCapturing }
+import akka.testkit.{ AkkaSpec, GHExcludeTest, ImplicitSender, WithLogCapturing }
 import akka.testkit.TestActors.EchoActor
 
 object ClusterShardingLeaseSpec {
@@ -124,7 +124,7 @@ class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
       testLease.setNextAcquireResult(Future.successful(true))
       expectMsg(3)
     }
-    "recover if lease lost" in {
+    "recover if lease lost" taggedAs GHExcludeTest in {
       region ! 4
       expectNoMessage(shortDuration)
       val testLease = leaseForShard(4)

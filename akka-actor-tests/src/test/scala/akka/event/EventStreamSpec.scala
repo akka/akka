@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigFactory
 import language.postfixOps
 
 import akka.actor._
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.{ AkkaSpec, GHExcludeTest, TestProbe }
 
 object EventStreamSpec {
 
@@ -315,7 +315,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
-    "unsubscribe the actor, when it subscribes already in terminated state" in {
+    "unsubscribe the actor, when it subscribes already in terminated state" taggedAs GHExcludeTest in {
       val sys = ActorSystem("EventStreamSpecUnsubscribeTerminated", configUnhandledWithDebug)
 
       try {
