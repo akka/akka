@@ -22,7 +22,8 @@ import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
-class FlowFlatMapPrefixSpec extends StreamSpec {
+// Debug loglevel to diagnose https://github.com/akka/akka/issues/30469
+class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
   def src10(i: Int = 0) = Source(i until (i + 10))
 
   for {
