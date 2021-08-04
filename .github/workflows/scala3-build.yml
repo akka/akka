@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: Compile and run tests on Scala 3
+    name: Test
     runs-on: ubuntu-18.04
     strategy:
       matrix:
@@ -48,7 +48,7 @@ jobs:
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
-      - name: Test
+      - name: Compile and run tests on Scala 3
         run: |
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=3.0 \
