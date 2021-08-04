@@ -59,6 +59,5 @@ jobs:
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx512M \
             -Dmultinode.host=127.0.0.1 \
-            clean \
             test:compile \
-            ${{ matrix.project }}/multiNodeTest
+            ${{ matrix.project }}/test
