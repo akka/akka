@@ -25,8 +25,8 @@ jobs:
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.sigar=true \
             -Dakka.cluster.assert=on \  
-            clean \
-            akka-cluster-metrics/test
+            -Dmultinode.XX:MetaspaceSize=128M \
+            clean akka-cluster-metrics/test
       - name: Email on failure
         if: ${{ failure() }}
         uses: dawidd6/action-send-mail@v3
