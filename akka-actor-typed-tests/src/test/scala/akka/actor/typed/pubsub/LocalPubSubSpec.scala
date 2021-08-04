@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import akka.testkit.GHExcludeTest
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -17,7 +18,8 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
 
   "A pub-sub topic running locally" must {
 
-    "publish to all local subscriber actors of a topic" in {
+    // Excluded in GH Actions: https://github.com/akka/akka/issues/30466
+    "publish to all local subscriber actors of a topic" taggedAs GHExcludeTest in {
       val fruitTopic =
         LoggingTestKit.debug("Topic list updated").withCheckExcess(false).expect {
           testKit.spawn(Topic[String]("fruit"))
