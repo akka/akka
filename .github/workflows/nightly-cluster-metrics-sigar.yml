@@ -21,11 +21,12 @@ jobs:
           java-version: adopt@1.8.0
       - name: Test
         run: |-
+          export MULTI='-Dmultinode.XX:MetaspaceSize=128M'
           sbt -jvm-opts .jvmopts-ci \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.sigar=true \
-            -Dakka.cluster.assert=on \  
-            -Dmultinode.XX:MetaspaceSize=128M \
+            -Dakka.cluster.assert=on \
+            $MULTI \
             clean akka-cluster-metrics/test
       - name: Email on failure
         if: ${{ failure() }}
