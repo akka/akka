@@ -8,9 +8,33 @@ on:
     tags-ignore: [ v.* ]
 
 jobs:
-  compile-and-test-with-scala3:
-    name: Compile and test with Scala 3
+  test:
+    name: Test
     runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        command:
+          - akka-actor-tests/test
+          - akka-actor-testkit-typed/test
+          - akka-actor-tests/test
+          - akka-actor-testkit-typed/test
+          - akka-actor-typed/compile
+          - akka-actor-typed-tests/test
+          - akka-cluster/Test/compile
+          - akka-coordination/test
+          - akka-discovery/test
+          - akka-pki/test
+          - akka-protobuf/test
+          - akka-protobuf-v3/test
+          - akka-serialization-jackson/test:compile
+          - akka-slf4j/test
+          - akka-stream/test
+          - akka-stream-testkit/test
+          - akka-stream-tests-tck/test
+          - akka-remote/test
+          - akka-remote-tests/test
+          - akka-testkit/test
+      fail-fast: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -25,27 +49,10 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-      - name: Compile and test selected modules on Scala 3
+      - name: Compile and run tests on Scala 3
         run: |
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=3.0 \
             -Dakka.test.multi-in-test=false \
             -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
-            akka-actor-tests/test \
-            akka-actor-testkit-typed/test \
-            akka-actor-typed/compile \
-            akka-actor-typed-tests/test \
-            akka-cluster/Test/compile \
-            akka-coordination/test \
-            akka-discovery/test \
-            akka-pki/test \
-            akka-protobuf/test \
-            akka-protobuf-v3/test \
-            akka-serialization-jackson/test:compile \
-            akka-slf4j/test \
-            akka-stream/test \
-            akka-stream-testkit/test \
-            akka-stream-tests-tck/test \
-            akka-remote/test \
-            akka-remote-tests/test \
-            akka-testkit/test
+            ${{ matrix.command }}
