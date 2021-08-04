@@ -260,7 +260,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
-    "test when starting some new entities mixed with sending to started" in {
+    "test when starting some new entities mixed with sending to started" taggedAs GHExcludeTest in {
       runBench("starting mixed with sending to started") { (iteration, region, histogram) =>
         val numberOfMessages = 1600 * NrOfMessagesFactor
         (1 to numberOfMessages).foreach { n =>
@@ -284,7 +284,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
-    "test sending to started" in {
+    "test sending to started" taggedAs GHExcludeTest in {
       runBench("sending to started") { (iteration, region, histogram) =>
         val numberOfMessages = 1600 * NrOfMessagesFactor
         (1 to numberOfMessages).foreach { n =>
