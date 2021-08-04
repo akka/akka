@@ -190,7 +190,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
-    "test latency when starting new entity and sending a few messages" in {
+    "test latency when starting new entity and sending a few messages" taggedAs GHExcludeTest in {
       val numberOfMessages = 800 * NrOfMessagesFactor
       runBench("start, few messages") { (iteration, region, histogram) =>
         for (n <- 1 to numberOfMessages / 5; _ <- 1 to 5) {
@@ -203,7 +203,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
-    "test latency when starting new entity and sending a few messages to it and stopping" in {
+    "test latency when starting new entity and sending a few messages to it and stopping" taggedAs GHExcludeTest in {
       val numberOfMessages = 800 * NrOfMessagesFactor
       // 160 entities, and an extra one for the intialization
       // all but the first one are not removed
@@ -237,7 +237,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
-    "test latency when starting, few messages, stopping, few messages" in {
+    "test latency when starting, few messages, stopping, few messages" taggedAs GHExcludeTest in {
       val numberOfMessages = 800 * NrOfMessagesFactor
       runBench("start, few messages, stop, few messages") { (iteration, region, histogram) =>
         for (n <- 1 to numberOfMessages / 5; m <- 1 to 5) {

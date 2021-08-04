@@ -14,6 +14,7 @@ jobs:
         project: [akka-cluster, akka-cluster-metrics, akka-cluster-sharding, akka-cluster-sharding-typed, akka-cluster-tools, akka-cluster-typed, akka-distributed-data, akka-remote-tests]
       # TODO: re-enable me before merging
       # fail-fast: true
+      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v2
