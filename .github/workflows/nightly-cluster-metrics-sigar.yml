@@ -21,7 +21,6 @@ jobs:
           java-version: adopt@1.8.0
       - name: Test
         run: |-
-          cp .sbtopts-nightly-cluster-metrics-sigar .sbtopts
           sbt -jvm-opts .jvmopts-ci \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.sigar=true \
