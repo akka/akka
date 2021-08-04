@@ -18,7 +18,7 @@ import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-import akka.testkit.{ EventFilter, GHExcludeTest }
+import akka.testkit.EventFilter
 
 class HubSpec extends StreamSpec {
   implicit val ec: ExecutionContext = system.dispatcher
@@ -201,8 +201,7 @@ class HubSpec extends StreamSpec {
       downstream.expectComplete()
     }
 
-    // Excluded in GH Actions: https://github.com/akka/akka/issues/30464
-    "immediately cancel new producers while draining" taggedAs GHExcludeTest in assertAllStagesStopped {
+    "immediately cancel new producers while draining" in assertAllStagesStopped {
       val downstream = TestSubscriber.probe[Int]()
       val (sink, draining) =
         MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
