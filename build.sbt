@@ -86,6 +86,17 @@ lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   streamTyped,
   testkit)
 
+lazy val printAggregatedProjects = taskKey[Unit]("Print the list of aggregated projects")
+
+ThisBuild / printAggregatedProjects := {
+  aggregatedProjects.foreach{ p =>
+    p match {
+      case sbt.LocalProject(prj) => println(prj)
+      case _ =>
+    }
+  }
+}
+
 lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
     actorTests,
     actorTypedTests,
