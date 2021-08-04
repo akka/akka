@@ -462,11 +462,8 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           .run()
 
         Await.result(serverErr, 1.second).getMessage should include("certificate_unknown")
-        val clientErrText = Await.result(clientErr, 1.second).getMessage
-        if (JavaVersion.majorVersion >= 11)
-          clientErrText should include("unable to find valid certification path to requested target")
-        else
-          clientErrText should equal("General SSLEngine problem")
+        val clientErrText = rootCauseOf(Await.result(clientErr, 1.second)).getMessage
+        clientErrText should include("unable to find valid certification path to requested target")
       }
 
       "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {
@@ -568,21 +565,21 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           Await.result(run("unknown.example.org"), 3.seconds)
         }
 
-        val rootCause =
-          if (JavaVersion.majorVersion >= 11) {
-            cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-            cause.getCause
-          } else {
-            cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-            val cause2 = cause.getCause
-            cause2.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-            cause2.getCause
-          }
+        cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+
+        val rootCause = rootCauseOf(cause.getCause)
         rootCause.getClass should ===(classOf[CertificateException])
         rootCause.getMessage should ===("No name matching unknown.example.org found")
       }
     }
   }
+
+  def rootCauseOf(e: Throwable): Throwable = {
+      if (JavaVersion.majorVersion >= 11) e
+      // Wrapped in an extra 'General SSLEngine problem' on 1.8.0-265 and before, but not 1.8.0-272 and later...
+      else if (e.isInstanceOf[SSLHandshakeException]) e.getCause
+      else e
+    }
 
   "A SslTlsPlacebo" must {
 
