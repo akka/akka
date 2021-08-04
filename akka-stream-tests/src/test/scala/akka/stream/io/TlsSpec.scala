@@ -462,6 +462,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           .run()
 
         Await.result(serverErr, 1.second).getMessage should include("certificate_unknown")
+
         val clientErrText = rootCauseOf(Await.result(clientErr, 1.second)).getMessage
         clientErrText should include("unable to find valid certification path to requested target")
       }
@@ -576,8 +577,9 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
 
   def rootCauseOf(e: Throwable): Throwable = {
     if (JavaVersion.majorVersion >= 11) e
-    // Wrapped in an extra 'General SSLEngine problem' on 1.8.0-265 and before, but not 1.8.0-272 and later...
-    else if (e.isInstanceOf[SSLHandshakeException]) e.getCause
+    // Wrapped in extra 'General SSLEngine problem' (sometimes multiple)
+    // on 1.8.0-265 and before, but not 1.8.0-272 and later...
+    else if (e.isInstanceOf[SSLHandshakeException]) rootCauseOf(e.getCause)
     else e
   }
 
