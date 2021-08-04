@@ -527,13 +527,11 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
   }
 
   def rootCauseOf(e: Throwable): Throwable = {
-      if (JavaVersion.majorVersion >= 11) e
-      // Wrapped in an extra 'General SSLEngine problem' on 1.8.0-265 and before, but not 1.8.0-272 and later...
-      else if (e.isInstanceOf[SSLHandshakeException]) e.getCause
-      else e
-    }
-
-
+    if (JavaVersion.majorVersion >= 11) e
+    // Wrapped in an extra 'General SSLEngine problem' on 1.8.0-265 and before, but not 1.8.0-272 and later...
+    else if (e.isInstanceOf[SSLHandshakeException]) e.getCause
+    else e
+  }
 
   "A SslTlsPlacebo" must {
 
