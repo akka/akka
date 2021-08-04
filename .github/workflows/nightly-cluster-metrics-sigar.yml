@@ -25,7 +25,6 @@ jobs:
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.sigar=true \
             -Dakka.cluster.assert=on \  
-            -Dmultinode.XX:MetaspaceSize=128M \
             clean \
             akka-cluster-metrics/test
       - name: Email on failure
