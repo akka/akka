@@ -85,6 +85,7 @@ class BalancingSpec extends AkkaSpec("""
     val replies1 = receiveN(iterationCount - poolSize + 1)
     // all replies from the unblocked worker so far
     replies1.toSet should be(Set(1))
+    log.warning(lastSender.toString)
     expectNoMessage(1.second)
 
     latch.open()
