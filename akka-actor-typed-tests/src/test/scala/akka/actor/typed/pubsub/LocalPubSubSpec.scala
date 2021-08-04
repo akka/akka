@@ -36,7 +36,9 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         val statsProbe = testKit.createTestProbe[TopicImpl.TopicStats]()
         statsProbe.awaitAssert {
           fruitTopic ! TopicImpl.GetTopicStats(statsProbe.ref)
-          statsProbe.receiveMessage().localSubscriberCount should ===(3)
+          val stats = statsProbe.receiveMessage()
+          stats.localSubscriberCount should ===(3)
+          stats.topicInstanceCount should ===(1)
         }
 
         fruitTopic ! Topic.Publish("banana")
