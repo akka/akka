@@ -1,12 +1,11 @@
 name: Build Akka with Scala 3
 
 on:
+  pull_request:
   push:
-  # pull_request:
-  # push:
-  #   branches:
-  #     - master
-  #   tags-ignore: [ v.* ]
+    branches:
+      - master
+    tags-ignore: [ v.* ]
 
 jobs:
   test:
