@@ -21,7 +21,7 @@ jobs:
           - akka-actor-testkit-typed/test
           - akka-actor-typed/compile
           - akka-actor-typed-tests/test
-          - akka-cluster/test/compile
+          - akka-cluster/Test/compile
           - akka-coordination/test
           - akka-discovery/test
           - akka-pki/test
@@ -48,6 +48,7 @@ jobs:
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
+
       - name: Compile and run tests on Scala 3
         run: |
           sbt -jvm-opts .jvmopts-ci \
