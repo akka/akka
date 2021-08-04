@@ -4,10 +4,11 @@
 
 package akka.stream.scaladsl
 
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.Done
 
+import scala.collection.immutable
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.duration._
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
 import akka.stream.testkit.StreamSpec
@@ -20,6 +21,7 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.{ EventFilter, GHExcludeTest }
 
 class HubSpec extends StreamSpec {
+  implicit val ec: ExecutionContext = system.dispatcher
 
   "MergeHub" must {
 
@@ -206,21 +208,30 @@ class HubSpec extends StreamSpec {
         MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
       Source(1 to 10).runWith(sink)
       Source(11 to 20).runWith(sink)
-      draining.drainAndComplete()
 
-      downstream.request(10)
-      val firstBatch = downstream.expectNextN(10)
+      // Give the sources time to fill up the producer buffers before completing (and cancelling the sources)
+      val testResult = Promise[Done]()
+      system.scheduler.scheduleOnce(200.millis) {
+        testResult.completeWith(Future {
+          draining.drainAndComplete()
 
-      val upstream = TestPublisher.probe[Int]()
-      Source.fromPublisher(upstream).runWith(sink)
-      upstream.expectCancellation()
+          downstream.request(10)
+          val firstBatch = downstream.expectNextN(10)
 
-      downstream.request(10)
-      val secondBatch = downstream.expectNextN(10)
+          val upstream = TestPublisher.probe[Int]()
+          Source.fromPublisher(upstream).runWith(sink)
+          upstream.expectCancellation()
 
-      (firstBatch ++ secondBatch).sorted should ===(1 to 20)
+          downstream.request(10)
+          val secondBatch = downstream.expectNextN(10)
 
-      downstream.expectComplete()
+          (firstBatch ++ secondBatch).sorted should ===(1 to 20)
+
+          downstream.expectComplete()
+          Done
+        })
+      }
+      testResult.future.futureValue
     }
   }
 
