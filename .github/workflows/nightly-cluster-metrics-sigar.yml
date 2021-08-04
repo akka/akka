@@ -1,9 +1,8 @@
 name: Nightly Akka Cluster Metrics Test with Sigar
 
 on:
-  push:
-  #schedule:
-  #  - cron: '0 0 * * *'
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   sbt:
