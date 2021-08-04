@@ -9,23 +9,6 @@ on:
   #   tags-ignore: [ v.* ]
 
 jobs:
-  setup-runner:
-    name: Setup runner
-    runs-on: ubuntu-18.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11.0-9
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
-
   test:
     name: Compile and run tests on Scala 3
     runs-on: ubuntu-18.04
@@ -65,7 +48,7 @@ jobs:
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
-      - name: Compile and test selected modules on Scala 3
+      - name: Test
         run: |
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=3.0 \
