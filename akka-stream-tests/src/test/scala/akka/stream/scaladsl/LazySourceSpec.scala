@@ -249,12 +249,12 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       doneF.failed.futureValue should ===(boom)
     }
 
-    "provide attributes to inner source" in assertAllStagesStopped {
+    "provide attributes to inner source" in {
+      // This stage never stops, but that's OK, that's not what we're testing here.
       val attributes = Source
         .lazySource(() => Source.fromGraph(new AttributesSource()))
         .addAttributes(myAttributes)
-        .buffer(1, OverflowStrategy.backpressure)
-        .to(Sink.cancelled)
+        .to(Sink.ignore)
         .run()
 
       attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
@@ -427,12 +427,12 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       terminationF.failed.futureValue should ===(boom)
     }
 
-    "provide attributes to inner source" in assertAllStagesStopped {
+    "provide attributes to inner source" in {
+      // This stage never stops, but that's OK, that's not what we're testing here.
       val attributes = Source
         .lazyFutureSource(() => Future(Source.fromGraph(new AttributesSource())))
         .addAttributes(myAttributes)
-        .buffer(1, OverflowStrategy.backpressure)
-        .to(Sink.cancelled)
+        .to(Sink.ignore)
         .run()
 
       attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
