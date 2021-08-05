@@ -1432,6 +1432,7 @@ private[akka] class DDataShardCoordinator(
 
   private var terminating = false
   private var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
+  private var initialStateRetries = 0
 
   private val rememberEntitiesStore =
     rememberEntitiesStoreProvider.map { provider =>
@@ -1468,10 +1469,14 @@ private[akka] class DDataShardCoordinator(
         onInitialState(existingState, rememberedShards)
 
       case GetFailure(CoordinatorStateKey, _) =>
-        log.error(
-          "{}: The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying). Has ClusterSharding been started on all nodes?",
-          typeName,
-          stateReadConsistency.timeout.toMillis)
+        initialStateRetries += 1
+        val template =
+          "{}: The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying). Has ClusterSharding been started on all nodes?"
+        if (initialStateRetries < 5)
+          log.warning(template, typeName, stateReadConsistency.timeout.toMillis)
+        else
+          log.error(template, typeName, stateReadConsistency.timeout.toMillis)
+
         // repeat until GetSuccess
         getCoordinatorState()
 
