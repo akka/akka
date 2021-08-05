@@ -344,10 +344,10 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "not allow initializing a TerminatedUnsubscriber twice" in {
-      val sys = ActorSystem("MustNotAllowDoubleInitOfTerminatedUnsubscriber",
+      val sys = ActorSystem(
+        "MustNotAllowDoubleInitOfTerminatedUnsubscriber",
         // debug loglevel to diagose #18630
-        ConfigFactory.parseString("akka.loglevel = debug").withFallback(ConfigFactory.load())
-      )
+        ConfigFactory.parseString("akka.loglevel = debug").withFallback(ConfigFactory.load()))
       // initializes an TerminatedUnsubscriber during start
 
       try {
