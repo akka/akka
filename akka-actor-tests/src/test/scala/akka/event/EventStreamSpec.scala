@@ -4,8 +4,6 @@
 
 package akka.event
 
-import akka.Done
-
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
@@ -13,8 +11,7 @@ import language.postfixOps
 import akka.actor._
 import akka.testkit.{ AkkaSpec, GHExcludeTest, TestProbe }
 
-import scala.concurrent.{ ExecutionContext, Promise }
-import scala.util.Try
+import scala.concurrent.ExecutionContext
 
 object EventStreamSpec {
 
