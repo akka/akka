@@ -342,24 +342,13 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         es.subscribe(target, classOf[A]) should ===(true)
         fishForDebugMessage(a2, s"unsubscribing $target from all channels")
 
-        after(30.millis) {
+        awaitAssert {
           es.subscribe(target, classOf[A]) should ===(true)
-          fishForDebugMessage(a2, s"unsubscribing $target from all channels")
         }
+        fishForDebugMessage(a2, s"unsubscribing $target from all channels")
       } finally {
         shutdown(sys)
       }
-    }
-
-    def after(delay: FiniteDuration)(block: => Unit): Unit = {
-      val done = Promise[Done]()
-      system.scheduler.scheduleOnce(delay) {
-        done.complete(Try {
-          block
-          Done
-        })
-      }
-      done.future.futureValue
     }
 
     "not allow initializing a TerminatedUnsubscriber twice" in {
