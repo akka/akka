@@ -8,7 +8,6 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.delivery.ConsumerController.DeliverThenStop
@@ -474,7 +473,7 @@ class ConsumerControllerSpec
       testKit.stop(consumerController)
     }
 
-    // Excluded in GH Actions: https://github.com/akka/akka/issues/30430
+    // Excluded fo GHActions. See https://github.com/akka/akka/issues/30430
     "send Ack when stopped" taggedAs GHExcludeTest in {
       nextId()
       val consumerController =
