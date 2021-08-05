@@ -20,7 +20,7 @@ To use Akka Persistence, add the module to your project:
   scope2=test
 }
 
-You also have to select durable state store plugin, see @ref:[Persistence Plugins](../persistence-plugins.md).
+You also have to select durable state store plugin, see @ref:[Persistence Plugins](../../persistence-plugins.md).
 
 @@@ note
 
@@ -41,7 +41,7 @@ This model of Akka Persistence enables a stateful actor / entity to store the fu
 
 The current state is always stored in the database. Since only the latest state is stored, we don't have access to any of the history of changes, unlike event sourced storage. Akka Persistence would read that state and store it in memory. After processing of the command is finished, the new state will be stored in the database. The processing of the next command will not start until the state has been successfully stored in the database.
 
-Akka Persistence also supports @ref:[Event Sourcing](persistence.md) based implementation, where only the _events_ that are persisted by the actor are stored, but not the actual state of the actor. By storing all events, using this model, 
+Akka Persistence also supports @ref:[Event Sourcing](../persistence.md) based implementation, where only the _events_ that are persisted by the actor are stored, but not the actual state of the actor. By storing all events, using this model, 
 a stateful actor can be recovered by replaying the stored events to the actor, which allows it to rebuild its state.
 
 The database specific implementations can be added to existing Akka Persistence plugin implementations, starting with the JDBC plugin. The plugin would serialize the state and store as a blob with the persistenceId as the primary key. Since each entity
@@ -74,10 +74,10 @@ Next we'll discuss each of these in detail.
 The @apidoc[akka.persistence.typed.PersistenceId] is the stable unique identifier for the persistent actor in the backend
 durabe state store.
 
-@ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `DurableStateBehavior` to ensure
+@ref:[Cluster Sharding](../cluster-sharding.md) is typically used together with `DurableStateBehavior` to ensure
 that there is only one active entity for each `PersistenceId` (`entityId`). There are techniques to ensure this 
 uniqueness, an example of which can be found in the 
-@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
+@ref:[Persistence example in the Cluster Sharding documentation](../cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
 
 The `entityId` in Cluster Sharding is the business domain identifier which uniquely identifies the instance of
 that specific `EntityType`. This means that across the cluster we have a unique combination of (`EntityType`, `EntityId`).
@@ -220,12 +220,12 @@ side effect is performed but that the state is not stored if the persist fails.
 
 ## Cluster Sharding and DurableStateBehavior
 
-@ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
+@ref:[Cluster Sharding](../cluster-sharding.md) is an excellent fit to spread persistent actors over a
 cluster, addressing them by id. It makes it possible to have more persistent actors exist in the cluster than what 
 would fit in the memory of one node. Cluster sharding improves the resilience of the cluster. If a node crashes, 
 the persistent actors are quickly started on a new node and can resume operations.
 
-The `DurableStateBehavior` can then be run as any plain actor as described in @ref:[actors documentation](actors.md),
+The `DurableStateBehavior` can then be run as any plain actor as described in @ref:[actors documentation](../actors.md),
 but since Akka Persistence is based on the single-writer principle, the persistent actors are typically used together
 with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
 Cluster Sharding ensures that there is only one active entity (or actor instance) for each id. 
@@ -299,13 +299,13 @@ Java
 :  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntityDurableState.java) { #behavior }
 
 This can be refactored one or two steps further by defining the command handlers in the state class as
-illustrated in @ref:[command handlers in the state](persistence-style-durable-state.md#command-handlers-in-the-state).
+illustrated in @ref:[command handlers in the state](persistence-style.md#command-handlers-in-the-state).
 
-There is also an example illustrating an @ref:[optional initial state](persistence-style-durable-state.md#optional-initial-state).
+There is also an example illustrating an @ref:[optional initial state](persistence-style.md#optional-initial-state).
 
 ## Replies
 
-The @ref:[Request-Response interaction pattern](interaction-patterns.md#request-response) is very common for
+The @ref:[Request-Response interaction pattern](../interaction-patterns.md#request-response) is very common for
 persistent actors, because you typically want to know if the command was rejected due to validation errors and
 when accepted you want a confirmation when the events have been successfully stored.
 
@@ -373,10 +373,10 @@ command or that a reply will be sent later, perhaps after some asynchronous inte
 
 ## Serialization
 
-The same @ref:[serialization](../serialization.md) mechanism as for actor messages is also used for persistent actors.
+The same @ref:[serialization](../../serialization.md) mechanism as for actor messages is also used for persistent actors.
 
-You need to enable @ref:[serialization](../serialization.md) for your commands (messages) and state.
-@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases and our
+You need to enable @ref:[serialization](../../serialization.md) for your commands (messages) and state.
+@ref:[Serialization with Jackson](../../serialization-jackson.md) is a good choice in many cases and our
 recommendation if you don't have other preference.
 
 ## Tagging

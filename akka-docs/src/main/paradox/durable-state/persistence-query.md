@@ -16,12 +16,12 @@ To use Persistence Query, you must add the following dependency in your project:
   version=AkkaVersion
 }
 
-This will also add dependency on the @ref[Akka Persistence](persistence.md) module.
+This will also add dependency on the @ref[Akka Persistence](../persistence.md) module.
 
 ## Introduction
 
-Akka persistence query provides a query interface to @ref:[Durable State Behaviors](typed/persistence-durable-state.md).
-These queries are based on asynchronous streams. These streams are similar to the ones offered in the @ref:[Event Sourcing](persistence-query.md)
+Akka persistence query provides a query interface to @ref:[Durable State Behaviors](../typed/durable-state/persistence.md).
+These queries are based on asynchronous streams. These streams are similar to the ones offered in the @ref:[Event Sourcing](../persistence-query.md)
 based implementation. Various state store plugins can implement these interfaces to expose their query capabilities.
 
 One of the rationales behind having a separate query module for Akka Persistence is for implementing the so-called 

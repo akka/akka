@@ -34,7 +34,7 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    * @param offset The offset to get changes since. Must either be [[akka.persistence.query.NoOffset]] to get
    *               changes since the beginning of time, or an offset that has been previously returned by this query.
    *               Any other offsets are invalid.
-   * @return A source of change events.
+   * @return A source of change in state.
    */
   def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], NotUsed]
 
@@ -46,14 +46,14 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    *
    * Not all changes that occur are guaranteed to be emitted, this call only guarantees that eventually, the most
    * recent change for each object since the offset will be emitted. In particular, multiple updates to a given object
-   * in quick succession are likely to be skipped, with only the last update resulting in a change event from this
+   * in quick succession are likely to be skipped, with only the last update resulting in a change from this
    * source.
    *
    * @param tag The tag to get changes for.
    * @param offset The offset to get changes since. Must either be [[akka.persistence.query.NoOffset]] to get
    *               changes since the beginning of time, or an offset that has been previously returned by this query.
    *               Any other offsets are invalid.
-   * @return A source of change events.
+   * @return A source of change in state.
    */
   def changes(tag: String, offset: Offset): Source[DurableStateChange[A], NotUsed]
 }

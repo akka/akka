@@ -8,9 +8,9 @@ project.description: Durable state with Akka Persistence enables actors to persi
 
 @@@ index
 
-* [persistence-durable-state](persistence-durable-state.md)
-* [persistence-style](persistence-style-durable-state.md)
-* [cqrs](cqrs-durable-state.md)
-* [persistence-query](../persistence-query-durable-state.md)
+* [persistence-durable-state](durable-state/persistence.md)
+* [persistence-style](durable-state/persistence-style.md)
+* [cqrs](durable-state/cqrs.md)
+* [persistence-query](../durable-state/persistence-query.md)
 
 @@@

@@ -37,7 +37,7 @@ allows for very high transaction rates and efficient replication. A stateful act
 events to the actor, allowing it to rebuild its state. This can be either the full history of changes
 or starting from a checkpoint in a snapshot, which can dramatically reduce recovery times. 
 
-Akka Persistence also supports @ref:[Durable State Behaviors](persistence-durable-state.md), which is based on 
+Akka Persistence also supports @ref:[Durable State Behaviors](durable-state/persistence.md), which is based on 
 persistence of the latest state of the actor. In this implementation, the _latest_ state is persisted, instead of events. 
 Hence this is more similar to CRUD based applications.
 
