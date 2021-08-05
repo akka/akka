@@ -4,6 +4,9 @@ language: scala
 
 sudo: false
 
+## The versions of scala specified here are only used as `-Dakka.build.scalaVersion=...`
+## which ignores the PATCH portion of the version id. These scala version don't need
+## to align with the version used in the build.
 scala:
   - "2.12.11"
   - "2.13.3"
