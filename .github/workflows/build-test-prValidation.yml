@@ -44,7 +44,7 @@ jobs:
           scalafmtCheckAll scalafmtSbtCheck test:compile
 
   PR-Validation:
-    name: PR Valication
+    name: PR Validation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
