@@ -5,13 +5,12 @@
 package akka.event
 
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
 
+import com.typesafe.config.ConfigFactory
 import language.postfixOps
+
 import akka.actor._
 import akka.testkit.{ AkkaSpec, GHExcludeTest, TestProbe }
-
-import scala.concurrent.ExecutionContext
 
 object EventStreamSpec {
 
@@ -72,7 +71,6 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
   import EventStreamSpec._
 
   val impl = system.asInstanceOf[ActorSystemImpl]
-  implicit val ec: ExecutionContext = system.dispatcher
 
   "An EventStream" must {
 
