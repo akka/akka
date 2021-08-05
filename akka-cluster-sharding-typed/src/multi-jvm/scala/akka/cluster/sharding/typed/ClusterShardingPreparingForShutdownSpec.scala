@@ -21,6 +21,7 @@ import akka.cluster.typed.PrepareForFullClusterShutdown
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.GHExcludeTest
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -78,7 +79,7 @@ class ClusterShardingPreparingForShutdownSpec
       formCluster(first, second, third)
     }
 
-    "not rebalance but should still work preparing for shutdown" in {
+    "not rebalance but should still work preparing for shutdown" taggedAs GHExcludeTest in {
 
       val shardRegion: ActorRef[ShardingEnvelope[Command]] =
         sharding.init(Entity(typeKey)(_ => Pinger()))
