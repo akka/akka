@@ -9,7 +9,6 @@ import java.util.UUID
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -30,6 +29,7 @@ import akka.cluster.typed.Join
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.delivery.EventSourcedProducerQueue
+import akka.testkit.GHExcludeTest
 
 object DurableShardingSpec {
   def conf: Config =
@@ -81,7 +81,8 @@ class DurableShardingSpec
       Cluster(system).manager ! Join(Cluster(system).selfMember.address)
     }
 
-    "load initial state and resend unconfirmed" in {
+    // GHExclude tracked in https://github.com/akka/akka/issues/30489
+    "load initial state and resend unconfirmed" taggedAs GHExcludeTest in {
       nextId()
       val typeKey = EntityTypeKey[SequencedMessage[TestConsumer.Job]](s"TestConsumer-$idCount")
       val consumerProbe = createTestProbe[TestConsumer.JobDelivery]()
