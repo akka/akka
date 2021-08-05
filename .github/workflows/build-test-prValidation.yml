@@ -2,9 +2,6 @@ name: PRValidation Workflow
 
 on:
   pull_request:
-  push:
-    branches: [ master ]
-    tags-ignore: [ v* ]
 
 jobs:
   check-code-style:
