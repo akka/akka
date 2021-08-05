@@ -177,6 +177,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       enterBarrier(s"after-start-stop-${testRun}")
     }
 
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
     "test when starting new entity" taggedAs GHExcludeTest in {
       val numberOfMessages = 200 * NrOfMessagesFactor
       runBench("start new entities") { (iteration, region, histogram) =>
@@ -190,6 +191,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
     "test latency when starting new entity and sending a few messages" taggedAs GHExcludeTest in {
       val numberOfMessages = 800 * NrOfMessagesFactor
       runBench("start, few messages") { (iteration, region, histogram) =>
@@ -203,6 +205,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
     "test latency when starting new entity and sending a few messages to it and stopping" taggedAs GHExcludeTest in {
       val numberOfMessages = 800 * NrOfMessagesFactor
       // 160 entities, and an extra one for the intialization
@@ -237,6 +240,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
     "test latency when starting, few messages, stopping, few messages" taggedAs GHExcludeTest in {
       val numberOfMessages = 800 * NrOfMessagesFactor
       runBench("start, few messages, stop, few messages") { (iteration, region, histogram) =>
@@ -260,6 +264,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
     "test when starting some new entities mixed with sending to started" taggedAs GHExcludeTest in {
       runBench("starting mixed with sending to started") { (iteration, region, histogram) =>
         val numberOfMessages = 1600 * NrOfMessagesFactor
@@ -284,6 +289,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
 
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
     "test sending to started" taggedAs GHExcludeTest in {
       runBench("sending to started") { (iteration, region, histogram) =>
         val numberOfMessages = 1600 * NrOfMessagesFactor
