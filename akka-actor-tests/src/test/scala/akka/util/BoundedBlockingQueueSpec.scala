@@ -21,7 +21,7 @@ import org.scalatest.time.Span
 import org.scalatest.time.SpanSugar._
 import org.scalatest.wordspec.AnyWordSpec
 
-import akka.testkit.TimingTest
+import akka.testkit.{ GHExcludeTest, TimingTest }
 import akka.util.DefaultExecutionContext._
 import akka.util.ccompat.JavaConverters._
 
@@ -284,7 +284,8 @@ class BoundedBlockingQueueSpec
       (events should contain).inOrder(awaitNotFull, signalNotFull, offer("World"))
     }
 
-    "check the backing queue size before offering" in {
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30479
+    "check the backing queue size before offering" taggedAs GHExcludeTest in {
       val TestContext(queue, events, _, notFull, lock, _) = newBoundedBlockingQueue(1)
       queue.put("Hello")
       // Blocks until another thread signals `notFull`
