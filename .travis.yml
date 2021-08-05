@@ -4,9 +4,12 @@ language: scala
 
 sudo: false
 
+## The versions of scala specified here are only used as `-Dakka.build.scalaVersion=...`
+## which ignores the PATCH portion of the version id. These scala version don't need
+## to align with the version used in the build.
 scala:
-  - "2.12.14"
-  - "2.13.6"
+  - "2.12.11"
+  - "2.13.3"
 
 before_install: curl -Ls https://git.io/jabba | bash && . ~/.jabba/jabba.sh
 install: jabba install "adopt@~1.$TRAVIS_JDK.0-0" && jabba use "$_" && java -Xmx32m -version
