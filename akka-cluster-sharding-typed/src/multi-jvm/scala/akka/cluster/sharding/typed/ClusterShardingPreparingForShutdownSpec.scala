@@ -79,6 +79,7 @@ class ClusterShardingPreparingForShutdownSpec
       formCluster(first, second, third)
     }
 
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
     "not rebalance but should still work preparing for shutdown" taggedAs GHExcludeTest in {
 
       val shardRegion: ActorRef[ShardingEnvelope[Command]] =
