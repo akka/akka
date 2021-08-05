@@ -224,7 +224,8 @@ public class GraphDslTest extends StreamTest {
   @Test
   public void canUseMapMaterializedValueOnGraphs() {
     Graph<SourceShape<Object>, NotUsed> srcGraph = Source.empty();
-    // FIXME it looks like the Graph.mapMaterializedValue static forwarder is no longer
+    // FIXME https://github.com/akka/akka/issues/30487
+    // it looks like the Graph.mapMaterializedValue static forwarder is no longer
     // generated on Scala 3
     //    Graph<SourceShape<Object>, Pair<NotUsed, NotUsed>> mappedMatValueSrcGraph =
     //        Graph.mapMaterializedValue(srcGraph, notUsed -> new Pair<>(notUsed, notUsed));
