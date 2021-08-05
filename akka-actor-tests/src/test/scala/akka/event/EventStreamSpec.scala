@@ -337,7 +337,9 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         es.subscribe(target, classOf[A]) should ===(true)
         fishForDebugMessage(a2, s"unsubscribing $target from all channels")
 
-        es.subscribe(target, classOf[A]) should ===(true)
+        awaitAssert {
+          es.subscribe(target, classOf[A]) should ===(true)
+        }
         fishForDebugMessage(a2, s"unsubscribing $target from all channels")
       } finally {
         shutdown(sys)
