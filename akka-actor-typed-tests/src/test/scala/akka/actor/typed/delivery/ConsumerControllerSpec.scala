@@ -15,6 +15,7 @@ import akka.actor.typed.delivery.ConsumerController.DeliverThenStop
 import akka.actor.typed.delivery.internal.ConsumerControllerImpl
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.serialization.SerializationExtension
+import akka.testkit.GHExcludeTest
 
 class ConsumerControllerSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.parseString("""
@@ -473,7 +474,8 @@ class ConsumerControllerSpec
       testKit.stop(consumerController)
     }
 
-    "send Ack when stopped" in {
+    // Excluded in GH Actions: https://github.com/akka/akka/issues/30430
+    "send Ack when stopped" taggedAs GHExcludeTest in {
       nextId()
       val consumerController =
         spawn(ConsumerController[TestConsumer.Job](), s"consumerController-${idCount}")
