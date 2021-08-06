@@ -7,6 +7,12 @@ on:
       - master
     tags-ignore: [ v.* ]
 
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-scala3-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Test
