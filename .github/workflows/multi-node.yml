@@ -63,7 +63,7 @@ jobs:
         uses: mxschmitt/action-tmate@v3
       - name: Finish the setup
         run: |
-          sudo telepresence connect
+          sudo telepresence
           cd kubernetes
           ./check-connectivity.sh
           ./post-setup.sh
