@@ -144,6 +144,11 @@ object Coroner {
                 #Heap usage: ${memMx.getHeapMemoryUsage()}
                 #Non-heap usage: ${memMx.getNonHeapMemoryUsage()}""".stripMargin('#'))
 
+    // If we look too soon, we've seen the JVM report a thread
+    // (in that case deadlock-thread-a from CoronerSpec)
+    // waiting on the lock while no thread seemed to be holding it
+    Thread.sleep(300)
+
     def dumpAllThreads: Seq[ThreadInfo] =
       threadMx.dumpAllThreads(threadMx.isObjectMonitorUsageSupported, threadMx.isSynchronizerUsageSupported).toSeq
 
