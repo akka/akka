@@ -44,10 +44,10 @@ jobs:
           java-version: adopt@1.11.0-9
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
-      - name: Install telepresence
+      - name: Install Telepresence V1
         run: |
-          sudo curl -fL https://app.getambassador.io/download/tel2/linux/amd64/latest/telepresence -o telepresence
-          sudo chmod a+x telepresence
+          curl -s https://packagecloud.io/install/repositories/datawireio/telepresence/script.deb.sh | sudo bash
+          sudo apt install --no-install-recommends -y telepresence
       - name: Setup Minikube
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
@@ -59,17 +59,15 @@ jobs:
           cd kubernetes
           ./generateKeys.sh
           ./setup-nodes.sh
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
       - name: Finish the setup
         run: |
-          sudo ./telepresence connect
+          sudo telepresence connect
           cd kubernetes
-          until ./check-connections.sh
-            echo waiting
-            sleep 3
-          done
+          ./check-connectivity.sh
           ./post-setup.sh
+          ./check-connections.sh
       - name: Multi node test
         env:
           JOB_ID: ${{ github.run_id }}
