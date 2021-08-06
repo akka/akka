@@ -48,6 +48,9 @@ jobs:
         run: |
           curl -s https://packagecloud.io/install/repositories/datawireio/telepresence/script.deb.sh | sudo bash
           sudo apt install --no-install-recommends -y telepresence
+      - name: Install Kubectl
+        run: |
+          snap install kubectl
       - name: Setup Minikube
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
@@ -59,8 +62,8 @@ jobs:
           cd kubernetes
           ./generateKeys.sh
           ./setup-nodes.sh
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
       - name: Finish the setup
         run: |
           sudo telepresence
