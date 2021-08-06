@@ -13,10 +13,10 @@ import scala.util.Random
 import scala.util.control.NoStackTrace
 import scala.annotation.nowarn
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import akka.persistence.PersistentActorSpec._
-import akka.testkit.{EventFilter, ImplicitSender, TestLatch, TestProbe}
+import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
 import org.scalatest.concurrent.Eventually
 
 object PersistentActorSpec {
