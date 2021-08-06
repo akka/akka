@@ -65,12 +65,14 @@ jobs:
           cd kubernetes
           ./generateKeys.sh
           ./setup-nodes.sh
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
       - name: Finish the setup
         run: |
           sudo telepresence
           cd kubernetes
+          # TODO FIXME
+          sleep 10
           sudo gosu runner ./check-connectivity.sh
           sudo gosu runner ./post-setup.sh
           sudo gosu runner ./check-connections.sh
