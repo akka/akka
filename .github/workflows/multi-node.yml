@@ -77,7 +77,7 @@ jobs:
           JOB_ID: ${{ github.run_id }}
         run: |
           cp kubernetes/multi-node-test.hosts .
-          sudo telepresence --run sudo gosu runner sbt -jvm-opts .jvmopts-ci \
+          sudo telepresence --run sudo gosu runner sbt -mem 2048 \
             -Dakka.test.timefactor=1 \
             -Dakka.cluster.assert=on \
             -Dsbt.override.build.repos=false \
