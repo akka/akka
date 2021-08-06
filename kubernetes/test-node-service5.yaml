@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-node5
+  labels:
+    app: multi-node-test5
+spec:
+  selector:
+    app: test-node5
+  ports:
+    - protocol: TCP
+      name: ssh
+      port: 22
+      targetPort: 22
+    - protocol: TCP
+      name: server-multi
+      port: 4711
+      targetPort: 4711
+    - protocol: TCP
+      name: multi-node
+      port: 5005
+      targetPort: 5005

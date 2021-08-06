@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-node3
+  labels:
+    app: multi-node-test3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-node3
+  template:
+    metadata:
+      labels:
+        app: test-node3
+    spec:
+      containers:
+      - image: docker.io/rayroestenburg/multi-node-k8s:latest
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - mkdir /root/.ssh && cp /multinode/ssh/keys/* /root/.ssh
+        imagePullPolicy: Always
+        name: multi-node-test3
+        volumeMounts:
+        - mountPath: /multinode/ssh/keys
+          subPath: keys
+          name: keys
+        ports:
+        - name: web
+          containerPort: 80
+          protocol: TCP
+        - name: ssh
+          containerPort: 22
+          protocol: TCP
+        - name: multi-node
+          containerPort: 5003
+          protocol: TCP
+        - name: server-multi
+          containerPort: 4711
+          protocol: TCP
+      volumes:
+      - name: keys
+        secret:
+          secretName: ssh-keys
+          defaultMode: 384
+          items:
+          - key: id_rsa
+            path: keys/id_rsa
+            mode: 256
+          - key: id_rsa.pub
+            path: keys/id_rsa.pub
+            mode: 256
+          - key: authorized_keys
+            path: keys/authorized_keys
+            mode: 256
