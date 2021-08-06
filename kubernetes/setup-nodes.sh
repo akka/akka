@@ -17,5 +17,5 @@ kubectl apply -f test-node-deployment5.yaml
 kubectl apply -f test-node-service5.yaml
 # kubectl apply -f test-conductor-service.yaml
 
-kubectl wait --for=condition=available --timeout=60s deployments --all
+kubectl wait --for=condition=available --timeout=120s deployments --all
 kubectl wait --for=condition=Ready --timeout=180s pods --all
