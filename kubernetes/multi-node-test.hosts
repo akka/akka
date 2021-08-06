@@ -1,0 +1,5 @@
+root@test-node1:/usr/lib/jvm/java-11-openjdk-amd64/bin/java -Dmultinode.port=5001
+root@test-node2:/usr/lib/jvm/java-11-openjdk-amd64/bin/java -Dmultinode.port=5002
+root@test-node3:/usr/lib/jvm/java-11-openjdk-amd64/bin/java -Dmultinode.port=5003
+root@test-node4:/usr/lib/jvm/java-11-openjdk-amd64/bin/java -Dmultinode.port=5004
+root@test-node5:/usr/lib/jvm/java-11-openjdk-amd64/bin/java -Dmultinode.port=5005

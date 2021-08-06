@@ -62,11 +62,11 @@ jobs:
           cd kubernetes
           ./generateKeys.sh
           ./setup-nodes.sh
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
       - name: Finish the setup
         run: |
-          sudo telepresence
+          sudo telepresence --run-shell
           su runner
           cd kubernetes
           ./check-connectivity.sh
