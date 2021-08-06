@@ -71,15 +71,15 @@ jobs:
         run: |
           sudo telepresence --run-shell
           cd kubernetes
-          gosu runner ./check-connectivity.sh
-          gosu runner ./post-setup.sh
-          gosu runner ./check-connections.sh
+          sudo gosu runner ./check-connectivity.sh
+          sudo gosu runner ./post-setup.sh
+          sudo gosu runner ./check-connections.sh
       - name: Multi node test
         env:
           JOB_ID: ${{ github.run_id }}
         run: |
           cp kubernetes/multi-node-test.hosts .
-          gosu runner sbt -jvm-opts .jvmopts-ci \
+          sudo gosu runner sbt -jvm-opts .jvmopts-ci \
             -Dakka.test.timefactor=1 \
             -Dakka.cluster.assert=on \
             -Dsbt.override.build.repos=false \
