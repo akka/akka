@@ -71,8 +71,6 @@ jobs:
         run: |
           sudo telepresence
           cd kubernetes
-          # TODO FIXME
-          sleep 10
           sudo gosu runner ./check-connectivity.sh
           sudo gosu runner ./post-setup.sh
           sudo gosu runner ./check-connections.sh

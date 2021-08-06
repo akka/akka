@@ -15,7 +15,7 @@ spec:
         app: test-node4
     spec:
       containers:
-      - image: docker.io/rayroestenburg/multi-node-k8s:latest
+      - image: docker.io/andreatp/multi-node-k8s@sha256:e40aa6e73dade152231bc2c0ddbd0bba2136dfd02c991739a236ea41b3f91c18
         lifecycle:
           postStart:
             exec:
