@@ -1,9 +1,9 @@
 #!/bin/bash
-kubectl delete deployments,services -l app=multi-node-test1
-kubectl delete deployments,services -l app=multi-node-test2
-kubectl delete deployments,services -l app=multi-node-test3
-kubectl delete deployments,services -l app=multi-node-test4
-kubectl delete deployments,services -l app=multi-node-test5
+kubectl delete deployments,services -l app=multi-node-test1 | true
+kubectl delete deployments,services -l app=multi-node-test2 | true
+kubectl delete deployments,services -l app=multi-node-test3 | true
+kubectl delete deployments,services -l app=multi-node-test4 | true
+kubectl delete deployments,services -l app=multi-node-test5 | true
 # kubectl apply -f test-conductor-deployment.yaml
 kubectl apply -f test-node-deployment1.yaml
 kubectl apply -f test-node-service1.yaml
