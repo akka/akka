@@ -61,7 +61,7 @@ jobs:
           ./setup-nodes.sh
       - name: Finish the setup
         run: |
-          ./telepresence
+          ./telepresence connect
           cd kubernetes
           ./post-setup.sh
           ./check-connections.sh
