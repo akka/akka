@@ -48,12 +48,6 @@ spec:
           secretName: ssh-keys
           defaultMode: 384
           items:
-          - key: id_rsa
-            path: keys/id_rsa
-            mode: 256
-          - key: id_rsa.pub
-            path: keys/id_rsa.pub
-            mode: 256
           - key: authorized_keys
             path: keys/authorized_keys
             mode: 256
