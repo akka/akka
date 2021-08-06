@@ -423,7 +423,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
           .withAttributes(attributes)
           .run()
 
-        notUsedF.value should be(empty)
         suffixF.value should be(empty)
         srcWatchTermF.value should be(empty)
 
