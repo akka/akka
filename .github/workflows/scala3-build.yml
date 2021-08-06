@@ -46,4 +46,16 @@ jobs:
             "akka-testkit/testOnly *CoronerSpec" \
             "akka-testkit/testOnly *CoronerSpec" \
             "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
+            "akka-testkit/testOnly *CoronerSpec" \
             "akka-testkit/testOnly *CoronerSpec"

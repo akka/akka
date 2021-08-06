@@ -113,7 +113,7 @@ class CoronerSpec extends AnyWordSpec with Matchers {
 
       // If we look too soon, we've seen the JVM report deadlock-thread-a
       // waiting on the lock while no thread seemed to be holding it
-      Thread.sleep(1000)
+      Thread.sleep(300)
       val (_, report) = captureOutput(Coroner.printReport("Deadlock test", _))
 
       a.thread.interrupt()
