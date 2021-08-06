@@ -1213,10 +1213,8 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       val persistentActor = asyncPersistPersistentActor
       persistentActor ! Cmd("x")
       persistentActor ! Cmd("y")
-      expectMsg("x")
-      expectMsg("y") // "y" command was processed before event persisted
-      expectMsg("x-1")
-      expectMsg("y-2")
+      val messages = receiveN(4)
+      messages.toSet should equal(Set("x", "y", "x-1", "y-2"))
     }
     "support multiple persistAsync calls for one command, and execute them 'when possible', not hindering command processing" in {
       val persistentActor = asyncPersistThreeTimesPersistentActor
