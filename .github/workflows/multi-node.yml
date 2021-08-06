@@ -68,14 +68,12 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
       - name: Finish the setup
-        shell: 'script -q -e -c "bash --noprofile --norc -eo pipefail {0}"'
         run: |
           sudo telepresence
-          su runner
           cd kubernetes
-          ./check-connectivity.sh
-          ./post-setup.sh
-          ./check-connections.sh
+          sudo gosu runner ./check-connectivity.sh
+          sudo gosu runner ./post-setup.sh
+          sudo gosu runner ./check-connections.sh
       - name: Multi node test
         env:
           JOB_ID: ${{ github.run_id }}
