@@ -44,7 +44,7 @@ jobs:
           scalafmtCheckAll scalafmtSbtCheck test:compile
 
   Check-Publish:
-    name: PR Validation
+    name: Check publishing locally
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
