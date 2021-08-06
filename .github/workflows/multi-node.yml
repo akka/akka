@@ -15,39 +15,40 @@ jobs:
         project: [akka-cluster-metrics]
       fail-fast: true
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Setup SSH to local
-        run: |
-          mkdir -p ~/.ssh
+      # - name: Checkout
+      #   uses: actions/checkout@v2
+      #   with:
+      #     fetch-depth: 0
+      # - name: Setup SSH to local
+      #   run: |
+      #     mkdir -p ~/.ssh
 
-          # setup the authorized key
-          ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
-          sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
-          sudo ssh-keyscan -H localhost >> ${HOME}/.ssh/known_hosts
-          sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
+      #     # setup the authorized key
+      #     ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
+      #     sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
+      #     sudo ssh-keyscan -H localhost >> ${HOME}/.ssh/known_hosts
+      #     sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
 
-          # fix the filesystem permissions
-          sudo chmod go-w ~/
-          sudo chmod 700 ~/.ssh
-          sudo chmod 600 ~/.ssh/authorized_keys
+      #     # fix the filesystem permissions
+      #     sudo chmod go-w ~/
+      #     sudo chmod 700 ~/.ssh
+      #     sudo chmod 600 ~/.ssh/authorized_keys
 
-          # restart the ssh daemon
-          sudo service sshd restart
+      #     # restart the ssh daemon
+      #     sudo service sshd restart
 
-          ssh runner@127.0.0.1 uptime
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11.0-9
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+      #     ssh runner@127.0.0.1 uptime
+      # - name: Set up JDK 11
+      #   uses: olafurpg/setup-scala@v10
+      #   with:
+      #     java-version: adopt@1.11.0-9
+      # - name: Cache Coursier cache
+      #   uses: coursier/cache-action@v6.2
       - name: Install telepresence
         run: |
-          sudo curl -fL https://app.getambassador.io/download/tel2/darwin/amd64/latest/telepresence -o /usr/local/bin/telepresence
-          sudo chmod a+x /usr/local/bin/telepresence
+          sudo curl -fL https://app.getambassador.io/download/tel2/darwin/amd64/latest/telepresence -o telepresence
+          sudo chmod a+x telepresence
+          ./telepresence
       - name: Setup Minikube
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
