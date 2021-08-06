@@ -61,10 +61,13 @@ jobs:
           ./setup-nodes.sh
       - name: Finish the setup
         run: |
-          ./telepresence connect
+          sudo ./telepresence connect
           cd kubernetes
+          until ./check-connections.sh
+            echo waiting
+            sleep 3
+          done
           ./post-setup.sh
-          ./check-connections.sh
       - name: Multi node test
         env:
           JOB_ID: ${{ github.run_id }}
