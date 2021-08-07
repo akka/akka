@@ -176,7 +176,7 @@ The stream can be completed successfully by sending any message to the actor tha
 by the completion matching function that was provided when the actor reference was created.
 If the returned completion strategy is `akka.stream.CompletionStrategy.immediately` the completion will be signaled immediately.
 If the completion strategy is `akka.stream.CompletionStrategy.draining`, already buffered elements will be processed before signaling completion.
-Any additional content will be ignored and fall back to the draining behaviour.
+Any subsequent elements that are delivered to the actor's mailbox will not be processed.
 
 The stream can be completed with failure by sending any message to the
 actor that is handled by the failure matching function that was specified
