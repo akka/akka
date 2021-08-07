@@ -172,18 +172,18 @@ for this Source type, i.e. elements will be dropped if the buffer is filled by s
 at a rate that is faster than the stream can consume. You should consider using `Source.queue`
 if you want a backpressured actor interface.
 
-The stream can be completed successfully by sending `akka.actor.Status.Success` to the actor reference.
-If the content is `akka.stream.CompletionStrategy.immediately` the completion will be signaled immediately.
-If the content is `akka.stream.CompletionStrategy.draining` already buffered elements will be signaled before signaling completion.
-Any other content will be ignored and fall back to the draining behaviour. 
+The stream can be completed successfully by sending any message to the actor that is handled
+by the completion matching function that was provided when the actor reference was created.
+If the returned completion strategy is `akka.stream.CompletionStrategy.immediately` the completion will be signaled immediately.
+If the completion strategy is `akka.stream.CompletionStrategy.draining`, already buffered elements will be processed before signaling completion.
+Any additional content will be ignored and fall back to the draining behaviour.
 
-The stream can be completed with failure by sending `akka.actor.Status.Failure` to the
-actor reference.
+The stream can be completed with failure by sending any message to the
+actor that is handled by the failure matching function that was specified
+when the actor reference was created.
 
-Note: Sending a `PoisonPill` is deprecated and will be ignored in the future.
-
-The actor will be stopped when the stream is completed, failed or cancelled from downstream,
-i.e. you can watch it to get notified when that happens.
+The actor will be stopped when the stream is completed, failed or cancelled from downstream.
+You can watch it to get notified when that happens.
 
 
 Scala
