@@ -14,7 +14,6 @@ import akka.annotation.InternalApi
   def resumeContext(): Unit
   def currentContext(): AnyRef
   def resumeContext(context: AnyRef): Unit
-  def isEnabled: Boolean
 }
 
 /**
@@ -33,5 +32,4 @@ private[akka] final class ContextPropagationImpl extends ContextPropagation {
   def resumeContext(): Unit = ()
   def currentContext(): AnyRef = null
   def resumeContext(context: AnyRef): Unit = ()
-  def isEnabled: Boolean = false
 }
