@@ -74,11 +74,12 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
       val info = ConnectionInfo(registration, handler, keepOpenOnPeerClosed, useResumeWriting)
 
+      context.setReceiveTimeout(Duration.Undefined)
+      context.become(connected(info))
+
       // if we are in push mode or already have resumed reading in pullMode while waiting for Register
       // then register OP_READ interest
       if (!pullMode || (/*pullMode && */ !readingSuspended)) resumeReading(info, None)
-      context.setReceiveTimeout(Duration.Undefined)
-      context.become(connected(info))
 
     case ResumeReading =>
       readingSuspended = false
