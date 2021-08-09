@@ -12,6 +12,9 @@ import akka.annotation.InternalApi
 @InternalApi private[akka] trait ContextPropagation {
   def suspendContext(): Unit
   def resumeContext(): Unit
+  def currentContext(): AnyRef
+  def resumeContext(context: AnyRef): Unit
+  def isEnabled: Boolean
 }
 
 /**
@@ -28,4 +31,7 @@ import akka.annotation.InternalApi
 private[akka] final class ContextPropagationImpl extends ContextPropagation {
   def suspendContext(): Unit = ()
   def resumeContext(): Unit = ()
+  def currentContext(): AnyRef = null
+  def resumeContext(context: AnyRef): Unit = ()
+  def isEnabled: Boolean = false
 }
