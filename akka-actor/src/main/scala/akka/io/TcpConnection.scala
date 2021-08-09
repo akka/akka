@@ -403,6 +403,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     }
   }
 
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    log.warning("pre-restart")
+    super.preRestart(reason, message)
+  }
+
   override def postStop(): Unit = {
     log.warning("post-stop")
     if (writePending) pendingWrite.release()
