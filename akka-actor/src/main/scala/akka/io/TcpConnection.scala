@@ -332,7 +332,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         // also see http://bugs.sun.com/view_bug.do?bug_id=4516760
         if (peerClosed || !safeShutdownOutput())
           doCloseConnection(info.handler, closeCommander, closedEvent)
-      else {
+        else {
           log.warning("becoming closing")
           context.become(closing(info, closeCommander))
         }
