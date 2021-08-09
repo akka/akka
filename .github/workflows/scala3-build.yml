@@ -31,29 +31,29 @@ jobs:
             -Dakka.build.scalaVersion=3.0 \
             -Dakka.test.multi-in-test=false \
             -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec" \
-            "akka-actor-tests/testOnly */TcpIntegrationSpec"
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec" \
+            "akka-actor-tests/testOnly *TcpIntegrationSpec"
