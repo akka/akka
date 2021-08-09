@@ -388,11 +388,16 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         context.stop(self)
       case Some(reg) =>
         context.become(unregistering)
-        reg.cancelAndClose(() => self ! Unregistered)
+        log.warning("unregistering")
+        reg.cancelAndClose(() => {
+          log.warning("cancelAndClose callback")
+          self ! Unregistered
+        })
     }
   }
 
   override def postStop(): Unit = {
+    log.warning("post-stop")
     if (writePending) pendingWrite.release()
 
     val interestedInClose: Set[ActorRef] =
