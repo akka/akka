@@ -78,6 +78,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       // then register OP_READ interest
       if (!pullMode || (/*pullMode && */ !readingSuspended)) resumeReading(info, None)
       context.setReceiveTimeout(Duration.Undefined)
+      log.warning("becoming connected")
       context.become(connected(info))
 
     case ResumeReading =>
@@ -233,6 +234,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     // !!WARNING!! The line below is needed to make Windows notify us about aborted connections, see #15766
     if (WindowsConnectionAbortWorkaroundEnabled) registration.enableInterest(OP_CONNECT)
 
+    log.warning("becoming waitingForRegistration")
     context.become(waitingForRegistration(registration, commander))
   }
 
@@ -313,11 +315,13 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         info.handler ! PeerClosed
         // used to check if peer already closed its side later
         peerClosed = true
+        log.warning("becoming peerSentEOF")
         context.become(peerSentEOF(info))
       case _ if writePending => // finish writing first
         // Our registered actor is now free to terminate cleanly
         unsignDeathPact()
         if (TraceLogging) log.debug("Got Close command but write is still pending.")
+        log.warning("becoming closingWithPendingWrite")
         context.become(closingWithPendingWrite(info, closeCommander, closedEvent))
       case ConfirmedClosed => // shutdown output and wait for confirmation
         if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
@@ -328,7 +332,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         // also see http://bugs.sun.com/view_bug.do?bug_id=4516760
         if (peerClosed || !safeShutdownOutput())
           doCloseConnection(info.handler, closeCommander, closedEvent)
-        else context.become(closing(info, closeCommander))
+      else {
+          log.warning("becoming closing")
+          context.become(closing(info, closeCommander))
+        }
       case _ => // close now
         if (TraceLogging) log.debug("Got Close command, closing connection.")
         doCloseConnection(info.handler, closeCommander, closedEvent)
