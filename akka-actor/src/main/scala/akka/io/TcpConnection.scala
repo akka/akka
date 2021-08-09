@@ -395,7 +395,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         context.stop(self)
       case Some(reg) =>
         context.become(unregistering)
-        log.warning("unregistering")
+        log.error(new Throwable(), "unregistering")
         reg.cancelAndClose(() => {
           log.warning("cancelAndClose callback")
           self ! Unregistered
