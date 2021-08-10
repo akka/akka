@@ -22,10 +22,11 @@ To use Akka Persistence, add the module to your project:
 
 You also have to select durable state store plugin, see @ref:[Persistence Plugins](../../persistence-plugins.md).
 
-@@@ note
+@@@ warning
 
-The APIs in the Durable State module are _experimental_ and subject to change based on feedbacks from the 
-users and the community.
+This module is currently marked as @ref:[may change](../../common/may-change.md) because it is a new feature that
+needs feedback from real usage before finalizing the API. This means that API or semantics can change without
+warning or deprecation period. It is also not recommended to use this module in production just yet.
 
 @@@ 
 
@@ -44,8 +45,7 @@ The current state is always stored in the database. Since only the latest state 
 Akka Persistence also supports @ref:[Event Sourcing](../persistence.md) based implementation, where only the _events_ that are persisted by the actor are stored, but not the actual state of the actor. By storing all events, using this model, 
 a stateful actor can be recovered by replaying the stored events to the actor, which allows it to rebuild its state.
 
-The database specific implementations can be added to existing Akka Persistence plugin implementations, starting with the JDBC plugin. The plugin would serialize the state and store as a blob with the persistenceId as the primary key. Since each entity
-lives on one node, consistency is guaranteed and reads can be served directly from memory. For details on how this guarantee
+Since each entity lives on one node, consistency is guaranteed and reads can be served directly from memory. For details on how this guarantee
 is ensured, have a look at the @ref:[Cluster Sharding and DurableStateBehavior](#cluster-sharding-and-durablestatebehavior) section below.
 
 ## Example and core API
