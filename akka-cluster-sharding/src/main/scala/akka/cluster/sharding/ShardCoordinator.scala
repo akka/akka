@@ -1472,7 +1472,9 @@ private[akka] class DDataShardCoordinator(
         initialStateRetries += 1
         val template =
           "{}: The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying). Has ClusterSharding been started on all nodes?"
-        if (initialStateRetries < 5)
+        if (initialStateRetries == 1)
+          log.info(template, typeName, stateReadConsistency.timeout.toMillis)
+        else if (initialStateRetries < 5)
           log.warning(template, typeName, stateReadConsistency.timeout.toMillis)
         else
           log.error(template, typeName, stateReadConsistency.timeout.toMillis)
