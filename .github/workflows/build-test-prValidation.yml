@@ -1,0 +1,120 @@
+name: PRValidation Workflow
+
+on:
+  pull_request:
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-code-style:
+    name: Checks
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+## https://github.com/akka/akka/issues/30459
+#    ghtag "$ghprbPullId" akka akka '["validating"]' "tested needs-attention"
+
+      - name: Code style check
+        run: |-
+          # MiMa is disabled in GHActions because it's already covered in Travis builds (travis runs for multiple scala versions)
+          # FIXME move MiMa checks to GHActions
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.mima.enabled=false \
+          -Dakka.ci-server=true \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.multi-node=false \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+          scalafmtCheckAll scalafmtSbtCheck
+
+  Check-Publish:
+    name: Check publishing locally
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Akka publishLocal
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.mima.enabled=false \
+          -Dakka.ci-server=true \
+          -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.timefactor=1 \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dakka.test.multi-node=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+          publishLocal publishM2
+
+
+  PR-Validation:
+    name: PR Validation
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Akka validatePR
+        # FIXME: Change this to validatePullRequest
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.mima.enabled=false \
+          -Dakka.ci-server=true \
+          -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.timefactor=1 \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dakka.test.multi-node=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+          Test/compile
+
+## https://github.com/akka/akka/issues/30459
+## if success
+#    ghtag "$ghprbPullId" akka akka '["tested"]' "validating needs-attention"
+## if aborted or unstable
+#    ghtag "$ghprbPullId" akka akka '["needs-attention"]' "tested validating"

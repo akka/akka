@@ -13,8 +13,9 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.WithLogCapturing
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
+
+import akka.testkit.GHExcludeTest
 
 /**
  * Covers some corner cases around sending triggering an entity with StartEntity
@@ -118,7 +119,7 @@ class StartEntitySpec extends AkkaSpec(StartEntitySpec.config) with ImplicitSend
 
   // entity crashed and before restart-backoff hit we sent it a StartEntity
   "StartEntity while the entity is waiting for restart" should {
-    "restart it immediately" in {
+    "restart it immediately" taggedAs GHExcludeTest in {
       val sharding = ClusterSharding(system).start(
         "start-entity-2",
         EntityActor.props(),

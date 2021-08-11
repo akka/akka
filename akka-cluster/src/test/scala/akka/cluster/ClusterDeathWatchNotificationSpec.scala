@@ -81,7 +81,8 @@ class ClusterDeathWatchNotificationSpec
     }
   }
 
-  "receive Terminated after ordinary messages" in {
+  // https://github.com/akka/akka/issues/30135
+  "receive Terminated after ordinary messages" taggedAs GHExcludeTest in {
     val receiverProbe = TestProbe()
     setupSender(system2, receiverProbe, "sender")
     val sender = identifySender(system2, "sender")
