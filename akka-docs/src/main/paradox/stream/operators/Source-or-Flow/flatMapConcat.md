@@ -9,12 +9,12 @@ Transform each input element into a `Source` whose elements are then flattened i
 
 @apidoc[Flow.flatMapConcat](Flow) { scala="#flatMapConcat[T,M](f:Out=%3akka.stream.Graph[akka.stream.SourceShape[T],M]):FlowOps.this.Repr[T]" java="#flatMapConcat(akka.japi.function.Function)" } 
 
-See also: @ref:[flatMapMerge](flatMapMerge.md)
-
 ## Description
 
 Transform each input element into a `Source` whose elements are then flattened into the output stream through
 concatenation. This means each source is fully consumed before consumption of the next source starts. 
+
+See also: @ref:[flatMapMerge](flatMapMerge.md), @ref:[mapConcat](mapConcat.md)
 
 ## Example
 
