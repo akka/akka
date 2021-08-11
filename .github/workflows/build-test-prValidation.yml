@@ -33,6 +33,7 @@ jobs:
       - name: Code style check
         run: |-
           # MiMa is disabled in GHActions because it's already covered in Travis builds (travis runs for multiple scala versions)
+          # FIXME move MiMa checks to GHActions
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
           -Dakka.ci-server=true \
@@ -42,7 +43,7 @@ jobs:
           -Dsbt.override.build.repos=false \
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
-          scalafmtCheckAll scalafmtSbtCheck test:compile
+          scalafmtCheckAll scalafmtSbtCheck
 
   Check-Publish:
     name: Check publishing locally
@@ -81,10 +82,6 @@ jobs:
   PR-Validation:
     name: PR Validation
     runs-on: ubuntu-20.04
-    strategy:
-      matrix: 
-        project: [akka-actor,akka-actor-testkit-typed,akka-actor-typed,akka-cluster,akka-cluster-metrics,akka-cluster-sharding,akka-cluster-sharding-typed,akka-cluster-tools,akka-cluster-typed,akka-coordination,akka-discovery,akka-distributed-data,akka-serialization-jackson,akka-multi-node-testkit,akka-osgi,akka-persistence,akka-persistence-query,akka-persistence-typed,akka-persistence-testkit,akka-protobuf,akka-protobuf-v3,akka-pki,akka-remote,akka-slf4j,akka-stream,akka-stream-testkit,akka-stream-typed,akka-testkit,akka-actor-tests,akka-actor-typed-tests,akka-docs,akka-bill-of-materials,akka-persistence-shared,akka-persistence-tck,akka-persistence-typed-tests,akka-remote-tests,akka-stream-tests,akka-stream-tests-tck]
-      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -101,6 +98,7 @@ jobs:
         uses: coursier/cache-action@v6.2
 
       - name: Akka validatePR
+        # FIXME: Change this to validatePullRequest
         run: |-
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
@@ -113,7 +111,7 @@ jobs:
           -Dakka.test.multi-node=false \
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
-          ${{ matrix.project }}/validatePullRequest
+          Test/compile
 
 ## https://github.com/akka/akka/issues/30459
 ## if success

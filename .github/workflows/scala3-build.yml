@@ -1,8 +1,7 @@
 name: Build Akka with Scala 3
 
 on:
-  # TODO: uncomment this before merging!
-  # pull_request:
+  pull_request:
   push:
     branches:
       - master
