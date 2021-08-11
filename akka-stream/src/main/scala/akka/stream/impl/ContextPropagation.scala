@@ -9,7 +9,7 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] trait ContextPropagation {
+@InternalApi trait ContextPropagation {
   def suspendContext(): Unit
   def resumeContext(): Unit
   def currentContext(): AnyRef
@@ -19,7 +19,7 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object ContextPropagation {
+@InternalApi object ContextPropagation {
 
   /**
    * INTERNAL API
