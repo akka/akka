@@ -5,12 +5,15 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+
 import akka.Done
 import akka.NotUsed
+import akka.event.Logging
 import akka.stream.Attributes.Name
 import akka.stream.scaladsl.AttributesSpec.{
   whateverAttribute,
@@ -40,7 +43,9 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
   private val minBackoff = 1.second.dilated
   private val maxBackoff = 3.seconds.dilated
 
-  private val shortRestartSettings = RestartSettings(shortMinBackoff, shortMaxBackoff, 0)
+  private val shortRestartSettings =
+    RestartSettings(shortMinBackoff, shortMaxBackoff, 0).withLogSettings(
+      RestartSettings.LogSettings(Logging.ErrorLevel))
   private val restartSettings = RestartSettings(minBackoff, maxBackoff, 0)
 
   "A restart with backoff source" should {

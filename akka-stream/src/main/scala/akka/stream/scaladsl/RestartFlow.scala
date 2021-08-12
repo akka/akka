@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 import akka.NotUsed
 import akka.event.Logging
@@ -281,6 +282,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         if (finishing || maxRestartsReached() || onlyOnFailures) {
           complete(out)
         } else {
+          logIt(s"Restarting stream due to completion [${restartCount + 1}]", OptionVal.None)
           scheduleRestartTimer()
         }
       }
@@ -292,8 +294,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         if (finishing || maxRestartsReached()) {
           fail(out, ex)
         } else {
-          if (loggingEnabled)
-            log.warning("Restarting graph due to failure. stack_trace: {}", Logging.stackTraceFor(ex))
+          logIt(s"Restarting stream due to failure [${restartCount + 1}]: $ex", OptionVal.Some(ex))
           scheduleRestartTimer()
         }
       }
@@ -307,6 +308,34 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
       }
     })
     sinkIn
+  }
+
+  private def logIt(message: String, exc: OptionVal[Throwable]): Unit = {
+    if (loggingEnabled) {
+      val logSettings = settings.logSettings
+      val logLevel =
+        if (restartCount > logSettings.criticalLogLevelAfter) logSettings.criticalLogLevel else logSettings.logLevel
+      logLevel match {
+        case Logging.ErrorLevel =>
+          exc match {
+            case OptionVal.Some(e) => log.error(e, message)
+            case _                 => log.error(message)
+          }
+        case Logging.WarningLevel =>
+          log.warning(message)
+          if (log.isWarningEnabled) {
+            exc match {
+              case OptionVal.Some(e) if !e.isInstanceOf[NoStackTrace] =>
+                log.warning(message + s"${Logging.stackTraceFor(e)}")
+              case _ =>
+                log.warning(message)
+            }
+          }
+        case Logging.InfoLevel  => log.info(message)
+        case Logging.DebugLevel => log.debug(message)
+        case _                  => // off
+      }
+    }
   }
 
   /**
@@ -363,7 +392,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   protected final def maxRestartsReached(): Boolean = {
     // Check if the last start attempt was more than the reset deadline
     if (resetDeadline.isOverdue()) {
-      log.debug("Last restart attempt was more than {} ago, resetting restart count", maxRestartsWithin)
+      log.debug("Last restart attempt was more than {} ago, resetting restart count", maxRestartsWithin.toCoarsest)
       restartCount = 0
     }
     restartCount == maxRestarts
@@ -372,7 +401,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   // Set a timer to restart after the calculated delay
   protected final def scheduleRestartTimer(): Unit = {
     val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-    log.debug("Restarting graph in {}", restartDelay)
+    log.debug("Restarting graph in {}", restartDelay.toCoarsest)
     scheduleOnce("RestartTimer", restartDelay)
     restartCount += 1
     // And while we wait, we go into backoff mode
