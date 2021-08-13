@@ -129,11 +129,17 @@ class StartEntitySpec extends AkkaSpec(StartEntitySpec.config) with ImplicitSend
       sharding ! EntityEnvelope("1", "ping")
       expectMsg("pong")
       val entity = lastSender
-      watch(entity)
 
       // stop without passivation
       entity ! "just-stop"
-      expectTerminated(entity)
+
+      // Make sure the shard has processed the termination
+      awaitAssert({
+        sharding ! ShardRegion.GetShardRegionState
+        val state = expectMsgType[ShardRegion.CurrentShardRegionState]
+        state.shards should have size (1)
+        state.shards.head.entityIds should ===(Set())
+      })
 
       // the backoff is 10s by default, so plenty time to
       // bypass region and send start entity directly to shard
