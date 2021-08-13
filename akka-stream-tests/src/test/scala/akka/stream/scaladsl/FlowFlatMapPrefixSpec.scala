@@ -30,7 +30,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
     att <- List(
       Attributes.NestedMaterializationCancellationPolicy.EagerCancellation,
       Attributes.NestedMaterializationCancellationPolicy.PropagateToNested)
-    delayDownstreanCancellation = att.propagateToNestedMaterialization
+    delayDownstreamCancellation = att.propagateToNestedMaterialization
     attributes = Attributes(att)
   } {
 
@@ -339,21 +339,22 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         subUpstream.expectRequest() should be >= (1L)
         subUpstream.sendNext(0)
         subUpstream.sendNext(1)
-        subDownstream.cancel()
 
         //subflow not materialized yet, hence mat value (future) isn't ready yet
         matFlowWatchTerm.value should be(empty)
 
-        if (delayDownstreanCancellation) {
+        if (delayDownstreamCancellation) {
           srcWatchTermF.value should be(empty)
           //this one is sent AFTER downstream cancellation
           subUpstream.sendNext(2)
 
+          subDownstream.cancel()
           subUpstream.expectCancellation()
 
           matFlowWatchTerm.futureValue should ===(Done)
           srcWatchTermF.futureValue should ===(Done)
         } else {
+          subDownstream.cancel()
           srcWatchTermF.futureValue should ===(Done)
           matFlowWatchTerm.failed.futureValue should be(a[NeverMaterializedException])
         }
@@ -386,7 +387,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         subUpstream.sendNext(1)
         subDownstream.asInstanceOf[SubscriptionWithCancelException].cancel(TE("that again?!"))
 
-        if (delayDownstreanCancellation) {
+        if (delayDownstreamCancellation) {
           matFlowWatchTerm.value should be(empty)
           srcWatchTermF.value should be(empty)
 

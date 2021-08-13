@@ -26,7 +26,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       builder(identity).connect(source, identity.in).connect(identity.out, sink).init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(RequestOne(source)))
@@ -45,7 +45,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       manualInit(logics, connections)
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(RequestOne(source)))
@@ -59,7 +59,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       builder(detach).connect(source, detach.shape.in).connect(detach.shape.out, sink).init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(RequestOne(source)))
@@ -69,7 +69,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       // Source waits
       source.onNext(2)
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       // "pushAndPull"
       sink.requestOne()
@@ -77,7 +77,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       // Sink waits
       sink.requestOne()
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       // "pushAndPull"
       source.onNext(3)
@@ -91,13 +91,13 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       builder(zip).connect(source1, zip.in0).connect(source2, zip.in1).connect(zip.out, sink).init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(RequestOne(source1), RequestOne(source2)))
 
       source1.onNext(42)
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       source2.onNext("Meaning of life")
       lastEvents() should ===(Set(OnNext(sink, (42, "Meaning of life")), RequestOne(source1), RequestOne(source2)))
@@ -110,10 +110,10 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       builder(bcast).connect(source, bcast.in).connect(bcast.out(0), sink1).connect(bcast.out(1), sink2).init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink1.requestOne()
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink2.requestOne()
       lastEvents() should ===(Set(RequestOne(source)))
@@ -135,7 +135,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         .connect(zip.out, sink)
         .init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(RequestOne(source)))
@@ -165,7 +165,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         .connect(bcast.out(1), sink2)
         .init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink1.requestOne()
       lastEvents() should ===(Set(RequestOne(source1), RequestOne(source2)))
@@ -173,7 +173,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       sink2.requestOne()
 
       source1.onNext(1)
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       source2.onNext(2)
       lastEvents() should ===(
@@ -188,7 +188,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       builder(merge).connect(source1, merge.in(0)).connect(source2, merge.in(1)).connect(merge.out, sink).init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(RequestOne(source1), RequestOne(source2)))
@@ -197,19 +197,19 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should ===(Set(OnNext(sink, 1), RequestOne(source1)))
 
       source2.onNext(2)
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(OnNext(sink, 2), RequestOne(source2)))
 
       sink.requestOne()
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       source2.onNext(3)
       lastEvents() should ===(Set(OnNext(sink, 3), RequestOne(source2)))
 
       sink.requestOne()
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       source1.onNext(4)
       lastEvents() should ===(Set(OnNext(sink, 4), RequestOne(source1)))
@@ -223,13 +223,13 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       builder(balance).connect(source, balance.in).connect(balance.out(0), sink1).connect(balance.out(1), sink2).init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink1.requestOne()
       lastEvents() should ===(Set(RequestOne(source)))
 
       sink2.requestOne()
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       source.onNext(1)
       lastEvents() should ===(Set(OnNext(sink1, 1), RequestOne(source)))
@@ -249,7 +249,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         .connect(balance.out(1), merge.in(1))
         .init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(RequestOne(source)))
@@ -279,7 +279,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         .connect(detach.shape.out, merge.in(1))
         .init()
 
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set.empty[TestEvent])
 
       sink.requestOne()
       lastEvents() should ===(Set(RequestOne(source)))

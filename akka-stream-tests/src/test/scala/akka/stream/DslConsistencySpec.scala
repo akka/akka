@@ -47,6 +47,7 @@ class DslConsistencySpec extends AnyWordSpec with Matchers {
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
     Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
     Set("productElementName", "productElementNames") ++
+    Set("_1") ++
     Set(
       "create",
       "apply",

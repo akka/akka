@@ -61,7 +61,7 @@ object MaterializationBenchmark {
     })
 
   val graphWithImportedFlowBuilder = (numOfFlows: Int) =>
-    RunnableGraph.fromGraph(GraphDSL.create(Source.single(())) { implicit b => source =>
+    RunnableGraph.fromGraph(GraphDSL.createGraph(Source.single(())) { implicit b => source =>
       import GraphDSL.Implicits._
       val flow = Flow[Unit].map(identity)
       var out: Outlet[Unit] = source.out

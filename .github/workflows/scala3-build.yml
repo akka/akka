@@ -28,7 +28,7 @@ jobs:
           - akka-pki/test
           - akka-serialization-jackson/test:compile
           - akka-slf4j/test
-          - akka-stream-testkit/test akka-stream/test
+          - akka-stream/test akka-stream-testkit/test akka-stream-tests/test
           - akka-stream-tests-tck/test
           - akka-remote/test akka-remote-tests/test akka-protobuf/test akka-protobuf-v3/test
       fail-fast: true
@@ -49,7 +49,7 @@ jobs:
       - name: Compile and run tests on Scala 3
         run: |
           sbt -jvm-opts .jvmopts-ci \
-            -Dakka.build.scalaVersion=3.0 \
-            -Dakka.test.multi-in-test=false \
-            -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
-            ${{ matrix.command }}
+          -Dakka.build.scalaVersion=3.0 \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
+          ${{ matrix.command }}

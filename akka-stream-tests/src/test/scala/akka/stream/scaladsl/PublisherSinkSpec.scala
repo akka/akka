@@ -18,7 +18,7 @@ class PublisherSinkSpec extends StreamSpec {
     "be unique when created twice" in assertAllStagesStopped {
 
       val (pub1, pub2) = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) {
+        .fromGraph(GraphDSL.createGraph(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) {
           implicit b => (p1, p2) =>
             import GraphDSL.Implicits._
 

@@ -60,14 +60,14 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     for ((name, op) <- List("identity" -> identity, "identity2" -> identity2); n <- List(1, 2, 4)) {
       s"request initial elements from upstream ($name, $n)" in {
         new ChainSetup(op, settings.withInputBuffer(initialSize = n, maxSize = n), toPublisher) {
-          upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)
+          upstream.expectRequest(upstreamSubscription, this.settings.maxInputBufferSize)
         }
       }
     }
 
     "request more elements from upstream when downstream requests more elements" in {
       new ChainSetup(identity, settings, toPublisher) {
-        upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)
+        upstream.expectRequest(upstreamSubscription, this.settings.maxInputBufferSize)
         downstreamSubscription.request(1)
         upstream.expectNoMessage(100.millis)
         downstreamSubscription.request(2)

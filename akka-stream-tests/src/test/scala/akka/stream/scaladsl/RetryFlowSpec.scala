@@ -275,7 +275,6 @@ class RetryFlowSpec extends StreamSpec("""
         .probe[(State, NotUsed)]
         .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, NumRetries, flow) {
           case (_, (s, _)) => Some(s -> NotUsed)
-          case _           => None
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()

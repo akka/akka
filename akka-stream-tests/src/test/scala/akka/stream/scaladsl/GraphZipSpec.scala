@@ -61,7 +61,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
 
       val completed = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.ignore) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.ignore) { implicit b => out =>
           val zip = b.add(Zip[Int, String]())
 
           Source.fromPublisher(upstream1) ~> zip.in0
@@ -88,7 +88,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val downstream = TestSubscriber.probe[(Int, String)]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.fromSubscriber(downstream)) { implicit b => out =>
           val zip = b.add(Zip[Int, String]())
 
           Source.fromPublisher(upstream1) ~> zip.in0
@@ -116,7 +116,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val downstream = TestSubscriber.probe[(Int, String)]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.fromSubscriber(downstream)) { implicit b => out =>
           val zip = b.add(Zip[Int, String]())
 
           Source.fromPublisher(upstream1) ~> zip.in0
@@ -143,7 +143,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val downstream = TestSubscriber.probe[(Int, String)]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.fromSubscriber(downstream)) { implicit b => out =>
           val zip = b.add(Zip[Int, String]())
 
           Source.fromPublisher(upstream1) ~> zip.in0
@@ -171,7 +171,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val downstream = TestSubscriber.probe[(Int, String)]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.fromSubscriber(downstream)) { implicit b => out =>
           val zip = b.add(Zip[Int, String]())
 
           Source.fromPublisher(upstream1) ~> zip.in0

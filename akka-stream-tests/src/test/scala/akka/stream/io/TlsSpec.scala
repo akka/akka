@@ -187,7 +187,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       }
 
       def server(flow: Flow[ByteString, ByteString, Any]) = {
-        val server = Tcp().bind("localhost", 0).to(Sink.foreach(c => c.flow.join(flow).run())).run()
+        val server = Tcp(system).bind("localhost", 0).to(Sink.foreach(c => c.flow.join(flow).run())).run()
         Await.result(server, 2.seconds)
       }
 
@@ -198,7 +198,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
             rightClosing: TLSClosing,
             rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
           binding = server(serverTls(rightClosing).reversed.join(rhs))
-          clientTls(leftClosing).join(Tcp().outgoingConnection(binding.localAddress))
+          clientTls(leftClosing).join(Tcp(system).outgoingConnection(binding.localAddress))
         }
         override def cleanup(): Unit = binding.unbind()
       }
@@ -210,7 +210,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
             rightClosing: TLSClosing,
             rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
           binding = server(clientTls(rightClosing).reversed.join(rhs))
-          serverTls(leftClosing).join(Tcp().outgoingConnection(binding.localAddress))
+          serverTls(leftClosing).join(Tcp(system).outgoingConnection(binding.localAddress))
         }
         override def cleanup(): Unit = binding.unbind()
       }
@@ -268,17 +268,17 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       }
 
       object EmptyBytesFirst extends PayloadScenario {
-        def inputs = List(ByteString.empty, ByteString("hello")).map(SendBytes)
+        def inputs = List(ByteString.empty, ByteString("hello")).map(SendBytes.apply)
         def output = ByteString("hello")
       }
 
       object EmptyBytesInTheMiddle extends PayloadScenario {
-        def inputs = List(ByteString("hello"), ByteString.empty, ByteString(" world")).map(SendBytes)
+        def inputs = List(ByteString("hello"), ByteString.empty, ByteString(" world")).map(SendBytes.apply)
         def output = ByteString("hello world")
       }
 
       object EmptyBytesLast extends PayloadScenario {
-        def inputs = List(ByteString("hello"), ByteString.empty).map(SendBytes)
+        def inputs = List(ByteString("hello"), ByteString.empty).map(SendBytes.apply)
         def output = ByteString("hello")
       }
 
@@ -449,7 +449,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
 
         // The creation of actual TCP connections is necessary. It is the easiest way to decouple the client and server
         // under error conditions, and has the bonus of matching most actual SSL deployments.
-        val (server, serverErr) = Tcp()
+        val (server, serverErr) = Tcp(system)
           .bind("localhost", 0)
           .mapAsync(1)(c =>
             c.flow.joinMat(serverTls(IgnoreBoth).reversed.joinMat(simple)(Keep.right))(Keep.right).run())
@@ -458,7 +458,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
 
         val clientErr = simple
           .join(badClientTls(IgnoreBoth))
-          .join(Tcp().outgoingConnection(Await.result(server, 1.second).localAddress))
+          .join(Tcp(system).outgoingConnection(Await.result(server, 1.second).localAddress))
           .run()
 
         Await.result(serverErr, 1.second).getMessage should include("certificate_unknown")
@@ -472,8 +472,10 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         val (sub, out1, out2) =
           RunnableGraph
             .fromGraph(
-              GraphDSL.create(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])(
-                (_, _, _)) { implicit b => (s, o1, o2) =>
+              GraphDSL.createGraph(
+                Source.asSubscriber[SslTlsOutbound],
+                Sink.head[ByteString],
+                Sink.head[SslTlsInbound])((_, _, _)) { implicit b => (s, o1, o2) =>
                 val tls = b.add(clientTls(EagerClose))
                 s ~> tls.in1
                 tls.out1 ~> o1
@@ -495,7 +497,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         val (sub, out1, out2) =
           RunnableGraph
             .fromGraph(
-              GraphDSL.create(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])(
+              GraphDSL.createGraph(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])(
                 (_, _, _)) { implicit b => (s, o1, o2) =>
                 val tls = b.add(clientTls(EagerClose))
                 Source.failed[SslTlsOutbound](ex) ~> tls.in1

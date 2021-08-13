@@ -133,11 +133,13 @@ class AttributesSpec
     val attributes = Attributes.name("a") and Attributes.name("b") and Attributes.inputBuffer(1, 2)
 
     "give access to the least specific attribute" in {
-      attributes.getFirst[Name] should ===(Some(Attributes.Name("a")))
+      val name = attributes.getFirst[Name]
+      name should ===(Some(Attributes.Name("a")))
     }
 
     "give access to the most specific attribute value" in {
-      attributes.get[Name] should ===(Some(Attributes.Name("b")))
+      val name = attributes.get[Name]
+      name should ===(Some(Attributes.Name("b")))
     }
 
     "return a mandatory value without allocating a some" in {
@@ -161,8 +163,10 @@ class AttributesSpec
           .toMat(Sink.head)(Keep.left)
           .run()
 
-      attributes.get[Name] should contain(Name("re-added"))
-      attributes.get[WhateverAttribute] should contain(WhateverAttribute("other-thing"))
+      val name = attributes.get[Name]
+      name shouldBe Some(Name("re-added"))
+      val whatever = attributes.get[WhateverAttribute]
+      whatever shouldBe Some(WhateverAttribute("other-thing"))
     }
 
     "be replaced withAttributes directly on a stage" in {
@@ -176,8 +180,10 @@ class AttributesSpec
           .toMat(Sink.head)(Keep.left)
           .run()
 
-      attributes.get[Name] should contain(Name("re-added"))
-      attributes.get[WhateverAttribute] shouldBe empty
+      val name = attributes.get[Name]
+      name shouldBe Some(Name("re-added"))
+      val whatever = attributes.get[WhateverAttribute]
+      whatever shouldBe empty
     }
 
     "be overridable on a module basis" in {
@@ -187,7 +193,8 @@ class AttributesSpec
           .toMat(Sink.head)(Keep.left)
           .run()
 
-      attributes.get[Name] should contain(Name("new-name"))
+      val name = attributes.get[Name]
+      name shouldBe Some(Name("new-name"))
     }
 
     "keep the outermost attribute as the least specific" in {
@@ -198,11 +205,11 @@ class AttributesSpec
         .toMat(Sink.head)(Keep.left)
         .run()
 
-      // most specific
-      attributes.get[Name] should contain(Name("original-name"))
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName shouldBe Some(Name("original-name"))
 
-      // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName shouldBe Some(Name("whole-graph"))
     }
   }
 
@@ -216,11 +223,11 @@ class AttributesSpec
           .toMat(Sink.head)(Keep.left)
           .run()
 
-      // most specific
-      attributes.get[Name] should contain(Name("new-name"))
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName shouldBe Some(Name("new-name"))
 
-      // least specific
-      attributes.getFirst[Name] should contain(Name("new-name"))
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName shouldBe Some(Name("new-name"))
     }
 
     "make the attributes on Source.fromGraph source behave the same as the stage itself" in {
@@ -232,13 +239,15 @@ class AttributesSpec
           .withAttributes(Attributes.name("whole-graph"))
           .run()
 
-      // most specific
-      attributes.get[Name] should contain(Name("replaced"))
-      attributes.get[WhateverAttribute] shouldBe empty
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName shouldBe Some(Name("replaced"))
+      val mostSpecificWhatever = attributes.get[WhateverAttribute]
+      mostSpecificWhatever shouldBe None
 
-      // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
-      attributes.getFirst[WhateverAttribute] shouldBe empty
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName shouldBe Some(Name("whole-graph"))
+      val leastSpecificWhatever = attributes.getFirst[WhateverAttribute]
+      leastSpecificWhatever shouldBe None
     }
 
     "not replace stage specific attributes with attributes on surrounding composite source" in {
@@ -249,11 +258,12 @@ class AttributesSpec
         .toMat(Sink.head)(Keep.left)
         .run()
 
-      // most specific still the original as the attribute was added on the composite source
-      attributes.get[Name] should contain(Name("original-name"))
+      // still the original as the attribute was added on the composite source
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName shouldBe Some(Name("original-name"))
 
-      // least specific
-      attributes.getFirst[Name] should contain(Name("composite-graph"))
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName shouldBe Some(Name("composite-graph"))
     }
 
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
@@ -267,11 +277,11 @@ class AttributesSpec
           .withAttributes(Attributes.name("whole-graph"))
           .run()
 
-      // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName shouldBe Some(Name("replaced"))
 
-      // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName shouldBe Some(Name("whole-graph"))
     }
 
     "use the initial attributes for dispatcher" in {
@@ -360,8 +370,10 @@ class AttributesSpec
           .withAttributes(Attributes.name("whole-graph"))
           .run()
 
-      attributes.get[Name] should contain(Name("replaced"))
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      val name = attributes.get[Name]
+      name shouldBe Some(Name("replaced"))
+      val firstName = attributes.getFirst[Name]
+      firstName shouldBe Some(Name("whole-graph"))
     }
 
     "handle attributes on a composed flow" in {
@@ -378,13 +390,17 @@ class AttributesSpec
           .toMat(Sink.ignore)(Keep.left)
           .run()
 
-      // this verifies that the old docs on flow.withAttribues was in fact incorrect
+      // this verifies that the old docs on flow.withAttributes was in fact incorrect
       // there is no sealing going on here
-      attributes.get[Name] should contain(Name("original-name"))
-      attributes.get[WhateverAttribute] should contain(WhateverAttribute("replaced"))
+      val name = attributes.get[Name]
+      name shouldBe Some(Name("original-name"))
+      val whatever = attributes.get[WhateverAttribute]
+      whatever shouldBe Some(WhateverAttribute("replaced"))
 
-      attributes.getFirst[Name] should contain(Name("replaced-again"))
-      attributes.getFirst[WhateverAttribute] should contain(WhateverAttribute("replaced"))
+      val firstName = attributes.getFirst[Name]
+      firstName shouldBe Some(Name("replaced-again"))
+      val firstWhatever = attributes.getFirst[WhateverAttribute]
+      firstWhatever shouldBe Some(WhateverAttribute("replaced"))
     }
 
   }
@@ -401,11 +417,11 @@ class AttributesSpec
           .withAttributes(Attributes.name("whole-graph"))
           .run()
 
-      // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName shouldBe Some(Name("replaced"))
 
-      // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName shouldBe Some(Name("whole-graph"))
     }
 
   }
@@ -450,11 +466,11 @@ class AttributesSpec
           .withAttributes(Attributes.name("whole-graph"))
           .run(materializer)
 
-      // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName shouldBe Some(Name("replaced"))
 
-      // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName shouldBe Some(Name("whole-graph"))
     }
 
     "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
@@ -472,11 +488,11 @@ class AttributesSpec
           .withAttributes(Attributes.name("whole-graph"))
           .run(materializer)
 
-      // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName should contain(Name("replaced"))
 
-      // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName should contain(Name("whole-graph"))
     }
 
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
@@ -493,10 +509,12 @@ class AttributesSpec
           .run(materializer)
 
       // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      val mostSpecificName = attributes.get[Name]
+      mostSpecificName should contain(Name("replaced"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      val leastSpecificName = attributes.getFirst[Name]
+      leastSpecificName should contain(Name("whole-graph"))
     }
 
   }

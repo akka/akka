@@ -5,12 +5,10 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
@@ -23,6 +21,7 @@ import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
+import akka.util.Timeout
 
 object FlowAskSpec {
   case class Reply(payload: Int)
@@ -81,7 +80,7 @@ class FlowAskSpec extends StreamSpec {
 
   "A Flow with ask" must {
 
-    implicit val timeout = akka.util.Timeout(10.seconds)
+    implicit val timeout: Timeout = akka.util.Timeout(10.seconds)
 
     val replyOnInts =
       system.actorOf(Props(classOf[Replier]).withDispatcher("akka.test.stream-dispatcher"), "replyOnInts")

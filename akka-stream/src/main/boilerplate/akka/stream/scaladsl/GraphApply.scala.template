@@ -22,8 +22,9 @@ trait GraphApply {
    * Creates a new [[Graph]] by importing the given graph `g1` and passing its [[Shape]]
    * along with the [[GraphDSL.Builder]] to the given create function.
    *
-   * Deprecated: this method signature does not work with Scala 3 type inference, kept for binary compatiblity. Use createGraph instead.
+   * Deprecated: this method signature does not work with Scala 3 type inference, kept for binary compatibility. Use createGraph instead.
    */
+  @deprecated("Use createGraph instead", "2.6.16")
   def create[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: GraphDSL.Builder[Mat] => (g1.Shape) => S): Graph[S, Mat] = {
     val builder = new GraphDSL.Builder
     val s1 = builder.add(g1, Keep.right)
@@ -51,8 +52,9 @@ trait GraphApply {
    * Creates a new [[Graph]] by importing the given graphs and passing their [[Shape]]s
    * along with the [[GraphDSL.Builder]] to the given create function.
    *
-   * Deprecated: this method signature does not work with Scala 3 type inference, kept for binary compatiblity. Use createGraph instead.
+   * Deprecated: this method signature does not work with Scala 3 type inference, kept for binary compatibility. Use createGraph instead.
    */
+  @deprecated("Use createGraph instead", "2.6.16")
   def create[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) => Mat)(buildBlock: GraphDSL.Builder[Mat] => ([#g1.Shape#]) => S): Graph[S, Mat] = {
     val builder = new GraphDSL.Builder
     val curried = combineMat.curried

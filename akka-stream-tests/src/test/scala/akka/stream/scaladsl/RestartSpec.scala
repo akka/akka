@@ -334,8 +334,10 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
         .runWith(Sink.cancelled)
 
       val attributes = Await.result(promisedAttributes.future, 1.second)
-      attributes.get[Name] should contain(Name("inner-name"))
-      attributes.get[WhateverAttribute] should contain(WhateverAttribute("other-thing"))
+      val name = attributes.get[Name]
+      name should contain(Name("inner-name"))
+      val whatever = attributes.get[WhateverAttribute]
+      whatever should contain(WhateverAttribute("other-thing"))
     }
   }
 
@@ -584,8 +586,10 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
         .runWith(Source.empty)
 
       val attributes = Await.result(promisedAttributes.future, 1.second)
-      attributes.get[Name] should contain(Name("inner-name"))
-      attributes.get[WhateverAttribute] should contain(WhateverAttribute("other-thing"))
+      val name = attributes.get[Name]
+      name shouldBe Some(Name("inner-name"))
+      val whatever = attributes.get[WhateverAttribute]
+      whatever shouldBe Some(WhateverAttribute("other-thing"))
     }
   }
 
@@ -927,8 +931,10 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
         .runWith(Source.empty, Sink.ignore)
 
       val attributes = Await.result(promisedAttributes.future, 1.second)
-      attributes.get[Name] should contain(Name("inner-name"))
-      attributes.get[WhateverAttribute] should contain(WhateverAttribute("other-thing"))
+      val name = attributes.get[Name]
+      name shouldBe Some(Name("inner-name"))
+      val whatever = attributes.get[WhateverAttribute]
+      whatever shouldBe Some(WhateverAttribute("other-thing"))
     }
   }
 }

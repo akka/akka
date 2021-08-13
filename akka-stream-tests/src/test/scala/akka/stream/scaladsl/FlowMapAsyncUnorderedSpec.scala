@@ -283,7 +283,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val flow = Flow[Int].mapAsyncUnordered[String](2) {
         case 2 =>
           Future {
-            Await.ready(latch, 10 seconds)
+            Await.ready(latch, 10.seconds)
             null
           }
         case x =>

@@ -37,7 +37,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       val aux = Source(Stream.fill(numElements)(2))
 
       val result = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b => sink =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => sink =>
           val merge = b.add(MergePreferred[Int](3))
           preferred ~> merge.preferred
 
@@ -54,7 +54,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
 
     "eventually pass through all elements without corrupting the ordering" in {
       val result = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b => sink =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => sink =>
           val merge = b.add(MergePreferred[Int](3))
           Source(1 to 100) ~> merge.preferred
 
