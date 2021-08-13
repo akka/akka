@@ -282,7 +282,10 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         if (finishing || maxRestartsReached() || onlyOnFailures) {
           complete(out)
         } else {
-          logIt(s"Restarting stream due to completion [${restartCount + 1}]", OptionVal.None)
+          logIt(
+            s"Restarting stream due to completion [${restartCount + 1}]",
+            OptionVal.None,
+            minLogLevel = Logging.InfoLevel)
           scheduleRestartTimer()
         }
       }
@@ -310,19 +313,24 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     sinkIn
   }
 
-  private def logIt(message: String, exc: OptionVal[Throwable]): Unit = {
+  private def logLevel(minLogLevel: Logging.LogLevel): Logging.LogLevel = {
+    val level =
+      if (restartCount >= logSettings.criticalLogLevelAfter) logSettings.criticalLogLevel else logSettings.logLevel
+    if (level >= minLogLevel || level == Logging.OffLevel) level else minLogLevel
+  }
+
+  private def logIt(
+      message: String,
+      exc: OptionVal[Throwable],
+      minLogLevel: Logging.LogLevel = Logging.ErrorLevel): Unit = {
     if (loggingEnabled) {
-      val logSettings = settings.logSettings
-      val logLevel =
-        if (restartCount > logSettings.criticalLogLevelAfter) logSettings.criticalLogLevel else logSettings.logLevel
-      logLevel match {
+      logLevel(minLogLevel) match {
         case Logging.ErrorLevel =>
           exc match {
             case OptionVal.Some(e) => log.error(e, message)
             case _                 => log.error(message)
           }
         case Logging.WarningLevel =>
-          log.warning(message)
           if (log.isWarningEnabled) {
             exc match {
               case OptionVal.Some(e) if !e.isInstanceOf[NoStackTrace] =>
