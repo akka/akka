@@ -124,7 +124,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val constructed = new AtomicBoolean(false)
-      val result = Source
+      Source
         .lazySource { () =>
           constructed.set(true); Source(List(1, 2, 3))
         }
@@ -132,7 +132,6 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         .run()
 
       constructed.get() should ===(false)
-      result.isCompleted should ===(false)
     }
 
     "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
@@ -271,7 +270,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val constructed = new AtomicBoolean(false)
-      val result = Source
+      Source
         .lazyFutureSource { () =>
           Future {
             constructed.set(true)
@@ -282,7 +281,6 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         .run()
 
       constructed.get() should ===(false)
-      result.isCompleted should ===(false)
     }
 
     "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
