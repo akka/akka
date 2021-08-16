@@ -54,7 +54,6 @@ object EventSourcedActorFailureSpec {
             case PersistentRepr(Evt(s: String), _) => s.contains("wrong")
             case _                                 => false
           }
-        case _ => false
       }
 
     def checkSerializable(messages: immutable.Seq[AtomicWrite]): immutable.Seq[Try[Unit]] =

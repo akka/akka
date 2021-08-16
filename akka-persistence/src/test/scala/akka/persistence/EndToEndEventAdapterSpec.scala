@@ -182,7 +182,7 @@ class EndToEndEventAdapterSpec extends AnyWordSpecLike with Matchers with Before
     "use the same adapter when reading as was used when writing to the journal" in
     withActorSystem("SimpleSystem", adaptersConfig) { implicit system =>
       val p = TestProbe()
-      implicit val ref = p.ref
+      implicit val ref: ActorRef = p.ref
 
       val p1 = persister("p1")
       val a = A("a1")
@@ -207,7 +207,7 @@ class EndToEndEventAdapterSpec extends AnyWordSpecLike with Matchers with Before
 
       withActorSystem("NoAdapterSystem", adaptersConfig) { implicit system =>
         val p = TestProbe()
-        implicit val ref = p.ref
+        implicit val ref: ActorRef = p.ref
 
         val p2 = persister(persistentName)
         val a = A("a1")
@@ -229,7 +229,7 @@ class EndToEndEventAdapterSpec extends AnyWordSpecLike with Matchers with Before
 
       withActorSystem("NowAdaptersAddedSystem", newAdaptersConfig) { implicit system =>
         val p = TestProbe()
-        implicit val ref = p.ref
+        implicit val ref: ActorRef = p.ref
 
         val p22 = persister(persistentName)
         p22 ! GetState

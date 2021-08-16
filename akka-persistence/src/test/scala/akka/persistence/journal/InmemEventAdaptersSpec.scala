@@ -65,6 +65,7 @@ class InmemEventAdaptersSpec extends AkkaSpec {
       adapters.get(classOf[PreciseAdapterEvent]).getClass should ===(classOf[PreciseAdapter])
 
       // no adapter defined for Long, should return identity adapter
+      import org.scalatest.Assertions.unconstrainedEquality
       adapters.get(classOf[java.lang.Long]).getClass should ===(IdentityEventAdapter.getClass)
     }
 
