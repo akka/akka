@@ -25,7 +25,7 @@ jobs:
           - akka-cluster/Test/compile
           - akka-coordination/test
           - akka-discovery/test
-          - akka-persistence/test
+          - akka-persistence/compile
           - akka-pki/test
           - akka-serialization-jackson/Test/compile
           - akka-slf4j/test
