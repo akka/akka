@@ -209,9 +209,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
         remoteSystem.terminate()
       }
 
-      EventFilter.warning(pattern = "Association with remote system", occurrences = 1).intercept {
-        Await.ready(remoteSystem.whenTerminated, 10.seconds)
-      }
+      Await.ready(remoteSystem.whenTerminated, 10.seconds)
 
       EventFilter[TimeoutException](occurrences = 1).intercept {}
 
