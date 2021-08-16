@@ -67,7 +67,9 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
             case Right(`n`) => verifyNext(n + 1)
             case Right(x)   => fail(s"expected $n, got $x")
             case Left(t) =>
-              t shouldBe an[IllegalStateException]
+              if (!t.isInstanceOf[IllegalStateException]) {
+                fail("Expected IllegalStateException, got", t)
+              }
               t.getMessage shouldBe "Received new element before ack was signaled back"
           }
       }
