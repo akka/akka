@@ -1214,13 +1214,14 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       // that commands are processed before events have been persisted. Therefore, we
       // retry until eventually...
       eventually {
+        val probe = TestProbe()
         val persistentActor = asyncPersistPersistentActor
-        persistentActor ! Cmd("x")
-        persistentActor ! Cmd("y")
-        expectMsg("x")
-        expectMsg("y") // "y" command was processed before event persisted
-        expectMsg("x-1")
-        expectMsg("y-2")
+        probe.send(persistentActor, Cmd("x"))
+        probe.send(persistentActor, Cmd("y"))
+        probe.expectMsg("x")
+        probe.expectMsg("y") // "y" command was processed before event persisted
+        probe.expectMsg("x-1")
+        probe.expectMsg("y-2")
       }
     }
     "support multiple persistAsync calls for one command, and execute them 'when possible', not hindering command processing" in {
@@ -1424,13 +1425,18 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       test(deferringSyncWithAsyncPersistActor)
     }
     "handle new messages before deferAsync handler is called" in {
-      val persistentActor = deferringAsyncActor
-      persistentActor ! Cmd("x")
-      persistentActor ! Cmd("y")
-      expectMsg("x")
-      expectMsg("y") // "y" command was processed before event persisted
-      expectMsg("x-defer")
-      expectMsg("y-defer")
+      // Depending on timing, 'x-defer' might arrive before or after 'y'.
+      // This test is meant to demonstrate that 'x-defer' *may* arrive later.'
+      eventually {
+        val probe = TestProbe()
+        val persistentActor = deferringAsyncActor
+        probe.send(persistentActor, Cmd("x"))
+        probe.send(persistentActor, Cmd("y"))
+        probe.expectMsg("x")
+        probe.expectMsg("y") // "y" command was processed before event persisted
+        probe.expectMsg("x-defer")
+        probe.expectMsg("y-defer")
+      }
     }
     "handle defer sequentially" in {
       val persistentActor = deferringSyncActor
