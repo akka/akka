@@ -27,11 +27,9 @@ jobs:
         run: |-
           sudo apt-get install graphviz
           sbt +mimaReportBinaryIssues
-          sbt whitesourceCheckPolicies
           sbt ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          WHITESOURCE_PASSWORD: ${{ secrets.WHITESOURCE_PASSWORD }}

@@ -34,9 +34,7 @@ jobs:
             -Dakka.test.metrics.reporter.graphite.prefix=jenkins \
             -Dakka.test.metrics.reporter.graphite.host=54.72.154.120 \
             -Dakka.sbt.statsd=false \
-            clean update whitesourceUpdate whitesourceCheckPolicies test:compile test publishLocal publishM2
-        env:
-          WHITESOURCE_PASSWORD: ${{ secrets.WHITESOURCE_PASSWORD }}
+            clean update test:compile test publishLocal publishM2
 
       - name: Email on failure
         if: ${{ failure() }}

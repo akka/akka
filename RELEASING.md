@@ -43,11 +43,6 @@ When releasing from Windows, you need MinGW and a gpg distribution such as Gpg4W
 Make sure you have set `core.autocrlf` to `false` in your `~/.gitconfig`,
 otherwise git might convert line endings in some cases.
 
-### Whitesource
-
-Make sure you have the Lightbend Whitesource credentials configured in
-your `~/.sbt/1.0/private-credentials.sbt`.
-
 ### Install Graphviz
 
 [Graphvis](https://graphviz.gitlab.io/download/) is needed for the 

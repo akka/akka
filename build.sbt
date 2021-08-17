@@ -131,7 +131,7 @@ lazy val actorTests = akkaModule("akka-actor-tests")
   .dependsOn(testkit % "compile->compile;test->test")
   .settings(Dependencies.actorTests)
   .enablePlugins(NoPublish)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(MimaPlugin)
 
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .aggregate(aggregatedProjects: _*)
@@ -145,7 +145,7 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
   .settings(Dependencies.benchJmh)
   .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
+  .disablePlugins(MimaPlugin, ValidatePullRequest, CopyrightHeaderInPr)
 
 lazy val cluster = akkaModule("akka-cluster")
   .dependsOn(
@@ -255,7 +255,7 @@ lazy val docs = akkaModule("akka-docs")
     ScaladocNoVerificationOfDiagrams,
     StreamOperatorsIndexGenerator,
     Jdk9)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(MimaPlugin)
   .disablePlugins((if (ScalafixSupport.fixTestScope) Nil else Seq(ScalafixPlugin)): _*)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
@@ -307,7 +307,7 @@ lazy val persistenceShared = akkaModule("akka-persistence-shared")
   .settings(AutomaticModuleName.settings("akka.persistence.shared"))
   .settings(Test / fork := true)
   .enablePlugins(NoPublish)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(MimaPlugin)
 
 lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .dependsOn(persistence % "compile->compile;test->test", testkit % "compile->compile;test->test")
@@ -414,7 +414,7 @@ lazy val remoteTests = akkaModule("akka-remote-tests")
   .settings(Test / parallelExecution := false)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest, NoPublish)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(MimaPlugin)
 
 lazy val slf4j = akkaModule("akka-slf4j")
   .dependsOn(actor, testkit % "test->test")
@@ -441,7 +441,7 @@ lazy val streamTests = akkaModule("akka-stream-tests")
   .dependsOn(streamTestkit % "test->test", remote % "test->test", stream % "TestJdk9->CompileJdk9")
   .settings(Dependencies.streamTests)
   .enablePlugins(NoPublish, Jdk9)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(MimaPlugin)
 
 lazy val streamTestsTck = akkaModule("akka-stream-tests-tck")
   .dependsOn(streamTestkit % "test->test", stream)
@@ -453,7 +453,7 @@ lazy val streamTestsTck = akkaModule("akka-stream-tests-tck")
     // to run with small heap without G1.
     Test / fork := true)
   .enablePlugins(NoPublish)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(MimaPlugin)
 
 lazy val testkit = akkaModule("akka-testkit")
   .dependsOn(actor)
