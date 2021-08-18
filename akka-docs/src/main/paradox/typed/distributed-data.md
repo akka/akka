@@ -229,9 +229,10 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 (or cluster role group)
  * `WriteMajorityPlus` is like `WriteMajority` but with the given number of `additional` nodes added
    to the majority count. At most all nodes. This gives better tolerance for membership changes between
-   writes and reads.
- * `WriteAll` the value will immediately be written to all nodes in the cluster
-(or all nodes in the cluster role group)
+   writes and reads. Exiting nodes are excluded using `WriteMajorityPlus` because those are typically about to be removed
+   and will not be able to respond.
+ * `WriteAll` the value will immediately be written to all nodes in the cluster (or all nodes in the cluster role group).
+   Exiting nodes are excluded using `WriteAll` because those are typically about to be removed and will not be able to respond.
 
 When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes.
 If there are not enough Acks after a 1/5th of the timeout, the update will be replicated to `n` other
@@ -263,9 +264,10 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 (or cluster role group)
 * `ReadMajorityPlus` is like `ReadMajority` but with the given number of `additional` nodes added
    to the majority count. At most all nodes. This gives better tolerance for membership changes between
-   writes and reads.
- * `ReadAll` the value will be read and merged from all nodes in the cluster
-(or all nodes in the cluster role group)
+   writes and reads. Exiting nodes are excluded using `ReadMajorityPlus` because those are typically about to be
+  removed and will not be able to respond.
+ * `ReadAll` the value will be read and merged from all nodes in the cluster (or all nodes in the cluster role group).
+   Exiting nodes are excluded using `ReadAll` because those are typically about to be removed and will not be able to respond.
 
 Note that `ReadMajority` and `ReadMajorityPlus` have a `minCap` parameter that is useful to specify to achieve
 better safety for small clusters.
