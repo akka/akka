@@ -484,7 +484,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       ref ! "stash"
       LoggingTestKit
         .error[TestException]
-        .withMessageContains("Supervisor RestartSupervisor saw failure: unstash-fail")
+        .withMessageRegex("Supervisor RestartSupervisor saw failure.*: unstash-fail")
         .expect {
           ref ! "unstash"
           // when childLatch is defined this be stashed in the internal stash of the RestartSupervisor

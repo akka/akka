@@ -1292,6 +1292,41 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
+    "log at critical level after specified restartWithBackoff attempts" in {
+      val probe = TestProbe[Event]("evt")
+      val behv = Behaviors
+        .supervise(targetBehavior(probe.ref))
+        .onFailure[Exc1](
+          SupervisorStrategy
+            .restartWithBackoff(1.millis, 1.millis, 0.0)
+            .withResetBackoffAfter(2.seconds)
+            .withLogLevel(Level.INFO)
+            .withCriticalLogLevel(Level.ERROR, 3))
+      val ref = spawn(behv)
+      LoggingTestKit.info("exc-1").withOccurrences(3).expect {
+        ref ! Throw(new Exc1)
+        probe.expectMessage(ReceivedSignal(PreRestart))
+        ref ! Throw(new Exc1)
+        probe.expectMessage(ReceivedSignal(PreRestart))
+        ref ! Throw(new Exc1)
+        probe.expectMessage(ReceivedSignal(PreRestart))
+      }
+      LoggingTestKit.error("exc-1").withOccurrences(2).expect {
+        ref ! Throw(new Exc1)
+        probe.expectMessage(ReceivedSignal(PreRestart))
+        ref ! Throw(new Exc1)
+        probe.expectMessage(ReceivedSignal(PreRestart))
+      }
+
+      // reset backoff 2 seconds
+      probe.expectNoMessage(2100.millis)
+      LoggingTestKit.info("exc-1").expect {
+        ref ! Throw(new Exc1)
+        probe.expectMessage(ReceivedSignal(PreRestart))
+      }
+
+    }
+
     "handle exceptions from different message type" in {
       val probe = TestProbe[Event]("evt")
 
