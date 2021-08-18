@@ -44,7 +44,7 @@ class PersistenceTestKitDurableStateStoreSpec
       stateStore.upsertObject("record-1", 1L, record, tag)
       val testSink = stateStore
         .changes(tag, NoOffset)
-        .collect { case u: UpdatedDurableState[Record] @unchecked => u }
+        .collect { case u: UpdatedDurableState[Record] => u }
         .runWith(TestSink[UpdatedDurableState[Record]]())
 
       val firstStateChange = testSink.request(1).expectNext()
@@ -70,7 +70,7 @@ class PersistenceTestKitDurableStateStoreSpec
       val testSinkCurrentChanges =
         stateStore
           .currentChanges(tag, NoOffset)
-          .collect { case u: UpdatedDurableState[Record] @unchecked => u }
+          .collect { case u: UpdatedDurableState[Record] => u }
           .runWith(TestSink[UpdatedDurableState[Record]]())
 
       stateStore.upsertObject("record-1", 2L, record.copy(name = "my-name-1-2"), tag)
@@ -85,7 +85,7 @@ class PersistenceTestKitDurableStateStoreSpec
       val testSinkIllegalOffset =
         stateStore
           .currentChanges(tag, Sequence(100L))
-          .collect { case u: UpdatedDurableState[Record] @unchecked => u }
+          .collect { case u: UpdatedDurableState[Record] => u }
           .runWith(TestSink[UpdatedDurableState[Record]]())
       testSinkIllegalOffset.request(1).expectNoMessage()
     }
