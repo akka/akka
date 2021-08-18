@@ -104,7 +104,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
           remoteSystem.terminate()
         }
 
-        Await.ready(remoteSystem.whenTerminated, 10.seconds)
+        Await.result(remoteSystem.whenTerminated, 10.seconds)
       }
 
       // Quarantine an old incarnation case
@@ -147,7 +147,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
           remoteSystem.terminate()
         }
 
-        Await.ready(remoteSystem.whenTerminated, 10.seconds)
+        Await.result(remoteSystem.whenTerminated, 10.seconds)
 
       }
 
@@ -170,14 +170,14 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
           probe.expectMsgType[ActorIdentity].ref.nonEmpty should be(true)
 
           // This will make sure that no SHUTDOWN message gets through
-          Await.ready(RARP(system).provider.transport.managementCommand(ForceDisassociate(remoteAddress)), 3.seconds)
+          Await.result(RARP(system).provider.transport.managementCommand(ForceDisassociate(remoteAddress)), 3.seconds)
 
         } finally {
           remoteSystem.terminate()
         }
 
         EventFilter.warning(pattern = "Association with remote system", occurrences = 1).intercept {
-          Await.ready(remoteSystem.whenTerminated, 10.seconds)
+          Await.result(remoteSystem.whenTerminated, 10.seconds)
         }
       }
 
@@ -203,15 +203,13 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
         // All system messages has been acked now on this side
 
         // This will make sure that no SHUTDOWN message gets through
-        Await.ready(RARP(system).provider.transport.managementCommand(ForceDisassociate(remoteAddress)), 3.seconds)
+        Await.result(RARP(system).provider.transport.managementCommand(ForceDisassociate(remoteAddress)), 3.seconds)
 
       } finally {
         remoteSystem.terminate()
       }
 
-      EventFilter.warning(pattern = "Association with remote system", occurrences = 1).intercept {
-        Await.ready(remoteSystem.whenTerminated, 10.seconds)
-      }
+      Await.result(remoteSystem.whenTerminated, 10.seconds)
 
       EventFilter[TimeoutException](occurrences = 1).intercept {}
 
