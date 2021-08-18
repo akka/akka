@@ -9,6 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import org.slf4j.event.Level
 
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
 
@@ -217,6 +218,10 @@ object SupervisorStrategy {
   }
 }
 
+/**
+ * Not for user extension
+ */
+@DoNotInherit
 sealed abstract class SupervisorStrategy {
   def loggingEnabled: Boolean
   def logLevel: Level
@@ -227,6 +232,10 @@ sealed abstract class SupervisorStrategy {
 
 }
 
+/**
+ * Not for user extension
+ */
+@DoNotInherit
 sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
 
   /**
@@ -282,6 +291,10 @@ sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
 
 }
 
+/**
+ * Not for user extension
+ */
+@DoNotInherit
 sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
   def resetBackoffAfter: FiniteDuration
 
