@@ -10,8 +10,9 @@ import scala.concurrent.Future
 
 import akka.Done
 import akka.actor.ExtendedActorSystem
-import akka.persistence.query.scaladsl.DurableStateStoreQuery
 import akka.persistence.query.DurableStateChange
+import akka.persistence.query.scaladsl.DurableStateStoreQuery
+import akka.persistence.query.UpdatedDurableState
 import akka.persistence.query.Offset
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Sequence
@@ -59,7 +60,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     Future.successful(Done)
   }
 
-  def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
+  def changes(tag: String, offset: Offset): Source[DurableStateChange, akka.NotUsed] = this.synchronized {
     val fromOffset = offset match {
       case NoOffset             => EarliestOffset
       case Sequence(fromOffset) => fromOffset
@@ -85,7 +86,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       .map(_.toDurableStateChange)
   }
 
-  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
+  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange, akka.NotUsed] = this.synchronized {
     val currentGlobalOffset = lastGlobalOffset.get()
     changes(tag, offset).takeWhile(_.offset match {
       case Sequence(fromOffset) =>
@@ -103,6 +104,6 @@ private final case class Record[A](
     value: A,
     tag: String,
     timestamp: Long = System.currentTimeMillis) {
-  def toDurableStateChange: DurableStateChange[A] =
-    new DurableStateChange(persistenceId, revision, value, Sequence(globalOffset), timestamp)
+  def toDurableStateChange: DurableStateChange =
+    new UpdatedDurableState(persistenceId, revision, value, Sequence(globalOffset), timestamp)
 }

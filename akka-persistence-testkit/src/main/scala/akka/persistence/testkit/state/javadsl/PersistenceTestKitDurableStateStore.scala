@@ -7,11 +7,13 @@ package akka.persistence.testkit.state.javadsl
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
+
 import akka.Done
-import akka.persistence.query.javadsl.DurableStateStoreQuery
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.Offset
-import akka.persistence.state.javadsl.{ DurableStateUpdateStore, GetObjectResult }
+import akka.persistence.query.javadsl.DurableStateStoreQuery
+import akka.persistence.state.javadsl.DurableStateUpdateStore
+import akka.persistence.state.javadsl.GetObjectResult
 import akka.persistence.testkit.state.scaladsl.{ PersistenceTestKitDurableStateStore => SStore }
 import akka.stream.javadsl.Source
 
@@ -32,10 +34,10 @@ class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
   def deleteObject(persistenceId: String): CompletionStage[Done] =
     toJava(stateStore.deleteObject(persistenceId))
 
-  def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
+  def changes(tag: String, offset: Offset): Source[DurableStateChange, akka.NotUsed] = {
     stateStore.changes(tag, offset).asJava
   }
-  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
+  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange, akka.NotUsed] = {
     stateStore.currentChanges(tag, offset).asJava
   }
 }

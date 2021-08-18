@@ -45,3 +45,5 @@ Scala
 Java
 :  @@snip [DurableStateStoreQueryUsageCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/DurableStateStoreQueryUsageCompileOnlyTest.java) { #get-durable-state-store-query-example } 
 
+The @apidoc[DurableStateChange] elements can be `UpdatedDurableState` or `DeletedDurableState`.
+`DeletedDurableState` is not implemented yet.

@@ -9,7 +9,7 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Sequence
-import akka.persistence.query.DurableStateChange
+import akka.persistence.query.UpdatedDurableState
 import akka.persistence.testkit.state.scaladsl.PersistenceTestKitDurableStateStore
 import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
 import akka.stream.testkit.scaladsl.TestSink
@@ -42,7 +42,10 @@ class PersistenceTestKitDurableStateStoreSpec
       val recordChange = Record(1, "my-name-1")
       val tag = "tag-1"
       stateStore.upsertObject("record-1", 1L, record, tag)
-      val testSink = stateStore.changes(tag, NoOffset).runWith(TestSink[DurableStateChange[Record]]())
+      val testSink = stateStore
+        .changes(tag, NoOffset)
+        .collect { case u: UpdatedDurableState[Record] @unchecked => u }
+        .runWith(TestSink[UpdatedDurableState[Record]]())
 
       val firstStateChange = testSink.request(1).expectNext()
       firstStateChange.value should be(record)
@@ -65,7 +68,10 @@ class PersistenceTestKitDurableStateStoreSpec
       stateStore.upsertObject("record-1", 1L, record, tag)
 
       val testSinkCurrentChanges =
-        stateStore.currentChanges(tag, NoOffset).runWith(TestSink[DurableStateChange[Record]]())
+        stateStore
+          .currentChanges(tag, NoOffset)
+          .collect { case u: UpdatedDurableState[Record] @unchecked => u }
+          .runWith(TestSink[UpdatedDurableState[Record]]())
 
       stateStore.upsertObject("record-1", 2L, record.copy(name = "my-name-1-2"), tag)
       stateStore.upsertObject("record-1", 3L, record.copy(name = "my-name-1-3"), tag)
@@ -77,7 +83,10 @@ class PersistenceTestKitDurableStateStoreSpec
       testSinkCurrentChanges.request(1).expectComplete()
 
       val testSinkIllegalOffset =
-        stateStore.currentChanges(tag, Sequence(100L)).runWith(TestSink[DurableStateChange[Record]]())
+        stateStore
+          .currentChanges(tag, Sequence(100L))
+          .collect { case u: UpdatedDurableState[Record] @unchecked => u }
+          .runWith(TestSink[UpdatedDurableState[Record]]())
       testSinkIllegalOffset.request(1).expectNoMessage()
     }
   }

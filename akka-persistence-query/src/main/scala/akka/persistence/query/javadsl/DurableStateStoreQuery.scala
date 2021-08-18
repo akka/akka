@@ -30,13 +30,16 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    * This will return changes that occurred up to when the `Source` returned by this call is materialized. Changes to
    * objects made since materialization are not guaranteed to be included in the results.
    *
+   * The [[DurableStateChange]] elements can be [[akka.persistence.query.UpdatedDurableState]] or `DeletedDurableState`.
+   * `DeletedDurableState` is not implemented yet, see issue https://github.com/akka/akka/issues/30446.
+   *
    * @param tag The tag to get changes for.
    * @param offset The offset to get changes since. Must either be [[akka.persistence.query.NoOffset]] to get
    *               changes since the beginning of time, or an offset that has been previously returned by this query.
    *               Any other offsets are invalid.
    * @return A source of change in state.
    */
-  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], NotUsed]
+  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange, NotUsed]
 
   /**
    * Get a source of the most recent changes made to objects of the given tag since the passed in offset.
@@ -49,11 +52,14 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    * in quick succession are likely to be skipped, with only the last update resulting in a change from this
    * source.
    *
+   * The [[DurableStateChange]] elements can be [[akka.persistence.query.UpdatedDurableState]] or `DeletedDurableState`.
+   * `DeletedDurableState` is not implemented yet, see issue https://github.com/akka/akka/issues/30446.
+   *
    * @param tag The tag to get changes for.
    * @param offset The offset to get changes since. Must either be [[akka.persistence.query.NoOffset]] to get
    *               changes since the beginning of time, or an offset that has been previously returned by this query.
    *               Any other offsets are invalid.
    * @return A source of change in state.
    */
-  def changes(tag: String, offset: Offset): Source[DurableStateChange[A], NotUsed]
+  def changes(tag: String, offset: Offset): Source[DurableStateChange, NotUsed]
 }
