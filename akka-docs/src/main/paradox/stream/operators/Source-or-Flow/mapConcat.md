@@ -17,7 +17,7 @@ This can be used to flatten collections into individual stream elements.
 Returning an empty iterable results in zero elements being passed downstream
 rather than the stream being cancelled.
 
-See also @ref:[statefulMapConcat](statefulMapConcat.md)
+See also @ref:[statefulMapConcat](statefulMapConcat.md), @ref:[flatMapConcat](flatMapConcat.md), @ref:[flatMapMerge](flatMapMerge.md)
 
 ## Example
 
