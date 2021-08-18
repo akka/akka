@@ -126,7 +126,6 @@ public class FlowDocTest extends AbstractJavaTest {
   @Test
   @SuppressWarnings("unused")
   public void compoundSourceCannotBeUsedAsKey() throws Exception {
-    // #compound-source-is-not-keyed-runWith
     final Object tick = new Object();
 
     final Duration oneSecond = Duration.ofSeconds(1);
@@ -138,13 +137,10 @@ public class FlowDocTest extends AbstractJavaTest {
     final Source<String, Cancellable> timerMap = timer.map(t -> "tick");
     // WRONG: returned type is not the timers Cancellable!
     // Cancellable timerCancellable = Sink.ignore().runWith(timerMap, mat);
-    // #compound-source-is-not-keyed-runWith
 
-    // #compound-source-is-not-keyed-run
     // retain the materialized map, in order to retrieve the timer's Cancellable
     final Cancellable timerCancellable = timer.to(Sink.ignore()).run(system);
     timerCancellable.cancel();
-    // #compound-source-is-not-keyed-run
   }
 
   @Test

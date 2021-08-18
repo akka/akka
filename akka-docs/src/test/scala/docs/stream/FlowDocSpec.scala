@@ -73,9 +73,6 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
   }
 
   "compound source cannot be used as key" in {
-    // FIXME #16902 This example is now turned around
-    // The WRONG case has been switched
-    //#compound-source-is-not-keyed-runWith
     import scala.concurrent.duration._
     case object Tick
 
@@ -88,12 +85,9 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     // materialize the flow and retrieve the timers Cancellable
     val timerCancellable = Sink.ignore.runWith(timerMap)
     timerCancellable.cancel()
-    //#compound-source-is-not-keyed-runWith
 
-    //#compound-source-is-not-keyed-run
     val timerCancellable2 = timerMap.to(Sink.ignore).run()
     timerCancellable2.cancel()
-    //#compound-source-is-not-keyed-run
   }
 
   "creating sources, sinks" in {
