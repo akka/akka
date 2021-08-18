@@ -16,9 +16,11 @@ import akka.annotation.DoNotInherit
  * `DeletedDurableState` is not implemented yet, see issue https://github.com/akka/akka/issues/30446
  *
  * Not for user extension
+ *
+ * @tparam A the type of the value
  */
 @DoNotInherit
-sealed trait DurableStateChange {
+sealed trait DurableStateChange[A] {
 
   /**
    * The persistence id of the origin entity.
@@ -59,4 +61,4 @@ final class UpdatedDurableState[A](
     val value: A,
     override val offset: Offset,
     val timestamp: Long)
-    extends DurableStateChange
+    extends DurableStateChange[A]

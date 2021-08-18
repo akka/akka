@@ -39,7 +39,7 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    *               Any other offsets are invalid.
    * @return A source of change in state.
    */
-  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange, NotUsed]
+  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], NotUsed]
 
   /**
    * Get a source of the most recent changes made to objects of the given tag since the passed in offset.
@@ -61,5 +61,5 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    *               Any other offsets are invalid.
    * @return A source of change in state.
    */
-  def changes(tag: String, offset: Offset): Source[DurableStateChange, NotUsed]
+  def changes(tag: String, offset: Offset): Source[DurableStateChange[A], NotUsed]
 }

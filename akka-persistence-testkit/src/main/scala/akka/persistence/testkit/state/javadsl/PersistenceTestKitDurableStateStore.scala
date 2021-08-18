@@ -34,10 +34,10 @@ class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
   def deleteObject(persistenceId: String): CompletionStage[Done] =
     toJava(stateStore.deleteObject(persistenceId))
 
-  def changes(tag: String, offset: Offset): Source[DurableStateChange, akka.NotUsed] = {
+  def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
     stateStore.changes(tag, offset).asJava
   }
-  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange, akka.NotUsed] = {
+  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
     stateStore.currentChanges(tag, offset).asJava
   }
 }

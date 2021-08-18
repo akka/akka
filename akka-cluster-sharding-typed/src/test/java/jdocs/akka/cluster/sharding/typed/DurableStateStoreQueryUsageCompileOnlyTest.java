@@ -26,7 +26,8 @@ class DurableStateStoreQueryUsageCompileOnlySpec {
     DurableStateStoreQuery<Record> durableStateStoreQuery =
         DurableStateStoreRegistry.get(system)
             .getDurableStateStoreFor(DurableStateStoreQuery.class, pluginId);
-    Source<DurableStateChange, NotUsed> source = durableStateStoreQuery.changes("tag", offset);
+    Source<DurableStateChange<Record>, NotUsed> source =
+        durableStateStoreQuery.changes("tag", offset);
     source.map(
         chg -> {
           if (chg instanceof UpdatedDurableState) {

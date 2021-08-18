@@ -22,7 +22,7 @@ object DurableStateStoreQueryUsageCompileOnlySpec {
 
     val durableStateStoreQuery =
       DurableStateStoreRegistry(system).durableStateStoreFor[DurableStateStoreQuery[Record]](pluginId)
-    val source: Source[DurableStateChange, NotUsed] = durableStateStoreQuery.changes("tag", offset)
+    val source: Source[DurableStateChange[Record], NotUsed] = durableStateStoreQuery.changes("tag", offset)
     source.map {
       case UpdatedDurableState(persistenceId, revision, value, offset, timestamp) => value
     }

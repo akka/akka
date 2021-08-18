@@ -60,7 +60,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     Future.successful(Done)
   }
 
-  def changes(tag: String, offset: Offset): Source[DurableStateChange, akka.NotUsed] = this.synchronized {
+  def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
     val fromOffset = offset match {
       case NoOffset             => EarliestOffset
       case Sequence(fromOffset) => fromOffset
@@ -86,7 +86,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       .map(_.toDurableStateChange)
   }
 
-  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange, akka.NotUsed] = this.synchronized {
+  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
     val currentGlobalOffset = lastGlobalOffset.get()
     changes(tag, offset).takeWhile(_.offset match {
       case Sequence(fromOffset) =>
@@ -104,6 +104,6 @@ private final case class Record[A](
     value: A,
     tag: String,
     timestamp: Long = System.currentTimeMillis) {
-  def toDurableStateChange: DurableStateChange =
+  def toDurableStateChange: DurableStateChange[A] =
     new UpdatedDurableState(persistenceId, revision, value, Sequence(globalOffset), timestamp)
 }
