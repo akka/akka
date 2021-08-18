@@ -5,12 +5,15 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+
 import akka.Done
 import akka.NotUsed
+import akka.event.Logging
 import akka.stream.Attributes.Name
 import akka.stream.scaladsl.AttributesSpec.{
   whateverAttribute,
@@ -29,9 +32,12 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.DefaultTimeout
+import akka.testkit.EventFilter
 import akka.testkit.TestDuration
 
-class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "10s")) with DefaultTimeout {
+class RestartSpec
+    extends StreamSpec(Map("akka.test.single-expect-default" -> "10s", "akka.loglevel" -> "INFO"))
+    with DefaultTimeout {
 
   import system.dispatcher
 
@@ -40,8 +46,11 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
   private val minBackoff = 1.second.dilated
   private val maxBackoff = 3.seconds.dilated
 
-  private val shortRestartSettings = RestartSettings(shortMinBackoff, shortMaxBackoff, 0)
-  private val restartSettings = RestartSettings(minBackoff, maxBackoff, 0)
+  private val logSettings = RestartSettings.LogSettings(Logging.InfoLevel).withCriticalLogLevel(Logging.WarningLevel, 2)
+  private val shortRestartSettings =
+    RestartSettings(shortMinBackoff, shortMaxBackoff, 0).withLogSettings(logSettings)
+  private val restartSettings =
+    RestartSettings(minBackoff, maxBackoff, 0).withLogSettings(logSettings)
 
   "A restart with backoff source" should {
     "run normally" in assertAllStagesStopped {
@@ -73,11 +82,13 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
         }
         .runWith(TestSink.probe)
 
-      probe.requestNext("a")
-      probe.requestNext("b")
-      probe.requestNext("a")
-      probe.requestNext("b")
-      probe.requestNext("a")
+      EventFilter.info(start = "Restarting stream due to completion", occurrences = 2).intercept {
+        probe.requestNext("a")
+        probe.requestNext("b")
+        probe.requestNext("a")
+        probe.requestNext("b")
+        probe.requestNext("a")
+      }
 
       created.get() should ===(3)
 
@@ -96,13 +107,21 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
         }
         .runWith(TestSink.probe)
 
-      probe.requestNext("a")
-      probe.requestNext("b")
-      probe.requestNext("a")
-      probe.requestNext("b")
-      probe.requestNext("a")
+      EventFilter.info(start = "Restarting stream due to failure", occurrences = 2).intercept {
+        probe.requestNext("a")
+        probe.requestNext("b")
+        probe.requestNext("a")
+        probe.requestNext("b")
+        probe.requestNext("a")
+      }
 
-      created.get() should ===(3)
+      // after 2, use critical level
+      EventFilter.warning(start = "Restarting stream due to failure [3]", occurrences = 1).intercept {
+        probe.requestNext("b")
+        probe.requestNext("a")
+      }
+
+      created.get() should ===(4)
 
       probe.cancel()
     }
@@ -622,7 +641,9 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
         .viaMat(
           RestartFlowFactory(
             onlyOnFailures,
-            RestartSettings(minBackoff, maxBackoff, 0).withMaxRestarts(maxRestarts, minBackoff)) { () =>
+            RestartSettings(minBackoff, maxBackoff, 0)
+              .withMaxRestarts(maxRestarts, minBackoff)
+              .withLogSettings(logSettings)) { () =>
             created.incrementAndGet()
             Flow.fromSinkAndSource(
               Flow[String]
@@ -705,12 +726,14 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
-      sink.request(1)
-      flowOutProbe.sendNext("complete")
+      EventFilter.info(start = "Restarting stream due to completion", occurrences = 1).intercept {
+        sink.request(1)
+        flowOutProbe.sendNext("complete")
 
-      // This will complete the flow in probe and cancel the flow out probe
-      flowInProbe.request(2)
-      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain.only("in complete", "out complete")
+        // This will complete the flow in probe and cancel the flow out probe
+        flowInProbe.request(2)
+        Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain.only("in complete", "out complete")
+      }
 
       // and it should restart
       source.sendNext("c")
@@ -729,11 +752,13 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
-      sink.request(1)
-      flowOutProbe.sendNext("error")
+      EventFilter.info(start = "Restarting stream due to failure", occurrences = 1).intercept {
+        sink.request(1)
+        flowOutProbe.sendNext("error")
 
-      // This should complete the in probe
-      flowInProbe.requestNext("in complete")
+        // This should complete the in probe
+        flowInProbe.requestNext("in complete")
+      }
 
       // and it should restart
       source.sendNext("c")
@@ -909,7 +934,8 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       val restartOnFailures =
         RestartFlow
-          .onFailuresWithBackoff(RestartSettings(1.second, 2.seconds, 0.2).withMaxRestarts(2, 1.second))(() => {
+          .onFailuresWithBackoff(
+            RestartSettings(1.second, 2.seconds, 0.2).withMaxRestarts(2, 1.second).withLogSettings(logSettings))(() => {
             flowCreations.incrementAndGet()
             failsSomeTimes
           })
