@@ -10,8 +10,9 @@ import scala.concurrent.Future
 
 import akka.Done
 import akka.actor.ExtendedActorSystem
-import akka.persistence.query.scaladsl.DurableStateStoreQuery
 import akka.persistence.query.DurableStateChange
+import akka.persistence.query.scaladsl.DurableStateStoreQuery
+import akka.persistence.query.UpdatedDurableState
 import akka.persistence.query.Offset
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Sequence
@@ -104,5 +105,5 @@ private final case class Record[A](
     tag: String,
     timestamp: Long = System.currentTimeMillis) {
   def toDurableStateChange: DurableStateChange[A] =
-    new DurableStateChange(persistenceId, revision, value, Sequence(globalOffset), timestamp)
+    new UpdatedDurableState(persistenceId, revision, value, Sequence(globalOffset), timestamp)
 }
