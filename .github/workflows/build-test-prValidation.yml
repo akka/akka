@@ -45,7 +45,7 @@ jobs:
           -Dakka.log.timestamps=true \
           scalafmtCheckAll scalafmtSbtCheck
 
-  Check-Publish:
+  check-publish:
     name: Check publishing locally
     runs-on: ubuntu-20.04
     steps:
@@ -79,8 +79,8 @@ jobs:
           publishLocal publishM2
 
 
-  PR-Validation:
-    name: PR Validation
+  pull-request-validation:
+    name: Pull Request Validation
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -98,7 +98,6 @@ jobs:
         uses: coursier/cache-action@v6.2
 
       - name: Akka validatePR
-        # FIXME: Change this to validatePullRequest
         run: |-
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
@@ -111,7 +110,7 @@ jobs:
           -Dakka.test.multi-node=false \
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
-          Test/compile
+          validatePullRequest
 
 ## https://github.com/akka/akka/issues/30459
 ## if success
