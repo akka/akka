@@ -131,6 +131,9 @@ jobs:
         with:
           java-version: adopt@1.8.0
 
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
       - name: Report MiMa Binary Issues
         run: sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} ";update ;mimaReportBinaryIssues ;Test/compile ;validateCompile"
 
