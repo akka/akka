@@ -1,4 +1,4 @@
-name: PRValidation Workflow
+name: Pull Requests
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   check-code-style:
-    name: Checks
+    name: Check / Code Style
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -44,7 +44,7 @@ jobs:
           scalafmtCheckAll scalafmtSbtCheck headerCheckAll
 
   check-publish:
-    name: Check publishing locally
+    name: Check / Publish Local
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -78,7 +78,7 @@ jobs:
 
 
   pull-request-validation:
-    name: Pull Request Validation
+    name: Check / Tests
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -87,15 +87,15 @@ jobs:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Set up JDK 8
+      - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8.0
+          java-version: adopt@1.11
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-      - name: Akka validatePR
+      - name: sbt validatePullRequest
         run: |-
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
@@ -111,7 +111,7 @@ jobs:
           validatePullRequest
 
   check-binary-compatibility:
-    name: Check publishing locally
+    name: Check / Binary Compatibility
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -131,7 +131,7 @@ jobs:
         with:
           java-version: adopt@1.8.0
 
-      - name: Report Binary Issues
+      - name: Report MiMa Binary Issues
         run: sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} ";update ;mimaReportBinaryIssues ;Test/compile ;validateCompile"
 
 
