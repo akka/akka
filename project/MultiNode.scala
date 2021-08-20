@@ -24,8 +24,7 @@ object MultiNode extends AutoPlugin {
 
   // MultiJvm tests can be excluded from normal test target an validatePullRequest
   // with -Dakka.test.multi-in-test=false
-  val multiNodeTestInTest: Boolean =
-    System.getProperty("akka.test.multi-in-test", "true") == "true"
+  val multiNodeTestInTest: Boolean = sys.props.getOrElse("akka.test.multi-in-test", "true").toBoolean
 
   object CliOptions {
     val multiNode = CliOption("akka.test.multi-node", false)
@@ -85,7 +84,7 @@ object MultiNode extends AutoPlugin {
         (name: String) =>
           new Logger {
             def trace(t: => Throwable): Unit = { logger.trace(t) }
-            def success(message: => String): Unit = { success(message) }
+            def success(message: => String): Unit = { logger.success(message) }
             def log(level: Level.Value, message: => String): Unit =
               logger.log(level, s"[${scala.Console.BLUE}$name${scala.Console.RESET}] $message")
           }

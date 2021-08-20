@@ -132,8 +132,8 @@ object AkkaBuild {
     crossVersion := CrossVersion.binary,
     // Adds a `src/main/scala-2.13+` source directory for code shared
     // between Scala 2.13 and Scala 3
-    unmanagedSourceDirectories in Compile ++= {
-      val sourceDir = (sourceDirectory in Compile).value
+    Compile / unmanagedSourceDirectories ++= {
+      val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, n))            => Seq(sourceDir / "scala-2.13+")
         case Some((2, n)) if n >= 13 => Seq(sourceDir / "scala-2.13+")
@@ -213,7 +213,7 @@ object AkkaBuild {
         group.runPolicy match {
           case Tests.SubProcess(forkOptions) =>
             // format: off
-            group.copy(runPolicy = Tests.SubProcess(
+            group.withRunPolicy(Tests.SubProcess(
               forkOptions.withWorkingDirectory(workingDirectory = Some(new File(System.getProperty("user.dir"))))))
             // format: on
           case _ => group
