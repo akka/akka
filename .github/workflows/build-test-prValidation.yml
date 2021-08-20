@@ -32,8 +32,6 @@ jobs:
 
       - name: Code style check
         run: |-
-          # MiMa is disabled in GHActions because it's already covered in Travis builds (travis runs for multiple scala versions)
-          # FIXME move MiMa checks to GHActions
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
           -Dakka.ci-server=true \
@@ -43,7 +41,7 @@ jobs:
           -Dsbt.override.build.repos=false \
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
-          scalafmtCheckAll scalafmtSbtCheck
+          scalafmtCheckAll scalafmtSbtCheck headerCheckAll
 
   check-publish:
     name: Check publishing locally
@@ -111,6 +109,31 @@ jobs:
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
           validatePullRequest
+
+  check-binary-compatibility:
+    name: Check publishing locally
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        # The versions of scala specified here are only used as `-Dakka.build.scalaVersion=...`
+        # which ignores the PATCH portion of the version id. These Scala versions don't need
+        # to be fully defined here then since Akka build handles which patch version will be used.
+        scalaVersion: ["2.12", "2.13"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Report Binary Issues
+        run: sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} ";update ;mimaReportBinaryIssues ;Test/compile ;validateCompile"
+
 
 ## https://github.com/akka/akka/issues/30459
 ## if success
