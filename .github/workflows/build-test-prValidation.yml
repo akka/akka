@@ -108,7 +108,7 @@ jobs:
           -Dakka.test.multi-node=false \
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
-          validatePullRequest
+          validateCompile validatePullRequest
 
 ## https://github.com/akka/akka/issues/30459
 ## if success
