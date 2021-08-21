@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorRef
 import akka.testkit.AkkaSpec
-import akka.testkit.GHExcludeTest
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.testkit.TestProbe
@@ -126,18 +125,20 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     }
 
     // #26903
-    // Excluded in GH Actions: https://github.com/akka/akka/issues/30462
-    "be able to send and receive when server goes away (and comes back)" taggedAs GHExcludeTest in {
+    "be able to send and receive when server goes away (and comes back)" in {
       val addresses = temporaryServerAddresses(2, udp = true)
       val serverAddress = addresses(0)
-      val clientAddress = addresses(1)
-      val server = bindUdp(serverAddress, testActor)
-      val data1 = ByteString("To infinity and beyond!")
+      val serverHandler = TestProbe()
+      val server = bindUdp(serverAddress, serverHandler.ref)
 
-      val clientCommander = connectUdp(Some(clientAddress), serverAddress, testActor)
+      val clientAddress = addresses(1)
+      val clientHandler = TestProbe()
+      val clientCommander = connectUdp(Some(clientAddress), serverAddress, clientHandler.ref)
+
+      val data1 = ByteString("To infinity and beyond!")
       clientCommander ! UdpConnected.Send(data1)
 
-      expectMsg(Udp.Received(data1, clientAddress))
+      serverHandler.expectMsg(Udp.Received(data1, clientAddress))
 
       server ! Udp.Unbind
       expectMsg(Udp.Unbound)
@@ -152,11 +153,12 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       expectMsg(2)
 
       // when a new server appears at the same port it it should be able to receive
-      val serverIncarnation2 = bindUdp(serverAddress, testActor)
+      val serverIncarnation2Handler = TestProbe()
+      val serverIncarnation2 = bindUdp(serverAddress, serverIncarnation2Handler.ref)
       val dataToNewIncarnation = ByteString("Data to new incarnation")
       clientCommander ! UdpConnected.Send(dataToNewIncarnation, 3)
       expectMsg(3)
-      expectMsg(Udp.Received(dataToNewIncarnation, clientAddress))
+      serverIncarnation2Handler.expectMsg(Udp.Received(dataToNewIncarnation, clientAddress))
 
       serverIncarnation2 ! Udp.Unbind
     }

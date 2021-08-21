@@ -56,7 +56,8 @@ class LazyFlowSpec extends StreamSpec("""
         .to(Sink.head)
         .run()
 
-      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
     }
   }
 
@@ -83,7 +84,8 @@ class LazyFlowSpec extends StreamSpec("""
         .to(Sink.head)
         .run()
 
-      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
     }
   }
 
@@ -263,7 +265,8 @@ class LazyFlowSpec extends StreamSpec("""
         .to(Sink.head)
         .run()
 
-      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
     }
   }
 

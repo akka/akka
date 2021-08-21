@@ -8,13 +8,13 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.delivery.ConsumerController.DeliverThenStop
 import akka.actor.typed.delivery.internal.ConsumerControllerImpl
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.serialization.SerializationExtension
+import akka.testkit.GHExcludeTest
 
 class ConsumerControllerSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.parseString("""
@@ -473,7 +473,8 @@ class ConsumerControllerSpec
       testKit.stop(consumerController)
     }
 
-    "send Ack when stopped" in {
+    // Excluded fo GHActions. See https://github.com/akka/akka/issues/30430
+    "send Ack when stopped" taggedAs GHExcludeTest in {
       nextId()
       val consumerController =
         spawn(ConsumerController[TestConsumer.Job](), s"consumerController-${idCount}")

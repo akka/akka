@@ -10,11 +10,14 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import org.scalatest.BeforeAndAfterEach
-
-import akka.actor.{ Actor, Props }
 import akka.actor.ActorRef
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
+import akka.actor.Actor
+import akka.actor.Props
+import akka.testkit.AkkaSpec
+import akka.testkit.GHExcludeTest
+import akka.testkit.ImplicitSender
+import akka.testkit.TestLatch
+import org.scalatest.BeforeAndAfterEach
 
 object BalancingSpec {
   val counter = new AtomicInteger(1)
@@ -85,6 +88,7 @@ class BalancingSpec extends AkkaSpec("""
     val replies1 = receiveN(iterationCount - poolSize + 1)
     // all replies from the unblocked worker so far
     replies1.toSet should be(Set(1))
+    log.warning(lastSender.toString)
     expectNoMessage(1.second)
 
     latch.open()
@@ -105,14 +109,14 @@ class BalancingSpec extends AkkaSpec("""
       test(pool, latch)
     }
 
-    "deliver messages in a balancing fashion when defined in config" in {
+    "deliver messages in a balancing fashion when defined in config" taggedAs GHExcludeTest in {
       val latch = TestLatch(poolSize)
       val pool =
         system.actorOf(FromConfig().props(routeeProps = Props(classOf[Worker], latch)), name = "balancingPool-2")
       test(pool, latch)
     }
 
-    "deliver messages in a balancing fashion when overridden in config" in {
+    "deliver messages in a balancing fashion when overridden in config" taggedAs GHExcludeTest in {
       val latch = TestLatch(poolSize)
       val pool =
         system.actorOf(BalancingPool(1).props(routeeProps = Props(classOf[Worker], latch)), name = "balancingPool-3")

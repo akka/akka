@@ -168,7 +168,8 @@ class LazySinkSpec extends StreamSpec("""
         .addAttributes(myAttributes)
         .run()
 
-      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute should contain(MyAttribute())
     }
   }
 

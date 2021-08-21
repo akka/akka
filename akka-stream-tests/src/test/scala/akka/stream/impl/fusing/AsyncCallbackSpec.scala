@@ -38,7 +38,7 @@ class AsyncCallbackSpec extends AkkaSpec("""
     val shape = FlowShape(in, out)
 
     def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, AsyncCallback[AnyRef]) = {
-      val logic = new GraphStageLogic(shape) {
+      val logic: GraphStageLogic { val callback: AsyncCallback[AnyRef] } = new GraphStageLogic(shape) {
         val callback = getAsyncCallback((whatever: AnyRef) => {
           whatever match {
             case t: Throwable     => throw t
@@ -245,7 +245,7 @@ class AsyncCallbackSpec extends AkkaSpec("""
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-          val logic = new GraphStageLogic(shape) {
+          val logic: GraphStageLogic { val callbacks: Set[AsyncCallback[AnyRef]] } = new GraphStageLogic(shape) {
             val callbacks = (0 to 10).map(_ => getAsyncCallback[AnyRef](probe ! _)).toSet
             setHandler(out, new OutHandler {
               def onPull(): Unit = ()

@@ -11,13 +11,13 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
-
 import scala.annotation.nowarn
-import com.typesafe.config.{ Config, ConfigFactory }
 
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import akka.persistence.PersistentActorSpec._
 import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
+import org.scalatest.concurrent.Eventually
 
 object PersistentActorSpec {
 
@@ -944,7 +944,7 @@ object PersistentActorSpec {
   }
 }
 
-abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
+abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender with Eventually {
 
   import PersistentActorSpec._
 
@@ -1210,13 +1210,19 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(5)
     }
     "be able to opt-out from stashing messages until all events have been processed" in {
-      val persistentActor = asyncPersistPersistentActor
-      persistentActor ! Cmd("x")
-      persistentActor ! Cmd("y")
-      expectMsg("x")
-      expectMsg("y") // "y" command was processed before event persisted
-      expectMsg("x-1")
-      expectMsg("y-2")
+      // There's a race between "y" and "x-1", but only if we receive "y" we will prove
+      // that commands are processed before events have been persisted. Therefore, we
+      // retry until eventually...
+      eventually {
+        val probe = TestProbe()
+        val persistentActor = asyncPersistPersistentActor
+        probe.send(persistentActor, Cmd("x"))
+        probe.send(persistentActor, Cmd("y"))
+        probe.expectMsg("x")
+        probe.expectMsg("y") // "y" command was processed before event persisted
+        probe.expectMsg("x-1")
+        probe.expectMsg("y-2")
+      }
     }
     "support multiple persistAsync calls for one command, and execute them 'when possible', not hindering command processing" in {
       val persistentActor = asyncPersistThreeTimesPersistentActor
@@ -1419,13 +1425,18 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       test(deferringSyncWithAsyncPersistActor)
     }
     "handle new messages before deferAsync handler is called" in {
-      val persistentActor = deferringAsyncActor
-      persistentActor ! Cmd("x")
-      persistentActor ! Cmd("y")
-      expectMsg("x")
-      expectMsg("y") // "y" command was processed before event persisted
-      expectMsg("x-defer")
-      expectMsg("y-defer")
+      // Depending on timing, 'x-defer' might arrive before or after 'y'.
+      // This test is meant to demonstrate that 'x-defer' *may* arrive later.'
+      eventually {
+        val probe = TestProbe()
+        val persistentActor = deferringAsyncActor
+        probe.send(persistentActor, Cmd("x"))
+        probe.send(persistentActor, Cmd("y"))
+        probe.expectMsg("x")
+        probe.expectMsg("y") // "y" command was processed before event persisted
+        probe.expectMsg("x-defer")
+        probe.expectMsg("y-defer")
+      }
     }
     "handle defer sequentially" in {
       val persistentActor = deferringSyncActor

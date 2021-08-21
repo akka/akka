@@ -51,7 +51,7 @@ class MaterializerStateSpec extends StreamSpec {
 
     "snapshot a running stream that includes a TLSActor" in {
       Source.never
-        .via(Tcp().outgoingConnectionWithTls(InetSocketAddress.createUnresolved("akka.io", 443), () => {
+        .via(Tcp(system).outgoingConnectionWithTls(InetSocketAddress.createUnresolved("akka.io", 443), () => {
           val engine = SSLContext.getDefault.createSSLEngine("akka.io", 443)
           engine.setUseClientMode(true)
           engine

@@ -27,7 +27,7 @@ class GraphMatValueSpec extends StreamSpec {
     "expose the materialized value as source" in {
       val sub = TestSubscriber.manualProbe[Int]()
       val f = RunnableGraph
-        .fromGraph(GraphDSL.create(foldSink) { implicit b => fold =>
+        .fromGraph(GraphDSL.createGraph(foldSink) { implicit b => fold =>
           Source(1 to 10) ~> fold
           b.materializedValue.mapAsync(4)(identity) ~> Sink.fromSubscriber(sub)
           ClosedShape
@@ -45,7 +45,7 @@ class GraphMatValueSpec extends StreamSpec {
       val sub = TestSubscriber.manualProbe[Int]()
 
       val f = RunnableGraph
-        .fromGraph(GraphDSL.create(foldSink) { implicit b => fold =>
+        .fromGraph(GraphDSL.createGraph(foldSink) { implicit b => fold =>
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
           Source(1 to 10) ~> fold
           b.materializedValue.mapAsync(4)(identity) ~> zip.in0
@@ -64,7 +64,7 @@ class GraphMatValueSpec extends StreamSpec {
     }
 
     // Exposes the materialized value as a stream value
-    val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source.fromGraph(GraphDSL.create(foldSink) {
+    val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source.fromGraph(GraphDSL.createGraph(foldSink) {
       implicit b => fold =>
         Source(1 to 10) ~> fold
         SourceShape(b.materializedValue)
@@ -83,7 +83,7 @@ class GraphMatValueSpec extends StreamSpec {
     }
 
     "work properly with nesting and reusing" in {
-      val compositeSource1 = Source.fromGraph(GraphDSL.create(foldFeedbackSource, foldFeedbackSource)(Keep.both) {
+      val compositeSource1 = Source.fromGraph(GraphDSL.createGraph(foldFeedbackSource, foldFeedbackSource)(Keep.both) {
         implicit b => (s1, s2) =>
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
 
@@ -92,7 +92,7 @@ class GraphMatValueSpec extends StreamSpec {
           SourceShape(zip.out)
       })
 
-      val compositeSource2 = Source.fromGraph(GraphDSL.create(compositeSource1, compositeSource1)(Keep.both) {
+      val compositeSource2 = Source.fromGraph(GraphDSL.createGraph(compositeSource1, compositeSource1)(Keep.both) {
         implicit b => (s1, s2) =>
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
           s1.out ~> zip.in0
@@ -111,18 +111,20 @@ class GraphMatValueSpec extends StreamSpec {
     }
 
     "work also when the source’s module is copied" in {
-      val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(foldSink) { implicit builder => fold =>
-        FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
+      val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.createGraph(foldSink) {
+        implicit builder => fold =>
+          FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
       })
 
       Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)
     }
 
     "work also when the source’s module is copied and the graph is extended before using the matValSrc" in {
-      val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(foldSink) { implicit builder => fold =>
-        val map = builder.add(Flow[Future[Int]].mapAsync(4)(identity))
-        builder.materializedValue ~> map
-        FlowShape(fold.in, map.outlet)
+      val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.createGraph(foldSink) {
+        implicit builder => fold =>
+          val map = builder.add(Flow[Future[Int]].mapAsync(4)(identity))
+          builder.materializedValue ~> map
+          FlowShape(fold.in, map.outlet)
       })
 
       Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)
@@ -135,7 +137,7 @@ class GraphMatValueSpec extends StreamSpec {
         Source.empty.mapMaterializedValue(_ => done = true) ~> Sink.ignore
         ClosedShape
       }
-      val r = RunnableGraph.fromGraph(GraphDSL.create(Sink.ignore) { implicit b => (s) =>
+      val r = RunnableGraph.fromGraph(GraphDSL.createGraph(Sink.ignore) { implicit b => (s) =>
         b.add(g)
         Source(1 to 10) ~> s
         ClosedShape
@@ -267,7 +269,7 @@ class GraphMatValueSpec extends StreamSpec {
       val matGen = new AtomicInteger(0)
       val source = Source.empty[Int].mapMaterializedValue(_ => matGen.incrementAndGet())
 
-      val graph = Source.fromGraph(GraphDSL.create(source) { implicit b => s =>
+      val graph = Source.fromGraph(GraphDSL.createGraph(source) { implicit b => s =>
         import GraphDSL.Implicits._
         val merge = b.add(Merge[Int](2))
 

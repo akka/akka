@@ -337,15 +337,21 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         es.subscribe(target, classOf[A]) should ===(true)
         fishForDebugMessage(a2, s"unsubscribing $target from all channels")
 
-        es.subscribe(target, classOf[A]) should ===(true)
+        awaitAssert {
+          es.subscribe(target, classOf[A]) should ===(true)
+        }
         fishForDebugMessage(a2, s"unsubscribing $target from all channels")
       } finally {
         shutdown(sys)
       }
     }
 
-    "not allow initializing a TerminatedUnsubscriber twice" in {
-      val sys = ActorSystem("MustNotAllowDoubleInitOfTerminatedUnsubscriber", config)
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/18630
+    "not allow initializing a TerminatedUnsubscriber twice" taggedAs GHExcludeTest in {
+      val sys = ActorSystem(
+        "MustNotAllowDoubleInitOfTerminatedUnsubscriber",
+        // debug loglevel to diagose #18630
+        ConfigFactory.parseString("akka.loglevel = debug").withFallback(ConfigFactory.load()))
       // initializes an TerminatedUnsubscriber during start
 
       try {

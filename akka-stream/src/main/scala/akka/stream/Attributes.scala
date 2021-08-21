@@ -499,7 +499,9 @@ object Attributes {
      * nested flow materialization.
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
-    val EagerCancellation = new NestedMaterializationCancellationPolicy(false)
+    val EagerCancellation = new NestedMaterializationCancellationPolicy(false) {
+      override def toString: String = "EagerCancellation"
+    }
 
     /**
      * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
@@ -507,7 +509,9 @@ object Attributes {
      * nested flow materialization. Once the nested flow is materialized it will be cancelled immediately.
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
-    val PropagateToNested = new NestedMaterializationCancellationPolicy(true)
+    val PropagateToNested = new NestedMaterializationCancellationPolicy(true) {
+      override def toString: String = "PropagateToNested"
+    }
 
     /**
      * Default [[NestedMaterializationCancellationPolicy]],

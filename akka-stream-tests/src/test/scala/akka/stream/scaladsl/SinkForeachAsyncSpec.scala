@@ -236,12 +236,12 @@ class SinkForeachAsyncSpec extends StreamSpec {
             Future {
               if (n == 3) {
                 // Error will happen only after elements 1, 2 has been processed
-                errorLatch.await(5, TimeUnit.SECONDS)
+                await(errorLatch)
                 throw new RuntimeException("err2") with NoStackTrace
               } else {
                 probe.ref ! n
                 errorLatch.countDown()
-                element4Latch.await(5, TimeUnit.SECONDS) // Block element 4, 5, 6, ... from entering
+                await(element4Latch) // Block element 4, 5, 6, ... from entering
               }
             }
           })
@@ -254,4 +254,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
 
     a[RuntimeException] must be thrownBy Await.result(p, 3.seconds)
   }
+
+  def await(latch: CountDownLatch): Unit =
+    latch.await(5, TimeUnit.SECONDS)
 }

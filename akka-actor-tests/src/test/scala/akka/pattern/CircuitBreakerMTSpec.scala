@@ -82,7 +82,8 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       result.toSet should ===(Set("succeed", "CBO"))
     }
 
-    "recover and reset the breaker after the reset timeout" in {
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30476
+    "recover and reset the breaker after the reset timeout" taggedAs GHExcludeTest in {
       val halfOpenLatch = new TestLatch(1)
       breaker.onHalfOpen(halfOpenLatch.countDown())
       openBreaker()

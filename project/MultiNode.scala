@@ -74,7 +74,7 @@ object MultiNode extends AutoPlugin {
       MultiJvm / jvmOptions := defaultMultiJvmOptions,
       MultiJvm / scalacOptions := (Test / scalacOptions).value,
       multiJvmCreateLogger / logLevel := Level.Debug, //  to see ssh establishment
-      MultiJvm / assembly / assemblyMergeStrategy  := {
+      MultiJvm / assembly / assemblyMergeStrategy := {
         case n if n.endsWith("logback-test.xml")                => MergeStrategy.first
         case n if n.toLowerCase.matches("meta-inf.*\\.default") => MergeStrategy.first
         case n                                                  => (MultiJvm / assembly / assemblyMergeStrategy).value.apply(n)

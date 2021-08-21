@@ -29,7 +29,8 @@ object Dependencies {
 
   val scala212Version = "2.12.14"
   val scala213Version = "2.13.6"
-  val scala3Version = "3.0.2-RC1"
+  // To get the fix for https://github.com/lampepfl/dotty/issues/13106
+  val scala3Version = "3.0.3-RC1-bin-20210802-814fca6-NIGHTLY"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -136,7 +137,7 @@ object Dependencies {
 
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
-      val commonsIo = "commons-io" % "commons-io" % "2.10.0" % "test" // ApacheV2
+      val commonsIo = "commons-io" % "commons-io" % "2.11.0" % "test" // ApacheV2
       val commonsCodec = "commons-codec" % "commons-codec" % "1.15" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
@@ -162,8 +163,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.24" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.24" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.25" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.25" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
@@ -300,15 +301,15 @@ object Dependencies {
         lz4Java,
         Test.junit,
         Test.scalatest) ++
-    (if (getScalaVersion() == scala3Version)
-      // jackson-module-scala is only available for Scala 3 from 2.13.0 onwards.
-      // since we don't depend on it ourselves, but provide it as a transitive
-      // dependency for convenience, we can leave it out for Scala 3 for now,
-      // and depend on 2.13.0-rc1 for our tests. Eventually we should consider
-      // whether to update all jackson artifacts for Scala 3.
-      Seq("com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0-rc1" % "test")
-    else
-      Seq(jacksonScala))
+      (if (getScalaVersion() == scala3Version)
+         // jackson-module-scala is only available for Scala 3 from 2.13.0 onwards.
+         // since we don't depend on it ourselves, but provide it as a transitive
+         // dependency for convenience, we can leave it out for Scala 3 for now,
+         // and depend on 2.13.0-rc1 for our tests. Eventually we should consider
+         // whether to update all jackson artifacts for Scala 3.
+         Seq("com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0-rc1" % "test")
+       else
+         Seq(jacksonScala))
 
   val osgi = l ++= Seq(
         osgiCore,

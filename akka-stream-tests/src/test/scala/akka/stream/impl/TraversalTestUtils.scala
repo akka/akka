@@ -43,7 +43,8 @@ object TraversalTestUtils {
   class LinearTestSource extends AtomicModule[SourceShape[Any], Any] {
     val out = Outlet[Any]("testSource.out")
     override val shape: Shape = SourceShape(out)
-    override val traversalBuilder = LinearTraversalBuilder.fromModule(this, Attributes.name("testSource"))
+    override val traversalBuilder: LinearTraversalBuilder =
+      LinearTraversalBuilder.fromModule(this, Attributes.name("testSource"))
 
     override def withAttributes(attributes: Attributes): AtomicModule[SourceShape[Any], Any] = ???
     override def toString = "TestSource"
@@ -52,7 +53,8 @@ object TraversalTestUtils {
   class LinearTestSink extends AtomicModule[SinkShape[Any], Any] {
     val in = Inlet[Any]("testSink.in")
     override val shape: Shape = SinkShape(in)
-    override val traversalBuilder = LinearTraversalBuilder.fromModule(this, Attributes.name("testSink"))
+    override val traversalBuilder: LinearTraversalBuilder =
+      LinearTraversalBuilder.fromModule(this, Attributes.name("testSink"))
 
     override def withAttributes(attributes: Attributes): AtomicModule[SinkShape[Any], Any] = ???
     override def toString = "TestSink"
@@ -62,7 +64,8 @@ object TraversalTestUtils {
     val in = Inlet[Any](s"testFlow$tag.in")
     val out = Outlet[Any](s"testFlow$tag.out")
     override val shape: Shape = FlowShape(in, out)
-    override val traversalBuilder = LinearTraversalBuilder.fromModule(this, Attributes.name(s"testFlow$tag"))
+    override val traversalBuilder: LinearTraversalBuilder =
+      LinearTraversalBuilder.fromModule(this, Attributes.name(s"testFlow$tag"))
 
     override def withAttributes(attributes: Attributes): AtomicModule[FlowShape[Any, Any], Any] = ???
     override def toString = s"TestFlow$tag"

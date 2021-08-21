@@ -43,11 +43,6 @@ When releasing from Windows, you need MinGW and a gpg distribution such as Gpg4W
 Make sure you have set `core.autocrlf` to `false` in your `~/.gitconfig`,
 otherwise git might convert line endings in some cases.
 
-### Whitesource
-
-Make sure you have the Lightbend Whitesource credentials configured in
-your `~/.sbt/1.0/private-credentials.sbt`.
-
 ### Install Graphviz
 
 [Graphvis](https://graphviz.gitlab.io/download/) is needed for the 
@@ -66,19 +61,23 @@ sonatype.
 
 It is possible to release a revised documentation to the already existing release.
 
-1. Create a new branch from a release tag. If a revised documentation is for the `v2.6.4` release, then the name of the new branch should be `docs/v2.6.4`.
+1. Create a new branch from a release tag. If a revised documentation is for the `v2.6.4` release, then the name of the new branch should be `docs/v2.6.4`:
+    ```
+    $ git checkout v2.6.4
+    $ git checkout -b docs/v2.6.4
+    ```
 1. Add and commit `version.sbt` file that pins the version to the one that is being revised. Also set `isSnapshot` to `false` for the stable documentation links. For example:
     ```scala
     ThisBuild / version := "2.6.4"
     ThisBuild / isSnapshot := false
     ```
-1. Make all of the required changes to the documentation.
+1. Switch to a new branch for your documentation change, make the change
 1. Build documentation locally with:
     ```sh
     sbt akka-docs/paradoxBrowse
     ```
-1. If the generated documentation looks good, send it to Gustav:
+1. If the generated documentation looks good, create a PR to the `docs/v2.6.4` branch you created earlier:
     ```sh
     sbt akka-docs/publishRsync
     ```
-1. Do not forget to push the new branch back to GitHub.
+1. It should automatically be published by GitHub Actions on merge.

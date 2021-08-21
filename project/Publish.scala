@@ -7,7 +7,6 @@ package akka
 import sbt._
 import sbt.Keys._
 import java.io.File
-import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncHost
 import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
@@ -58,5 +57,5 @@ object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
   override def projectSettings =
-    Seq(publish / skip := true, Compile / doc / sources := Seq.empty, whitesourceIgnore := true)
+    Seq(publish / skip := true, Compile / doc / sources := Seq.empty)
 }

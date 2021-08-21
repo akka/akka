@@ -241,7 +241,7 @@ class GraphUnzipWithSpec extends StreamSpec("""
 
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val unzip = b.add(UnzipWith((a: Person) => Person.unapply(a).get))
+          val unzip = b.add(UnzipWith((a: Person) => (a.name, a.surname, a.int)))
 
           Source.single(Person("Caplin", "Capybara", 3)) ~> unzip.in
 

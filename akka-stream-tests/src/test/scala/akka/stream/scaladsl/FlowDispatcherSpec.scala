@@ -20,7 +20,7 @@ class FlowDispatcherSpec extends StreamSpec(s"my-dispatcher = $${akka.test.strea
       settings: ActorMaterializerSettings = defaultSettings,
       dispatcher: String = "akka.test.stream-dispatcher") = {
 
-    implicit val materializer = ActorMaterializer(settings)
+    implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
     val probe = TestProbe()
     Source(List(1, 2, 3)).map(i => { probe.ref ! Thread.currentThread().getName(); i }).to(Sink.ignore).run()

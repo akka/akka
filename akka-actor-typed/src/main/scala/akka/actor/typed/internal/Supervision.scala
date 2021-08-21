@@ -84,12 +84,20 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
     } catch handleSignalException(ctx, target)
   }
 
-  def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
+  def log(ctx: TypedActorContext[_], t: Throwable): Unit =
+    log(ctx, t, errorCount = -1)
+
+  def log(ctx: TypedActorContext[_], t: Throwable, errorCount: Int): Unit = {
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
-      val logMessage = s"Supervisor $this saw failure: ${unwrapped.getMessage}"
+      val errorCountStr = if (errorCount >= 0) s" [$errorCount]" else ""
+      val logMessage = s"Supervisor $this saw failure$errorCountStr: ${unwrapped.getMessage}"
       val logger = ctx.asScala.log
-      strategy.logLevel match {
+      val logLevel = strategy match {
+        case b: Backoff => if (errorCount > b.criticalLogLevelAfter) b.criticalLogLevel else strategy.logLevel
+        case _          => strategy.logLevel
+      }
+      logLevel match {
         case Level.ERROR => logger.error(logMessage, unwrapped)
         case Level.WARN  => logger.warn(logMessage, unwrapped)
         case Level.INFO  => logger.info(logMessage, unwrapped)
@@ -313,7 +321,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
         strategy match {
           case _: Restart => throw t
           case _: Backoff =>
-            log(ctx, t)
+            log(ctx, t, restartCount + 1)
             BehaviorImpl.failed(t)
         }
 
@@ -328,7 +336,10 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
   }
 
   private def prepareRestart(ctx: TypedActorContext[Any], reason: Throwable): Behavior[T] = {
-    log(ctx, reason)
+    strategy match {
+      case _: Backoff => log(ctx, reason, restartCount + 1)
+      case _: Restart => log(ctx, reason)
+    }
 
     val currentRestartCount = restartCount
     updateRestartCount()

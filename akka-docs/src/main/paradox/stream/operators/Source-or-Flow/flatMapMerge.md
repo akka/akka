@@ -16,7 +16,7 @@ request any more elements meaning that it back pressures until one of the existi
 Order of the elements for each `Source` is preserved but there is no deterministic order between elements from
 different active `Source`s.
 
-See also: @ref:[flatMapConcat](flatMapConcat.md)
+See also: @ref:[flatMapConcat](flatMapConcat.md), @ref:[mapConcat](mapConcat.md)
 
 ## Example
 

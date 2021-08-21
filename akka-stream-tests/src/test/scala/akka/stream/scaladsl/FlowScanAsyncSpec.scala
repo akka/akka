@@ -202,7 +202,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
         val expectedMessage = ReactiveStreamsCompliance.ElementMustNotBeNullMsg
         val elements = "null" :: Nil
         val actual = whenNullElement(elements, "").expectError()
-        assert(actual.getClass === classOf[NullPointerException])
+        actual.getClass should ===(classOf[NullPointerException])
         assert(actual.getMessage === expectedMessage)
       }
     }
