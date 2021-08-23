@@ -1,4 +1,4 @@
-name: PRValidation Workflow
+name: Pull Requests
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   check-code-style:
-    name: Checks
+    name: Check / Code Style
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -32,8 +32,6 @@ jobs:
 
       - name: Code style check
         run: |-
-          # MiMa is disabled in GHActions because it's already covered in Travis builds (travis runs for multiple scala versions)
-          # FIXME move MiMa checks to GHActions
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
           -Dakka.ci-server=true \
@@ -43,10 +41,10 @@ jobs:
           -Dsbt.override.build.repos=false \
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
-          scalafmtCheckAll scalafmtSbtCheck
+          scalafmtCheckAll scalafmtSbtCheck headerCheckAll
 
-  Check-Publish:
-    name: Check publishing locally
+  check-publish:
+    name: Check / Publish Local
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -79,8 +77,8 @@ jobs:
           publishLocal publishM2
 
 
-  PR-Validation:
-    name: PR Validation
+  pull-request-validation:
+    name: Check / Tests
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -97,8 +95,7 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-      - name: Akka validatePR
-        # FIXME: Change this to validatePullRequest
+      - name: sbt validatePullRequest
         run: |-
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
@@ -111,7 +108,7 @@ jobs:
           -Dakka.test.multi-node=false \
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
-          Test/compile
+          validateCompile validatePullRequest
 
 ## https://github.com/akka/akka/issues/30459
 ## if success
