@@ -11,6 +11,8 @@ import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 
+import scala.concurrent.duration._
+
 object Paradox {
 
   val propertiesSettings = Seq(
@@ -69,11 +71,14 @@ object Paradox {
 
   val groupsSettings = Seq(Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")))
 
+  val parsingSettings = Seq(Compile / paradoxParsingTimeout := 5.seconds)
+
   val settings =
     propertiesSettings ++
     rootsSettings ++
     includesSettings ++
     groupsSettings ++
+    parsingSettings ++
     Seq(
       Compile / paradox / name := "Akka",
       resolvers += Resolver.jcenterRepo,
