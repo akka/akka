@@ -47,6 +47,7 @@ object AkkaValidatePullRequest extends AutoPlugin {
       ValidatePR / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
       ValidatePR / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
       ValidatePR / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
+      ValidatePR / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "gh-exclude"),
       // make it fork just like regular test running
       ValidatePR / fork := (Test / fork).value,
       ValidatePR / testGrouping := (Test / testGrouping).value,
