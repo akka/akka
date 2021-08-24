@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2011-2012 Typesafe Inc. <http://www.typesafe.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package com.typesafe.sbt.multijvm
 
 import java.io.File
