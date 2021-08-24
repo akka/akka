@@ -3,8 +3,8 @@ NUM_OF_NODES=$1
 DEST_HOST_FILE=$2
 TMP_DIR=.tmp
 
-kubectl delete deployments,services -l app=multi-node-test | true
-kubectl wait --for=condition=Ready pods --all | true
+# kubectl delete deployments,services -l app=multi-node-test | true
+# kubectl wait --for=condition=Ready pods --all | true
 
 rm -rf ${TMP_DIR}
 mkdir -p ${TMP_DIR}
@@ -20,6 +20,6 @@ done
 
 kubectl apply -f ${TMP_DIR}
 
-# TODO: check timeouts
-kubectl wait deploy/test-node1 --for condition=available --timeout=60s | true
-kubectl wait --for=condition=Ready pods  --timeout=120s --all | true
+# TODO: re-enable me
+# kubectl wait deploy/test-node1 --for condition=available --timeout=60s | true
+# kubectl wait --for=condition=Ready pods  --timeout=120s --all | true
