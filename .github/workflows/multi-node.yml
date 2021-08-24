@@ -41,7 +41,7 @@ jobs:
           driver: docker
       - name: Setup Pods
         run: |
-          ./kubernetes/setup.sh 5 ../multi-node-test.hosts
+          ./kubernetes/setup.sh 5 ../multi-node-test.hosts | true
       - name: Multi node test
         env:
           JOB_ID: ${{ github.run_id }}
