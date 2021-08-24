@@ -4,8 +4,6 @@ DEST_HOST_FILE=$2
 TMP_DIR=.tmp
 
 kubectl delete deployments,services -l app=multi-node-test | true
-# TODO: wait for a proper condition
-sleep 10
 
 rm -rf ${TMP_DIR}
 mkdir -p ${TMP_DIR}
@@ -20,9 +18,7 @@ do
 done
 
 kubectl apply -f ${TMP_DIR}
-# TODO: wait for a proper condition
-sleep 10
 
-# TODO: re-enable me
-kubectl wait deploy/test-node1 --for condition=available --timeout=60s | true
-kubectl wait --for=condition=Ready pods  --timeout=120s --all | true
+# TODO: conditions are hanging in CI
+# kubectl wait deploy/test-node1 --for condition=available --timeout=60s | true
+# kubectl wait --for=condition=Ready pods  --timeout=120s --all | true
