@@ -37,7 +37,7 @@ jobs:
           ./kubernetes/create-cluster-gke.sh "akka-multi-node-${GITHUB_RUN_ID}"
       - name: Setup Pods
         run: |
-          ./kubernetes/setup.sh 5 multi-node-test.hosts
+          ./kubernetes/setup.sh 10 multi-node-test.hosts
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
         with:
