@@ -31,6 +31,8 @@ jobs:
       - name: Setup Pods
         run: |
           ./kubernetes/setup.sh 5 multi-node-test.hosts
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
         with:
