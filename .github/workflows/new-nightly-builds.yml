@@ -1,0 +1,66 @@
+# FIXME move jobs to `nightly-builds.yml`. This exists only to test the jobs in the pull request
+name: PR Nightly Builds
+
+on:
+  pull_request:
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  akka-classic-cluster-tests:
+    name: Artery Cluster
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        command:
+          - "akka-cluster/test"
+          - "akka-distributed-data/test"
+          - "akka-cluster-tools/test"
+          - "akka-cluster-sharding/test"
+          - "akka-cluster-metrics/test"
+          - "akka-cluster-typed/test"
+          - "akka-cluster-sharding-typed/test"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: sbt ${{ matrix.command }}
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -J-Xss2m \
+          -J-XX:ReservedCodeCacheSize=128m \
+          -Djava.security.egd=file:/dev/./urandom \
+          -Dakka.remote.artery.enabled=off \
+          -Dsbt.ivy.home=/localhome/jenkinsakka/.ivy2 \
+          -Dakka.test.timefactor=1 \
+          -Dakka.cluster.assert=on \
+          -Dakka.test.multi-node=true \
+          -Dakka.test.multi-node.targetDirName=${PWD}/target/${JOB_ID} \
+          -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
+          -Dmultinode.XX:MaxDirectMemorySize=256m \
+          -Dmultinode.XX:MetaspaceSize=128M \
+          -Dmultinode.XX:+UseCompressedOops \
+          -Dmultinode.Xms256M \
+          -Dmultinode.Xmx512M \
+          -Dmultinode.XX:+PrintGCDetails \
+          -Dmultinode.XX:+PrintGCTimeStamps \
+          clean ${{ matrix.command }}
+
+# FIXME delete later
+# Jenkins JVM Flags  -Dmultinode.XX:MaxDirectMemorySize=256m -Xss2m -XX:ReservedCodeCacheSize=128m -Djava.security.egd=file:/dev/./urandom
+# Jenkins sbt Flags  -Dakka.remote.artery.enabled=off -Dakka.ci-server=true -Dsbt.ivy.home=/localhome/jenkinsakka/.ivy2 -Dakka.build.M2Dir=/localhome/jenkinsakka/.m2/repository -Dakka.test.timefactor=1 -Dakka.cluster.assert=on -Dakka.publish.credentials=/home/jenkinsakka/.sbt/moxie-nexus.credentials -Dakka.test.multi-node=true -Dakka.test.multi-node.targetDirName=/localhome/akka/${JOB_NAME} -Dakka.test.multi-node.java=/usr/lib/jvm/jdk8u192-b12/bin/java -Dmultinode.XX:MetaspaceSize=128M -Dmultinode.XX:+UseCompressedOops -Dmultinode.Xms256M -Dmultinode.Xmx512M -Dmultinode.XX:+PrintGCDetails -Dmultinode.XX:+PrintGCTimeStamps
+# Jenkins Actions    clean akka-cluster/test akka-distributed-data/test akka-cluster-tools/test akka-cluster-sharding/test akka-cluster-metrics/test akka-cluster-typed/test akka-cluster-sharding-typed/test
