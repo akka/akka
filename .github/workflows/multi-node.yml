@@ -71,7 +71,6 @@ jobs:
             -Dmultinode.XX:+UseCompressedOops \
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx512M \
-            -Dmultinode.server-port=4711 \
             ${{ matrix.project }}/multiNodeTest
       # - name: Email on failure
       #   if: ${{ failure() }}
