@@ -25,6 +25,11 @@ jobs:
           java-version: adopt@1.11.0-9
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
+      - name: Hack Multi-Jvm
+        run: |
+          git clone --branch multi-node-on-k8s --depth 1 https://github.com/andreaTP/sbt-multi-jvm.git
+          cd sbt-multi-jvm
+          sbt publishLocal
       - name: Install Kubectl
         run: |
           sudo snap install kubectl --classic
@@ -34,11 +39,6 @@ jobs:
           minikube version: 'v1.21.0'
           kubernetes version: 'v1.21.0'
           driver: docker
-      - name: Hack Multi-Jvm
-        run: |
-          git clone --branch multi-node-on-k8s --depth 1 https://github.com/andreaTP/sbt-multi-jvm.git
-          cd sbt-multi-jvm
-          sbt "^^ 1.5.5; publishLocal"
       - name: Setup Pods
         run: |
           ./kubernetes/setup.sh 5 ../multi-node-test.hosts
