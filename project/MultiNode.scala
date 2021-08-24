@@ -6,7 +6,7 @@ package akka
 
 import akka.TestExtras.Filter.Keys._
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.multiJvmCreateLogger
-import com.typesafe.sbt.{MultiJvmPlugin => SbtMultiJvm}
+import com.typesafe.sbt.{ MultiJvmPlugin => SbtMultiJvm }
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys._
 import sbt.{ Def, _ }
 import sbt.Keys._

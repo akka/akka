@@ -1,10 +1,9 @@
 /**
  * Copyright (C) 2011-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-
 package com.typesafe.sbt
 
-import com.typesafe.sbt.multijvm.{Jvm, JvmLogger}
+import com.typesafe.sbt.multijvm.{ Jvm, JvmLogger }
 import scala.sys.process.Process
 import sjsonnew.BasicJsonProtocol._
 import sbt._
@@ -15,7 +14,7 @@ import java.lang.Boolean.getBoolean
 import scala.Console.{ GREEN, RESET }
 
 import sbtassembly.AssemblyPlugin.assemblySettings
-import sbtassembly.{MergeStrategy, AssemblyKeys}
+import sbtassembly.{ AssemblyKeys, MergeStrategy }
 import AssemblyKeys._
 
 object MultiJvmPlugin extends AutoPlugin {
@@ -23,7 +22,7 @@ object MultiJvmPlugin extends AutoPlugin {
   case class Options(jvm: Seq[String], extra: String => Seq[String], run: String => Seq[String])
 
   object MultiJvmKeys {
-    val MultiJvm = config("multi-jvm") extend(Test)
+    val MultiJvm = config("multi-jvm").extend(Test)
 
     val multiJvmMarker = SettingKey[String]("multi-jvm-marker")
 
@@ -66,7 +65,8 @@ object MultiJvmPlugin extends AutoPlugin {
     val multiNodeJavaName = SettingKey[String]("multi-node-java-name")
 
     // TODO fugly workaround for now
-    val multiNodeWorkAround = TaskKey[(String, (IndexedSeq[String], IndexedSeq[String]), String)]("multi-node-workaround")
+    val multiNodeWorkAround =
+      TaskKey[(String, (IndexedSeq[String], IndexedSeq[String]), String)]("multi-node-workaround")
   }
 
   val autoImport = MultiJvmKeys
@@ -82,84 +82,89 @@ object MultiJvmPlugin extends AutoPlugin {
   private[this] def noTestsMessage(scoped: ScopedKey[_])(implicit display: Show[ScopedKey[_]]): String =
     "No tests to run for " + display.show(scoped)
 
-  lazy val multiJvmSettings: Seq[Def.Setting[_]] = inConfig(MultiJvm)(Defaults.configSettings ++ internalMultiJvmSettings)
+  lazy val multiJvmSettings: Seq[Def.Setting[_]] =
+    inConfig(MultiJvm)(Defaults.configSettings ++ internalMultiJvmSettings)
 
   // https://github.com/sbt/sbt/blob/v0.13.15/main/actions/src/main/scala/sbt/Tests.scala#L296-L298
   private[this] def showResults(log: Logger, results: Tests.Output, noTestsMessage: => String): Unit =
-    TestResultLogger.Default.copy(printNoTests = TestResultLogger.const(_ info noTestsMessage))
-      .run(log, results, "")
+    TestResultLogger.Default.copy(printNoTests = TestResultLogger.const(_.info(noTestsMessage))).run(log, results, "")
 
   private def internalMultiJvmSettings = assemblySettings ++ Seq(
     multiJvmMarker := "MultiJvm",
     loadedTestFrameworks := (loadedTestFrameworks in Test).value,
     definedTests := Defaults.detectTests.value,
     multiJvmTests := collectMultiJvm(definedTests.value.map(_.name), multiJvmMarker.value),
-    multiJvmTestNames := (multiJvmTests.map(_.keys.toSeq) storeAs multiJvmTestNames triggeredBy compile).value,
+    multiJvmTestNames := multiJvmTests.map(_.keys.toSeq).storeAs(multiJvmTestNames).triggeredBy(compile).value,
     multiJvmApps := collectMultiJvm(discoveredMainClasses.value, multiJvmMarker.value),
-    multiJvmAppNames := (multiJvmApps.map(_.keys.toSeq) storeAs multiJvmAppNames triggeredBy compile).value,
+    multiJvmAppNames := multiJvmApps.map(_.keys.toSeq).storeAs(multiJvmAppNames).triggeredBy(compile).value,
     multiJvmJavaCommand := javaCommand(javaHome.value, "java"),
     jvmOptions := Seq.empty,
-    extraOptions := { (name: String) => Seq.empty },
-    multiJvmCreateLogger := { (name: String) => new JvmLogger(name) },
+    extraOptions := { (name: String) =>
+      Seq.empty
+    },
+    multiJvmCreateLogger := { (name: String) =>
+      new JvmLogger(name)
+    },
     scalatestRunner := "org.scalatest.tools.Runner",
     scalatestOptions := defaultScalatestOptions,
     scalatestClasspath := managedClasspath.value.filter(_.data.name.contains("scalatest")),
     multiRunCopiedClassLocation := new File(target.value, "multi-run-copied-libraries"),
-    scalatestScalaOptions := scalaOptionsForScalatest(scalatestRunner.value, scalatestOptions.value, fullClasspath.value, multiRunCopiedClassLocation.value),
+    scalatestScalaOptions := scalaOptionsForScalatest(
+        scalatestRunner.value,
+        scalatestOptions.value,
+        fullClasspath.value,
+        multiRunCopiedClassLocation.value),
     scalatestMultiNodeScalaOptions := scalaMultiNodeOptionsForScalatest(scalatestRunner.value, scalatestOptions.value),
     multiTestOptions := Options(jvmOptions.value, extraOptions.value, scalatestScalaOptions.value),
     multiNodeTestOptions := Options(jvmOptions.value, extraOptions.value, scalatestMultiNodeScalaOptions.value),
     appScalaOptions := scalaOptionsForApps(fullClasspath.value),
     connectInput := true,
     multiRunOptions := Options(jvmOptions.value, extraOptions.value, appScalaOptions.value),
-
     executeTests := multiJvmExecuteTests.value,
     testOnly := multiJvmTestOnly.evaluated,
     test := showResults(streams.value.log, executeTests.value, "No tests to run for MultiJvm"),
     run := multiJvmRun.evaluated,
     runMain := multiJvmRun.evaluated,
-
     // TODO try to make sure that this is only generated on a need to have basis
     multiJvmTestJar := (assemblyOutputPath in assembly).map(_.getAbsolutePath).dependsOn(assembly).value,
     multiJvmTestJarName := (assemblyOutputPath in assembly).value.getAbsolutePath,
-
     multiNodeTest := {
       implicit val display = Project.showContextKey(state.value)
-      showResults(streams.value.log, multiNodeExecuteTests.value, noTestsMessage(resolvedScoped.value)) },
+      showResults(streams.value.log, multiNodeExecuteTests.value, noTestsMessage(resolvedScoped.value))
+    },
     multiNodeExecuteTests := multiNodeExecuteTestsTask.value,
     multiNodeTestOnly := multiNodeTestOnlyTask.evaluated,
     multiNodeHosts := Seq.empty,
     multiNodeHostsFileName := "multi-node-test.hosts",
-    multiNodeProcessedHosts := processMultiNodeHosts(multiNodeHosts.value, multiNodeHostsFileName.value, multiNodeJavaName.value, streams.value),
+    multiNodeProcessedHosts := processMultiNodeHosts(
+        multiNodeHosts.value,
+        multiNodeHostsFileName.value,
+        multiNodeJavaName.value,
+        streams.value),
     multiNodeTargetDirName := "multi-node-test",
     multiNodeJavaName := "java",
     // TODO there must be a way get at keys in the tasks that I just don't get
     multiNodeWorkAround := (multiJvmTestJar.value, multiNodeProcessedHosts.value, multiNodeTargetDirName.value),
-
     // here follows the assembly parts of the config
     // don't run the tests when creating the assembly
     test in assembly := {},
-
     // we want everything including the tests and test frameworks
     fullClasspath in assembly := (fullClasspath in MultiJvm).value,
-
     // the first class wins just like a classpath
     // just concatenate conflicting text files
     assemblyMergeStrategy in assembly := {
-        case n if n.endsWith(".class") => MergeStrategy.first
-        case n if n.endsWith(".txt") => MergeStrategy.concat
-        case n if n.endsWith("NOTICE") => MergeStrategy.concat
-        case n => (assemblyMergeStrategy in assembly).value.apply(n)
+      case n if n.endsWith(".class") => MergeStrategy.first
+      case n if n.endsWith(".txt")   => MergeStrategy.concat
+      case n if n.endsWith("NOTICE") => MergeStrategy.concat
+      case n                         => (assemblyMergeStrategy in assembly).value.apply(n)
     },
-
     assemblyJarName in assembly := {
       name.value + "_" + scalaVersion.value + "-" + version.value + "-multi-jvm-assembly.jar"
-    }
-  )
+    })
 
   def collectMultiJvm(discovered: Seq[String], marker: String): Map[String, Seq[String]] = {
-    val found = discovered filter (_.contains(marker)) groupBy (multiName(_, marker))
-    found map {
+    val found = discovered.filter(_.contains(marker)).groupBy(multiName(_, marker))
+    found.map {
       case (key, values) =>
         val totalNodes = sys.props.get(marker + "." + key + ".nrOfNodes").getOrElse(values.size.toString).toInt
         val sortedClasses = values.sorted
@@ -181,16 +186,23 @@ object MultiJvmPlugin extends AutoPlugin {
     if (getBoolean("sbt.log.noformat")) Seq("-oW") else Seq("-o")
   }
 
-  def scalaOptionsForScalatest(runner: String, options: Seq[String], fullClasspath: Classpath, multiRunCopiedClassDir: File) = {
+  def scalaOptionsForScalatest(
+      runner: String,
+      options: Seq[String],
+      fullClasspath: Classpath,
+      multiRunCopiedClassDir: File) = {
     val directoryBasedClasspathEntries = fullClasspath.files.filter(_.isDirectory)
     // Copy over just the jars to this folder.
-    fullClasspath.files.filter(_.isFile).foreach(classpathFile => IO.copyFile(classpathFile, new File(multiRunCopiedClassDir, classpathFile.getName), true))
+    fullClasspath.files
+      .filter(_.isFile)
+      .foreach(classpathFile =>
+        IO.copyFile(classpathFile, new File(multiRunCopiedClassDir, classpathFile.getName), true))
     val cp = directoryBasedClasspathEntries.absString + File.pathSeparator + multiRunCopiedClassDir.getAbsolutePath + File.separator + "*"
     (testClass: String) => { Seq("-cp", cp, runner, "-s", testClass) ++ options }
   }
 
-  def scalaMultiNodeOptionsForScalatest(runner: String, options: Seq[String]) = {
-    (testClass: String) => { Seq(runner, "-s", testClass) ++ options }
+  def scalaMultiNodeOptionsForScalatest(runner: String, options: Seq[String]) = { (testClass: String) =>
+    { Seq(runner, "-s", testClass) ++ options }
   }
 
   def scalaOptionsForApps(classpath: Classpath) = {
@@ -199,39 +211,62 @@ object MultiJvmPlugin extends AutoPlugin {
   }
 
   def multiJvmExecuteTests: Def.Initialize[sbt.Task[Tests.Output]] = Def.task {
-    runMultiJvmTests(multiJvmTests.value, multiJvmMarker.value, multiJvmJavaCommand.value, multiTestOptions.value, sourceDirectory.value, multiJvmCreateLogger.value, streams.value.log)
+    runMultiJvmTests(
+      multiJvmTests.value,
+      multiJvmMarker.value,
+      multiJvmJavaCommand.value,
+      multiTestOptions.value,
+      sourceDirectory.value,
+      multiJvmCreateLogger.value,
+      streams.value.log)
   }
 
-  def multiJvmTestOnly: Def.Initialize[sbt.InputTask[Unit]] = InputTask.createDyn(
-    loadForParser(multiJvmTestNames)((s, i) => Defaults.testOnlyParser(s, i getOrElse Nil))
-  ) {
-    Def.task { case (selection, _extraOptions) =>
-      val s = streams.value
-      val options = multiTestOptions.value
-      val opts = options.copy(extra = (s: String) => { options.extra(s) ++ _extraOptions })
-      val filters = selection.map(GlobFilter(_))
-      val tests = multiJvmTests.value.filterKeys(name => filters.exists(_.accept(name)))
+  def multiJvmTestOnly: Def.Initialize[sbt.InputTask[Unit]] =
+    InputTask.createDyn(loadForParser(multiJvmTestNames)((s, i) => Defaults.testOnlyParser(s, i.getOrElse(Nil)))) {
       Def.task {
-        val results = runMultiJvmTests(tests, multiJvmMarker.value, multiJvmJavaCommand.value, opts, sourceDirectory.value, multiJvmCreateLogger.value, s.log)
-        showResults(s.log, results, "No tests to run for MultiJvm")
+        case (selection, _extraOptions) =>
+          val s = streams.value
+          val options = multiTestOptions.value
+          val opts = options.copy(extra = (s: String) => { options.extra(s) ++ _extraOptions })
+          val filters = selection.map(GlobFilter(_))
+          val tests = multiJvmTests.value.filterKeys(name => filters.exists(_.accept(name)))
+          Def.task {
+            val results = runMultiJvmTests(
+              tests,
+              multiJvmMarker.value,
+              multiJvmJavaCommand.value,
+              opts,
+              sourceDirectory.value,
+              multiJvmCreateLogger.value,
+              s.log)
+            showResults(s.log, results, "No tests to run for MultiJvm")
+          }
       }
     }
-  }
 
-  def runMultiJvmTests(tests: Map[String, Seq[String]], marker: String, javaBin: File, options: Options,
-                       srcDir: File, createLogger: String => Logger, log: Logger): Tests.Output = {
+  def runMultiJvmTests(
+      tests: Map[String, Seq[String]],
+      marker: String,
+      javaBin: File,
+      options: Options,
+      srcDir: File,
+      createLogger: String => Logger,
+      log: Logger): Tests.Output = {
     val results =
       if (tests.isEmpty)
         List()
-      else tests.map {
-        case (_name, classes) => multi(_name, classes, marker, javaBin, options, srcDir, false, createLogger, log)
-      }
-    Tests.Output(Tests.overall(results.map(_._2)), Map.empty, results.map(result => Tests.Summary("multi-jvm", result._1)))
+      else
+        tests.map {
+          case (_name, classes) => multi(_name, classes, marker, javaBin, options, srcDir, false, createLogger, log)
+        }
+    Tests.Output(
+      Tests.overall(results.map(_._2)),
+      Map.empty,
+      results.map(result => Tests.Summary("multi-jvm", result._1)))
   }
 
-  def multiJvmRun: Def.Initialize[sbt.InputTask[Unit]] = InputTask.createDyn(
-    loadForParser(multiJvmAppNames)((s, i) => runParser(s, i getOrElse Nil))
-  ) {
+  def multiJvmRun: Def.Initialize[sbt.InputTask[Unit]] =
+    InputTask.createDyn(loadForParser(multiJvmAppNames)((s, i) => runParser(s, i.getOrElse(Nil)))) {
       Def.task {
         val s = streams.value
         val apps = multiJvmApps.value
@@ -254,83 +289,152 @@ object MultiJvmPlugin extends AutoPlugin {
 
   def runParser: (State, Seq[String]) => complete.Parser[String] = {
     import complete.DefaultParsers._
-    (state, appClasses) => Space ~> token(NotSpace examples appClasses.toSet)
+    (state, appClasses) => Space ~> token(NotSpace.examples(appClasses.toSet))
   }
 
-  def multi(name: String, classes: Seq[String], marker: String, javaBin: File, options: Options, srcDir: File,
-            input: Boolean, createLogger: String => Logger, log: Logger): (String, sbt.TestResult) = {
+  def multi(
+      name: String,
+      classes: Seq[String],
+      marker: String,
+      javaBin: File,
+      options: Options,
+      srcDir: File,
+      input: Boolean,
+      createLogger: String => Logger,
+      log: Logger): (String, sbt.TestResult) = {
     val logName = "* " + name
     log.info(if (log.ansiCodesSupported) GREEN + logName + RESET else logName)
     val classesHostsJavas = getClassesHostsJavas(classes, IndexedSeq.empty, IndexedSeq.empty, "")
     val hosts = classesHostsJavas.map(_._2)
-    val processes = classes.zipWithIndex map {
+    val processes = classes.zipWithIndex.map {
       case (testClass, index) =>
         val className = multiSimpleName(testClass)
         val jvmName = "JVM-" + (index + 1) + "-" + className
         val jvmLogger = createLogger(jvmName)
         val optionsFile = (srcDir ** (className + ".opts")).get.headOption
-        val optionsFromFile = optionsFile map (IO.read(_)) map (_.trim.replace("\\n", " ").split("\\s+").toList) getOrElse (Seq.empty[String])
+        val optionsFromFile =
+          optionsFile.map(IO.read(_)).map(_.trim.replace("\\n", " ").split("\\s+").toList).getOrElse(Seq.empty[String])
         val multiNodeOptions = getMultiNodeCommandLineOptions(hosts, index, classes.size)
         val allJvmOptions = options.jvm ++ multiNodeOptions ++ optionsFromFile ++ options.extra(className)
         val runOptions = options.run(testClass)
         val connectInput = input && index == 0
-        log.debug("Starting %s for %s" format (jvmName, testClass))
-        log.debug("  with JVM options: %s" format allJvmOptions.mkString(" "))
+        log.debug("Starting %s for %s".format(jvmName, testClass))
+        log.debug("  with JVM options: %s".format(allJvmOptions.mkString(" ")))
         (testClass, Jvm.startJvm(javaBin, allJvmOptions, runOptions, jvmLogger, connectInput))
     }
     processExitCodes(name, processes, log)
   }
 
   def processExitCodes(name: String, processes: Seq[(String, Process)], log: Logger): (String, sbt.TestResult) = {
-    val exitCodes = processes map {
+    val exitCodes = processes.map {
       case (testClass, process) => (testClass, process.exitValue())
     }
-    val failures = exitCodes flatMap {
+    val failures = exitCodes.flatMap {
       case (testClass, exit) if exit > 0 => Some("Failed: " + testClass)
-      case _ => None
+      case _                             => None
     }
-    failures foreach(log.error(_))
-    (name, if(failures.nonEmpty) TestResult.Failed else TestResult.Passed)
+    failures.foreach(log.error(_))
+    (name, if (failures.nonEmpty) TestResult.Failed else TestResult.Passed)
   }
 
   def multiNodeExecuteTestsTask: Def.Initialize[sbt.Task[Tests.Output]] = Def.task {
     val (_jarName, (hostsAndUsers, javas), targetDir) = multiNodeWorkAround.value
-    runMultiNodeTests(multiJvmTests.value, multiJvmMarker.value, multiNodeJavaName.value, multiNodeTestOptions.value, sourceDirectory.value, _jarName, hostsAndUsers, javas, targetDir, multiJvmCreateLogger.value, streams.value.log)
+    runMultiNodeTests(
+      multiJvmTests.value,
+      multiJvmMarker.value,
+      multiNodeJavaName.value,
+      multiNodeTestOptions.value,
+      sourceDirectory.value,
+      _jarName,
+      hostsAndUsers,
+      javas,
+      targetDir,
+      multiJvmCreateLogger.value,
+      streams.value.log)
   }
 
-  def multiNodeTestOnlyTask: Def.Initialize[InputTask[Unit]] = InputTask.createDyn(
-    loadForParser(multiJvmTestNames)((s, i) => Defaults.testOnlyParser(s, i getOrElse Nil))
-  ) {
-    Def.task { case (selected, _extraOptions) =>
-      val options = multiNodeTestOptions.value
-      val (_jarName, (hostsAndUsers, javas), targetDir) = multiNodeWorkAround.value
-      val s = streams.value
-      val opts = options.copy(extra = (s: String) => { options.extra(s) ++ _extraOptions })
-      val tests = selected flatMap { name => multiJvmTests.value.get(name) map ((name, _)) }
+  def multiNodeTestOnlyTask: Def.Initialize[InputTask[Unit]] =
+    InputTask.createDyn(loadForParser(multiJvmTestNames)((s, i) => Defaults.testOnlyParser(s, i.getOrElse(Nil)))) {
       Def.task {
-        val results = runMultiNodeTests(tests.toMap, multiJvmMarker.value, multiNodeJavaName.value, opts, sourceDirectory.value, _jarName, hostsAndUsers, javas, targetDir, multiJvmCreateLogger.value, s.log)
-        showResults(s.log, results, "No tests to run for MultiNode")
+        case (selected, _extraOptions) =>
+          val options = multiNodeTestOptions.value
+          val (_jarName, (hostsAndUsers, javas), targetDir) = multiNodeWorkAround.value
+          val s = streams.value
+          val opts = options.copy(extra = (s: String) => { options.extra(s) ++ _extraOptions })
+          val tests = selected.flatMap { name =>
+            multiJvmTests.value.get(name).map((name, _))
+          }
+          Def.task {
+            val results = runMultiNodeTests(
+              tests.toMap,
+              multiJvmMarker.value,
+              multiNodeJavaName.value,
+              opts,
+              sourceDirectory.value,
+              _jarName,
+              hostsAndUsers,
+              javas,
+              targetDir,
+              multiJvmCreateLogger.value,
+              s.log)
+            showResults(s.log, results, "No tests to run for MultiNode")
+          }
       }
     }
-  }
 
-  def runMultiNodeTests(tests: Map[String, Seq[String]], marker: String, java: String, options: Options,
-                        srcDir: File, jarName: String, hostsAndUsers: IndexedSeq[String],
-                        javas: IndexedSeq[String], targetDir: String,
-                        createLogger: String => Logger, log: Logger): Tests.Output = {
+  def runMultiNodeTests(
+      tests: Map[String, Seq[String]],
+      marker: String,
+      java: String,
+      options: Options,
+      srcDir: File,
+      jarName: String,
+      hostsAndUsers: IndexedSeq[String],
+      javas: IndexedSeq[String],
+      targetDir: String,
+      createLogger: String => Logger,
+      log: Logger): Tests.Output = {
     val results =
       if (tests.isEmpty)
         List()
-      else tests.map {
-        case (_name, classes) => multiNode(_name, classes, marker, java, options, srcDir, false, jarName,
-          hostsAndUsers, javas, targetDir, createLogger, log)
-      }
-    Tests.Output(Tests.overall(results.map(_._2)), Map.empty, results.map(result => Tests.Summary("multi-jvm", result._1)))
+      else
+        tests.map {
+          case (_name, classes) =>
+            multiNode(
+              _name,
+              classes,
+              marker,
+              java,
+              options,
+              srcDir,
+              false,
+              jarName,
+              hostsAndUsers,
+              javas,
+              targetDir,
+              createLogger,
+              log)
+        }
+    Tests.Output(
+      Tests.overall(results.map(_._2)),
+      Map.empty,
+      results.map(result => Tests.Summary("multi-jvm", result._1)))
   }
 
-  def multiNode(name: String, classes: Seq[String], marker: String, defaultJava: String, options: Options, srcDir: File,
-                input: Boolean, testJar: String, hostsAndUsers: IndexedSeq[String], javas: IndexedSeq[String], targetDir: String,
-                createLogger: String => Logger, log: Logger): (String, sbt.TestResult) = {
+  def multiNode(
+      name: String,
+      classes: Seq[String],
+      marker: String,
+      defaultJava: String,
+      options: Options,
+      srcDir: File,
+      input: Boolean,
+      testJar: String,
+      hostsAndUsers: IndexedSeq[String],
+      javas: IndexedSeq[String],
+      targetDir: String,
+      createLogger: String => Logger,
+      log: Logger): (String, sbt.TestResult) = {
     val logName = "* " + name
     log.info(if (log.ansiCodesSupported) GREEN + logName + RESET else logName)
     val classesHostsJavas = getClassesHostsJavas(classes, hostsAndUsers, javas, defaultJava)
@@ -342,26 +446,38 @@ object MultiJvmPlugin extends AutoPlugin {
     }
     val syncResult = processExitCodes(name, syncProcesses, log)
     if (syncResult._2 == TestResult.Passed) {
-      val processes = classesHostsJavas.zipWithIndex map {
+      val processes = classesHostsJavas.zipWithIndex.map {
         case ((testClass, hostAndUser, java), index) => {
           val jvmName = "JVM-" + (index + 1)
           val jvmLogger = createLogger(jvmName)
           val className = multiSimpleName(testClass)
           val optionsFile = (srcDir ** (className + ".opts")).get.headOption
-          val optionsFromFile = optionsFile map (IO.read(_)) map (_.trim.replace("\\n", " ").split("\\s+").toList) getOrElse (Seq.empty[String])
+          val optionsFromFile = optionsFile
+            .map(IO.read(_))
+            .map(_.trim.replace("\\n", " ").split("\\s+").toList)
+            .getOrElse(Seq.empty[String])
           val multiNodeOptions = getMultiNodeCommandLineOptions(hosts, index, classes.size)
           val allJvmOptions = options.jvm ++ optionsFromFile ++ options.extra(className) ++ multiNodeOptions
           val runOptions = options.run(testClass)
           val connectInput = input && index == 0
-          log.debug("Starting %s for %s" format (jvmName, testClass))
-          log.debug("  with JVM options: %s" format allJvmOptions.mkString(" "))
-          (testClass, Jvm.forkRemoteJava(java, allJvmOptions, runOptions, testJar, hostAndUser, targetDir,
-            jvmLogger, connectInput, log))
+          log.debug("Starting %s for %s".format(jvmName, testClass))
+          log.debug("  with JVM options: %s".format(allJvmOptions.mkString(" ")))
+          (
+            testClass,
+            Jvm.forkRemoteJava(
+              java,
+              allJvmOptions,
+              runOptions,
+              testJar,
+              hostAndUser,
+              targetDir,
+              jvmLogger,
+              connectInput,
+              log))
         }
       }
       processExitCodes(name, processes, log)
-    }
-    else {
+    } else {
       syncResult
     }
   }
@@ -374,33 +490,44 @@ object MultiJvmPlugin extends AutoPlugin {
       (realSeq /: (0 until (max - realSeq.size)))((mySeq, pos) => mySeq :+ realSeq(pos % realSeq.size))
   }
 
-  private def getClassesHostsJavas(classes: Seq[String], hostsAndUsers: IndexedSeq[String], javas: IndexedSeq[String],
-                                   defaultJava: String): IndexedSeq[(String, String, String)] = {
+  private def getClassesHostsJavas(
+      classes: Seq[String],
+      hostsAndUsers: IndexedSeq[String],
+      javas: IndexedSeq[String],
+      defaultJava: String): IndexedSeq[(String, String, String)] = {
     val max = classes.length
-    val tuple = (classes.toIndexedSeq, padSeqOrDefaultTo(hostsAndUsers, "localhost", max), padSeqOrDefaultTo(javas, defaultJava, max))
+    val tuple = (
+      classes.toIndexedSeq,
+      padSeqOrDefaultTo(hostsAndUsers, "localhost", max),
+      padSeqOrDefaultTo(javas, defaultJava, max))
     tuple.zipped.map { case (className: String, hostAndUser: String, _java: String) => (className, hostAndUser, _java) }
   }
 
   private def getMultiNodeCommandLineOptions(hosts: Seq[String], index: Int, maxNodes: Int): Seq[String] = {
-    Seq("-Dmultinode.max-nodes=" + maxNodes, "-Dmultinode.server-host=" + hosts(0).split("@").last,
-      "-Dmultinode.host=" + hosts(index).split("@").last, "-Dmultinode.index=" + index)
+    Seq(
+      "-Dmultinode.max-nodes=" + maxNodes,
+      "-Dmultinode.server-host=" + hosts(0).split("@").last,
+      "-Dmultinode.host=" + hosts(index).split("@").last,
+      "-Dmultinode.index=" + index)
   }
 
-  private def processMultiNodeHosts(hosts: Seq[String], hostsFileName: String, defaultJava: String, s: Types.Id[Keys.TaskStreams]):
-    (IndexedSeq[String], IndexedSeq[String]) = {
+  private def processMultiNodeHosts(
+      hosts: Seq[String],
+      hostsFileName: String,
+      defaultJava: String,
+      s: Types.Id[Keys.TaskStreams]): (IndexedSeq[String], IndexedSeq[String]) = {
     val hostsFile = new File(hostsFileName)
     val theHosts: IndexedSeq[String] =
       if (hosts.isEmpty) {
         if (hostsFile.exists && hostsFile.canRead) {
           s.log.info("Using hosts defined in file " + hostsFile.getAbsolutePath)
           IO.readLines(hostsFile).map(_.trim).filter(_.length > 0).toIndexedSeq
-        }
-        else
+        } else
           hosts.toIndexedSeq
-      }
-      else {
+      } else {
         if (hostsFile.exists && hostsFile.canRead)
-          s.log.info("Hosts from setting " + multiNodeHosts.key.label + " is overrriding file " + hostsFile.getAbsolutePath)
+          s.log.info(
+            "Hosts from setting " + multiNodeHosts.key.label + " is overrriding file " + hostsFile.getAbsolutePath)
         hosts.toIndexedSeq
       }
 
