@@ -22,4 +22,4 @@ kubectl apply -f ${TMP_DIR}
 
 # TODO: check timeouts
 kubectl wait deploy/test-node1 --for condition=available --timeout=60s | true
-kubectl wait --for=condition=Ready pods  --timeout=600s --all | true
+kubectl wait --for=condition=Ready pods  --timeout=120s --all | true
