@@ -244,7 +244,7 @@ class MessageAdapterSpec
             .receiveMessage[Wrapped] { _ =>
               probe.ref ! count
               if (count == 3) {
-                throw new TestException("boom")
+                throw TestException("boom")
               }
               behv(count + 1)
             }
@@ -294,7 +294,12 @@ class MessageAdapterSpec
     deadLetter.message match {
       case AdaptMessage(Pong("hi"), _) => // passed through the FunctionRef
       case Pong("hi")                  => // FunctionRef stopped
-      case unexpected                  => fail(s"Unexpected message [$unexpected], expected Pong or AdaptMessage(Pong)")
+      case unexpected =>
+        fail(s"""
+             |Unexpected message:
+             |Got => $unexpected: ${unexpected.getClass.getName}
+             |Expected => ${classOf[Pong].getName} or AdaptMessage(${classOf[Pong].getName})
+             |""".stripMargin)
     }
   }
 
