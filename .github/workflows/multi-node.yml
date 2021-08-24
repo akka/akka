@@ -22,12 +22,23 @@ jobs:
       - name: Install Kubectl
         run: |
           sudo snap install kubectl --classic
-      - name: Setup Minikube
-        uses: manusa/actions-setup-minikube@v2.4.2
+      # - name: Setup Minikube
+      #   uses: manusa/actions-setup-minikube@v2.4.2
+      #   with:
+      #     minikube version: 'v1.21.0'
+      #     kubernetes version: 'v1.21.0'
+      #     driver: docker
+      # Latest tagged version uses a deprecated github actions feature that is going to be removed on 16th nov
+      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@15dc2ebff158fa77e9b28e43515bae5f990345b4
         with:
-          minikube version: 'v1.21.0'
-          kubernetes version: 'v1.21.0'
-          driver: docker
+          version: '290.0.1'
+          service_account_key: ${{ secrets.GKE_SA_KEY }}
+          project_id: ${{ secrets.GKE_PROJECT }}
+      - name: Create the cluster
+        run: |-
+          gcloud config set compute/region europe-west1
+          gcloud config set compute/zone europe-west1-b
+          ./kubernetes/create-cluster-gke.sh "akka-multi-node-${GITHUB_RUN_ID}"
       - name: Setup Pods
         run: |
           ./kubernetes/setup.sh 5 multi-node-test.hosts
@@ -78,3 +89,8 @@ jobs:
       #     body: |
       #       Multi node test of ${{github.repository}} failed!
       #       https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      - name: Cleanup the environment
+        if: ${{ always() }}
+        shell: bash {0}
+        run: |
+          gcloud container clusters delete "akka-multi-node-${GITHUB_RUN_ID}" --quiet
