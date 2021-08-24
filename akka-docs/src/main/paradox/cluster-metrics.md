@@ -24,7 +24,6 @@ akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 
 ## Introduction
 
-
 The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
 and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
 
@@ -44,16 +43,16 @@ Certain message routing and let-it-crash functions may not work when Sigar is no
 
 Cluster metrics extension comes with two built-in collector implementations:
 
- 1. `akka.cluster.metrics.SigarMetricsCollector`, which requires Sigar provisioning, and is more rich/precise
- 2. `akka.cluster.metrics.JmxMetricsCollector`, which is used as fall back, and is less rich/precise
+1. `akka.cluster.metrics.SigarMetricsCollector`, which requires Sigar provisioning, and is more rich/precise
+2. `akka.cluster.metrics.JmxMetricsCollector`, which is used as fall back, and is less rich/precise
 
 You can also plug-in your own metrics collector implementation.
 
 By default, metrics extension will use collector provider fall back and will try to load them in this order:
 
- 1. configured user-provided collector
- 2. built-in `akka.cluster.metrics.SigarMetricsCollector`
- 3. and finally `akka.cluster.metrics.JmxMetricsCollector`
+1. configured user-provided collector
+2. built-in `akka.cluster.metrics.SigarMetricsCollector`
+3. and finally `akka.cluster.metrics.JmxMetricsCollector`
 
 ## Metrics Events
 
@@ -69,14 +68,14 @@ You can subscribe your metrics listener actors to these events in order to imple
 
 Scala
 :  @@@ vars
-```
+```scala
 ClusterMetricsExtension(system).subscribe(metricsListenerActor)
 ```
 @@@
 
 Java
 :  @@@ vars
-```
+```java
 ClusterMetricsExtension.get(system).subscribe(metricsListenerActor);
 ```
 @@@
@@ -123,11 +122,11 @@ The `AdaptiveLoadBalancingPool` / `AdaptiveLoadBalancingGroup` performs load bal
 It uses random selection of routees with probabilities derived from the remaining capacity of the corresponding node.
 It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
 
- * `heap` / `HeapMetricsSelector` - Used and max JVM heap memory. Weights based on remaining heap capacity; (max - used) / max
- * `load` / `SystemLoadAverageMetricsSelector` - System load average for the past 1 minute, corresponding value can be found in `top` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors)
- * `cpu` / `CpuMetricsSelector` - CPU utilization in percentage, sum of User + Sys + Nice + Wait. Weights based on remaining cpu capacity; 1 - utilization
- * `mix` / `MixMetricsSelector` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
- * Any custom implementation of `akka.cluster.metrics.MetricsSelector`
+* `heap` / `HeapMetricsSelector` - Used and max JVM heap memory. Weights based on remaining heap capacity; (max - used) / max
+* `load` / `SystemLoadAverageMetricsSelector` - System load average for the past 1 minute, corresponding value can be found in `top` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors)
+* `cpu` / `CpuMetricsSelector` - CPU utilization in percentage, sum of User + Sys + Nice + Wait. Weights based on remaining cpu capacity; 1 - utilization
+* `mix` / `MixMetricsSelector` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
+* Any custom implementation of `akka.cluster.metrics.MetricsSelector`
 
 The collected metrics values are smoothed with [exponential weighted moving average](https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average). In the @ref:[Cluster configuration](cluster-usage.md#cluster-configuration) you can adjust how quickly past data is decayed compared to new data.
 
