@@ -36,7 +36,7 @@ jobs:
           driver: docker
       - name: Hack Multi-Jvm
         run: |
-          git clone --branch multi-node-on-k8s --depth 1 git@github.com:andreaTP/sbt-multi-jvm.git
+          git clone --branch multi-node-on-k8s --depth 1 https://github.com/andreaTP/sbt-multi-jvm.git
           cd sbt-multi-jvm
           sbt "^^ 1.5.5; publishLocal"
       - name: Setup Pods
