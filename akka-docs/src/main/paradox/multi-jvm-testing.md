@@ -1,6 +1,7 @@
 ---
 project.description: Multi JVM testing of distributed systems built with Akka.
 ---
+
 # Multi JVM Testing
 
 Supports running applications (objects with main methods) and ScalaTest tests in multiple JVMs at the same time.
@@ -11,20 +12,22 @@ Useful for integration testing where multiple systems communicate with each othe
 The multi-JVM testing is an sbt plugin that you can find at [https://github.com/sbt/sbt-multi-jvm](https://github.com/sbt/sbt-multi-jvm).
 To configure it in your project you should do the following steps:
 
-1. Add it as a plugin by adding the following to your project/plugins.sbt:
-
-    @@snip [plugins.sbt](/project/plugins.sbt) { #sbt-multi-jvm }
-
-2. Add multi-JVM testing to `build.sbt` or `project/Build.scala` by enabling `MultiJvmPlugin` and 
-setting the `MultiJvm` config.
+1.  Add it as a plugin by adding the following to your project/plugins.sbt:
 
     ```none
-    lazy val root = (project in file("."))
-      .enablePlugins(MultiJvmPlugin)
-      .configs(MultiJvm)
+    addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
     ```
-    
-**Please note** that by default MultiJvm test sources are located in `src/multi-jvm/...`, 
+
+2.  Add multi-JVM testing to `build.sbt` or `project/Build.scala` by enabling `MultiJvmPlugin` and
+    setting the `MultiJvm` config.
+
+        ```none
+        lazy val root = (project in file("."))
+          .enablePlugins(MultiJvmPlugin)
+          .configs(MultiJvm)
+        ```
+
+**Please note** that by default MultiJvm test sources are located in `src/multi-jvm/...`,
 and not in `src/test/...`.
 
 ## Running tests
@@ -148,7 +151,7 @@ directory as the test.
 
 For example, to feed the JVM options `-Dakka.remote.port=9991` and `-Xmx256m` to the `SampleMultiJvmNode1`
 let's create three `*.opts` files and add the options to them. Separate multiple options with
-space. 
+space.
 
 `SampleMultiJvmNode1.opts`:
 

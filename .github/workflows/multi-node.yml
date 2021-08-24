@@ -49,11 +49,6 @@ jobs:
           java-version: adopt@1.11.0-9
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
-      - name: Hack Multi-Jvm
-        run: |
-          git clone --branch multi-node-on-k8s --depth 1 https://github.com/andreaTP/sbt-multi-jvm.git
-          cd sbt-multi-jvm
-          sbt publishLocal
       - name: Multi node test
         env:
           JOB_ID: ${{ github.run_id }}

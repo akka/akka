@@ -3,11 +3,6 @@ libraryDependencies += Defaults.sbtPluginExtra(
   (pluginCrossBuild / sbtBinaryVersion).value,
   (pluginCrossBuild / scalaBinaryVersion).value)
 
-// these comment markers are for including code into the docs
-//#sbt-multi-jvm
-addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.1-SNAPSHOT")
-//#sbt-multi-jvm
-
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.6.0")
 addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")

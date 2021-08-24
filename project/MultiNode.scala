@@ -6,8 +6,8 @@ package akka
 
 import akka.TestExtras.Filter.Keys._
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.multiJvmCreateLogger
-import com.typesafe.sbt.SbtMultiJvm
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
+import com.typesafe.sbt.{MultiJvmPlugin => SbtMultiJvm}
+import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys._
 import sbt.{ Def, _ }
 import sbt.Keys._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
