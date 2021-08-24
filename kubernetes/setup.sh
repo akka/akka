@@ -3,8 +3,8 @@ NUM_OF_NODES=$1
 DEST_HOST_FILE=$2
 TMP_DIR=.tmp
 
-kubectl delete deployments,services -l app=multi-node-test
-kubectl wait --for=condition=Ready pods --all
+kubectl delete deployments,services -l app=multi-node-test | true
+kubectl wait --for=condition=Ready pods --all | true
 
 rm -rf ${TMP_DIR}
 mkdir -p ${TMP_DIR}

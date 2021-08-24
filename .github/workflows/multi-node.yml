@@ -41,12 +41,11 @@ jobs:
           driver: docker
       - name: Setup Pods
         run: |
-          ./kubernetes/setup.sh 5 ../multi-node-test.hosts | true
+          ./kubernetes/setup.sh 5 ../multi-node-test.hosts
       - name: Multi node test
         env:
           JOB_ID: ${{ github.run_id }}
         run: |
-          cp kubernetes/multi-node-test.hosts .
           sudo telepresence --run sudo gosu runner sbt -mem 2048 \
             -Dakka.test.timefactor=1 \
             -Dakka.cluster.assert=on \
