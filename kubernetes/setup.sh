@@ -19,4 +19,6 @@ do
 done
 
 kubectl apply -f ${TMP_DIR}
-kubectl wait --for=condition=Ready pods --all | true
+
+kubectl wait deploy/test-node1 --for condition=available
+kubectl wait --for=condition=Ready pods --all
