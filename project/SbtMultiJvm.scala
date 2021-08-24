@@ -89,78 +89,81 @@ object MultiJvmPlugin extends AutoPlugin {
   private[this] def showResults(log: Logger, results: Tests.Output, noTestsMessage: => String): Unit =
     TestResultLogger.Default.copy(printNoTests = TestResultLogger.const(_.info(noTestsMessage))).run(log, results, "")
 
-  private def internalMultiJvmSettings = assemblySettings ++ Seq(
-    multiJvmMarker := "MultiJvm",
-    loadedTestFrameworks := (loadedTestFrameworks in Test).value,
-    definedTests := Defaults.detectTests.value,
-    multiJvmTests := collectMultiJvm(definedTests.value.map(_.name), multiJvmMarker.value),
-    multiJvmTestNames := multiJvmTests.map(_.keys.toSeq).storeAs(multiJvmTestNames).triggeredBy(compile).value,
-    multiJvmApps := collectMultiJvm(discoveredMainClasses.value, multiJvmMarker.value),
-    multiJvmAppNames := multiJvmApps.map(_.keys.toSeq).storeAs(multiJvmAppNames).triggeredBy(compile).value,
-    multiJvmJavaCommand := javaCommand(javaHome.value, "java"),
-    jvmOptions := Seq.empty,
-    extraOptions := { (name: String) =>
-      Seq.empty
-    },
-    multiJvmCreateLogger := { (name: String) =>
-      new JvmLogger(name)
-    },
-    scalatestRunner := "org.scalatest.tools.Runner",
-    scalatestOptions := defaultScalatestOptions,
-    scalatestClasspath := managedClasspath.value.filter(_.data.name.contains("scalatest")),
-    multiRunCopiedClassLocation := new File(target.value, "multi-run-copied-libraries"),
-    scalatestScalaOptions := scalaOptionsForScalatest(
-        scalatestRunner.value,
-        scalatestOptions.value,
-        fullClasspath.value,
-        multiRunCopiedClassLocation.value),
-    scalatestMultiNodeScalaOptions := scalaMultiNodeOptionsForScalatest(scalatestRunner.value, scalatestOptions.value),
-    multiTestOptions := Options(jvmOptions.value, extraOptions.value, scalatestScalaOptions.value),
-    multiNodeTestOptions := Options(jvmOptions.value, extraOptions.value, scalatestMultiNodeScalaOptions.value),
-    appScalaOptions := scalaOptionsForApps(fullClasspath.value),
-    connectInput := true,
-    multiRunOptions := Options(jvmOptions.value, extraOptions.value, appScalaOptions.value),
-    executeTests := multiJvmExecuteTests.value,
-    testOnly := multiJvmTestOnly.evaluated,
-    test := showResults(streams.value.log, executeTests.value, "No tests to run for MultiJvm"),
-    run := multiJvmRun.evaluated,
-    runMain := multiJvmRun.evaluated,
-    // TODO try to make sure that this is only generated on a need to have basis
-    multiJvmTestJar := (assemblyOutputPath in assembly).map(_.getAbsolutePath).dependsOn(assembly).value,
-    multiJvmTestJarName := (assemblyOutputPath in assembly).value.getAbsolutePath,
-    multiNodeTest := {
-      implicit val display = Project.showContextKey(state.value)
-      showResults(streams.value.log, multiNodeExecuteTests.value, noTestsMessage(resolvedScoped.value))
-    },
-    multiNodeExecuteTests := multiNodeExecuteTestsTask.value,
-    multiNodeTestOnly := multiNodeTestOnlyTask.evaluated,
-    multiNodeHosts := Seq.empty,
-    multiNodeHostsFileName := "multi-node-test.hosts",
-    multiNodeProcessedHosts := processMultiNodeHosts(
-        multiNodeHosts.value,
-        multiNodeHostsFileName.value,
-        multiNodeJavaName.value,
-        streams.value),
-    multiNodeTargetDirName := "multi-node-test",
-    multiNodeJavaName := "java",
-    // TODO there must be a way get at keys in the tasks that I just don't get
-    multiNodeWorkAround := (multiJvmTestJar.value, multiNodeProcessedHosts.value, multiNodeTargetDirName.value),
-    // here follows the assembly parts of the config
-    // don't run the tests when creating the assembly
-    test in assembly := {},
-    // we want everything including the tests and test frameworks
-    fullClasspath in assembly := (fullClasspath in MultiJvm).value,
-    // the first class wins just like a classpath
-    // just concatenate conflicting text files
-    assemblyMergeStrategy in assembly := {
-      case n if n.endsWith(".class") => MergeStrategy.first
-      case n if n.endsWith(".txt")   => MergeStrategy.concat
-      case n if n.endsWith("NOTICE") => MergeStrategy.concat
-      case n                         => (assemblyMergeStrategy in assembly).value.apply(n)
-    },
-    assemblyJarName in assembly := {
-      name.value + "_" + scalaVersion.value + "-" + version.value + "-multi-jvm-assembly.jar"
-    })
+  private def internalMultiJvmSettings =
+    assemblySettings ++ Seq(
+      multiJvmMarker := "MultiJvm",
+      loadedTestFrameworks := (loadedTestFrameworks in Test).value,
+      definedTests := Defaults.detectTests.value,
+      multiJvmTests := collectMultiJvm(definedTests.value.map(_.name), multiJvmMarker.value),
+      multiJvmTestNames := multiJvmTests.map(_.keys.toSeq).storeAs(multiJvmTestNames).triggeredBy(compile).value,
+      multiJvmApps := collectMultiJvm(discoveredMainClasses.value, multiJvmMarker.value),
+      multiJvmAppNames := multiJvmApps.map(_.keys.toSeq).storeAs(multiJvmAppNames).triggeredBy(compile).value,
+      multiJvmJavaCommand := javaCommand(javaHome.value, "java"),
+      jvmOptions := Seq.empty,
+      extraOptions := { (name: String) =>
+        Seq.empty
+      },
+      multiJvmCreateLogger := { (name: String) =>
+        new JvmLogger(name)
+      },
+      scalatestRunner := "org.scalatest.tools.Runner",
+      scalatestOptions := defaultScalatestOptions,
+      scalatestClasspath := managedClasspath.value.filter(_.data.name.contains("scalatest")),
+      multiRunCopiedClassLocation := new File(target.value, "multi-run-copied-libraries"),
+      scalatestScalaOptions := scalaOptionsForScalatest(
+          scalatestRunner.value,
+          scalatestOptions.value,
+          fullClasspath.value,
+          multiRunCopiedClassLocation.value),
+      scalatestMultiNodeScalaOptions := scalaMultiNodeOptionsForScalatest(
+          scalatestRunner.value,
+          scalatestOptions.value),
+      multiTestOptions := Options(jvmOptions.value, extraOptions.value, scalatestScalaOptions.value),
+      multiNodeTestOptions := Options(jvmOptions.value, extraOptions.value, scalatestMultiNodeScalaOptions.value),
+      appScalaOptions := scalaOptionsForApps(fullClasspath.value),
+      connectInput := true,
+      multiRunOptions := Options(jvmOptions.value, extraOptions.value, appScalaOptions.value),
+      executeTests := multiJvmExecuteTests.value,
+      testOnly := multiJvmTestOnly.evaluated,
+      test := showResults(streams.value.log, executeTests.value, "No tests to run for MultiJvm"),
+      run := multiJvmRun.evaluated,
+      runMain := multiJvmRun.evaluated,
+      // TODO try to make sure that this is only generated on a need to have basis
+      multiJvmTestJar := (assemblyOutputPath in assembly).map(_.getAbsolutePath).dependsOn(assembly).value,
+      multiJvmTestJarName := (assemblyOutputPath in assembly).value.getAbsolutePath,
+      multiNodeTest := {
+        implicit val display = Project.showContextKey(state.value)
+        showResults(streams.value.log, multiNodeExecuteTests.value, noTestsMessage(resolvedScoped.value))
+      },
+      multiNodeExecuteTests := multiNodeExecuteTestsTask.value,
+      multiNodeTestOnly := multiNodeTestOnlyTask.evaluated,
+      multiNodeHosts := Seq.empty,
+      multiNodeHostsFileName := "multi-node-test.hosts",
+      multiNodeProcessedHosts := processMultiNodeHosts(
+          multiNodeHosts.value,
+          multiNodeHostsFileName.value,
+          multiNodeJavaName.value,
+          streams.value),
+      multiNodeTargetDirName := "multi-node-test",
+      multiNodeJavaName := "java",
+      // TODO there must be a way get at keys in the tasks that I just don't get
+      multiNodeWorkAround := (multiJvmTestJar.value, multiNodeProcessedHosts.value, multiNodeTargetDirName.value),
+      // here follows the assembly parts of the config
+      // don't run the tests when creating the assembly
+      test in assembly := {},
+      // we want everything including the tests and test frameworks
+      fullClasspath in assembly := (fullClasspath in MultiJvm).value,
+      // the first class wins just like a classpath
+      // just concatenate conflicting text files
+      assemblyMergeStrategy in assembly := {
+        case n if n.endsWith(".class") => MergeStrategy.first
+        case n if n.endsWith(".txt")   => MergeStrategy.concat
+        case n if n.endsWith("NOTICE") => MergeStrategy.concat
+        case n                         => (assemblyMergeStrategy in assembly).value.apply(n)
+      },
+      assemblyJarName in assembly := {
+        name.value + "_" + scalaVersion.value + "-" + version.value + "-multi-jvm-assembly.jar"
+      })
 
   def collectMultiJvm(discovered: Seq[String], marker: String): Map[String, Seq[String]] = {
     val found = discovered.filter(_.contains(marker)).groupBy(multiName(_, marker))
