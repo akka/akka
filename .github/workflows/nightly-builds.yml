@@ -33,6 +33,7 @@ jobs:
             -Dakka.cluster.assert=on \
             -Dakka.test.timefactor=2 \
             -Dakka.test.tags.exclude=gh-exclude \
+            -Dakka.log.timestamps=true \
             clean akka-cluster-metrics/test
 
       - name: Test Reports
@@ -90,8 +91,9 @@ jobs:
           ## TODO: restore the multi-node tests
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
-            -Dakka.test.timefactor=2 \
             -Dakka.cluster.assert=on \
+            -Dakka.log.timestamps=true \
+            -Dakka.test.timefactor=2 \
             -Dakka.test.multi-in-test=${{ matrix.scalaVersion == '2.13' }} \
             -Dakka.test.tags.exclude=gh-exclude \
             clean update Test/compile test checkTestsHaveRun
