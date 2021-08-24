@@ -19,4 +19,4 @@ do
 done
 
 kubectl apply -f ${TMP_DIR}
-kubectl wait --for=condition=Ready pods --all
+kubectl wait --for=condition=Ready pods --all | true
