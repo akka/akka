@@ -5,7 +5,7 @@ libraryDependencies += Defaults.sbtPluginExtra(
 
 // these comment markers are for including code into the docs
 //#sbt-multi-jvm
-addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.1-SNAPSHOT")
 //#sbt-multi-jvm
 
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.6.0")

@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-node2
+  name: test-nodeX
   labels:
-    app: multi-node-test2
+    app: multi-node-test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: test-node2
+      host: test-nodeX
   template:
     metadata:
       labels:
-        app: test-node2
+        host: test-nodeX
     spec:
       containers:
       - image: docker.io/andreatp/multi-node-k8s@sha256:e40aa6e73dade152231bc2c0ddbd0bba2136dfd02c991739a236ea41b3f91c18
@@ -22,9 +22,9 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - mkdir /root/.ssh && cp /multinode/ssh/keys/* /root/.ssh
+                - truncate --size -1 /etc/hosts && echo " test-nodeX" >> /etc/hosts
         imagePullPolicy: Always
-        name: multi-node-test1
+        name: multi-test-nodeX
         volumeMounts:
         - mountPath: /multinode/ssh/keys
           subPath: keys
@@ -37,7 +37,7 @@ spec:
           containerPort: 22
           protocol: TCP
         - name: multi-node
-          containerPort: 5002
+          containerPort: 5000
           protocol: TCP
         - name: server-multi
           containerPort: 4711
@@ -48,6 +48,35 @@ spec:
           secretName: ssh-keys
           defaultMode: 384
           items:
+          - key: id_rsa
+            path: keys/id_rsa
+            mode: 256
+          - key: id_rsa.pub
+            path: keys/id_rsa.pub
+            mode: 256
           - key: authorized_keys
             path: keys/authorized_keys
             mode: 256
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-nodeX
+  labels:
+    app: multi-node-test
+spec:
+  selector:
+    host: test-nodeX
+  ports:
+    - protocol: TCP
+      name: ssh
+      port: 22
+      targetPort: 22
+    - protocol: TCP
+      name: server-multi
+      port: 4711
+      targetPort: 4711
+    - protocol: TCP
+      name: multi-node
+      port: 5000
+      targetPort: 5000
