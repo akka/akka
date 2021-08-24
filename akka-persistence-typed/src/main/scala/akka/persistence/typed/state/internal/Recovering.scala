@@ -144,7 +144,7 @@ private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
       case None    => setup.emptyState
     }
 
-    setup.context.log.debug("Recovered from revision [{}]", result.revision)
+    setup.internalLogger.debug("Recovered from revision [{}]", result.revision)
 
     setup.cancelRecoveryTimer()
 
