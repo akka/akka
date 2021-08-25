@@ -6,7 +6,7 @@ on:
 
 jobs:
 
-  nightly-cluster-metrics-sigar:
+  akka-cluster-metrics-sigar:
     name: Akka Cluster Metrics Test with Sigar
     runs-on: ubuntu-20.04
     if: github.repository == 'akka/akka'
@@ -15,7 +15,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          # we don't know what commit the last tag was it's safer
+          # to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
       - name: Set up JDK 8
@@ -67,8 +68,9 @@ jobs:
     if: github.repository == 'akka/akka'
     strategy:
       matrix:
-        # No need to specify the full Scala version. Only the Scala binary version
-        # is required and Akka build will set the right full version from it.
+        # No need to specify the full Scala version. Only the Scala
+        # binary version is required and Akka build will set the right
+        # full version from it.
         scalaVersion: ["2.12", "2.13"]
         jdkVersion: ["adopt@1.8.0", "adopt@1.11"]
     steps:
@@ -126,6 +128,61 @@ jobs:
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
             publishLocal publishM2
+
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
+          to: akka.official@gmail.com
+          from: Akka CI (GHActions)
+          body: |
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+
+
+  akka-artery-cluster-tests:
+    name: Artery Cluster
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        command:
+          - "akka-cluster/test"
+          - "akka-distributed-data/test"
+          - "akka-cluster-tools/test"
+          - "akka-cluster-sharding/test"
+          - "akka-cluster-metrics/test"
+          - "akka-cluster-typed/test"
+          - "akka-cluster-sharding-typed/test"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: sbt ${{ matrix.command }}
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Djava.security.egd=file:/dev/./urandom \
+          -Dakka.remote.artery.transport=aeron-udp \
+          -Dakka.test.timefactor=2 \
+          -Dakka.cluster.assert=on \
+          -Dakka.remote.artery.enabled=on \
+          -Dakka.test.tags.exclude=gh-exclude \
+          clean ${{ matrix.command }}
 
       - name: Email on failure
         if: ${{ failure() }}
