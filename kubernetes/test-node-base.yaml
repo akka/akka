@@ -32,6 +32,9 @@ spec:
                 - truncate --size -1 /etc/hosts && echo " test-nodeX" >> /etc/hosts
         imagePullPolicy: Always
         name: multi-test-nodeX
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
         ports:
         - name: web
           containerPort: 80
@@ -45,9 +48,17 @@ spec:
         - name: multi-node2
           containerPort: 5001
           protocol: TCP
+        - name: multi-node-udp
+          containerPort: 6000
+          protocol: UDP
         - name: server-multi
           containerPort: 4711
           protocol: TCP
+      volumes:
+        # Needed for Aeron tests: https://github.com/real-logic/aeron/blob/master/README.md#troubleshooting
+        - name: dshm
+          emptyDir:
+            medium: Memory
 ---
 apiVersion: v1
 kind: Service
@@ -75,3 +86,7 @@ spec:
       name: multi-node2
       port: 5001
       targetPort: 5001
+    - protocol: UDP
+      name: multi-node-udp
+      port: 6000
+      targetPort: 6000

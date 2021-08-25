@@ -784,7 +784,7 @@ abstract class StressSpec
                 previousAS.foreach { as =>
                   TestKit.shutdownActorSystem(as)
                 }
-                val sys =  {
+                val sys = {
                   val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
                   if (port != 0) {
                     ActorSystem(

@@ -246,7 +246,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   "handle Update before load" in {
     runOn(first) {
 
-      val sys1 =  {
+      val sys1 = {
         val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
         if (port != 0) {
           ActorSystem(
