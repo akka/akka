@@ -14,7 +14,7 @@ on:
 jobs:
   run-multi-node-tests:
     name: Multi Node Test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -53,7 +53,7 @@ jobs:
         run: |
           cat multi-node-test.hosts
           sbt -jvm-opts .jvmopts-ci \
-            -Dakka.test.timefactor=1 \
+            -Dakka.test.timefactor=2 \
             -Dakka.cluster.assert=on \
             -Dsbt.override.build.repos=false \
             -Dakka.test.tags.exclude=gh-exclude \
