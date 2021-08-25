@@ -40,7 +40,8 @@ jobs:
           ./kubernetes/create-cluster-gke.sh "akka-multi-node-${GITHUB_RUN_ID}"
       - name: Setup Pods
         run: |
-          ./kubernetes/setup.sh 5 multi-node-test.hosts
+          # Stress tests are using 13 nodes
+          ./kubernetes/setup.sh 15 multi-node-test.hosts
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
         with:
@@ -64,7 +65,7 @@ jobs:
             -Dmultinode.XX:+UseCompressedOops \
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx2G \
-            akka-cluster/multiNodeTest
+            akka-cluster/multiNodeTestOnly akka.cluster.Stress
             
             # akka-cluster-metrics/multiNodeTest \
             # akka-cluster-typed/multiNodeTest
