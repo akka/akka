@@ -62,10 +62,10 @@ jobs:
             -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.XX:+UseCompressedOops \
-            -Dmultinode.Xms256M \
-            -Dmultinode.Xmx512M \
+            -Dmultinode.Xms512M \
+            -Dmultinode.Xmx2G \
             akka-cluster/multiNodeTest
-
+            
             # akka-cluster-metrics/multiNodeTest \
             # akka-cluster-typed/multiNodeTest
             

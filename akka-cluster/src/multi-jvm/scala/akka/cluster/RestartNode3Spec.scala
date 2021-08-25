@@ -56,7 +56,19 @@ abstract class RestartNode3Spec
   @volatile var secondUniqueAddress: UniqueAddress = _
 
   // use a separate ActorSystem, to be able to simulate restart
-  lazy val secondSystem = ActorSystem(system.name, system.settings.config)
+  lazy val secondSystem = {
+    val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
+    if (port != 0) {
+      ActorSystem(
+        system.name,
+        ConfigFactory.parseString(s"""
+            akka.remote.classic.netty.tcp.port = ${port + 1}
+            akka.remote.artery.canonical.port = ${port + 1}
+            """).withFallback(system.settings.config))
+    } else {
+      ActorSystem(system.name, system.settings.config)
+    }
+  }
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(first)
 

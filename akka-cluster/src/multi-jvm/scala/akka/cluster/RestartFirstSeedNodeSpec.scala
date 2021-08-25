@@ -55,12 +55,12 @@ abstract class RestartFirstSeedNodeSpec
   lazy val seed1System = {
     val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
     if (port != 0) {
-    ActorSystem(
-      system.name,
-      ConfigFactory.parseString(s"""
-          akka.remote.classic.netty.tcp.port = ${port + 1}
-          akka.remote.artery.canonical.port = ${port + 1}
-          """).withFallback(system.settings.config))
+      ActorSystem(
+        system.name,
+        ConfigFactory.parseString(s"""
+            akka.remote.classic.netty.tcp.port = ${port + 1}
+            akka.remote.artery.canonical.port = ${port + 1}
+            """).withFallback(system.settings.config))
     } else {
       ActorSystem(system.name, system.settings.config)
     }
