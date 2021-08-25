@@ -246,7 +246,19 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   "handle Update before load" in {
     runOn(first) {
 
-      val sys1 = ActorSystem("AdditionalSys", system.settings.config)
+      val sys1 =  {
+        val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
+        if (port != 0) {
+          ActorSystem(
+            "AdditionalSys",
+            ConfigFactory.parseString(s"""
+                akka.remote.classic.netty.tcp.port = ${port + 1}
+                akka.remote.artery.canonical.port = ${port + 1}
+                """).withFallback(system.settings.config))
+        } else {
+          ActorSystem("AdditionalSys", system.settings.config)
+        }
+      }
       val address = Cluster(sys1).selfAddress
       try {
         Cluster(sys1).join(address)
