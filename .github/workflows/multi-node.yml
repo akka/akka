@@ -24,10 +24,8 @@ jobs:
       #     minikube version: 'v1.21.0'
       #     kubernetes version: 'v1.21.0'
       #     driver: docker
-      # Latest tagged version uses a deprecated github actions feature that is going to be removed on 16th nov
-      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@15dc2ebff158fa77e9b28e43515bae5f990345b4
+      - uses: google-github-actions/setup-gcloud@v0.2
         with:
-          version: '290.0.1'
           service_account_key: ${{ secrets.GKE_SA_KEY }}
           project_id: ${{ secrets.GKE_PROJECT }}
       - name: Create the cluster
