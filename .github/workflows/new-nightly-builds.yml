@@ -48,16 +48,6 @@ jobs:
           -Dsbt.ivy.home=/localhome/jenkinsakka/.ivy2 \
           -Dakka.test.timefactor=1 \
           -Dakka.cluster.assert=on \
-          -Dakka.test.multi-node=true \
-          -Dakka.test.multi-node.targetDirName=${PWD}/target/${JOB_ID} \
-          -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
-          -Dmultinode.XX:MaxDirectMemorySize=256m \
-          -Dmultinode.XX:MetaspaceSize=128M \
-          -Dmultinode.XX:+UseCompressedOops \
-          -Dmultinode.Xms256M \
-          -Dmultinode.Xmx512M \
-          -Dmultinode.XX:+PrintGCDetails \
-          -Dmultinode.XX:+PrintGCTimeStamps \
           clean ${{ matrix.command }}
 
 # FIXME delete later
