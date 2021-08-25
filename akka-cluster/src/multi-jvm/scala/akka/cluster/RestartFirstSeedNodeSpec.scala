@@ -66,6 +66,8 @@ abstract class RestartFirstSeedNodeSpec
     }
   }
 
+  override def verifySystemShutdown: Boolean = true
+
   def missingSeed = address(seed3).copy(port = Some(61313))
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seedNode1Address, seed2, seed3, missingSeed)
 
@@ -83,8 +85,6 @@ abstract class RestartFirstSeedNodeSpec
     }
     super.afterAll()
   }
-
-  override def verifySystemShutdown: Boolean = true
 
   "Cluster seed nodes" must {
     "be able to restart first seed node and join other seed nodes" taggedAs LongRunningTest in within(40 seconds) {
