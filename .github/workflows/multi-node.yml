@@ -64,7 +64,7 @@ jobs:
             -Dmultinode.XX:+UseCompressedOops \
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx512M \
-            akka-cluster-tools/multiNodeTest
+            akka-cluster-typed/multiNodeTest
             
             # akka-cluster-metrics/multiNodeTest \
             
