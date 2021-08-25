@@ -52,7 +52,19 @@ abstract class RestartFirstSeedNodeSpec
   @volatile var seedNode1Address: Address = _
 
   // use a separate ActorSystem, to be able to simulate restart
-  lazy val seed1System = ActorSystem(system.name, system.settings.config)
+  lazy val seed1System = {
+    val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
+    if (port != 0) {
+    ActorSystem(
+      system.name,
+      ConfigFactory.parseString(s"""
+          akka.remote.classic.netty.tcp.port = ${port + 1}
+          akka.remote.artery.canonical.port = ${port + 1}
+          """).withFallback(system.settings.config))
+    } else {
+      ActorSystem(system.name, system.settings.config)
+    }
+  }
 
   def missingSeed = address(seed3).copy(port = Some(61313))
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seedNode1Address, seed2, seed3, missingSeed)
@@ -67,9 +79,12 @@ abstract class RestartFirstSeedNodeSpec
   override def afterAll(): Unit = {
     runOn(seed1) {
       shutdown(if (seed1System.whenTerminated.isCompleted) restartedSeed1System else seed1System)
+
     }
     super.afterAll()
   }
+
+  override def verifySystemShutdown: Boolean = true
 
   "Cluster seed nodes" must {
     "be able to restart first seed node and join other seed nodes" taggedAs LongRunningTest in within(40 seconds) {

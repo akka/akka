@@ -42,6 +42,9 @@ spec:
         - name: multi-node
           containerPort: 5000
           protocol: TCP
+        - name: multi-node2
+          containerPort: 5001
+          protocol: TCP
         - name: server-multi
           containerPort: 4711
           protocol: TCP
@@ -68,3 +71,7 @@ spec:
       name: multi-node
       port: 5000
       targetPort: 5000
+    - protocol: TCP
+      name: multi-node2
+      port: 5001
+      targetPort: 5001
