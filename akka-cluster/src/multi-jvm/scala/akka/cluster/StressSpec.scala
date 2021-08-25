@@ -458,6 +458,8 @@ abstract class StressSpec
 
   override def shutdownTimeout: FiniteDuration = 30.seconds.dilated
 
+  override def verifySystemShutdown: Boolean = true
+
   override def muteLog(sys: ActorSystem = system): Unit = {
     super.muteLog(sys)
     sys.eventStream.publish(Mute(EventFilter[RuntimeException](pattern = ".*Simulated exception.*")))
@@ -782,7 +784,19 @@ abstract class StressSpec
                 previousAS.foreach { as =>
                   TestKit.shutdownActorSystem(as)
                 }
-                val sys = ActorSystem(system.name, system.settings.config)
+                val sys =  {
+                  val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
+                  if (port != 0) {
+                    ActorSystem(
+                      system.name,
+                      ConfigFactory.parseString(s"""
+                          akka.remote.classic.netty.tcp.port = ${port + 1}
+                          akka.remote.artery.canonical.port = ${port + 1}
+                          """).withFallback(system.settings.config))
+                  } else {
+                    ActorSystem(system.name, system.settings.config)
+                  }
+                }
                 muteLog(sys)
                 Cluster(sys).joinSeedNodes(seedNodes.toIndexedSeq.map(address))
                 Some(sys)
