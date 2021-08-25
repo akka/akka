@@ -65,7 +65,6 @@ jobs:
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx512M \
             akka-cluster-metrics/multiNodeTest \
-            akka-remote-tests/multiNodeTest \
             akka-cluster-typed/multiNodeTest
             
             # akka-cluster/multiNodeTest
