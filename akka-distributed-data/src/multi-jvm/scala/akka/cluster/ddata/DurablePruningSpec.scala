@@ -75,7 +75,19 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       join(first, first)
       join(second, first)
 
-      val sys2 = ActorSystem(system.name, system.settings.config)
+      val sys2 = {
+        val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
+        if (port != 0) {
+          ActorSystem(
+            system.name,
+            ConfigFactory.parseString(s"""
+                akka.remote.classic.netty.tcp.port = ${port + 1}
+                akka.remote.artery.canonical.port = ${port + 1}
+                """).withFallback(system.settings.config))
+        } else {
+          ActorSystem(system.name, system.settings.config)
+        }
+      }
       val cluster2 = Cluster(sys2)
       val distributedData2 = DistributedData(sys2)
       val replicator2 = startReplicator(sys2)
