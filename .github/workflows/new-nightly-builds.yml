@@ -4,11 +4,6 @@ name: PR Nightly Builds
 on:
   pull_request:
 
-concurrency:
-  # Only run once for latest commit per ref and cancel other (previous) runs.
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   akka-classic-cluster-tests:
     name: Artery Cluster
@@ -41,13 +36,11 @@ jobs:
       - name: sbt ${{ matrix.command }}
         run: |-
           sbt -jvm-opts .jvmopts-ci \
-          -J-Xss2m \
-          -J-XX:ReservedCodeCacheSize=128m \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.enabled=off \
-          -Dsbt.ivy.home=/localhome/jenkinsakka/.ivy2 \
-          -Dakka.test.timefactor=1 \
+          -Dakka.test.timefactor=2 \
           -Dakka.cluster.assert=on \
+          -Dakka.test.tags.exclude=gh-exclude \
           clean ${{ matrix.command }}
 
 # FIXME delete later
