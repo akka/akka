@@ -23,12 +23,6 @@ jobs:
       - name: Install Kubectl
         run: |
           sudo snap install kubectl --classic
-      # - name: Setup Minikube
-      #   uses: manusa/actions-setup-minikube@v2.4.2
-      #   with:
-      #     minikube version: 'v1.21.0'
-      #     kubernetes version: 'v1.21.0'
-      #     driver: docker
       - uses: google-github-actions/setup-gcloud@v0.2
         with:
           service_account_key: ${{ secrets.GKE_SA_KEY }}
@@ -66,17 +60,6 @@ jobs:
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx2G \
             multiNodeTest
-            
-            # akka-cluster-metrics/multiNodeTest \
-            # akka-cluster-typed/multiNodeTest
-            
-            # akka-cluster/multiNodeTest
-            # akka-cluster-sharding/multiNodeTest \
-            # akka-cluster-sharding-typed/multiNodeTest \
-            # akka-cluster-tools/multiNodeTest \
-            # akka-cluster-typed/multiNodeTest \
-            # akka-distributed-data/multiNodeTest \
-            # akka-remote-tests/multiNodeTest
       - name: Email on failure
         if: ${{ failure() }}
         uses: dawidd6/action-send-mail@v3
