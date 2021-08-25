@@ -5,6 +5,7 @@ TMP_DIR=.tmp
 
 kubectl delete deployments,services -l app=multi-node-test | true
 
+rm -rf ${DEST_HOST_FILE}
 rm -rf ${TMP_DIR}
 mkdir -p ${TMP_DIR}
 
