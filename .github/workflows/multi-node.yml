@@ -65,7 +65,7 @@ jobs:
             -Dmultinode.XX:+UseCompressedOops \
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx2G \
-            "akka-cluster/multiNodeTestOnly akka.cluster.Stress"
+            akka-cluster/multiNodeTest
             
             # akka-cluster-metrics/multiNodeTest \
             # akka-cluster-typed/multiNodeTest
