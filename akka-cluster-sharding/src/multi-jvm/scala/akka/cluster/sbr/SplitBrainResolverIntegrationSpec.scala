@@ -118,11 +118,24 @@ class SplitBrainResolverIntegrationSpec
     val sys: ActorSystem = {
       val dcName = scenario.dcDecider(myself)
 
-      val sys = ActorSystem(
-        system.name + "-" + c,
-        scenario.cfg
-          .withValue("akka.cluster.multi-data-center.self-data-center", ConfigValueFactory.fromAnyRef(dcName))
-          .withFallback(system.settings.config))
+      val sys = {
+        val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
+        if (port != 0) {
+          ActorSystem(
+            system.name,
+            ConfigFactory.parseString(s"""
+                akka.remote.classic.netty.tcp.port = ${port + 1}
+                akka.remote.artery.canonical.port = ${port + 1}
+                akka.cluster.multi-data-center.self-data-center = $dcName
+                """).withFallback(system.settings.config))
+        } else {
+          ActorSystem(
+            system.name + "-" + c,
+            scenario.cfg
+              .withValue("akka.cluster.multi-data-center.self-data-center", ConfigValueFactory.fromAnyRef(dcName))
+              .withFallback(system.settings.config))
+        }
+      }
       val gremlinController = sys.actorOf(GremlinController.props, "gremlinController")
       system.actorOf(GremlinControllerProxy.props(gremlinController), s"gremlinControllerProxy-$c")
       sys
