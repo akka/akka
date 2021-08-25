@@ -53,7 +53,7 @@ CLUSTER_VERSION=$2
 if [ -z "$CLUSTER_VERSION" ]
   then
     # https://cloud.google.com/kubernetes-engine/versioning-and-upgrades#versions_available_for_new_cluster_masters
-    CLUSTER_VERSION=$(gcloud container get-server-config --format json | jq -r .defaultClusterVersion)
+    CLUSTER_VERSION=$(gcloud container get-server-config --format="value(defaultClusterVersion)")
     echo "No cluster version specified. Using the default: $CLUSTER_VERSION"
   else
     echo "Cluster version: $CLUSTER_VERSION"
