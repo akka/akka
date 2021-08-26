@@ -55,7 +55,6 @@ jobs:
             -Dakka.test.multi-node.targetDirName=${PWD}/target/${JOB_ID} \
             -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
             -Dmultinode.XX:MetaspaceSize=128M \
-            -Dmultinode.XX:+UseCompressedOops \
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx1536G \
             -Dmultinode.Xlog:gc \
