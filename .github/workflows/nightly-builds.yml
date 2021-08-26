@@ -9,6 +9,7 @@ jobs:
   nightly-cluster-metrics-sigar:
     name: Akka Cluster Metrics Test with Sigar
     runs-on: ubuntu-20.04
+    if: github.repository == ‘akka/akka’
     steps:
 
       - name: Checkout
@@ -62,6 +63,7 @@ jobs:
   jdk-nightly-tests:
     name: JDK ${{ matrix.jdkVersion }} / Scala ${{ matrix.scalaVersion }}
     runs-on: ubuntu-20.04
+    if: github.repository == ‘akka/akka’
     strategy:
       matrix:
         # No need to specify the full Scala version. Only the Scala binary version
