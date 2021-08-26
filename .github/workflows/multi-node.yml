@@ -1,13 +1,14 @@
 name: Multi node test
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
+  push:
+#   schedule:
+#     - cron: '0 0 * * *'
 
-concurrency:
-  # Only run once for latest commit per ref and cancel other (previous) runs.
-  group: ci-multi-node-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   # Only run once for latest commit per ref and cancel other (previous) runs.
+#   group: ci-multi-node-${{ github.ref }}
+#   cancel-in-progress: true
 
 jobs:
   run-multi-node-tests:
@@ -27,8 +28,8 @@ jobs:
           project_id: ${{ secrets.GKE_PROJECT }}
       - name: Create the cluster
         run: |-
-          gcloud config set compute/region europe-west1
-          gcloud config set compute/zone europe-west1-b
+          gcloud config set compute/region us-central1
+          gcloud config set compute/zone us-central1-c
           ./kubernetes/create-cluster-gke.sh "akka-multi-node-${GITHUB_RUN_ID}"
       - name: Setup Pods
         run: |
@@ -56,7 +57,8 @@ jobs:
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.XX:+UseCompressedOops \
             -Dmultinode.Xms512M \
-            -Dmultinode.Xmx2G \
+            -Dmultinode.Xmx512M \
+            -Dmultinode.Xlog:gc \
             akka-cluster/multiNodeTest \
             akka-cluster-metrics/multiNodeTest \
             akka-cluster-sharding/multiNodeTest \
