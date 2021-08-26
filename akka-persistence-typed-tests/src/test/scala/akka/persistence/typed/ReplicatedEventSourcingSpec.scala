@@ -16,6 +16,7 @@ import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing, ReplicationContext }
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.GHExcludeTest
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -200,7 +201,7 @@ class ReplicatedEventSourcingSpec
       recoveryProbe.expectMessage(EventAndContext("Event", ReplicaId("R1"), recoveryRunning = true, false))
     }
 
-    "persist all" in {
+    "persist all" taggedAs GHExcludeTest in {
       val entityId = nextEntityId
       val probe = createTestProbe[Done]()
       val eventProbeR1 = createTestProbe[EventAndContext]()
