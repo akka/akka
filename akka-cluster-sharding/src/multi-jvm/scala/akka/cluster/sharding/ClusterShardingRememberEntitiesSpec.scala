@@ -11,6 +11,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.testkit._
+import akka.remote.testkit.MultiNodeSpec
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -200,19 +201,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
         }
         // no nodes left of the original cluster, start a new cluster
 
-        val sys2 = {
-          val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
-          if (port != 0) {
-            ActorSystem(
-              system.name,
-              ConfigFactory.parseString(s"""
-                  akka.remote.classic.netty.tcp.port = ${port + 1}
-                  akka.remote.artery.canonical.port = ${port + 1}
-                  """).withFallback(system.settings.config))
-          } else {
-            ActorSystem(system.name, system.settings.config)
-          }
-        }
+        val sys2 = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
         val entityProbe2 = TestProbe()(sys2)
         val probe2 = TestProbe()(sys2)
 

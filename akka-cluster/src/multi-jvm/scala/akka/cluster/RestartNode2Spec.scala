@@ -56,19 +56,7 @@ abstract class RestartNode2SpecSpec
   @volatile var seedNode1Address: Address = _
 
   // use a separate ActorSystem, to be able to simulate restart
-  lazy val seed1System = {
-    val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
-    if (port != 0) {
-      ActorSystem(
-        system.name,
-        ConfigFactory.parseString(s"""
-            akka.remote.classic.netty.tcp.port = ${port + 1}
-            akka.remote.artery.canonical.port = ${port + 1}
-            """).withFallback(system.settings.config))
-    } else {
-      ActorSystem(system.name, system.settings.config)
-    }
-  }
+  lazy val seed1System = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
 
   override def verifySystemShutdown: Boolean = true
 

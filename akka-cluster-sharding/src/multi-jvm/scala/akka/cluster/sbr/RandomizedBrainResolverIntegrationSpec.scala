@@ -130,20 +130,7 @@ class RandomizedSplitBrainResolverIntegrationSpec
     c += 1
 
     val sys: ActorSystem = {
-
-      val sys = {
-        val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
-        if (port != 0) {
-          ActorSystem(
-            system.name + "-" + c,
-            ConfigFactory.parseString(s"""
-                akka.remote.classic.netty.tcp.port = ${port + 1}
-                akka.remote.artery.canonical.port = ${port + 1}
-                """).withFallback(system.settings.config))
-        } else {
-          ActorSystem(system.name + "-" + c, system.settings.config)
-        }
-      }
+      val sys = ActorSystem(system.name + "-" + c, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
       val gremlinController = sys.actorOf(GremlinController.props, "gremlinController")
       system.actorOf(GremlinControllerProxy.props(gremlinController), s"gremlinControllerProxy-$c")
       sys

@@ -63,20 +63,10 @@ abstract class QuickRestartSpec
         log.info("round-" + n)
         runOn(second) {
           restartingSystem = if (restartingSystem == null) {
-            val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
-            if (port != 0) {
-              ActorSystem(
-                system.name,
-                ConfigFactory.parseString(s"""
-                      akka.cluster.roles = [round-$n]
-                      akka.remote.classic.netty.tcp.port = ${port + 1}
-                      akka.remote.artery.canonical.port = ${port + 1}
-                      """).withFallback(system.settings.config))
-            } else {
-              ActorSystem(
-                system.name,
-                ConfigFactory.parseString(s"akka.cluster.roles = [round-$n]").withFallback(system.settings.config))
-            }
+            ActorSystem(
+              system.name,
+              MultiNodeSpec.configureNextPortIfFixed(
+                ConfigFactory.parseString(s"akka.cluster.roles = [round-$n]").withFallback(system.settings.config)))
           } else {
             ActorSystem(
               system.name,

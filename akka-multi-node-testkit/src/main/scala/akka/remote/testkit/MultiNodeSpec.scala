@@ -257,6 +257,17 @@ object MultiNodeSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
+  def configureNextPortIfFixed(config: Config): Config = {
+    val port = config.getInt("akka.remote.artery.canonical.port")
+    if (port != 0) {
+      ConfigFactory.parseString(s"""
+            akka.remote.classic.netty.tcp.port = ${port + 1}
+            akka.remote.artery.canonical.port = ${port + 1}
+            """).withFallback(config)
+    } else {
+      config
+    }
+  }
 }
 
 /**
