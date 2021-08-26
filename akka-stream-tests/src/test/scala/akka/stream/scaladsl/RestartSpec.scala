@@ -562,7 +562,8 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" in assertAllStagesStopped {
+    // https://github.com/akka/akka/issues/30540
+    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" taggedAs GHExcludeTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
