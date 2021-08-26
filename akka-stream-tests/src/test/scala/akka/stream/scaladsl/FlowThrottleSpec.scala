@@ -18,7 +18,7 @@ import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.{ TimingTest, GHExcludeTest }
+import akka.testkit.{ GHExcludeTest, TimingTest }
 import akka.util.ByteString
 
 class FlowThrottleSpec extends StreamSpec("""
