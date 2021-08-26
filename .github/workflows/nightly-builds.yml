@@ -146,7 +146,7 @@ jobs:
 
 
   akka-artery-cluster-tests:
-    name: Artery Cluster
+    name: Artery Aeron UDP Cluster
     runs-on: ubuntu-20.04
     strategy:
       matrix:
