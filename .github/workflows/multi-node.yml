@@ -59,17 +59,6 @@ jobs:
             -Dmultinode.Xmx1536G \
             -Dmultinode.Xlog:gc \
             multiNodeTest
-
-            # all modules are:
-            # akka-cluster/multiNodeTest \
-            # akka-cluster-metrics/multiNodeTest \
-            # akka-cluster-sharding/multiNodeTest \
-            # akka-cluster-sharding-typed/multiNodeTest \
-            # akka-cluster-tools/multiNodeTest \
-            # akka-cluster-typed/multiNodeTest \
-            # akka-distributed-data/multiNodeTest \
-            # akka-remote-tests/multiNodeTest
-            
       - name: Email on failure
         if: ${{ failure() }}
         uses: dawidd6/action-send-mail@v3
