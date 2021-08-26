@@ -58,7 +58,7 @@ jobs:
             -Dmultinode.XX:+UseCompressedOops \
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx2G \
-            akka-cluster-metrics/multiNodeTest
+            multiNodeTest
       - name: Email on failure
         if: ${{ failure() }}
         uses: dawidd6/action-send-mail@v3
