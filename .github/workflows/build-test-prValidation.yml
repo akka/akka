@@ -33,14 +33,8 @@ jobs:
       - name: Code style check
         run: |-
           sbt -jvm-opts .jvmopts-ci \
-          -Dakka.mima.enabled=false \
-          -Dakka.ci-server=true \
-          -Dakka.test.multi-in-test=false \
-          -Dakka.test.multi-node=false \
-          -Dakka.cluster.assert=on \
           -Dsbt.override.build.repos=false \
           -Dsbt.log.noformat=false \
-          -Dakka.log.timestamps=true \
           scalafmtCheckAll scalafmtSbtCheck headerCheckAll
 
   check-publish:
@@ -64,10 +58,8 @@ jobs:
       - name: Akka publishLocal
         run: |-
           sbt -jvm-opts .jvmopts-ci \
-          -Dakka.ci-server=true \
           -Dsbt.override.build.repos=false \
           -Dsbt.log.noformat=false \
-          -Dakka.log.timestamps=true \
           publishLocal publishM2
 
 
@@ -94,7 +86,6 @@ jobs:
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
           -Dakka.ci-server=true \
-          -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
           -Dakka.test.multi-in-test=false \
           -Dakka.test.timefactor=2 \
           -Dakka.cluster.assert=on \
