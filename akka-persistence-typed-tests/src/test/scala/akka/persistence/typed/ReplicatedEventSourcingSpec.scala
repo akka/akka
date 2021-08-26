@@ -201,6 +201,7 @@ class ReplicatedEventSourcingSpec
       recoveryProbe.expectMessage(EventAndContext("Event", ReplicaId("R1"), recoveryRunning = true, false))
     }
 
+    // https://github.com/akka/akka/issues/30548
     "persist all" taggedAs GHExcludeTest in {
       val entityId = nextEntityId
       val probe = createTestProbe[Done]()
