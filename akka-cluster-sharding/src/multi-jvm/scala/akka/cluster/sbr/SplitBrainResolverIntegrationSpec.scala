@@ -123,11 +123,11 @@ class SplitBrainResolverIntegrationSpec
         if (port != 0) {
           ActorSystem(
             system.name,
-            ConfigFactory.parseString(s"""
-                akka.remote.classic.netty.tcp.port = ${port + 1}
-                akka.remote.artery.canonical.port = ${port + 1}
-                akka.cluster.multi-data-center.self-data-center = $dcName
-                """).withFallback(system.settings.config))
+            scenario.cfg
+              .withValue("akka.remote.classic.netty.tcp.port", ConfigValueFactory.fromAnyRef(port + 1))
+              .withValue("akka.remote.artery.canonical.port", ConfigValueFactory.fromAnyRef(port + 1))
+              .withValue("akka.cluster.multi-data-center.self-data-center", ConfigValueFactory.fromAnyRef(dcName))
+              .withFallback(system.settings.config))
         } else {
           ActorSystem(
             system.name + "-" + c,
