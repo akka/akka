@@ -131,7 +131,7 @@ class RandomizedSplitBrainResolverIntegrationSpec
 
     val sys: ActorSystem = {
 
-      val sys =  {
+      val sys = {
         val port = system.settings.config.getInt("akka.remote.artery.canonical.port")
         if (port != 0) {
           ActorSystem(
