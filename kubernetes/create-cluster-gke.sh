@@ -66,8 +66,6 @@ gcloud container clusters create $CLUSTER_NAME \
   --image-type cos \
   --machine-type n1-standard-4 \
   --num-nodes 5 \
-  --min-nodes=1 \
-  --max-nodes=10 \
   --no-enable-autoupgrade
 
   # --workload-pool=$gcloudProject.svc.id.goog # becoming default in next version, allows mapping of GCP service accounts to k8s service accounts
