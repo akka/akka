@@ -36,19 +36,9 @@ jobs:
 
       - name: Run Performance tests
         run: |
-          sbt -jvm-opts .jvmopts-ci \
+          sbt -jvm-opts .jvmopts-perf-ci \
             -Dakka.ci-server=true \
-            -XX:+UseParallelGC \
-            -XX:+UseParallelOldGC \
-            -Xms2g \
-            -Xmx2g \
-            -XX:-UseBiasedLocking \
-            -XX:+UseCompressedOops \
-            -XX:+PrintGCDetails \
-            -XX:+PrintGCTimeStamps \
-            -XX:MetaspaceSize=512M \
-            -Xss2m \
-            -XX:ReservedCodeCacheSize=256m \
+            -Dakka.test.timefactor=1 \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.timefactor=1 \
             ${{ matrix.command }}
