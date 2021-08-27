@@ -226,7 +226,7 @@ class FlowThrottleSpec extends StreamSpec("""
       downstream.cancel()
     }
 
-    "send elements downstream as soon as time comes" in assertAllStagesStopped {
+    "send elements downstream as soon as time comes" taggedAs GHExcludeTest in assertAllStagesStopped {
       val probe = Source(1 to 10).throttle(4, 500.millis, 0, _ => 2, Shaping).runWith(TestSink.probe[Int]).request(5)
       probe.receiveWithin(600.millis) should be(Seq(1, 2))
       probe.expectNoMessage(100.millis).expectNext(3).expectNoMessage(100.millis).expectNext(4).cancel()
