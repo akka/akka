@@ -15,6 +15,11 @@ jobs:
     name: Test
     runs-on: self-hosted
     if: github.repository == 'akka/akka'
+    strategy:
+      matrix:
+          command:
+            - "akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff GraphBuilderBenchmark.csv -p complexity=10 akka.stream.GraphBuilderBenchmark"
+            - "akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff MaterializationBenchmark.csv -p complexity=10 akka.stream.MaterializationBenchmark"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -32,26 +37,26 @@ jobs:
       - name: Run Performance tests
         run: |
           sbt -jvm-opts .jvmopts-ci \
-            -Dakka.ci-server=true
-            -XX:+UseParallelGC
-            -XX:+UseParallelOldGC
-            -Xms2g
-            -Xmx2g
-            -XX:-UseBiasedLocking
-            -XX:+UseCompressedOops
-            -XX:+PrintGCDetails
-            -XX:+PrintGCTimeStamps
-            -XX:MetaspaceSize=512M
-            -Xss2m
-            -XX:ReservedCodeCacheSize=256m
-            -Djava.security.egd=file:/dev/./urandom
-            -Dakka.test.timefactor=1
-            "akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff GraphBuilderBenchmark.csv -p complexity=10 akka.stream.GraphBuilderBenchmark" "akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff MaterializationBenchmark.csv -p complexity=10 akka.stream.MaterializationBenchmark"
+            -Dakka.ci-server=true \
+            -XX:+UseParallelGC \
+            -XX:+UseParallelOldGC \
+            -Xms2g \
+            -Xmx2g \
+            -XX:-UseBiasedLocking \
+            -XX:+UseCompressedOops \
+            -XX:+PrintGCDetails \
+            -XX:+PrintGCTimeStamps \
+            -XX:MetaspaceSize=512M \
+            -Xss2m \
+            -XX:ReservedCodeCacheSize=256m \
+            -Djava.security.egd=file:/dev/./urandom \
+            -Dakka.test.timefactor=1 \
+            ${{ matrix.command }}
 
       - name: 'Store produced csv files'
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: 'benchmark-results'
-          path: 'akka-bench-jmh/*.csv'
+          name: benchmark-results ${{ matrix.command }}
+          path: akka-bench-jmh/*.csv
           if-no-files-found: error
