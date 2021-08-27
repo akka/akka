@@ -37,6 +37,7 @@ jobs:
           -Dakka.test.timefactor=2 \
           -Dakka.cluster.assert=on \
           -Dakka.test.tags.exclude=gh-exclude \
+          -Dakka.test.names.exclude=akka.cluster.Stress \
           clean ${{ matrix.command }}
 
 # FIXME delete later
