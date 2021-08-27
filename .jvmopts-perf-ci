@@ -6,8 +6,7 @@
 -Xmx2g
 -XX:-UseBiasedLocking
 -XX:+UseCompressedOops
--XX:+PrintGCDetails
--XX:+PrintGCTimeStamps
+-Xlog:gc
 -XX:MetaspaceSize=512M
 -Xss2m
 -XX:ReservedCodeCacheSize=256m
