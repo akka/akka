@@ -36,7 +36,8 @@ jobs:
 
       - name: Run Performance tests
         run: |
-          sbt -jvm-opts .jvmopts-perf-ci \
+          cp .jvmopts-perf-ci .jvmopts
+          sbt \
             -Dakka.ci-server=true \
             -Dakka.test.timefactor=1 \
             -Djava.security.egd=file:/dev/./urandom \
