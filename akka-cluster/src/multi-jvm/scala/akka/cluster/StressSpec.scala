@@ -454,7 +454,7 @@ abstract class StressSpec
 
   override def beforeEach(): Unit = { step += 1 }
 
-  override def expectedTestDuration = settings.expectedTestDuration
+  override def expectedTestDuration: FiniteDuration = settings.expectedTestDuration
 
   override def shutdownTimeout: FiniteDuration = 30.seconds.dilated
 
