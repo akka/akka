@@ -1,19 +1,20 @@
 name: Multi node test
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
+  push:
+#   schedule:
+#     - cron: '0 0 * * *'
 
-concurrency:
-  # Only run once for latest commit per ref and cancel other (previous) runs.
-  group: ci-multi-node-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   # Only run once for latest commit per ref and cancel other (previous) runs.
+#   group: ci-multi-node-${{ github.ref }}
+#   cancel-in-progress: true
 
 jobs:
   run-multi-node-tests:
     name: Multi Node Test
     runs-on: ubuntu-20.04
-    if: github.repository == ‘akka/akka’
+    # if: github.repository == ‘akka/akka’
     steps:
       - name: Checkout
         uses: actions/checkout@v2
