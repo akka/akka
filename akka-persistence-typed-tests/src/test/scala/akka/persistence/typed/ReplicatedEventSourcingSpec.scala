@@ -18,6 +18,7 @@ import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, Replicate
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.testkit.GHExcludeTest
 
 object ReplicatedEventSourcingSpec {
 
@@ -329,7 +330,7 @@ class ReplicatedEventSourcingSpec
       eventProbeR3.expectNoMessage()
     }
 
-    "set concurrent on replay of events" in {
+    "set concurrent on replay of events" taggedAs GHExcludeTest in {
       val entityId = nextEntityId
       val probe = createTestProbe[Done]()
       val eventProbeR1 = createTestProbe[EventAndContext]()
