@@ -72,7 +72,7 @@ gcloud container clusters create $CLUSTER_NAME \
 
 ## Wait for clusters to come up
 echo "Waiting for cluster to become stable before continuing with the installation....."
-gcloud compute instance-groups managed list | grep gke-$CLUSTER_NAME | awk '/'$my_name'/ {print $1}' | while read -r line ; do
+gcloud compute instance-groups managed list --filter="name~gke-$CLUSTER_NAME" --format="value(name)" | while read -r line ; do
   gcloud compute instance-groups managed wait-until --stable $line
 done
 

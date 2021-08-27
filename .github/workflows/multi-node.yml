@@ -42,8 +42,6 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
       - name: Multi node test
-        env:
-          JOB_ID: ${{ github.run_id }}
         run: |
           cat multi-node-test.hosts
           sbt -jvm-opts .jvmopts-ci \
@@ -52,7 +50,7 @@ jobs:
             -Dsbt.override.build.repos=false \
             -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.test.multi-node=true \
-            -Dakka.test.multi-node.targetDirName=${PWD}/target/${JOB_ID} \
+            -Dakka.test.multi-node.targetDirName=${PWD}/target/${{ github.run_id }} \
             -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms512M \

@@ -257,16 +257,23 @@ object MultiNodeSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
+  // Multi node tests on kuberenetes require fixed ports to be mapped and exposed
+  // This method change the port bindings to avoid conflicts
+  // Please note that with the current setup only port 5000 and 5001 are exposed in kubernetes
   def configureNextPortIfFixed(config: Config): Config = {
-    val port = config.getInt("akka.remote.artery.canonical.port")
-    if (port != 0) {
-      ConfigFactory.parseString(s"""
-            akka.remote.classic.netty.tcp.port = ${port + 1}
-            akka.remote.artery.canonical.port = ${port + 1}
-            """).withFallback(config)
-    } else {
-      config
-    }
+    val arteryPortConfig = getNextPortString("akka.remote.artery.canonical.port", config)
+    val nettyPortConfig = getNextPortString("akka.remote.classic.netty.tcp.port", config)
+    ConfigFactory.parseString(s"""{
+      $arteryPortConfig
+      $nettyPortConfig
+      }""").withFallback(config)
+  }
+
+  private def getNextPortString(key: String, config: Config): String = {
+    val port = config.getInt(key)
+    if (port != 0)
+      s"""$key = ${port + 1}"""
+    else ""
   }
 }
 
