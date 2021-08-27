@@ -5,10 +5,10 @@ on:
   #   - cron: "0 0 * * *"
   push:
 
-concurrency:
-  # Only run once for latest commit per ref and cancel other (previous) runs.
-  group: akka-stream-perf-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   # Only run once for latest commit per ref and cancel other (previous) runs.
+#   group: akka-stream-perf-${{ github.ref }}
+#   cancel-in-progress: true
 
 jobs:
   test:
@@ -26,10 +26,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
+      # - name: Set up JDK 11
+      #   uses: olafurpg/setup-scala@v10
+      #   with:
+      #     java-version: adopt@1.11
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
