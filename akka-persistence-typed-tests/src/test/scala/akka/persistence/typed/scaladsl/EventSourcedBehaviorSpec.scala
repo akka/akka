@@ -360,9 +360,14 @@ class EventSourcedBehaviorSpec
 
       val counterDefaultRecoveryStrategy = spawn(counterWithRecoveryStrategy(Recovery.default))
       counterSetup ! Increment
+
       counterSetup ! StopIt
       probe.expectTerminated(counterSetup)
+
       counterDefaultRecoveryStrategy ! GetValue(probe.ref)
+      counterDefaultRecoveryStrategy ! StopIt
+      probe.expectTerminated(counterDefaultRecoveryStrategy)
+
       probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
 
       val counterDisabledRecoveryStrategy = spawn(counterWithRecoveryStrategy(Recovery.disabled))
