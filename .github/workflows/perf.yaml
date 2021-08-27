@@ -13,18 +13,12 @@ jobs:
     strategy:
       matrix:
           command:
-            - "'akka-bench-jmh/jmh:compile; akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff GraphBuilderBenchmark.csv -p complexity=10 akka.stream.GraphBuilderBenchmark'"
-            - "'akka-bench-jmh/jmh:compile; akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff MaterializationBenchmark.csv -p complexity=10 akka.stream.MaterializationBenchmark'"
+            
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-
-      # - name: Set up JDK 11
-      #   uses: olafurpg/setup-scala@v10
-      #   with:
-      #     java-version: adopt@1.11
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
@@ -37,7 +31,9 @@ jobs:
             -Dakka.test.timefactor=1 \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.timefactor=1 \
-            ${{ matrix.command }}
+            "akka-bench-jmh/jmh:compile" \
+            "akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff GraphBuilderBenchmark.csv -p complexity=10 akka.stream.GraphBuilderBenchmark" \
+            "akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff MaterializationBenchmark.csv -p complexity=10 akka.stream.MaterializationBenchmark"
 
       - name: 'Store produced csv files'
         if: success()
