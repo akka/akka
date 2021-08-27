@@ -5,11 +5,6 @@ on:
   #   - cron: "0 0 * * *"
   push:
 
-# concurrency:
-#   # Only run once for latest commit per ref and cancel other (previous) runs.
-#   group: akka-stream-perf-${{ github.ref }}
-#   cancel-in-progress: true
-
 jobs:
   test:
     name: Test
@@ -18,8 +13,8 @@ jobs:
     strategy:
       matrix:
           command:
-            - "'akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff GraphBuilderBenchmark.csv -p complexity=10 akka.stream.GraphBuilderBenchmark'"
-            - "'akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff MaterializationBenchmark.csv -p complexity=10 akka.stream.MaterializationBenchmark'"
+            - "'akka-bench-jmh/jmh:compile akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff GraphBuilderBenchmark.csv -p complexity=10 akka.stream.GraphBuilderBenchmark'"
+            - "'akka-bench-jmh/jmh:compile akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff MaterializationBenchmark.csv -p complexity=10 akka.stream.MaterializationBenchmark'"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
