@@ -23,6 +23,7 @@ spec:
             cpu: "1"
           limits:
             memory: "2Gi"
+            cpu: "1"
         lifecycle:
           postStart:
             exec:
