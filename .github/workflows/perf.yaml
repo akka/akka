@@ -10,10 +10,7 @@ jobs:
     name: Test
     runs-on: self-hosted
     if: github.repository == 'akka/akka'
-    strategy:
-      matrix:
-          command:
-            
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
