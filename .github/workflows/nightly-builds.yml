@@ -151,13 +151,9 @@ jobs:
     strategy:
       matrix:
         command:
-          - "akka-cluster/test"
-          - "akka-distributed-data/test"
-          - "akka-cluster-tools/test"
-          - "akka-cluster-sharding/test"
-          - "akka-cluster-metrics/test"
-          - "akka-cluster-typed/test"
-          - "akka-cluster-sharding-typed/test"
+          - akka-cluster/test akka-distributed-data/test akka-cluster-tools/test akka-cluster-metrics/test
+          - akka-cluster-sharding/test
+          - akka-cluster-typed/test akka-cluster-sharding-typed/test
     steps:
       - name: Checkout
         uses: actions/checkout@v2
