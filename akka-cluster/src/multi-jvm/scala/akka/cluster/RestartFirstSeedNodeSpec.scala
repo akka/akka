@@ -52,7 +52,9 @@ abstract class RestartFirstSeedNodeSpec
   @volatile var seedNode1Address: Address = _
 
   // use a separate ActorSystem, to be able to simulate restart
-  lazy val seed1System = ActorSystem(system.name, system.settings.config)
+  lazy val seed1System = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
+
+  override def verifySystemShutdown: Boolean = true
 
   def missingSeed = address(seed3).copy(port = Some(61313))
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seedNode1Address, seed2, seed3, missingSeed)
@@ -67,6 +69,7 @@ abstract class RestartFirstSeedNodeSpec
   override def afterAll(): Unit = {
     runOn(seed1) {
       shutdown(if (seed1System.whenTerminated.isCompleted) restartedSeed1System else seed1System)
+
     }
     super.afterAll()
   }

@@ -75,7 +75,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       join(first, first)
       join(second, first)
 
-      val sys2 = ActorSystem(system.name, system.settings.config)
+      val sys2 = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
       val cluster2 = Cluster(sys2)
       val distributedData2 = DistributedData(sys2)
       val replicator2 = startReplicator(sys2)

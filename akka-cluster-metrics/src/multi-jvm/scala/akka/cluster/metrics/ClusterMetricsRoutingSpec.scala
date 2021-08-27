@@ -6,6 +6,7 @@ package akka.cluster.metrics
 
 import java.lang.management.ManagementFactory
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -25,7 +26,7 @@ import akka.routing.FromConfig
 import akka.routing.GetRoutees
 import akka.routing.Routees
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
+import akka.testkit.{ DefaultTimeout, GHExcludeTest, ImplicitSender, LongRunningTest }
 import akka.util.unused
 
 object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
@@ -118,6 +119,7 @@ class AdaptiveLoadBalancingRouterMultiJvmNode1 extends AdaptiveLoadBalancingRout
 class AdaptiveLoadBalancingRouterMultiJvmNode2 extends AdaptiveLoadBalancingRouterSpec
 class AdaptiveLoadBalancingRouterMultiJvmNode3 extends AdaptiveLoadBalancingRouterSpec
 
+@nowarn
 abstract class AdaptiveLoadBalancingRouterSpec
     extends MultiNodeSpec(AdaptiveLoadBalancingRouterConfig)
     with MultiNodeClusterSpec
@@ -170,7 +172,8 @@ abstract class AdaptiveLoadBalancingRouterSpec
       enterBarrier("after-1")
     }
 
-    "use all nodes in the cluster when not overloaded" taggedAs LongRunningTest in {
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
+    "use all nodes in the cluster when not overloaded" taggedAs (LongRunningTest, GHExcludeTest) in {
       runOn(node1) {
         val router1 = startRouter("router1")
 
@@ -196,7 +199,8 @@ abstract class AdaptiveLoadBalancingRouterSpec
       enterBarrier("after-2")
     }
 
-    "prefer node with more free heap capacity" taggedAs LongRunningTest in {
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
+    "prefer node with more free heap capacity" taggedAs (LongRunningTest, GHExcludeTest) in {
       System.gc()
       enterBarrier("gc")
 
@@ -229,7 +233,8 @@ abstract class AdaptiveLoadBalancingRouterSpec
       enterBarrier("after-3")
     }
 
-    "create routees from configuration" taggedAs LongRunningTest in {
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
+    "create routees from configuration" taggedAs (LongRunningTest, GHExcludeTest) in {
       runOn(node1) {
         val router3 = system.actorOf(FromConfig.props(Props[Memory]()), "router3")
         // it may take some time until router receives cluster member events
@@ -240,7 +245,8 @@ abstract class AdaptiveLoadBalancingRouterSpec
       enterBarrier("after-4")
     }
 
-    "create routees from cluster.enabled configuration" taggedAs LongRunningTest in {
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
+    "create routees from cluster.enabled configuration" taggedAs (LongRunningTest, GHExcludeTest) in {
       runOn(node1) {
         val router4 = system.actorOf(FromConfig.props(Props[Memory]()), "router4")
         // it may take some time until router receives cluster member events
