@@ -47,7 +47,7 @@ Another group of issues is those which start from a number. They're used to sign
 The last group of special tags indicates specific states a ticket is in:
 
 - [bug](https://github.com/akka/akka/labels/bug) indicates potential production issues. Bugs take priority in being fixed above features. The core team dedicates some days to work on bugs in each sprint. Bugs which have reproducers are also great for community contributions as they're well-isolated. Sometimes we're not as lucky to have reproducers, though, then a bugfix should also include a test reproducing the original error along with the fix.
-- [failed](https://github.com/akka/akka/labels/failed) indicates a Jenkins failure (for example, from a nightly build). These tickets usually include a stacktrace + link to the Jenkins failure, and we'll add a comment when we see the same problem again. Since these tickets can either indicate tests with incorrect assumptions, or legitimate issues in the production code, we look at them periodically. When the same problem isn't seen again over a period of 6 months we assume it to be a rare flaky test or a problem that might have since been fixed, so we close the issue until it pops up again.
+- [failed](https://github.com/akka/akka/labels/failed) indicates a CI failure (for example, from a nightly build). These tickets usually include a stacktrace + link to the failed job, and we'll add a comment when we see the same problem again. Since these tickets can either indicate tests with incorrect assumptions, or legitimate issues in the production code, we look at them periodically. When the same problem isn't seen again over a period of 6 months we assume it to be a rare flaky test or a problem that might have since been fixed, so we close the issue until it pops up again.
 
 Pull request validation states:
 
@@ -76,9 +76,9 @@ The steps are exactly the same for everyone involved in the project, including t
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
 1. If it's a new feature or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs). When the feature touches Scala and Java DSL, document both the Scala and Java APIs.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
-    - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, as this will cause the PR to be linked properly with the Issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
+    - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, as this will cause the PR to be linked properly with the issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
 1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](http://www.lightbend.com/contribute/cla) online. CLA stands for Contributor License Agreement and protects intellectual property disputes from harming the project.
-1. A core member will comment `OK TO TEST` on your PR to kick off the build. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
+1. If you are a first time contributor, a core member must approval approve the CI to run for your pull request.
 1. Now, both committers and interested people will review your code. This process ensures that the code we merge is of the best possible quality and that no silly mistakes slip through. You're expected to follow-up on these comments by adding new commits to the same branch. The commit messages of those commits can be more loose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
     - The community and core team are really nice people, so don't be afraid to ask follow-up questions if you didn't understand some comment or would like clarification on how to continue with a given feature. We're here to help, so feel free to ask and discuss any questions you might have during the review process!
 1. After the review, you should fix the issues as needed (pushing a new commit for a new review, etc.), iterating until the reviewers give their approval signaled by GitHub's pull-request approval feature. Usually, a reviewer will add an `LGTM` comment, which means "Looks Good To Me".
@@ -310,7 +310,7 @@ For a pull request to be considered at all, it has to meet these requirements:
 1. All Lightbend projects must include Lightbend copyright notices.  Each project can choose between one of two approaches:
 
     1. All source files in the project must have a Lightbend copyright notice in the file header.
-    1. The Notices file for the project includes the Lightbend copyright notice and no other files contain copyright notices.  See <http://www.apache.org/legal/src-headers.html> for instructions for managing this approach for copyrights.
+    1. The Notices file for the project includes the Lightbend copyright notice and no other files contain copyright notices.  See <https://www.apache.org/legal/src-headers.html> for instructions for managing this approach for copyrights.
 
     Akka uses the first choice, having copyright notices in every file header. When absent, these are added automatically during `sbt compile`.
 
@@ -371,7 +371,7 @@ If you'd like to check if your links and formatting look good in JavaDoc (and no
 sbt -Dakka.genjavadoc.enabled=true Javaunidoc/doc
 ```
 
-Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`. This requires a jdk version 11 or later.
+Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`. This requires a JDK version 11 or later.
 
 ### External dependencies
 
@@ -417,17 +417,11 @@ Enable Travis CI #1
 
 ### Pull request validation workflow details
 
-Akka uses [Jenkins GitHub pull request builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin)
-that automatically merges the code, builds it, runs the tests, and comments on the pull request in GitHub.
+Akka uses GitHub Actions to validate pull requests, which involves checking code style, run tests, check binary compatibility, etc.
 
-Upon submission of a pull request, the GitHub pull request builder plugin will post the following comment:
+For existing contributors, Github Actions will run without requiring any manual intervention from a core team member.
 
-    Can one of the repo owners verify this patch?
-
-This requires a member from a core team to start the pull request validation process by posting a comment consisting only of `OK TO TEST`.
-From now on, whenever new commits are pushed to the pull request, a validation job will be automatically started and the results of the validation posted to the pull request.
-
-A pull request validation job can be started manually by posting `PLS BUILD` comment on the pull request.
+For first time contributors, the workflow will be run after an approval from a core team member. After that, whenever new commits are pushed to the pull request, a validation job will be automatically started.
 
 To speed up PR validation times the Akka build contains a special sbt task called `validatePullRequest`,
 which is smart enough to figure out which projects should be built if a PR only has changes in some parts of the project.
@@ -441,11 +435,13 @@ You can exclude the same kind of tests in your local build by starting sbt with:
 sbt -Dakka.test.tags.exclude=performance,timing,long-running -Dakka.test.multi-in-test=false
 ```
 
-In order to force the `validatePullRequest` task to build the entire project, regardless of dependency analysis of a PRs
-changes one can use the special `PLS BUILD ALL` command (typed in a comment on GitHub, on the pull request), which will cause
-the validator to test all projects.
+It is also possible to exclude groups of test by their names. For example:
 
-Note, that `OK TO TEST` will only be picked up when the user asking for it is considered a core team member. Public (!) members of the [akka organization](https://github.com/orgs/akka/people) are automatically considered admins and users manually declared admin in the Jenkins job (currently no one is explicitly listed). `PLS BUILD` and `PLS BUILD ALL` can be issued by everyone that is an admin or everyone who was given permission in the Jenkins Job.
+```shell
+sbt -Dakka.test.names.exclude=akka.cluster.Stress
+```
+
+Will exclude any tests that have names containing `akka.cluster.Stress`.
 
 ### Source style
 
@@ -484,7 +480,7 @@ PR validation includes the discipline flags and hence may fail if the flags were
 
 #### Preferred ways to use timeouts in tests
 
-Avoid short test timeouts since Jenkins server may GC heavily, causing spurious test failures. GC pause or other hiccups of 2 seconds are common in our CI environment. Please note that usually giving a larger timeout *does not slow down the tests*, as in an `expectMessage` call for example it usually will complete quickly.
+Avoid short test timeouts since Github Actions runners may GC heavily, causing spurious test failures. GC pause or other hiccups of 2 seconds are common in our CI environment. Please note that usually giving a larger timeout *does not slow down the tests*, as in an `expectMessage` call for example it usually will complete quickly.
 
 There are a number of ways timeouts can be defined in Akka tests. The following ways to use timeouts are recommended (in order of preference):
 
@@ -604,15 +600,13 @@ disclosure!
 
 ### Continuous integration
 
-Akka currently uses a combination of Jenkins and Travis for Continuous Integration:
+Akka currently uses Github Actions to run continuous integration. There are workflows for different purposes, such as:
 
-* Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/job/pr-validator-per-commit-jenkins/)
-* Jenkins [runs a nightly test suite](https://jenkins.akka.io:8498/view/Nightly%20Jobs/job/akka-nightly/)
-* Travis [checks dependency licenses for all PR's](https://travis-ci.com/github/akka/akka)
+* Validating pull requests
+* Nightly builds
+* Run a larger group of tests when pushing code to master branch.
 
-The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
-
-The cluster is made out of real bare-metal boxes and maintained by the Akka team (and other very helpful people at Lightbend).
+Anyone can propose new changes to our CI workflows, and we will gladly review them as we do for regular pull-requests.
 
 ### Related links
 
