@@ -23,18 +23,15 @@ jobs:
         run: |
           cp .jvmopts-perf-ci .jvmopts
           sbt \
-            -Dakka.ci-server=true \
-            -Dakka.test.timefactor=1 \
             -Djava.security.egd=file:/dev/./urandom \
-            -Dakka.test.timefactor=1 \
-            "akka-bench-jmh/jmh:compile" \
-            "akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff GraphBuilderBenchmark.csv -p complexity=10 akka.stream.GraphBuilderBenchmark" \
-            "akka-bench-jmh/jmh:runMain akka.BenchRunner full -rf csv -rff MaterializationBenchmark.csv -p complexity=10 akka.stream.MaterializationBenchmark"
+            "akka-bench-jmh/Jmh/compile" \
+            "akka-bench-jmh/Jmh/runMain akka.BenchRunner full -rf csv -rff GraphBuilderBenchmark.csv -p complexity=10 akka.stream.GraphBuilderBenchmark" \
+            "akka-bench-jmh/Jmh/runMain akka.BenchRunner full -rf csv -rff MaterializationBenchmark.csv -p complexity=10 akka.stream.MaterializationBenchmark"
 
       - name: 'Store produced csv files'
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: benchmark-results ${{ matrix.command }}
+          name: benchmark-results
           path: akka-bench-jmh/*.csv
           if-no-files-found: error
