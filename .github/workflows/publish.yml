@@ -13,6 +13,7 @@ jobs:
   sbt:
     name: sbt publish
     runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
     steps:
       - name: Checkout
         uses: actions/checkout@v2

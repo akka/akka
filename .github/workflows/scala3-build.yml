@@ -17,6 +17,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
     strategy:
       matrix:
         command:
