@@ -291,7 +291,7 @@ The generated files are automatically transformed to use the shaded version of p
 
 Generation depends on protoc `3.9.0` being on the path. Old versions of
 protoc can be downloaded from the [protobuf release page](https://github.com/protocolbuffers/protobuf/releases) and built from
-source or downloaded from [maven central](http://repo1.maven.org/maven2/com/google/protobuf/protoc/3.9.0/). See
+source or downloaded from [maven central](https://repo1.maven.org/maven2/com/google/protobuf/protoc/3.9.0/). See
 [Protobuf.scala](https://github.com/akka/akka/blob/master/project/Protobuf.scala) for details of how to override 
 the settings for generation.
 
@@ -314,7 +314,7 @@ For a pull request to be considered at all it has to meet these requirements:
 
 Some additional guidelines regarding source code are:
 
-- Keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
+- Keep the code [DRY](https://www.oreilly.com/library/view/97-things-every/9780596809515/ch30.html).
 - Apply the [Boy Scout Rule](https://www.oreilly.com/library/view/97-things-every/9780596809515/ch08.html) whenever you have the chance to.
 - Never delete or change existing copyright notices, just add additional info.
 - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html).
