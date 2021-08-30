@@ -267,7 +267,7 @@ compromising any node with certificates issued by the same internal PKI tree.
 
 By default, @ref[Java serialization](serialization.md#java-serialization) is disabled in Akka.
 That is also security best-practice because of its multiple
-[known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+[known attack surfaces](https://community.microfocus.com/cyberres/fortify/f/fortify-discussions/317555/the-perils-of-java-deserialization).
 
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
