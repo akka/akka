@@ -62,6 +62,41 @@ jobs:
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
 
+  akka-classic-remoting-tests:
+    name: Akka Classic Remoting Tests
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        command:
+          - akka-cluster/test akka-distributed-data/test akka-cluster-tools/test akka-cluster-metrics/test
+          - akka-cluster-sharding/test
+          - akka-cluster-typed/test akka-cluster-sharding-typed/test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: sbt ${{ matrix.command }}
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Djava.security.egd=file:/dev/./urandom \
+          -Dakka.remote.artery.enabled=off \
+          -Dakka.test.timefactor=2 \
+          -Dakka.cluster.assert=on \
+          -Dakka.test.tags.exclude=gh-exclude \
+          -Dakka.test.names.exclude=akka.cluster.Stress \
+          clean ${{ matrix.command }}
+
   jdk-nightly-tests:
     name: JDK ${{ matrix.jdkVersion }} / Scala ${{ matrix.scalaVersion }}
     runs-on: ubuntu-20.04

@@ -95,7 +95,11 @@ object MultiJvmPlugin extends AutoPlugin {
       multiJvmMarker := "MultiJvm",
       loadedTestFrameworks := (loadedTestFrameworks in Test).value,
       definedTests := Defaults.detectTests.value,
-      multiJvmTests := collectMultiJvm(definedTests.value.map(_.name), multiJvmMarker.value),
+      multiJvmTests := collectMultiJvmTests(
+          definedTests.value,
+          multiJvmMarker.value,
+          (MultiJvm / testOptions).value,
+          streams.value.log),
       multiJvmTestNames := multiJvmTests.map(_.keys.toSeq).storeAs(multiJvmTestNames).triggeredBy(compile).value,
       multiJvmApps := collectMultiJvm(discoveredMainClasses.value, multiJvmMarker.value),
       multiJvmAppNames := multiJvmApps.map(_.keys.toSeq).storeAs(multiJvmAppNames).triggeredBy(compile).value,
@@ -165,6 +169,43 @@ object MultiJvmPlugin extends AutoPlugin {
       assemblyJarName in assembly := {
         name.value + "_" + scalaVersion.value + "-" + version.value + "-multi-jvm-assembly.jar"
       })
+
+  def collectMultiJvmTests(
+      discovered: Seq[TestDefinition],
+      marker: String,
+      testOptions: Seq[TestOption],
+      log: Logger): Map[String, Seq[String]] = {
+    val testFilters = new collection.mutable.ListBuffer[String => Boolean]
+    val excludeTestsSet = new collection.mutable.HashSet[String]
+
+    for (option <- testOptions) {
+      option match {
+        case Tests.Exclude(excludedTests) => excludeTestsSet ++= excludedTests
+        case Tests.Filter(filterTestsIn)  => testFilters += filterTestsIn
+        case _                            => // do nothing since the intention is only to filter tests
+      }
+    }
+
+    if (excludeTestsSet.nonEmpty) {
+      log.debug(excludeTestsSet.mkString("Excluding tests: \n\t", "\n\t", ""))
+    }
+
+    def includeTest(test: TestDefinition): Boolean = {
+      !excludeTestsSet.contains(test.name) && testFilters.forall(filter => filter(test.name)) && test.name.contains(
+        marker)
+    }
+
+    val groupedTests: Map[String, List[TestDefinition]] =
+      discovered.filter(includeTest).toList.distinct.groupBy(test => multiName(test.name, marker))
+
+    groupedTests.map {
+      case (key, values) =>
+        val totalNodes = sys.props.get(marker + "." + key + ".nrOfNodes").getOrElse(values.size.toString).toInt
+        val sortedClasses = values.map(_.name).sorted
+        val totalClasses = sortedClasses.padTo(totalNodes, sortedClasses.last)
+        (key, totalClasses)
+    }
+  }
 
   def collectMultiJvm(discovered: Seq[String], marker: String): Map[String, Seq[String]] = {
     val found = discovered.filter(_.contains(marker)).groupBy(multiName(_, marker))
