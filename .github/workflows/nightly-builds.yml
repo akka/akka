@@ -15,8 +15,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          # we don't know what commit the last tag was it's safer
-          # to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
       - name: Set up JDK 8
@@ -97,7 +95,7 @@ jobs:
           -Dakka.test.names.exclude=akka.cluster.Stress \
           clean ${{ matrix.command }}
 
-  jdk-nightly-tests:
+  jdk-nightly-build:
     name: JDK ${{ matrix.jdkVersion }} / Scala ${{ matrix.scalaVersion }}
     runs-on: ubuntu-20.04
     if: github.repository == 'akka/akka'
@@ -122,9 +120,9 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-      # Only run multijvm tests in Scala 2.13. No need to run it to
+      # Only run multi-jvm tests in Scala 2.13. No need to run it to
       # multiple Scala versions AND multiple JDK versions. This will
-      # run multijvm tests to run for both JDK 8 and 11 though.
+      # run multi-jvm tests to run for both JDK 8 and 11 though.
       - name: Compile and Test
         run: |-
           ## TODO: restore the multi-node tests
@@ -189,6 +187,7 @@ jobs:
           - akka-cluster/test akka-distributed-data/test akka-cluster-tools/test akka-cluster-metrics/test
           - akka-cluster-sharding/test
           - akka-cluster-typed/test akka-cluster-sharding-typed/test
+          - akka-remote/test akka-remote-tests/test
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -211,7 +210,6 @@ jobs:
           -Dakka.remote.artery.transport=aeron-udp \
           -Dakka.test.timefactor=2 \
           -Dakka.cluster.assert=on \
-          -Dakka.remote.artery.enabled=on \
           -Dakka.test.tags.exclude=gh-exclude \
           clean ${{ matrix.command }}
 
