@@ -12,20 +12,10 @@ jobs:
     if: github.repository == 'akka/akka'
     steps:
 
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Base setup
+        uses: ignasi35/akka-base-action@v1
         with:
-          # we don't know what commit the last tag was it's safer
-          # to get entire repo so previousStableVersion resolves
-          fetch-depth: 0
-
-      - name: Set up JDK 8
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.8.0
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+          olafurpg-java-version: 'adopt@1.8.0'
 
       - name: sbt akka-cluster-metrics/test
         run: |-
@@ -74,18 +64,10 @@ jobs:
         scalaVersion: ["2.12", "2.13"]
         jdkVersion: ["adopt@1.8.0", "adopt@1.11"]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Base setup
+        uses: ignasi35/akka-base-action@v1
         with:
-          fetch-depth: 0
-
-      - name: Set up JDK ${{ matrix.jdkVersion }}
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: ${{ matrix.jdkVersion }}
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+          olafurpg-java-version: ${{ matrix.jdkVersion }}
 
       # Only run multijvm tests in Scala 2.13. No need to run it to
       # multiple Scala versions AND multiple JDK versions. This will
@@ -155,19 +137,8 @@ jobs:
           - akka-cluster-sharding/test
           - akka-cluster-typed/test akka-cluster-sharding-typed/test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
-          fetch-depth: 0
-
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+      - name: Base setup
+        uses: ignasi35/akka-base-action@v1
 
       - name: sbt ${{ matrix.command }}
         run: |-

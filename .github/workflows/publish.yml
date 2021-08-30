@@ -14,15 +14,11 @@ jobs:
     name: sbt publish
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Base setup
+        uses: ignasi35/akka-base-action@v1
         with:
-          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
-          fetch-depth: 0
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11.0-9
+          olafurpg-java-version: 'adopt@1.11.0-9'
+
       - name: Publish
         run: |-
           sudo apt-get install graphviz
