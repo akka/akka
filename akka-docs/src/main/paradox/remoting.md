@@ -479,7 +479,7 @@ akka {
 Always use [substitution from environment variables](https://github.com/lightbend/config#optional-system-or-env-variable-overrides)
 for passwords. Don't define real passwords in config files.
 
-According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
+According to [RFC 7525](https://www.rfc-editor.org/rfc/rfc7525.html) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
 
  * TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
  * TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
@@ -623,4 +623,4 @@ Keep in mind that local.address will most likely be in one of private network ra
  * *172.16.0.0 - 172.31.255.255* (network class B)
  * *192.168.0.0 - 192.168.255.255* (network class C)
 
-For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
+For further details see [RFC 1597](https://www.rfc-editor.org/rfc/rfc1597.html) and [RFC 1918](https://www.rfc-editor.org/rfc/rfc1918.html).

@@ -71,7 +71,7 @@ import akka.util.ByteString
 
 /** INTERNAL API */
 @InternalApi private[akka] object GzipDecompressor {
-  // RFC 1952: http://tools.ietf.org/html/rfc1952 section 2.2
+  // RFC 1952: https://www.rfc-editor.org/rfc/rfc1952.html section 2.2
   private[impl] val Header = ByteString(0x1F, // ID1
     0x8B, // ID2
     8, // CM = Deflate
