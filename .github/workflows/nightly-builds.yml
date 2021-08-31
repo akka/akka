@@ -63,6 +63,7 @@ jobs:
   akka-classic-remoting-tests:
     name: Akka Classic Remoting Tests
     runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
     strategy:
       matrix:
         command:
@@ -177,6 +178,7 @@ jobs:
   akka-artery-cluster-tests:
     name: Artery Aeron UDP Cluster
     runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
     strategy:
       matrix:
         command:
