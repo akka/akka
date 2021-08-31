@@ -37,32 +37,6 @@ jobs:
           -Dsbt.log.noformat=false \
           scalafmtCheckAll scalafmtSbtCheck headerCheckAll
 
-  check-publish:
-    name: Check / Publish Local
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
-          fetch-depth: 0
-
-      - name: Set up JDK 8
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.8.0
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
-
-      - name: Akka publishLocal
-        run: |-
-          sbt -jvm-opts .jvmopts-ci \
-          -Dsbt.override.build.repos=false \
-          -Dsbt.log.noformat=false \
-          publishLocal publishM2
-
-
   pull-request-validation:
     name: Check / Tests
     runs-on: ubuntu-20.04
