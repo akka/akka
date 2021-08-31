@@ -54,7 +54,7 @@ jobs:
             -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms512M \
-            -Dmultinode.Xmx1536G \
+            -Dmultinode.Xmx512M \
             -Dmultinode.Xlog:gc \
             multiNodeTest
       - name: Email on failure
