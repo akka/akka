@@ -120,18 +120,14 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-      # Only run multi-jvm tests in Scala 2.13. No need to run it to
-      # multiple Scala versions AND multiple JDK versions. This will
-      # run multi-jvm tests to run for both JDK 8 and 11 though.
       - name: Compile and Test
         run: |-
-          ## TODO: restore the multi-node tests
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
             -Dakka.cluster.assert=on \
             -Dakka.log.timestamps=true \
             -Dakka.test.timefactor=2 \
-            -Dakka.test.multi-in-test=${{ matrix.scalaVersion == '2.13' }} \
+            -Dakka.test.multi-in-test=false \
             -Dakka.test.tags.exclude=gh-exclude \
             clean update Test/compile test checkTestsHaveRun
 
