@@ -381,9 +381,14 @@ class BoundedBlockingQueueSpec
 
       notEmpty.manualTimeControl(true)
 
-      val f = Future(queue.poll(100, TimeUnit.MILLISECONDS))
+      val polled = new CountDownLatch(1)
+      val f = Future {
+        polled.countDown()
+        queue.poll(100, TimeUnit.MILLISECONDS)
+      }
 
       notEmpty.advanceTime(99.milliseconds)
+      polled.await(3, TimeUnit.SECONDS)
       after(50.milliseconds) {
         f.isCompleted should be(false)
         queue.put("Hello")
