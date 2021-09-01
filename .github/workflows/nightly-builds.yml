@@ -175,10 +175,12 @@ jobs:
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
 
 
-  akka-artery-cluster-tests:
+  akka-artery-aeron-cluster-tests:
     name: Artery Aeron UDP Cluster
     runs-on: ubuntu-20.04
-    if: github.repository == 'akka/akka'
+    # FIXME disabled due to https://github.com/akka/akka/issues/30601
+    #if: github.repository == 'akka/akka'
+    if: ${{ false }}
     strategy:
       matrix:
         command:
