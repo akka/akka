@@ -2,10 +2,8 @@ name: Build Akka with Scala 3
 
 on:
   pull_request:
-  push:
-    branches:
-      - master
-    tags-ignore: [ v.* ]
+  schedule:
+    - cron: "0 0 * * *"
 
 
 concurrency:
