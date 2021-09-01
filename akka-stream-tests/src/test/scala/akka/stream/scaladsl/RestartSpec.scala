@@ -42,8 +42,8 @@ class RestartSpec
 
   import system.dispatcher
 
-  private val shortMinBackoff = 10.millis
-  private val shortMaxBackoff = 20.millis
+  private val shortMinBackoff = 200.millis
+  private val shortMaxBackoff = 300.millis
   private val minBackoff = 1.second.dilated
   private val maxBackoff = 3.seconds.dilated
 
