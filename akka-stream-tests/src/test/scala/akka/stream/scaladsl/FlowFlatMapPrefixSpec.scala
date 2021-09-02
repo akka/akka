@@ -619,6 +619,43 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         log.debug("closer assigned, waiting for completion")
         fNotUsed.futureValue should be(NotUsed)
       }
+
+      "complete when downstream cancels before pulling" in assertAllStagesStopped {
+        val fSeq = Source
+          .single(1)
+          .flatMapPrefixMat(1){ prefix =>
+            Flow[Int]
+              .mapMaterializedValue(_ => prefix)
+          } (Keep.right)
+          .to(Sink.cancelled)
+          .withAttributes(attributes)
+          .run()
+
+        att match {
+          case Attributes.NestedMaterializationCancellationPolicy.EagerCancellation =>
+            fSeq.failed.futureValue should be (a[NeverMaterializedException])
+          case Attributes.NestedMaterializationCancellationPolicy.PropagateToNested =>
+            fSeq.futureValue should equal (Seq(1))
+        }
+      }
+
+      "complete when downstream cancels before pulling and upstream does not produce" in assertAllStagesStopped {
+        val fSeq = Source(List.empty[Int])
+          .flatMapPrefixMat(1){ prefix =>
+            Flow[Int]
+              .mapMaterializedValue(_ => prefix)
+          } (Keep.right)
+          .to(Sink.cancelled)
+          .withAttributes(attributes)
+          .run()
+
+        att match {
+          case Attributes.NestedMaterializationCancellationPolicy.EagerCancellation =>
+            fSeq.failed.futureValue should be (a[NeverMaterializedException])
+          case Attributes.NestedMaterializationCancellationPolicy.PropagateToNested =>
+            fSeq.futureValue should equal (Nil)
+        }
+      }
     }
   }
 
