@@ -202,7 +202,7 @@ class HubSpec extends StreamSpec {
       downstream.request(2)
       probe1.sendNext(-1)
       probe2.sendNext(-2)
-      downstream.expectNextN(2) should contain theSameElementsAs(List(-1, -2))
+      downstream.expectNextN(2) should contain theSameElementsAs (List(-1, -2))
 
       draining.drainAndComplete()
 
@@ -239,7 +239,7 @@ class HubSpec extends StreamSpec {
       downstream.request(2)
       probe1.sendNext(-1)
       probe2.sendNext(-2)
-      downstream.expectNextN(2) should contain theSameElementsAs(List(-1, -2))
+      downstream.expectNextN(2) should contain theSameElementsAs (List(-1, -2))
 
       draining.drainAndComplete()
 
@@ -269,7 +269,6 @@ class HubSpec extends StreamSpec {
       val downstream = TestSubscriber.probe[Int]()
       val (_, draining) =
         MergeHub.sourceWithDraining[Int](16).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
-
 
       draining.drainAndComplete()
       downstream.request(1)
