@@ -43,21 +43,21 @@ Java
 
 One important thing to be aware of is that the @apidoc[StashBuffer] is a buffer and stashed messages will be
 kept in memory until they are unstashed (or the actor is stopped and garbage collected). It's recommended
-to avoid stashing too many messages to avoid too much memory usage and even risking @scala[`OutOfMemoryError`]@java[@javadoc[OutOfMemoryError](java.lang.OutOfMemoryError)]
+to avoid stashing too many messages to avoid too much memory usage and even risking @javadoc[OutOfMemoryError](java.lang.OutOfMemoryError)
 if many actors are stashing many messages. Therefore the @apidoc[StashBuffer] is bounded and the `capacity`
 of how many messages it can hold must be specified when it's created.
 
-If you try to stash more messages than the `capacity` a @scala[@scaladoc[StashOverflowException](akka.actor.typed.scaladsl.StashOverflowException)]@java[@javadoc[StashOverflowException](akka.actor.typed.javadsl.StashOverflowException)] will be thrown.
-You can use @scala[@scaladoc[StashBuffer.isFull](akka.actor.typed.scaladsl.StashBuffer#isFull:Boolean)]@java[@javadoc[StashBuffer.isFull](akka.actor.typed.javadsl.StashBuffer#isFull())] before stashing a message to avoid that and take other actions, such as
+If you try to stash more messages than the `capacity` a @apidoc[StashOverflowException](typed.*.StashOverflowException) will be thrown.
+You can use @apidoc[StashBuffer.isFull](StashBuffer) {scala="#isFull:Boolean" java="#isFull()"} before stashing a message to avoid that and take other actions, such as
 dropping the message.
 
-When unstashing the buffered messages by calling @apidoc[unstashAll](StashBuffer) the messages will be processed sequentially
+When unstashing the buffered messages by calling @apidoc[unstashAll](StashBuffer) {scala="#unstashAll(behavior:akka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#unstashAll(akka.actor.typed.Behavior)"} the messages will be processed sequentially
 in the order they were added and all are processed unless an exception is thrown. The actor is unresponsive
-to other new messages until @apidoc[unstashAll](StashBuffer) is completed. That is another reason for keeping the number of
+to other new messages until @apidoc[unstashAll](StashBuffer) {scala="#unstashAll(behavior:akka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#unstashAll(akka.actor.typed.Behavior)"} is completed. That is another reason for keeping the number of
 stashed messages low. Actors that hog the message processing thread for too long can result in starvation
 of other actors.
 
-That can be mitigated by using the @apidoc[StashBuffer.unstash](StashBuffer) with `numberOfMessages` parameter and then send a
+That can be mitigated by using the @apidoc[StashBuffer.unstash](StashBuffer) {scala="#unstash(behavior:akka.actor.typed.Behavior[T],numberOfMessages:Int,wrap:T=%3ET):akka.actor.typed.Behavior[T]" java="#unstash(akka.actor.typed.Behavior,int,java.util.function.Function)"} with `numberOfMessages` parameter and then send a
 message to @scala[`context.self`]@java[`context.getSelf`] before continuing unstashing more. That means that other
 new messages may arrive in-between and those must be stashed to keep the original order of messages. It
 becomes more complicated, so better keep the number of stashed messages low.
