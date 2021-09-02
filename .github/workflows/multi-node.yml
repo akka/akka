@@ -1,0 +1,80 @@
+name: Multi node test
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-multi-node-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-multi-node-tests:
+    name: Multi Node Test
+    runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install Kubectl
+        run: |
+          sudo snap install kubectl --classic
+      - uses: google-github-actions/setup-gcloud@v0.2
+        with:
+          service_account_key: ${{ secrets.GKE_SA_KEY }}
+          project_id: ${{ secrets.GKE_PROJECT }}
+      - name: Create the cluster
+        run: |-
+          gcloud config set compute/region us-central1
+          gcloud config set compute/zone us-central1-c
+          ./kubernetes/create-cluster-gke.sh "akka-multi-node-${GITHUB_RUN_ID}"
+      - name: Setup Pods
+        run: |
+          # Stress tests are using 13 nodes
+          ./kubernetes/setup.sh 15 multi-node-test.hosts
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11.0-9
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+      - name: Multi node test
+        run: |
+          cat multi-node-test.hosts
+          sbt -jvm-opts .jvmopts-ci \
+            -Dakka.test.timefactor=2 \
+            -Dakka.cluster.assert=on \
+            -Dsbt.override.build.repos=false \
+            -Dakka.test.tags.exclude=gh-exclude \
+            -Dakka.test.multi-node=true \
+            -Dakka.test.multi-node.targetDirName=${PWD}/target/${{ github.run_id }} \
+            -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
+            -Dmultinode.XX:MetaspaceSize=128M \
+            -Dmultinode.Xms512M \
+            -Dmultinode.Xmx512M \
+            -Dmultinode.Xlog:gc \
+            multiNodeTest
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          # Using port 465 already sets `secure: true`
+          secure: true
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: Multi node test (Akka)
+          to: akka.official@gmail.com
+          from: Akka CI (GHActions)
+          body: |
+            Multi node test of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      - name: Cleanup the environment
+        if: ${{ always() }}
+        shell: bash {0}
+        run: |
+          gcloud container clusters delete "akka-multi-node-${GITHUB_RUN_ID}" --quiet

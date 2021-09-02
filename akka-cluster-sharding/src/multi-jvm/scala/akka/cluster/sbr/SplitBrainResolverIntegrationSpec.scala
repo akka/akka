@@ -120,9 +120,10 @@ class SplitBrainResolverIntegrationSpec
 
       val sys = ActorSystem(
         system.name + "-" + c,
-        scenario.cfg
-          .withValue("akka.cluster.multi-data-center.self-data-center", ConfigValueFactory.fromAnyRef(dcName))
-          .withFallback(system.settings.config))
+        MultiNodeSpec.configureNextPortIfFixed(
+          scenario.cfg
+            .withValue("akka.cluster.multi-data-center.self-data-center", ConfigValueFactory.fromAnyRef(dcName))
+            .withFallback(system.settings.config)))
       val gremlinController = sys.actorOf(GremlinController.props, "gremlinController")
       system.actorOf(GremlinControllerProxy.props(gremlinController), s"gremlinControllerProxy-$c")
       sys

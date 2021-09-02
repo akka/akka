@@ -108,8 +108,12 @@ abstract class AeronStreamMaxThroughputSpec
 
   def channel(roleName: RoleName) = {
     val n = node(roleName)
-    system.actorSelection(n / "user" / "updPort") ! UdpPortActor.GetUdpPort
-    val port = expectMsgType[Int]
+    val port = MultiNodeSpec.udpPort match {
+      case None =>
+        system.actorSelection(n / "user" / "updPort") ! UdpPortActor.GetUdpPort
+        expectMsgType[Int]
+      case Some(p) => p
+    }
     s"aeron:udp?endpoint=${n.address.host.get}:$port"
   }
 

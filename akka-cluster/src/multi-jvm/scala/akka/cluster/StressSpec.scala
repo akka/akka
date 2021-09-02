@@ -454,9 +454,11 @@ abstract class StressSpec
 
   override def beforeEach(): Unit = { step += 1 }
 
-  override def expectedTestDuration = settings.expectedTestDuration
+  override def expectedTestDuration: FiniteDuration = settings.expectedTestDuration
 
   override def shutdownTimeout: FiniteDuration = 30.seconds.dilated
+
+  override def verifySystemShutdown: Boolean = true
 
   override def muteLog(sys: ActorSystem = system): Unit = {
     super.muteLog(sys)
@@ -782,7 +784,7 @@ abstract class StressSpec
                 previousAS.foreach { as =>
                   TestKit.shutdownActorSystem(as)
                 }
-                val sys = ActorSystem(system.name, system.settings.config)
+                val sys = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
                 muteLog(sys)
                 Cluster(sys).joinSeedNodes(seedNodes.toIndexedSeq.map(address))
                 Some(sys)

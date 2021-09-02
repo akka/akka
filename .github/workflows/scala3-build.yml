@@ -2,10 +2,8 @@ name: Build Akka with Scala 3
 
 on:
   pull_request:
-  push:
-    branches:
-      - master
-    tags-ignore: [ v.* ]
+  schedule:
+    - cron: "0 0 * * *"
 
 
 concurrency:
@@ -17,6 +15,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
     strategy:
       matrix:
         command:
@@ -50,6 +49,8 @@ jobs:
         run: |
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.build.scalaVersion=3.0 \
+          -Dakka.log.timestamps=true \
+          -Dakka.test.timefactor=2 \
           -Dakka.test.multi-in-test=false \
           -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
           ${{ matrix.command }}

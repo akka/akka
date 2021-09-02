@@ -33,6 +33,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.DefaultTimeout
 import akka.testkit.EventFilter
+import akka.testkit.GHExcludeTest
 import akka.testkit.TestDuration
 
 class RestartSpec
@@ -41,8 +42,8 @@ class RestartSpec
 
   import system.dispatcher
 
-  private val shortMinBackoff = 10.millis
-  private val shortMaxBackoff = 20.millis
+  private val shortMinBackoff = 200.millis
+  private val shortMaxBackoff = 300.millis
   private val minBackoff = 1.second.dilated
   private val maxBackoff = 3.seconds.dilated
 
@@ -318,7 +319,8 @@ class RestartSpec
       probe.cancel()
     }
 
-    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" in assertAllStagesStopped {
+    // https://github.com/akka/akka/issues/30540
+    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" taggedAs GHExcludeTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(shortRestartSettings.withMaxRestarts(2, 1.second)) { () =>
@@ -560,7 +562,7 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" in assertAllStagesStopped {
+    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" taggedAs GHExcludeTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource

@@ -130,8 +130,7 @@ class RandomizedSplitBrainResolverIntegrationSpec
     c += 1
 
     val sys: ActorSystem = {
-
-      val sys = ActorSystem(system.name + "-" + c, system.settings.config)
+      val sys = ActorSystem(system.name + "-" + c, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
       val gremlinController = sys.actorOf(GremlinController.props, "gremlinController")
       system.actorOf(GremlinControllerProxy.props(gremlinController), s"gremlinControllerProxy-$c")
       sys

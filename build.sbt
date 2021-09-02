@@ -36,7 +36,7 @@ addCommandAlias(name = "sortImports", value = ";scalafixEnable; scalafixAll Sort
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import sbt.Keys.{ initialCommands, parallelExecution }
 import spray.boilerplate.BoilerplatePlugin

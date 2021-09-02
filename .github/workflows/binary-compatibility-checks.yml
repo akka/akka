@@ -12,6 +12,7 @@ jobs:
   check-binary-compatibility:
     name: Check / Binary Compatibility
     runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
     strategy:
       matrix:
         # The versions of scala specified here are only used as `-Dakka.build.scalaVersion=...`

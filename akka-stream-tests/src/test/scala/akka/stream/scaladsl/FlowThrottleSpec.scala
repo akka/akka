@@ -18,7 +18,7 @@ import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.TimingTest
+import akka.testkit.{ GHExcludeTest, TimingTest }
 import akka.util.ByteString
 
 class FlowThrottleSpec extends StreamSpec("""
@@ -111,7 +111,8 @@ class FlowThrottleSpec extends StreamSpec("""
       downstream.cancel()
     }
 
-    "send elements downstream as soon as time comes" in assertAllStagesStopped {
+    // https://github.com/akka/akka/issues/30574
+    "send elements downstream as soon as time comes" taggedAs GHExcludeTest in assertAllStagesStopped {
       val probe = Source(1 to 10).throttle(2, 750.millis, 0, Shaping).runWith(TestSink.probe[Int]).request(5)
       probe.receiveWithin(900.millis) should be(Seq(1, 2))
       probe.expectNoMessage(150.millis).expectNext(3).expectNoMessage(150.millis).expectNext(4).cancel()
@@ -225,7 +226,7 @@ class FlowThrottleSpec extends StreamSpec("""
       downstream.cancel()
     }
 
-    "send elements downstream as soon as time comes" in assertAllStagesStopped {
+    "send elements downstream as soon as time comes" taggedAs GHExcludeTest in assertAllStagesStopped {
       val probe = Source(1 to 10).throttle(4, 500.millis, 0, _ => 2, Shaping).runWith(TestSink.probe[Int]).request(5)
       probe.receiveWithin(600.millis) should be(Seq(1, 2))
       probe.expectNoMessage(100.millis).expectNext(3).expectNoMessage(100.millis).expectNext(4).cancel()

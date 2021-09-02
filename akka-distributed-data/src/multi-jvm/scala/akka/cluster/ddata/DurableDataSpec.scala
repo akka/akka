@@ -246,7 +246,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   "handle Update before load" in {
     runOn(first) {
 
-      val sys1 = ActorSystem("AdditionalSys", system.settings.config)
+      val sys1 = ActorSystem("AdditionalSys", MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
       val address = Cluster(sys1).selfAddress
       try {
         Cluster(sys1).join(address)
