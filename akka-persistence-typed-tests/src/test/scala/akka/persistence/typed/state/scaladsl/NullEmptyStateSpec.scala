@@ -33,28 +33,34 @@ class NullEmptyStateSpec
 
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
-  def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
-    DurableStateBehavior[String, String](persistenceId, emptyState = null, commandHandler = (_, command) => {
-      if (command == "stop")
-        Effect.stop()
-      else
-        Effect.persist(command).thenReply(probe)(_ => command)
-    })
+  def nullState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
+    DurableStateBehavior[String, String](
+      persistenceId,
+      emptyState = null,
+      commandHandler = (state, command) => {
+        if (command == "stop")
+          Effect.stop()
+        else if (state == null)
+          Effect.persist(command).thenReply(probe)(newState => newState)
+        else
+          Effect.persist(s"$state:$command").thenReply(probe)(newState => newState)
+      })
 
-  "A typed persistent actor with primitive state" must {
+  "A typed persistent actor with null empty state" must {
     "persist and update state" in {
       val probe = TestProbe[String]()
-      val b = primitiveState(PersistenceId.ofUniqueId("a"), probe.ref)
+      val b = nullState(PersistenceId.ofUniqueId("a"), probe.ref)
       val ref1 = spawn(b)
       ref1 ! "one"
       probe.expectMessage("one")
       ref1 ! "two"
-      probe.expectMessage("two")
+      probe.expectMessage("one:two")
       ref1 ! "stop"
       probe.expectTerminated(ref1)
 
-      val _ = spawn(b)
-      probe.expectNoMessage()
+      val ref2 = spawn(b)
+      ref2 ! "three"
+      probe.expectMessage("one:two:three")
     }
   }
 }
