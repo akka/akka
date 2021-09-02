@@ -65,6 +65,7 @@ jobs:
     runs-on: ubuntu-20.04
     if: github.repository == 'akka/akka'
     strategy:
+      fail-fast: false
       matrix:
         command:
           - akka-cluster/test akka-distributed-data/test akka-cluster-tools/test akka-cluster-metrics/test
@@ -101,6 +102,7 @@ jobs:
     runs-on: ubuntu-20.04
     if: github.repository == 'akka/akka'
     strategy:
+      fail-fast: false
       matrix:
         # No need to specify the full Scala version. Only the Scala
         # binary version is required and Akka build will set the right
@@ -182,6 +184,7 @@ jobs:
     #if: github.repository == 'akka/akka'
     if: ${{ false }}
     strategy:
+      fail-fast: false
       matrix:
         command:
           - akka-cluster/test akka-distributed-data/test akka-cluster-tools/test akka-cluster-metrics/test
