@@ -27,9 +27,6 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-## https://github.com/akka/akka/issues/30459
-#    ghtag "$ghprbPullId" akka akka '["validating"]' "tested needs-attention"
-
       - name: Code style check
         run: |-
           sbt -jvm-opts .jvmopts-ci \
@@ -68,9 +65,3 @@ jobs:
           -Dsbt.log.noformat=false \
           -Dakka.log.timestamps=true \
           validateCompile validatePullRequest
-
-## https://github.com/akka/akka/issues/30459
-## if success
-#    ghtag "$ghprbPullId" akka akka '["tested"]' "validating needs-attention"
-## if aborted or unstable
-#    ghtag "$ghprbPullId" akka akka '["needs-attention"]' "tested validating"
