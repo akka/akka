@@ -96,6 +96,10 @@ class ThrowExceptionStrategyPersistentActorBoundedStashingSpec
       // initial read highest
       SteppingInmemJournal.step(journal)
 
+      // make sure it's fully started first
+      persistentActor ! GetState
+      expectMsg(Nil)
+
       //barrier for stash
       persistentActor ! Cmd("a")
 
@@ -124,6 +128,10 @@ class DiscardStrategyPersistentActorBoundedStashingSpec
       //initial read highest
       SteppingInmemJournal.step(journal)
 
+      // make sure it's fully started first
+      persistentActor ! GetState
+      expectMsg(Nil)
+
       //barrier for stash
       persistentActor ! Cmd("a")
 
@@ -151,6 +159,10 @@ class ReplyToStrategyPersistentActorBoundedStashingSpec
 
       //initial read highest
       SteppingInmemJournal.step(journal)
+
+      // make sure it's fully started first
+      persistentActor ! GetState
+      expectMsg(Nil)
 
       //barrier for stash
       persistentActor ! Cmd("a")
