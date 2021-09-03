@@ -229,9 +229,15 @@ class FlowThrottleSpec extends StreamSpec("""
     }
 
     "cancel when downstream cancels" in assertAllStagesStopped {
+      val downstream = TestSubscriber.probe[Int]()
+      Source(1 to 10).throttle(2, 200.millis, 0, identity, Shaping).runWith(Sink.fromSubscriber(downstream))
+      downstream.cancel()
+    }
+
+    "send elements downstream as soon as time comes" in assertAllStagesStopped {
       val throttleInterval = 300.millis
       val elementsAndTimestampsMs = Source(1 to 10)
-        .throttle(2, throttleInterval, identity)
+        .throttle(4, throttleInterval, _ => 2)
         .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
           (System.nanoTime() / 1000000, n) :: acc
         }.futureValue(timeout(5.seconds))
@@ -243,12 +249,6 @@ class FlowThrottleSpec extends StreamSpec("""
       withClue(perThrottleInterval) {
         perThrottleInterval.forall { case (_, entries) => entries.size == 2 } should ===(true)
       }
-    }
-
-    "send elements downstream as soon as time comes" in assertAllStagesStopped {
-      val probe = Source(1 to 10).throttle(4, 500.millis, 0, _ => 2, Shaping).runWith(TestSink.probe[Int]).request(5)
-      probe.receiveWithin(600.millis) should be(Seq(1, 2))
-      probe.expectNoMessage(100.millis).expectNext(3).expectNoMessage(100.millis).expectNext(4).cancel()
     }
 
     "burst according to its maximum if enough time passed" in assertAllStagesStopped {
