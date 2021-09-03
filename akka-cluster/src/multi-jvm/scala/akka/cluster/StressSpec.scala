@@ -551,14 +551,15 @@ abstract class StressSpec
     }
     enterBarrier("result-aggregator-created-" + step)
     runOn(roles.take(nbrUsedRoles): _*) {
-      val resultAggregator = clusterResultAggregator
+      val resultAggregator = identifyClusterResultAggregator()
       phiObserver ! ReportTo(resultAggregator)
       statsObserver ! Reset
       statsObserver ! ReportTo(resultAggregator)
     }
+    enterBarrier("result-aggregator-identified-" + step)
   }
 
-  def clusterResultAggregator: Option[ActorRef] = {
+  def identifyClusterResultAggregator(): Option[ActorRef] = {
     system.actorSelection(node(roles.head) / "user" / ("result" + step)).tell(Identify(step), identifyProbe.ref)
     identifyProbe.expectMsgType[ActorIdentity].ref
   }
@@ -573,7 +574,7 @@ abstract class StressSpec
 
   def awaitClusterResult(): Unit = {
     runOn(roles.head) {
-      clusterResultAggregator match {
+      identifyClusterResultAggregator() match {
         case Some(r) =>
           watch(r)
           expectMsgPF() { case Terminated(a) if a.path == r.path => true }
@@ -751,7 +752,7 @@ abstract class StressSpec
 
     val returnValue = thunk
 
-    clusterResultAggregator.foreach {
+    identifyClusterResultAggregator().foreach {
       _ ! ClusterResult(cluster.selfAddress, (System.nanoTime - startTime).nanos, latestGossipStats :- startStats)
     }
 
