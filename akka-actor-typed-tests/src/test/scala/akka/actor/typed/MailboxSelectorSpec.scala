@@ -64,21 +64,22 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
 
     "set capacity on a bounded mailbox" in {
       val latch = new CountDownLatch(1)
+      val probe = testKit.createTestProbe[String]()
       val actor = spawn(Behaviors.receiveMessage[String] {
         case "one" =>
           // block here so we can fill mailbox up
+          probe ! "blocking-on-one"
           latch.await(10, TimeUnit.SECONDS)
           Behaviors.same
         case _ =>
           Behaviors.same
       }, MailboxSelector.bounded(2))
       actor ! "one" // actor will block here
+      probe.expectMessage("blocking-on-one")
       actor ! "two"
-      LoggingTestKit.deadLetters().withCheckExcess(false).expect {
-        // one or both of these doesn't fit in mailbox
-        // depending on race with how fast actor consumes
+      LoggingTestKit.deadLetters().expect {
         actor ! "three"
-        actor ! "four"
+        actor ! "four" // mailbox full, will be dropped
       }
       latch.countDown()
     }
