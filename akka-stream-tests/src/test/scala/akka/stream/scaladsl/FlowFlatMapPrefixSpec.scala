@@ -630,11 +630,10 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
           .withAttributes(attributes)
           .run()
 
-        att match {
-          case Attributes.NestedMaterializationCancellationPolicy.EagerCancellation =>
-            fSeq.failed.futureValue should be(a[NeverMaterializedException])
-          case Attributes.NestedMaterializationCancellationPolicy.PropagateToNested =>
-            fSeq.futureValue should equal(Seq(1))
+        if (att.propagateToNestedMaterialization) {
+          fSeq.futureValue should equal(Seq(1))
+        } else {
+          fSeq.failed.futureValue should be(a[NeverMaterializedException])
         }
       }
 
@@ -648,11 +647,10 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
           .withAttributes(attributes)
           .run()
 
-        att match {
-          case Attributes.NestedMaterializationCancellationPolicy.EagerCancellation =>
-            fSeq.failed.futureValue should be(a[NeverMaterializedException])
-          case Attributes.NestedMaterializationCancellationPolicy.PropagateToNested =>
-            fSeq.futureValue should equal(Nil)
+        if (att.propagateToNestedMaterialization) {
+          fSeq.futureValue should equal(Nil)
+        } else {
+          fSeq.failed.futureValue should be(a[NeverMaterializedException])
         }
       }
 
@@ -665,11 +663,10 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
           .withAttributes(attributes)
           .run()
 
-        att match {
-          case Attributes.NestedMaterializationCancellationPolicy.EagerCancellation =>
-            fSeq.failed.futureValue should be(a[NeverMaterializedException])
-          case Attributes.NestedMaterializationCancellationPolicy.PropagateToNested =>
-            fSeq.futureValue should equal(Nil)
+        if (att.propagateToNestedMaterialization) {
+          fSeq.futureValue should equal(Nil)
+        } else {
+          fSeq.failed.futureValue should be(a[NeverMaterializedException])
         }
       }
 
@@ -682,11 +679,10 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
           .withAttributes(attributes)
           .run()
 
-        att match {
-          case Attributes.NestedMaterializationCancellationPolicy.EagerCancellation =>
-            fSeq.failed.futureValue should be(a[NeverMaterializedException])
-          case Attributes.NestedMaterializationCancellationPolicy.PropagateToNested =>
-            fSeq.futureValue should equal(Nil)
+        if (att.propagateToNestedMaterialization) {
+          fSeq.futureValue should equal(Nil)
+        } else {
+          fSeq.failed.futureValue should be(a[NeverMaterializedException])
         }
       }
     }
