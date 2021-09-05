@@ -4,25 +4,20 @@
 
 package akka.actor.testkit.typed.internal
 
-import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
+import akka.actor.testkit.typed.CapturedLogEvent
+import akka.actor.typed._
+import akka.actor.typed.internal._
+import akka.actor.{ ActorPath, ActorRefProvider, InvalidMessageException }
+import akka.annotation.InternalApi
+import akka.util.Helpers
+import akka.{ actor => classic }
+import org.slf4j.Logger
+import org.slf4j.helpers.{ MessageFormatter, SubstituteLoggerFactory }
 
+import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-
-import org.slf4j.Logger
-import org.slf4j.helpers.MessageFormatter
-import org.slf4j.helpers.SubstituteLoggerFactory
-
-import akka.{ actor => classic }
-import akka.actor.{ ActorPath, InvalidMessageException }
-import akka.actor.ActorRefProvider
-import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.typed._
-import akka.actor.typed.internal._
-import akka.annotation.InternalApi
-import akka.util.Helpers
 
 /**
  * INTERNAL API
