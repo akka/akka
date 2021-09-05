@@ -4,16 +4,16 @@
 
 package akka.actor.testkit.typed.internal
 
-import java.util.concurrent.{CompletionStage, ThreadFactory}
+import java.util.concurrent.{ CompletionStage, ThreadFactory }
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
 import scala.annotation.nowarn
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import akka.{actor => classic}
+import akka.{ actor => classic }
 import akka.Done
-import akka.actor.{ActorPath, ActorRefProvider, Address, ReflectiveDynamicAccess}
+import akka.actor.{ ActorPath, ActorRefProvider, Address, ReflectiveDynamicAccess }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -33,8 +33,9 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @nowarn
-@InternalApi private[akka] final class ActorSystemStub(val name: String,
-    config : Config = ActorSystemStub.config.defaultReference)
+@InternalApi private[akka] final class ActorSystemStub(
+    val name: String,
+    config: Config = ActorSystemStub.config.defaultReference)
     extends ActorSystem[Nothing]
     with ActorRef[Nothing]
     with ActorRefImpl[Nothing]
