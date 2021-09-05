@@ -25,12 +25,16 @@ import akka.util.ccompat.JavaConverters._
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehavior: Behavior[T])
+private[akka] final class BehaviorTestKitImpl[T](
+    system: ActorSystemStub,
+    _path: ActorPath,
+    _initialBehavior: Behavior[T])
     extends akka.actor.testkit.typed.javadsl.BehaviorTestKit[T]
     with akka.actor.testkit.typed.scaladsl.BehaviorTestKit[T] {
 
   // really this should be private, make so when we port out tests that need it
-  private[akka] val context: EffectfulActorContext[T] = new EffectfulActorContext[T](_path, () => currentBehavior)
+  private[akka] val context: EffectfulActorContext[T] =
+    new EffectfulActorContext[T](system, _path, () => currentBehavior)
 
   private[akka] def as[U]: BehaviorTestKitImpl[U] = this.asInstanceOf[BehaviorTestKitImpl[U]]
 

@@ -63,11 +63,18 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
  * provides only stubs for the effects an Actor can perform and replaces
  * created child Actors by a synchronous Inbox (see `Inbox.sync`).
  */
-@InternalApi private[akka] class StubbedActorContext[T](val path: ActorPath, currentBehaviorProvider: () => Behavior[T])
+@InternalApi private[akka] class StubbedActorContext[T](
+    val system: ActorSystemStub,
+    val path: ActorPath,
+    currentBehaviorProvider: () => Behavior[T])
     extends ActorContextImpl[T] {
 
+  def this(system: ActorSystemStub, name: String, currentBehaviorProvider: () => Behavior[T]) = {
+    this(system, (system.path / name).withUid(rnd().nextInt()), currentBehaviorProvider)
+  }
+
   def this(name: String, currentBehaviorProvider: () => Behavior[T]) = {
-    this((TestInbox.address / name).withUid(rnd().nextInt()), currentBehaviorProvider)
+    this(new ActorSystemStub("StubbedActorContext"), name, currentBehaviorProvider)
   }
 
   /**
@@ -76,7 +83,6 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   @InternalApi private[akka] val selfInbox = new TestInboxImpl[T](path)
 
   override val self = selfInbox.ref
-  override val system: ActorSystemStub = new ActorSystemStub("StubbedActorContext")
   private var _children = TreeMap.empty[String, BehaviorTestKitImpl[_]]
   private val childName = Iterator.from(0).map(Helpers.base64(_))
   private val substituteLoggerFactory = new SubstituteLoggerFactory
@@ -100,7 +106,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     checkCurrentActorThread()
-    val btk = new BehaviorTestKitImpl[U]((path / childName.next()).withUid(rnd().nextInt()), behavior)
+    val btk = new BehaviorTestKitImpl[U](system, (path / childName.next()).withUid(rnd().nextInt()), behavior)
     _children += btk.context.self.path.name -> btk
     btk.context.self
   }
@@ -109,7 +115,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     _children.get(name) match {
       case Some(_) => throw classic.InvalidActorNameException(s"actor name $name is already taken")
       case None =>
-        val btk = new BehaviorTestKitImpl[U]((path / name).withUid(rnd().nextInt()), behavior)
+        val btk = new BehaviorTestKitImpl[U](system, (path / name).withUid(rnd().nextInt()), behavior)
         _children += name -> btk
         btk.context.self
     }
@@ -162,7 +168,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val p = (path / n).withUid(rnd().nextInt())
-    val i = new BehaviorTestKitImpl[U](p, BehaviorImpl.ignore)
+    val i = new BehaviorTestKitImpl[U](system, p, BehaviorImpl.ignore)
     _children += p.name -> i
 
     new FunctionRef[U](p, (message, _) => {
