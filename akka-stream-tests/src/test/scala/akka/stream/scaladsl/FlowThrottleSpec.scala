@@ -6,19 +6,17 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
-
 import akka.Done
 import akka.stream._
 import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.{ GHExcludeTest, TimingTest }
+import akka.testkit.TimingTest
 import akka.util.ByteString
 
 class FlowThrottleSpec extends StreamSpec("""
@@ -111,11 +109,24 @@ class FlowThrottleSpec extends StreamSpec("""
       downstream.cancel()
     }
 
-    // https://github.com/akka/akka/issues/30574
-    "send elements downstream as soon as time comes" taggedAs GHExcludeTest in assertAllStagesStopped {
-      val probe = Source(1 to 10).throttle(2, 750.millis, 0, Shaping).runWith(TestSink.probe[Int]).request(5)
-      probe.receiveWithin(900.millis) should be(Seq(1, 2))
-      probe.expectNoMessage(150.millis).expectNext(3).expectNoMessage(150.millis).expectNext(4).cancel()
+    "send elements downstream as soon as time comes" in assertAllStagesStopped {
+      val throttleInterval = 500.millis
+      val elementsAndTimestampsMs = Source(1 to 5)
+        .throttle(1, throttleInterval)
+        .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
+          (System.nanoTime() / 1000000, n) :: acc
+        }
+        .futureValue(timeout(5.seconds))
+        .reverse
+
+      val startMs = elementsAndTimestampsMs.head._1
+      val elemsAndTimeFromStart = elementsAndTimestampsMs.map { case (ts, n) => (ts - startMs, n) }
+      val perThrottleInterval = elemsAndTimeFromStart.groupBy {
+        case (fromStart, _) => fromStart / throttleInterval.toMillis
+      }
+      withClue(perThrottleInterval) {
+        perThrottleInterval.forall { case (_, entries) => entries.size == 1 } should ===(true)
+      }
     }
 
     "burst according to its maximum if enough time passed" in assertAllStagesStopped {
@@ -226,10 +237,24 @@ class FlowThrottleSpec extends StreamSpec("""
       downstream.cancel()
     }
 
-    "send elements downstream as soon as time comes" taggedAs GHExcludeTest in assertAllStagesStopped {
-      val probe = Source(1 to 10).throttle(4, 500.millis, 0, _ => 2, Shaping).runWith(TestSink.probe[Int]).request(5)
-      probe.receiveWithin(600.millis) should be(Seq(1, 2))
-      probe.expectNoMessage(100.millis).expectNext(3).expectNoMessage(100.millis).expectNext(4).cancel()
+    "send elements downstream as soon as time comes" in assertAllStagesStopped {
+      val throttleInterval = 500.millis
+      val elementsAndTimestampsMs = Source(1 to 5)
+        .throttle(2, throttleInterval, _ => 2)
+        .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
+          (System.nanoTime() / 1000000, n) :: acc
+        }
+        .futureValue(timeout(5.seconds))
+        .reverse
+
+      val startMs = elementsAndTimestampsMs.head._1
+      val elemsAndTimeFromStart = elementsAndTimestampsMs.map { case (ts, n) => (ts - startMs, n) }
+      val perThrottleInterval = elemsAndTimeFromStart.groupBy {
+        case (fromStart, _) => fromStart / throttleInterval.toMillis
+      }
+      withClue(perThrottleInterval) {
+        perThrottleInterval.forall { case (_, entries) => entries.size == 1 } should ===(true)
+      }
     }
 
     "burst according to its maximum if enough time passed" in assertAllStagesStopped {
