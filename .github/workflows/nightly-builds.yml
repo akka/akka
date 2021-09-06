@@ -157,6 +157,7 @@ jobs:
 
       - name: Publish
         run: |-
+          sudo apt-get install graphviz
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
             publishLocal publishM2
