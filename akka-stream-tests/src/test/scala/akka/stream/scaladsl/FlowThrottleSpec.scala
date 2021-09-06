@@ -110,9 +110,9 @@ class FlowThrottleSpec extends StreamSpec("""
     }
 
     "send elements downstream as soon as time comes" in assertAllStagesStopped {
-      val throttleInterval = 300.millis
-      val elementsAndTimestampsMs = Source(1 to 10)
-        .throttle(2, throttleInterval)
+      val throttleInterval = 500.millis
+      val elementsAndTimestampsMs = Source(1 to 5)
+        .throttle(1, throttleInterval)
         .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
           (System.nanoTime() / 1000000, n) :: acc
         }
@@ -125,7 +125,7 @@ class FlowThrottleSpec extends StreamSpec("""
         case (fromStart, _) => fromStart / throttleInterval.toMillis
       }
       withClue(perThrottleInterval) {
-        perThrottleInterval.forall { case (_, entries) => entries.size == 2 } should ===(true)
+        perThrottleInterval.forall { case (_, entries) => entries.size == 1 } should ===(true)
       }
     }
 
@@ -238,9 +238,9 @@ class FlowThrottleSpec extends StreamSpec("""
     }
 
     "send elements downstream as soon as time comes" in assertAllStagesStopped {
-      val throttleInterval = 300.millis
-      val elementsAndTimestampsMs = Source(1 to 10)
-        .throttle(4, throttleInterval, _ => 2)
+      val throttleInterval = 500.millis
+      val elementsAndTimestampsMs = Source(1 to 5)
+        .throttle(2, throttleInterval, _ => 2)
         .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
           (System.nanoTime() / 1000000, n) :: acc
         }
@@ -253,7 +253,7 @@ class FlowThrottleSpec extends StreamSpec("""
         case (fromStart, _) => fromStart / throttleInterval.toMillis
       }
       withClue(perThrottleInterval) {
-        perThrottleInterval.forall { case (_, entries) => entries.size == 2 } should ===(true)
+        perThrottleInterval.forall { case (_, entries) => entries.size == 1 } should ===(true)
       }
     }
 
