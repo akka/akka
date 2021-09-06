@@ -132,9 +132,11 @@ class ShardWithLeaseSpec extends AkkaSpec(ShardWithLeaseSpec.config) with WithLo
           occurrences = 1)
         .intercept {
           lease.getCurrentCallback().apply(Some(BadLease("bye bye lease")))
-          sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
-          probe.expectNoMessage(shortDuration)
         }
+
+      lease.setNextAcquireResult(Future.successful(false))
+      sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
+      probe.expectNoMessage(shortDuration)
     }
   }
 
