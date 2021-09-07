@@ -59,7 +59,7 @@ jobs:
           -Dakka.ci-server=true \
           -Dakka.test.multi-in-test=false \
           -Dakka.test.timefactor=2 \
-          -Dakka.actor.testkit.typed=2 \
+          -Dakka.actor.testkit.typed.timefactor=2 \
           -Dakka.cluster.assert=on \
           -Dsbt.override.build.repos=false \
           -Dakka.test.multi-node=false \

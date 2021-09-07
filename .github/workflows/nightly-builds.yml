@@ -32,7 +32,7 @@ jobs:
             -Dakka.test.sigar=true \
             -Dakka.cluster.assert=on \
             -Dakka.test.timefactor=2 \
-            -Dakka.actor.testkit.typed=2 \
+            -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.log.timestamps=true \
             clean akka-cluster-metrics/test
@@ -93,7 +93,7 @@ jobs:
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.enabled=off \
           -Dakka.test.timefactor=2 \
-          -Dakka.actor.testkit.typed=2 \
+          -Dakka.actor.testkit.typed.timefactor=2 \
           -Dakka.cluster.assert=on \
           -Dakka.test.tags.exclude=gh-exclude \
           -Dakka.test.names.exclude=akka.cluster.Stress \
@@ -132,7 +132,7 @@ jobs:
             -Dakka.cluster.assert=on \
             -Dakka.log.timestamps=true \
             -Dakka.test.timefactor=2 \
-            -Dakka.actor.testkit.typed=2 \
+            -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.multi-in-test=false \
             -Dakka.test.tags.exclude=gh-exclude \
             clean update Test/compile test checkTestsHaveRun
@@ -216,7 +216,7 @@ jobs:
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.transport=aeron-udp \
           -Dakka.test.timefactor=2 \
-          -Dakka.actor.testkit.typed=2 \
+          -Dakka.actor.testkit.typed.timefactor=2 \
           -Dakka.cluster.assert=on \
           -Dakka.test.tags.exclude=gh-exclude \
           clean ${{ matrix.command }}
