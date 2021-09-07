@@ -46,6 +46,7 @@ jobs:
           cat multi-node-test.hosts
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.test.timefactor=2 \
+            -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.cluster.assert=on \
             -Dsbt.override.build.repos=false \
             -Dakka.test.tags.exclude=gh-exclude \
