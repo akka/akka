@@ -622,8 +622,6 @@ class EventSourcedBehaviorStashSpec
     "stop from PoisonPill after unstashing completed" in {
       val c = spawn(counter(nextPid()))
       val ackProbe = TestProbe[Ack]()
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
       c ! Increment("1", ackProbe.ref)
       ackProbe.expectMessage(Ack("1"))
@@ -647,8 +645,6 @@ class EventSourcedBehaviorStashSpec
       ackProbe.expectMessage(Ack("4"))
 
       ackProbe.expectTerminated(c)
-
-      unhandledProbe.receiveMessage()
 
       // 6 shouldn't make it, already stopped
       ackProbe.expectNoMessage(100.millis)
