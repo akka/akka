@@ -177,9 +177,11 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
           remoteSystem.terminate()
         }
 
-        EventFilter.warning(start = s"Association with remote system [${remoteAddress}] has failed", occurrences = 1).intercept {
-          Await.result(remoteSystem.whenTerminated, 10.seconds)
-        }
+        EventFilter
+          .warning(start = s"Association with remote system [${remoteAddress}] has failed", occurrences = 1)
+          .intercept {
+            Await.result(remoteSystem.whenTerminated, 10.seconds)
+          }
       }
 
       // Remote idle for too long case
