@@ -3,7 +3,7 @@ libraryDependencies += Defaults.sbtPluginExtra(
   (pluginCrossBuild / sbtBinaryVersion).value,
   (pluginCrossBuild / scalaBinaryVersion).value)
 
-addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.6.0")
+addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.6.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.29")
