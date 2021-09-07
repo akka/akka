@@ -51,6 +51,7 @@ jobs:
           -Dakka.build.scalaVersion=3.0 \
           -Dakka.log.timestamps=true \
           -Dakka.test.timefactor=2 \
+          -Dakka.actor.testkit.typed=2 \
           -Dakka.test.multi-in-test=false \
           -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
           ${{ matrix.command }}
