@@ -68,6 +68,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
           .debug("Topic list updated")
           // both topic instances should have seen the updated list
           .withOccurrences(2)
+          .withCheckExcess(false)
           .expect {
             fruitTopic2 ! Topic.Subscribe(probe1.ref)
             fruitTopic2 ! Topic.Subscribe(probe2.ref)
