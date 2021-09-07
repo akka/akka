@@ -11,11 +11,9 @@ import scala.concurrent.duration.FiniteDuration
 import com.typesafe.config.Config
 
 import akka.actor.typed.ActorSystem
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
 
-@ApiMayChange
 object ShardedDaemonProcessSettings {
 
   /** Scala API: Create default settings for system */
@@ -41,7 +39,6 @@ object ShardedDaemonProcessSettings {
 /**
  * Not for user constructions, use factory methods to instanciate.
  */
-@ApiMayChange
 final class ShardedDaemonProcessSettings @InternalApi private[akka] (
     val keepAliveInterval: FiniteDuration,
     val shardingSettings: Option[ClusterShardingSettings],
