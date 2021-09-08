@@ -521,6 +521,13 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
 
   // workaround, possibly for https://github.com/scala/bug/issues/11512
   override def receive: Receive = super.receive
+
+  @throws(classOf[Exception])
+  override def postStop(): Unit = {
+    // Make sure any ambiguity is resolved on the 'scala side' so this doesn't have to
+    // happen on the 'java side'
+    super.postStop()
+  }
 }
 
 /**

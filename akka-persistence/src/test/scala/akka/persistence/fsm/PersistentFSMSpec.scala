@@ -19,7 +19,7 @@ import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
 import akka.testkit._
 
-@nowarn("msg=deprecated")
+@nowarn("msg=deprecated|Unused import")
 abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import PersistentFSMSpec._
 
@@ -290,7 +290,6 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
     "can extract state name" in {
       StateChangeEvent("xxx", None) match {
         case StateChangeEvent(name, _) => name should equal("xxx")
-        case _                         => fail("unable to extract state name")
       }
     }
 
@@ -341,6 +340,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectMsgPF() {
         case SnapshotOffer(SnapshotMetadata(_, _, timestamp), PersistentFSMSnapshot(stateIdentifier, cart, None)) =>
           stateIdentifier should ===(Paid.identifier)
+          import org.scalatest.matchers.should.Matchers.unconstrainedEquality
           cart should ===(NonEmptyShoppingCart(List(shirt, shoes, coat)))
           timestamp should be > 0L
       }

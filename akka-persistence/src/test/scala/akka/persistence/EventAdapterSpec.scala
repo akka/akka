@@ -59,7 +59,7 @@ object EventAdapterSpec {
   }
 
   class LoggingAdapter(system: ExtendedActorSystem) extends EventAdapter {
-    final val log = Logging(system, getClass)
+    final val log = Logging(system, classOf[EventAdapterSpec])
     override def toJournal(event: Any): Any = {
       log.info("On its way to the journal: []: " + event)
       event
