@@ -852,7 +852,7 @@ class RestartSpec
 
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
-      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain.only("in complete", "out complete")
+      expectInAnyOrder(flowInProbe, "in complete", "out complete")
 
       // and it should restart
       sink.request(1)
@@ -865,6 +865,14 @@ class RestartSpec
       sink.expectComplete()
 
       created.get() should ===(2)
+    }
+
+    def expectInAnyOrder(probe: TestSubscriber.Probe[String], one: String, other: String): Unit = {
+      probe.expectNext() match {
+        case `one` => probe.expectNext() should be(other)
+        case `other` => probe.expectNext() should be(one)
+        case other => fail(s"Unexpected: [$other]")
+      }
     }
 
     // onlyOnFailures -->
