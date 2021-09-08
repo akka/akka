@@ -272,13 +272,13 @@ class MessageAdapterSpec
 
       deadLetterProbe.receiveMessage().message match {
         case AdaptMessage(Pong(greeting), _) => greeting shouldBe "hello"
-        case  Pong(greeting) => greeting shouldBe "hello"
-        case other => fail(s"Unexpected dead letter: [$other]")
+        case Pong(greeting)                  => greeting shouldBe "hello"
+        case other                           => fail(s"Unexpected dead letter: [$other]")
       }
       deadLetterProbe.receiveMessage().message match {
         case AdaptMessage(Pong(greeting), _) => greeting shouldBe "hello"
-        case Pong(greeting) => greeting shouldBe "hello"
-        case other => fail(s"Unexpected dead letter: [$other]")
+        case Pong(greeting)                  => greeting shouldBe "hello"
+        case other                           => fail(s"Unexpected dead letter: [$other]")
       }
     }
 
