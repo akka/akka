@@ -257,6 +257,8 @@ class MessageAdapterSpec
         behv(count = 1)
       }
 
+      val deadLetterProbe = testKit.createDeadLetterProbe()
+
       // Not expecting "Exception thrown out of adapter. Stopping myself"
       LoggingTestKit.error[TestException].withMessageContains("boom").expect {
         spawn(snitch)
@@ -267,6 +269,9 @@ class MessageAdapterSpec
       probe.expectMessage(3)
       // exception was thrown for 3
       probe.expectMessage("stopped")
+
+      deadLetterProbe.receiveMessage().message.asInstanceOf[AdaptMessage[_, _]].message shouldBe (Pong("hello"))
+      deadLetterProbe.receiveMessage().message.asInstanceOf[AdaptMessage[_, _]].message shouldBe (Pong("hello"))
     }
 
   }
