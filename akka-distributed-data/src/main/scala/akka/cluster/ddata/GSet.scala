@@ -87,7 +87,7 @@ final case class GSet[A] private (elements: Set[A])(override val delta: Option[G
 
   override def toString: String = s"G$elements"
 
-  def copy(e: Set[A] = elements) = new GSet[A](e)(delta)
+  def copy(e: Set[A]) = new GSet[A](e)(delta)
 }
 
 object GSetKey {
