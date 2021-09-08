@@ -134,8 +134,7 @@ jobs:
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.multi-in-test=false \
-            -Dakka.test.tags.exclude=gh-exclude \
-            clean update Test/compile test checkTestsHaveRun
+            clean Test/compile test checkTestsHaveRun
 
       - name: Test Reports
         # Makes it easier to spot failures instead of looking at the logs.

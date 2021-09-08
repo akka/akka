@@ -49,7 +49,6 @@ jobs:
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.cluster.assert=on \
             -Dsbt.override.build.repos=false \
-            -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.test.multi-node=true \
             -Dakka.test.multi-node.targetDirName=${PWD}/target/${{ github.run_id }} \
             -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
