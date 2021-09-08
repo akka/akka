@@ -270,8 +270,8 @@ class MessageAdapterSpec
       // exception was thrown for 3
       probe.expectMessage("stopped")
 
-      deadLetterProbe.receiveMessage().message.asInstanceOf[AdaptMessage[_, _]].message shouldBe (Pong("hello"))
-      deadLetterProbe.receiveMessage().message.asInstanceOf[AdaptMessage[_, _]].message shouldBe (Pong("hello"))
+      deadLetterProbe.receiveMessage().message.asInstanceOf[AdaptMessage[Pong, _]].message.greeting shouldBe "hello"
+      deadLetterProbe.receiveMessage().message.asInstanceOf[AdaptMessage[Pong, _]].message.greeting shouldBe "hello"
     }
 
   }
