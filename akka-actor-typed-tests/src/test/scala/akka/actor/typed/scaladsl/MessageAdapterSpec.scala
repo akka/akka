@@ -270,8 +270,16 @@ class MessageAdapterSpec
       // exception was thrown for 3
       probe.expectMessage("stopped")
 
-      deadLetterProbe.receiveMessage().message.asInstanceOf[AdaptMessage[Pong, _]].message.greeting shouldBe "hello"
-      deadLetterProbe.receiveMessage().message.asInstanceOf[AdaptMessage[Pong, _]].message.greeting shouldBe "hello"
+      deadLetterProbe.receiveMessage().message match {
+        case AdaptMessage(Pong(greeting), _) => greeting shouldBe "hello"
+        case  Pong(greeting) => greeting shouldBe "hello"
+        case other => fail(s"Unexpected dead letter: [$other]")
+      }
+      deadLetterProbe.receiveMessage().message match {
+        case AdaptMessage(Pong(greeting), _) => greeting shouldBe "hello"
+        case Pong(greeting) => greeting shouldBe "hello"
+        case other => fail(s"Unexpected dead letter: [$other]")
+      }
     }
 
   }
