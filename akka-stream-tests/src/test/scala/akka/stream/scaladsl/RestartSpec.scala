@@ -869,9 +869,9 @@ class RestartSpec
 
     def expectInAnyOrder(probe: TestSubscriber.Probe[String], one: String, other: String): Unit = {
       probe.expectNext() match {
-        case `one` => probe.expectNext() should be(other)
+        case `one`   => probe.expectNext() should be(other)
         case `other` => probe.expectNext() should be(one)
-        case other => fail(s"Unexpected: [$other]")
+        case other   => fail(s"Unexpected: [$other]")
       }
     }
 
