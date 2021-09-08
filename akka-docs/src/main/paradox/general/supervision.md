@@ -71,7 +71,7 @@ cleared out. If the supervisor decides that its other children or itself is not
 affected by the corruption—e.g. because of conscious application of the error
 kernel pattern—it is therefore best to restart the actor. This is carried out
 by creating a new instance of the underlying @apidoc[Behavior] class and replacing
-the failed instance with the fresh one inside the child’s @apidoc[typed.ActorRef];
+the failed instance with the fresh one inside the child's @apidoc[typed.ActorRef];
 the ability to do this is one of the reasons for encapsulating actors within
 special references. The new actor then resumes processing its mailbox, meaning
 that the restart is not visible outside of the actor itself with the notable
