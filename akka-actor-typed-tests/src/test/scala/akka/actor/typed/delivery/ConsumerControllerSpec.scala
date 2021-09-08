@@ -14,7 +14,6 @@ import akka.actor.typed.delivery.ConsumerController.DeliverThenStop
 import akka.actor.typed.delivery.internal.ConsumerControllerImpl
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.serialization.SerializationExtension
-import akka.testkit.GHExcludeTest
 
 class ConsumerControllerSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.parseString("""
@@ -473,8 +472,7 @@ class ConsumerControllerSpec
       testKit.stop(consumerController)
     }
 
-    // Excluded fo GHActions. See https://github.com/akka/akka/issues/30430
-    "send Ack when stopped" taggedAs GHExcludeTest in {
+    "send Ack when stopped" in {
       nextId()
       val consumerController =
         spawn(ConsumerController[TestConsumer.Job](), s"consumerController-${idCount}")
@@ -495,6 +493,11 @@ class ConsumerControllerSpec
       consumerProbe1.expectMessageType[ConsumerController.Delivery[TestConsumer.Job]]
       consumerController ! ConsumerController.Confirmed
 
+      consumerController ! sequencedMessage(producerId, 3, producerControllerProbe.ref)
+      consumerProbe1.expectMessageType[ConsumerController.Delivery[TestConsumer.Job]]
+
+      // now we know that the ConsumerController has received Confirmed for 2,
+      // and 3 is still not confirmed
       testKit.stop(consumerController)
       producerControllerProbe.expectMessage(ProducerControllerImpl.Ack(2L))
     }
