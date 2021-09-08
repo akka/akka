@@ -4,8 +4,6 @@
 
 package akka.remote.classic
 
-import java.util.concurrent.TimeoutException
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -210,9 +208,6 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       }
 
       Await.result(remoteSystem.whenTerminated, 10.seconds)
-
-      EventFilter[TimeoutException](occurrences = 1).intercept {}
-
       awaitAssert(assertResult(initialActors)(targets.flatMap(collectLiveActors).toSet), 10.seconds)
     }
 
