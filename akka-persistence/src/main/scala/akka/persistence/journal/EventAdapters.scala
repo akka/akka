@@ -118,9 +118,9 @@ private[akka] object EventAdapters {
     if (classOf[EventAdapter].isAssignableFrom(clazz))
       instantiate[EventAdapter](adapterFQN, system)
     else if (classOf[WriteEventAdapter].isAssignableFrom(clazz))
-      instantiate[WriteEventAdapter](adapterFQN, system).map(NoopReadEventAdapter)
+      instantiate[WriteEventAdapter](adapterFQN, system).map(NoopReadEventAdapter.apply)
     else if (classOf[ReadEventAdapter].isAssignableFrom(clazz))
-      instantiate[ReadEventAdapter](adapterFQN, system).map(NoopWriteEventAdapter)
+      instantiate[ReadEventAdapter](adapterFQN, system).map(NoopWriteEventAdapter.apply)
     else
       throw new IllegalArgumentException(s"Configured $adapterFQN does not implement any EventAdapter interface!")
   }

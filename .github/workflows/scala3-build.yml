@@ -24,8 +24,9 @@ jobs:
           - akka-cluster/Test/compile
           - akka-coordination/test
           - akka-discovery/test
+          - akka-persistence/compile
           - akka-pki/test
-          - akka-serialization-jackson/test:compile
+          - akka-serialization-jackson/Test/compile
           - akka-slf4j/test
           - akka-stream/test akka-stream-testkit/test akka-stream-tests/test
           - akka-stream-tests-tck/test
