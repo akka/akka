@@ -7,7 +7,6 @@ package akka.event
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
-import language.postfixOps
 
 import akka.actor._
 import akka.testkit.{ AkkaSpec, GHExcludeTest, TestProbe }
@@ -82,7 +81,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
       bus.subscribe(testActor, classOf[M])
       bus.publish(M(42))
-      within(1 second) {
+      within(1.second) {
         expectMsg(M(42))
         bus.unsubscribe(testActor)
         bus.publish(M(13))
@@ -126,7 +125,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       bus.startDefaultLoggers(impl)
       bus.publish(SetTarget(testActor))
       expectMsg("OK")
-      within(2 seconds) {
+      within(2.seconds) {
         import Logging._
         verifyLevel(bus, InfoLevel)
         bus.setLogLevel(WarningLevel)
@@ -144,7 +143,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       val b2 = new B3
       val c = new C
       val bus = new EventStream(system, false)
-      within(2 seconds) {
+      within(2.seconds) {
         bus.subscribe(testActor, classOf[B3]) should ===(true)
         bus.publish(c)
         bus.publish(b2)
@@ -202,7 +201,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.publish(tm2)
       (a1.expectMsgType[AT]: AT) should ===(tm2)
       (a2.expectMsgType[BT]: BT) should ===(tm2)
-      a3.expectNoMessage(1 second)
+      a3.expectNoMessage(1.second)
       (a4.expectMsgType[CCATBT]: CCATBT) should ===(tm2)
       es.unsubscribe(a1.ref, classOf[AT]) should ===(true)
       es.unsubscribe(a2.ref, classOf[BT]) should ===(true)
@@ -224,7 +223,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.publish(tm2)
       (a1.expectMsgType[AT]: AT) should ===(tm2)
       (a2.expectMsgType[BT]: BT) should ===(tm2)
-      a3.expectNoMessage(1 second)
+      a3.expectNoMessage(1.second)
       (a4.expectMsgType[CCATBT]: CCATBT) should ===(tm2)
       es.unsubscribe(a1.ref, classOf[AT]) should ===(true)
       es.unsubscribe(a2.ref, classOf[BT]) should ===(true)
@@ -277,7 +276,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.subscribe(a1.ref, classOf[AT]) should ===(true)
       es.publish(tm1)
       (a1.expectMsgType[AT]: AT) should ===(tm1)
-      a2.expectNoMessage(1 second)
+      a2.expectNoMessage(1.second)
       es.subscribe(a2.ref, classOf[BTT]) should ===(true)
       es.publish(tm1)
       (a1.expectMsgType[AT]: AT) should ===(tm1)
@@ -308,7 +307,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
         es.publish(tm)
 
-        a1.expectNoMessage(1 second)
+        a1.expectNoMessage(1.second)
         a2.expectMsg(tm)
       } finally {
         shutdown(sys)
@@ -398,17 +397,17 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
         es.subscribe(a2.ref, classOf[A])
         es.subscribe(a2.ref, classOf[T])
-        fishForDebugMessage(a1, s"watching ${a2.ref}", 1 second)
-        fishForDebugMessage(a1, s"watching ${a2.ref}", 1 second) // the unsubscriber "starts to watch" each time, as watching is idempotent
+        fishForDebugMessage(a1, s"watching ${a2.ref}")
+        fishForDebugMessage(a1, s"watching ${a2.ref}") // the unsubscriber "starts to watch" each time, as watching is idempotent
 
         es.unsubscribe(a2.ref, classOf[A]) should equal(true)
         fishForDebugMessage(a1, s"unsubscribing ${a2.ref} from channel class akka.event.EventStreamSpec$$A")
-        a1.expectNoMessage(1 second)
+        a1.expectNoMessage(1.second)
 
         es.unsubscribe(a2.ref, classOf[T]) should equal(true)
         fishForDebugMessage(a1, s"unsubscribing ${a2.ref} from channel interface akka.event.EventStreamSpec$$T")
         fishForDebugMessage(a1, s"unwatching ${a2.ref}, since has no subscriptions")
-        a1.expectNoMessage(1 second)
+        a1.expectNoMessage(1.second)
 
         es.unsubscribe(a2.ref, classOf[T]) should equal(false)
 
@@ -428,8 +427,8 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     msg.foreach(expectMsg(_))
   }
 
-  private def fishForDebugMessage(a: TestProbe, messagePrefix: String, max: Duration = 3 seconds): Unit = {
-    a.fishForMessage(max, hint = "expected debug message prefix: " + messagePrefix) {
+  private def fishForDebugMessage(a: TestProbe, messagePrefix: String): Unit = {
+    a.fishForMessage(hint = "expected debug message prefix: " + messagePrefix) {
       case Logging.Debug(_, _, msg: String) if msg.startsWith(messagePrefix) => true
       case _                                                                 => false
     }
