@@ -26,7 +26,6 @@ object BalancingSpec {
     def receive = {
       case _: Int =>
         latch.countDown()
-        latch
         if (id == 1) {
           // wait for all routees to receive a message before processing
           Await.result(latch, 1.minute)

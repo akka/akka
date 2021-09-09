@@ -75,6 +75,7 @@ final case class BalancingPool(
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     extends Pool {
+  println(s"XXX pool $this with $nrOfInstances")
 
   def this(config: Config) =
     this(nrOfInstances = config.getInt("nr-of-instances"))

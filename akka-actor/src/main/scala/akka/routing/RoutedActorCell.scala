@@ -109,6 +109,7 @@ private[akka] class RoutedActorCell(
     routerConfig match {
       case pool: Pool =>
         val nrOfRoutees = pool.nrOfInstances(system)
+        println(s"Pool $pool of $nrOfRoutees routees")
         if (nrOfRoutees > 0)
           addRoutees(Vector.fill(nrOfRoutees)(pool.newRoutee(routeeProps, this)))
       case group: Group =>
