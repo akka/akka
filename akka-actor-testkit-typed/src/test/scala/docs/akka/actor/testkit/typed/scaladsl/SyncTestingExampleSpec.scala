@@ -156,7 +156,7 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
         case ar: ActorRef[_] =>
           testKit.childTestKit(ar.unsafeUpcast[Any].narrow[ConfigAware.Command])
         case unexpected =>
-          unexpected should be (a[ActorRef[_]])
+          unexpected should be(a[ActorRef[_]])
           ???
       }
 
