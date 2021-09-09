@@ -63,7 +63,7 @@ object SyncTestingExampleSpec {
   }
 
   object ConfigAware {
-    trait Command
+    sealed trait Command
     case class GetCfgString(key: String, replyTo: ActorRef[String]) extends Command
     case class SpawnChild(replyTo: ActorRef[ActorRef[Command]]) extends Command
 
@@ -155,6 +155,9 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
       val childTestKit = inbox.receiveMessage() match {
         case ar: ActorRef[_] =>
           testKit.childTestKit(ar.unsafeUpcast[Any].narrow[ConfigAware.Command])
+        case unexpected =>
+          unexpected should be (a[ActorRef[_]])
+          ???
       }
 
       childTestKit.run(ConfigAware.GetCfgString("test.secret", inbox.ref.narrow))
