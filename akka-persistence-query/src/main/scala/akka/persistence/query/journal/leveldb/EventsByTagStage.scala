@@ -53,6 +53,8 @@ final private[leveldb] class EventsByTagStage(
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[EventEnvelope] {
+      override def doPush(out: Outlet[EventEnvelope], elem: EventEnvelope): Unit = super.push(out, elem)
+
       val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
       var currOffset: Long = fromOffset
       var toOffset: Long = initialTooOffset

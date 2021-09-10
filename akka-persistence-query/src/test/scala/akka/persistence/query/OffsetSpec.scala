@@ -30,7 +30,7 @@ class OffsetSpec extends AnyWordSpecLike with Matchers {
   "Sequence offset" must {
 
     "be ordered correctly" in {
-      val sequenceBasedList = List(1L, 2L, 3L).map(Sequence)
+      val sequenceBasedList = List(1L, 2L, 3L).map(Sequence(_))
       Random.shuffle(sequenceBasedList).sorted shouldEqual sequenceBasedList
     }
   }

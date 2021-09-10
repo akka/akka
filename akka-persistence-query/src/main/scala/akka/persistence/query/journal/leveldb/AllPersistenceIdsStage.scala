@@ -30,6 +30,8 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[String] {
+      override def doPush(out: Outlet[String], elem: String): Unit = super.push(out, elem)
+
       setHandler(out, this)
       val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
       var initialResponseReceived = false

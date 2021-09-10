@@ -5,10 +5,12 @@
 package akka.persistence.journal
 
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
 
+import scala.annotation.nowarn
+
+@nowarn("msg=Unused import")
 class InmemEventAdaptersSpec extends AkkaSpec {
 
   val config = ConfigFactory.parseString(s"""
@@ -65,6 +67,7 @@ class InmemEventAdaptersSpec extends AkkaSpec {
       adapters.get(classOf[PreciseAdapterEvent]).getClass should ===(classOf[PreciseAdapter])
 
       // no adapter defined for Long, should return identity adapter
+      import org.scalatest.matchers.should.Matchers.unconstrainedEquality
       adapters.get(classOf[java.lang.Long]).getClass should ===(IdentityEventAdapter.getClass)
     }
 
