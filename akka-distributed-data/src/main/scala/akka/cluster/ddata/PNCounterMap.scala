@@ -189,7 +189,7 @@ final class PNCounterMap[A] private[akka] (private[akka] val underlying: ORMap[A
   override def toString: String = s"PNCounter$entries"
 
   override def equals(o: Any): Boolean = o match {
-    case other: PNCounterMap[A] => underlying == other.underlying
+    case other: PNCounterMap[_] => underlying == other.underlying
     case _                      => false
   }
 

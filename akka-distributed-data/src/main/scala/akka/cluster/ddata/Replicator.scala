@@ -1727,9 +1727,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def isLocalSender(): Boolean = !replyTo.path.address.hasGlobalScope
 
-  def receiveUpdate(
+  def receiveUpdate[A <: ReplicatedData](
       key: KeyR,
-      modify: Option[ReplicatedData] => ReplicatedData,
+      modify: Option[A] => A,
       writeConsistency: WriteConsistency,
       req: Option[Any]): Unit = {
     val localValue = getData(key.id)
@@ -1746,7 +1746,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         case Some(envelope @ DataEnvelope(DeletedData, _, _)) =>
           (envelope, None)
         case Some(envelope @ DataEnvelope(existing, _, _)) =>
-          modify(Some(existing)) match {
+          modify(Some(existing.asInstanceOf[A])) match {
             case d: DeltaReplicatedData if deltaCrdtEnabled =>
               (envelope.merge(d.resetDelta.asInstanceOf[existing.T]), deltaOrPlaceholder(d))
             case d =>

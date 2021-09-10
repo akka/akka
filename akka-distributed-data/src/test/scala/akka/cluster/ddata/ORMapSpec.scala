@@ -192,7 +192,7 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       val deltaVersion = m1.delta.get match {
         case ORMap.PutDeltaOp(delta, _, _) =>
           delta match {
-            case AddDeltaOp(u) =>
+            case AddDeltaOp(u: ORSet[Any]) =>
               if (u.elementsMap.contains("a"))
                 Some(u.elementsMap("a").versionAt(node1))
               else
