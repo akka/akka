@@ -15,11 +15,9 @@ import java.util.Locale
 import java.util.Optional
 import java.util.UUID
 import java.util.logging.FileHandler
-
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -34,18 +32,20 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
+
 import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -458,6 +458,20 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
     import ScalaTestMessages._
 
     "be possible to create custom ObjectMapper" in {
+      val customJavaTimeModule = new SimpleModule() {
+        import com.fasterxml.jackson.databind.ser.std._
+        addSerializer(classOf[Instant], new StdSerializer[Instant](classOf[Instant]) {
+          override def serialize(value: Instant, gen: JsonGenerator, provider: SerializerProvider): Unit = {
+            gen.writeStartObject()
+            gen.writeFieldName("nanos")
+            gen.writeNumber(value.getNano)
+            gen.writeFieldName("custom")
+            gen.writeString("field")
+            gen.writeEndObject()
+          }
+        })
+      }
+
       val customJacksonObjectMapperFactory = new JacksonObjectMapperFactory {
         override def newObjectMapper(bindingName: String, jsonFactory: JsonFactory): ObjectMapper = {
           if (bindingName == "jackson-json") {
@@ -483,7 +497,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
             bindingName: String,
             configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
           if (bindingName == "jackson-json")
-            configuredModules.filterNot(_.isInstanceOf[JavaTimeModule])
+            configuredModules.filterNot(_.isInstanceOf[JavaTimeModule]) :+ customJavaTimeModule
           else
             super.overrideConfiguredModules(bindingName, configuredModules)
 
@@ -529,10 +543,10 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
         val msg = InstantCommand(Instant.ofEpochMilli(1559907792075L))
         val json = serializeToJsonString(msg, sys)
-        // using the custom ObjectMapper with pretty printing enabled, and no JavaTimeModule
+        // using the custom ObjectMapper with pretty printing enabled, and a custom JavaTimeModule
         json should include("""  "instant" : {""")
-        json should include("""    "nanos" : 75000000,""")
-        json should include("""    "seconds" : 1559907792""")
+        json should include("""    "nanos" : 75000000""")
+        json should include("""    "custom" : "field"""")
       }
     }
 
