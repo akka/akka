@@ -77,7 +77,7 @@ private[remote] class FlushBeforeDeathWatchNotification(
       if (remaining == 0)
         context.stop(self)
     case Timeout =>
-      log.debug("Flush timeout, [{}] remaining", remaining)
+      log.warning("Flush timeout, [{}] remaining", remaining)
       context.stop(self)
   }
 }
