@@ -7,10 +7,10 @@ package akka
 import java.io.File
 
 import com.typesafe.config.ConfigFactory
-import sbt.internal.sbtscalafix.Compat
+import sbt.ConsoleLogger
 
 class ProjectFileIgnoreSupport(ignoreConfigFile: File, descriptor: String) {
-  private val stdoutLogger = Compat.ConsoleLogger(System.out)
+  private val stdoutLogger = ConsoleLogger(System.out)
 
   private val javaSourceDirectories = Set("java", Jdk9.JAVA_SOURCE_DIRECTORY, Jdk9.JAVA_TEST_SOURCE_DIRECTORY)
 
