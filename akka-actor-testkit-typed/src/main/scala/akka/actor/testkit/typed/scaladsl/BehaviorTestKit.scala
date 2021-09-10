@@ -18,10 +18,7 @@ import scala.reflect.ClassTag
 @ApiMayChange
 object BehaviorTestKit {
 
-  trait config {
-    def appTestConfig: Config = ActorTestKit.ApplicationTestConfig
-  }
-  object config extends config
+  val ApplicationTestConfig: Config = ActorTestKit.ApplicationTestConfig
 
   def apply[T](initialBehavior: Behavior[T], name: String, config: Config): BehaviorTestKit[T] = {
     val system = new ActorSystemStub("StubbedActorContext", config)

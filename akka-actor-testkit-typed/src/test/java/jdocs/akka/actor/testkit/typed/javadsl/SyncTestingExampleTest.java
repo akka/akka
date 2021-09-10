@@ -205,7 +205,7 @@ public class SyncTestingExampleTest extends JUnitSuite {
   public void testWithAppTestCfg() {
 
     // #test-app-test-config
-    Config cfg = BehaviorTestKit.config().appTestConfig();
+    Config cfg = BehaviorTestKit.ApplicationTestConfig();
     BehaviorTestKit<Hello.Command> test = BehaviorTestKit.create(Hello.create(), "hello", cfg);
   }
 }

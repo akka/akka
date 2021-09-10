@@ -145,7 +145,8 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
 
     "has access to the provided config" in {
       val conf =
-        BehaviorTestKit.config.appTestConfig.withFallback(ConfigFactory.parseMap(Map("test.secret" -> "shhhhh").asJava))
+        BehaviorTestKit.ApplicationTestConfig.withFallback(
+          ConfigFactory.parseMap(Map("test.secret" -> "shhhhh").asJava))
       val testKit = BehaviorTestKit(ConfigAware(), "root", conf)
       val inbox = TestInbox[AnyRef]("Inboxer")
       testKit.run(ConfigAware.GetCfgString("test.secret", inbox.ref.narrow))

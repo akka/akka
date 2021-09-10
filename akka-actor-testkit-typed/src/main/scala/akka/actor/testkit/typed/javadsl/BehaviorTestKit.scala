@@ -5,7 +5,8 @@
 package akka.actor.testkit.typed.javadsl
 
 import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
-import akka.actor.testkit.typed.{ scaladsl, CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.{ ActorRef, Behavior, Signal }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
@@ -19,7 +20,7 @@ object BehaviorTestKit {
    * JAVA API
    */
   @ApiMayChange
-  def config(): akka.actor.testkit.typed.scaladsl.BehaviorTestKit.config = scaladsl.BehaviorTestKit.config
+  def ApplicationTestConfig: Config = ActorTestKit.ApplicationTestConfig
 
   /**
    * JAVA API
