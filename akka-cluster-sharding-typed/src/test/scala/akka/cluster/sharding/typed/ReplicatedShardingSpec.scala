@@ -5,9 +5,7 @@
 package akka.cluster.sharding.typed
 
 import java.util.concurrent.ThreadLocalRandom
-
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -225,7 +223,8 @@ class DataCenterReplicatedShardingSpec
 
 abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA: Config, configB: Config)
     extends ScalaTestWithActorTestKit(configA)
-    with AnyWordSpecLike {
+    with AnyWordSpecLike
+    with LogCapturing {
 
   // don't retry quite so quickly
   override implicit val patience: PatienceConfig =
@@ -290,6 +289,15 @@ abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA:
         val uniqueTexts = responses.flatMap(res => res.ints).toSet
         uniqueTexts should ===(Set(10, 11))
       }
+
+      // This is also done in 'afterAll', but we do it here as well so we can see the
+      // logging to diagnose
+      // https://github.com/akka/akka/issues/30501 and
+      // https://github.com/akka/akka/issues/30502
+      ActorTestKit.shutdown(
+        system2,
+        testKitSettings.DefaultActorSystemShutdownTimeout,
+        testKitSettings.ThrowOnShutdownTimeout)
     }
   }
 
