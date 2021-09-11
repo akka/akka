@@ -38,7 +38,7 @@ akka {
             }
           ]
         },
-        service2 = {
+        "service2.domain.com" = {
           endpoints = []
         }
       }
