@@ -1,14 +1,5 @@
 # Sharded Daemon Process
 
-
-@@@ warning
-
-This module is currently marked as @ref:[may change](../common/may-change.md) because it is a new feature that
-needs feedback from real usage before finalizing the API. This means that API or semantics can change without
-warning or deprecation period. It is also not recommended to use this module in production just yet.
-
-@@@
-
 ## Module info
 
 To use Akka Sharded Daemon Process, you must add the following dependency in your project:
