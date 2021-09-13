@@ -52,7 +52,10 @@ object GroupRouterSpec {
     private case class SawPong(worker: ActorRef[_]) extends Command
     private case object RetryPinging extends Command
     case class DonePinging(pongs: Int, uniqueWorkers: Set[ActorRef[_]])
-    def apply(router: ActorRef[PingActor.Ping], requestedPings: Int, tellMeWhenDone: ActorRef[DonePinging]): Behavior[Command] =
+    def apply(
+        router: ActorRef[PingActor.Ping],
+        requestedPings: Int,
+        tellMeWhenDone: ActorRef[DonePinging]): Behavior[Command] =
       Behaviors.setup { ctx =>
         val pongAdapter = ctx.messageAdapter[PingActor.Pong] {
           case PingActor.Pong(ref) => SawPong(ref)
@@ -112,29 +115,27 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
 
     val resultProbe = testKit.createTestProbe[Pinger.DonePinging]()
 
-    val system1 = ActorSystem(Behaviors.setup[Receptionist.Listing] { ctx =>
-      (0 until settings.node1WorkerCount).foreach { i =>
-        val worker = ctx.spawn(PingActor(), s"ping-pong-$i")
-        ctx.system.receptionist ! Receptionist.Register(pingPongKey, worker)
-      }
-      val router = ctx.spawn(groupRouter, "group-router")
+    val system1 = ActorSystem(Behaviors.setup[Receptionist.Listing] {
+      ctx =>
+        (0 until settings.node1WorkerCount).foreach { i =>
+          val worker = ctx.spawn(PingActor(), s"ping-pong-$i")
+          ctx.system.receptionist ! Receptionist.Register(pingPongKey, worker)
+        }
+        val router = ctx.spawn(groupRouter, "group-router")
         ctx.system.receptionist ! Receptionist.Subscribe(pingPongKey, ctx.self)
 
         Behaviors.receiveMessage {
-          case pingPongKey.Listing(update)
-            if update.size == settings.node1WorkerCount + settings.node2WorkerCount =>
-              // the requested number of workers are started and registered with the receptionist
-              // start pinging them
-              ctx.log.debug("Saw {} workers, starting pinger", update.size)
-              ctx.spawn(Pinger(router, settings.messageCount, resultProbe.ref), "pinger")
-              // ignore further listings
-              Behaviors.empty
-            case _ =>
-              Behaviors.same
-          }
-        },
-        system.name,
-        config)
+          case pingPongKey.Listing(update) if update.size == settings.node1WorkerCount + settings.node2WorkerCount =>
+            // the requested number of workers are started and registered with the receptionist
+            // start pinging them
+            ctx.log.debug("Saw {} workers, starting pinger", update.size)
+            ctx.spawn(Pinger(router, settings.messageCount, resultProbe.ref), "pinger")
+            // ignore further listings
+            Behaviors.empty
+          case _ =>
+            Behaviors.same
+        }
+    }, system.name, config)
 
     val system2 = ActorSystem(Behaviors.setup[Unit] { ctx =>
       (0 until settings.node2WorkerCount).foreach { i =>
@@ -142,9 +143,7 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
         ctx.system.receptionist ! Receptionist.Register(pingPongKey, worker)
       }
       Behaviors.empty
-    },
-      system.name,
-      config)
+    }, system.name, config)
 
     try {
       val node1 = Cluster(system1)
@@ -168,34 +167,33 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
     // default is to not preferLocalRoutees
     List(
       "random" -> Routers.group(pingPongKey).withRandomRouting(), // default group is same as this
-      "round robin" -> Routers.group(pingPongKey).withRoundRobinRouting()).foreach { case (strategy, groupRouter) =>
-
-      s"use all reachable routees if preferLocalRoutees is not enabled, strategy $strategy" in {
-        val settings = GroupRouterSpecSettings(node1WorkerCount = 2, node2WorkerCount = 2, messageCount = 100)
-        val result = checkGroupRouterBehavior(groupRouter, settings)
-        result.actorsInSystem1 should === (settings.node1WorkerCount)
-        result.actorsInSystem2 should === (settings.node2WorkerCount)
-      }
+      "round robin" -> Routers.group(pingPongKey).withRoundRobinRouting()).foreach {
+      case (strategy, groupRouter) =>
+        s"use all reachable routees if preferLocalRoutees is not enabled, strategy $strategy" in {
+          val settings = GroupRouterSpecSettings(node1WorkerCount = 2, node2WorkerCount = 2, messageCount = 100)
+          val result = checkGroupRouterBehavior(groupRouter, settings)
+          result.actorsInSystem1 should ===(settings.node1WorkerCount)
+          result.actorsInSystem2 should ===(settings.node2WorkerCount)
+        }
     }
 
     List(
       "random" -> Routers.group(pingPongKey).withRandomRouting(true),
-      "round robin" -> Routers.group(pingPongKey).withRoundRobinRouting(true)
-    ).foreach { case (strategy, groupRouter) =>
+      "round robin" -> Routers.group(pingPongKey).withRoundRobinRouting(true)).foreach {
+      case (strategy, groupRouter) =>
+        s"only use local routees if preferLocalRoutees is enabled and there are local routees, strategy $strategy" in {
+          val settings = GroupRouterSpecSettings(node1WorkerCount = 2, node2WorkerCount = 2, messageCount = 100)
+          val result = checkGroupRouterBehavior(groupRouter, settings)
+          result.actorsInSystem1 should ===(settings.node1WorkerCount)
+          result.actorsInSystem2 should ===(0)
+        }
 
-      s"only use local routees if preferLocalRoutees is enabled and there are local routees, strategy $strategy" in {
-        val settings = GroupRouterSpecSettings(node1WorkerCount = 2, node2WorkerCount = 2, messageCount = 100)
-        val result = checkGroupRouterBehavior(groupRouter, settings)
-        result.actorsInSystem1 should === (settings.node1WorkerCount)
-        result.actorsInSystem2 should === (0)
-      }
-
-      s"use remote routees if preferLocalRoutees is enabled but there is no local routees, strategy $strategy" in {
-        val settings = GroupRouterSpecSettings(node1WorkerCount = 0, node2WorkerCount = 2, messageCount = 100)
-        val result = checkGroupRouterBehavior(groupRouter, settings)
-        result.actorsInSystem1 should ===(0)
-        result.actorsInSystem2 should ===(settings.node2WorkerCount)
-      }
+        s"use remote routees if preferLocalRoutees is enabled but there is no local routees, strategy $strategy" in {
+          val settings = GroupRouterSpecSettings(node1WorkerCount = 0, node2WorkerCount = 2, messageCount = 100)
+          val result = checkGroupRouterBehavior(groupRouter, settings)
+          result.actorsInSystem1 should ===(0)
+          result.actorsInSystem2 should ===(settings.node2WorkerCount)
+        }
     }
   }
 }
