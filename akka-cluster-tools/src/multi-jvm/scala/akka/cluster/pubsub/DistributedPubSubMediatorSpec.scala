@@ -161,14 +161,16 @@ class DistributedPubSubMediatorSpec
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
       mediator ! Count
-      expectMsgType[Int] should ===(expected)
+      val actual = expectMsgType[Int]
+      actual should ===(expected)
     }
   }
 
   def awaitCountSubscribers(expected: Int, topic: String): Unit = {
     awaitAssert {
       mediator ! CountSubscribers(topic)
-      expectMsgType[Int] should ===(expected)
+      val actual = expectMsgType[Int]
+      actual should ===(expected)
     }
   }
 

@@ -76,7 +76,8 @@ class DistributedPubSubRestartSpec
     val probe = TestProbe()
     awaitAssert {
       mediator.tell(Count, probe.ref)
-      probe.expectMsgType[Int] should ===(expected)
+      val actual = probe.expectMsgType[Int]
+      actual should ===(expected)
     }
   }
 

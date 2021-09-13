@@ -64,7 +64,8 @@ class ClusterClientStopSpec extends MultiNodeSpec(ClusterClientStopSpec) with ST
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
       DistributedPubSub(system).mediator ! DistributedPubSubMediator.Count
-      expectMsgType[Int] should ===(expected)
+      val actual = expectMsgType[Int]
+      actual should ===(expected)
     }
   }
 

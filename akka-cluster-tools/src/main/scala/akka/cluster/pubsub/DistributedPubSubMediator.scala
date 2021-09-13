@@ -278,7 +278,7 @@ object DistributedPubSubMediator {
 
     @SerialVersionUID(1L)
     final case class ValueHolder(version: Long, ref: Option[ActorRef]) {
-      @transient lazy val routee: Option[Routee] = ref.map(ActorRefRoutee)
+      @transient lazy val routee: Option[Routee] = ref.map(ActorRefRoutee(_))
     }
 
     @SerialVersionUID(1L)
@@ -454,7 +454,7 @@ object DistributedPubSubMediator {
       def business = {
         case SendToOneSubscriber(msg) =>
           if (subscribers.nonEmpty)
-            Router(routingLogic, subscribers.map(ActorRefRoutee).toVector).route(wrapIfNeeded(msg), sender())
+            Router(routingLogic, subscribers.map(ActorRefRoutee(_)).toVector).route(wrapIfNeeded(msg), sender())
       }
     }
 
