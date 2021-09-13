@@ -77,7 +77,7 @@ object GroupRouterSpec {
               Behaviors.same
             }
           case RetryPinging =>
-            // delivery isn't guaranteed so retry sending if we didn't get resonses in a timely fashion
+            // delivery isn't guaranteed so retry sending if we didn't get responses in a timely fashion
             retriesLeft -= 1
             if (retriesLeft == 0) {
               ctx.log.warn("Gave up retrying re-sending")
