@@ -17,10 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 8
+      - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8.0
+          java-version: adopt@1.11
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
@@ -28,6 +28,7 @@ jobs:
       - name: sbt akka-cluster-metrics/test
         run: |-
           sbt -jvm-opts .jvmopts-ci \
+            -Xlog:gc \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.sigar=true \
             -Dakka.cluster.assert=on \
@@ -35,6 +36,10 @@ jobs:
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.log.timestamps=true \
+            -Dmultinode.XX:MetaspaceSize=128M \
+            -Dmultinode.Xms256M \
+            -Dmultinode.Xmx256M \
+            -Dmultinode.Xlog:gc \
             clean akka-cluster-metrics/test
 
       - name: Test Reports
@@ -90,6 +95,7 @@ jobs:
       - name: sbt ${{ matrix.command }}
         run: |-
           sbt -jvm-opts .jvmopts-ci \
+          -Xlog:gc \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.enabled=off \
           -Dakka.test.timefactor=2 \
@@ -97,6 +103,10 @@ jobs:
           -Dakka.cluster.assert=on \
           -Dakka.test.tags.exclude=gh-exclude \
           -Dakka.test.names.exclude=akka.cluster.Stress \
+          -Dmultinode.XX:MetaspaceSize=128M \
+          -Dmultinode.Xms256M \
+          -Dmultinode.Xmx256M \
+          -Dmultinode.Xlog:gc \
           clean ${{ matrix.command }}
 
   jdk-nightly-build:
@@ -126,6 +136,7 @@ jobs:
         uses: coursier/cache-action@v6.2
 
       - name: Compile and Test
+        # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
         run: |-
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
@@ -134,6 +145,9 @@ jobs:
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.multi-in-test=false \
+            -Dmultinode.XX:MetaspaceSize=128M \
+            -Dmultinode.Xms256M \
+            -Dmultinode.Xmx256M \
             clean Test/compile test checkTestsHaveRun
 
       - name: Test Reports
@@ -212,12 +226,17 @@ jobs:
       - name: sbt ${{ matrix.command }}
         run: |-
           sbt -jvm-opts .jvmopts-ci \
+          -Xlog:gc \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.transport=aeron-udp \
           -Dakka.test.timefactor=2 \
           -Dakka.actor.testkit.typed.timefactor=2 \
           -Dakka.cluster.assert=on \
           -Dakka.test.tags.exclude=gh-exclude \
+          -Dmultinode.XX:MetaspaceSize=128M \
+          -Dmultinode.Xms256M \
+          -Dmultinode.Xmx256M \
+          -Dmultinode.Xlog:gc \
           clean ${{ matrix.command }}
 
       - name: Email on failure
