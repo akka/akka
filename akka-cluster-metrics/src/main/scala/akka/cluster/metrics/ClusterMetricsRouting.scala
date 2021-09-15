@@ -420,8 +420,6 @@ object MetricsSelector {
 /**
  * A MetricsSelector is responsible for producing weights from the node metrics.
  */
-@nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait MetricsSelector extends Serializable {
 
   /**
