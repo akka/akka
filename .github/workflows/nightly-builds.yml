@@ -28,7 +28,6 @@ jobs:
       - name: sbt akka-cluster-metrics/test
         run: |-
           sbt -jvm-opts .jvmopts-ci \
-            -Xlog:gc \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.sigar=true \
             -Dakka.cluster.assert=on \
@@ -95,7 +94,6 @@ jobs:
       - name: sbt ${{ matrix.command }}
         run: |-
           sbt -jvm-opts .jvmopts-ci \
-          -Xlog:gc \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.enabled=off \
           -Dakka.test.timefactor=2 \
@@ -123,9 +121,9 @@ jobs:
         jdkVersion: ["adopt@1.8.0", "adopt@1.11"]
         include:
           - jdkVersion: adopt@1.8.0
-            extraOpts: "-XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Dmultinode.XX:+PrintGCDetails -Dmultinode.XX:+PrintGCTimeStamps"
+            extraOpts: "-Dmultinode.XX:+PrintGCDetails -Dmultinode.XX:+PrintGCTimeStamps"
           - jdkVersion: adopt@1.11
-            extraOpts: "-Xlog:gc -Dmultinode.Xlog:gc"
+            extraOpts: "-Dmultinode.Xlog:gc"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -232,7 +230,6 @@ jobs:
       - name: sbt ${{ matrix.command }}
         run: |-
           sbt -jvm-opts .jvmopts-ci \
-          -Xlog:gc \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.transport=aeron-udp \
           -Dakka.test.timefactor=2 \
