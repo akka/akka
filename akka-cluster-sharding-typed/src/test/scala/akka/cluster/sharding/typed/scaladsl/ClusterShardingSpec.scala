@@ -125,7 +125,7 @@ class ClusterShardingSpec
   val sharding2 = ClusterSharding(system2)
 
   override def afterAll(): Unit = {
-    ActorTestKit.shutdown(system2, 5.seconds)
+    ActorTestKit.shutdown(system2)
     super.afterAll()
   }
 

@@ -234,10 +234,7 @@ abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA:
 
   override protected def afterAll(): Unit = {
     super.afterAll()
-    ActorTestKit.shutdown(
-      system2,
-      testKitSettings.DefaultActorSystemShutdownTimeout,
-      testKitSettings.ThrowOnShutdownTimeout)
+    ActorTestKit.shutdown(system2)
   }
 
   "Replicated sharding" should {
@@ -294,10 +291,7 @@ abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA:
       // logging to diagnose
       // https://github.com/akka/akka/issues/30501 and
       // https://github.com/akka/akka/issues/30502
-      ActorTestKit.shutdown(
-        system2,
-        testKitSettings.DefaultActorSystemShutdownTimeout,
-        testKitSettings.ThrowOnShutdownTimeout)
+      ActorTestKit.shutdown(system2)
     }
   }
 

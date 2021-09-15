@@ -103,7 +103,7 @@ class RemoteDeployNotAllowedSpec
         system2 ! SpawnAnonymous
         probe.expectMessageType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
       } finally {
-        ActorTestKit.shutdown(system2, 5.seconds)
+        ActorTestKit.shutdown(system2)
       }
     }
   }
