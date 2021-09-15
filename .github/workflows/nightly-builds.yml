@@ -121,6 +121,11 @@ jobs:
         # full version from it.
         scalaVersion: ["2.12", "2.13"]
         jdkVersion: ["adopt@1.8.0", "adopt@1.11"]
+        include:
+          - jdkVersion: adopt@1.8.0
+            extraOpts: "-XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Dmultinode.XX:+PrintGCDetails -Dmultinode.XX:+PrintGCTimeStamps"
+          - jdkVersion: adopt@1.11
+            extraOpts: "-Xlog:gc -Dmultinode.Xlog:gc"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -148,6 +153,7 @@ jobs:
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx256M \
+            ${{ matrix.extraOpts }} \
             clean Test/compile test checkTestsHaveRun
 
       - name: Test Reports
