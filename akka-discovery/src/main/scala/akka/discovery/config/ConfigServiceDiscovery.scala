@@ -7,7 +7,7 @@ package akka.discovery.config
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigUtil }
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
@@ -27,7 +27,7 @@ private object ConfigServicesParser {
       .entrySet()
       .asScala
       .map { en =>
-        (en.getKey, config.getConfig(en.getKey))
+        (en.getKey, config.getConfig(ConfigUtil.quoteString(en.getKey)))
       }
       .toMap
 
