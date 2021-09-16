@@ -21,6 +21,7 @@ jobs:
         command:
           - akka-testkit/test akka-actor-tests/test
           - akka-actor-testkit-typed/test akka-actor-typed-tests/test
+          - akka-bench-jmh/test
           - akka-cluster/Test/compile akka-cluster-tools/test akka-distributed-data/test
           - akka-coordination/test
           - akka-discovery/test
