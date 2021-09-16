@@ -83,6 +83,7 @@ class DurableShardingSpec
 
     // GHExclude tracked in https://github.com/akka/akka/issues/30489
     "load initial state and resend unconfirmed" taggedAs GHExcludeTest in {
+      pending // FIXME issue #30489, this could be a real problem
       nextId()
       val typeKey = EntityTypeKey[SequencedMessage[TestConsumer.Job]](s"TestConsumer-$idCount")
       val consumerProbe = createTestProbe[TestConsumer.JobDelivery]()
