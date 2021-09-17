@@ -292,14 +292,14 @@ import akka.coordination.lease.scaladsl.Lease
       try {
         val intersectionOfObserversAndSubjects = indirectlyConnectedFromIntersectionOfObserversAndSubjects
         val haveSeenCurrentGossip = indirectlyConnectedFromSeenCurrentGossip
-        _reachability = reachability
-          .filterRecords { r =>
-            // we only retain records for addresses that are still downable
-            downable.contains(r.observer) && downable.contains(r.subject) &&
-            // remove records between the indirectly connected
-            !(intersectionOfObserversAndSubjects(r.observer) && intersectionOfObserversAndSubjects(r.subject) ||
-              haveSeenCurrentGossip(r.observer) && haveSeenCurrentGossip(r.subject))
-          }
+        // remove records between the indirectly connected
+        _reachability = reachability.filterRecords { r =>
+          // we only retain records for addresses that are still downable
+          downable.contains(r.observer) && downable.contains(r.subject) &&
+          // remove records between the indirectly connected
+          !(intersectionOfObserversAndSubjects(r.observer) && intersectionOfObserversAndSubjects(r.subject) ||
+          haveSeenCurrentGossip(r.observer) && haveSeenCurrentGossip(r.subject))
+        }
         _unreachable = reachability.allUnreachableOrTerminated
 
         val additionalDecision = decide()

@@ -15,6 +15,7 @@ import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.cluster.ClusterEvent.LeaderChanged
+import akka.cluster.ClusterEvent.MemberExited
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
@@ -937,7 +938,8 @@ class SplitBrainResolverSpec
       strategy3.nodesToDown(reverseDecision3) should ===(Set(memberB, memberC, memberD, memberE).map(_.uniqueAddress))
     }
 
-    "down indirectly connected to already downed node during clean partition: {A, B, C, D} | {(E, F)} => {A, B, C, D}" in new Setup2(role = None) {
+    "down indirectly connected to already downed node during partition: {A, B, C, D} | {(E, F)} => {A, B, C, D}" in new Setup2(
+      role = None) {
       val memberELeaving = leaving(memberE)
       val memberFDown = downed(memberF)
       side1 = Set(memberA, memberB, memberC, memberD)
@@ -1489,6 +1491,56 @@ class SplitBrainResolverSpec
         stop()
       }
 
+    }
+
+    "down indirectly connected when combined with partition and exiting: {A, B, C, D} | {E, F-exiting} => {A, B, C, D}" in {
+      new SetupKeepMajority(stableAfter = Duration.Zero, memberA.uniqueAddress, role = None) {
+        memberUp(memberA, memberB, memberC, memberD, memberE, memberF)
+        val memberFExiting = exiting(memberF)
+        a ! MemberExited(memberFExiting)
+        leader(memberA)
+        // indirectly connected: memberF
+        // partition: memberA, memberB, memberC, memberD | memberE, memberF
+        reachabilityChanged(
+          memberA -> memberE,
+          memberA -> memberFExiting,
+          memberB -> memberE,
+          memberB -> memberFExiting,
+          memberC -> memberE,
+          memberC -> memberFExiting,
+          memberD -> memberE,
+          memberD -> memberFExiting,
+          memberE -> memberFExiting)
+        tick()
+        // keep fully connected members
+        expectDownCalled(memberE)
+        stop()
+      }
+    }
+
+    "down indirectly connected when combined with partition and exiting: {A, B, C, D} | {E-exiting, F} => {A, B, C, D}" in {
+      new SetupKeepMajority(stableAfter = Duration.Zero, memberA.uniqueAddress, role = None) {
+        memberUp(memberA, memberB, memberC, memberD, memberE, memberF)
+        val memberEExiting = exiting(memberE)
+        a ! MemberExited(memberEExiting)
+        leader(memberA)
+        // indirectly connected: memberF
+        // partition: memberA, memberB, memberC, memberD | memberE, memberF
+        reachabilityChanged(
+          memberA -> memberEExiting,
+          memberA -> memberF,
+          memberB -> memberEExiting,
+          memberB -> memberF,
+          memberC -> memberEExiting,
+          memberC -> memberF,
+          memberD -> memberEExiting,
+          memberD -> memberF,
+          memberE -> memberF)
+        tick()
+        // keep fully connected members
+        expectDownCalled(memberF)
+        stop()
+      }
     }
 
     "down all in self data centers" in new SetupDownAllNodes(stableAfter = Duration.Zero, memberA.uniqueAddress) {
