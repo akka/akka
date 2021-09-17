@@ -52,7 +52,7 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
       SupervisorStrategyProvider,
       immutable.Seq(classOf[Config] -> SupervisorStrategyConfiguration))
     .getOrElse {
-      val log: LoggingAdapter = Logging(system, getClass)
+      val log: LoggingAdapter = Logging(system, classOf[ClusterMetricsExtension])
       log.error(s"Configured strategy provider ${SupervisorStrategyProvider} failed to load, using default ${classOf[
         ClusterMetricsStrategy].getName}.")
       new ClusterMetricsStrategy(SupervisorStrategyConfiguration)

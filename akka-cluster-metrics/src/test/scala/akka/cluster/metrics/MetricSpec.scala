@@ -280,6 +280,8 @@ class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Metri
             // we don't check the heap max value in this test.
             // extract is the java api
             StandardMetrics.extractHeapMemory(node) should not be null
+          case other =>
+            fail(other.toString)
         }
 
         node match {
@@ -297,6 +299,8 @@ class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Metri
             }
             // extract is the java api
             StandardMetrics.extractCpu(node) should not be null
+          case other =>
+            fail(other.toString)
         }
       }
     }
