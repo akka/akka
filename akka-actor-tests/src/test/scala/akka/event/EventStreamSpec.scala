@@ -345,12 +345,8 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
-    // Excluded on GH Actions: https://github.com/akka/akka/issues/18630
-    "not allow initializing a TerminatedUnsubscriber twice" taggedAs GHExcludeTest in {
-      val sys = ActorSystem(
-        "MustNotAllowDoubleInitOfTerminatedUnsubscriber",
-        // debug loglevel to diagose #18630
-        ConfigFactory.parseString("akka.loglevel = debug").withFallback(ConfigFactory.load()))
+    "not allow initializing a TerminatedUnsubscriber twice" in {
+      val sys = ActorSystem("MustNotAllowDoubleInitOfTerminatedUnsubscriber")
       // initializes an TerminatedUnsubscriber during start
 
       try {
