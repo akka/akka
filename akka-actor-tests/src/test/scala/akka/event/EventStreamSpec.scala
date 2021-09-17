@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import akka.actor._
-import akka.testkit.{ AkkaSpec, GHExcludeTest, TestProbe }
+import akka.testkit.{ AkkaSpec, TestProbe }
 
 object EventStreamSpec {
 
@@ -322,7 +322,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         val probe = TestProbe()
 
         val terminated = system.actorOf(Props(new Actor {
-          def receive = { case in => }
+          def receive = { case _ => }
         }), "to-be-killed")
 
         watch(terminated)
