@@ -50,7 +50,6 @@ object GroupRouterSpec {
   object Pinger {
     sealed trait Command
     private case class SawPong(worker: ActorRef[_]) extends Command
-    private case object RetryPinging extends Command
     case class DonePinging(pongs: Int, uniqueWorkers: Set[ActorRef[_]])
     def apply(
         router: ActorRef[PingActor.Ping],
@@ -60,14 +59,9 @@ object GroupRouterSpec {
         val pongAdapter = ctx.messageAdapter[PingActor.Pong] {
           case PingActor.Pong(ref) => SawPong(ref)
         }
-        ctx.setReceiveTimeout(1.second, RetryPinging)
-        def sendPing(): Unit = {
-          router ! PingActor.Ping(pongAdapter)
-        }
-        (0 to requestedPings).foreach(_ => sendPing())
+        (0 to requestedPings).foreach(_ => router ! PingActor.Ping(pongAdapter))
         var pongs = 0
         var uniqueWorkers = Set.empty[ActorRef[_]]
-        var retriesLeft = 3
 
         Behaviors.receiveMessage {
           case SawPong(worker) =>
@@ -79,22 +73,8 @@ object GroupRouterSpec {
             } else {
               Behaviors.same
             }
-          case RetryPinging =>
-            // delivery isn't guaranteed so retry sending if we didn't get responses in a timely fashion
-            retriesLeft -= 1
-            if (retriesLeft == 0) {
-              ctx.log.warn("Gave up retrying re-sending")
-              tellMeWhenDone ! DonePinging(pongs, uniqueWorkers)
-              Behaviors.stopped
-            } else {
-              // unlikely we lost all, so resend a fraction
-              ctx.log.debug("Retrying sending")
-              (0 to (requestedPings / 5)).foreach(_ => sendPing())
-              Behaviors.same
-            }
         }
       }
-
   }
 
   case class GroupRouterSpecSettings(node1WorkerCount: Int, node2WorkerCount: Int, messageCount: Int)
@@ -121,14 +101,13 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
           val worker = ctx.spawn(PingActor(), s"ping-pong-$i")
           ctx.system.receptionist ! Receptionist.Register(pingPongKey, worker)
         }
-        val router = ctx.spawn(groupRouter, "group-router")
         ctx.system.receptionist ! Receptionist.Subscribe(pingPongKey, ctx.self)
-
         Behaviors.receiveMessage {
           case pingPongKey.Listing(update) if update.size == settings.node1WorkerCount + settings.node2WorkerCount =>
             // the requested number of workers are started and registered with the receptionist
-            // start pinging them
-            ctx.log.debug("Saw {} workers, starting pinger", update.size)
+            // a new router will see all after this has been observed
+            ctx.log.debug("Saw {} workers, starting router and pinger", update.size)
+            val router = ctx.spawn(groupRouter, "group-router")
             ctx.spawn(Pinger(router, settings.messageCount, resultProbe.ref), "pinger")
             // ignore further listings
             Behaviors.empty
