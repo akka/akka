@@ -314,32 +314,32 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
-    // Excluded in GH Actions: https://github.com/akka/akka/issues/30460
-    "unsubscribe the actor, when it subscribes already in terminated state" taggedAs GHExcludeTest in {
+    "unsubscribe the actor, when it subscribes already in terminated state" in {
       val sys = ActorSystem("EventStreamSpecUnsubscribeTerminated", configUnhandledWithDebug)
 
       try {
         val es = sys.eventStream
-        val a1, a2 = TestProbe()
+        val probe = TestProbe()
 
-        val target = system.actorOf(Props(new Actor {
-          def receive = { case in => a1.ref.forward(in) }
+        val terminated = system.actorOf(Props(new Actor {
+          def receive = { case in => }
         }), "to-be-killed")
 
-        watch(target)
-        target ! PoisonPill
-        expectTerminated(target)
+        watch(terminated)
+        terminated ! PoisonPill
+        expectTerminated(terminated)
 
-        es.subscribe(a2.ref, classOf[Any])
+        es.subscribe(probe.ref, classOf[Any])
 
         // target1 is Terminated; When subscribing, it will be unsubscribed by the Unsubscriber right away
-        es.subscribe(target, classOf[A]) should ===(true)
-        fishForDebugMessage(a2, s"unsubscribing $target from all channels")
+        es.subscribe(terminated, classOf[A]) should ===(true)
+        fishForDebugMessage(probe, s"unsubscribing $terminated from all channels")
 
         awaitAssert {
-          es.subscribe(target, classOf[A]) should ===(true)
+          // when we try to re-subscribe it, that should be ok, since not among the subscribed
+          es.subscribe(terminated, classOf[A]) should ===(true)
         }
-        fishForDebugMessage(a2, s"unsubscribing $target from all channels")
+        fishForDebugMessage(probe, s"unsubscribing $terminated from all channels")
       } finally {
         shutdown(sys)
       }
