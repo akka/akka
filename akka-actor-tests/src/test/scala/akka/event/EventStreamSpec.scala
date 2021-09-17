@@ -80,18 +80,11 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       //#event-bus-start-unsubscriber-scala
 
       bus.subscribe(testActor, classOf[M])
-      // subscription is async
-      var n = 41
-      awaitAssert {
-        n += 1
-        bus.publish(M(n))
-        expectMsg(M(n))
-      }
-      bus.unsubscribe(testActor)
-      // unsubscription is async
-      awaitAssert {
-        n += 1
-        bus.publish(M(n))
+      bus.publish(M(42))
+      within(1.second) {
+        expectMsg(M(42))
+        bus.unsubscribe(testActor)
+        bus.publish(M(13))
         expectNoMessage()
       }
     }
@@ -113,19 +106,14 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       val sys = ActorSystem("EventStreamSpecUnhandled", configUnhandled)
       try {
         sys.eventStream.subscribe(testActor, classOf[AnyRef])
-        // subscription is async
-        var n = 41
-        awaitAssert {
-          n += 1
-          val m = UnhandledMessage(n, sys.deadLetters, sys.deadLetters)
-          sys.eventStream.publish(m)
-          expectMsgAllOf(
-            m,
-            Logging.Debug(
-              sys.deadLetters.path.toString,
-              sys.deadLetters.getClass,
-              s"unhandled message from ${sys.deadLetters}: $n"))
-        }
+        val m = UnhandledMessage(42, sys.deadLetters, sys.deadLetters)
+        sys.eventStream.publish(m)
+        expectMsgAllOf(
+          m,
+          Logging.Debug(
+            sys.deadLetters.path.toString,
+            sys.deadLetters.getClass,
+            "unhandled message from " + sys.deadLetters + ": 42"))
         sys.eventStream.unsubscribe(testActor)
       } finally {
         shutdown(sys)
@@ -157,28 +145,21 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       val bus = new EventStream(system, false)
       within(2.seconds) {
         bus.subscribe(testActor, classOf[B3]) should ===(true)
-        // subscription is async
-        awaitAssert {
-          bus.publish(c)
-          bus.publish(b2)
-          expectMsg(b2)
-        }
+        bus.publish(c)
+        bus.publish(b2)
+        expectMsg(b2)
         bus.subscribe(testActor, classOf[A]) should ===(true)
-        awaitAssert {
-          bus.publish(c)
-          expectMsg(c)
-        }
+        bus.publish(c)
+        expectMsg(c)
         bus.publish(b1)
         expectMsg(b1)
         bus.unsubscribe(testActor, classOf[B2]) should ===(true)
-        awaitAssert {
-          bus.publish(c)
-          bus.publish(b2)
-          bus.publish(a)
-          expectMsg(b2)
-          expectMsg(a)
-          expectNoMessage()
-        }
+        bus.publish(c)
+        bus.publish(b2)
+        bus.publish(a)
+        expectMsg(b2)
+        expectMsg(a)
+        expectNoMessage()
       }
     }
 
@@ -192,16 +173,13 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.subscribe(a2.ref, classOf[BT]) should ===(true)
       es.subscribe(a3.ref, classOf[CC]) should ===(true)
       es.subscribe(a4.ref, classOf[CCATBT]) should ===(true)
-      // subscription is async
-      awaitAssert {
-        es.publish(tm1)
-        es.publish(tm2)
-        (a1.expectMsgType[AT]: AT) should ===(tm2)
-        (a2.expectMsgType[BT]: BT) should ===(tm2)
-        (a3.expectMsgType[CC]: CC) should ===(tm1)
-        (a3.expectMsgType[CC]: CC) should ===(tm2)
-        (a4.expectMsgType[CCATBT]: CCATBT) should ===(tm2)
-      }
+      es.publish(tm1)
+      es.publish(tm2)
+      (a1.expectMsgType[AT]: AT) should ===(tm2)
+      (a2.expectMsgType[BT]: BT) should ===(tm2)
+      (a3.expectMsgType[CC]: CC) should ===(tm1)
+      (a3.expectMsgType[CC]: CC) should ===(tm2)
+      (a4.expectMsgType[CCATBT]: CCATBT) should ===(tm2)
       es.unsubscribe(a1.ref, classOf[AT]) should ===(true)
       es.unsubscribe(a2.ref, classOf[BT]) should ===(true)
       es.unsubscribe(a3.ref, classOf[CC]) should ===(true)
@@ -219,15 +197,12 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.subscribe(a3.ref, classOf[CC]) should ===(true)
       es.subscribe(a4.ref, classOf[CCATBT]) should ===(true)
       es.unsubscribe(a3.ref, classOf[CC]) should ===(true)
-      // subscription and unsubscription is async
-      awaitAssert {
-        es.publish(tm1)
-        es.publish(tm2)
-        (a1.expectMsgType[AT]: AT) should ===(tm2)
-        (a2.expectMsgType[BT]: BT) should ===(tm2)
-        a3.expectNoMessage(1.second)
-        (a4.expectMsgType[CCATBT]: CCATBT) should ===(tm2)
-      }
+      es.publish(tm1)
+      es.publish(tm2)
+      (a1.expectMsgType[AT]: AT) should ===(tm2)
+      (a2.expectMsgType[BT]: BT) should ===(tm2)
+      a3.expectNoMessage(1.second)
+      (a4.expectMsgType[CCATBT]: CCATBT) should ===(tm2)
       es.unsubscribe(a1.ref, classOf[AT]) should ===(true)
       es.unsubscribe(a2.ref, classOf[BT]) should ===(true)
       es.unsubscribe(a4.ref, classOf[CCATBT]) should ===(true)
@@ -243,16 +218,13 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.subscribe(a2.ref, classOf[BT]) should ===(true)
       es.subscribe(a3.ref, classOf[CC]) should ===(true)
       es.subscribe(a4.ref, classOf[CCATBT]) should ===(true)
-      // subscription and unsubscription is async
-      awaitAssert {
-        es.unsubscribe(a3.ref)
-        es.publish(tm1)
-        es.publish(tm2)
-        (a1.expectMsgType[AT]: AT) should ===(tm2)
-        (a2.expectMsgType[BT]: BT) should ===(tm2)
-        a3.expectNoMessage(1.second)
-        (a4.expectMsgType[CCATBT]: CCATBT) should ===(tm2)
-      }
+      es.unsubscribe(a3.ref)
+      es.publish(tm1)
+      es.publish(tm2)
+      (a1.expectMsgType[AT]: AT) should ===(tm2)
+      (a2.expectMsgType[BT]: BT) should ===(tm2)
+      a3.expectNoMessage(1.second)
+      (a4.expectMsgType[CCATBT]: CCATBT) should ===(tm2)
       es.unsubscribe(a1.ref, classOf[AT]) should ===(true)
       es.unsubscribe(a2.ref, classOf[BT]) should ===(true)
       es.unsubscribe(a4.ref, classOf[CCATBT]) should ===(true)
@@ -266,13 +238,10 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
       es.subscribe(a1.ref, classOf[AT]) should ===(true)
       es.subscribe(a2.ref, classOf[BT]) should ===(true)
-      // subscription and unsubscription is async
-      awaitAssert {
-        es.publish(tm1)
-        es.publish(tm2)
-        (a1.expectMsgType[AT]: AT) should ===(tm2)
-        (a2.expectMsgType[BT]: BT) should ===(tm2)
-      }
+      es.publish(tm1)
+      es.publish(tm2)
+      (a1.expectMsgType[AT]: AT) should ===(tm2)
+      (a2.expectMsgType[BT]: BT) should ===(tm2)
       es.unsubscribe(a1.ref, classOf[AT]) should ===(true)
       es.unsubscribe(a2.ref, classOf[BT]) should ===(true)
     }
@@ -289,14 +258,11 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.subscribe(a3.ref, classOf[CC]) should ===(true)
       es.unsubscribe(a2.ref, classOf[CC]) should ===(true)
       es.unsubscribe(a3.ref, classOf[CCATBT]) should ===(true)
-      // subscription and unsubscription is async
-      awaitAssert {
-        es.publish(tm1)
-        es.publish(tm2)
-        (a1.expectMsgType[AT]: AT) should ===(tm2)
-        (a2.expectMsgType[BT]: BT) should ===(tm2)
-        (a3.expectMsgType[CC]: CC) should ===(tm1)
-      }
+      es.publish(tm1)
+      es.publish(tm2)
+      (a1.expectMsgType[AT]: AT) should ===(tm2)
+      (a2.expectMsgType[BT]: BT) should ===(tm2)
+      (a3.expectMsgType[CC]: CC) should ===(tm1)
       es.unsubscribe(a1.ref, classOf[AT]) should ===(true)
       es.unsubscribe(a2.ref, classOf[BT]) should ===(true)
       es.unsubscribe(a3.ref, classOf[CC]) should ===(true)
@@ -308,19 +274,13 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       val a1, a2 = TestProbe()
 
       es.subscribe(a1.ref, classOf[AT]) should ===(true)
-      // subscription and unsubscription is async
-      awaitAssert {
-        es.publish(tm1)
-        (a1.expectMsgType[AT]: AT) should ===(tm1)
-      }
-
+      es.publish(tm1)
+      (a1.expectMsgType[AT]: AT) should ===(tm1)
+      a2.expectNoMessage(1.second)
       es.subscribe(a2.ref, classOf[BTT]) should ===(true)
-      // subscription and unsubscription is async
-      awaitAssert {
-        es.publish(tm1)
-        (a1.expectMsgType[AT]: AT) should ===(tm1)
-        (a2.expectMsgType[BTT]: BTT) should ===(tm1)
-      }
+      es.publish(tm1)
+      (a1.expectMsgType[AT]: AT) should ===(tm1)
+      (a2.expectMsgType[BTT]: BTT) should ===(tm1)
       es.unsubscribe(a1.ref, classOf[AT]) should ===(true)
       es.unsubscribe(a2.ref, classOf[BTT]) should ===(true)
     }
@@ -338,8 +298,6 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         }), "to-be-killed")
 
         es.subscribe(a2.ref, classOf[Any])
-        waitForDebugSubscription(es, a2)
-
         es.subscribe(target, classOf[A]) should ===(true)
         es.subscribe(target, classOf[A]) should ===(false)
 
@@ -373,7 +331,6 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         expectTerminated(target)
 
         es.subscribe(a2.ref, classOf[Any])
-        waitForDebugSubscription(es, a2)
 
         // target1 is Terminated; When subscribing, it will be unsubscribed by the Unsubscriber right away
         es.subscribe(target, classOf[A]) should ===(true)
@@ -417,7 +374,6 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         val a1, a2 = TestProbe()
 
         es.subscribe(a1.ref, classOf[Logging.Debug])
-        waitForDebugSubscription(es, a1)
 
         es.subscribe(a2.ref, classOf[A])
         fishForDebugMessage(a1, s"watching ${a2.ref}")
@@ -438,7 +394,6 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         val a1, a2 = TestProbe()
 
         es.subscribe(a1.ref, classOf[Logging.Debug])
-        waitForDebugSubscription(es, a1)
 
         es.subscribe(a2.ref, classOf[A])
         es.subscribe(a2.ref, classOf[T])
@@ -476,17 +431,6 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     a.fishForMessage(hint = "expected debug message prefix: " + messagePrefix) {
       case Logging.Debug(_, _, msg: String) if msg.startsWith(messagePrefix) => true
       case _                                                                 => false
-    }
-  }
-
-  private def waitForDebugSubscription(bus: LoggingBus, a: TestProbe): Unit = {
-    // subscription is async, we need to verify it completed before asserting other things
-    var n = 0
-    awaitAssert {
-      n += 1
-      val debug = Logging.Debug(n.toString, classOf[EventStreamSpec])
-      bus.publish(debug)
-      a.expectMsg(debug)
     }
   }
 
