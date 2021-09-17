@@ -73,7 +73,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
   "An EventStream" must {
 
-    "manage subscriptions" taggedAs GHExcludeTest in {
+    "manage subscriptions" in {
       //#event-bus-start-unsubscriber-scala
       val bus = new EventStream(system, true)
       bus.startUnsubscriber()
@@ -109,7 +109,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       intercept[IllegalArgumentException] { bus.unsubscribe(null) }.getMessage should ===("subscriber is null")
     }
 
-    "be able to log unhandled messages" taggedAs GHExcludeTest in {
+    "be able to log unhandled messages" in {
       val sys = ActorSystem("EventStreamSpecUnhandled", configUnhandled)
       try {
         sys.eventStream.subscribe(testActor, classOf[AnyRef])
@@ -149,9 +149,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
-    // Excluded on GH Actions: https://github.com/akka/akka/issues/30675
-
-    "manage sub-channels using classes" taggedAs GHExcludeTest in {
+    "manage sub-channels using classes" in {
       val a = new A
       val b1 = new B2
       val b2 = new B3
@@ -184,7 +182,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
-    "manage sub-channels using classes and traits (update on subscribe)" taggedAs GHExcludeTest in {
+    "manage sub-channels using classes and traits (update on subscribe)" in {
       val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
@@ -210,7 +208,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.unsubscribe(a4.ref, classOf[CCATBT]) should ===(true)
     }
 
-    "manage sub-channels using classes and traits (update on unsubscribe)" taggedAs GHExcludeTest in {
+    "manage sub-channels using classes and traits (update on unsubscribe)" in {
       val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
@@ -235,7 +233,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.unsubscribe(a4.ref, classOf[CCATBT]) should ===(true)
     }
 
-    "manage sub-channels using classes and traits (update on unsubscribe all)" taggedAs GHExcludeTest in {
+    "manage sub-channels using classes and traits (update on unsubscribe all)" in {
       val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
@@ -260,7 +258,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.unsubscribe(a4.ref, classOf[CCATBT]) should ===(true)
     }
 
-    "manage sub-channels using classes and traits (update on publish)" taggedAs GHExcludeTest in {
+    "manage sub-channels using classes and traits (update on publish)" in {
       val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
@@ -279,7 +277,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.unsubscribe(a2.ref, classOf[BT]) should ===(true)
     }
 
-    "manage sub-channels using classes and traits (unsubscribe classes used with trait)" taggedAs GHExcludeTest in {
+    "manage sub-channels using classes and traits (unsubscribe classes used with trait)" in {
       val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
@@ -304,7 +302,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.unsubscribe(a3.ref, classOf[CC]) should ===(true)
     }
 
-    "manage sub-channels using classes and traits (subscribe after publish)" taggedAs GHExcludeTest in {
+    "manage sub-channels using classes and traits (subscribe after publish)" in {
       val es = new EventStream(system, false)
       val tm1 = new CCATBT
       val a1, a2 = TestProbe()
@@ -327,7 +325,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.unsubscribe(a2.ref, classOf[BTT]) should ===(true)
     }
 
-    "unsubscribe an actor on its termination" taggedAs GHExcludeTest in {
+    "unsubscribe an actor on its termination" in {
       val sys = ActorSystem("EventStreamSpecUnsubscribeOnTerminated", configUnhandledWithDebug)
 
       try {
@@ -390,6 +388,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
+    // Excluded on GH Actions: https://github.com/akka/akka/issues/18630
     "not allow initializing a TerminatedUnsubscriber twice" taggedAs GHExcludeTest in {
       val sys = ActorSystem(
         "MustNotAllowDoubleInitOfTerminatedUnsubscriber",
@@ -410,7 +409,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
-    "unwatch an actor from unsubscriber when that actor unsubscribes from the stream" taggedAs GHExcludeTest in {
+    "unwatch an actor from unsubscriber when that actor unsubscribes from the stream" in {
       val sys = ActorSystem("MustUnregisterDuringUnsubscribe", configUnhandledWithDebug)
 
       try {
@@ -431,7 +430,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       }
     }
 
-    "unwatch an actor from unsubscriber when that actor unsubscribes from channels it subscribed" taggedAs GHExcludeTest in {
+    "unwatch an actor from unsubscriber when that actor unsubscribes from channels it subscribed" in {
       val sys = ActorSystem("MustUnregisterWhenNoMoreChannelSubscriptions", configUnhandledWithDebug)
 
       try {
