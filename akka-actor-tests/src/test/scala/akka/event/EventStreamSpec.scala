@@ -81,7 +81,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
       bus.subscribe(testActor, classOf[M])
       bus.publish(M(42))
-      within(1.second) {
+      within(3.seconds) {
         expectMsg(M(42))
         bus.unsubscribe(testActor)
         bus.publish(M(13))
@@ -125,7 +125,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       bus.startDefaultLoggers(impl)
       bus.publish(SetTarget(testActor))
       expectMsg("OK")
-      within(2.seconds) {
+      within(3.seconds) {
         import Logging._
         verifyLevel(bus, InfoLevel)
         bus.setLogLevel(WarningLevel)
@@ -143,7 +143,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       val b2 = new B3
       val c = new C
       val bus = new EventStream(system, false)
-      within(2.seconds) {
+      within(3.seconds) {
         bus.subscribe(testActor, classOf[B3]) should ===(true)
         bus.publish(c)
         bus.publish(b2)
