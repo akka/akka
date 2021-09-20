@@ -335,6 +335,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
   protected def ask(message: Any, timeout: Timeout): Future[Any] =
     internalAsk(message, timeout, ActorRef.noSender)
 
+  //todo add scaladoc
   def ask(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 

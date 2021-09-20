@@ -162,7 +162,7 @@ the start of the actor system.
 stopped or non-existing actors are re-routed (on a best-effort basis: messages
 may be lost even within the local JVM).
  * `"/temp"` is the guardian for all short-lived system-created actors, e.g.
-those which are used in the implementation of @apidoc[ActorRef.ask](ExplicitAskSupport) {scala="#ask(actorRef:akka.actor.ActorRef):akka.pattern.ExplicitlyAskableActorRef" java="#ask(akka.actor.ActorRef)"}.
+those which are used in the implementation of @scala[@scaladoc[ActorRef.ask](akka.pattern.AskableActorRef#ask(message:Any)(implicittimeout:akka.util.Timeout,implicitsender:akka.actor.ActorRef):scala.concurrent.Future[Any])]@java[@javadoc[Patterns.ask](akka.pattern.Patterns#ask(akka.actor.ActorRef,java.lang.Object,java.time.Duration))].
  * `"/remote"` is an artificial path below which all actors reside whose
 supervisors are remote actor references
 
