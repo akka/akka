@@ -11,9 +11,6 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
-    .withRank(KeyRanks.Invisible) // avoid 'unused key' warning
-
   val junitVersion = "4.13.2"
   val slf4jVersion = "1.7.32"
   // check agrona version when updating this
@@ -67,16 +64,8 @@ object Dependencies {
   val Versions =
     Seq(
       crossScalaVersions := Seq(scala212Version, scala213Version),
-      scalaVersion := getScalaVersion(),
-      java8CompatVersion := {
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          // java8-compat is only used in a couple of places for 2.13,
-          // it is probably possible to remove the dependency if needed.
-          case Some((3, _))            => "1.0.0"
-          case Some((2, n)) if n >= 13 => "1.0.0"
-          case _                       => "0.8.0"
-        }
-      })
+      scalaVersion := getScalaVersion()
+    )
 
   object Compile {
     // Compile
@@ -107,9 +96,8 @@ object Dependencies {
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
-    val java8Compat = Def.setting {
-      ("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value).cross(CrossVersion.for3Use2_13)
-    } // Scala License
+    val java8Compat =
+      ("org.scala-lang.modules" %% "scala-java8-compat" % "1.0.0").cross(CrossVersion.for3Use2_13) // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
@@ -205,7 +193,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat.value)
+  val actor = l ++= Seq(config, java8Compat)
 
   val actorTyped = l ++= Seq(slf4jApi)
 
