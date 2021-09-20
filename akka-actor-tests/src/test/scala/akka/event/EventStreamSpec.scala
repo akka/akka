@@ -139,25 +139,25 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
     "manage sub-channels using classes" in {
       val a = new A
-      val b1 = new B2
-      val b2 = new B3
+      val b2 = new B2
+      val b3 = new B3
       val c = new C
       val bus = new EventStream(system, false)
       within(3.seconds) {
         bus.subscribe(testActor, classOf[B3]) should ===(true)
         bus.publish(c)
-        bus.publish(b2)
-        expectMsg(b2)
+        bus.publish(b3)
+        expectMsg(b3)
         bus.subscribe(testActor, classOf[A]) should ===(true)
         bus.publish(c)
         expectMsg(c)
-        bus.publish(b1)
-        expectMsg(b1)
+        bus.publish(b2)
+        expectMsg(b2)
         bus.unsubscribe(testActor, classOf[B2]) should ===(true)
         bus.publish(c)
-        bus.publish(b2)
+        bus.publish(b3)
         bus.publish(a)
-        expectMsg(b2)
+        expectMsg(b3)
         expectMsg(a)
         expectNoMessage()
       }
