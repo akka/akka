@@ -113,7 +113,7 @@ class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with Im
   }
 }
 
-class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender {
+class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender with WithLogCapturing {
 
   import SupervisionSpec._
 
@@ -143,16 +143,22 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
       val response = expectMsgType[Response](5.seconds)
       watch(response.self)
 
-      // 1. passivation message is passed on from supervisor to shard (which starts buffering messages for the entity id)
-      // 2. child stops
-      // 3. the supervisor has or has not yet seen gotten the stop message back from the shard
-      //   a. if has it will stop immediatel, and the next message will trigger the shard to restart it
-      //   b. if it hasn't the supervisor will back off before restarting the child, when the
-      //     final stop message `StopMessage` comes in from the shard it will stop itself
+      // 1. as soon as the PassivatingActor receives "passivate" the child sends Passivate(StopMessage) to its
+      //    backoff supervisor parent and then stops itself
+      // 2. the supervisor forwards Passivate to the shard (which starts buffering new messages for the entity id)
+      //    and sends the StopMessage back to the supervisor
+      // 3. now there is a race between the supervisor seeing the child terminating and getting
+      //    the StopMessage back from the shard
+      //  a. if sees the StopMessage first it stops immediately and the next message will trigger the shard to restart it
+      //  b. if sees the child terminating first it backs off before restarting the child, when the
+      //     stop message `StopMessage` comes in from the shard it will stop itself
       // 4. when the supervisor stops the shard should start it anew and deliver the buffered messages
       region ! Msg(10, "passivate")
       expectTerminated(response.self)
 
+      // Another race: now the shard either saw the entity terminating already and will
+      // restart it as soon as it gets a message for it or has not yet seen it and will buffer the message
+      // until it sees it terminate and then restart the entity and deliver the message
       region ! Msg(10, "hello")
       expectMsgType[Response](20.seconds)
     }
