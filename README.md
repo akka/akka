@@ -6,7 +6,7 @@ Most of the time it's because we are using the wrong tools and the wrong level o
 
 Akka is here to change that.
 
-Using the Actor Model we raise the abstraction level and provide a better platform to build correct concurrent and scalable applications. This model is a perfect match for the principles laid out in the [Reactive Manifesto](http://www.reactivemanifesto.org/).
+Using the Actor Model we raise the abstraction level and provide a better platform to build correct concurrent and scalable applications. This model is a perfect match for the principles laid out in the [Reactive Manifesto](https://www.reactivemanifesto.org/).
 
 For resilience, we adopt the "Let it crash" model which the telecom industry has used with great success to build applications that self-heal and systems that never stop.
 
@@ -17,8 +17,8 @@ Learn more at [akka.io](https://akka.io/).
 Reference Documentation
 -----------------------
 
-The reference documentation is available at [doc.akka.io](http://doc.akka.io),
-for [Scala](http://doc.akka.io/docs/akka/current/scala.html) and [Java](http://doc.akka.io/docs/akka/current/java.html).
+The reference documentation is available at [doc.akka.io](https://doc.akka.io),
+for [Scala](https://doc.akka.io/docs/akka/current/scala.html) and [Java](https://doc.akka.io/docs/akka/current/java.html).
 
 Community
 ---------
@@ -30,10 +30,10 @@ You can join these groups and chats to discuss and ask Akka related questions:
 
 In addition to that, you may enjoy following:
 
-- The [news](http://akka.io/news) section of the page, which is updated whenever a new version is released
-- The [Akka Team Blog](http://blog.akka.io)
+- The [news](https://akka.io/news) section of the page, which is updated whenever a new version is released
+- The [Akka Team Blog](https://blog.akka.io)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
-- Questions tagged [#akka on StackOverflow](http://stackoverflow.com/questions/tagged/akka)
+- Questions tagged [#akka on StackOverflow](https://stackoverflow.com/questions/tagged/akka)
 - Projects built with Akka: [![akka-dependency-badge]][akka-dependency-scaladex]
 
 Contributing
