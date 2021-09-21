@@ -30,8 +30,8 @@ You can join these groups and chats to discuss and ask Akka related questions:
 
 In addition to that, you may enjoy following:
 
-- The [news](https://akka.io/news) section of the page, which is updated whenever a new version is released
-- The [Akka Team Blog](https://blog.akka.io)
+- The [news](https://akka.io/blog/news-archive.html) section of the page, which is updated whenever a new version is released
+- The [Akka Team Blog](https://akka.io/blog/article-archive.html)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
 - Questions tagged [#akka on StackOverflow](https://stackoverflow.com/questions/tagged/akka)
 - Projects built with Akka: [![akka-dependency-badge]][akka-dependency-scaladex]
