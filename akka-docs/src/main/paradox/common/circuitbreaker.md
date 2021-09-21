@@ -80,9 +80,9 @@ Java
 
 ### Future & Synchronous based API
 
-Once a circuit breaker actor has been initialized, interacting with that actor is done by either using the Future based API or the synchronous API. Both of these APIs are considered `Call Protection` because whether synchronously or asynchronously, the purpose of the circuit breaker is to protect your system from cascading failures while making a call to another service. In the future based API, we use the @apidoc[withCircuitBreaker](CircuitBreaker) {scala="#withCircuitBreaker[T](body:=%3Escala.concurrent.Future[T]):scala.concurrent.Future[T]" java="#callWithCircuitBreaker(java.util.concurrent.Callable)"} which takes an asynchronous method (some method wrapped in a @scaladoc[Future](scala.concurrent.Future)), for instance a call to retrieve data from a database, and we pipe the result back to the sender. If for some reason the database in this example isn't responding, or there is another issue, the circuit breaker will open and stop trying to hit the database again and again until the timeout is over.
+Once a circuit breaker actor has been initialized, interacting with that actor is done by either using the Future based API or the synchronous API. Both of these APIs are considered `Call Protection` because whether synchronously or asynchronously, the purpose of the circuit breaker is to protect your system from cascading failures while making a call to another service. In the future based API, we use the @scala[@scaladoc[withCircuitBreaker](akka.pattern.CircuitBreaker#withCircuitBreaker[T](body:=%3Escala.concurrent.Future[T]):scala.concurrent.Future[T])]@java[@javadoc[callWithCircuitBreakerCS](akka.pattern.CircuitBreaker#callWithCircuitBreakerCS(java.util.concurrent.Callable))] which takes an asynchronous method (some method wrapped in a @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionState](java.util.concurrent.CompletionStage)]), for instance a call to retrieve data from a database, and we pipe the result back to the sender. If for some reason the database in this example isn't responding, or there is another issue, the circuit breaker will open and stop trying to hit the database again and again until the timeout is over.
 
-The Synchronous API would also wrap your call with the circuit breaker logic, however, it uses the @apidoc[withSyncCircuitBreaker](CircuitBreaker) {scala="#withSyncCircuitBreaker[T](body:=%3ET):T" java="#callWithSyncCircuitBreaker(java.util.concurrent.Callable)"} and receives a method that is not wrapped in a @scaladoc[Future](scala.concurrent.Future).
+The Synchronous API would also wrap your call with the circuit breaker logic, however, it uses the @scala[@scaladoc[withSyncCircuitBreaker](akka.pattern.CircuitBreaker#withSyncCircuitBreaker[T](body:=%3ET):T)]@java[@javadoc[callWithSyncCircuitBreaker](akka.pattern.CircuitBreaker#callWithSyncCircuitBreaker(java.util.concurrent.Callable))] and receives a method that is not wrapped in a @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionState](java.util.concurrent.CompletionStage)].
 
 Scala
 : @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-usage }
@@ -92,26 +92,24 @@ Java
 
 @@@ note
 
-Using the @apidoc[CircuitBreaker](CircuitBreaker$)'s companion object @scala[@scaladoc[apply](akka.pattern.CircuitBreaker$#apply(scheduler:akka.actor.Scheduler,maxFailures:Int,callTimeout:scala.concurrent.duration.FiniteDuration,resetTimeout:scala.concurrent.duration.FiniteDuration):akka.pattern.CircuitBreaker)]@java[@javadoc[create](akka.pattern.CircuitBreaker#create(akka.actor.Scheduler,int,java.time.Duration,java.time.Duration))] method
+Using the @scala[@apidoc[CircuitBreaker](CircuitBreaker$)'s companion object @scaladoc[apply](akka.pattern.CircuitBreaker$#apply(scheduler:akka.actor.Scheduler,maxFailures:Int,callTimeout:scala.concurrent.duration.FiniteDuration,resetTimeout:scala.concurrent.duration.FiniteDuration):akka.pattern.CircuitBreaker)]@java[@javadoc[CircuitBreaker.create](akka.pattern.CircuitBreaker#create(akka.actor.Scheduler,int,java.time.Duration,java.time.Duration))] method
 will return a @apidoc[CircuitBreaker] where callbacks are executed in the caller's thread.
-This can be useful if the asynchronous @scaladoc[Future](scala.concurrent.Future) behavior is unnecessary, for
+This can be useful if the asynchronous @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionState](java.util.concurrent.CompletionStage)] behavior is unnecessary, for
 example invoking a synchronous-only API.
 
 @@@
 
 ### Control failure count explicitly
 
-By default, the circuit breaker treats @javadoc[Exception](java.lang.Exception) as failure in synchronized API, or failed @scaladoc[Future](scala.concurrent.Future) as failure in future based API.
+By default, the circuit breaker treats @javadoc[Exception](java.lang.Exception) as failure in synchronized API, or failed @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionState](java.util.concurrent.CompletionStage)] as failure in future based API.
 On failure, the failure count will increment. If the failure count reaches the *maxFailures*, the circuit breaker will be opened.
 However, some applications may require certain exceptions to not increase the failure count.
 In other cases one may want to increase the failure count even if the call succeeded.
 Akka circuit breaker provides a way to achieve such use cases:
 
-* @apidoc[withCircuitBreaker](CircuitBreaker) {scala="#withCircuitBreaker[T](body:=%3Escala.concurrent.Future[T],defineFailureFn:scala.util.Try[T]=%3EBoolean):scala.concurrent.Future[T]" java="#callWithCircuitBreaker(java.util.concurrent.Callable,java.util.function.BiFunction)"}
-* @apidoc[withSyncCircuitBreaker](CircuitBreaker) {scala="#withSyncCircuitBreaker[T](body:=%3ET,defineFailureFn:scala.util.Try[T]=%3EBoolean):T" java="#callWithSyncCircuitBreaker(java.util.concurrent.Callable,java.util.function.BiFunction)"}
-* `callWithCircuitBreaker`
-* `callWithCircuitBreakerCS`
-* `callWithSyncCircuitBreaker`
+@scala[@scaladoc[withCircuitBreaker](akka.pattern.CircuitBreaker#withCircuitBreaker[T](body:=%3Escala.concurrent.Future[T],defineFailureFn:scala.util.Try[T]=%3EBoolean):scala.concurrent.Future[T])]@java[@javadoc[callWithCircuitBreaker](akka.pattern.CircuitBreaker#callWithCircuitBreaker(java.util.concurrent.Callable,java.util.function.BiFunction))]  
+@scala[@scaladoc[withSyncCircuitBreaker](akka.pattern.CircuitBreaker#withSyncCircuitBreaker[T](body:=%3ET,defineFailureFn:scala.util.Try[T]=%3EBoolean):T)]@java[@javadoc[callWithSyncCircuitBreaker](akka.pattern.CircuitBreaker#callWithSyncCircuitBreaker(java.util.concurrent.Callable,java.util.function.BiFunction))]  
+@java[@javadoc[callWithCircuitBreakerCS](akka.pattern.CircuitBreaker#callWithCircuitBreakerCS(java.util.concurrent.Callable,java.util.function.BiFunction))]
 
 All methods above accept an argument `defineFailureFn`
 
