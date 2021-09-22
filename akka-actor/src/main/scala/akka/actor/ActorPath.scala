@@ -46,7 +46,7 @@ object ActorPaths {
   /**
    * This method is used to validate a path element (Actor Name).
    * Since Actors form a tree, it is addressable using an URL, therefore an Actor Name has to conform to:
-   * <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC-2396</a>.
+   * <a href="https://www.ietf.org/rfc/rfc2396.txt">RFC-2396</a>.
    *
    * User defined Actor names may not start from a `$` sign - these are reserved for system names.
    */
@@ -106,7 +106,7 @@ object ActorPath {
   /**
    * This method is used to validate a path element (Actor Name).
    * Since Actors form a tree, it is addressable using an URL, therefore an Actor Name has to conform to:
-   * <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC-2396</a>.
+   * <a href="https://www.ietf.org/rfc/rfc2396.txt">RFC-2396</a>.
    *
    * User defined Actor names may not start from a `$` sign - these are reserved for system names.
    */

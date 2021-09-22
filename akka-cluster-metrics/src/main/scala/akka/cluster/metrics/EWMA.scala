@@ -12,13 +12,13 @@ import scala.concurrent.duration.FiniteDuration
  * of its alpha, or decay factor, this provides a statistical streaming data model
  * that is exponentially biased towards newer entries.
  *
- * http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+ * https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
  *
  * An EWMA only needs the most recent forecast value to be kept, as opposed to a standard
  * moving average model.
  *
  * @param alpha decay factor, sets how quickly the exponential weighting decays for past data compared to new data,
- *   see http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+ *   see https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
  *
  * @param value the current exponentially weighted moving average, e.g. Y(n - 1), or,
  *             the sampled value resulting from the previous smoothing iteration.
