@@ -15,7 +15,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.receptionist.AbstractServiceKey
 import akka.actor.typed.receptionist.ServiceKey
 import akka.cluster.UniqueAddress
-import akka.cluster.typed.internal.receptionist.ClusterReceptionist.SubscriptionsKV
+import akka.cluster.typed.internal.receptionist.ClusterReceptionistProtocol.SubscriptionsKV
 import akka.util.TypedMultiMap
 
 class ClusterReceptionistStateSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers {

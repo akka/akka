@@ -125,8 +125,10 @@ class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventual
           akka.cluster.seed-nodes = [ "akka://ClusterSystem@127.0.0.1:$sys1Port", "akka://ClusterSystem@127.0.0.1:$sys2Port" ]
         """)
 
-      val system1 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", config(sys1Port).withFallback(configSystem1))
-      val system2 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", config(sys2Port).withFallback(configSystem2))
+      val system1 =
+        ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", config(sys1Port).withFallback(configSystem1))
+      val system2 =
+        ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", config(sys2Port).withFallback(configSystem2))
       try {
         Cluster(system1)
         Cluster(system2)
@@ -173,8 +175,8 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
   "Cluster API" must {
     "init cluster" in {
 
-      val system = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
-      val system2 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
+      val system = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
+      val system2 = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
 
       try {
         //#cluster-create
@@ -207,9 +209,10 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
     }
 
     "subscribe to cluster events" in {
-      implicit val system1 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
-      val system2 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
-      val system3 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
+      implicit val system1 =
+        ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
+      val system2 = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
+      val system3 = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
 
       try {
         val cluster1 = Cluster(system1)
