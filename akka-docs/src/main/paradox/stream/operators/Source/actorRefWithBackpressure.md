@@ -16,8 +16,8 @@ once the element could be emitted allowing for backpressure from the source. Sen
 See also:
 
 * @ref[Source.actorRef](../Source/actorRef.md) This operator without backpressure control
-* @ref[ActorSource.actorRef](actorRef.md) The operator for the new actors API without backpressure control
-* @ref[ActorSource.actorRefWithBackpressure](actorRefWithBackpressure.md) The corresponding operator for the new actors API
+* @ref[ActorSource.actorRef](../ActorSource/actorRef.md) The operator for the new actors API without backpressure control
+* @ref[ActorSource.actorRefWithBackpressure](../ActorSource/actorRefWithBackpressure.md) The corresponding operator for the new actors API
 * @ref[Source.queue](../Source/queue.md) Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source
 
 ## Examples
