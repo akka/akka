@@ -1,7 +1,11 @@
+/*
+ * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.cluster.typed.internal.receptionist
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.internal.receptionist.{AbstractServiceKey, ReceptionistMessages}
+import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, ReceptionistMessages }
 import akka.annotation.InternalApi
 
 /**

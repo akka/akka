@@ -5,7 +5,7 @@
 package akka.cluster.typed.internal.receptionist
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.internal.receptionist.{AbstractServiceKey, ReceptionistMessages}
+import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, ReceptionistMessages }
 import akka.annotation.InternalApi
 
 /**
