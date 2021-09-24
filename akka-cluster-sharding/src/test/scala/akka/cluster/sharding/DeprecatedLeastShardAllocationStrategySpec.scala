@@ -121,7 +121,7 @@ class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
       val allocations = createAllocations(aCount = 3, bCount = 3)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("001"))
       allocationStrategy.rebalance(allocations, Set("001")).futureValue should ===(Set("004"))
-      allocationStrategy.rebalance(allocations, Set("001", "004")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "004")).futureValue should ===(Set.empty[String])
     }
 
     "rebalance from region with most number of shards [4, 4, 0], rebalanceThreshold=2" in {
@@ -129,7 +129,7 @@ class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
       val allocations = createAllocations(aCount = 4, bCount = 4)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("001", "002"))
       allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set("005", "006"))
-      allocationStrategy.rebalance(allocations, Set("001", "002", "005", "006")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002", "005", "006")).futureValue should ===(Set.empty[String])
     }
 
     "rebalance from region with most number of shards [5, 5, 0], rebalanceThreshold=2" in {
@@ -216,9 +216,9 @@ class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
           override protected def selfMember: Member = member1
         }
       val allocations = createAllocations(aCount = 5, bCount = 5)
-      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
-      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty)
-      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty[String])
     }
 
     "not rebalance when regions are unreachable" in {
@@ -234,9 +234,9 @@ class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
           override protected def selfMember: Member = member1
         }
       val allocations = createAllocations(aCount = 5, bCount = 5)
-      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
-      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty)
-      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty[String])
     }
 
     "not rebalance when members are joining dc" in {
@@ -256,9 +256,9 @@ class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
           override protected def selfMember: Member = member2
         }
       val allocations = createAllocations(aCount = 5, bCount = 5)
-      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
-      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty)
-      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty[String])
     }
 
   }

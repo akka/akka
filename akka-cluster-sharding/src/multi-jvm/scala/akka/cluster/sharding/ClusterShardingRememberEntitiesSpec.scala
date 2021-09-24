@@ -123,7 +123,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
       sys,
       typeName = dataType,
       entityProps = Props(new EntityActor(probe)),
-      settings = ClusterShardingSettings(sys).withRememberEntities(rememberEntities),
+      settings = ClusterShardingSettings(sys).withRememberEntities(multiNodeConfig.rememberEntities),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
   }
@@ -135,7 +135,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
       event: Int,
       probe: TestProbe,
       entityProbe: TestProbe): EntityActor.Started = {
-    if (!rememberEntities) {
+    if (!multiNodeConfig.rememberEntities) {
       probe.send(ClusterSharding(sys).shardRegion(dataType), event)
       probe.expectMsg(1)
     }
@@ -143,7 +143,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
     entityProbe.expectMsgType[EntityActor.Started](30.seconds)
   }
 
-  s"Cluster sharding with remember entities ($mode)" must {
+  s"Cluster sharding with remember entities (${multiNodeConfig.mode})" must {
 
     "start remembered entities when coordinator fail over" in within(30.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second, third))
