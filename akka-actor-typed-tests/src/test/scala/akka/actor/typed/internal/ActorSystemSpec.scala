@@ -7,13 +7,14 @@ package internal
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import akka.Done
 import akka.actor.dungeon.Dispatch
 import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
@@ -22,6 +23,9 @@ import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
+import org.scalatest.time.Span
+
+import akka.actor.testkit.typed.TestKitSettings
 
 class ActorSystemSpec
     extends AnyWordSpec
@@ -31,7 +35,9 @@ class ActorSystemSpec
     with Eventually
     with LogCapturing {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(1.second)
+  private val testKitSettings = TestKitSettings(ConfigFactory.load().getConfig("akka.actor.testkit.typed"))
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(testKitSettings.SingleExpectDefaultTimeout, Span(100, org.scalatest.time.Millis))
   def system[T](behavior: Behavior[T], name: String, props: Props = Props.empty) =
     ActorSystem(behavior, name, ConfigFactory.empty(), props)
   def suite = "adapter"

@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 import com.typesafe.config.ConfigFactory
@@ -23,6 +22,7 @@ import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
+import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed.ActorRef
@@ -68,7 +68,9 @@ class ActorSystemSpec
     with Eventually
     with LogCapturing {
 
-  implicit val patience: PatienceConfig = PatienceConfig(3.seconds, Span(100, org.scalatest.time.Millis))
+  private val testKitSettings = TestKitSettings(ConfigFactory.load().getConfig("akka.actor.testkit.typed"))
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(testKitSettings.SingleExpectDefaultTimeout, Span(100, org.scalatest.time.Millis))
 
   val config = ConfigFactory.parseString("""
       akka.actor.provider = cluster
