@@ -48,6 +48,7 @@ jobs:
         uses: coursier/cache-action@v6.2
 
       - name: Compile and run tests on Scala 3
+        # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
         run: |
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.build.scalaVersion=3.0 \
@@ -56,4 +57,8 @@ jobs:
           -Dakka.actor.testkit.typed.timefactor=2 \
           -Dakka.test.multi-in-test=false \
           -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
+          -Dmultinode.XX:MetaspaceSize=128M \
+          -Dmultinode.Xms256M \
+          -Dmultinode.Xmx256M \
+          -Dmultinode.Xlog:gc \
           ${{ matrix.command }}

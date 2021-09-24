@@ -17,10 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 8
+      - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8.0
+          java-version: adopt@1.11
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
@@ -35,6 +35,10 @@ jobs:
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.log.timestamps=true \
+            -Dmultinode.XX:MetaspaceSize=128M \
+            -Dmultinode.Xms256M \
+            -Dmultinode.Xmx256M \
+            -Dmultinode.Xlog:gc \
             clean akka-cluster-metrics/test
 
       - name: Test Reports
@@ -97,6 +101,10 @@ jobs:
           -Dakka.cluster.assert=on \
           -Dakka.test.tags.exclude=gh-exclude \
           -Dakka.test.names.exclude=akka.cluster.Stress \
+          -Dmultinode.XX:MetaspaceSize=128M \
+          -Dmultinode.Xms256M \
+          -Dmultinode.Xmx256M \
+          -Dmultinode.Xlog:gc \
           clean ${{ matrix.command }}
 
   jdk-nightly-build:
@@ -111,6 +119,11 @@ jobs:
         # full version from it.
         scalaVersion: ["2.12", "2.13"]
         jdkVersion: ["adopt@1.8.0", "adopt@1.11"]
+        include:
+          - jdkVersion: adopt@1.8.0
+            extraOpts: "-Dmultinode.XX:+PrintGCDetails -Dmultinode.XX:+PrintGCTimeStamps"
+          - jdkVersion: adopt@1.11
+            extraOpts: "-Dmultinode.Xlog:gc"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -126,6 +139,7 @@ jobs:
         uses: coursier/cache-action@v6.2
 
       - name: Compile and Test
+        # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
         run: |-
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
@@ -134,6 +148,10 @@ jobs:
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.multi-in-test=false \
+            -Dmultinode.XX:MetaspaceSize=128M \
+            -Dmultinode.Xms256M \
+            -Dmultinode.Xmx256M \
+            ${{ matrix.extraOpts }} \
             clean Test/compile test checkTestsHaveRun
 
       - name: Test Reports
@@ -218,6 +236,10 @@ jobs:
           -Dakka.actor.testkit.typed.timefactor=2 \
           -Dakka.cluster.assert=on \
           -Dakka.test.tags.exclude=gh-exclude \
+          -Dmultinode.XX:MetaspaceSize=128M \
+          -Dmultinode.Xms256M \
+          -Dmultinode.Xmx256M \
+          -Dmultinode.Xlog:gc \
           clean ${{ matrix.command }}
 
       - name: Email on failure
