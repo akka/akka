@@ -117,8 +117,6 @@ abstract class ClusterShardingSpecConfig(
     val entityRecoveryStrategy: String = "all")
     extends MultiNodeClusterShardingConfig(mode = mode, rememberEntitiesStore = rememberEntitiesStore) {
 
-  val theMode = mode
-
   val controller = role("controller")
   val first = role("first")
   val second = role("second")
