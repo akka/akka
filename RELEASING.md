@@ -50,7 +50,7 @@ scaladoc generation build task, which is part of the release.
  
 ## Snapshot releases
 
-Snapshot releases are created from master and published to
+Snapshot releases are created from `main` and published to
 https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/
 
 To create snapshot versions manually, use `sbt clean publishLocal`.
