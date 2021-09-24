@@ -19,7 +19,7 @@ object BehaviorTestKit {
    * JAVA API
    */
   @ApiMayChange
-  def ApplicationTestConfig: Config = akka.actor.testkit.typed.scaladsl.BehaviorTestKit.ApplicationTestConfig
+  def applicationTestConfig: Config = akka.actor.testkit.typed.scaladsl.BehaviorTestKit.ApplicationTestConfig
 
   /**
    * JAVA API
