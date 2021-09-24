@@ -275,7 +275,8 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocations = createAllocations(aCount = 5, bCount = 5)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
       allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty[String])
-      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(
+        Set.empty[String])
     }
 
     "not rebalance when regions are unreachable" in {
@@ -293,7 +294,8 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocations = createAllocations(aCount = 5, bCount = 5)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
       allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty[String])
-      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(
+        Set.empty[String])
     }
     "not rebalance when members are joining dc" in {
       val allocationStrategy =
@@ -314,7 +316,8 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocations = createAllocations(aCount = 5, bCount = 5)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
       allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty[String])
-      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty[String])
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(
+        Set.empty[String])
     }
 
   }
