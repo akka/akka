@@ -16,7 +16,7 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – active development branch of Akka 2.6.x
+* `main` – active development branch of Akka 2.6.x
 * `release-2.5` – maintenance branch of Akka 2.5.x
 * similarly `release-2.#` branches contain legacy versions of Akka
 
@@ -63,7 +63,7 @@ We encourage changes that make it easier to achieve our goals efficiently.
 
 ### General workflow
 
-The steps below describe how to get a patch into the main development branch (`master`).
+The steps below describe how to get a patch into the main development branch (`main`).
 The steps are exactly the same for everyone involved in the project, including the core team and first-time contributors.
 
 1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka/issues) and [existing pull requests](https://github.com/akka/akka/pulls) for existing work.
@@ -74,7 +74,7 @@ The steps are exactly the same for everyone involved in the project, including t
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
    - Use the `verifyCodeStyle` sbt task to ensure your code is properly formatted and includes the proper copyright headers.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
-1. If it's a new feature or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs). When the feature touches Scala and Java DSL, document both the Scala and Java APIs.
+1. If it's a new feature or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka/tree/main/akka-docs). When the feature touches Scala and Java DSL, document both the Scala and Java APIs.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
     - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, as this will cause the PR to be linked properly with the issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
 1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](https://www.lightbend.com/contribute/cla) online. CLA stands for Contributor License Agreement and protects intellectual property disputes from harming the project.
@@ -234,7 +234,7 @@ To use the task, simply type `validatePullRequest`, and the output should includ
 [info] Detected changes in directories: [akka-actor-tests, project, akka-stream, akka-docs, akka-persistence]
 ```
 
-By default, changes are diffed with the `master` branch when working locally. If you want to validate against a different
+By default, changes are diffed with the `main` branch when working locally. If you want to validate against a different
 target PR branch, you can do so by setting the PR_TARGET_BRANCH environment variable for sbt:
 
 ```shell
@@ -298,7 +298,7 @@ run `protobufGenerate`. The generated files are put in each project's `src/main/
 The generated files are automatically transformed to use the shaded version of protobuf.
 
 Generation depends on protoc `3.9.0` being on the path. See [protobuf project](https://github.com/protocolbuffers/protobuf#protocol-compiler-installation) for installation instructions, and
-[Protobuf.scala](https://github.com/akka/akka/blob/master/project/Protobuf.scala) for details of how to override
+[Protobuf.scala](https://github.com/akka/akka/blob/main/project/Protobuf.scala) for details of how to override
 the settings for generation.
 
 ### Pull request requirements
@@ -493,7 +493,7 @@ There are a number of ways timeouts can be defined in Akka tests. The following 
 
 Special care should be given to `expectNoMessage` calls, which indeed will wait for the entire timeout before continuing. Therefore a shorter timeout should be used in those, for example `200.millis` or `300.millis`. Prefer the method without timeout parameter, which will use the configured `expect-no-message-default` timeout.
 
-You can read up on `remaining` and friends in [TestKit.scala](https://github.com/akka/akka/blob/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala).
+You can read up on `remaining` and friends in [TestKit.scala](https://github.com/akka/akka/blob/main/akka-testkit/src/main/scala/akka/testkit/TestKit.scala).
 
 ### Contributing modules
 
@@ -606,7 +606,7 @@ Akka currently uses Github Actions to run continuous integration. There are work
 
 * Validating pull requests
 * Nightly builds
-* Run a larger group of tests when pushing code to master branch.
+* Run a larger group of tests when pushing code to `main` branch.
 
 Anyone can propose new changes to our CI workflows, and we will gladly review them as we do for regular pull-requests.
 

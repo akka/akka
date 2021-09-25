@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - master
-      # for testing the GH Action without merging to master,
+      - main
+      # for testing the GH Action without merging to main,
       # in some cases
       - test-publish-snapshots
     tags: ["*"]
