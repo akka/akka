@@ -138,7 +138,7 @@ class StartEntitySpec extends AkkaSpec(StartEntitySpec.config) with ImplicitSend
         sharding ! ShardRegion.GetShardRegionState
         val state = expectMsgType[ShardRegion.CurrentShardRegionState]
         state.shards should have size (1)
-        state.shards.head.entityIds should ===(Set())
+        state.shards.head.entityIds should ===(Set.empty[String])
       })
 
       // the backoff is 10s by default, so plenty time to

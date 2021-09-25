@@ -23,7 +23,7 @@ private[akka] final class CustomStateStoreModeProvider(
     settings: ClusterShardingSettings)
     extends RememberEntitiesProvider {
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[CustomStateStoreModeProvider])
   log.warning("Using custom remember entities store for [{}], not intended for production use.", typeName)
   val customStore = if (system.settings.config.hasPath("akka.cluster.sharding.remember-entities-custom-store")) {
     val customClassName = system.settings.config.getString("akka.cluster.sharding.remember-entities-custom-store")

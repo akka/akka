@@ -423,7 +423,7 @@ object ShardCoordinator {
     @SerialVersionUID(1L) final case class ShardRegionProxyTerminated(regionProxy: ActorRef) extends DomainEvent
     @SerialVersionUID(1L) final case class ShardHomeAllocated(shard: ShardId, region: ActorRef) extends DomainEvent
     @SerialVersionUID(1L) final case class ShardHomeDeallocated(shard: ShardId) extends DomainEvent
-    @SerialVersionUID(1L) final case object ShardCoordinatorInitialized extends DomainEvent
+    @SerialVersionUID(1L) case object ShardCoordinatorInitialized extends DomainEvent
 
     case object StateInitialized
 

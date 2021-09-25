@@ -136,7 +136,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
 
   def region(sys: ActorSystem = system) = ClusterSharding(sys).shardRegion(typeName)
 
-  s"Cluster with min-nr-of-members using sharding ($mode)" must {
+  s"Cluster with min-nr-of-members using sharding (${multiNodeConfig.mode})" must {
 
     "start up first cluster and sharding" in within(15.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(second, third))

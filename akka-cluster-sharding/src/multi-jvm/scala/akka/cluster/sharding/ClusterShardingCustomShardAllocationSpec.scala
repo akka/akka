@@ -115,7 +115,7 @@ abstract class ClusterShardingCustomShardAllocationSpec(multiNodeConfig: Cluster
 
   lazy val allocator = system.actorOf(Props[Allocator](), "allocator")
 
-  s"Cluster sharding ($mode) with custom allocation strategy" must {
+  s"Cluster sharding (${multiNodeConfig.mode}) with custom allocation strategy" must {
 
     "use specified region" in within(30.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
