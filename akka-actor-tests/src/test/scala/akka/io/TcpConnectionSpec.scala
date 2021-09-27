@@ -288,7 +288,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
 
     /*
-     * Disabled on Windows: http://support.microsoft.com/kb/214397
+     * Disabled on Windows: https://support.microsoft.com/kb/214397
      *
      * "To optimize performance at the application layer, Winsock copies data buffers from application send calls
      * to a Winsock kernel buffer. Then, the stack uses its own heuristics (such as Nagle algorithm) to determine
@@ -462,7 +462,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
 
     /*
-     * Partly disabled on Windows: http://support.microsoft.com/kb/214397
+     * Partly disabled on Windows: https://support.microsoft.com/kb/214397
      *
      * "To optimize performance at the application layer, Winsock copies data buffers from application send calls
      * to a Winsock kernel buffer. Then, the stack uses its own heuristics (such as Nagle algorithm) to determine
@@ -1118,7 +1118,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       try channel.socket.setSoLinger(true, 0) // causes the following close() to send TCP RST
       catch {
         case NonFatal(e) =>
-          // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
+          // setSoLinger can fail due to https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6799574
           // (also affected: OS/X Java 1.6.0_37)
           log.debug("setSoLinger(true, 0) failed with {}", e)
       }
