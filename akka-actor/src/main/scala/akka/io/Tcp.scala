@@ -27,7 +27,7 @@ import akka.util.ccompat.JavaConverters._
  * TCP Extension for Akka’s IO layer.
  *
  * For a full description of the design and philosophy behind this IO
- * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
+ * implementation please refer to <a href="https://akka.io/docs/">the Akka online documentation</a>.
  *
  * In order to open an outbound connection send a [[Tcp.Connect]] message
  * to the [[TcpExt#manager]].

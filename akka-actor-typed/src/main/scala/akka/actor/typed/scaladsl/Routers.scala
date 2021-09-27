@@ -145,7 +145,7 @@ trait PoolRouter[T] extends Behavior[T] {
    *
    * @param virtualNodesFactor This factor has to be greater or equal to 1. Assuming that the reader
    *                           knows what consistent hashing is
-   *                           (if not, please refer: http://www.tom-e-white.com/2007/11/consistent-hashing.html or wiki).
+   *                           (if not, please refer: https://www.tom-e-white.com/2007/11/consistent-hashing.html or wiki).
    *                           This number is responsible for creating additional,
    *                           virtual addresses for a provided set of routees,
    *                           so that in the total number of points on hashing ring

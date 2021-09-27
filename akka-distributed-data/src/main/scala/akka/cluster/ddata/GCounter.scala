@@ -31,7 +31,7 @@ object GCounter {
  * Implements a 'Growing Counter' CRDT, also called a 'G-Counter'.
  *
  * It is described in the paper
- * <a href="http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf">A comprehensive study of Convergent and Commutative Replicated Data Types</a>.
+ * <a href="https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf">A comprehensive study of Convergent and Commutative Replicated Data Types</a>.
  *
  * A G-Counter is a increment-only counter (inspired by vector clocks) in
  * which only increment and merge are possible. Incrementing the counter
