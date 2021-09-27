@@ -105,11 +105,7 @@ By default, the circuit breaker treats @javadoc[Exception](java.lang.Exception) 
 On failure, the failure count will increment. If the failure count reaches the *maxFailures*, the circuit breaker will be opened.
 However, some applications may require certain exceptions to not increase the failure count.
 In other cases one may want to increase the failure count even if the call succeeded.
-Akka circuit breaker provides a way to achieve such use cases:
-
-@scala[@scaladoc[withCircuitBreaker](akka.pattern.CircuitBreaker#withCircuitBreaker[T](body:=%3Escala.concurrent.Future[T],defineFailureFn:scala.util.Try[T]=%3EBoolean):scala.concurrent.Future[T])]@java[@javadoc[callWithCircuitBreaker](akka.pattern.CircuitBreaker#callWithCircuitBreaker(java.util.concurrent.Callable,java.util.function.BiFunction))]  
-@scala[@scaladoc[withSyncCircuitBreaker](akka.pattern.CircuitBreaker#withSyncCircuitBreaker[T](body:=%3ET,defineFailureFn:scala.util.Try[T]=%3EBoolean):T)]@java[@javadoc[callWithSyncCircuitBreaker](akka.pattern.CircuitBreaker#callWithSyncCircuitBreaker(java.util.concurrent.Callable,java.util.function.BiFunction))]  
-@java[@javadoc[callWithCircuitBreakerCS](akka.pattern.CircuitBreaker#callWithCircuitBreakerCS(java.util.concurrent.Callable,java.util.function.BiFunction))]
+Akka circuit breaker provides a way to achieve such use cases: @scala[@scaladoc[withCircuitBreaker](akka.pattern.CircuitBreaker#withCircuitBreaker[T](body:=%3Escala.concurrent.Future[T],defineFailureFn:scala.util.Try[T]=%3EBoolean):scala.concurrent.Future[T]) and @scaladoc[withSyncCircuitBreaker](akka.pattern.CircuitBreaker#withSyncCircuitBreaker[T](body:=%3ET,defineFailureFn:scala.util.Try[T]=%3EBoolean):T)]@java[@javadoc[callWithCircuitBreaker](akka.pattern.CircuitBreaker#callWithCircuitBreaker(java.util.concurrent.Callable,java.util.function.BiFunction)), @javadoc[callWithSyncCircuitBreaker](akka.pattern.CircuitBreaker#callWithSyncCircuitBreaker(java.util.concurrent.Callable,java.util.function.BiFunction)) and @javadoc[callWithCircuitBreakerCS](akka.pattern.CircuitBreaker#callWithCircuitBreakerCS(java.util.concurrent.Callable,java.util.function.BiFunction))].
 
 All methods above accept an argument `defineFailureFn`
 
