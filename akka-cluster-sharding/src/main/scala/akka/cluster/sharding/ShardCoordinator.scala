@@ -1606,7 +1606,7 @@ private[akka] class DDataShardCoordinator(
       }
 
     case ModifyFailure(key, error, cause, _) =>
-      log.warning(
+      log.error(
         cause,
         s"$typeName: The ShardCoordinator was unable to update a distributed state {} with error {} and event {}. {}",
         key,
