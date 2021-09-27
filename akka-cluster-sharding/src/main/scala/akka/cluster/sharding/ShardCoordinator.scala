@@ -1591,7 +1591,7 @@ private[akka] class DDataShardCoordinator(
       }
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) =>
-      log.error(
+      log.warning(
         "{}: The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
         "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
         typeName,
@@ -1606,7 +1606,7 @@ private[akka] class DDataShardCoordinator(
       }
 
     case ModifyFailure(key, error, cause, _) =>
-      log.error(
+      log.warning(
         cause,
         s"$typeName: The ShardCoordinator was unable to update a distributed state {} with error {} and event {}. {}",
         key,
