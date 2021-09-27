@@ -331,9 +331,9 @@ The normal goal is to customize the middle layer while leaving the
 other two alone.
 
  * [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#load--) loads the whole stack
- * the overloads of [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#load-java.lang.ClassLoader-com.typesafe.config.ConfigParseOptions-com.typesafe.config.ConfigResolveOptions-) let you specify a
+ * the overloads of [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html) let you specify a
 different middle layer
- * the [ConfigFactory.parse()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#parseResources-java.lang.ClassLoader-java.lang.String-com.typesafe.config.ConfigParseOptions-) variations load single files or resources
+ * the [ConfigFactory.parse](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html) variations load single files or resources
 
 To stack two layers, use [override.withFallback(fallback)](https://lightbend.github.io/config/latest/api/com/typesafe/config/Config.html#withFallback-com.typesafe.config.ConfigMergeable-); try
 to keep system props ([defaultOverrides()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#defaultOverrides--)) on top and
