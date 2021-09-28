@@ -63,7 +63,7 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    * This field is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def system: ActorSystem[Nothing]
+  implicit def system: ActorSystem[Nothing]
 
   /**
    * An actor specific logger.
