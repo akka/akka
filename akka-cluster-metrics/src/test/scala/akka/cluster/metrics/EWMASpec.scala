@@ -53,7 +53,7 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
     }
 
     "calculate alpha from half-life and collect interval" in {
-      // according to http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+      // according to https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
       val expectedAlpha = 0.1
       // alpha = 2.0 / (1 + N)
       val n = 19

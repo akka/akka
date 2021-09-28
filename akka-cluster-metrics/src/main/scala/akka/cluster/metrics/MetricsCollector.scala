@@ -237,7 +237,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
 
   /**
    * (SIGAR) Returns the stolen CPU time. Relevant to virtual hosting environments.
-   * For details please see: <a href="http://en.wikipedia.org/wiki/CPU_time#Subdivision">Wikipedia - CPU time subdivision</a> and
+   * For details please see: <a href="https://en.wikipedia.org/wiki/CPU_time#Subdivision">Wikipedia - CPU time subdivision</a> and
    * <a href="https://www.datadoghq.com/2013/08/understanding-aws-stolen-cpu-and-how-it-affects-your-apps/">Understanding AWS stolen CPU and how it affects your apps</a>
    *
    * Creates a new instance each time.

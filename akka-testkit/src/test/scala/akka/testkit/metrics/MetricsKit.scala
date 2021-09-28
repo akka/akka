@@ -22,7 +22,7 @@ import akka.testkit.metrics.reporter.AkkaConsoleReporter
  * Allows to easily measure performance / memory / file descriptor use in tests.
  *
  * WARNING: This trait should not be seen as utility for micro-benchmarking,
- * please refer to <a href="http://openjdk.java.net/projects/code-tools/jmh/">JMH</a> if that's what you're writing.
+ * please refer to <a href="https://openjdk.java.net/projects/code-tools/jmh/">JMH</a> if that's what you're writing.
  * This trait instead aims to give an high level overview as well as data for trend-analysis of long running tests.
  *
  * Reporting defaults to `ConsoleReporter`.
