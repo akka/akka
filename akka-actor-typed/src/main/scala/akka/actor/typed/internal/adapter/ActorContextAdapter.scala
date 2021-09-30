@@ -44,7 +44,7 @@ private[akka] object ActorContextAdapter {
   private[akka] override def currentBehavior: Behavior[T] = adapter.currentBehavior
 
   final override val self = ActorRefAdapter(classicContext.self)
-  final override val system = ActorSystemAdapter(classicContext.system)
+  implicit final override val system = ActorSystemAdapter(classicContext.system)
   private[akka] def classicActorContext = classicContext
   override def children: Iterable[ActorRef[Nothing]] = {
     checkCurrentActorThread()
