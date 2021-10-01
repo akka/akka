@@ -7,6 +7,7 @@ package akka.cluster.sharding
 import scala.concurrent.duration._
 
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.Span
 
 import akka.actor.{ Actor, ActorLogging, Address, Props }
 import akka.cluster.Cluster
@@ -74,7 +75,10 @@ abstract class ExternalShardAllocationSpec
   import ExternalShardAllocationSpec.GiveMeYourHome._
   import ExternalShardAllocationSpecConfig._
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.second)
+  override implicit val patienceConfig: PatienceConfig = {
+    import akka.testkit.TestDuration
+    PatienceConfig(testKitSettings.DefaultTimeout.duration.dilated, Span(100, org.scalatest.time.Millis))
+  }
 
   val typeName = "home"
   val initiallyOnForth = "on-forth"

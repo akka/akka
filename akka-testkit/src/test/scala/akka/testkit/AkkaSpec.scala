@@ -60,8 +60,6 @@ abstract class AkkaSpec(_system: ActorSystem)
     with TypeCheckedTripleEquals
     with ScalaFutures {
 
-  implicit val patience: PatienceConfig = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, Millis))
-
   def this(config: Config) =
     this(
       ActorSystem(
@@ -73,6 +71,9 @@ abstract class AkkaSpec(_system: ActorSystem)
   def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
 
   def this() = this(ActorSystem(TestKitUtils.testNameFromCallStack(classOf[AkkaSpec], "".r), AkkaSpec.testConf))
+
+  implicit val patience: PatienceConfig =
+    PatienceConfig(testKitSettings.SingleExpectDefaultTimeout.dilated, Span(100, Millis))
 
   val log: LoggingAdapter = Logging(system, Logging.simpleName(this))
 
