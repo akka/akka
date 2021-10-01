@@ -131,8 +131,6 @@ object ShoppingCartBehavior {
             Effect.none
           case Timeout =>
             Effect.persist(CustomerInactive)
-          case _ =>
-            Effect.none
         }
       case Inactive(_) =>
         command match {
@@ -170,7 +168,6 @@ object ShoppingCartBehavior {
           case OrderExecuted    => Paid(cart)
           case OrderDiscarded   => state // will be stopped
           case CustomerInactive => Inactive(cart)
-          case _                => s
         }
       case i @ Inactive(cart) =>
         event match {

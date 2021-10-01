@@ -509,7 +509,7 @@ private class ShardingProducerControllerImpl[A: ClassTag](
 
     Behaviors.receiveMessage {
 
-      case msg: Msg[A] =>
+      case msg: Msg[A @unchecked] =>
         if (durableQueue.isEmpty) {
           // currentSeqNr is only updated when durableQueue is enabled
           onMessage(msg.envelope.entityId, msg.envelope.message, None, s.currentSeqNr, s.replyAfterStore)
@@ -537,13 +537,13 @@ private class ShardingProducerControllerImpl[A: ClassTag](
       case StoreMessageSentCompleted(MessageSent(seqNr, msg: A, _, entityId, _)) =>
         receiveStoreMessageSentCompleted(seqNr, msg, entityId)
 
-      case f: StoreMessageSentFailed[A] =>
+      case f: StoreMessageSentFailed[A @unchecked] =>
         receiveStoreMessageSentFailed(f)
 
       case ack: Ack =>
         receiveAck(ack)
 
-      case w: WrappedRequestNext[A] =>
+      case w: WrappedRequestNext[A @unchecked] =>
         receiveWrappedRequestNext(w)
 
       case ResendFirstUnconfirmed =>
@@ -552,7 +552,7 @@ private class ShardingProducerControllerImpl[A: ClassTag](
       case CleanupUnused =>
         receiveCleanupUnused()
 
-      case start: Start[A] =>
+      case start: Start[A @unchecked] =>
         receiveStart(start)
 
       case AskTimeout(outKey, outSeqNr) =>
