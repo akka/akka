@@ -22,14 +22,6 @@ To use Akka Persistence, add the module to your project:
 
 You also have to select durable state store plugin, see @ref:[Persistence Plugins](../../persistence-plugins.md).
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../../common/may-change.md) because it is a new feature that
-needs feedback from real usage before finalizing the API. This means that API or semantics can change without
-warning or deprecation period. It is also not recommended to use this module in production just yet.
-
-@@@ 
-
 @@project-info{ projectId="akka-persistence-typed" }
 
 ## Introduction
