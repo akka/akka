@@ -55,7 +55,6 @@ object CircuitBreakerSpec {
       .onCallBreakerOpen(callBreakerOpenLatch.countDown())
   }
 
-
   def multiFailureCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
     new Breaker(new CircuitBreaker(system.scheduler, 5, 200.millis.dilated, 500.millis.dilated))
 
@@ -88,7 +87,6 @@ class CircuitBreakerSpec extends AkkaSpec {
   val longResetTimeout = 5.seconds.dilated
   def longResetTimeoutCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
     new Breaker(new CircuitBreaker(system.scheduler, 1, 100.millis.dilated, longResetTimeout))
-
 
   def checkLatch(latch: TestLatch): Unit = Await.ready(latch, awaitTimeout)
 
