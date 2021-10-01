@@ -1,0 +1,49 @@
+name: Compile Akka with Scala 3
+
+on:
+  pull_request:
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-scala3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile
+    runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
+    strategy:
+      matrix:
+        command:
+          - akka-testkit/Test/compile akka-actor-tests/Test/compile
+          - akka-actor-testkit-typed/Test/compile akka-actor-typed-tests/Test/compile
+          - akka-bench-jmh/Test/compile
+          - akka-cluster/Test/compile akka-cluster-tools/Test/compile akka-cluster-typed/Test/compile akka-distributed-data/Test/compile akka-cluster-metrics/Test/compile akka-cluster-sharding/Test/compile
+          - akka-discovery/Test/compile akka-coordination/Test/compile
+          - akka-persistence/Test/compile akka-persistence-shared/Test/compile akka-persistence-query/Test/compile
+          - akka-pki/Test/compile akka-slf4j/Test/compile
+          - akka-serialization-jackson/Test/compile
+          - akka-stream/Test/compile akka-stream-testkit/Test/compile akka-stream-tests/Test/compile
+          - akka-stream-tests-tck/Test/compile
+          - akka-remote/Test/compile akka-remote-tests/Test/compile akka-protobuf/Test/compile akka-protobuf-v3/Test/compile
+      fail-fast: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Compile on Scala 3
+        run: |
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.build.scalaVersion=3.0 \
+          ${{ matrix.command }}
