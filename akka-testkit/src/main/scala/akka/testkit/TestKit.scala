@@ -878,7 +878,7 @@ trait TestKitBase {
    */
   def shutdown(
       actorSystem: ActorSystem = system,
-      duration: Duration = 10.seconds.dilated.min(10.seconds),
+      duration: Duration = Duration.Undefined,
       verifySystemShutdown: Boolean = false): Unit = {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
@@ -1015,19 +1015,25 @@ object TestKit {
    * Shut down an actor system and wait for termination.
    * On failure debug output will be logged about the remaining actors in the system.
    *
+   * The `duration` is dilated by the timefactor.
+   *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
   def shutdownActorSystem(
       actorSystem: ActorSystem,
-      duration: Duration = 10.seconds,
+      duration: Duration = Duration.Undefined,
       verifySystemShutdown: Boolean = false): Unit = {
+    val d = duration match {
+      case f: FiniteDuration => f.dilated(actorSystem)
+      case _                 => 10.seconds.dilated(actorSystem).min(10.seconds)
+    }
     actorSystem.terminate()
-    try Await.ready(actorSystem.whenTerminated, duration)
+    try Await.ready(actorSystem.whenTerminated, d)
     catch {
       case _: TimeoutException =>
         val msg = "Failed to stop [%s] within [%s] \n%s".format(
           actorSystem.name,
-          duration,
+          d,
           actorSystem.asInstanceOf[ActorSystemImpl].printTree)
         if (verifySystemShutdown) throw new RuntimeException(msg)
         else println(msg)
