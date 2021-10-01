@@ -11,7 +11,10 @@ import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
+import com.typesafe.config.ConfigFactory
 import org.slf4j.event.Level
+
+import scala.jdk.CollectionConverters.MapHasAsJava
 //#imports
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -57,6 +60,25 @@ object SyncTestingExampleSpec {
         Behaviors.same
     }
     //#under-test
+  }
+
+  object ConfigAware {
+    sealed trait Command
+    case class GetCfgString(key: String, replyTo: ActorRef[String]) extends Command
+    case class SpawnChild(replyTo: ActorRef[ActorRef[Command]]) extends Command
+
+    def apply(): Behavior[Command] = Behaviors.setup[Command] { ctx =>
+      Behaviors.receiveMessage {
+        case GetCfgString(key, replyTo) =>
+          val str = ctx.system.settings.config.getString(key)
+          replyTo ! str
+          Behaviors.same
+        case SpawnChild(replyTo) =>
+          val child = ctx.spawnAnonymous(ConfigAware())
+          replyTo ! child
+          Behaviors.same
+      }
+    }
   }
 
 }
@@ -119,6 +141,28 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
       testKit.run(Hello.LogAndSayHello(inbox.ref))
       testKit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, "Saying hello to Inboxer"))
       //#test-check-logging
+    }
+
+    "has access to the provided config" in {
+      val conf =
+        BehaviorTestKit.ApplicationTestConfig.withFallback(
+          ConfigFactory.parseMap(Map("test.secret" -> "shhhhh").asJava))
+      val testKit = BehaviorTestKit(ConfigAware(), "root", conf)
+      val inbox = TestInbox[AnyRef]("Inboxer")
+      testKit.run(ConfigAware.GetCfgString("test.secret", inbox.ref.narrow))
+      inbox.expectMessage("shhhhh")
+
+      testKit.run(ConfigAware.SpawnChild(inbox.ref.narrow))
+      val childTestKit = inbox.receiveMessage() match {
+        case ar: ActorRef[_] =>
+          testKit.childTestKit(ar.unsafeUpcast[Any].narrow[ConfigAware.Command])
+        case unexpected =>
+          unexpected should be(a[ActorRef[_]])
+          ???
+      }
+
+      childTestKit.run(ConfigAware.GetCfgString("test.secret", inbox.ref.narrow))
+      inbox.expectMessage("shhhhh")
     }
   }
 }

@@ -5,15 +5,12 @@
 package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
-
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
-
 import scala.annotation.nowarn
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import akka.{ actor => classic }
 import akka.Done
 import akka.actor.{ ActorPath, ActorRefProvider, Address, ReflectiveDynamicAccess }
@@ -36,7 +33,9 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @nowarn
-@InternalApi private[akka] final class ActorSystemStub(val name: String)
+@InternalApi private[akka] final class ActorSystemStub(
+    val name: String,
+    config: Config = ActorSystemStub.config.defaultReference)
     extends ActorSystem[Nothing]
     with ActorRef[Nothing]
     with ActorRefImpl[Nothing]
@@ -49,9 +48,9 @@ import akka.annotation.InternalApi
   override val settings: Settings = {
     val classLoader = getClass.getClassLoader
     val dynamicAccess = new ReflectiveDynamicAccess(classLoader)
-    val config =
-      classic.ActorSystem.Settings.amendSlf4jConfig(ConfigFactory.defaultReference(classLoader), dynamicAccess)
-    val untypedSettings = new classic.ActorSystem.Settings(classLoader, config, name)
+    val config_ =
+      classic.ActorSystem.Settings.amendSlf4jConfig(config, dynamicAccess)
+    val untypedSettings = new classic.ActorSystem.Settings(classLoader, config_, name)
     new Settings(untypedSettings)
   }
 
@@ -124,4 +123,15 @@ import akka.annotation.InternalApi
   override def log: Logger = LoggerFactory.getLogger(getClass)
 
   def address: Address = rootPath.address
+}
+
+@InternalApi private[akka] object ActorSystemStub {
+  object config {
+    // this is backward compatible with the old behaviour, hence it uses the loader used to load the test-kit
+    // which is not necessarily the one used to load the tests...
+    // hence this might not include reference config related to the actually executing test
+    //todo: might be better NOT to pass any class loader and let typesafeConfig rely on the contextClassLoader
+    // (which is usually the system class loader)
+    def defaultReference: Config = ConfigFactory.defaultReference(getClass.getClassLoader)
+  }
 }
