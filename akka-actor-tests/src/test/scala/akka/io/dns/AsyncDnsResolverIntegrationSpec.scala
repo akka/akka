@@ -9,8 +9,10 @@ import java.net.InetAddress
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
-import CachePolicy.Ttl
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
 
+import CachePolicy.Ttl
 import akka.io.{ Dns, IO }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.pattern.ask
@@ -34,8 +36,10 @@ class AsyncDnsResolverIntegrationSpec extends DockerBindDnsService(ConfigFactory
     akka.io.dns.async-dns.search-domains = ["foo.test", "test"]
     akka.io.dns.async-dns.ndots = 2
   """)) with WithLogCapturing {
-  val duration = 10.seconds
-  implicit val timeout: Timeout = Timeout(duration)
+
+  implicit val timeout: Timeout = Timeout(10.seconds)
+  override implicit val patience: PatienceConfig =
+    PatienceConfig(timeout.duration + 1.second, Span(100, Millis))
 
   val hostPort = AsyncDnsResolverIntegrationSpec.dockerDnsServerPort
 
