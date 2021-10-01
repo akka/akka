@@ -405,8 +405,10 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         val debugLogEntries = Set(a1.expectMsgType[Logging.Debug], a1.expectMsgType[Logging.Debug]).collect {
           case Logging.Debug(_, _, msg: String) => msg
         }
-        debugLogEntries.exists(_.startsWith(s"unsubscribing ${a2.ref} from channel interface akka.event.EventStreamSpec$$T")) should === (true)
-        debugLogEntries.exists(_.startsWith(s"unwatching ${a2.ref}, since has no subscriptions")) should === (true)
+        debugLogEntries.exists(
+          _.startsWith(s"unsubscribing ${a2.ref} from channel interface akka.event.EventStreamSpec$$T")) should ===(
+          true)
+        debugLogEntries.exists(_.startsWith(s"unwatching ${a2.ref}, since has no subscriptions")) should ===(true)
         a1.expectNoMessage(1.second)
 
         es.unsubscribe(a2.ref, classOf[T]) should equal(false)
