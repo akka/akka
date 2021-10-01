@@ -14,7 +14,7 @@ import akka.util.Unsafe;
  *     (Apache V2: https://github.com/plokhotnyuk/actors/blob/master/LICENSE)
  *
  * Dmitriy Vyukov's non-intrusive MPSC queue:
- *   - http://www.1024cores.net/home/lock-free-algorithms/queues/non-intrusive-mpsc-node-based-queue
+ *   - https://www.1024cores.net/home/lock-free-algorithms/queues/non-intrusive-mpsc-node-based-queue
  *   (Simplified BSD)
  */
 @SuppressWarnings("serial")
