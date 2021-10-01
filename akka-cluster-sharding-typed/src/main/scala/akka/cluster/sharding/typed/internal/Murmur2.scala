@@ -64,7 +64,7 @@ private[sharding] object Murmur2 {
         h ^= data(length & ~3) & 0xff
         h *= m
       case 0 =>
-        // fall through
+      // fall through
     }
 
     h ^= h >>> 13
