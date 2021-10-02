@@ -162,7 +162,7 @@ object ShoppingCartBehavior {
           case ItemAdded(item) => Shopping(cart.addItem(item))
           case _               => la
         }
-      case s @ Shopping(cart) =>
+      case Shopping(cart) =>
         event match {
           case ItemAdded(item)  => Shopping(cart.addItem(item))
           case OrderExecuted    => Paid(cart)
