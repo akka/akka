@@ -111,7 +111,7 @@ Java
 
 Note that replying to the sender of the elements (the "stream") is required as lack of those ack signals would be interpreted
 as back-pressure (as intended), and no new elements will be sent into the actor until it acknowledges some elements.
-Handling the other signals while is not required, however is a good practice, to see the state of the streams lifecycle
+Handling the other signals while is not required, however is a good practice, to see the state of the stream's lifecycle
 in the connected actor as well. Technically it is also possible to use multiple sinks targeting the same actor,
 however it is not common practice to do so, and one should rather investigate using a `Merge` operator for this purpose.
 
