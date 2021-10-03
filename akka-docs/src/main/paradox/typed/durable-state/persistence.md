@@ -108,7 +108,7 @@ More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-
 
 In addition to returning the primary `Effect` for the command, `DurableStateBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
-function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
+function e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 ### Completing the example
 
@@ -171,7 +171,7 @@ Note that only one of those can be chosen per incoming command. It is not possib
 
 In addition to returning the primary `Effect` for the command `DurableStateBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
-function that runs the callback passed to it e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`]. 
+function that runs the callback passed to it e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`]. 
 
 All `thenRun` registered callbacks are executed sequentially after successful execution of the persist statement
 (or immediately, in case of `none` and `unhandled`).

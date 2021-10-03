@@ -45,7 +45,7 @@ The extra argument to set the `ThrottleMode` to `shapping` tells `throttle` to m
 the maximum rate. Alternatively we could set the throttling mode to cause a stream failure when upstream is faster
 than the throttle rate.   
 
-The examples above don't cover all the parameters supported by `throttle` (e.g `cost`-based throttling). See the 
+The examples above don't cover all the parameters supported by `throttle` (e.g. `cost`-based throttling). See the 
 @apidoc[api documentation](Flow) { scala="#throttle(cost:Int,per:scala.concurrent.duration.FiniteDuration,maximumBurst:Int,costCalculation:Out=&gt;Int,mode:akka.stream.ThrottleMode):FlowOps.this.Repr[Out]" java="#throttle(int,java.time.Duration,int,akka.japi.function.Function,akka.stream.ThrottleMode)" }
 for all the details.
 
