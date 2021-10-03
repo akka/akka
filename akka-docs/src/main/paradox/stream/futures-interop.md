@@ -35,7 +35,7 @@ Scala
 Java
 :   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #tweet-authors }
 
-Assume that we can lookup their email address using:
+Assume that we can look up their email address using:
 
 Scala
 :   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #email-address-lookup }
