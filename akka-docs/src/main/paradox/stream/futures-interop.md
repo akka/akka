@@ -274,6 +274,6 @@ after: I
 Note that `after` lines are not in the same order as the `before` lines. For example
 `H` overtakes the slow `G`.
 
-The numbers in parenthesis illustrates how many calls that are in progress at
+The numbers in parentheses illustrate how many calls that are in progress at
 the same time. Here the downstream demand and thereby the number of concurrent
 calls are limited by the buffer size (4) set with an attribute.
