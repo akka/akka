@@ -54,7 +54,7 @@ is already a message in the mailbox when the actor has completed previous
 message.
 
 The actor must reply to the @scala[`sender()`]@java[`getSender()`] for each message from the stream. That
-reply will complete the  @scala[`Future`]@java[`CompletionStage`] of the `ask` and it will be the element that is emitted downstreams.
+reply will complete the  @scala[`Future`]@java[`CompletionStage`] of the `ask` and it will be the element that is emitted downstream.
 
 In case the target actor is stopped, the operator will fail with an `AskStageTargetActorTerminatedException`
 
