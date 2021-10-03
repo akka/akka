@@ -62,7 +62,7 @@ Java
 
 `mapAsync` is applying the given function that is calling out to the external service to
 each of the elements as they pass through this processing step. The function returns a @scala[`Future`]@java[`CompletionStage`]
-and the value of that future will be emitted downstreams. The number of Futures
+and the value of that future will be emitted downstream. The number of Futures
 that shall run in parallel is given as the first argument to `mapAsync`.
 These Futures may complete in any order, but the elements that are emitted
 downstream are in the same order as received from upstream.
