@@ -162,7 +162,7 @@ akka {
 }
 ```
 
-If you want very detailed logging of all lifecycle changes of Actors (restarts, deaths etc):
+If you want very detailed logging of all lifecycle changes of Actors (restarts, deaths etc.):
 
 ```ruby
 akka {
