@@ -152,7 +152,7 @@ More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-
 
 In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
-function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
+function e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 ### Event handler
 
@@ -235,7 +235,7 @@ Note that only one of those can be chosen per incoming command. It is not possib
 
 In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
-function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
+function e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 In the example below the state is sent to the `subscriber` ActorRef. Note that the new state after applying 
 the event is passed as parameter of the `thenRun` function. In the case where multiple events have been persisted,

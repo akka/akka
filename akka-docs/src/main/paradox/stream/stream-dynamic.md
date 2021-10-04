@@ -228,7 +228,7 @@ Scala
 Java
 :   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #partition-hub-stateful }
 
-Note that it is a factory of a function to to be able to hold stateful variables that are 
+Note that it is a factory of a function to be able to hold stateful variables that are 
 unique for each materialization. @java[In this example the `partitioner` function is implemented as a class to
 be able to hold the mutable variable. A new instance of `RoundRobin` is created for each materialization of the hub.]
 

@@ -35,7 +35,7 @@ Scala
 Java
 :   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #tweet-authors }
 
-Assume that we can lookup their email address using:
+Assume that we can look up their email address using:
 
 Scala
 :   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #email-address-lookup }
@@ -62,7 +62,7 @@ Java
 
 `mapAsync` is applying the given function that is calling out to the external service to
 each of the elements as they pass through this processing step. The function returns a @scala[`Future`]@java[`CompletionStage`]
-and the value of that future will be emitted downstreams. The number of Futures
+and the value of that future will be emitted downstream. The number of Futures
 that shall run in parallel is given as the first argument to `mapAsync`.
 These Futures may complete in any order, but the elements that are emitted
 downstream are in the same order as received from upstream.
@@ -214,7 +214,7 @@ Note that `after` lines are in the same order as the `before` lines even
 though elements are `completed` in a different order. For example `H`
 is `completed` before `g`, but still emitted afterwards.
 
-The numbers in parenthesis illustrates how many calls that are in progress at
+The numbers in parentheses illustrate how many calls that are in progress at
 the same time. Here the downstream demand and thereby the number of concurrent
 calls are limited by the buffer size (4) set with an attribute.
 
@@ -274,6 +274,6 @@ after: I
 Note that `after` lines are not in the same order as the `before` lines. For example
 `H` overtakes the slow `G`.
 
-The numbers in parenthesis illustrates how many calls that are in progress at
+The numbers in parentheses illustrate how many calls that are in progress at
 the same time. Here the downstream demand and thereby the number of concurrent
 calls are limited by the buffer size (4) set with an attribute.

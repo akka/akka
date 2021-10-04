@@ -33,7 +33,7 @@ provides the following three strategies:
 Since actors are part of a hierarchy it can often make sense to propagate
 the permanent failures upwards, if all children of an actor has stopped
 unexpectedly it may make sense for the actor itself to restart or stop to
-get back to a functional state. This can achieved through a combination of
+get back to a functional state. This can be achieved through a combination of
 supervision and watching the children to get notified when they terminate.
 An example of this can be found in @ref:[Bubble failures up through the hierarchy](../typed/fault-tolerance.md#bubble).
 
