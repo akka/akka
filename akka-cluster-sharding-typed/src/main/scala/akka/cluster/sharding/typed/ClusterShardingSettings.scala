@@ -156,10 +156,10 @@ object ClusterShardingSettings {
         throw new IllegalArgumentException(
           s"Not recognized RememberEntitiesStore, only '${RememberEntitiesStoreModeDData.name}' and '${RememberEntitiesStoreModeEventSourced.name}' are supported.")
   }
-  final case object RememberEntitiesStoreModeEventSourced extends RememberEntitiesStoreMode {
+  case object RememberEntitiesStoreModeEventSourced extends RememberEntitiesStoreMode {
     override def name = "eventsourced"
   }
-  final case object RememberEntitiesStoreModeDData extends RememberEntitiesStoreMode { override def name = "ddata" }
+  case object RememberEntitiesStoreModeDData extends RememberEntitiesStoreMode { override def name = "ddata" }
 
   // generated using kaze-class
   final class TuningParameters private (

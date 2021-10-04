@@ -72,10 +72,10 @@ private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
     def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
       Behaviors
         .receiveMessage[InternalProtocol] {
-          case success: GetSuccess[S] => onGetSuccess(success.result, receivedPoisonPill)
-          case GetFailure(exc)        => onGetFailure(exc)
-          case RecoveryTimeout        => onRecoveryTimeout()
-          case cmd: IncomingCommand[C] =>
+          case success: GetSuccess[S @unchecked] => onGetSuccess(success.result, receivedPoisonPill)
+          case GetFailure(exc)                   => onGetFailure(exc)
+          case RecoveryTimeout                   => onRecoveryTimeout()
+          case cmd: IncomingCommand[C @unchecked] =>
             if (receivedPoisonPill) {
               if (setup.settings.logOnStashing)
                 setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
