@@ -14,7 +14,6 @@ import akka.actor.typed.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.slf4j.event.Level
 
-import scala.jdk.CollectionConverters.MapHasAsJava
 //#imports
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -146,7 +145,7 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
     "has access to the provided config" in {
       val conf =
         BehaviorTestKit.ApplicationTestConfig.withFallback(
-          ConfigFactory.parseMap(Map("test.secret" -> "shhhhh").asJava))
+          ConfigFactory.parseString("test.secret=shhhhh"))
       val testKit = BehaviorTestKit(ConfigAware(), "root", conf)
       val inbox = TestInbox[AnyRef]("Inboxer")
       testKit.run(ConfigAware.GetCfgString("test.secret", inbox.ref.narrow))
