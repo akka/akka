@@ -14,7 +14,7 @@ import akka.persistence.testkit.state.javadsl.{
 }
 
 class PersistenceTestKitDurableStateStoreProvider(system: ExtendedActorSystem) extends DurableStateStoreProvider {
-  private def _scaladslDurableStateStore[T]() = new PersistenceTestKitDurableStateStore[T](system)
+  private val _scaladslDurableStateStore[T]() = new PersistenceTestKitDurableStateStore[T](system)
   override def scaladslDurableStateStore(): DurableStateStore[Any] = _scaladslDurableStateStore[Any]()
 
   override def javadslDurableStateStore(): JDurableStateStore[AnyRef] =
