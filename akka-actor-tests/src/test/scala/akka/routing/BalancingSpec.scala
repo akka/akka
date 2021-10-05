@@ -6,9 +6,9 @@ package akka.routing
 
 import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
+import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.testkit.AkkaSpec
 import akka.testkit.GHExcludeTest
 import akka.testkit.ImplicitSender
