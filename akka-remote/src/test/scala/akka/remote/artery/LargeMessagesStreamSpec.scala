@@ -24,9 +24,10 @@ object LargeMessagesStreamSpec {
   }
 }
 
-class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
+class LargeMessagesStreamSpec
+    extends ArteryMultiNodeSpec("""
     akka {
-      remote.artery.large-message-destinations = [ "/user/large" ]
+      remote.artery.large-message-destinations = [ "/user/large" , "/user/largeWildcard*" ]
     }
   """.stripMargin) {
 
@@ -78,6 +79,29 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
       // flag should be cached now
       largeRemote.asInstanceOf[RemoteActorRef].cachedSendQueueIndex should ===(Association.LargeQueueIndex)
 
+    }
+
+    "accept wildcard suffixes in actor path" in {
+      val systemA = localSystem
+      val systemB = newRemoteSystem()
+
+      val senderProbeA = TestProbe()(systemA)
+      val senderProbeB = TestProbe()(systemB)
+
+      // start actor and make sure it is up and running
+      val large = systemB.actorOf(Props(new EchoSize), "largeWildcard123")
+      large.tell(Ping(), senderProbeB.ref)
+      senderProbeB.expectMsg(Pong(0))
+
+      // communicate with it from the other system
+      val addressB = RARP(systemB).provider.getDefaultAddress
+      val rootB = RootActorPath(addressB)
+      val largeRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "largeWildcard123"))
+      largeRemote.tell(Ping(), senderProbeA.ref)
+      senderProbeA.expectMsg(Pong(0))
+
+      // flag should be cached now
+      largeRemote.asInstanceOf[RemoteActorRef].cachedSendQueueIndex should ===(Association.LargeQueueIndex)
     }
 
     "allow for normal communication while simultaneously sending large messages" in {
