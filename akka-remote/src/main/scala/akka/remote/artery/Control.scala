@@ -67,7 +67,7 @@ private[remote] case object Flush extends ControlMessage
  * INTERNAL API
  */
 @InternalApi
-private[remote] case object FlushAck extends ArteryMessage
+private[remote] final case class FlushAck(expectedAcks: Int) extends ArteryMessage
 
 /**
  * INTERNAL API

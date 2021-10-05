@@ -417,6 +417,7 @@ private[remote] class ArteryTcpTransport(
             .via(laneKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
+            .via(Flow.fromGraph(new DuplicateFlush(inboundLanes, system, envelopeBufferPool)))
 
         val (inboundHub, compressionAccess, laneHub) =
           laneSource
