@@ -803,7 +803,7 @@ private[remote] class DuplicateFlush(numberOfLanes: Int, system: ExtendedActorSy
       def lazyInitOfSerializer(): Unit = {
         if (_serializerId == -1) {
           val serialization = SerializationExtension(system)
-          val ser = serialization.serializerFor(classOf[Flush.type])
+          val ser = serialization.serializerFor(Flush.getClass)
           _manifest = Serializers.manifestFor(ser, Flush)
           _serializerId = ser.identifier
         }
