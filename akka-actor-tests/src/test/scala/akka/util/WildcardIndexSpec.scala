@@ -61,7 +61,7 @@ class WildcardIndexSpec extends AnyWordSpec with Matchers {
     }
 
     "fail when a double wildcard is used as a suffix" in {
-      an [IllegalArgumentException] should be thrownBy emptyIndex.insert(Array("a**"), 1)
+      an[IllegalArgumentException] should be thrownBy emptyIndex.insert(Array("a**"), 1)
     }
 
     "never find anything when emptyIndex" in {
