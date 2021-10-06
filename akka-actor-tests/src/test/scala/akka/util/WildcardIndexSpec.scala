@@ -60,6 +60,10 @@ class WildcardIndexSpec extends AnyWordSpec with Matchers {
       tree2.find(Array("b", "cc", "x")) shouldBe None
     }
 
+    "fail when a double wildcard is used as a suffix" in {
+      an [IllegalArgumentException] should be thrownBy emptyIndex.insert(Array("a**"), 1)
+    }
+
     "never find anything when emptyIndex" in {
       emptyIndex.find(Array("a")) shouldBe None
       emptyIndex.find(Array("a", "b")) shouldBe None
