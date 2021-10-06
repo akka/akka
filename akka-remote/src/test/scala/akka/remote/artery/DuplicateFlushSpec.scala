@@ -56,9 +56,7 @@ class DuplicateFlushSpec extends AkkaSpec("""
         env
       }
       .via(new DuplicateFlush(numberOfLanes = 3, system.asInstanceOf[ExtendedActorSystem], pool))
-      .map { env: InboundEnvelope =>
-        (env.message -> env.lane)
-      }
+      .map(env => env.message -> env.lane)
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }
