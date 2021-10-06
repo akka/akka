@@ -681,6 +681,7 @@ akka.remote.artery.large-message-destinations = [
    "/user/largeMessagesGroup/*",
    "/user/anotherGroup/*/largeMesssages",
    "/user/thirdGroup/**",
+   "/temp/session-ask-actor*"
 ]
 ```
 
@@ -693,6 +694,7 @@ This means that all messages sent to the following actors will pass through the 
  * `/user/anotherGroup/actor2/largeMessages`
  * `/user/thirdGroup/actor3/`
  * `/user/thirdGroup/actor4/actor5`
+ * `/temp/session-ask-actor$abc`
 
 Messages destined for actors not matching any of these patterns are sent using the default channel as before.
 
