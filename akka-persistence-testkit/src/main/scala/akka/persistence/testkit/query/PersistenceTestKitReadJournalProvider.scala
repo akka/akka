@@ -9,9 +9,9 @@ import com.typesafe.config.Config
 
 class PersistenceTestKitReadJournalProvider(system: ExtendedActorSystem, config: Config, configPath: String)
     extends ReadJournalProvider {
-  private val _scaladslReadJournal = 
+  private val _scaladslReadJournal =
     new scaladsl.PersistenceTestKitReadJournal(system, config, configPath)
-  override def scaladslReadJournal(): scaladsl.PersistenceTestKitReadJournal = 
+  override def scaladslReadJournal(): scaladsl.PersistenceTestKitReadJournal =
     _scaladslReadJournal
 
   override def javadslReadJournal(): javadsl.PersistenceTestKitReadJournal =
