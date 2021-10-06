@@ -14,7 +14,6 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
 import akka.persistence.PersistencePlugin
@@ -24,10 +23,7 @@ import akka.util.unused
 
 /**
  * Persistence extension for queries.
- *
- * API May Change
  */
-@ApiMayChange
 object DurableStateStoreRegistry extends ExtensionId[DurableStateStoreRegistry] with ExtensionIdProvider {
 
   override def get(system: ActorSystem): DurableStateStoreRegistry = super.get(system)
@@ -47,7 +43,6 @@ object DurableStateStoreRegistry extends ExtensionId[DurableStateStoreRegistry] 
 
 }
 
-@ApiMayChange
 class DurableStateStoreRegistry(system: ExtendedActorSystem)
     extends PersistencePlugin[scaladsl.DurableStateStore[_], javadsl.DurableStateStore[_], DurableStateStoreProvider](
       system)(ClassTag(classOf[DurableStateStoreProvider]), DurableStateStoreRegistry.pluginProvider)
