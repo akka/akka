@@ -246,9 +246,9 @@ import scala.util.Success
       createRequest,
       (ok: StatusReply[Res], failure: Throwable) =>
         ok match {
-          case null                            => applyToResponse(null.asInstanceOf[Res], failure)
           case StatusReply.Success(value: Res) => applyToResponse(value, null)
           case StatusReply.Error(why)          => applyToResponse(null.asInstanceOf[Res], why)
+          case null                            => applyToResponse(null.asInstanceOf[Res], failure)
           case _                               => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
         })
   }
