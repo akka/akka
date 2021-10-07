@@ -17,11 +17,11 @@ This is only a summary of the most important parts for more details see [the con
 
 ## Where configuration is read from
 
-All configuration for Akka is held within instances of `ActorSystem`, or
-put differently, as viewed from the outside, `ActorSystem` is the only
+All configuration for Akka is held within instances of @apidoc[ActorSystem](typed.ActorSystem), or
+put differently, as viewed from the outside, @apidoc[ActorSystem](typed.ActorSystem) is the only
 consumer of configuration information. While constructing an actor system, you
-can either pass in a `Config` object or not, where the second case is
-equivalent to passing `ConfigFactory.load()` (with the right class loader).
+can either pass in a [Config](https://lightbend.github.io/config/latest/api/index.html?com/typesafe/config/Config.html) object or not, where the second case is
+equivalent to passing [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#load-java.lang.ClassLoader-) (with the right class loader).
 This means roughly that the default is to parse all `application.conf`,
 `application.json` and `application.properties` found at the root of the
 class path—please refer to the aforementioned documentation for details. The
@@ -186,14 +186,14 @@ Java
 
 In several places of the configuration file it is possible to specify the
 fully-qualified class name of something to be instantiated by Akka. This is
-done using Java reflection, which in turn uses a `ClassLoader`. Getting
+done using Java reflection, which in turn uses a @javadoc[ClassLoader](java.lang.ClassLoader). Getting
 the right one in challenging environments like application containers or OSGi
 bundles is not always trivial, the current approach of Akka is that each
-`ActorSystem` implementation stores the current thread’s context class
+@apidoc[ActorSystem](typed.ActorSystem) implementation stores the current thread’s context class
 loader (if available, otherwise just its own loader as in
-`this.getClass.getClassLoader`) and uses that for all reflective accesses.
+@javadoc[this.getClass.getClassLoader](java.lang.Class#getClassLoader())) and uses that for all reflective accesses.
 This implies that putting Akka on the boot class path will yield
-`NullPointerException` from strange places: this is not supported.
+@javadoc[NullPointerException](java.lang.NullPointerException) from strange places: this is not supported.
 
 ## Application specific settings
 
@@ -202,12 +202,12 @@ A good practice is to place those settings in an @ref:[Extension](../extending-a
 
 ## Configuring multiple ActorSystem
 
-If you have more than one `ActorSystem` (or you're writing a
-library and have an `ActorSystem` that may be separate from the
+If you have more than one @apidoc[ActorSystem](typed.ActorSystem) (or you're writing a
+library and have an @apidoc[ActorSystem](typed.ActorSystem) that may be separate from the
 application's) you may want to separate the configuration for each
 system.
 
-Given that `ConfigFactory.load()` merges all resources with matching name
+Given that [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#load--) merges all resources with matching name
 from the whole class path, it is easiest to utilize that functionality and
 differentiate actor systems within the hierarchy of the configuration:
 
@@ -262,7 +262,7 @@ substitutions.
 @@@
 
 You may also specify and parse the configuration programmatically in other ways when instantiating
-the `ActorSystem`.
+the @apidoc[ActorSystem](typed.ActorSystem).
 
 
 Scala
@@ -277,7 +277,7 @@ Java
 You can replace or supplement `application.conf` either in code
 or using system properties.
 
-If you're using `ConfigFactory.load()` (which Akka does by
+If you're using [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#load--) (which Akka does by
 default) you can replace `application.conf` by defining
 `-Dconfig.resource=whatever`, `-Dconfig.file=whatever`, or
 `-Dconfig.url=whatever`.
@@ -292,23 +292,23 @@ file.
 
 In code, there are many customization options.
 
-There are several overloads of `ConfigFactory.load()`; these
+There are several overloads of [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#load--); these
 allow you to specify something to be sandwiched between system
 properties (which override) and the defaults (from
 `reference.conf`), replacing the usual
 `application.{conf,json,properties}` and replacing
 `-Dconfig.file` and friends.
 
-The simplest variant of `ConfigFactory.load()` takes a resource
+The simplest variant of [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#load-java.lang.String-) takes a resource
 basename (instead of `application`); `myname.conf`,
 `myname.json`, and `myname.properties` would then be used
 instead of `application.{conf,json,properties}`.
 
-The most flexible variant takes a `Config` object, which
-you can load using any method in `ConfigFactory`.  For example
+The most flexible variant takes a [Config](https://lightbend.github.io/config/latest/api/com/typesafe/config/Config.html) object, which
+you can load using any method in [ConfigFactory](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html).  For example
 you could put a config string in code using
-`ConfigFactory.parseString()` or you could make a map and
-`ConfigFactory.parseMap()`, or you could load a file.
+[ConfigFactory.parseString()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#parseString-java.lang.String-) or you could make a map and
+[ConfigFactory.parseMap()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#parseMap-java.util.Map-), or you could load a file.
 
 You can also combine your custom config with the usual config,
 that might look like:
@@ -320,24 +320,24 @@ Java
 : @@snip [ConfigDocTest.java](/akka-docs/src/test/java/jdocs/config/ConfigDocTest.java) { #custom-config-2 }
 
 
-When working with `Config` objects, keep in mind that there are
+When working with [Config](https://lightbend.github.io/config/latest/api/com/typesafe/config/Config.html) objects, keep in mind that there are
 three "layers" in the cake:
 
- * `ConfigFactory.defaultOverrides()` (system properties)
+ * [ConfigFactory.defaultOverrides()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#defaultOverrides--) (system properties)
  * the app's settings
- * `ConfigFactory.defaultReference()` (reference.conf)
+ * [ConfigFactory.defaultReference()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#defaultReference--) (reference.conf)
 
 The normal goal is to customize the middle layer while leaving the
 other two alone.
 
- * `ConfigFactory.load()` loads the whole stack
- * the overloads of `ConfigFactory.load()` let you specify a
+ * [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#load--) loads the whole stack
+ * the overloads of [ConfigFactory.load()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html) let you specify a
 different middle layer
- * the `ConfigFactory.parse()` variations load single files or resources
+ * the [ConfigFactory.parse](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html) variations load single files or resources
 
-To stack two layers, use `override.withFallback(fallback)`; try
-to keep system props (`defaultOverrides()`) on top and
-`reference.conf` (`defaultReference()`) on the bottom.
+To stack two layers, use [override.withFallback(fallback)](https://lightbend.github.io/config/latest/api/com/typesafe/config/Config.html#withFallback-com.typesafe.config.ConfigMergeable-); try
+to keep system props ([defaultOverrides()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#defaultOverrides--)) on top and
+`reference.conf` ([defaultReference()](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html#defaultReference--)) on the bottom.
 
 Do keep in mind, you can often just add another `include`
 statement in `application.conf` rather than writing code.
