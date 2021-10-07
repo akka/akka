@@ -42,7 +42,9 @@ object AsyncDnsResolverIntegrationSpec {
   """)
 }
 
-class AsyncDnsResolverIntegrationSpec extends DockerBindDnsService(AsyncDnsResolverIntegrationSpec.conf) with WithLogCapturing {
+class AsyncDnsResolverIntegrationSpec
+    extends DockerBindDnsService(AsyncDnsResolverIntegrationSpec.conf)
+    with WithLogCapturing {
   import AsyncDnsResolverIntegrationSpec._
 
   override implicit val patience: PatienceConfig =
@@ -205,4 +207,3 @@ class AsyncDnsResolverIntegrationSpec extends DockerBindDnsService(AsyncDnsResol
 
   }
 }
-
