@@ -47,7 +47,7 @@ class ScalaUdpMulticastSpec
         val iterator = ipv6ifaces.iterator
         while (!foundOneThatWorked && iterator.hasNext) {
           val ipv6iface = iterator.next()
-          // host assigned link local multicast address http://tools.ietf.org/html/rfc3307#section-4.3.2
+          // host assigned link local multicast address https://www.rfc-editor.org/rfc/rfc3307#section-4.3.2
           // generate a random 32 bit multicast address with the high order bit set
           val randomAddress: String = (Random.nextInt().abs.toLong | (1L << 31)).toHexString.toUpperCase
           val group = randomAddress.grouped(4).mkString("FF02::", ":", "")

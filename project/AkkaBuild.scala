@@ -193,7 +193,7 @@ object AkkaBuild {
         // increase stack size (todo why?)
         "-Xss2m",
         // ## extra memory/gc tuning
-        // this breaks jstat, but could avoid costly syncs to disc see http://www.evanjones.ca/jvm-mmap-pause.html
+        // this breaks jstat, but could avoid costly syncs to disc see https://www.evanjones.ca/jvm-mmap-pause.html
         "-XX:+PerfDisableSharedMem",
         // tell G1GC that we would be really happy if all GC pauses could be kept below this as higher would
         // likely start causing test failures in timing tests
