@@ -137,17 +137,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     // this should be the last test step, since the cluster is shutdown
     "publish MemberRemoved when shutdown" in {
-      val callbackProbe = TestProbe()
-      cluster.registerOnMemberRemoved(callbackProbe.ref ! "OnMemberRemoved")
-
       cluster.subscribe(testActor, classOf[ClusterEvent.MemberRemoved])
       // first, is in response to the subscription
       expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
       cluster.shutdown()
       expectMsgType[ClusterEvent.MemberRemoved].member.address should ===(selfAddress)
-
-      callbackProbe.expectMsg("OnMemberRemoved")
     }
 
     "allow join and leave with local address" in {
