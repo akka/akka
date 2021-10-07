@@ -8,9 +8,7 @@ import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-import akka.actor.ActorRef
-import akka.actor.Actor
-import akka.actor.Props
+import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.testkit.AkkaSpec
 import akka.testkit.GHExcludeTest
 import akka.testkit.ImplicitSender
@@ -20,18 +18,27 @@ import org.scalatest.BeforeAndAfterEach
 object BalancingSpec {
   val counter = new AtomicInteger(1)
 
-  class Worker(latch: TestLatch, startOthers: Future[Unit]) extends Actor {
+  class Worker(latch: TestLatch, startOthers: Future[Unit]) extends Actor with ActorLogging {
     lazy val id = counter.getAndIncrement()
+    log.debug("Worker started")
 
     def receive = {
       case _: Int =>
         latch.countDown()
         if (id == 1) {
-          // wait for all routees to receive a message before processing
-          Await.result(latch, 1.minute)
+          if (!latch.isOpen) {
+            log.debug("Waiting for all routees to receieve a message")
+            // wait for all routees to receive a message before processing
+            Await.result(latch, 1.minute)
+            log.debug("All routees receieved a message, continuing")
+          }
         } else {
-          // wait for the first worker to process messages before also processing
-          Await.result(startOthers, 1.minute)
+          if (!startOthers.isCompleted) {
+            log.debug("Waiting for startOthers toggle")
+            // wait for the first worker to process messages before also processing
+            Await.result(startOthers, 1.minute)
+            log.debug("Continuing after wait for startOthers toggle")
+          }
         }
         sender() ! id
     }
@@ -50,6 +57,7 @@ object BalancingSpec {
 }
 
 class BalancingSpec extends AkkaSpec("""
+    akka.loglevel=debug
     akka.actor.deployment {
       /balancingPool-2 {
         router = balancing-pool
@@ -86,7 +94,7 @@ class BalancingSpec extends AkkaSpec("""
     val replies1 = receiveN(iterationCount - poolSize + 1)
     // all replies from the unblocked worker so far
     replies1.toSet should be(Set(1))
-    log.warning(lastSender.toString)
+    log.debug("worker one: [{}]", lastSender)
     expectNoMessage(1.second)
 
     // Now unblock the other workers from also making progress
@@ -96,6 +104,7 @@ class BalancingSpec extends AkkaSpec("""
     replies2.toSet should be((2 to poolSize).toSet)
     expectNoMessage(500.millis)
 
+    pool ! PoisonPill
   }
 
   "balancing pool" must {
