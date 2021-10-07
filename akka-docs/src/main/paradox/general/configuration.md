@@ -10,7 +10,7 @@ might amend:
  * @ref:[message serializers](../serialization.md)
  * @ref:[tuning of dispatchers](../typed/dispatchers.md)
 
-Akka uses the [Lightbend Config Library](https://github.com/lightbend/config), which might also be a good choice
+Akka uses the [Typesafe Config Library](https://github.com/lightbend/config), which might also be a good choice
 for the configuration of your own application or library built with or without
 Akka. This library is implemented in Java with no external dependencies;
 This is only a summary of the most important parts for more details see [the config library docs](https://github.com/lightbend/config/blob/master/README.md).
