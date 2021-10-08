@@ -48,7 +48,7 @@ class EventsByPersistenceIdSpec
     with AnyWordSpecLike {
   import EventsByPersistenceIdSpec._
 
-  implicit val classic = system.classicSystem
+  implicit val classic: akka.actor.ActorSystem = system.classicSystem
 
   val queries =
     PersistenceQuery(system).readJournalFor[PersistenceTestKitReadJournal](PersistenceTestKitReadJournal.Identifier)

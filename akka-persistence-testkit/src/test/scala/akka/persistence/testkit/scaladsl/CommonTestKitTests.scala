@@ -14,7 +14,7 @@ import akka.testkit.EventFilter
 
 trait CommonTestKitTests extends ScalaDslUtils {
 
-  lazy val testKit = new PersistenceTestKit(system)
+  final lazy val testKit: PersistenceTestKit = new PersistenceTestKit(system)
   import testKit._
 
   def specificTests(): Unit

@@ -31,7 +31,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     extends DurableStateUpdateStore[A]
     with DurableStateStoreQuery[A] {
 
-  private implicit val sys = system
+  private implicit val sys: ExtendedActorSystem = system
   private var store = Map.empty[String, Record[A]]
 
   private val (publisher, changesSource) =
@@ -76,7 +76,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       .statefulMapConcat { () =>
         var globalOffsetSeen = EarliestOffset
 
-        { record: Record[A] =>
+        { (record: Record[A]) =>
           if (record.globalOffset > globalOffsetSeen) {
             globalOffsetSeen = record.globalOffset
             record :: Nil

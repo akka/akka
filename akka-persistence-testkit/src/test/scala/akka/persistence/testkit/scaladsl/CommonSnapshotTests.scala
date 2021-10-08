@@ -15,7 +15,7 @@ import akka.testkit.EventFilter
 
 trait CommonSnapshotTests extends ScalaDslUtils {
 
-  lazy val testKit = new SnapshotTestKit(system)
+  final lazy val testKit = new SnapshotTestKit(system)
   import testKit._
 
   def specificTests(): Unit
@@ -71,7 +71,7 @@ trait CommonSnapshotTests extends ScalaDslUtils {
       expectNextPersistedType[Int](pid) should be(2)
 
       assertThrows[AssertionError] {
-        expectNextPersistedType(pid)
+        expectNextPersistedType[Any](pid)
       }
     }
 
