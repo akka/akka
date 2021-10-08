@@ -27,7 +27,7 @@ object Dependencies {
 
   val jacksonVersion = "2.11.4"
 
-  val scala212Version = "2.12.14"
+  val scala212Version = "2.12.15"
   val scala213Version = "2.13.6"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   val scala3Version = "3.1.1-RC1-bin-20210915-ea871c2-NIGHTLY"
