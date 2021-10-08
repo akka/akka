@@ -13,7 +13,7 @@ Concretely **may change** means that an API or module is in early access mode an
 
 Complete modules can be marked as **may change**, which will be stated in the module's description and in the docs.
 
-Individual public APIs can be annotated with `akka.api.annotation.ApiMayChange` to signal that it has less
+Individual public APIs can be annotated with @javadoc[ApiMayChange](akka.annotation.ApiMayChange) to signal that it has less
 guarantees than the rest of the module it lives in. For example, when while introducing "new" Java 8 APIs into
 existing stable modules, these APIs may be marked with this annotation to signal that they are not frozen yet.
 Please use such methods and classes with care, however if you see such APIs that is the best point in time to try them
