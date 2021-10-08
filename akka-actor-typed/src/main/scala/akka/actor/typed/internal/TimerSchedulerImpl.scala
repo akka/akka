@@ -145,13 +145,11 @@ import scala.concurrent.duration.FiniteDuration
   }
 
   private def cancelTimer(timer: Timer[T]): Unit = {
-    ctx.log.debug("Cancel timer [{}] with generation [{}]", timer.key, timer.generation)
     timer.task.cancel()
     timers -= timer.key
   }
 
   override def cancelAll(): Unit = {
-    ctx.log.debug("Cancel all timers")
     timers.valuesIterator.foreach { timer =>
       timer.task.cancel()
     }
