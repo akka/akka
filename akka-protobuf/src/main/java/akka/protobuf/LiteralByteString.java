@@ -45,11 +45,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * This class implements a {@link akka.protobuf.ByteString} backed by a
- * single array of bytes, contiguous in memory. It supports substring by
- * pointing to only a sub-range of the underlying byte array, meaning that a
- * substring will reference the full byte-array of the string it's made from,
- * exactly as with {@link String}.
+ * This class implements a {@link akka.protobuf.ByteString} backed by a single array of bytes,
+ * contiguous in memory. It supports substring by pointing to only a sub-range of the underlying
+ * byte array, meaning that a substring will reference the full byte-array of the string it's made
+ * from, exactly as with {@link String}.
  *
  * @author carlanton@google.com (Carl Haverl)
  */
@@ -58,8 +57,7 @@ class LiteralByteString extends ByteString {
   protected final byte[] bytes;
 
   /**
-   * Creates a {@code LiteralByteString} backed by the given array, without
-   * copying.
+   * Creates a {@code LiteralByteString} backed by the given array, without copying.
    *
    * @param bytes array to wrap
    */
@@ -86,26 +84,22 @@ class LiteralByteString extends ByteString {
   @Override
   public ByteString substring(int beginIndex, int endIndex) {
     if (beginIndex < 0) {
-      throw new IndexOutOfBoundsException(
-          "Beginning index: " + beginIndex + " < 0");
+      throw new IndexOutOfBoundsException("Beginning index: " + beginIndex + " < 0");
     }
     if (endIndex > size()) {
-      throw new IndexOutOfBoundsException("End index: " + endIndex + " > " +
-          size());
+      throw new IndexOutOfBoundsException("End index: " + endIndex + " > " + size());
     }
     int substringLength = endIndex - beginIndex;
     if (substringLength < 0) {
       throw new IndexOutOfBoundsException(
-          "Beginning index larger than ending index: " + beginIndex + ", "
-              + endIndex);
+          "Beginning index larger than ending index: " + beginIndex + ", " + endIndex);
     }
 
     ByteString result;
     if (substringLength == 0) {
       result = ByteString.EMPTY;
     } else {
-      result = new BoundedByteString(bytes, getOffsetIntoBytes() + beginIndex,
-          substringLength);
+      result = new BoundedByteString(bytes, getOffsetIntoBytes() + beginIndex, substringLength);
     }
     return result;
   }
@@ -114,8 +108,8 @@ class LiteralByteString extends ByteString {
   // ByteString -> byte[]
 
   @Override
-  protected void copyToInternal(byte[] target, int sourceOffset, 
-      int targetOffset, int numberToCopy) {
+  protected void copyToInternal(
+      byte[] target, int sourceOffset, int targetOffset, int numberToCopy) {
     // Optimized form, not for subclasses, since we don't call
     // getOffsetIntoBytes() or check the 'numberToCopy' parameter.
     System.arraycopy(bytes, sourceOffset, target, targetOffset, numberToCopy);
@@ -123,13 +117,12 @@ class LiteralByteString extends ByteString {
 
   @Override
   public void copyTo(ByteBuffer target) {
-    target.put(bytes, getOffsetIntoBytes(), size());  // Copies bytes
+    target.put(bytes, getOffsetIntoBytes(), size()); // Copies bytes
   }
 
   @Override
   public ByteBuffer asReadOnlyByteBuffer() {
-    ByteBuffer byteBuffer =
-        ByteBuffer.wrap(bytes, getOffsetIntoBytes(), size());
+    ByteBuffer byteBuffer = ByteBuffer.wrap(bytes, getOffsetIntoBytes(), size());
     return byteBuffer.asReadOnlyBuffer();
   }
 
@@ -139,16 +132,15 @@ class LiteralByteString extends ByteString {
     List<ByteBuffer> result = new ArrayList<ByteBuffer>(1);
     result.add(asReadOnlyByteBuffer());
     return result;
- }
+  }
 
- @Override
+  @Override
   public void writeTo(OutputStream outputStream) throws IOException {
     outputStream.write(toByteArray());
   }
 
   @Override
-  public String toString(String charsetName)
-      throws UnsupportedEncodingException {
+  public String toString(String charsetName) throws UnsupportedEncodingException {
     return new String(bytes, getOffsetIntoBytes(), size(), charsetName);
   }
 
@@ -192,37 +184,34 @@ class LiteralByteString extends ByteString {
       return other.equals(this);
     } else {
       throw new IllegalArgumentException(
-          "Has a new type of ByteString been created? Found "
-              + other.getClass());
+          "Has a new type of ByteString been created? Found " + other.getClass());
     }
   }
 
   /**
-   * Check equality of the substring of given length of this object starting at
-   * zero with another {@code LiteralByteString} substring starting at offset.
+   * Check equality of the substring of given length of this object starting at zero with another
+   * {@code LiteralByteString} substring starting at offset.
    *
-   * @param other  what to compare a substring in
+   * @param other what to compare a substring in
    * @param offset offset into other
    * @param length number of bytes to compare
    * @return true for equality of substrings, else false.
    */
   boolean equalsRange(LiteralByteString other, int offset, int length) {
     if (length > other.size()) {
-      throw new IllegalArgumentException(
-          "Length too large: " + length + size());
+      throw new IllegalArgumentException("Length too large: " + length + size());
     }
     if (offset + length > other.size()) {
       throw new IllegalArgumentException(
-          "Ran off end of other: " + offset + ", " + length + ", " +
-              other.size());
+          "Ran off end of other: " + offset + ", " + length + ", " + other.size());
     }
 
     byte[] thisBytes = bytes;
     byte[] otherBytes = other.bytes;
     int thisLimit = getOffsetIntoBytes() + length;
-    for (int thisIndex = getOffsetIntoBytes(), otherIndex =
-        other.getOffsetIntoBytes() + offset;
-        (thisIndex < thisLimit); ++thisIndex, ++otherIndex) {
+    for (int thisIndex = getOffsetIntoBytes(), otherIndex = other.getOffsetIntoBytes() + offset;
+        (thisIndex < thisLimit);
+        ++thisIndex, ++otherIndex) {
       if (thisBytes[thisIndex] != otherBytes[otherIndex]) {
         return false;
       }
@@ -231,15 +220,13 @@ class LiteralByteString extends ByteString {
   }
 
   /**
-   * Cached hash value.  Intentionally accessed via a data race, which
-   * is safe because of the Java Memory Model's "no out-of-thin-air values"
-   * guarantees for ints.
+   * Cached hash value. Intentionally accessed via a data race, which is safe because of the Java
+   * Memory Model's "no out-of-thin-air values" guarantees for ints.
    */
   private int hash = 0;
 
   /**
-   * Compute the hashCode using the traditional algorithm from {@link
-   * ByteString}.
+   * Compute the hashCode using the traditional algorithm from {@link ByteString}.
    *
    * @return hashCode value
    */
@@ -266,8 +253,7 @@ class LiteralByteString extends ByteString {
   @Override
   protected int partialHash(int h, int offset, int length) {
     byte[] thisBytes = bytes;
-    for (int i = getOffsetIntoBytes() + offset, limit = i + length; i < limit;
-        i++) {
+    for (int i = getOffsetIntoBytes() + offset, limit = i + length; i < limit; i++) {
       h = h * 31 + thisBytes[i];
     }
     return h;
@@ -278,16 +264,14 @@ class LiteralByteString extends ByteString {
 
   @Override
   public InputStream newInput() {
-    return new ByteArrayInputStream(bytes, getOffsetIntoBytes(),
-        size());  // No copy
+    return new ByteArrayInputStream(bytes, getOffsetIntoBytes(), size()); // No copy
   }
 
   @Override
   public CodedInputStream newCodedInput() {
     // We trust CodedInputStream not to modify the bytes, or to give anyone
     // else access to them.
-    return CodedInputStream
-        .newInstance(bytes, getOffsetIntoBytes(), size());  // No copy
+    return CodedInputStream.newInstance(bytes, getOffsetIntoBytes(), size()); // No copy
   }
 
   // =================================================================

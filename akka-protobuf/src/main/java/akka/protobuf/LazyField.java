@@ -39,29 +39,29 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 /**
- * LazyField encapsulates the logic of lazily parsing message fields. It stores
- * the message in a ByteString initially and then parse it on-demand.
+ * LazyField encapsulates the logic of lazily parsing message fields. It stores the message in a
+ * ByteString initially and then parse it on-demand.
  *
- * LazyField is thread-compatible e.g. concurrent read are safe, however,
- * synchronizations are needed under read/write situations.
+ * <p>LazyField is thread-compatible e.g. concurrent read are safe, however, synchronizations are
+ * needed under read/write situations.
  *
- * Now LazyField is only used to lazily load MessageSet.
- * TODO(xiangl): Use LazyField to lazily load all messages.
+ * <p>Now LazyField is only used to lazily load MessageSet. TODO(xiangl): Use LazyField to lazily
+ * load all messages.
  *
  * @author xiangl@google.com (Xiang Li)
  */
 class LazyField {
 
-  final private MessageLite defaultInstance;
-  final private ExtensionRegistryLite extensionRegistry;
+  private final MessageLite defaultInstance;
+  private final ExtensionRegistryLite extensionRegistry;
 
   // Mutable because it is initialized lazily.
   private ByteString bytes;
   private volatile MessageLite value;
   private volatile boolean isDirty = false;
 
-  public LazyField(MessageLite defaultInstance,
-      ExtensionRegistryLite extensionRegistry, ByteString bytes) {
+  public LazyField(
+      MessageLite defaultInstance, ExtensionRegistryLite extensionRegistry, ByteString bytes) {
     this.defaultInstance = defaultInstance;
     this.extensionRegistry = extensionRegistry;
     this.bytes = bytes;
@@ -73,8 +73,8 @@ class LazyField {
   }
 
   /**
-   * LazyField is not thread-safe for write access. Synchronizations are needed
-   * under read/write situations.
+   * LazyField is not thread-safe for write access. Synchronizations are needed under read/write
+   * situations.
    */
   public MessageLite setValue(MessageLite value) {
     MessageLite originalValue = this.value;
@@ -85,9 +85,8 @@ class LazyField {
   }
 
   /**
-   * Due to the optional field can be duplicated at the end of serialized
-   * bytes, which will make the serialized size changed after LazyField
-   * parsed. Be careful when using this method.
+   * Due to the optional field can be duplicated at the end of serialized bytes, which will make the
+   * serialized size changed after LazyField parsed. Be careful when using this method.
    */
   public int getSerializedSize() {
     if (isDirty) {
@@ -138,8 +137,7 @@ class LazyField {
       }
       try {
         if (bytes != null) {
-          value = defaultInstance.getParserForType()
-              .parseFrom(bytes, extensionRegistry);
+          value = defaultInstance.getParserForType().parseFrom(bytes, extensionRegistry);
         }
       } catch (IOException e) {
         // TODO(xiangl): Refactory the API to support the exception thrown from
@@ -151,8 +149,8 @@ class LazyField {
   // ====================================================
 
   /**
-   * LazyEntry and LazyIterator are used to encapsulate the LazyField, when
-   * users iterate all fields from FieldSet.
+   * LazyEntry and LazyIterator are used to encapsulate the LazyField, when users iterate all fields
+   * from FieldSet.
    */
   static class LazyEntry<K> implements Entry<K, Object> {
     private Entry<K, LazyField> entry;
@@ -181,7 +179,7 @@ class LazyField {
       if (!(value instanceof MessageLite)) {
         throw new IllegalArgumentException(
             "LazyField now only used for MessageSet, "
-            + "and the value of MessageSet must be an instance of MessageLite");
+                + "and the value of MessageSet must be an instance of MessageLite");
       }
       return entry.getValue().setValue((MessageLite) value);
     }

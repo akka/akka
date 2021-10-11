@@ -42,35 +42,27 @@ import java.util.List;
 /**
  * Reads and decodes protocol message fields.
  *
- * This class contains two kinds of methods:  methods that read specific
- * protocol message constructs and field types (e.g. {@link #readTag()} and
- * {@link #readInt32()}) and methods that read low-level values (e.g.
- * {@link #readRawVarint32()} and {@link #readRawBytes}).  If you are reading
- * encoded protocol messages, you should use the former methods, but if you are
- * reading some other format of your own design, use the latter.
+ * <p>This class contains two kinds of methods: methods that read specific protocol message
+ * constructs and field types (e.g. {@link #readTag()} and {@link #readInt32()}) and methods that
+ * read low-level values (e.g. {@link #readRawVarint32()} and {@link #readRawBytes}). If you are
+ * reading encoded protocol messages, you should use the former methods, but if you are reading some
+ * other format of your own design, use the latter.
  *
  * @author kenton@google.com Kenton Varda
  */
 public final class CodedInputStream {
-  /**
-   * Create a new CodedInputStream wrapping the given InputStream.
-   */
+  /** Create a new CodedInputStream wrapping the given InputStream. */
   public static CodedInputStream newInstance(final InputStream input) {
     return new CodedInputStream(input);
   }
 
-  /**
-   * Create a new CodedInputStream wrapping the given byte array.
-   */
+  /** Create a new CodedInputStream wrapping the given byte array. */
   public static CodedInputStream newInstance(final byte[] buf) {
     return newInstance(buf, 0, buf.length);
   }
 
-  /**
-   * Create a new CodedInputStream wrapping the given byte array slice.
-   */
-  public static CodedInputStream newInstance(final byte[] buf, final int off,
-                                             final int len) {
+  /** Create a new CodedInputStream wrapping the given byte array slice. */
+  public static CodedInputStream newInstance(final byte[] buf, final int off, final int len) {
     CodedInputStream result = new CodedInputStream(buf, off, len);
     try {
       // Some uses of CodedInputStream can be more efficient if they know
@@ -95,9 +87,9 @@ public final class CodedInputStream {
   // -----------------------------------------------------------------
 
   /**
-   * Attempt to read a field tag, returning zero if we have reached EOF.
-   * Protocol message parsers use this to read tags, since a protocol message
-   * may legally end wherever a tag occurs, and zero is not a valid tag number.
+   * Attempt to read a field tag, returning zero if we have reached EOF. Protocol message parsers
+   * use this to read tags, since a protocol message may legally end wherever a tag occurs, and zero
+   * is not a valid tag number.
    */
   public int readTag() throws IOException {
     if (isAtEnd()) {
@@ -115,15 +107,12 @@ public final class CodedInputStream {
   }
 
   /**
-   * Verifies that the last call to readTag() returned the given tag value.
-   * This is used to verify that a nested group ended with the correct
-   * end tag.
+   * Verifies that the last call to readTag() returned the given tag value. This is used to verify
+   * that a nested group ended with the correct end tag.
    *
-   * @throws InvalidProtocolBufferException {@code value} does not match the
-   *                                        last tag.
+   * @throws InvalidProtocolBufferException {@code value} does not match the last tag.
    */
-  public void checkLastTagWas(final int value)
-                              throws InvalidProtocolBufferException {
+  public void checkLastTagWas(final int value) throws InvalidProtocolBufferException {
     if (lastTag != value) {
       throw InvalidProtocolBufferException.invalidEndTag();
     }
@@ -132,8 +121,8 @@ public final class CodedInputStream {
   /**
    * Reads and discards a single field, given its tag value.
    *
-   * @return {@code false} if the tag is an endgroup tag, in which case
-   *         nothing is skipped.  Otherwise, returns {@code true}.
+   * @return {@code false} if the tag is an endgroup tag, in which case nothing is skipped.
+   *     Otherwise, returns {@code true}.
    */
   public boolean skipField(final int tag) throws IOException {
     switch (WireFormat.getTagWireType(tag)) {
@@ -149,8 +138,7 @@ public final class CodedInputStream {
       case WireFormat.WIRETYPE_START_GROUP:
         skipMessage();
         checkLastTagWas(
-          WireFormat.makeTag(WireFormat.getTagFieldNumber(tag),
-                             WireFormat.WIRETYPE_END_GROUP));
+            WireFormat.makeTag(WireFormat.getTagFieldNumber(tag), WireFormat.WIRETYPE_END_GROUP));
         return true;
       case WireFormat.WIRETYPE_END_GROUP:
         return false;
@@ -163,8 +151,8 @@ public final class CodedInputStream {
   }
 
   /**
-   * Reads and discards an entire message.  This will read either until EOF
-   * or until an endgroup tag, whichever comes first.
+   * Reads and discards an entire message. This will read either until EOF or until an endgroup tag,
+   * whichever comes first.
    */
   public void skipMessage() throws IOException {
     while (true) {
@@ -233,47 +221,43 @@ public final class CodedInputStream {
   }
 
   /** Read a {@code group} field value from the stream. */
-  public void readGroup(final int fieldNumber,
-                        final MessageLite.Builder builder,
-                        final ExtensionRegistryLite extensionRegistry)
-      throws IOException {
-    if (recursionDepth >= recursionLimit) {
-      throw InvalidProtocolBufferException.recursionLimitExceeded();
-    }
-    ++recursionDepth;
-    builder.mergeFrom(this, extensionRegistry);
-    checkLastTagWas(
-      WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
-    --recursionDepth;
-  }
-
-  /** Read a {@code group} field value from the stream. */
-  public <T extends MessageLite> T readGroup(
+  public void readGroup(
       final int fieldNumber,
-      final Parser<T> parser,
+      final MessageLite.Builder builder,
       final ExtensionRegistryLite extensionRegistry)
       throws IOException {
     if (recursionDepth >= recursionLimit) {
       throw InvalidProtocolBufferException.recursionLimitExceeded();
     }
     ++recursionDepth;
+    builder.mergeFrom(this, extensionRegistry);
+    checkLastTagWas(WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
+    --recursionDepth;
+  }
+
+  /** Read a {@code group} field value from the stream. */
+  public <T extends MessageLite> T readGroup(
+      final int fieldNumber, final Parser<T> parser, final ExtensionRegistryLite extensionRegistry)
+      throws IOException {
+    if (recursionDepth >= recursionLimit) {
+      throw InvalidProtocolBufferException.recursionLimitExceeded();
+    }
+    ++recursionDepth;
     T result = parser.parsePartialFrom(this, extensionRegistry);
-    checkLastTagWas(
-      WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
+    checkLastTagWas(WireFormat.makeTag(fieldNumber, WireFormat.WIRETYPE_END_GROUP));
     --recursionDepth;
     return result;
   }
 
   /**
-   * Reads a {@code group} field value from the stream and merges it into the
-   * given {@link UnknownFieldSet}.
+   * Reads a {@code group} field value from the stream and merges it into the given {@link
+   * UnknownFieldSet}.
    *
-   * @deprecated UnknownFieldSet.Builder now implements MessageLite.Builder, so
-   *             you can just call {@link #readGroup}.
+   * @deprecated UnknownFieldSet.Builder now implements MessageLite.Builder, so you can just call
+   *     {@link #readGroup}.
    */
   @Deprecated
-  public void readUnknownGroup(final int fieldNumber,
-                               final MessageLite.Builder builder)
+  public void readUnknownGroup(final int fieldNumber, final MessageLite.Builder builder)
       throws IOException {
     // We know that UnknownFieldSet will ignore any ExtensionRegistry so it
     // is safe to pass null here.  (We can't call
@@ -284,8 +268,8 @@ public final class CodedInputStream {
   }
 
   /** Read an embedded message field value from the stream. */
-  public void readMessage(final MessageLite.Builder builder,
-                          final ExtensionRegistryLite extensionRegistry)
+  public void readMessage(
+      final MessageLite.Builder builder, final ExtensionRegistryLite extensionRegistry)
       throws IOException {
     final int length = readRawVarint32();
     if (recursionDepth >= recursionLimit) {
@@ -301,9 +285,7 @@ public final class CodedInputStream {
 
   /** Read an embedded message field value from the stream. */
   public <T extends MessageLite> T readMessage(
-      final Parser<T> parser,
-      final ExtensionRegistryLite extensionRegistry)
-      throws IOException {
+      final Parser<T> parser, final ExtensionRegistryLite extensionRegistry) throws IOException {
     int length = readRawVarint32();
     if (recursionDepth >= recursionLimit) {
       throw InvalidProtocolBufferException.recursionLimitExceeded();
@@ -340,8 +322,8 @@ public final class CodedInputStream {
   }
 
   /**
-   * Read an enum field value from the stream.  Caller is responsible
-   * for converting the numeric value to an actual enum.
+   * Read an enum field value from the stream. Caller is responsible for converting the numeric
+   * value to an actual enum.
    */
   public int readEnum() throws IOException {
     return readRawVarint32();
@@ -369,10 +351,7 @@ public final class CodedInputStream {
 
   // =================================================================
 
-  /**
-   * Read a raw Varint from the stream.  If larger than 32 bits, discard the
-   * upper bits.
-   */
+  /** Read a raw Varint from the stream. If larger than 32 bits, discard the upper bits. */
   public int readRawVarint32() throws IOException {
     byte tmp = readRawByte();
     if (tmp >= 0) {
@@ -408,11 +387,10 @@ public final class CodedInputStream {
   }
 
   /**
-   * Reads a varint from the input one byte at a time, so that it does not
-   * read any bytes after the end of the varint.  If you simply wrapped the
-   * stream in a CodedInputStream and used {@link #readRawVarint32(InputStream)}
-   * then you would probably end up reading past the end of the varint since
-   * CodedInputStream buffers its input.
+   * Reads a varint from the input one byte at a time, so that it does not read any bytes after the
+   * end of the varint. If you simply wrapped the stream in a CodedInputStream and used {@link
+   * #readRawVarint32(InputStream)} then you would probably end up reading past the end of the
+   * varint since CodedInputStream buffers its input.
    */
   static int readRawVarint32(final InputStream input) throws IOException {
     final int firstByte = input.read();
@@ -423,12 +401,11 @@ public final class CodedInputStream {
   }
 
   /**
-   * Like {@link #readRawVarint32(InputStream)}, but expects that the caller
-   * has already read one byte.  This allows the caller to determine if EOF
-   * has been reached before attempting to read.
+   * Like {@link #readRawVarint32(InputStream)}, but expects that the caller has already read one
+   * byte. This allows the caller to determine if EOF has been reached before attempting to read.
    */
-  public static int readRawVarint32(
-      final int firstByte, final InputStream input) throws IOException {
+  public static int readRawVarint32(final int firstByte, final InputStream input)
+      throws IOException {
     if ((firstByte & 0x80) == 0) {
       return firstByte;
     }
@@ -464,7 +441,7 @@ public final class CodedInputStream {
     long result = 0;
     while (shift < 64) {
       final byte b = readRawByte();
-      result |= (long)(b & 0x7F) << shift;
+      result |= (long) (b & 0x7F) << shift;
       if ((b & 0x80) == 0) {
         return result;
       }
@@ -479,10 +456,10 @@ public final class CodedInputStream {
     final byte b2 = readRawByte();
     final byte b3 = readRawByte();
     final byte b4 = readRawByte();
-    return (((int)b1 & 0xff)      ) |
-           (((int)b2 & 0xff) <<  8) |
-           (((int)b3 & 0xff) << 16) |
-           (((int)b4 & 0xff) << 24);
+    return (((int) b1 & 0xff))
+        | (((int) b2 & 0xff) << 8)
+        | (((int) b3 & 0xff) << 16)
+        | (((int) b4 & 0xff) << 24);
   }
 
   /** Read a 64-bit little-endian integer from the stream. */
@@ -495,24 +472,23 @@ public final class CodedInputStream {
     final byte b6 = readRawByte();
     final byte b7 = readRawByte();
     final byte b8 = readRawByte();
-    return (((long)b1 & 0xff)      ) |
-           (((long)b2 & 0xff) <<  8) |
-           (((long)b3 & 0xff) << 16) |
-           (((long)b4 & 0xff) << 24) |
-           (((long)b5 & 0xff) << 32) |
-           (((long)b6 & 0xff) << 40) |
-           (((long)b7 & 0xff) << 48) |
-           (((long)b8 & 0xff) << 56);
+    return (((long) b1 & 0xff))
+        | (((long) b2 & 0xff) << 8)
+        | (((long) b3 & 0xff) << 16)
+        | (((long) b4 & 0xff) << 24)
+        | (((long) b5 & 0xff) << 32)
+        | (((long) b6 & 0xff) << 40)
+        | (((long) b7 & 0xff) << 48)
+        | (((long) b8 & 0xff) << 56);
   }
 
   /**
-   * Decode a ZigZag-encoded 32-bit value.  ZigZag encodes signed integers
-   * into values that can be efficiently encoded with varint.  (Otherwise,
-   * negative values must be sign-extended to 64 bits to be varint encoded,
-   * thus always taking 10 bytes on the wire.)
+   * Decode a ZigZag-encoded 32-bit value. ZigZag encodes signed integers into values that can be
+   * efficiently encoded with varint. (Otherwise, negative values must be sign-extended to 64 bits
+   * to be varint encoded, thus always taking 10 bytes on the wire.)
    *
-   * @param n An unsigned 32-bit integer, stored in a signed int because
-   *          Java has no explicit unsigned support.
+   * @param n An unsigned 32-bit integer, stored in a signed int because Java has no explicit
+   *     unsigned support.
    * @return A signed 32-bit integer.
    */
   public static int decodeZigZag32(final int n) {
@@ -520,13 +496,12 @@ public final class CodedInputStream {
   }
 
   /**
-   * Decode a ZigZag-encoded 64-bit value.  ZigZag encodes signed integers
-   * into values that can be efficiently encoded with varint.  (Otherwise,
-   * negative values must be sign-extended to 64 bits to be varint encoded,
-   * thus always taking 10 bytes on the wire.)
+   * Decode a ZigZag-encoded 64-bit value. ZigZag encodes signed integers into values that can be
+   * efficiently encoded with varint. (Otherwise, negative values must be sign-extended to 64 bits
+   * to be varint encoded, thus always taking 10 bytes on the wire.)
    *
-   * @param n An unsigned 64-bit integer, stored in a signed int because
-   *          Java has no explicit unsigned support.
+   * @param n An unsigned 64-bit integer, stored in a signed int because Java has no explicit
+   *     unsigned support.
    * @return A signed 64-bit integer.
    */
   public static long decodeZigZag64(final long n) {
@@ -543,11 +518,10 @@ public final class CodedInputStream {
   private int lastTag;
 
   /**
-   * The total number of bytes read before the current buffer.  The total
-   * bytes read up to the current position can be computed as
-   * {@code totalBytesRetired + bufferPos}.  This value may be negative if
-   * reading started in the middle of the current buffer (e.g. if the
-   * constructor that takes a byte array and an offset was used).
+   * The total number of bytes read before the current buffer. The total bytes read up to the
+   * current position can be computed as {@code totalBytesRetired + bufferPos}. This value may be
+   * negative if reading started in the middle of the current buffer (e.g. if the constructor that
+   * takes a byte array and an offset was used).
    */
   private int totalBytesRetired;
 
@@ -556,13 +530,14 @@ public final class CodedInputStream {
 
   /** See setRecursionLimit() */
   private int recursionDepth;
+
   private int recursionLimit = DEFAULT_RECURSION_LIMIT;
 
   /** See setSizeLimit() */
   private int sizeLimit = DEFAULT_SIZE_LIMIT;
 
   private static final int DEFAULT_RECURSION_LIMIT = 64;
-  private static final int DEFAULT_SIZE_LIMIT = 64 << 20;  // 64MB
+  private static final int DEFAULT_SIZE_LIMIT = 64 << 20; // 64MB
   private static final int BUFFER_SIZE = 4096;
 
   private CodedInputStream(final byte[] buffer, final int off, final int len) {
@@ -582,16 +557,15 @@ public final class CodedInputStream {
   }
 
   /**
-   * Set the maximum message recursion depth.  In order to prevent malicious
-   * messages from causing stack overflows, {@code CodedInputStream} limits
-   * how deeply messages may be nested.  The default limit is 64.
+   * Set the maximum message recursion depth. In order to prevent malicious messages from causing
+   * stack overflows, {@code CodedInputStream} limits how deeply messages may be nested. The default
+   * limit is 64.
    *
    * @return the old limit.
    */
   public int setRecursionLimit(final int limit) {
     if (limit < 0) {
-      throw new IllegalArgumentException(
-        "Recursion limit cannot be negative: " + limit);
+      throw new IllegalArgumentException("Recursion limit cannot be negative: " + limit);
     }
     final int oldLimit = recursionLimit;
     recursionLimit = limit;
@@ -599,49 +573,41 @@ public final class CodedInputStream {
   }
 
   /**
-   * Set the maximum message size.  In order to prevent malicious
-   * messages from exhausting memory or causing integer overflows,
-   * {@code CodedInputStream} limits how large a message may be.
-   * The default limit is 64MB.  You should set this limit as small
-   * as you can without harming your app's functionality.  Note that
-   * size limits only apply when reading from an {@code InputStream}, not
-   * when constructed around a raw byte array (nor with
-   * {@link ByteString#newCodedInput}).
-   * <p>
-   * If you want to read several messages from a single CodedInputStream, you
-   * could call {@link #resetSizeCounter()} after each one to avoid hitting the
-   * size limit.
+   * Set the maximum message size. In order to prevent malicious messages from exhausting memory or
+   * causing integer overflows, {@code CodedInputStream} limits how large a message may be. The
+   * default limit is 64MB. You should set this limit as small as you can without harming your app's
+   * functionality. Note that size limits only apply when reading from an {@code InputStream}, not
+   * when constructed around a raw byte array (nor with {@link ByteString#newCodedInput}).
+   *
+   * <p>If you want to read several messages from a single CodedInputStream, you could call {@link
+   * #resetSizeCounter()} after each one to avoid hitting the size limit.
    *
    * @return the old limit.
    */
   public int setSizeLimit(final int limit) {
     if (limit < 0) {
-      throw new IllegalArgumentException(
-        "Size limit cannot be negative: " + limit);
+      throw new IllegalArgumentException("Size limit cannot be negative: " + limit);
     }
     final int oldLimit = sizeLimit;
     sizeLimit = limit;
     return oldLimit;
   }
 
-  /**
-   * Resets the current size counter to zero (see {@link #setSizeLimit(int)}).
-   */
+  /** Resets the current size counter to zero (see {@link #setSizeLimit(int)}). */
   public void resetSizeCounter() {
     totalBytesRetired = -bufferPos;
   }
 
   /**
-   * Sets {@code currentLimit} to (current position) + {@code byteLimit}.  This
-   * is called when descending into a length-delimited embedded message.
+   * Sets {@code currentLimit} to (current position) + {@code byteLimit}. This is called when
+   * descending into a length-delimited embedded message.
    *
-   * <p>Note that {@code pushLimit()} does NOT affect how many bytes the
-   * {@code CodedInputStream} reads from an underlying {@code InputStream} when
-   * refreshing its buffer.  If you need to prevent reading past a certain
-   * point in the underlying {@code InputStream} (e.g. because you expect it to
-   * contain more data after the end of the message which you need to handle
-   * differently) then you must place a wrapper around your {@code InputStream}
-   * which limits the amount of data that can be read from it.
+   * <p>Note that {@code pushLimit()} does NOT affect how many bytes the {@code CodedInputStream}
+   * reads from an underlying {@code InputStream} when refreshing its buffer. If you need to prevent
+   * reading past a certain point in the underlying {@code InputStream} (e.g. because you expect it
+   * to contain more data after the end of the message which you need to handle differently) then
+   * you must place a wrapper around your {@code InputStream} which limits the amount of data that
+   * can be read from it.
    *
    * @return the old limit.
    */
@@ -684,8 +650,8 @@ public final class CodedInputStream {
   }
 
   /**
-   * Returns the number of bytes to be read before the current limit.
-   * If no limit is set, returns -1.
+   * Returns the number of bytes to be read before the current limit. If no limit is set, returns
+   * -1.
    */
   public int getBytesUntilLimit() {
     if (currentLimit == Integer.MAX_VALUE) {
@@ -697,33 +663,31 @@ public final class CodedInputStream {
   }
 
   /**
-   * Returns true if the stream has reached the end of the input.  This is the
-   * case if either the end of the underlying input source has been reached or
-   * if the stream has reached a limit created using {@link #pushLimit(int)}.
+   * Returns true if the stream has reached the end of the input. This is the case if either the end
+   * of the underlying input source has been reached or if the stream has reached a limit created
+   * using {@link #pushLimit(int)}.
    */
   public boolean isAtEnd() throws IOException {
     return bufferPos == bufferSize && !refillBuffer(false);
   }
 
   /**
-   * The total bytes read up to the current position. Calling
-   * {@link #resetSizeCounter()} resets this value to zero.
+   * The total bytes read up to the current position. Calling {@link #resetSizeCounter()} resets
+   * this value to zero.
    */
   public int getTotalBytesRead() {
-      return totalBytesRetired + bufferPos;
+    return totalBytesRetired + bufferPos;
   }
 
   /**
-   * Called with {@code this.buffer} is empty to read more bytes from the
-   * input.  If {@code mustSucceed} is true, refillBuffer() guarantees that
-   * either there will be at least one byte in the buffer when it returns
-   * or it will throw an exception.  If {@code mustSucceed} is false,
+   * Called with {@code this.buffer} is empty to read more bytes from the input. If {@code
+   * mustSucceed} is true, refillBuffer() guarantees that either there will be at least one byte in
+   * the buffer when it returns or it will throw an exception. If {@code mustSucceed} is false,
    * refillBuffer() returns false if no more bytes were available.
    */
   private boolean refillBuffer(final boolean mustSucceed) throws IOException {
     if (bufferPos < bufferSize) {
-      throw new IllegalStateException(
-        "refillBuffer() called when buffer wasn't empty.");
+      throw new IllegalStateException("refillBuffer() called when buffer wasn't empty.");
     }
 
     if (totalBytesRetired + bufferSize == currentLimit) {
@@ -741,8 +705,9 @@ public final class CodedInputStream {
     bufferSize = (input == null) ? -1 : input.read(buffer);
     if (bufferSize == 0 || bufferSize < -1) {
       throw new IllegalStateException(
-          "InputStream#read(byte[]) returned invalid result: " + bufferSize +
-          "\nThe InputStream implementation is buggy.");
+          "InputStream#read(byte[]) returned invalid result: "
+              + bufferSize
+              + "\nThe InputStream implementation is buggy.");
     }
     if (bufferSize == -1) {
       bufferSize = 0;
@@ -753,8 +718,7 @@ public final class CodedInputStream {
       }
     } else {
       recomputeBufferSizeAfterLimit();
-      final int totalBytesRead =
-        totalBytesRetired + bufferSize + bufferSizeAfterLimit;
+      final int totalBytesRead = totalBytesRetired + bufferSize + bufferSizeAfterLimit;
       if (totalBytesRead > sizeLimit || totalBytesRead < 0) {
         throw InvalidProtocolBufferException.sizeLimitExceeded();
       }
@@ -765,8 +729,7 @@ public final class CodedInputStream {
   /**
    * Read one byte from the input.
    *
-   * @throws InvalidProtocolBufferException The end of the stream or the current
-   *                                        limit was reached.
+   * @throws InvalidProtocolBufferException The end of the stream or the current limit was reached.
    */
   public byte readRawByte() throws IOException {
     if (bufferPos == bufferSize) {
@@ -778,8 +741,7 @@ public final class CodedInputStream {
   /**
    * Read a fixed size of bytes from the input.
    *
-   * @throws InvalidProtocolBufferException The end of the stream or the current
-   *                                        limit was reached.
+   * @throws InvalidProtocolBufferException The end of the stream or the current limit was reached.
    */
   public byte[] readRawBytes(final int size) throws IOException {
     if (size < 0) {
@@ -852,8 +814,7 @@ public final class CodedInputStream {
         final byte[] chunk = new byte[Math.min(sizeLeft, BUFFER_SIZE)];
         int pos = 0;
         while (pos < chunk.length) {
-          final int n = (input == null) ? -1 :
-            input.read(chunk, pos, chunk.length - pos);
+          final int n = (input == null) ? -1 : input.read(chunk, pos, chunk.length - pos);
           if (n == -1) {
             throw InvalidProtocolBufferException.truncatedMessage();
           }
@@ -885,8 +846,7 @@ public final class CodedInputStream {
   /**
    * Reads and discards {@code size} bytes.
    *
-   * @throws InvalidProtocolBufferException The end of the stream or the current
-   *                                        limit was reached.
+   * @throws InvalidProtocolBufferException The end of the stream or the current limit was reached.
    */
   public void skipRawBytes(final int size) throws IOException {
     if (size < 0) {
