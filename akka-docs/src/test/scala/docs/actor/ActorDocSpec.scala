@@ -702,7 +702,7 @@ class ActorDocSpec extends AkkaSpec("""
       case ref: ActorRef =>
         //#reply-with-sender
         sender().tell("reply", context.parent) // replies will go back to parent
-        sender().!("reply")(context.parent) // alternative syntax (beware of the parents!)
+        sender().!("reply")(context.parent) // alternative syntax
       //#reply-with-sender
       case x =>
         //#reply-without-sender
