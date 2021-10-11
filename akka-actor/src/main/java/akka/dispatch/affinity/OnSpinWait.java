@@ -9,28 +9,27 @@ import java.lang.invoke.MethodHandles;
 import akka.annotation.InternalApi;
 import static java.lang.invoke.MethodType.methodType;
 
-/** INTERNAL API */
+/**
+ * INTERNAL API
+ */
 @InternalApi
 final class OnSpinWait {
-  private static final MethodHandle handle;
+    private final static MethodHandle handle;
 
-  public static final void spinWait() throws Throwable {
-    handle
-        .invoke(); // Will be inlined as an invokeExact since the callsite matches the MH definition
-                   // of () -> void
-  }
-
-  static {
-    final MethodHandle noop =
-        MethodHandles.constant(Object.class, null).asType(methodType(Void.TYPE));
-    MethodHandle impl;
-    try {
-      impl = MethodHandles.lookup().findStatic(Thread.class, "onSpinWait", methodType(Void.TYPE));
-    } catch (NoSuchMethodException nsme) {
-      impl = noop;
-    } catch (IllegalAccessException iae) {
-      impl = noop;
+    public final static void spinWait() throws Throwable {
+        handle.invoke(); // Will be inlined as an invokeExact since the callsite matches the MH definition of () -> void
     }
-    handle = impl;
+
+    static {
+        final MethodHandle noop = MethodHandles.constant(Object.class, null).asType(methodType(Void.TYPE));
+        MethodHandle impl;
+        try {
+          impl = MethodHandles.lookup().findStatic(Thread.class, "onSpinWait", methodType(Void.TYPE));
+        } catch (NoSuchMethodException nsme) {
+          impl = noop;
+        } catch (IllegalAccessException iae) {
+          impl = noop;
+        }
+        handle = impl;
   };
 }

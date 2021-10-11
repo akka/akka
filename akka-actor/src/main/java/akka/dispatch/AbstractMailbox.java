@@ -7,19 +7,15 @@ package akka.dispatch;
 import akka.util.Unsafe;
 
 final class AbstractMailbox {
-  static final long mailboxStatusOffset;
-  static final long systemMessageOffset;
+    final static long mailboxStatusOffset;
+    final static long systemMessageOffset;
 
-  static {
-    try {
-      mailboxStatusOffset =
-          Unsafe.instance.objectFieldOffset(
-              Mailbox.class.getDeclaredField("_statusDoNotCallMeDirectly"));
-      systemMessageOffset =
-          Unsafe.instance.objectFieldOffset(
-              Mailbox.class.getDeclaredField("_systemQueueDoNotCallMeDirectly"));
-    } catch (Throwable t) {
-      throw new ExceptionInInitializerError(t);
+    static {
+        try {
+          mailboxStatusOffset = Unsafe.instance.objectFieldOffset(Mailbox.class.getDeclaredField("_statusDoNotCallMeDirectly"));
+          systemMessageOffset = Unsafe.instance.objectFieldOffset(Mailbox.class.getDeclaredField("_systemQueueDoNotCallMeDirectly"));
+        } catch(Throwable t){
+            throw new ExceptionInInitializerError(t);
+        }
     }
-  }
 }

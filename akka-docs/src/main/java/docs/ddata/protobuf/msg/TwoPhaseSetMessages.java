@@ -9,84 +9,81 @@ package docs.ddata.protobuf.msg;
 
 public final class TwoPhaseSetMessages {
   private TwoPhaseSetMessages() {}
-
   public static void registerAllExtensions(
-      akka.protobufv3.internal.ExtensionRegistryLite registry) {}
-
-  public static void registerAllExtensions(akka.protobufv3.internal.ExtensionRegistry registry) {
-    registerAllExtensions((akka.protobufv3.internal.ExtensionRegistryLite) registry);
+      akka.protobufv3.internal.ExtensionRegistryLite registry) {
   }
 
-  public interface TwoPhaseSetOrBuilder
-      extends
+  public static void registerAllExtensions(
+      akka.protobufv3.internal.ExtensionRegistry registry) {
+    registerAllExtensions(
+        (akka.protobufv3.internal.ExtensionRegistryLite) registry);
+  }
+  public interface TwoPhaseSetOrBuilder extends
       // @@protoc_insertion_point(interface_extends:docs.ddata.TwoPhaseSet)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>repeated string adds = 1;</code>
-     *
      * @return A list containing the adds.
      */
-    java.util.List<java.lang.String> getAddsList();
+    java.util.List<java.lang.String>
+        getAddsList();
     /**
      * <code>repeated string adds = 1;</code>
-     *
      * @return The count of adds.
      */
     int getAddsCount();
     /**
      * <code>repeated string adds = 1;</code>
-     *
      * @param index The index of the element to return.
      * @return The adds at the given index.
      */
     java.lang.String getAdds(int index);
     /**
      * <code>repeated string adds = 1;</code>
-     *
      * @param index The index of the value to return.
      * @return The bytes of the adds at the given index.
      */
-    akka.protobufv3.internal.ByteString getAddsBytes(int index);
+    akka.protobufv3.internal.ByteString
+        getAddsBytes(int index);
 
     /**
      * <code>repeated string removals = 2;</code>
-     *
      * @return A list containing the removals.
      */
-    java.util.List<java.lang.String> getRemovalsList();
+    java.util.List<java.lang.String>
+        getRemovalsList();
     /**
      * <code>repeated string removals = 2;</code>
-     *
      * @return The count of removals.
      */
     int getRemovalsCount();
     /**
      * <code>repeated string removals = 2;</code>
-     *
      * @param index The index of the element to return.
      * @return The removals at the given index.
      */
     java.lang.String getRemovals(int index);
     /**
      * <code>repeated string removals = 2;</code>
-     *
      * @param index The index of the value to return.
      * @return The bytes of the removals at the given index.
      */
-    akka.protobufv3.internal.ByteString getRemovalsBytes(int index);
+    akka.protobufv3.internal.ByteString
+        getRemovalsBytes(int index);
   }
-  /** Protobuf type {@code docs.ddata.TwoPhaseSet} */
-  public static final class TwoPhaseSet extends akka.protobufv3.internal.GeneratedMessageV3
-      implements
+  /**
+   * Protobuf type {@code docs.ddata.TwoPhaseSet}
+   */
+  public  static final class TwoPhaseSet extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:docs.ddata.TwoPhaseSet)
       TwoPhaseSetOrBuilder {
-    private static final long serialVersionUID = 0L;
+  private static final long serialVersionUID = 0L;
     // Use TwoPhaseSet.newBuilder() to construct.
     private TwoPhaseSet(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
-
     private TwoPhaseSet() {
       adds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
       removals_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -100,10 +97,10 @@ public final class TwoPhaseSetMessages {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
-
     private TwoPhaseSet(
         akka.protobufv3.internal.CodedInputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -123,40 +120,38 @@ public final class TwoPhaseSetMessages {
             case 0:
               done = true;
               break;
-            case 10:
-              {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                  adds_ = new akka.protobufv3.internal.LazyStringArrayList();
-                  mutable_bitField0_ |= 0x00000001;
-                }
-                adds_.add(bs);
-                break;
+            case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
+                adds_ = new akka.protobufv3.internal.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000001;
               }
-            case 18:
-              {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                if (!((mutable_bitField0_ & 0x00000002) != 0)) {
-                  removals_ = new akka.protobufv3.internal.LazyStringArrayList();
-                  mutable_bitField0_ |= 0x00000002;
-                }
-                removals_.add(bs);
-                break;
+              adds_.add(bs);
+              break;
+            }
+            case 18: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              if (!((mutable_bitField0_ & 0x00000002) != 0)) {
+                removals_ = new akka.protobufv3.internal.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000002;
               }
-            default:
-              {
-                if (!parseUnknownField(input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
-                break;
+              removals_.add(bs);
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
               }
+              break;
+            }
           }
         }
       } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-            .setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000001) != 0)) {
           adds_ = adds_.getUnmodifiableView();
@@ -168,35 +163,31 @@ public final class TwoPhaseSetMessages {
         makeExtensionsImmutable();
       }
     }
-
-    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
-      return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-          .internal_static_docs_ddata_TwoPhaseSet_descriptor;
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
+        getDescriptor() {
+      return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-          .internal_static_docs_ddata_TwoPhaseSet_fieldAccessorTable
+      return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.class,
-              docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.Builder.class);
+              docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.class, docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.Builder.class);
     }
 
     public static final int ADDS_FIELD_NUMBER = 1;
     private akka.protobufv3.internal.LazyStringList adds_;
     /**
      * <code>repeated string adds = 1;</code>
-     *
      * @return A list containing the adds.
      */
-    public akka.protobufv3.internal.ProtocolStringList getAddsList() {
+    public akka.protobufv3.internal.ProtocolStringList
+        getAddsList() {
       return adds_;
     }
     /**
      * <code>repeated string adds = 1;</code>
-     *
      * @return The count of adds.
      */
     public int getAddsCount() {
@@ -204,7 +195,6 @@ public final class TwoPhaseSetMessages {
     }
     /**
      * <code>repeated string adds = 1;</code>
-     *
      * @param index The index of the element to return.
      * @return The adds at the given index.
      */
@@ -213,11 +203,11 @@ public final class TwoPhaseSetMessages {
     }
     /**
      * <code>repeated string adds = 1;</code>
-     *
      * @param index The index of the value to return.
      * @return The bytes of the adds at the given index.
      */
-    public akka.protobufv3.internal.ByteString getAddsBytes(int index) {
+    public akka.protobufv3.internal.ByteString
+        getAddsBytes(int index) {
       return adds_.getByteString(index);
     }
 
@@ -225,15 +215,14 @@ public final class TwoPhaseSetMessages {
     private akka.protobufv3.internal.LazyStringList removals_;
     /**
      * <code>repeated string removals = 2;</code>
-     *
      * @return A list containing the removals.
      */
-    public akka.protobufv3.internal.ProtocolStringList getRemovalsList() {
+    public akka.protobufv3.internal.ProtocolStringList
+        getRemovalsList() {
       return removals_;
     }
     /**
      * <code>repeated string removals = 2;</code>
-     *
      * @return The count of removals.
      */
     public int getRemovalsCount() {
@@ -241,7 +230,6 @@ public final class TwoPhaseSetMessages {
     }
     /**
      * <code>repeated string removals = 2;</code>
-     *
      * @param index The index of the element to return.
      * @return The removals at the given index.
      */
@@ -250,16 +238,15 @@ public final class TwoPhaseSetMessages {
     }
     /**
      * <code>repeated string removals = 2;</code>
-     *
      * @param index The index of the value to return.
      * @return The bytes of the removals at the given index.
      */
-    public akka.protobufv3.internal.ByteString getRemovalsBytes(int index) {
+    public akka.protobufv3.internal.ByteString
+        getRemovalsBytes(int index) {
       return removals_.getByteString(index);
     }
 
     private byte memoizedIsInitialized = -1;
-
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -272,7 +259,7 @@ public final class TwoPhaseSetMessages {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-        throws java.io.IOException {
+                        throws java.io.IOException {
       for (int i = 0; i < adds_.size(); i++) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, adds_.getRaw(i));
       }
@@ -312,16 +299,17 @@ public final class TwoPhaseSetMessages {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-        return true;
+       return true;
       }
       if (!(obj instanceof docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet)) {
         return super.equals(obj);
       }
-      docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet other =
-          (docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet) obj;
+      docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet other = (docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet) obj;
 
-      if (!getAddsList().equals(other.getAddsList())) return false;
-      if (!getRemovalsList().equals(other.getRemovalsList())) return false;
+      if (!getAddsList()
+          .equals(other.getAddsList())) return false;
+      if (!getRemovalsList()
+          .equals(other.getRemovalsList())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -347,95 +335,87 @@ public final class TwoPhaseSetMessages {
     }
 
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
-        java.nio.ByteBuffer data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
-        java.nio.ByteBuffer data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
         akka.protobufv3.internal.ByteString data)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
         akka.protobufv3.internal.ByteString data,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(byte[] data)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
-        byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        byte[] data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
-    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
-        java.io.InputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
-    }
-
-    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
-        java.io.InputStream input, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
-          PARSER, input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
-
-    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseDelimitedFrom(
-        java.io.InputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
-          PARSER, input);
-    }
-
-    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseDelimitedFrom(
-        java.io.InputStream input, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
-          PARSER, input, extensionRegistry);
-    }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
-        akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
-
+    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
+        akka.protobufv3.internal.CodedInputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet parseFrom(
         akka.protobufv3.internal.CodedInputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
-          PARSER, input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() {
-      return newBuilder();
-    }
-
+    public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-
-    public static Builder newBuilder(
-        docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet prototype) {
+    public static Builder newBuilder(docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -444,25 +424,24 @@ public final class TwoPhaseSetMessages {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /** Protobuf type {@code docs.ddata.TwoPhaseSet} */
-    public static final class Builder
-        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
-        implements
+    /**
+     * Protobuf type {@code docs.ddata.TwoPhaseSet}
+     */
+    public static final class Builder extends
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:docs.ddata.TwoPhaseSet)
         docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSetOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
-        return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-            .internal_static_docs_ddata_TwoPhaseSet_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptor() {
+        return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-            .internal_static_docs_ddata_TwoPhaseSet_fieldAccessorTable
+        return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.class,
-                docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.Builder.class);
+                docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.class, docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.Builder.class);
       }
 
       // Construct using docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.newBuilder()
@@ -470,15 +449,16 @@ public final class TwoPhaseSetMessages {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
-
       private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {}
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
       }
-
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -490,9 +470,9 @@ public final class TwoPhaseSetMessages {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
-        return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-            .internal_static_docs_ddata_TwoPhaseSet_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptorForType() {
+        return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet_descriptor;
       }
 
       @java.lang.Override
@@ -511,8 +491,7 @@ public final class TwoPhaseSetMessages {
 
       @java.lang.Override
       public docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet buildPartial() {
-        docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet result =
-            new docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet(this);
+        docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet result = new docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet(this);
         int from_bitField0_ = bitField0_;
         if (((bitField0_ & 0x00000001) != 0)) {
           adds_ = adds_.getUnmodifiableView();
@@ -532,41 +511,38 @@ public final class TwoPhaseSetMessages {
       public Builder clone() {
         return super.clone();
       }
-
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
         return super.setField(field, value);
       }
-
       @java.lang.Override
-      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
-
       @java.lang.Override
-      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
-
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index,
-          java.lang.Object value) {
+          int index, java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
-
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
-
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet) {
-          return mergeFrom((docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet) other);
+          return mergeFrom((docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet)other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -574,8 +550,7 @@ public final class TwoPhaseSetMessages {
       }
 
       public Builder mergeFrom(docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet other) {
-        if (other == docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.getDefaultInstance())
-          return this;
+        if (other == docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.getDefaultInstance()) return this;
         if (!other.adds_.isEmpty()) {
           if (adds_.isEmpty()) {
             adds_ = other.adds_;
@@ -615,8 +590,7 @@ public final class TwoPhaseSetMessages {
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          parsedMessage =
-              (docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet) e.getUnfinishedMessage();
+          parsedMessage = (docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
@@ -625,29 +599,25 @@ public final class TwoPhaseSetMessages {
         }
         return this;
       }
-
       private int bitField0_;
 
-      private akka.protobufv3.internal.LazyStringList adds_ =
-          akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-
+      private akka.protobufv3.internal.LazyStringList adds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
       private void ensureAddsIsMutable() {
         if (!((bitField0_ & 0x00000001) != 0)) {
           adds_ = new akka.protobufv3.internal.LazyStringArrayList(adds_);
           bitField0_ |= 0x00000001;
-        }
+         }
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @return A list containing the adds.
        */
-      public akka.protobufv3.internal.ProtocolStringList getAddsList() {
+      public akka.protobufv3.internal.ProtocolStringList
+          getAddsList() {
         return adds_.getUnmodifiableView();
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @return The count of adds.
        */
       public int getAddsCount() {
@@ -655,7 +625,6 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @param index The index of the element to return.
        * @return The adds at the given index.
        */
@@ -664,59 +633,59 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @param index The index of the value to return.
        * @return The bytes of the adds at the given index.
        */
-      public akka.protobufv3.internal.ByteString getAddsBytes(int index) {
+      public akka.protobufv3.internal.ByteString
+          getAddsBytes(int index) {
         return adds_.getByteString(index);
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @param index The index to set the value at.
        * @param value The adds to set.
        * @return This builder for chaining.
        */
-      public Builder setAdds(int index, java.lang.String value) {
+      public Builder setAdds(
+          int index, java.lang.String value) {
         if (value == null) {
-          throw new NullPointerException();
-        }
-        ensureAddsIsMutable();
+    throw new NullPointerException();
+  }
+  ensureAddsIsMutable();
         adds_.set(index, value);
         onChanged();
         return this;
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @param value The adds to add.
        * @return This builder for chaining.
        */
-      public Builder addAdds(java.lang.String value) {
+      public Builder addAdds(
+          java.lang.String value) {
         if (value == null) {
-          throw new NullPointerException();
-        }
-        ensureAddsIsMutable();
+    throw new NullPointerException();
+  }
+  ensureAddsIsMutable();
         adds_.add(value);
         onChanged();
         return this;
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @param values The adds to add.
        * @return This builder for chaining.
        */
-      public Builder addAllAdds(java.lang.Iterable<java.lang.String> values) {
+      public Builder addAllAdds(
+          java.lang.Iterable<java.lang.String> values) {
         ensureAddsIsMutable();
-        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, adds_);
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+            values, adds_);
         onChanged();
         return this;
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearAdds() {
@@ -727,40 +696,37 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
-       *
        * @param value The bytes of the adds to add.
        * @return This builder for chaining.
        */
-      public Builder addAddsBytes(akka.protobufv3.internal.ByteString value) {
+      public Builder addAddsBytes(
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
-          throw new NullPointerException();
-        }
-        ensureAddsIsMutable();
+    throw new NullPointerException();
+  }
+  ensureAddsIsMutable();
         adds_.add(value);
         onChanged();
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList removals_ =
-          akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-
+      private akka.protobufv3.internal.LazyStringList removals_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
       private void ensureRemovalsIsMutable() {
         if (!((bitField0_ & 0x00000002) != 0)) {
           removals_ = new akka.protobufv3.internal.LazyStringArrayList(removals_);
           bitField0_ |= 0x00000002;
-        }
+         }
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @return A list containing the removals.
        */
-      public akka.protobufv3.internal.ProtocolStringList getRemovalsList() {
+      public akka.protobufv3.internal.ProtocolStringList
+          getRemovalsList() {
         return removals_.getUnmodifiableView();
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @return The count of removals.
        */
       public int getRemovalsCount() {
@@ -768,7 +734,6 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @param index The index of the element to return.
        * @return The removals at the given index.
        */
@@ -777,59 +742,59 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @param index The index of the value to return.
        * @return The bytes of the removals at the given index.
        */
-      public akka.protobufv3.internal.ByteString getRemovalsBytes(int index) {
+      public akka.protobufv3.internal.ByteString
+          getRemovalsBytes(int index) {
         return removals_.getByteString(index);
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @param index The index to set the value at.
        * @param value The removals to set.
        * @return This builder for chaining.
        */
-      public Builder setRemovals(int index, java.lang.String value) {
+      public Builder setRemovals(
+          int index, java.lang.String value) {
         if (value == null) {
-          throw new NullPointerException();
-        }
-        ensureRemovalsIsMutable();
+    throw new NullPointerException();
+  }
+  ensureRemovalsIsMutable();
         removals_.set(index, value);
         onChanged();
         return this;
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @param value The removals to add.
        * @return This builder for chaining.
        */
-      public Builder addRemovals(java.lang.String value) {
+      public Builder addRemovals(
+          java.lang.String value) {
         if (value == null) {
-          throw new NullPointerException();
-        }
-        ensureRemovalsIsMutable();
+    throw new NullPointerException();
+  }
+  ensureRemovalsIsMutable();
         removals_.add(value);
         onChanged();
         return this;
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @param values The removals to add.
        * @return This builder for chaining.
        */
-      public Builder addAllRemovals(java.lang.Iterable<java.lang.String> values) {
+      public Builder addAllRemovals(
+          java.lang.Iterable<java.lang.String> values) {
         ensureRemovalsIsMutable();
-        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, removals_);
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+            values, removals_);
         onChanged();
         return this;
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearRemovals() {
@@ -840,20 +805,19 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
-       *
        * @param value The bytes of the removals to add.
        * @return This builder for chaining.
        */
-      public Builder addRemovalsBytes(akka.protobufv3.internal.ByteString value) {
+      public Builder addRemovalsBytes(
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
-          throw new NullPointerException();
-        }
-        ensureRemovalsIsMutable();
+    throw new NullPointerException();
+  }
+  ensureRemovalsIsMutable();
         removals_.add(value);
         onChanged();
         return this;
       }
-
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -866,12 +830,12 @@ public final class TwoPhaseSetMessages {
         return super.mergeUnknownFields(unknownFields);
       }
 
+
       // @@protoc_insertion_point(builder_scope:docs.ddata.TwoPhaseSet)
     }
 
     // @@protoc_insertion_point(class_scope:docs.ddata.TwoPhaseSet)
     private static final docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet DEFAULT_INSTANCE;
-
     static {
       DEFAULT_INSTANCE = new docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet();
     }
@@ -880,17 +844,16 @@ public final class TwoPhaseSetMessages {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated
-    public static final akka.protobufv3.internal.Parser<TwoPhaseSet> PARSER =
-        new akka.protobufv3.internal.AbstractParser<TwoPhaseSet>() {
-          @java.lang.Override
-          public TwoPhaseSet parsePartialFrom(
-              akka.protobufv3.internal.CodedInputStream input,
-              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-              throws akka.protobufv3.internal.InvalidProtocolBufferException {
-            return new TwoPhaseSet(input, extensionRegistry);
-          }
-        };
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<TwoPhaseSet>
+        PARSER = new akka.protobufv3.internal.AbstractParser<TwoPhaseSet>() {
+      @java.lang.Override
+      public TwoPhaseSet parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new TwoPhaseSet(input, extensionRegistry);
+      }
+    };
 
     public static akka.protobufv3.internal.Parser<TwoPhaseSet> parser() {
       return PARSER;
@@ -905,58 +868,51 @@ public final class TwoPhaseSetMessages {
     public docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
+
   }
 
-  public interface TwoPhaseSet2OrBuilder
-      extends
+  public interface TwoPhaseSet2OrBuilder extends
       // @@protoc_insertion_point(interface_extends:docs.ddata.TwoPhaseSet2)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>optional bytes adds = 1;</code>
-     *
      * @return Whether the adds field is set.
      */
     boolean hasAdds();
     /**
      * <code>optional bytes adds = 1;</code>
-     *
      * @return The adds.
      */
     akka.protobufv3.internal.ByteString getAdds();
 
     /**
      * <code>optional bytes removals = 2;</code>
-     *
      * @return Whether the removals field is set.
      */
     boolean hasRemovals();
     /**
      * <code>optional bytes removals = 2;</code>
-     *
      * @return The removals.
      */
     akka.protobufv3.internal.ByteString getRemovals();
   }
   /**
-   *
-   *
    * <pre>
-   * #twophaseset2
+   *#twophaseset2
    * </pre>
    *
    * Protobuf type {@code docs.ddata.TwoPhaseSet2}
    */
-  public static final class TwoPhaseSet2 extends akka.protobufv3.internal.GeneratedMessageV3
-      implements
+  public  static final class TwoPhaseSet2 extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:docs.ddata.TwoPhaseSet2)
       TwoPhaseSet2OrBuilder {
-    private static final long serialVersionUID = 0L;
+  private static final long serialVersionUID = 0L;
     // Use TwoPhaseSet2.newBuilder() to construct.
     private TwoPhaseSet2(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
-
     private TwoPhaseSet2() {
       adds_ = akka.protobufv3.internal.ByteString.EMPTY;
       removals_ = akka.protobufv3.internal.ByteString.EMPTY;
@@ -970,10 +926,10 @@ public final class TwoPhaseSetMessages {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
-
     private TwoPhaseSet2(
         akka.protobufv3.internal.CodedInputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -993,51 +949,46 @@ public final class TwoPhaseSetMessages {
             case 0:
               done = true;
               break;
-            case 10:
-              {
-                bitField0_ |= 0x00000001;
-                adds_ = input.readBytes();
-                break;
+            case 10: {
+              bitField0_ |= 0x00000001;
+              adds_ = input.readBytes();
+              break;
+            }
+            case 18: {
+              bitField0_ |= 0x00000002;
+              removals_ = input.readBytes();
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
               }
-            case 18:
-              {
-                bitField0_ |= 0x00000002;
-                removals_ = input.readBytes();
-                break;
-              }
-            default:
-              {
-                if (!parseUnknownField(input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
-                break;
-              }
+              break;
+            }
           }
         }
       } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-            .setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-
-    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
-      return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-          .internal_static_docs_ddata_TwoPhaseSet2_descriptor;
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
+        getDescriptor() {
+      return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet2_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-          .internal_static_docs_ddata_TwoPhaseSet2_fieldAccessorTable
+      return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet2_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.class,
-              docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.Builder.class);
+              docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.class, docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.Builder.class);
     }
 
     private int bitField0_;
@@ -1045,7 +996,6 @@ public final class TwoPhaseSetMessages {
     private akka.protobufv3.internal.ByteString adds_;
     /**
      * <code>optional bytes adds = 1;</code>
-     *
      * @return Whether the adds field is set.
      */
     public boolean hasAdds() {
@@ -1053,7 +1003,6 @@ public final class TwoPhaseSetMessages {
     }
     /**
      * <code>optional bytes adds = 1;</code>
-     *
      * @return The adds.
      */
     public akka.protobufv3.internal.ByteString getAdds() {
@@ -1064,7 +1013,6 @@ public final class TwoPhaseSetMessages {
     private akka.protobufv3.internal.ByteString removals_;
     /**
      * <code>optional bytes removals = 2;</code>
-     *
      * @return Whether the removals field is set.
      */
     public boolean hasRemovals() {
@@ -1072,7 +1020,6 @@ public final class TwoPhaseSetMessages {
     }
     /**
      * <code>optional bytes removals = 2;</code>
-     *
      * @return The removals.
      */
     public akka.protobufv3.internal.ByteString getRemovals() {
@@ -1080,7 +1027,6 @@ public final class TwoPhaseSetMessages {
     }
 
     private byte memoizedIsInitialized = -1;
-
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -1093,7 +1039,7 @@ public final class TwoPhaseSetMessages {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-        throws java.io.IOException {
+                        throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
         output.writeBytes(1, adds_);
       }
@@ -1110,10 +1056,12 @@ public final class TwoPhaseSetMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream.computeBytesSize(1, adds_);
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBytesSize(1, adds_);
       }
       if (((bitField0_ & 0x00000002) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream.computeBytesSize(2, removals_);
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBytesSize(2, removals_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -1123,21 +1071,22 @@ public final class TwoPhaseSetMessages {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-        return true;
+       return true;
       }
       if (!(obj instanceof docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2)) {
         return super.equals(obj);
       }
-      docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 other =
-          (docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2) obj;
+      docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 other = (docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2) obj;
 
       if (hasAdds() != other.hasAdds()) return false;
       if (hasAdds()) {
-        if (!getAdds().equals(other.getAdds())) return false;
+        if (!getAdds()
+            .equals(other.getAdds())) return false;
       }
       if (hasRemovals() != other.hasRemovals()) return false;
       if (hasRemovals()) {
-        if (!getRemovals().equals(other.getRemovals())) return false;
+        if (!getRemovals()
+            .equals(other.getRemovals())) return false;
       }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
@@ -1164,95 +1113,87 @@ public final class TwoPhaseSetMessages {
     }
 
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
-        java.nio.ByteBuffer data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
-        java.nio.ByteBuffer data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
         akka.protobufv3.internal.ByteString data)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
         akka.protobufv3.internal.ByteString data,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(byte[] data)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
-        byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        byte[] data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
-    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
-        java.io.InputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
-    }
-
-    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
-        java.io.InputStream input, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
-          PARSER, input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
-
-    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseDelimitedFrom(
-        java.io.InputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
-          PARSER, input);
-    }
-
-    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseDelimitedFrom(
-        java.io.InputStream input, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
-          PARSER, input, extensionRegistry);
-    }
-
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
-        akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
-
+    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
+        akka.protobufv3.internal.CodedInputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
     public static docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 parseFrom(
         akka.protobufv3.internal.CodedInputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
-          PARSER, input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() {
-      return newBuilder();
-    }
-
+    public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-
-    public static Builder newBuilder(
-        docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 prototype) {
+    public static Builder newBuilder(docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -1262,32 +1203,27 @@ public final class TwoPhaseSetMessages {
       return builder;
     }
     /**
-     *
-     *
      * <pre>
-     * #twophaseset2
+     *#twophaseset2
      * </pre>
      *
      * Protobuf type {@code docs.ddata.TwoPhaseSet2}
      */
-    public static final class Builder
-        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
-        implements
+    public static final class Builder extends
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:docs.ddata.TwoPhaseSet2)
         docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2OrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
-        return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-            .internal_static_docs_ddata_TwoPhaseSet2_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptor() {
+        return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet2_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-            .internal_static_docs_ddata_TwoPhaseSet2_fieldAccessorTable
+        return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet2_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.class,
-                docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.Builder.class);
+                docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.class, docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.Builder.class);
       }
 
       // Construct using docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.newBuilder()
@@ -1295,15 +1231,16 @@ public final class TwoPhaseSetMessages {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
-
       private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {}
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
       }
-
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -1315,9 +1252,9 @@ public final class TwoPhaseSetMessages {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
-        return docs.ddata.protobuf.msg.TwoPhaseSetMessages
-            .internal_static_docs_ddata_TwoPhaseSet2_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptorForType() {
+        return docs.ddata.protobuf.msg.TwoPhaseSetMessages.internal_static_docs_ddata_TwoPhaseSet2_descriptor;
       }
 
       @java.lang.Override
@@ -1336,8 +1273,7 @@ public final class TwoPhaseSetMessages {
 
       @java.lang.Override
       public docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 buildPartial() {
-        docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 result =
-            new docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2(this);
+        docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 result = new docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -1357,41 +1293,38 @@ public final class TwoPhaseSetMessages {
       public Builder clone() {
         return super.clone();
       }
-
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
         return super.setField(field, value);
       }
-
       @java.lang.Override
-      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
-
       @java.lang.Override
-      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
-
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index,
-          java.lang.Object value) {
+          int index, java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
-
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
-
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2) {
-          return mergeFrom((docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2) other);
+          return mergeFrom((docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2)other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -1399,8 +1332,7 @@ public final class TwoPhaseSetMessages {
       }
 
       public Builder mergeFrom(docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 other) {
-        if (other == docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.getDefaultInstance())
-          return this;
+        if (other == docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.getDefaultInstance()) return this;
         if (other.hasAdds()) {
           setAdds(other.getAdds());
         }
@@ -1426,8 +1358,7 @@ public final class TwoPhaseSetMessages {
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          parsedMessage =
-              (docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2) e.getUnfinishedMessage();
+          parsedMessage = (docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
@@ -1436,13 +1367,11 @@ public final class TwoPhaseSetMessages {
         }
         return this;
       }
-
       private int bitField0_;
 
       private akka.protobufv3.internal.ByteString adds_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes adds = 1;</code>
-       *
        * @return Whether the adds field is set.
        */
       public boolean hasAdds() {
@@ -1450,7 +1379,6 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>optional bytes adds = 1;</code>
-       *
        * @return The adds.
        */
       public akka.protobufv3.internal.ByteString getAdds() {
@@ -1458,22 +1386,20 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>optional bytes adds = 1;</code>
-       *
        * @param value The adds to set.
        * @return This builder for chaining.
        */
       public Builder setAdds(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000001;
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
         adds_ = value;
         onChanged();
         return this;
       }
       /**
        * <code>optional bytes adds = 1;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearAdds() {
@@ -1483,11 +1409,9 @@ public final class TwoPhaseSetMessages {
         return this;
       }
 
-      private akka.protobufv3.internal.ByteString removals_ =
-          akka.protobufv3.internal.ByteString.EMPTY;
+      private akka.protobufv3.internal.ByteString removals_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes removals = 2;</code>
-       *
        * @return Whether the removals field is set.
        */
       public boolean hasRemovals() {
@@ -1495,7 +1419,6 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>optional bytes removals = 2;</code>
-       *
        * @return The removals.
        */
       public akka.protobufv3.internal.ByteString getRemovals() {
@@ -1503,22 +1426,20 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>optional bytes removals = 2;</code>
-       *
        * @param value The removals to set.
        * @return This builder for chaining.
        */
       public Builder setRemovals(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000002;
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
         removals_ = value;
         onChanged();
         return this;
       }
       /**
        * <code>optional bytes removals = 2;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearRemovals() {
@@ -1527,7 +1448,6 @@ public final class TwoPhaseSetMessages {
         onChanged();
         return this;
       }
-
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -1540,12 +1460,12 @@ public final class TwoPhaseSetMessages {
         return super.mergeUnknownFields(unknownFields);
       }
 
+
       // @@protoc_insertion_point(builder_scope:docs.ddata.TwoPhaseSet2)
     }
 
     // @@protoc_insertion_point(class_scope:docs.ddata.TwoPhaseSet2)
     private static final docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 DEFAULT_INSTANCE;
-
     static {
       DEFAULT_INSTANCE = new docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2();
     }
@@ -1554,17 +1474,16 @@ public final class TwoPhaseSetMessages {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated
-    public static final akka.protobufv3.internal.Parser<TwoPhaseSet2> PARSER =
-        new akka.protobufv3.internal.AbstractParser<TwoPhaseSet2>() {
-          @java.lang.Override
-          public TwoPhaseSet2 parsePartialFrom(
-              akka.protobufv3.internal.CodedInputStream input,
-              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-              throws akka.protobufv3.internal.InvalidProtocolBufferException {
-            return new TwoPhaseSet2(input, extensionRegistry);
-          }
-        };
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<TwoPhaseSet2>
+        PARSER = new akka.protobufv3.internal.AbstractParser<TwoPhaseSet2>() {
+      @java.lang.Override
+      public TwoPhaseSet2 parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new TwoPhaseSet2(input, extensionRegistry);
+      }
+    };
 
     public static akka.protobufv3.internal.Parser<TwoPhaseSet2> parser() {
       return PARSER;
@@ -1579,48 +1498,50 @@ public final class TwoPhaseSetMessages {
     public docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2 getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
+
   }
 
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-      internal_static_docs_ddata_TwoPhaseSet_descriptor;
-  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+    internal_static_docs_ddata_TwoPhaseSet_descriptor;
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_docs_ddata_TwoPhaseSet_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-      internal_static_docs_ddata_TwoPhaseSet2_descriptor;
-  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+    internal_static_docs_ddata_TwoPhaseSet2_descriptor;
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_docs_ddata_TwoPhaseSet2_fieldAccessorTable;
 
-  public static akka.protobufv3.internal.Descriptors.FileDescriptor getDescriptor() {
+  public static akka.protobufv3.internal.Descriptors.FileDescriptor
+      getDescriptor() {
     return descriptor;
   }
-
-  private static akka.protobufv3.internal.Descriptors.FileDescriptor descriptor;
-
+  private static  akka.protobufv3.internal.Descriptors.FileDescriptor
+      descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\031TwoPhaseSetMessages.proto\022\ndocs.ddata\""
-          + "-\n\013TwoPhaseSet\022\014\n\004adds\030\001 \003(\t\022\020\n\010removals"
-          + "\030\002 \003(\t\".\n\014TwoPhaseSet2\022\014\n\004adds\030\001 \001(\014\022\020\n\010"
-          + "removals\030\002 \001(\014B\033\n\027docs.ddata.protobuf.ms"
-          + "gH\001"
+      "\n\031TwoPhaseSetMessages.proto\022\ndocs.ddata\"" +
+      "-\n\013TwoPhaseSet\022\014\n\004adds\030\001 \003(\t\022\020\n\010removals" +
+      "\030\002 \003(\t\".\n\014TwoPhaseSet2\022\014\n\004adds\030\001 \001(\014\022\020\n\010" +
+      "removals\030\002 \001(\014B\033\n\027docs.ddata.protobuf.ms" +
+      "gH\001"
     };
-    descriptor =
-        akka.protobufv3.internal.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(
-            descriptorData, new akka.protobufv3.internal.Descriptors.FileDescriptor[] {});
-    internal_static_docs_ddata_TwoPhaseSet_descriptor = getDescriptor().getMessageTypes().get(0);
-    internal_static_docs_ddata_TwoPhaseSet_fieldAccessorTable =
-        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-            internal_static_docs_ddata_TwoPhaseSet_descriptor,
-            new java.lang.String[] {
-              "Adds", "Removals",
-            });
-    internal_static_docs_ddata_TwoPhaseSet2_descriptor = getDescriptor().getMessageTypes().get(1);
-    internal_static_docs_ddata_TwoPhaseSet2_fieldAccessorTable =
-        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-            internal_static_docs_ddata_TwoPhaseSet2_descriptor,
-            new java.lang.String[] {
-              "Adds", "Removals",
-            });
+    descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
+      .internalBuildGeneratedFileFrom(descriptorData,
+        new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
+        });
+    internal_static_docs_ddata_TwoPhaseSet_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_docs_ddata_TwoPhaseSet_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_docs_ddata_TwoPhaseSet_descriptor,
+        new java.lang.String[] { "Adds", "Removals", });
+    internal_static_docs_ddata_TwoPhaseSet2_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_docs_ddata_TwoPhaseSet2_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_docs_ddata_TwoPhaseSet2_descriptor,
+        new java.lang.String[] { "Adds", "Removals", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)
