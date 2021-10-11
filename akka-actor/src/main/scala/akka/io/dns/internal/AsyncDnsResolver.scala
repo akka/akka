@@ -129,7 +129,7 @@ private[io] final class AsyncDnsResolver(
       name: String,
       requestType: RequestType,
       resolver: ActorRef): Future[DnsProtocol.Resolved] = {
-    if (settings.SearchDomains.nonEmpty) {
+    if (settings.SearchDomains.nonEmpty && name != "localhost") {
       val nameWithSearch = settings.SearchDomains.map(sd => name + "." + sd)
       // ndots is a heuristic used to try and work out whether the name passed in is a fully qualified domain name,
       // or a name relative to one of the search names. The idea is to prevent the cost of doing a lookup that is
