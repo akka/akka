@@ -32,7 +32,7 @@ jobs:
           sbt -jvm-opts .jvmopts-ci \
           -Dsbt.override.build.repos=false \
           -Dsbt.log.noformat=false \
-          scalafmtCheckAll scalafmtSbtCheck headerCheckAll
+          verifyCodeStyle
 
   pull-request-validation:
     name: Check / Tests
