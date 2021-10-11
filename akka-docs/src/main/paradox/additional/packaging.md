@@ -10,7 +10,7 @@ In many cases, such as deploying to an analytics cluster, building your applicat
 When building fat jars, some additional configuration is needed to merge Akka config files, because each Akka jar
 contains a `reference.conf` resource with default values.
 
-The method for ensuring `reference.conf` resources are merged depends on the tooling you use to create the fat jar:
+The method for ensuring `reference.conf` and other `*.conf` resources are merged depends on the tooling you use to create the fat jar:
 
  * sbt: as an application packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager)
  * Maven: as an application packaged with a bundler such as jarjar, onejar or assembly
@@ -69,6 +69,10 @@ The plugin configuration might look like this:
        <resource>reference.conf</resource>
       </transformer>
       <transformer
+       implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+       <resource>version.conf</resource>
+      </transformer>
+      <transformer
        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
        <manifestEntries>
         <Main-Class>myapp.Main</Main-Class>
@@ -97,13 +101,12 @@ import com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransfor
 
 plugins {
     id 'java'
-    id "com.github.johnrengelman.shadow" version "5.0.0"
+    id "com.github.johnrengelman.shadow" version "7.0.0"
 }
 
 shadowJar {
-    transform(AppendingTransformer) {
-        resource = 'reference.conf'
-    }
+    append 'reference.conf'
+    append 'version.conf'
     with jar
 }
 ```

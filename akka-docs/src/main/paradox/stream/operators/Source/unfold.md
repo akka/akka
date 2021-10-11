@@ -32,7 +32,7 @@ Java
  :   @@snip [Unfold.java](/akka-docs/src/test/java/jdocs/stream/operators/source/Unfold.java) { #countdown }
 
 
-It is also possible to express unfolds that don't have an end, which will never return @scala[`None`] @java[`Optional.empty`] and must be combined with for example `.take(n)` to not produce infinite streams. Here we have implemented the Fibonacci numbers (0, 1, 1, 2, 3, 5, 8, 13, etc) with `unfold`:
+It is also possible to express unfolds that don't have an end, which will never return @scala[`None`] @java[`Optional.empty`] and must be combined with for example `.take(n)` to not produce infinite streams. Here we have implemented the Fibonacci numbers (0, 1, 1, 2, 3, 5, 8, 13, etc.) with `unfold`:
 
 Scala
  :   @@snip [Unfold.scala](/akka-docs/src/test/scala/docs/stream/operators/source/Unfold.scala) { #fibonacci }

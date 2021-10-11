@@ -125,7 +125,7 @@ class ClusterShardingSpec
   val sharding2 = ClusterSharding(system2)
 
   override def afterAll(): Unit = {
-    ActorTestKit.shutdown(system2, 5.seconds)
+    ActorTestKit.shutdown(system2)
     super.afterAll()
   }
 
@@ -267,27 +267,27 @@ class ClusterShardingSpec
 
     "EntityRef - ask" in {
       val bobRef = sharding.entityRefFor(typeKeyWithEnvelopes, "bob")
-      val charlieRef = sharding.entityRefFor(typeKeyWithEnvelopes, "charlie")
+      val aliceRef = sharding.entityRefFor(typeKeyWithEnvelopes, "alice")
 
-      val reply1 = bobRef ? WhoAreYou // TODO document that WhoAreYou(_) would not work
+      val reply1 = bobRef ? WhoAreYou
       val response = reply1.futureValue
       response should startWith("I'm bob")
       // typekey and entity id encoded in promise ref path
       response should include(s"${typeKeyWithEnvelopes.name}-bob")
 
-      val reply2 = charlieRef.ask(WhoAreYou)
-      reply2.futureValue should startWith("I'm charlie")
+      val reply2 = aliceRef.ask(WhoAreYou)
+      reply2.futureValue should startWith("I'm alice")
 
       bobRef ! StopPlz()
     }
 
     "EntityRef - ActorContext.ask" in {
-      val aliceRef = sharding.entityRefFor(typeKeyWithEnvelopes, "alice")
+      val peterRef = sharding.entityRefFor(typeKeyWithEnvelopes, "peter")
 
       val p = TestProbe[TheReply]()
 
       spawn(Behaviors.setup[TheReply] { ctx =>
-        ctx.ask(aliceRef, WhoAreYou) {
+        ctx.ask(peterRef, WhoAreYou) {
           case Success(name) => TheReply(name)
           case Failure(ex)   => TheReply(ex.getMessage)
         }
@@ -299,11 +299,11 @@ class ClusterShardingSpec
       })
 
       val response = p.receiveMessage()
-      response.s should startWith("I'm alice")
+      response.s should startWith("I'm peter")
       // typekey and entity id encoded in promise ref path
-      response.s should include(s"${typeKeyWithEnvelopes.name}-alice")
+      response.s should include(s"${typeKeyWithEnvelopes.name}-peter")
 
-      aliceRef ! StopPlz()
+      peterRef ! StopPlz()
 
       // FIXME #26514: doesn't compile with Scala 2.13.0-M5
       /*

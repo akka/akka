@@ -41,7 +41,8 @@ object AkkaValidatePullRequest extends AutoPlugin {
   override lazy val buildSettings = Seq(
     validatePullRequest / includeFilter := PathGlobFilter("akka-*/**"),
     validatePullRequestBuildAll / excludeFilter := PathGlobFilter("project/MiMa.scala"),
-    prValidatorGithubRepository := Some("akka/akka"))
+    prValidatorGithubRepository := Some("akka/akka"),
+    prValidatorTargetBranch := "origin/main")
 
   override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
       ValidatePR / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),

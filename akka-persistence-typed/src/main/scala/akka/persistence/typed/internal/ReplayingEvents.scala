@@ -95,15 +95,15 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
-      case JournalResponse(r)              => onJournalResponse(r)
-      case SnapshotterResponse(r)          => onSnapshotterResponse(r)
-      case RecoveryTickEvent(snap)         => onRecoveryTick(snap)
-      case evt: ReplicatedEventEnvelope[E] => onInternalCommand(evt)
-      case pe: PublishedEventImpl          => onInternalCommand(pe)
-      case cmd: IncomingCommand[C]         => onInternalCommand(cmd)
-      case get: GetState[S @unchecked]     => stashInternal(get)
-      case get: GetSeenSequenceNr          => stashInternal(get)
-      case RecoveryPermitGranted           => Behaviors.unhandled // should not happen, we already have the permit
+      case JournalResponse(r)                         => onJournalResponse(r)
+      case SnapshotterResponse(r)                     => onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap)                    => onRecoveryTick(snap)
+      case evt: ReplicatedEventEnvelope[E @unchecked] => onInternalCommand(evt)
+      case pe: PublishedEventImpl                     => onInternalCommand(pe)
+      case cmd: IncomingCommand[C @unchecked]         => onInternalCommand(cmd)
+      case get: GetState[S @unchecked]                => stashInternal(get)
+      case get: GetSeenSequenceNr                     => stashInternal(get)
+      case RecoveryPermitGranted                      => Behaviors.unhandled // should not happen, we already have the permit
     }
   }
 

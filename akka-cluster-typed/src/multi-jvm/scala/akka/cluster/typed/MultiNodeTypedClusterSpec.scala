@@ -92,7 +92,8 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
   private lazy val spawnActor =
     system.actorOf(PropsAdapter(SpawnProtocol()), "testSpawn").toTyped[SpawnProtocol.Command]
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = {
-    implicit val timeout: Timeout = testKitSettings.DefaultTimeout
+    import akka.testkit.TestDuration
+    implicit val timeout: Timeout = testKitSettings.DefaultTimeout.duration.dilated
     val f: Future[ActorRef[T]] = spawnActor.ask(SpawnProtocol.Spawn(behavior, name, Props.empty, _))
 
     Await.result(f, timeout.duration * 2)

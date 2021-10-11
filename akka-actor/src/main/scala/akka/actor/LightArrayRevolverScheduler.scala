@@ -85,7 +85,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
    * Overridable for tests
    */
   protected def waitNanos(nanos: Long): Unit = {
-    // see http://www.javamex.com/tutorials/threads/sleep_issues.shtml
+    // see https://www.javamex.com/tutorials/threads/sleep_issues.shtml
     val sleepMs = if (Helpers.isWindows) (nanos + 4999999) / 10000000 * 10 else (nanos + 999999) / 1000000
     try Thread.sleep(sleepMs)
     catch {

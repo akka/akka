@@ -27,7 +27,7 @@ object Dependencies {
 
   val jacksonVersion = "2.11.4"
 
-  val scala212Version = "2.12.14"
+  val scala212Version = "2.12.15"
   val scala213Version = "2.13.6"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   val scala3Version = "3.1.1-RC1-bin-20210915-ea871c2-NIGHTLY"
@@ -163,8 +163,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.3" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.3" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.4" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.4" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

@@ -173,7 +173,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   import ClusterShardingGuardian._
   import ShardCoordinator.ShardAllocationStrategy
 
-  private val log = Logging(system, this.getClass)
+  private val log = Logging(system, classOf[ClusterSharding])
 
   private val cluster = Cluster(system)
 

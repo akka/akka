@@ -46,7 +46,7 @@ class MessageAdapterSpec
     deadLetterProbe.fishForMessage(deadLetterProbe.remainingOrDefault, s"looking for DeadLetter $expectedMessage") {
       deadLetter =>
         deadLetter.message match {
-          case AdaptMessage(msg, _) =>
+          case AdaptMessage(msg, _) if msg.getClass == expectedMessage.getClass =>
             msg shouldBe expectedMessage
             FishingOutcomes.complete
           case msg if msg.getClass == expectedMessage.getClass =>

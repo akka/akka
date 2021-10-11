@@ -97,7 +97,7 @@ abstract class ClusterShardCoordinatorDowning2Spec(multiNodeConfig: ClusterShard
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  s"Cluster sharding ($mode) with down member, scenario 2" must {
+  s"Cluster sharding (${multiNodeConfig.mode}) with down member, scenario 2" must {
 
     "join cluster" in within(20.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))

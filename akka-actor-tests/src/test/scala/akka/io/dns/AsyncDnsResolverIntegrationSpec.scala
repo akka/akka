@@ -9,8 +9,10 @@ import java.net.InetAddress
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
-import CachePolicy.Ttl
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
 
+import CachePolicy.Ttl
 import akka.io.{ Dns, IO }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.pattern.ask
@@ -19,25 +21,36 @@ import akka.testkit.SocketUtil.Both
 import akka.testkit.WithLogCapturing
 import akka.util.Timeout
 
-/*
-These tests rely on a DNS server with 2 zones configured, foo.test and bar.example.
-
-The configuration to start a bind DNS server in Docker with this configuration
-is included, and the test will automatically start this container when the
-test starts and tear it down when it finishes.
+/**
+ * These tests rely on a DNS server with 2 zones configured, foo.test and bar.example.
+ *
+ * The configuration to start a bind DNS server in Docker with this configuration
+ * is included, and the test will automatically start this container when the
+ * test starts and tear it down when it finishes.
  */
-class AsyncDnsResolverIntegrationSpec extends DockerBindDnsService(ConfigFactory.parseString(s"""
+object AsyncDnsResolverIntegrationSpec {
+  lazy val dockerDnsServerPort: Int = SocketUtil.temporaryLocalPort(Both)
+  implicit val defaultTimeout: Timeout = Timeout(10.seconds)
+  def conf = ConfigFactory.parseString(s"""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
-    akka.io.dns.async-dns.nameservers = ["localhost:${AsyncDnsResolverIntegrationSpec.dockerDnsServerPort}"]
+    akka.io.dns.async-dns.nameservers = ["localhost:${dockerDnsServerPort}"]
     akka.io.dns.async-dns.search-domains = ["foo.test", "test"]
     akka.io.dns.async-dns.ndots = 2
-  """)) with WithLogCapturing {
-  val duration = 10.seconds
-  implicit val timeout: Timeout = Timeout(duration)
+    akka.io.dns.async-dns.resolve-timeout = ${defaultTimeout.duration.toSeconds}s
+  """)
+}
 
-  val hostPort = AsyncDnsResolverIntegrationSpec.dockerDnsServerPort
+class AsyncDnsResolverIntegrationSpec
+    extends DockerBindDnsService(AsyncDnsResolverIntegrationSpec.conf)
+    with WithLogCapturing {
+  import AsyncDnsResolverIntegrationSpec._
+
+  override implicit val patience: PatienceConfig =
+    PatienceConfig(defaultTimeout.duration + 1.second, Span(100, Millis))
+
+  override val hostPort = dockerDnsServerPort
 
   "Resolver" must {
     if (!dockerAvailable()) {
@@ -193,8 +206,4 @@ class AsyncDnsResolverIntegrationSpec extends DockerBindDnsService(ConfigFactory
     }
 
   }
-}
-
-object AsyncDnsResolverIntegrationSpec {
-  lazy val dockerDnsServerPort: Int = SocketUtil.temporaryLocalPort(Both)
 }

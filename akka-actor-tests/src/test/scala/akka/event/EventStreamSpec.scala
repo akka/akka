@@ -401,8 +401,14 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         a1.expectNoMessage(1.second)
 
         es.unsubscribe(a2.ref, classOf[T]) should equal(true)
-        fishForDebugMessage(a1, s"unsubscribing ${a2.ref} from channel interface akka.event.EventStreamSpec$$T")
-        fishForDebugMessage(a1, s"unwatching ${a2.ref}, since has no subscriptions")
+        // order of log entries is not deterministic, one is on this thread one from actor, but should be both these
+        val debugLogEntries = Set(a1.expectMsgType[Logging.Debug], a1.expectMsgType[Logging.Debug]).collect {
+          case Logging.Debug(_, _, msg: String) => msg
+        }
+        debugLogEntries.exists(
+          _.startsWith(s"unsubscribing ${a2.ref} from channel interface akka.event.EventStreamSpec$$T")) should ===(
+          true)
+        debugLogEntries.exists(_.startsWith(s"unwatching ${a2.ref}, since has no subscriptions")) should ===(true)
         a1.expectNoMessage(1.second)
 
         es.unsubscribe(a2.ref, classOf[T]) should equal(false)

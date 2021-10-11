@@ -4,12 +4,9 @@
 
 package akka.persistence.query
 
-import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 
 /**
- * API May Change
- *
  * The `DurableStateStoreQuery` stream elements for `DurableStateStoreQuery`.
  *
  * The implementation can be a [[UpdatedDurableState]] or a `DeletedDurableState`.
@@ -35,16 +32,11 @@ sealed trait DurableStateChange[A] {
 
 object UpdatedDurableState {
 
-  /**
-   * API May Change
-   */
-  @ApiMayChange
   def unapply[A](arg: UpdatedDurableState[A]): Option[(String, Long, A, Offset, Long)] =
     Some((arg.persistenceId, arg.revision, arg.value, arg.offset, arg.timestamp))
 }
 
 /**
- * API May Change
  *
  * @param persistenceId The persistence id of the origin entity.
  * @param revision The revision number from the origin entity.
@@ -54,7 +46,6 @@ object UpdatedDurableState {
  *   (same as `System.currentTimeMillis`).
  * @tparam A the type of the value
  */
-@ApiMayChange
 final class UpdatedDurableState[A](
     val persistenceId: String,
     val revision: Long,

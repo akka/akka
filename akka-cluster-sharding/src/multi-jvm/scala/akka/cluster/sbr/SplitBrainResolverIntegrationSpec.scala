@@ -164,12 +164,12 @@ class SplitBrainResolverIntegrationSpec
     }
 
     def sysAddress(at: RoleName): Address = {
-      implicit val timeout = Timeout(3.seconds)
+      implicit val timeout: Timeout = 3.seconds
       Await.result((gremlinControllerProxy(at) ? GetAddress).mapTo[Address], timeout.duration)
     }
 
     def blackhole(from: RoleName, to: RoleName): Unit = {
-      implicit val timeout = Timeout(3.seconds)
+      implicit val timeout: Timeout = 3.seconds
       import system.dispatcher
       val f = for {
         target <- (gremlinControllerProxy(to) ? GetAddress).mapTo[Address]

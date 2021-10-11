@@ -27,8 +27,8 @@ would have no way to determine whether an element was skipped
 or merely reordered and still in flight.
 
 For this reason, @apidoc[FlowWithContext] allows filtering operations
-(such as `filter`, `filterNot`, `collect`, etc) and grouping operations
-(such as `grouped`, `sliding`, etc) but not reordering operations
+(such as `filter`, `filterNot`, `collect`, etc.) and grouping operations
+(such as `grouped`, `sliding`, etc.) but not reordering operations
 (such as `mapAsyncUnordered` and `statefulMapConcat`). Finally,
 also 'one-to-n' operations such as `mapConcat` are allowed.
 

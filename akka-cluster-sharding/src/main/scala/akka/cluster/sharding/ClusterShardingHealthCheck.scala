@@ -15,10 +15,10 @@ import akka.pattern.AskTimeoutException
 import akka.util.ccompat.JavaConverters._
 import akka.util.JavaDurationConverters._
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import com.typesafe.config.Config
-
 import scala.concurrent.duration.FiniteDuration
+import com.typesafe.config.Config
 
 /**
  * Internal API
@@ -57,7 +57,7 @@ final class ClusterShardingHealthCheck private[akka] (
       name => ClusterSharding(system).shardRegion(name))
 
   private implicit val timeout: Timeout = settings.timeout
-  private implicit val ec = system.dispatchers.internalDispatcher
+  private implicit val ec: ExecutionContext = system.dispatchers.internalDispatcher
 
   // Once the check has passed it always does
   @volatile private var registered = false

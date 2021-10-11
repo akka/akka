@@ -75,7 +75,7 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
 
   lazy val region = ClusterSharding(system).shardRegion(typeName)
 
-  s"Cluster sharding ($mode)" must {
+  s"Cluster sharding (${multiNodeConfig.mode})" must {
     "start some shards in both regions" in within(30.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
 

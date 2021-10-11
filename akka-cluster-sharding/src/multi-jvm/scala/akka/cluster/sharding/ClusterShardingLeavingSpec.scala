@@ -101,7 +101,7 @@ abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavin
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  s"Cluster sharding ($mode) with leaving member" must {
+  s"Cluster sharding (${multiNodeConfig.mode}) with leaving member" must {
 
     "join cluster" in within(20.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = roles)

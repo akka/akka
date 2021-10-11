@@ -9,7 +9,6 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.OptionConverters._
 
-import akka.annotation.ApiMayChange
 import akka.persistence.state.scaladsl.{ GetObjectResult => SGetObjectResult }
 
 /**
@@ -18,10 +17,7 @@ import akka.persistence.state.scaladsl.{ GetObjectResult => SGetObjectResult }
  * For Scala API see [[akka.persistence.state.scaladsl.DurableStateStore]].
  *
  * See also [[DurableStateUpdateStore]]
- *
- * API May Change
  */
-@ApiMayChange
 trait DurableStateStore[A] {
 
   def getObject(persistenceId: String): CompletionStage[GetObjectResult[A]]

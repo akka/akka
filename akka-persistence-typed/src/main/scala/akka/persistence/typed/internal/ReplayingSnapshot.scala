@@ -58,12 +58,12 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
       Behaviors
         .receiveMessage[InternalProtocol] {
-          case SnapshotterResponse(r)          => onSnapshotterResponse(r, receivedPoisonPill)
-          case JournalResponse(r)              => onJournalResponse(r)
-          case RecoveryTickEvent(snapshot)     => onRecoveryTick(snapshot)
-          case evt: ReplicatedEventEnvelope[E] => onReplicatedEvent(evt)
-          case pe: PublishedEventImpl          => onPublishedEvent(pe)
-          case cmd: IncomingCommand[C] =>
+          case SnapshotterResponse(r)                     => onSnapshotterResponse(r, receivedPoisonPill)
+          case JournalResponse(r)                         => onJournalResponse(r)
+          case RecoveryTickEvent(snapshot)                => onRecoveryTick(snapshot)
+          case evt: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(evt)
+          case pe: PublishedEventImpl                     => onPublishedEvent(pe)
+          case cmd: IncomingCommand[C @unchecked] =>
             if (receivedPoisonPill) {
               if (setup.settings.logOnStashing)
                 setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)

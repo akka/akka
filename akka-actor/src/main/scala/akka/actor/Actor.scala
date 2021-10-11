@@ -418,7 +418,7 @@ object Actor {
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
- * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>
+ * <a href="https://en.wikipedia.org/wiki/Actor_model">https://en.wikipedia.org/wiki/Actor_model</a>
  *
  * An actor has a well-defined (non-cyclic) life-cycle.
  *  - ''RUNNING'' (created and started actor) - can receive messages

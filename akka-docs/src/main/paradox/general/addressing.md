@@ -13,9 +13,9 @@ within an actor system, please read on for the details.
 
 ## What is an Actor Reference
 
-An actor reference is a subtype of `ActorRef`, whose foremost purpose is
+An actor reference is a subtype of @apidoc[ActorRef](typed.ActorRef), whose foremost purpose is
 to support sending messages to the actor it represents. Each actor has access
-to its canonical (local) reference through the `ActorContext.self` field; this
+to its canonical (local) reference through the @apidoc[ActorContext.self](typed.*.ActorContext) {scala="#self:akka.actor.typed.ActorRef[T]" java="#getSelf()"} field; this
 reference can be included in messages to other actors to get replies back.
 
 There are several different types of actor references that are supported
@@ -34,7 +34,7 @@ communication, i.e. sending messages to them will serialize the messages
 transparently and send them to the remote JVM.
  * There are several special types of actor references which behave like local
 actor references for all practical purposes:
-    * `PromiseActorRef` is the special representation of a `Promise`
+    * `PromiseActorRef` is the special representation of a @scaladoc[Promise](scala.concurrent.Promise)
 for the purpose of being completed by the response from an actor.
 `akka.pattern.ask` creates this actor reference.
     * `DeadLetterActorRef` is the default implementation of the dead
@@ -52,7 +52,7 @@ as a pseudo-supervisor for the root guardian, we call it “the one who walks
 the bubbles of space-time”.
     * The first logging service started before actually firing up actor creation
 facilities is a fake actor reference which accepts log events and prints
-them directly to standard output; it is `Logging.StandardOutLogger`.
+them directly to standard output; it is @apidoc[Logging.StandardOutLogger](Logging.StandardOutLogger).
 
 ## What is an Actor Path?
 
@@ -117,16 +117,16 @@ There are two general categories to how actor references may be obtained: by
 
 ## Actor Reference and Path Equality
 
-Equality of `ActorRef` match the intention that an `ActorRef` corresponds to
+Equality of @apidoc[ActorRef](typed.ActorRef) match the intention that an @apidoc[ActorRef](typed.ActorRef) corresponds to
 the target actor incarnation. Two actor references are compared equal when they have
 the same path and point to the same actor incarnation. A reference pointing to a
 terminated actor does not compare equal to a reference pointing to another (re-created)
 actor with the same path. Note that a restart of an actor caused by a failure still
 means that it is the same actor incarnation, i.e. a restart is not visible for the
-consumer of the `ActorRef`.
+consumer of the @apidoc[ActorRef](typed.ActorRef).
 
 If you need to keep track of actor references in a collection and do not care about
-the exact actor incarnation you can use the `ActorPath` as key, because the identifier
+the exact actor incarnation you can use the @apidoc[ActorPath](ActorPath) as key, because the identifier
 of the target actor is not taken into account when comparing actor paths.
 
 ## Reusing Actor Paths
@@ -154,7 +154,7 @@ other actors are found; its name is `"/"`. The next level consists of the
 following:
 
  * `"/user"` is the guardian actor for all user-created top-level actors;
-actors created using `ActorSystem.actorOf` are found below this one.
+actors created using @apidoc[ActorSystem.actorOf](ActorRefFactory) {scala="#actorOf(props:akka.actor.Props):akka.actor.ActorRef" java="#actorOf(akka.actor.Props)"} are found below this one.
  * `"/system"` is the guardian actor for all system-created top-level actors,
 e.g. logging listeners or actors automatically deployed by configuration at
 the start of the actor system.
@@ -162,7 +162,7 @@ the start of the actor system.
 stopped or non-existing actors are re-routed (on a best-effort basis: messages
 may be lost even within the local JVM).
  * `"/temp"` is the guardian for all short-lived system-created actors, e.g.
-those which are used in the implementation of `ActorRef.ask`.
+those which are used in the implementation of @scala[@scaladoc[ActorRef.ask](akka.pattern.AskableActorRef#ask(message:Any)(implicittimeout:akka.util.Timeout,implicitsender:akka.actor.ActorRef):scala.concurrent.Future[Any])]@java[@javadoc[Patterns.ask](akka.pattern.Patterns#ask(akka.actor.ActorRef,java.lang.Object,java.time.Duration))].
  * `"/remote"` is an artificial path below which all actors reside whose
 supervisors are remote actor references
 

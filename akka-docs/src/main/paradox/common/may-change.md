@@ -30,5 +30,4 @@ These are the current complete modules marked as **may change**:
 
 * @ref:[Multi Node Testing](../multi-node-testing.md)
 * @ref:[Reliable Delivery](../typed/reliable-delivery.md)
-* @ref:[Durable State](../typed/durable-state/persistence.md)
 

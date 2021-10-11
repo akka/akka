@@ -173,8 +173,8 @@ object DnsSettings {
       // Using jndi-dns to obtain the default name servers.
       //
       // See:
-      // - http://docs.oracle.com/javase/8/docs/technotes/guides/jndi/jndi-dns.html
-      // - http://mail.openjdk.java.net/pipermail/net-dev/2017-March/010695.html
+      // - https://docs.oracle.com/javase/8/docs/technotes/guides/jndi/jndi-dns.html
+      // - https://mail.openjdk.java.net/pipermail/net-dev/2017-March/010695.html
       val env = new util.Hashtable[String, String]
       env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory")
       env.put("java.naming.provider.url", "dns://")

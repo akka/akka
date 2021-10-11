@@ -66,7 +66,7 @@ Java
 The `Publisher` is used as an input `Source` to the flow and the
 `Subscriber` is used as an output `Sink`.
 
-A `Flow` can also be also converted to a `RunnableGraph[Processor[In, Out]]` which
+A `Flow` can also be converted to a `RunnableGraph[Processor[In, Out]]` which
 materializes to a `Processor` when `run()` is called. `run()` itself can be called multiple
 times, resulting in a new `Processor` instance each time.
 

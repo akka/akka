@@ -1,4 +1,4 @@
-Akka [![Latest version](https://index.scala-lang.org/akka/akka/akka-actor/latest.svg)](https://index.scala-lang.org/akka/akka/akka-actor)[![Build Status](https://api.travis-ci.com/akka/akka.svg?branch=master)](https://travis-ci.com/github/akka/akka)
+Akka [![Latest version](https://index.scala-lang.org/akka/akka/akka-actor/latest.svg)](https://index.scala-lang.org/akka/akka/akka-actor)[![Build Status](https://api.travis-ci.com/akka/akka.svg?branch=main)](https://travis-ci.com/github/akka/akka)
 ====
 
 We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
@@ -42,7 +42,7 @@ Contributions are *very* welcome!
 
 If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a pull request implementing it.
 
-Refer to the [CONTRIBUTING.md](https://github.com/akka/akka/blob/master/CONTRIBUTING.md) file for more details about the workflow,
+Refer to the [CONTRIBUTING.md](https://github.com/akka/akka/blob/main/CONTRIBUTING.md) file for more details about the workflow,
 and general hints on how to prepare your pull request. You can also ask for clarifications or guidance in GitHub issues directly,
 or in the akka/dev chat if a more real time communication would be of benefit.
 

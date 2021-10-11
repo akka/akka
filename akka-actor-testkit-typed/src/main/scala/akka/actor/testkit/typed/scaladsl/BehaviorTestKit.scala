@@ -4,24 +4,29 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import java.util.concurrent.ThreadLocalRandom
+import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
+import akka.annotation.{ ApiMayChange, DoNotInherit }
+import com.typesafe.config.Config
 
+import java.util.concurrent.ThreadLocalRandom
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
-import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
-import akka.actor.typed.receptionist.Receptionist
-import akka.annotation.{ ApiMayChange, DoNotInherit }
-
 @ApiMayChange
 object BehaviorTestKit {
-  import akka.actor.testkit.typed.scaladsl.TestInbox.address
 
-  def apply[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
+  val ApplicationTestConfig: Config = ActorTestKit.ApplicationTestConfig
+
+  def apply[T](initialBehavior: Behavior[T], name: String, config: Config): BehaviorTestKit[T] = {
+    val system = new ActorSystemStub("StubbedActorContext", config)
     val uid = ThreadLocalRandom.current().nextInt()
-    new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior)
+    new BehaviorTestKitImpl(system, (system.path / name).withUid(uid), initialBehavior)
+  }
+  def apply[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
+    apply(initialBehavior, name, ActorSystemStub.config.defaultReference)
   }
   def apply[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
     apply(initialBehavior, "testkit")
