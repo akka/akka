@@ -1433,6 +1433,7 @@ private[akka] class DDataShardCoordinator(
   private var terminating = false
   private var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
   private var initialStateRetries = 0
+  private var initialWaitForUpdateRetries = 0
 
   private val rememberEntitiesStore =
     rememberEntitiesStoreProvider.map { provider =>
@@ -1591,19 +1592,38 @@ private[akka] class DDataShardCoordinator(
       }
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) =>
-      log.warning(
-        "{}: The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
-        "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
-        typeName,
-        stateWriteConsistency.timeout.toMillis,
-        if (terminating) "terminating" else "retrying",
-        evt)
-      if (terminating) {
-        context.stop(self)
-      } else {
-        // repeat until UpdateSuccess
-        sendCoordinatorStateUpdate(evt)
+      val template = "{}: The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
+      "Perhaps the ShardRegion has not started on all active nodes yet? event={}"
+
+      if(initialWaitForUpdateRetries < 5) {
+        initialWaitForUpdateRetries += 1
+        log.warning(template,
+          typeName,
+          stateWriteConsistency.timeout.toMillis,
+          if (terminating) "terminating" else "retrying",
+          evt)
+        if (terminating) {
+          context.stop(self)
+        } else {
+          // repeat until UpdateSuccess
+          sendCoordinatorStateUpdate(evt)
+        }
       }
+      else
+      {
+        log.error(template,
+          typeName,
+          stateWriteConsistency.timeout.toMillis,
+          if (terminating) "terminating" else "retrying",
+          evt)
+        if (terminating) {
+          context.stop(self)
+        } else {
+          // repeat until UpdateSuccess
+          sendCoordinatorStateUpdate(evt)
+        }
+      }
+
 
     case ModifyFailure(key, error, cause, _) =>
       log.error(
