@@ -53,10 +53,10 @@ object EventSourcedBehaviorTestKitSpec {
 
     case object NotSerializableCommand extends Command
 
-    final case class IncrementWithNotSerializableReply(replyTo: ActorRef[NotSerializableReply.type])
+    final case class IncrementWithNotSerializableReply(replyTo: ActorRef[NotSerializableReply])
         extends Command
         with CborSerializable
-    object NotSerializableReply
+    class NotSerializableReply
 
     def apply(persistenceId: PersistenceId): Behavior[Command] =
       apply(persistenceId, RealState(0, Vector.empty))
@@ -100,7 +100,7 @@ object EventSourcedBehaviorTestKitSpec {
               Effect.persist(IncrementedWithNotSerializableState(1)).thenNoReply()
 
             case IncrementWithNotSerializableReply(replyTo) =>
-              Effect.persist(Incremented(1)).thenReply(replyTo)(_ => NotSerializableReply)
+              Effect.persist(Incremented(1)).thenReply(replyTo)(_ => new NotSerializableReply)
 
             case NotSerializableCommand =>
               Effect.noReply
@@ -277,7 +277,7 @@ class EventSourcedBehaviorTestKitSpec
       val eventSourcedTestKit = createTestKit()
 
       val exc = intercept[IllegalArgumentException] {
-        eventSourcedTestKit.runCommand(TestCounter.IncrementWithNotSerializableReply)
+        eventSourcedTestKit.runCommand(replyTo => TestCounter.IncrementWithNotSerializableReply(replyTo))
       }
       (exc.getMessage should include).regex("Reply.*isn't serializable")
       exc.getCause.getClass should ===(classOf[NotSerializableException])

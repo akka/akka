@@ -23,7 +23,7 @@ jobs:
           - akka-bench-jmh/test
           - akka-cluster/Test/compile akka-cluster-tools/test akka-cluster-typed/test akka-distributed-data/test akka-cluster-metrics/Test/compile akka-cluster-sharding/Test/compile akka-cluster-sharding-typed/compile
           - akka-discovery/test akka-coordination/test
-          - akka-persistence/test akka-persistence-shared/test akka-persistence-query/test
+          - akka-persistence/test akka-persistence-shared/test akka-persistence-query/test akka-persistence-typed/test akka-persistence-testkit/test
           - akka-pki/test akka-slf4j/test
           - akka-serialization-jackson/test
           - akka-stream/test akka-stream-testkit/test akka-stream-tests/test

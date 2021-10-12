@@ -16,7 +16,7 @@ import akka.util.ccompat.JavaConverters._
 
 trait CommonSnapshotTests extends JavaDslUtils {
 
-  lazy val testKit = new SnapshotTestKit(system)
+  final lazy val testKit = new SnapshotTestKit(system)
   import testKit._
 
   def specificTests(): Unit

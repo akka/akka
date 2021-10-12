@@ -15,7 +15,7 @@ import akka.util.ccompat.JavaConverters._
 
 trait CommonTestKitTests extends JavaDslUtils {
 
-  lazy val testKit = new PersistenceTestKit(system)
+  final lazy val testKit = new PersistenceTestKit(system)
   import testKit._
 
   def specificTests(): Unit
