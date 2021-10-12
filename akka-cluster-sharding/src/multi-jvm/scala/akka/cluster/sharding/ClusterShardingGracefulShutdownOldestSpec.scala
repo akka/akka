@@ -21,30 +21,6 @@ abstract class ClusterShardingGracefulShutdownOldestSpecConfig(mode: String)
 }
 
 object ClusterShardingGracefulShutdownOldestSpec {
-  object TerminationOrderActor {
-    case object RegionTerminated
-
-    case object CoordinatorTerminated
-
-    def props(probe: ActorRef, coordinator: ActorRef, region: ActorRef) =
-      Props(new TerminationOrderActor(probe, coordinator, region))
-  }
-
-  class TerminationOrderActor(probe: ActorRef, coordinator: ActorRef, region: ActorRef) extends Actor {
-
-    import TerminationOrderActor._
-
-    context.watch(coordinator)
-    context.watch(region)
-
-    def receive = {
-      case Terminated(`coordinator`) =>
-        probe ! CoordinatorTerminated
-      case Terminated(`region`) =>
-        probe ! RegionTerminated
-    }
-
-  }
 
   object SlowStopShardedEntity {
     case object Stop
@@ -143,15 +119,17 @@ abstract class ClusterShardingGracefulShutdownOldestSpec(
               .resolveOne(remainingOrDefault),
             remainingOrDefault)
         }
-        val terminationProbe = TestProbe()
-        system.actorOf(TerminationOrderActor.props(terminationProbe.ref, coordinator, region))
+
+        val regionTerminationProbe = TestProbe()
+        regionTerminationProbe.watch(region)
+        val coordinatorTerminationProbe = TestProbe()
+        coordinatorTerminationProbe.watch(coordinator)
 
         // trigger graceful shutdown
         cluster.leave(address(first))
 
-        // region first
-        terminationProbe.expectMsg(TerminationOrderActor.RegionTerminated)
-        terminationProbe.expectMsg(TerminationOrderActor.CoordinatorTerminated)
+        regionTerminationProbe.expectTerminated(region)
+        coordinatorTerminationProbe.expectTerminated(coordinator)
       }
       enterBarrier("terminated")
 
