@@ -1593,11 +1593,25 @@ private[akka] class DDataShardCoordinator(
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) =>
       val template = "{}: The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
-      "Perhaps the ShardRegion has not started on all active nodes yet? event={}"
+        "Perhaps the ShardRegion has not started on all active nodes yet? event={}"
 
-      if(initialWaitForUpdateRetries < 5) {
+      if (initialWaitForUpdateRetries < 5) {
         initialWaitForUpdateRetries += 1
-        log.warning(template,
+        log.warning(
+          template,
+          typeName,
+          stateWriteConsistency.timeout.toMillis,
+          if (terminating) "terminating" else "retrying",
+          evt)
+        if (terminating) {
+          context.stop(self)
+        } else {
+          // repeat until UpdateSuccess
+          sendCoordinatorStateUpdate(evt)
+        }
+      } else {
+        log.error(
+          template,
           typeName,
           stateWriteConsistency.timeout.toMillis,
           if (terminating) "terminating" else "retrying",
@@ -1609,21 +1623,6 @@ private[akka] class DDataShardCoordinator(
           sendCoordinatorStateUpdate(evt)
         }
       }
-      else
-      {
-        log.error(template,
-          typeName,
-          stateWriteConsistency.timeout.toMillis,
-          if (terminating) "terminating" else "retrying",
-          evt)
-        if (terminating) {
-          context.stop(self)
-        } else {
-          // repeat until UpdateSuccess
-          sendCoordinatorStateUpdate(evt)
-        }
-      }
-
 
     case ModifyFailure(key, error, cause, _) =>
       log.error(
