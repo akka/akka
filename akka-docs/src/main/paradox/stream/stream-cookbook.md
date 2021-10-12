@@ -240,7 +240,7 @@ Java
 **Situation:** The idea is that you have a source which you don't want to start until you have a demand.
 Also, you want to shut it down when there is no more demand, and start it up again there is new demand again.
 
-You can achieve this behavior by combining `lazily`, `backpressureTimeout` and `recoverWithRetries` as follows:
+You can achieve this behavior by combining `lazySource`, `backpressureTimeout` and `recoverWithRetries` as follows:
 
 Scala
 :   @@snip [RecipeAdhocSource.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeAdhocSource.scala) { #adhoc-source }
