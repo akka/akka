@@ -1433,7 +1433,7 @@ private[akka] class DDataShardCoordinator(
   private var terminating = false
   private var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
   private var initialStateRetries = 0
-  private var initialWaitForUpdateRetries = 0
+  private var updateStateRetries = 0
 
   private val rememberEntitiesStore =
     rememberEntitiesStoreProvider.map { provider =>
@@ -1573,6 +1573,7 @@ private[akka] class DDataShardCoordinator(
       afterUpdateCallback: E => Unit): Receive = {
 
     case UpdateSuccess(CoordinatorStateKey, Some(`evt`)) =>
+      updateStateRetries = 0
       if (!waitingForRememberShard) {
         log.debug("{}: The coordinator state was successfully updated with {}", typeName, evt)
         if (shardId.isDefined) timers.cancel(RememberEntitiesTimeoutKey)
@@ -1592,17 +1593,14 @@ private[akka] class DDataShardCoordinator(
       }
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) =>
-      val template = "{}: The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
-        "Perhaps the ShardRegion has not started on all active nodes yet? event={}"
+      updateStateRetries += 1
 
-      if (initialWaitForUpdateRetries < 5) {
-        initialWaitForUpdateRetries += 1
-        log.warning(
-          template,
-          typeName,
-          stateWriteConsistency.timeout.toMillis,
-          if (terminating) "terminating" else "retrying",
-          evt)
+      val template = s"$typeName: The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': ${stateWriteConsistency.timeout.toMillis} millis (${if (terminating) "terminating"
+        else "retrying"}). Attempt $updateStateRetries. " +
+        s"Perhaps the ShardRegion has not started on all active nodes yet? event=$evt"
+
+      if (updateStateRetries < 5) {
+        log.warning(template)
         if (terminating) {
           context.stop(self)
         } else {
@@ -1610,12 +1608,7 @@ private[akka] class DDataShardCoordinator(
           sendCoordinatorStateUpdate(evt)
         }
       } else {
-        log.error(
-          template,
-          typeName,
-          stateWriteConsistency.timeout.toMillis,
-          if (terminating) "terminating" else "retrying",
-          evt)
+        log.error(template)
         if (terminating) {
           context.stop(self)
         } else {
