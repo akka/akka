@@ -16,6 +16,7 @@ import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestDuration
 import akka.testkit.TimingTest
 import akka.util.ByteString
 
@@ -110,19 +111,19 @@ class FlowThrottleSpec extends StreamSpec("""
     }
 
     "send elements downstream as soon as time comes" in assertAllStagesStopped {
-      val throttleInterval = 500.millis
+      val throttleInterval = 500.millis.dilated
       val elementsAndTimestampsMs = Source(1 to 5)
         .throttle(1, throttleInterval)
         .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
           (System.nanoTime() / 1000000, n) :: acc
         }
-        .futureValue(timeout(5.seconds))
+        .futureValue(timeout(5.seconds.dilated))
         .reverse
 
       val startMs = elementsAndTimestampsMs.head._1
       val elemsAndTimeFromStart = elementsAndTimestampsMs.map { case (ts, n) => (ts - startMs, n) }
       val perThrottleInterval = elemsAndTimeFromStart.groupBy {
-        case (fromStart, _) => fromStart / throttleInterval.toMillis
+        case (fromStart, _) => math.round(fromStart.toDouble / throttleInterval.toMillis).toInt
       }
       withClue(perThrottleInterval) {
         perThrottleInterval.forall { case (_, entries) => entries.size == 1 } should ===(true)
@@ -238,19 +239,19 @@ class FlowThrottleSpec extends StreamSpec("""
     }
 
     "send elements downstream as soon as time comes" in assertAllStagesStopped {
-      val throttleInterval = 500.millis
+      val throttleInterval = 500.millis.dilated
       val elementsAndTimestampsMs = Source(1 to 5)
         .throttle(2, throttleInterval, _ => 2)
         .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
           (System.nanoTime() / 1000000, n) :: acc
         }
-        .futureValue(timeout(5.seconds))
+        .futureValue(timeout(5.seconds.dilated))
         .reverse
 
       val startMs = elementsAndTimestampsMs.head._1
       val elemsAndTimeFromStart = elementsAndTimestampsMs.map { case (ts, n) => (ts - startMs, n) }
       val perThrottleInterval = elemsAndTimeFromStart.groupBy {
-        case (fromStart, _) => fromStart / throttleInterval.toMillis
+        case (fromStart, _) => math.round(fromStart.toDouble / throttleInterval.toMillis).toInt
       }
       withClue(perThrottleInterval) {
         perThrottleInterval.forall { case (_, entries) => entries.size == 1 } should ===(true)
