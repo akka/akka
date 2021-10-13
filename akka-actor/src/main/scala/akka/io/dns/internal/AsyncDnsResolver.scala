@@ -39,6 +39,26 @@ private[io] final class AsyncDnsResolver(
 
   implicit val ec: ExecutionContextExecutor = context.dispatcher
 
+  // avoid ever looking up localhost by pre-populating cache
+  {
+    val loopback = InetAddress.getLoopbackAddress
+    val (ipv4Address, ipv6Address) = loopback match {
+      case ipv6: Inet6Address => (InetAddress.getByName("127.0.0.1"), ipv6)
+      case ipv4: Inet4Address => (ipv4, InetAddress.getByName("::1"))
+      case unknown => throw new IllegalArgumentException(s"Loopback address was [$unknown]")
+    }
+    cache.put("localhost" -> Ip(),
+      DnsProtocol.Resolved("localhost", Seq(ARecord("localhost", Ttl.effectivelyForever, loopback))),
+      Ttl.effectivelyForever)
+    cache.put("localhost" -> Ip(ipv6 = false, ipv4 = true),
+      DnsProtocol.Resolved("localhost", Seq(ARecord("localhost", Ttl.effectivelyForever, ipv4Address))),
+      Ttl.effectivelyForever)
+    cache.put("localhost" -> Ip(ipv6 = true, ipv4 = false),
+      DnsProtocol.Resolved("localhost", Seq(ARecord("localhost", Ttl.effectivelyForever, ipv6Address))),
+      Ttl.effectivelyForever)
+
+  }
+
   // For ask to DNS Client
   implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
 
@@ -129,7 +149,7 @@ private[io] final class AsyncDnsResolver(
       name: String,
       requestType: RequestType,
       resolver: ActorRef): Future[DnsProtocol.Resolved] = {
-    if (settings.SearchDomains.nonEmpty && name != "localhost") {
+    if (settings.SearchDomains.nonEmpty) {
       val nameWithSearch = settings.SearchDomains.map(sd => name + "." + sd)
       // ndots is a heuristic used to try and work out whether the name passed in is a fully qualified domain name,
       // or a name relative to one of the search names. The idea is to prevent the cost of doing a lookup that is
