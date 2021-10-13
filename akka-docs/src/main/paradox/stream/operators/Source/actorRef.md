@@ -24,8 +24,8 @@ Using `akka.actor.ActorSystem.stop` to stop the actor and complete the stream is
 See also:
 
 * @ref[Source.actorRefWithBackpressure](../Source/actorRefWithBackpressure.md) This operator, but with backpressure control
-* @ref[ActorSource.actorRef](actorRef.md) The corresponding operator for the new actors API
-* @ref[ActorSource.actorRefWithBackpressure](actorRefWithBackpressure.md) The operator for the new actors API with backpressure control
+* @ref[ActorSource.actorRef](../ActorSource/actorRef.md) The corresponding operator for the new actors API
+* @ref[ActorSource.actorRefWithBackpressure](../ActorSource/actorRefWithBackpressure.md) The operator for the new actors API with backpressure control
 * @ref[Source.queue](../Source/queue.md) Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source
 
 ## Examples

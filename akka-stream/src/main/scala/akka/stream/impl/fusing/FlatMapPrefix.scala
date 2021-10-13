@@ -99,8 +99,15 @@ import akka.util.OptionVal
         subSink match {
           case OptionVal.Some(s) => s.cancel(cause)
           case _ =>
-            if (propagateToNestedMaterialization) downstreamCause = OptionVal.Some(cause)
-            else {
+            if (propagateToNestedMaterialization) {
+              downstreamCause = OptionVal.Some(cause)
+              if (accumulated.size == n) {
+                //corner case for n = 0, can be handled in FlowOps
+                materializeFlow()
+              } else if (!hasBeenPulled(in)) { //if in was already closed, nested flow would have already been materialized
+                pull(in)
+              }
+            } else {
               matPromise.failure(new NeverMaterializedException(cause))
               cancelStage(cause)
             }

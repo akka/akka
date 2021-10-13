@@ -85,6 +85,8 @@ public class PrimitiveStateTest extends JUnitSuite {
     probe.expectMessage("eventHandler:1:2");
 
     ref1.tell(-1);
+    // wait for ref1 to terminate
+    probe.expectTerminated(ref1);
     ActorRef<Integer> ref2 = testKit.spawn(b);
     // eventHandler from reply
     probe.expectMessage("eventHandler:0:1");

@@ -131,7 +131,7 @@ private[akka] object Running {
           sideEffects.size)
 
       effect match {
-        case CompositeEffect(eff, currentSideEffects) =>
+        case CompositeEffect(eff, currentSideEffects: Seq[SideEffect[S @unchecked]]) =>
           // unwrap and accumulate effects
           applyEffects(msg, state, eff, currentSideEffects ++ sideEffects)
 
@@ -274,9 +274,6 @@ private[akka] object Running {
       case callback: Callback[_] =>
         callback.sideEffect(state.state)
         behavior
-
-      case _ =>
-        throw new IllegalArgumentException(s"Unsupported side effect detected [${effect.getClass.getName}]")
     }
   }
 

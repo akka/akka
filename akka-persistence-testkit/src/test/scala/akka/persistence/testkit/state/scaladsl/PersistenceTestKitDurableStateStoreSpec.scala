@@ -32,7 +32,7 @@ class PersistenceTestKitDurableStateStoreSpec
 
   import PersistenceTestKitDurableStateStoreSpec._
 
-  implicit val classic = system.classicSystem
+  implicit val classic: akka.actor.ActorSystem = system.classicSystem
 
   "Persistent test kit state store changes query" must {
 

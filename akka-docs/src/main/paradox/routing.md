@@ -603,7 +603,7 @@ Java
 
 The ConsistentHashingPool uses [consistent hashing](https://en.wikipedia.org/wiki/Consistent_hashing)
 to select a routee based on the sent message. This 
-[article](http://www.tom-e-white.com/2007/11/consistent-hashing.html) gives good 
+[article](https://www.tom-e-white.com/2007/11/consistent-hashing.html) gives good 
 insight into how consistent hashing is implemented.
 
 There is 3 ways to define what data to use for the consistent hash key.

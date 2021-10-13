@@ -37,7 +37,7 @@ class GetShardTypeNamesSpec extends AkkaSpec(GetShardTypeNamesSpec.config) with 
 
   "GetShardTypeNames" must {
     "contain empty when join cluster without shards" in {
-      ClusterSharding(system).shardTypeNames should ===(Set())
+      ClusterSharding(system).shardTypeNames should ===(Set.empty[String])
     }
 
     "contain started shards when started 2 shards" in {

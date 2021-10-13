@@ -27,8 +27,10 @@ class QueueSourceSpec extends StreamSpec {
   val pause = 300.millis
 
   // more frequent checks than defaults from AkkaSpec
-  implicit val testPatience: PatienceConfig =
-    PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(5, org.scalatest.time.Millis))
+  implicit val testPatience: PatienceConfig = {
+    import akka.testkit.TestDuration
+    PatienceConfig(testKitSettings.DefaultTimeout.duration.dilated, Span(5, org.scalatest.time.Millis))
+  }
 
   def assertSuccess(f: Future[QueueOfferResult]): Unit = {
     f.futureValue should ===(QueueOfferResult.Enqueued)

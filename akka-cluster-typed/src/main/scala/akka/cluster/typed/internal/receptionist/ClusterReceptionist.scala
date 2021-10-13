@@ -38,7 +38,7 @@ private[typed] final class ClusterReceptionist
 @InternalApi
 private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
-  type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[ReceptionistMessages.Listing[K#Protocol]]
+  import ClusterReceptionistProtocol.SubscriptionsKV
   type SubscriptionRegistry = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
   type DDataKey = ORMultiMapKey[ServiceKey[_], Entry]
 
@@ -167,7 +167,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       addTombstone(serviceInstance, key, tombstoneDeadline).copy(servicesPerActor = newServicesForActor)
     }
 
-    def removeSubscriber(subscriber: ActorRef[ReceptionistMessages.Listing[Any]]): ClusterReceptionist.State =
+    def removeSubscriber[T](subscriber: ActorRef[ReceptionistMessages.Listing[T]]): ClusterReceptionist.State =
       copy(subscriptions = subscriptions.valueRemoved(subscriber))
 
   }
@@ -591,7 +591,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           // support two heterogeneous types of messages without union types
           case cmd: InternalCommand => onInternalCommand(cmd)
           case cmd: Command         => onCommand(cmd)
-          case _                    => Behaviors.unhandled
+          case null                 => Behaviors.unhandled
         }
       }
     }

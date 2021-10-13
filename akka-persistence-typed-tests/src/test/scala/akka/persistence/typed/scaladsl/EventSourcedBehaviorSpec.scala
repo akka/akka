@@ -357,11 +357,15 @@ class EventSourcedBehaviorSpec
       counterSetup ! Increment
       counterSetup ! GetValue(probe.ref)
       probe.expectMessage(State(3, Vector(0, 1, 2)))
+      counterSetup ! Increment
+      counterSetup ! StopIt
+      probe.expectTerminated(counterSetup)
 
       val counterDefaultRecoveryStrategy = spawn(counterWithRecoveryStrategy(Recovery.default))
-      counterSetup ! Increment
       counterDefaultRecoveryStrategy ! GetValue(probe.ref)
       probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
+      counterDefaultRecoveryStrategy ! StopIt
+      probe.expectTerminated(counterDefaultRecoveryStrategy)
 
       val counterDisabledRecoveryStrategy = spawn(counterWithRecoveryStrategy(Recovery.disabled))
       counterDisabledRecoveryStrategy ! Increment
@@ -390,6 +394,8 @@ class EventSourcedBehaviorSpec
       snapshotProbe.receiveMessages(3)
       counterSetup ! GetValue(commandProbe.ref)
       commandProbe.expectMessage(State(3, Vector(0, 1, 2)))
+      counterSetup ! StopIt
+      commandProbe.expectTerminated(counterSetup)
 
       val counterWithSnapshotSelectionCriteriaNone = spawn(
         counterWithSnapshotSelectionCriteria(Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)))
@@ -401,6 +407,9 @@ class EventSourcedBehaviorSpec
       eventProbe.expectMessage(State(3, Vector(0, 1, 2)) -> Incremented(1))
       counterWithSnapshotSelectionCriteriaNone ! GetValue(commandProbe.ref)
       commandProbe.expectMessage(State(4, Vector(0, 1, 2, 3)))
+
+      counterWithSnapshotSelectionCriteriaNone ! StopIt
+      commandProbe.expectTerminated(counterWithSnapshotSelectionCriteriaNone)
 
       val counterWithSnapshotSelectionCriteriaLatest = spawn(
         counterWithSnapshotSelectionCriteria(Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.latest)))

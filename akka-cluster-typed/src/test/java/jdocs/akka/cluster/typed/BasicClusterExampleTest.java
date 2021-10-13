@@ -69,7 +69,7 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
 
       // #prepare
       PrepareForFullClusterShutdown msg =
-          PrepareForFullClusterShutdown.prepareForFullClusterShutdown();
+          PrepareForFullClusterShutdown$.MODULE$.prepareForFullClusterShutdown();
       cluster2.manager().tell(msg);
       // #prepare
 

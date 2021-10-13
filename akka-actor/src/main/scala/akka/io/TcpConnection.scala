@@ -326,7 +326,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         // If peer closed first, the socket is now fully closed.
         // Also, if shutdownOutput threw an exception we expect this to be an indication
         // that the peer closed first or concurrently with this code running.
-        // also see http://bugs.sun.com/view_bug.do?bug_id=4516760
+        // also see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4516760
         if (peerClosed || !safeShutdownOutput())
           doCloseConnection(info.handler, closeCommander, closedEvent)
         else context.become(closing(info, closeCommander))
@@ -365,7 +365,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     try channel.socket.setSoLinger(true, 0) // causes the following close() to send TCP RST
     catch {
       case NonFatal(e) =>
-        // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
+        // setSoLinger can fail due to https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6799574
         // (also affected: OS/X Java 1.6.0_37)
         if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
     }

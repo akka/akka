@@ -15,9 +15,9 @@ capabilities in the context of the JVM process that runs the ActorSystem if:
  * or if TLS is enabled with mutual authentication and the authentication keys of a host that is allowed to connect have been compromised, an attacker gained access to a valid certificate (e.g. by compromising a node with certificates issued by the same internal PKI tree to get access of the certificate)
  * regardless of whether `untrusted` mode is enabled or not
 
-Java deserialization is [known to be vulnerable](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995) to attacks when attacker can provide arbitrary types.
+Java deserialization is [known to be vulnerable](https://community.microfocus.com/cyberres/fortify/f/fortify-discussions/317555/the-perils-of-java-deserialization) to attacks when attacker can provide arbitrary types.
 
-Akka Remoting uses Java serialiser as default configuration which makes it vulnerable in its default form. The documentation of how to disable Java serializer was not complete. The documentation of how to enable mutual authentication was missing (only described in reference.conf).
+Akka Remoting uses Java serializer as default configuration which makes it vulnerable in its default form. The documentation of how to disable Java serializer was not complete. The documentation of how to enable mutual authentication was missing (only described in reference.conf).
 
 To protect against such attacks the system should be updated to Akka *2.4.17* or later and be configured with 
 [disabled Java serializer](https://doc.akka.io/docs/akka/2.5/remoting.html#disable-java-serializer). Additional protection can be achieved when running in an

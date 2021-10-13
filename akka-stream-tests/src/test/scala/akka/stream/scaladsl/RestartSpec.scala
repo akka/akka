@@ -33,6 +33,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.DefaultTimeout
 import akka.testkit.EventFilter
+import akka.testkit.GHExcludeTest
 import akka.testkit.TestDuration
 
 class RestartSpec
@@ -41,8 +42,8 @@ class RestartSpec
 
   import system.dispatcher
 
-  private val shortMinBackoff = 10.millis
-  private val shortMaxBackoff = 20.millis
+  private val shortMinBackoff = 200.millis
+  private val shortMaxBackoff = 300.millis
   private val minBackoff = 1.second.dilated
   private val maxBackoff = 3.seconds.dilated
 
@@ -318,7 +319,8 @@ class RestartSpec
       probe.cancel()
     }
 
-    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" in assertAllStagesStopped {
+    // https://github.com/akka/akka/issues/30540
+    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" taggedAs GHExcludeTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(shortRestartSettings.withMaxRestarts(2, 1.second)) { () =>
@@ -560,7 +562,7 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" in assertAllStagesStopped {
+    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" taggedAs GHExcludeTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
@@ -850,7 +852,7 @@ class RestartSpec
 
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
-      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain.only("in complete", "out complete")
+      expectInAnyOrder(flowInProbe, "in complete", "out complete")
 
       // and it should restart
       sink.request(1)
@@ -863,6 +865,14 @@ class RestartSpec
       sink.expectComplete()
 
       created.get() should ===(2)
+    }
+
+    def expectInAnyOrder(probe: TestSubscriber.Probe[String], one: String, other: String): Unit = {
+      probe.expectNext() match {
+        case `one`   => probe.expectNext() should be(other)
+        case `other` => probe.expectNext() should be(one)
+        case other   => fail(s"Unexpected: [$other]")
+      }
     }
 
     // onlyOnFailures -->

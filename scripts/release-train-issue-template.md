@@ -41,7 +41,7 @@ Release Akka $VERSION$
   - [ ] push changes to the [remote git repository](https://github.com/akka/doc.akka.io)
        ```
        cd ~/www
-       git push origin master
+       git push origin main
        ```
 
 ### Announcements

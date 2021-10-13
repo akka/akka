@@ -399,7 +399,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
   lazy val rebalancingPersistentRegion = createRegion("RebalancingRememberCounter", rememberEntities = true)
   lazy val autoMigrateRegion = createRegion("AutoMigrateRememberRegionTest", rememberEntities = true)
 
-  s"Cluster sharding ($mode)" must {
+  s"Cluster sharding (${multiNodeConfig.mode})" must {
 
     // must be done also in ddata mode since Counter is PersistentActor
     "setup shared journal" in {

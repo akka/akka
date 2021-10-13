@@ -23,6 +23,7 @@ object ShutdownAfterJoinSeedNodesSpec {
          seed-node-timeout = 2s
          retry-unsuccessful-join-after = 2s
          shutdown-after-unsuccessful-join-seed-nodes = 5s
+         jmx.multi-mbeans-in-same-jvm = on
        }
        """
 }

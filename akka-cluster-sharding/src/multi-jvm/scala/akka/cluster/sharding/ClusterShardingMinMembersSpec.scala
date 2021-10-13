@@ -63,7 +63,7 @@ abstract class ClusterShardingMinMembersSpec(multiNodeConfig: ClusterShardingMin
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  s"Cluster with min-nr-of-members using sharding ($mode)" must {
+  s"Cluster with min-nr-of-members using sharding (${multiNodeConfig.mode})" must {
 
     "use all nodes" in within(30.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second, third))

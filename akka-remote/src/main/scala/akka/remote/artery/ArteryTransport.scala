@@ -864,16 +864,19 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     }
   }
 
-  // Checks for termination hint messages and sends an ACK for those (not processing them further)
+  // Checks for Flush messages and sends an FlushAck for those (not processing them further)
   // Purpose of this stage is flushing, the sender can wait for the ACKs up to try flushing
   // pending messages.
-  val flushReplier: Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
+  // The Flush messages are duplicated into all lanes by the DuplicateFlush stage and
+  // the `expectedAcks` corresponds to the number of lanes. The sender receives the `expectedAcks` and
+  // thereby knows how many to wait for.
+  def flushReplier(expectedAcks: Int): Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
     Flow[InboundEnvelope].filter { envelope =>
       envelope.message match {
         case Flush =>
           envelope.sender match {
             case OptionVal.Some(snd) =>
-              snd.tell(FlushAck, ActorRef.noSender)
+              snd.tell(FlushAck(expectedAcks), ActorRef.noSender)
             case _ =>
               log.error("Expected sender for Flush message from [{}]", envelope.association)
           }
@@ -887,7 +890,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
-      .via(flushReplier)
+      .via(flushReplier(expectedAcks = settings.Advanced.InboundLanes))
       .via(terminationHintReplier(inControlStream = false))
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
@@ -907,7 +910,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(envelopeBufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
-      .via(flushReplier)
+      .via(flushReplier(expectedAcks = 1))
       .via(terminationHintReplier(inControlStream = true))
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))

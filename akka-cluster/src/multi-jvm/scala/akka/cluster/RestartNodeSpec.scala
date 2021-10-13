@@ -76,7 +76,9 @@ abstract class RestartNodeSpec
   @volatile var secondUniqueAddress: UniqueAddress = _
 
   // use a separate ActorSystem, to be able to simulate restart
-  lazy val secondSystem = ActorSystem(system.name, system.settings.config)
+  lazy val secondSystem = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
+
+  override def verifySystemShutdown: Boolean = true
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(first, secondUniqueAddress.address, third)
 

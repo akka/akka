@@ -120,9 +120,10 @@ class SplitBrainResolverIntegrationSpec
 
       val sys = ActorSystem(
         system.name + "-" + c,
-        scenario.cfg
-          .withValue("akka.cluster.multi-data-center.self-data-center", ConfigValueFactory.fromAnyRef(dcName))
-          .withFallback(system.settings.config))
+        MultiNodeSpec.configureNextPortIfFixed(
+          scenario.cfg
+            .withValue("akka.cluster.multi-data-center.self-data-center", ConfigValueFactory.fromAnyRef(dcName))
+            .withFallback(system.settings.config)))
       val gremlinController = sys.actorOf(GremlinController.props, "gremlinController")
       system.actorOf(GremlinControllerProxy.props(gremlinController), s"gremlinControllerProxy-$c")
       sys
@@ -163,12 +164,12 @@ class SplitBrainResolverIntegrationSpec
     }
 
     def sysAddress(at: RoleName): Address = {
-      implicit val timeout = Timeout(3.seconds)
+      implicit val timeout: Timeout = 3.seconds
       Await.result((gremlinControllerProxy(at) ? GetAddress).mapTo[Address], timeout.duration)
     }
 
     def blackhole(from: RoleName, to: RoleName): Unit = {
-      implicit val timeout = Timeout(3.seconds)
+      implicit val timeout: Timeout = 3.seconds
       import system.dispatcher
       val f = for {
         target <- (gremlinControllerProxy(to) ? GetAddress).mapTo[Address]

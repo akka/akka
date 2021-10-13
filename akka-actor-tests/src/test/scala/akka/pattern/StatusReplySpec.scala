@@ -33,6 +33,13 @@ class StatusReplySpec extends AkkaSpec with ScalaFutures {
         case _               => fail()
       }
     }
+    "not throw exception if null" in {
+      (null: StatusReply[_]) match {
+        case StatusReply.Success(_) => fail()
+        case StatusReply.Error(_)   => fail()
+        case _                      =>
+      }
+    }
     "pattern match error with text" in {
       StatusReply.Error("boho!") match {
         case StatusReply.Error(_) =>

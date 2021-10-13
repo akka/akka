@@ -112,13 +112,11 @@ import akka.util.OptionVal
   }
 
   private def cancelTimer(timer: Timer): Unit = {
-    log.debug("Cancel timer [{}] with generation [{}]", timer.key, timer.generation)
     timer.task.cancel()
     timers -= timer.key
   }
 
   override def cancelAll(): Unit = {
-    log.debug("Cancel all timers")
     timers.valuesIterator.foreach { timer =>
       timer.task.cancel()
     }

@@ -454,9 +454,11 @@ abstract class StressSpec
 
   override def beforeEach(): Unit = { step += 1 }
 
-  override def expectedTestDuration = settings.expectedTestDuration
+  override def expectedTestDuration: FiniteDuration = settings.expectedTestDuration
 
   override def shutdownTimeout: FiniteDuration = 30.seconds.dilated
+
+  override def verifySystemShutdown: Boolean = true
 
   override def muteLog(sys: ActorSystem = system): Unit = {
     super.muteLog(sys)
@@ -549,14 +551,15 @@ abstract class StressSpec
     }
     enterBarrier("result-aggregator-created-" + step)
     runOn(roles.take(nbrUsedRoles): _*) {
-      val resultAggregator = clusterResultAggregator
+      val resultAggregator = identifyClusterResultAggregator()
       phiObserver ! ReportTo(resultAggregator)
       statsObserver ! Reset
       statsObserver ! ReportTo(resultAggregator)
     }
+    enterBarrier("result-aggregator-identified-" + step)
   }
 
-  def clusterResultAggregator: Option[ActorRef] = {
+  def identifyClusterResultAggregator(): Option[ActorRef] = {
     system.actorSelection(node(roles.head) / "user" / ("result" + step)).tell(Identify(step), identifyProbe.ref)
     identifyProbe.expectMsgType[ActorIdentity].ref
   }
@@ -571,7 +574,7 @@ abstract class StressSpec
 
   def awaitClusterResult(): Unit = {
     runOn(roles.head) {
-      clusterResultAggregator match {
+      identifyClusterResultAggregator() match {
         case Some(r) =>
           watch(r)
           expectMsgPF() { case Terminated(a) if a.path == r.path => true }
@@ -749,7 +752,7 @@ abstract class StressSpec
 
     val returnValue = thunk
 
-    clusterResultAggregator.foreach {
+    identifyClusterResultAggregator().foreach {
       _ ! ClusterResult(cluster.selfAddress, (System.nanoTime - startTime).nanos, latestGossipStats :- startStats)
     }
 
@@ -782,7 +785,7 @@ abstract class StressSpec
                 previousAS.foreach { as =>
                   TestKit.shutdownActorSystem(as)
                 }
-                val sys = ActorSystem(system.name, system.settings.config)
+                val sys = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
                 muteLog(sys)
                 Cluster(sys).joinSeedNodes(seedNodes.toIndexedSeq.map(address))
                 Some(sys)

@@ -15,7 +15,7 @@ object Dependencies {
     .withRank(KeyRanks.Invisible) // avoid 'unused key' warning
 
   val junitVersion = "4.13.2"
-  val slf4jVersion = "1.7.31"
+  val slf4jVersion = "1.7.32"
   // check agrona version when updating this
   val aeronVersion = "1.32.0"
   // needs to be inline with the aeron version, check
@@ -23,14 +23,15 @@ object Dependencies {
   val agronaVersion = "1.9.0"
   val nettyVersion = "3.10.6.Final"
   val protobufJavaVersion = "3.11.4"
-  val logbackVersion = "1.2.3"
+  val logbackVersion = "1.2.5"
 
   val jacksonVersion = "2.11.4"
 
-  val scala212Version = "2.12.14"
+  val scala212Version = "2.12.15"
   val scala213Version = "2.13.6"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
-  val scala3Version = "3.0.3-RC1-bin-20210802-814fca6-NIGHTLY"
+  // and restored static forwarders
+  val scala3Version = "3.1.1-RC1-bin-20211007-c041327-NIGHTLY"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -132,7 +133,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.7" % "test"
+      val gson = "com.google.code.gson" % "gson" % "2.8.8" % "test"
     }
 
     object Test {
@@ -163,8 +164,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.25" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.25" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.4" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.4" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

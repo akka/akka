@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-nodeX
+  labels:
+    app: multi-node-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      host: test-nodeX
+  template:
+    metadata:
+      labels:
+        host: test-nodeX
+    spec:
+      containers:
+      - image: openjdk:11
+        command: ["sleep", "infinity"]
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "2Gi"
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - truncate --size -1 /etc/hosts && echo " test-nodeX" >> /etc/hosts
+        imagePullPolicy: Always
+        name: multi-test-nodeX
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+        ports:
+        - name: web
+          containerPort: 80
+          protocol: TCP
+        - name: ssh
+          containerPort: 22
+          protocol: TCP
+        - name: multi-node
+          containerPort: 5000
+          protocol: TCP
+        - name: multi-node2
+          containerPort: 5001
+          protocol: TCP
+        - name: multi-node-udp
+          containerPort: 6000
+          protocol: UDP
+        - name: server-multi
+          containerPort: 4711
+          protocol: TCP
+      volumes:
+        # Needed for Aeron tests: https://github.com/real-logic/aeron/blob/master/README.md#troubleshooting
+        - name: dshm
+          emptyDir:
+            medium: Memory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-nodeX
+  labels:
+    app: multi-node-test
+spec:
+  selector:
+    host: test-nodeX
+  ports:
+    - protocol: TCP
+      name: ssh
+      port: 22
+      targetPort: 22
+    - protocol: TCP
+      name: server-multi
+      port: 4711
+      targetPort: 4711
+    - protocol: TCP
+      name: multi-node
+      port: 5000
+      targetPort: 5000
+    - protocol: TCP
+      name: multi-node2
+      port: 5001
+      targetPort: 5001
+    - protocol: UDP
+      name: multi-node-udp
+      port: 6000
+      targetPort: 6000

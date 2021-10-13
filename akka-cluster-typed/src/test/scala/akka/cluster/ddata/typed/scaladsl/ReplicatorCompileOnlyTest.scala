@@ -26,7 +26,7 @@ object ReplicatorCompileOnlyTest {
     import akka.actor.typed.scaladsl.AskPattern._
 
     val replicator: ActorRef[Replicator.Command] = ???
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = Timeout(3.seconds)
     implicit val scheduler: Scheduler = ???
     implicit val cluster: SelfUniqueAddress = ???
     val key = GCounterKey("counter")

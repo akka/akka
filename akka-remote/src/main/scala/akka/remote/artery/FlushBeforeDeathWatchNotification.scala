@@ -44,15 +44,16 @@ private[remote] class FlushBeforeDeathWatchNotification(
     with ActorLogging {
   import FlushBeforeDeathWatchNotification.Timeout
 
-  var remaining = 0
+  private var sent = 0
+  private var remaining = -1
 
   private val timeoutTask =
     context.system.scheduler.scheduleOnce(timeout, self, Timeout)(context.dispatcher)
 
   override def preStart(): Unit = {
     try {
-      remaining = association.sendFlush(self, excludeControlQueue = true)
-      if (remaining == 0) {
+      sent = association.sendFlush(self, excludeControlQueue = true)
+      if (sent == 0) {
         done.trySuccess(Done)
         context.stop(self)
       }
@@ -71,13 +72,15 @@ private[remote] class FlushBeforeDeathWatchNotification(
   }
 
   def receive: Receive = {
-    case FlushAck =>
+    case FlushAck(expectedAcks) =>
+      if (remaining == -1)
+        remaining = sent * expectedAcks // first ack, then we know how many acks that are expected
       remaining -= 1
       log.debug("Flush acknowledged, [{}] remaining", remaining)
       if (remaining == 0)
         context.stop(self)
     case Timeout =>
-      log.debug("Flush timeout, [{}] remaining", remaining)
+      log.warning("Flush timeout, [{}] remaining", remaining)
       context.stop(self)
   }
 }

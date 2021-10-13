@@ -11,6 +11,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.testkit._
+import akka.remote.testkit.MultiNodeSpec
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -122,7 +123,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
       sys,
       typeName = dataType,
       entityProps = Props(new EntityActor(probe)),
-      settings = ClusterShardingSettings(sys).withRememberEntities(rememberEntities),
+      settings = ClusterShardingSettings(sys).withRememberEntities(multiNodeConfig.rememberEntities),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
   }
@@ -134,7 +135,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
       event: Int,
       probe: TestProbe,
       entityProbe: TestProbe): EntityActor.Started = {
-    if (!rememberEntities) {
+    if (!multiNodeConfig.rememberEntities) {
       probe.send(ClusterSharding(sys).shardRegion(dataType), event)
       probe.expectMsg(1)
     }
@@ -142,7 +143,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
     entityProbe.expectMsgType[EntityActor.Started](30.seconds)
   }
 
-  s"Cluster sharding with remember entities ($mode)" must {
+  s"Cluster sharding with remember entities (${multiNodeConfig.mode})" must {
 
     "start remembered entities when coordinator fail over" in within(30.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second, third))
@@ -200,7 +201,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
         }
         // no nodes left of the original cluster, start a new cluster
 
-        val sys2 = ActorSystem(system.name, system.settings.config)
+        val sys2 = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
         val entityProbe2 = TestProbe()(sys2)
         val probe2 = TestProbe()(sys2)
 

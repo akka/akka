@@ -77,7 +77,7 @@ object PingPongExample {
 
     def apply(): Behavior[Command] = {
       Behaviors.setup[Command] { context =>
-        val listingResponseAdapter = context.messageAdapter[Receptionist.Listing](ListingResponse)
+        val listingResponseAdapter = context.messageAdapter[Receptionist.Listing](ListingResponse.apply)
 
         context.spawnAnonymous(PingService())
 

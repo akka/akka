@@ -27,12 +27,15 @@ class PrimitiveStateSpec
     with LogCapturing {
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =
-    DurableStateBehavior[Int, Int](persistenceId, emptyState = 0, commandHandler = (_, command) => {
-      if (command < 0)
-        Effect.stop()
-      else
-        Effect.persist(command).thenReply(probe)(_ => command.toString)
-    })
+    DurableStateBehavior[Int, Int](
+      persistenceId,
+      emptyState = 0,
+      commandHandler = (state, command) => {
+        if (command < 0)
+          Effect.stop()
+        else
+          Effect.persist(state + command).thenReply(probe)(newState => newState.toString)
+      })
 
   "A typed persistent actor with primitive state" must {
     "persist primitive state and update" in {
@@ -42,15 +45,14 @@ class PrimitiveStateSpec
       ref1 ! 1
       probe.expectMessage("1")
       ref1 ! 2
-      probe.expectMessage("2")
+      probe.expectMessage("3")
 
       ref1 ! -1
       probe.expectTerminated(ref1)
 
       val ref2 = spawn(b)
-      probe.expectNoMessage()
       ref2 ! 3
-      probe.expectMessage("3")
+      probe.expectMessage("6")
     }
   }
 }

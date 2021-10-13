@@ -30,7 +30,7 @@ object PNCounter {
  * Implements a 'Increment/Decrement Counter' CRDT, also called a 'PN-Counter'.
  *
  * It is described in the paper
- * <a href="http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf">A comprehensive study of Convergent and Commutative Replicated Data Types</a>.
+ * <a href="https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf">A comprehensive study of Convergent and Commutative Replicated Data Types</a>.
  *
  * PN-Counters allow the counter to be incremented by tracking the
  * increments (P) separate from the decrements (N). Both P and N are represented

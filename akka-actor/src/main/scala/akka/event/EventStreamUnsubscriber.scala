@@ -26,12 +26,6 @@ protected[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: B
 
   import EventStreamUnsubscriber._
 
-  override def preStart(): Unit = {
-    if (debug)
-      eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $eventStream"))
-    eventStream.initUnsubscriber(self)
-  }
-
   def receive = {
     case Register(actor) =>
       if (debug)
@@ -81,9 +75,13 @@ private[akka] object EventStreamUnsubscriber {
 
   def start(system: ActorSystem, stream: EventStream) = {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
-    system
+    val unsubscriber = system
       .asInstanceOf[ExtendedActorSystem]
       .systemActorOf(props(stream, debug), "eventStreamUnsubscriber-" + unsubscribersCount.incrementAndGet())
+    if (debug)
+      stream.publish(Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $stream"))
+    stream.initUnsubscriber(unsubscriber)
+    unsubscriber
   }
 
 }

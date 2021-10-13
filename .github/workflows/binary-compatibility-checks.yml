@@ -1,0 +1,40 @@
+name: Binary Compatibility
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+    tags:
+      - v2.6.*
+
+jobs:
+  check-binary-compatibility:
+    name: Check / Binary Compatibility
+    runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
+    strategy:
+      fail-fast: false
+      matrix:
+        # The versions of scala specified here are only used as `-Dakka.build.scalaVersion=...`
+        # which ignores the PATCH portion of the version id. These Scala versions don't need
+        # to be fully defined here then since Akka build handles which patch version will be used.
+        scalaVersion: [ "2.12", "2.13" ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Report MiMa Binary Issues
+        run: sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} mimaReportBinaryIssues

@@ -31,8 +31,10 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
   }
   """) with ImplicitSender with Eventually {
 
-  override implicit val patience: PatienceConfig =
-    PatienceConfig(testKitSettings.DefaultTimeout.duration * 2, Span(200, org.scalatest.time.Millis))
+  override implicit val patience: PatienceConfig = {
+    import akka.testkit.TestDuration
+    PatienceConfig(testKitSettings.DefaultTimeout.duration.dilated * 2, Span(200, org.scalatest.time.Millis))
+  }
 
   private def isArteryTcp: Boolean =
     RARP(system).provider.transport.asInstanceOf[ArteryTransport].settings.Transport == ArterySettings.Tcp

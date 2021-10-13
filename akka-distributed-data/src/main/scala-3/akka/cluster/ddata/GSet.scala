@@ -23,7 +23,7 @@ object GSet {
  * remove elements of a G-Set.
  *
  * It is described in the paper
- * <a href="http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf">A comprehensive study of Convergent and Commutative Replicated Data Types</a>.
+ * <a href="https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf">A comprehensive study of Convergent and Commutative Replicated Data Types</a>.
  *
  * A G-Set doesn't accumulate any garbage apart from the elements themselves.
  *
@@ -87,7 +87,7 @@ final case class GSet[A] private (elements: Set[A])(override val delta: Option[G
 
   override def toString: String = s"G$elements"
 
-  def copy(e: Set[A] = elements) = new GSet[A](e)(delta)
+  def copy(e: Set[A]) = new GSet[A](e)(delta)
 }
 
 object GSetKey {

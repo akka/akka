@@ -229,7 +229,7 @@ private[akka] object Shard {
    * its stop is being recorded in the remember entities store, or while the stop is queued up
    * to be stored in the next batch.
    */
-  final case object RememberingStop extends EntityState {
+  case object RememberingStop extends EntityState {
     override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
       case NoState => NoState
       case _       => invalidTransition(newState, entities)

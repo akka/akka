@@ -1,0 +1,2 @@
+# Has always been private[akka]
+ProblemFilters.exclude[Problem]("akka.persistence.fsm.PersistentFSM#State.copy*")

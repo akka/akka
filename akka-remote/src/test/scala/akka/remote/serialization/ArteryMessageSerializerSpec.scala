@@ -32,7 +32,7 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
       "ActorSystemTerminating" -> ActorSystemTerminating(uniqueAddress()),
       "ActorSystemTerminatingAck" -> ActorSystemTerminatingAck(uniqueAddress()),
       "Flush" -> Flush,
-      "FlushAck" -> FlushAck,
+      "FlushAck" -> FlushAck(3),
       "HandshakeReq" -> HandshakeReq(uniqueAddress(), uniqueAddress().address),
       "HandshakeRsp" -> HandshakeRsp(uniqueAddress()),
       "ActorRefCompressionAdvertisement" -> ActorRefCompressionAdvertisement(

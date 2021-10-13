@@ -219,7 +219,7 @@ Applications should use standard Protobuf dependency and not `akka-protobuf-v3`.
 
 ## Java serialization
 
-Java serialization is known to be slow and [prone to attacks](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995)
+Java serialization is known to be slow and [prone to attacks](https://community.microfocus.com/cyberres/fortify/f/fortify-discussions/317555/the-perils-of-java-deserialization)
 of various kinds - it never was designed for high throughput messaging after all.
 One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
 

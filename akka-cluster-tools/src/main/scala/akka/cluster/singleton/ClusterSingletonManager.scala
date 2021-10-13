@@ -34,6 +34,7 @@ import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.dispatch.Dispatchers
 import akka.event.LogMarker
 import akka.event.Logging
+import akka.event.MarkerLoggingAdapter
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.JavaDurationConverters._
@@ -495,7 +496,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
   private val singletonLeaseName = s"${context.system.name}-singleton-${self.path}"
 
-  override val log = Logging.withMarker(context.system, this)
+  override val log: MarkerLoggingAdapter = Logging.withMarker(context.system, this)
 
   val lease: Option[Lease] = settings.leaseSettings.map(
     settings =>
@@ -821,7 +822,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     import context.dispatcher
 
     if (!preparingForFullShutdown) {
-      pipe(lease.get.acquire(reason => self ! LeaseLost(reason)).map[Any](AcquireLeaseResult).recover {
+      pipe(lease.get.acquire(reason => self ! LeaseLost(reason)).map[Any](AcquireLeaseResult(_)).recover {
         case NonFatal(t) => AcquireLeaseFailure(t)
       }).to(self)
     }
@@ -1201,7 +1202,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
           logInfo("Releasing lease as leaving AcquiringLease going to [{}]", to)
           import context.dispatcher
           lease.foreach(l =>
-            pipe(l.release().map[Any](ReleaseLeaseResult).recover {
+            pipe(l.release().map[Any](ReleaseLeaseResult(_)).recover {
               case t => ReleaseLeaseFailure(t)
             }).to(self))
         case _ =>
@@ -1213,7 +1214,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       lease.foreach { l =>
         logInfo("Releasing lease as leaving Oldest")
         import context.dispatcher
-        pipe(l.release().map(ReleaseLeaseResult)).to(self)
+        pipe(l.release().map(ReleaseLeaseResult(_))).to(self)
       }
   }
 

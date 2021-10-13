@@ -40,7 +40,7 @@ import akka.cluster.sharding.typed.delivery.ShardingConsumerController
     Behaviors.withStash(settings.bufferSize) { stashBuffer =>
       Behaviors
         .receiveMessage[ConsumerController.Command[A]] {
-          case start: ConsumerController.Start[A] =>
+          case start: ConsumerController.Start[A @unchecked] =>
             ConsumerControllerImpl.enforceLocalConsumer(start.deliverTo)
             context.unwatch(consumer)
             context.watch(start.deliverTo)
@@ -74,7 +74,7 @@ private class ShardingConsumerControllerImpl[A](
 
     Behaviors
       .receiveMessagePartial[ConsumerController.Command[A]] {
-        case seqMsg: ConsumerController.SequencedMessage[A] =>
+        case seqMsg: ConsumerController.SequencedMessage[A @unchecked] =>
           def updatedProducerControllers(): Map[ActorRef[ProducerControllerImpl.InternalCommand], String] = {
             producerControllers.get(seqMsg.producerController) match {
               case Some(_) =>

@@ -118,8 +118,10 @@ abstract class ReplicatedShardingSpec
     with Eventually {
   import ReplicatedShardingSpec._
 
-  implicit val patience: PatienceConfig =
-    PatienceConfig(testKitSettings.DefaultTimeout.duration * 2, Span(500, org.scalatest.time.Millis))
+  implicit val patience: PatienceConfig = {
+    import akka.testkit.TestDuration
+    PatienceConfig(testKitSettings.DefaultTimeout.duration.dilated * 2, Span(500, org.scalatest.time.Millis))
+  }
 
   "Replicated sharding" should {
     "form cluster" in {

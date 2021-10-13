@@ -56,8 +56,10 @@ abstract class MultiDcClusterShardingSpec
   import MultiDcClusterShardingSpecConfig._
   import MultiDcPinger._
 
-  override implicit def patienceConfig: PatienceConfig =
-    PatienceConfig(testKitSettings.DefaultTimeout.duration, 100.millis)
+  override implicit def patienceConfig: PatienceConfig = {
+    import akka.testkit.TestDuration
+    PatienceConfig(testKitSettings.DefaultTimeout.duration.dilated, 100.millis)
+  }
 
   val typeKey = EntityTypeKey[Command]("ping")
   val entityId = "ping-1"

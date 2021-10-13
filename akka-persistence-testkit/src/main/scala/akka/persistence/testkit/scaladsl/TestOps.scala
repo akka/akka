@@ -56,7 +56,7 @@ private[testkit] trait RejectSupport[U] {
 
 }
 
-private[testkit] trait PolicyOpsTestKit[P] extends {
+private[testkit] trait PolicyOpsTestKit[P] {
   this: HasStorage[P, _] =>
 
   private[testkit] val Policies: DefaultPolicies[P]

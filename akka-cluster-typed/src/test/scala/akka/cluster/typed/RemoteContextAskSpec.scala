@@ -85,7 +85,7 @@ class RemoteContextAskSpec
       spawn(Behaviors.setup[AnyRef] { ctx =>
         implicit val timeout: Timeout = 3.seconds
 
-        ctx.ask(remoteRef, Ping) {
+        ctx.ask(remoteRef, Ping.apply) {
           case Success(pong) => pong
           case Failure(ex)   => ex
         }

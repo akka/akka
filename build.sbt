@@ -12,21 +12,8 @@ enablePlugins(
   JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
 
-// check format and headers
-TaskKey[Unit]("verifyCodeFmt") := {
-  javafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
-    throw new MessageOnlyException(
-      "Unformatted Java code found. Please run 'javafmtAll' (or use the 'applyCodeStyle' alias) and commit the reformatted code")
-  }
-
-  scalafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
-    throw new MessageOnlyException(
-      "Unformatted Scala code found. Please run 'scalafmtAll' (or use the 'applyCodeStyle' alias) and commit the reformatted code")
-  }
-}
-
-addCommandAlias("verifyCodeStyle", "headerCheckAll; verifyCodeFmt")
-addCommandAlias("applyCodeStyle", "headerCreateAll; javafmtAll; scalafmtAll")
+addCommandAlias("verifyCodeStyle", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
+addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbtAll")
 
 addCommandAlias(
   name = "fixall",
@@ -36,7 +23,7 @@ addCommandAlias(name = "sortImports", value = ";scalafixEnable; scalafixAll Sort
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import sbt.Keys.{ initialCommands, parallelExecution }
 import spray.boilerplate.BoilerplatePlugin
@@ -360,7 +347,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
           // https://github.com/sbt/sbt-assembly/issues/400
           .inLibrary(Dependencies.Compile.Provided.protobufRuntime)
           .inProject),
-    assembly / assemblyOption := (assembly / assemblyOption).value.copy(includeScala = false, includeBin = false),
+    assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(false).withIncludeBin(false),
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value

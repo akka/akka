@@ -90,8 +90,14 @@ test-output
 factorials.txt
 factorial2.txt
 
+all-projects.txt
+multi-node-projects.txt
+/multi-node-test.hosts
+
 # Default sigar library extract location.
 native/
 
 /dumps/
 /core
+
+.tmp

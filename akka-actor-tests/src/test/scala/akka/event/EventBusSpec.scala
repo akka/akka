@@ -4,10 +4,7 @@
 
 package akka.event
 
-import scala.concurrent.duration._
-
 import com.typesafe.config.{ Config, ConfigFactory }
-import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
 
 import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props }
@@ -273,7 +270,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
 
   private def expectUnsubscribedByUnsubscriber(p: TestProbe, a: ActorRef): Unit = {
     val expectedMsg = s"actor $a has terminated, unsubscribing it from $bus"
-    p.fishForMessage(1 second, hint = expectedMsg) {
+    p.fishForMessage(hint = expectedMsg) {
       case Logging.Debug(_, _, msg) if msg.equals(expectedMsg) => true
       case _                                                   => false
     }
@@ -281,7 +278,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
 
   private def expectUnregisterFromUnsubscriber(p: TestProbe, a: ActorRef): Unit = {
     val expectedMsg = s"unregistered watch of $a in $bus"
-    p.fishForMessage(1 second, hint = expectedMsg) {
+    p.fishForMessage(hint = expectedMsg) {
       case Logging.Debug(_, _, msg) if msg.equals(expectedMsg) => true
       case _                                                   => false
     }

@@ -1185,10 +1185,10 @@ object Replicator {
  *
  * For good introduction to the CRDT subject watch the
  * <a href="http://www.ustream.tv/recorded/61448875">The Final Causal Frontier</a>
- * and <a href="http://vimeo.com/43903960">Eventually Consistent Data Structures</a>
+ * and <a href="https://www.infoq.com/presentations/CRDT/">Eventually Consistent Data Structures</a>
  * talk by Sean Cribbs and and the
- * <a href="http://research.microsoft.com/apps/video/dl.aspx?id=153540">talk by Mark Shapiro</a>
- * and read the excellent paper <a href="http://hal.upmc.fr/docs/00/55/55/88/PDF/techreport.pdf">
+ * <a href="https://www.microsoft.com/en-us/research/video/strong-eventual-consistency-and-conflict-free-replicated-data-types/">talk by Mark Shapiro</a>
+ * and read the excellent paper <a href="https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf">
  * A comprehensive study of Convergent and Commutative Replicated Data Types</a>
  * by Mark Shapiro et. al.
  *
@@ -1199,7 +1199,7 @@ object Replicator {
  * actor using the `Replicator.props`. If it is started as an ordinary actor it is important
  * that it is given the same name, started on same path, on all nodes.
  *
- * <a href="http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>
+ * <a href="https://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>
  * are supported. delta-CRDT is a way to reduce the need for sending the full state
  * for updates. For example adding element 'c' and 'd' to set {'a', 'b'} would
  * result in sending the delta {'c', 'd'} and merge that with the state on the
@@ -1727,9 +1727,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def isLocalSender(): Boolean = !replyTo.path.address.hasGlobalScope
 
-  def receiveUpdate(
+  def receiveUpdate[A <: ReplicatedData](
       key: KeyR,
-      modify: Option[ReplicatedData] => ReplicatedData,
+      modify: Option[A] => A,
       writeConsistency: WriteConsistency,
       req: Option[Any]): Unit = {
     val localValue = getData(key.id)
@@ -1746,7 +1746,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         case Some(envelope @ DataEnvelope(DeletedData, _, _)) =>
           (envelope, None)
         case Some(envelope @ DataEnvelope(existing, _, _)) =>
-          modify(Some(existing)) match {
+          modify(Some(existing.asInstanceOf[A])) match {
             case d: DeltaReplicatedData if deltaCrdtEnabled =>
               (envelope.merge(d.resetDelta.asInstanceOf[existing.T]), deltaOrPlaceholder(d))
             case d =>

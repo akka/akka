@@ -28,7 +28,7 @@ class NullEmptyStateSpec
 
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
-  def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
+  def nullState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     EventSourcedBehavior[String, String, String](
       persistenceId,
       emptyState = null,
@@ -46,10 +46,10 @@ class NullEmptyStateSpec
         probe.tell("onRecoveryCompleted:" + state)
     }
 
-  "A typed persistent actor with primitive state" must {
+  "A typed persistent actor with null empty state" must {
     "persist events and update state" in {
       val probe = TestProbe[String]()
-      val b = primitiveState(PersistenceId.ofUniqueId("a"), probe.ref)
+      val b = nullState(PersistenceId.ofUniqueId("a"), probe.ref)
       val ref1 = spawn(b)
       probe.expectMessage("onRecoveryCompleted:null")
       ref1 ! "one"
@@ -58,6 +58,9 @@ class NullEmptyStateSpec
       probe.expectMessage("eventHandler:one:two")
 
       ref1 ! "stop"
+      // wait till ref1 stops
+      probe.expectTerminated(ref1)
+
       val ref2 = testKit.spawn(b)
       // eventHandler from reply
       probe.expectMessage("eventHandler:null:one")

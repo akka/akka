@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - master
-      # for testing the GH Action without merging to master,
+      - main
+      # for testing the GH Action without merging to main,
       # in some cases
       - test-publish-snapshots
       - docs/v*
@@ -14,6 +15,7 @@ jobs:
   documentation:
     name: Documentation
     runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
     steps:
       - name: Checkout
         uses: actions/checkout@v2

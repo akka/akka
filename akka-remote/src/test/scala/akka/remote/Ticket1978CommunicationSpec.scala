@@ -72,10 +72,9 @@ object Configuration {
       provider: Option[ConfigSSLEngineProvider])
 
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
-    val (localPort, remotePort) = SocketUtil.temporaryServerAddresses(2, "127.0.0.1").map(_.getPort) match {
-      case Seq(local, remote) => (local, remote)
-      case _                  => throw new RuntimeException()
-    }
+    val ports = SocketUtil.temporaryServerAddresses(2, "127.0.0.1").map(_.getPort)
+    assert(ports.size == 2)
+    val (localPort, remotePort) = (ports(0), ports(1))
     try {
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
 

@@ -126,7 +126,7 @@ private[akka] object Running {
         val queryPluginId = replicationSetup.allReplicasAndQueryPlugins(replicaId)
         val replication = query.readJournalFor[EventsByPersistenceIdQuery](queryPluginId)
 
-        implicit val timeout = Timeout(30.seconds)
+        implicit val timeout: Timeout = 30.seconds
         implicit val scheduler = setup.context.system.scheduler
         implicit val ec = setup.context.system.executionContext
 
@@ -907,9 +907,6 @@ private[akka] object Running {
       case callback: Callback[_] =>
         callback.sideEffect(state.state)
         behavior
-
-      case _ =>
-        throw new IllegalArgumentException(s"Unsupported side effect detected [${effect.getClass.getName}]")
     }
   }
 

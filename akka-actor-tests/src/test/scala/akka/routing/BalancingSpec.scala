@@ -6,13 +6,9 @@ package akka.routing
 
 import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicInteger
-
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-
-import akka.actor.ActorRef
-import akka.actor.Actor
-import akka.actor.Props
+import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.testkit.AkkaSpec
 import akka.testkit.GHExcludeTest
 import akka.testkit.ImplicitSender
@@ -22,24 +18,37 @@ import org.scalatest.BeforeAndAfterEach
 object BalancingSpec {
   val counter = new AtomicInteger(1)
 
-  class Worker(latch: TestLatch) extends Actor {
+  class Worker(latch: TestLatch, startOthers: Future[Unit]) extends Actor with ActorLogging {
     lazy val id = counter.getAndIncrement()
-
-    override def preStart(): Unit = latch.countDown()
+    log.debug("Worker started")
 
     def receive = {
-      case msg: Int =>
-        if (id != 1)
-          Await.ready(latch, 1.minute)
-        else if (msg <= 10)
-          Thread.sleep(50) // dispatch to other routees
+      case _: Int =>
+        latch.countDown()
+        if (id == 1) {
+          if (!latch.isOpen) {
+            log.debug("Waiting for all routees to receieve a message")
+            // wait for all routees to receive a message before processing
+            Await.result(latch, 1.minute)
+            log.debug("All routees receieved a message, continuing")
+          }
+        } else {
+          if (!startOthers.isCompleted) {
+            log.debug("Waiting for startOthers toggle")
+            // wait for the first worker to process messages before also processing
+            Await.result(startOthers, 1.minute)
+            log.debug("Continuing after wait for startOthers toggle")
+          }
+        }
         sender() ! id
     }
   }
 
   class Parent extends Actor {
     val pool =
-      context.actorOf(BalancingPool(2).props(routeeProps = Props(classOf[Worker], TestLatch(0)(context.system))))
+      context.actorOf(
+        BalancingPool(2).props(
+          routeeProps = Props(classOf[Worker], TestLatch(0)(context.system), Future.successful(()))))
 
     def receive = {
       case msg => pool.forward(msg)
@@ -48,6 +57,7 @@ object BalancingSpec {
 }
 
 class BalancingSpec extends AkkaSpec("""
+    akka.loglevel=debug
     akka.actor.deployment {
       /balancingPool-2 {
         router = balancing-pool
@@ -73,11 +83,7 @@ class BalancingSpec extends AkkaSpec("""
     counter.set(1)
   }
 
-  def test(pool: ActorRef, latch: TestLatch): Unit = {
-    // wait until all routees have started
-    Await.ready(latch, remainingOrDefault)
-
-    latch.reset()
+  def test(pool: ActorRef, startOthers: Promise[Unit]): Unit = {
     val iterationCount = 100
 
     for (i <- 1 to iterationCount) {
@@ -88,39 +94,48 @@ class BalancingSpec extends AkkaSpec("""
     val replies1 = receiveN(iterationCount - poolSize + 1)
     // all replies from the unblocked worker so far
     replies1.toSet should be(Set(1))
-    log.warning(lastSender.toString)
+    log.debug("worker one: [{}]", lastSender)
     expectNoMessage(1.second)
 
-    latch.open()
+    // Now unblock the other workers from also making progress
+    startOthers.success(())
     val replies2 = receiveN(poolSize - 1)
     // the remaining replies come from the blocked
     replies2.toSet should be((2 to poolSize).toSet)
     expectNoMessage(500.millis)
 
+    pool ! PoisonPill
   }
 
   "balancing pool" must {
 
     "deliver messages in a balancing fashion when defined programatically" in {
       val latch = TestLatch(poolSize)
+      val startOthers = Promise[Unit]()
       val pool = system.actorOf(
-        BalancingPool(poolSize).props(routeeProps = Props(classOf[Worker], latch)),
+        BalancingPool(poolSize).props(routeeProps = Props(classOf[Worker], latch, startOthers.future)),
         name = "balancingPool-1")
-      test(pool, latch)
+      test(pool, startOthers)
     }
 
     "deliver messages in a balancing fashion when defined in config" taggedAs GHExcludeTest in {
       val latch = TestLatch(poolSize)
+      val startOthers = Promise[Unit]()
       val pool =
-        system.actorOf(FromConfig().props(routeeProps = Props(classOf[Worker], latch)), name = "balancingPool-2")
-      test(pool, latch)
+        system.actorOf(
+          FromConfig().props(routeeProps = Props(classOf[Worker], latch, startOthers.future)),
+          name = "balancingPool-2")
+      test(pool, startOthers)
     }
 
     "deliver messages in a balancing fashion when overridden in config" taggedAs GHExcludeTest in {
       val latch = TestLatch(poolSize)
+      val startOthers = Promise[Unit]()
       val pool =
-        system.actorOf(BalancingPool(1).props(routeeProps = Props(classOf[Worker], latch)), name = "balancingPool-3")
-      test(pool, latch)
+        system.actorOf(
+          BalancingPool(1).props(routeeProps = Props(classOf[Worker], latch, startOthers.future)),
+          name = "balancingPool-3")
+      test(pool, startOthers)
     }
 
     "work with anonymous actor names" in {

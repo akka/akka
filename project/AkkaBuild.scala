@@ -4,12 +4,8 @@
 
 package akka
 
-import java.io.FileReader
 import java.io.{ FileInputStream, InputStreamReader }
 import java.util.Properties
-import java.time.format.DateTimeFormatter
-import java.time.ZonedDateTime
-import java.time.ZoneOffset
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
 import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
 import sbtassembly.AssemblyPlugin.autoImport._
@@ -20,6 +16,13 @@ import JdkOptions.autoImport._
 import scala.collection.breakOut
 
 object AkkaBuild {
+
+  object CliOptions {
+    // CI is the env var defined by Github Actions and Travis:
+    // - https://docs.github.com/en/actions/reference/environment-variables#default-environment-variables
+    // - https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
+    val runningOnCi: CliOption[Boolean] = CliOption("akka.ci-server", sys.env.contains("CI"))
+  }
 
   val enableMiMa = true
 
@@ -88,7 +91,7 @@ object AkkaBuild {
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
   final val DefaultScalacOptions = {
-    if (Dependencies.getScalaVersion().startsWith("3.0")) {
+    if (Dependencies.getScalaVersion().startsWith("3.")) {
       Seq(
         "-encoding",
         "UTF-8",
@@ -106,6 +109,15 @@ object AkkaBuild {
         // 'blessed' since 2.13.1
         "-language:higherKinds")
     }
+  }
+
+  private def jvmGCLogOptions(isJdk11OrHigher: Boolean, isJdk8: Boolean): Seq[String] = {
+    if (isJdk11OrHigher)
+      // -Xlog:gc* is equivalent to -XX:+PrintGCDetails. See:
+      // https://docs.oracle.com/en/java/javase/11/tools/java.html#GUID-BE93ABDC-999C-4CB5-A88B-1994AAAC74D5
+      Seq("-Xlog:gc*")
+    else if (isJdk8) Seq("-XX:+PrintGCTimeStamps", "-XX:+PrintGCDetails")
+    else Nil
   }
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
@@ -132,8 +144,8 @@ object AkkaBuild {
     crossVersion := CrossVersion.binary,
     // Adds a `src/main/scala-2.13+` source directory for code shared
     // between Scala 2.13 and Scala 3
-    unmanagedSourceDirectories in Compile ++= {
-      val sourceDir = (sourceDirectory in Compile).value
+    Compile / unmanagedSourceDirectories ++= {
+      val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, n))            => Seq(sourceDir / "scala-2.13+")
         case Some((2, n)) if n >= 13 => Seq(sourceDir / "scala-2.13+")
@@ -181,7 +193,7 @@ object AkkaBuild {
         // increase stack size (todo why?)
         "-Xss2m",
         // ## extra memory/gc tuning
-        // this breaks jstat, but could avoid costly syncs to disc see http://www.evanjones.ca/jvm-mmap-pause.html
+        // this breaks jstat, but could avoid costly syncs to disc see https://www.evanjones.ca/jvm-mmap-pause.html
         "-XX:+PerfDisableSharedMem",
         // tell G1GC that we would be really happy if all GC pauses could be kept below this as higher would
         // likely start causing test failures in timing tests
@@ -191,10 +203,9 @@ object AkkaBuild {
         // faster random source
         "-Djava.security.egd=file:/dev/./urandom")
 
-      if (sys.props.contains("akka.ci-server"))
-        defaults ++ Seq("-XX:+PrintGCTimeStamps", "-XX:+PrintGCDetails")
-      else
-        defaults
+      defaults ++ CliOptions.runningOnCi
+        .ifTrue(jvmGCLogOptions(JdkOptions.isJdk11orHigher, JdkOptions.isJdk8))
+        .getOrElse(Nil)
     },
     // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
     Test / javaOptions := {
@@ -213,7 +224,7 @@ object AkkaBuild {
         group.runPolicy match {
           case Tests.SubProcess(forkOptions) =>
             // format: off
-            group.copy(runPolicy = Tests.SubProcess(
+            group.withRunPolicy(Tests.SubProcess(
               forkOptions.withWorkingDirectory(workingDirectory = Some(new File(System.getProperty("user.dir"))))))
             // format: on
           case _ => group

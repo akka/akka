@@ -182,7 +182,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
       DistributedPubSub(system).mediator ! DistributedPubSubMediator.Count
-      expectMsgType[Int] should ===(expected)
+      val actual = expectMsgType[Int]
+      actual should ===(expected)
     }
   }
 
@@ -247,7 +248,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val c = system.actorOf(
           ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
           "ask-client")
-        implicit val timeout = Timeout(remaining)
+        implicit val timeout: Timeout = Timeout(remaining)
         val reply = c ? ClusterClient.Send("/user/testService", "hello-request", localAffinity = true)
         Await.result(reply.mapTo[Reply], remaining).msg should be("hello-request-ack")
         system.stop(c)
@@ -303,7 +304,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "report events" in within(15 seconds) {
       runOn(client) {
-        implicit val timeout = Timeout(1.second.dilated)
+        implicit val timeout: Timeout = Timeout(1.second.dilated)
         val client = Await.result(system.actorSelection("/user/client").resolveOne(), timeout.duration)
         val listener = system.actorOf(Props(classOf[TestClientListener], client), "reporter-client-listener")
 
@@ -319,7 +320,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       runOn(first, second, third) {
         // Only run this test on a node that knows about our client. It could be that no node knows
         // but there isn't a means of expressing that at least one of the nodes needs to pass the test.
-        implicit val timeout = Timeout(2.seconds.dilated)
+        implicit val timeout: Timeout = Timeout(2.seconds.dilated)
         val r = ClusterClientReceptionist(system).underlying
         r ! GetClusterClients
         val cps = expectMsgType[ClusterClients]

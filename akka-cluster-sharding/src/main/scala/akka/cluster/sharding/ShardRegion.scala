@@ -438,7 +438,7 @@ object ShardRegion {
    * Response is [[ShardRegionState]]
    */
   @InternalApi
-  private[akka] final object GetShardRegionStatus extends ShardRegionQuery
+  private[akka] object GetShardRegionStatus extends ShardRegionQuery
 
   /**
    * INTERNAL API
@@ -952,7 +952,7 @@ private[akka] class ShardRegion(
     case GetShardRegionStatus =>
       sender() ! new ShardRegionStatus(typeName, coordinator.isDefined)
 
-    case _ => unhandled(query)
+    case null => unhandled(query)
   }
 
   def receiveTerminated(ref: ActorRef): Unit = {

@@ -31,10 +31,10 @@ with a fresh state that we know is valid.
 In Akka this "somewhere else" is called supervision. Supervision allows you to declaratively describe what should happen when certain types of exceptions are thrown inside an actor. 
 
 The default @ref:[supervision](../general/supervision.md) strategy is to stop the actor if an exception is thrown. 
-In many cases you will want to further customize this behavior. To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`. 
+In many cases you will want to further customize this behavior. To use supervision the actual Actor behavior is wrapped using @apidoc[Behaviors.supervise](typed.*.Behaviors$) {scala="#supervise[T](wrapped:akka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Supervise[T]" java="#supervise(akka.actor.typed.Behavior)"}. 
 Typically you would wrap the actor with supervision in the parent when spawning it as a child.
  
-This example restarts the actor when it fails with an `IllegalStateException`: 
+This example restarts the actor when it fails with an @javadoc[IllegalStateException](java.lang.IllegalStateException): 
 
 
 Scala
@@ -60,7 +60,7 @@ Scala
 Java
 :  @@snip [SupervisionCompileOnlyTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #restart-limit }
 
-To handle different exceptions with different strategies calls to `supervise`
+To handle different exceptions with different strategies calls to @apidoc[supervise](typed.*.Behaviors$) {scala="#supervise[T](wrapped:akka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Supervise[T]" java="#supervise(akka.actor.typed.Behavior)"}
 can be nested:
 
 Scala
@@ -73,10 +73,10 @@ For a full list of strategies see the public methods on @apidoc[akka.actor.typed
 
 @@@ note
 
-When the behavior is restarted the original `Behavior` that was given to `Behaviors.supervise` is re-installed,
-which means that if it contains mutable state it must be a factory via `Behaviors.setup`. When using the
-object-oriented style with a class extending `AbstractBehavior` it's always recommended to create it via
-`Behaviors.setup` as described in @ref:[Behavior factory method](style-guide.md#behavior-factory-method).
+When the behavior is restarted the original @apidoc[Behavior] that was given to @apidoc[Behaviors.supervise](typed.*.Behaviors$) {scala="#supervise[T](wrapped:akka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Supervise[T]" java="#supervise(akka.actor.typed.Behavior)"} is re-installed,
+which means that if it contains mutable state it must be a factory via @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"}. When using the
+object-oriented style with a class extending @apidoc[AbstractBehavior](typed.*.AbstractBehavior) it's always recommended to create it via
+@apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"} as described in @ref:[Behavior factory method](style-guide.md#behavior-factory-method).
 For the function style there is typically no need for the factory if the state is captured in immutable
 parameters.
 @@@
@@ -104,7 +104,7 @@ Each returned behavior will be re-wrapped automatically with the supervisor.
 
 ## Child actors are stopped when parent is restarting
 
-Child actors are often started in a `setup` block that is run again when the parent actor is restarted.
+Child actors are often started in a @apidoc[setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"} block that is run again when the parent actor is restarted.
 The child actors are stopped to avoid resource leaks of creating new child actors each time the parent is restarted.
 
 Scala
@@ -116,9 +116,9 @@ Java
 It is possible to override this so that child actors are not influenced when the parent actor is restarted.
 The restarted parent instance will then have the same children as before the failure.
 
-If child actors are created from `setup` like in the previous example and they should remain intact (not stopped)
-when parent is restarted the `supervise` should be placed inside the `setup` and using
-@scala[`SupervisorStrategy.restart.withStopChildren(false)`]@java[`SupervisorStrategy.restart().withStopChildren(false)`]
+If child actors are created from @apidoc[setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"} like in the previous example and they should remain intact (not stopped)
+when parent is restarted the @apidoc[supervise](typed.*.Behaviors$) {scala="#supervise[T](wrapped:akka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Supervise[T]" java="#supervise(akka.actor.typed.Behavior)"} should be placed inside the @apidoc[setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"} and using
+@scala[@scaladoc[SupervisorStrategy.restart.withStopChildren(false)](akka.actor.typed.RestartSupervisorStrategy#withStopChildren(enabled:Boolean):akka.actor.typed.RestartSupervisorStrategy)]@java[@javadoc[SupervisorStrategy.restart().withStopChildren(false)](akka.actor.typed.RestartSupervisorStrategy#withStopChildren(boolean))]
 like this:
 
 Scala
@@ -127,14 +127,14 @@ Scala
 Java
 :  @@snip [SupervisionCompileOnlyTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #restart-keep-children }
 
-That means that the `setup` block will only be run when the parent actor is first started, and not when it is
+That means that the @apidoc[setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"} block will only be run when the parent actor is first started, and not when it is
 restarted.
 
 ## The PreRestart signal
 
-Before a supervised actor is restarted it is sent the @apidoc[akka.actor.typed.PreRestart] signal giving it a chance to clean up resources
-it has created, much like the @apidoc[akka.actor.typed.PostStop] signal when the @ref[actor stops](actor-lifecycle.md#stopping-actors). 
-The returned behavior from the `PreRestart` signal is ignored.
+Before a supervised actor is restarted it is sent the @apidoc[PreRestart] signal giving it a chance to clean up resources
+it has created, much like the @apidoc[PostStop] signal when the @ref[actor stops](actor-lifecycle.md#stopping-actors). 
+The returned behavior from the @apidoc[PreRestart] signal is ignored.
 
 Scala
 :  @@snip [SupervisionCompileOnly.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/supervision/SupervisionCompileOnly.scala) { #restart-PreRestart-signal }
@@ -142,7 +142,7 @@ Scala
 Java
 :  @@snip [SupervisionCompileOnlyTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #restart-PreRestart-signal }
 
-Note that `PostStop` is not emitted for a restart, so typically you need to handle both `PreRestart` and `PostStop`
+Note that @apidoc[PostStop] is not emitted for a restart, so typically you need to handle both @apidoc[PreRestart] and @apidoc[PostStop]
 to cleanup resources.
 
 <a id="bubble"/>
@@ -152,18 +152,18 @@ In some scenarios it may be useful to push the decision about what to do on a fa
  and let the parent actor handle what should happen on failures (in classic Akka Actors this is how it works by default).
 
 For a parent to be notified when a child is terminated it has to @ref:[watch](actor-lifecycle.md#watching-actors) the
-child. If the child was stopped because of a failure the `ChildFailed` signal will be received which will contain the
-cause. `ChildFailed` extends `Terminated` so if your use case does not need to distinguish between stopping and failing
-you can handle both cases with the `Terminated` signal.
+child. If the child was stopped because of a failure the @apidoc[ChildFailed] signal will be received which will contain the
+cause. @apidoc[ChildFailed] extends @apidoc[Terminated](typed.Terminated) so if your use case does not need to distinguish between stopping and failing
+you can handle both cases with the @apidoc[Terminated](typed.Terminated) signal.
 
-If the parent in turn does not handle the `Terminated` message it will itself fail with an `akka.actor.typed.DeathPactException`.
+If the parent in turn does not handle the @apidoc[Terminated](typed.Terminated) message it will itself fail with an @apidoc[DeathPactException](typed.DeathPactException).
 
 This means that a hierarchy of actors can have a child failure bubble up making each actor on the way stop but informing the
 top-most parent that there was a failure and how to deal with it, however, the original exception that caused the failure
 will only be available to the immediate parent out of the box (this is most often a good thing, not leaking implementation details). 
 
 There might be cases when you want the original exception to bubble up the hierarchy, this can be done by handling the 
-`Terminated` signal, and rethrowing the exception in each actor.
+@apidoc[Terminated](typed.Terminated) signal, and rethrowing the exception in each actor.
 
  
 Scala

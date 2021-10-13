@@ -774,3 +774,69 @@ private[remote] class DuplicateHandshakeReq(
       setHandlers(in, out, this)
     }
 }
+
+/**
+ * INTERNAL API: The Flush message must be passed in each inbound lane to
+ * ensure that all application messages are handled first.
+ */
+private[remote] class DuplicateFlush(numberOfLanes: Int, system: ExtendedActorSystem, bufferPool: EnvelopeBufferPool)
+    extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+
+  val in: Inlet[InboundEnvelope] = Inlet("Artery.DuplicateFlush.in")
+  val out: Outlet[InboundEnvelope] = Outlet("Artery.DuplicateFlush.out")
+  val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+
+      // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
+      var _serializerId: Int = -1
+      var _manifest = ""
+      def serializerId: Int = {
+        lazyInitOfSerializer()
+        _serializerId
+      }
+      def manifest: String = {
+        lazyInitOfSerializer()
+        _manifest
+      }
+      def lazyInitOfSerializer(): Unit = {
+        if (_serializerId == -1) {
+          val serialization = SerializationExtension(system)
+          val ser = serialization.serializerFor(Flush.getClass)
+          _manifest = Serializers.manifestFor(ser, Flush)
+          _serializerId = ser.identifier
+        }
+      }
+
+      var currentIterator: Iterator[InboundEnvelope] = Iterator.empty
+
+      override def onPush(): Unit = {
+        val envelope = grab(in)
+        if (envelope.serializer == serializerId && envelope.classManifest == manifest) {
+          try {
+            currentIterator = Vector.tabulate(numberOfLanes)(i => envelope.copyForLane(i)).iterator
+            push(out, currentIterator.next())
+          } finally {
+            val buf = envelope.envelopeBuffer
+            if (buf != null) {
+              envelope.releaseEnvelopeBuffer()
+              bufferPool.release(buf)
+            }
+          }
+        } else
+          push(out, envelope)
+      }
+
+      override def onPull(): Unit = {
+        if (currentIterator.isEmpty)
+          pull(in)
+        else {
+          push(out, currentIterator.next())
+          if (currentIterator.isEmpty) currentIterator = Iterator.empty // GC friendly
+        }
+      }
+
+      setHandlers(in, out, this)
+    }
+}

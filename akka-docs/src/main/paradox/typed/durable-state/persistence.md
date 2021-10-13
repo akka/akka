@@ -22,14 +22,6 @@ To use Akka Persistence, add the module to your project:
 
 You also have to select durable state store plugin, see @ref:[Persistence Plugins](../../persistence-plugins.md).
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../../common/may-change.md) because it is a new feature that
-needs feedback from real usage before finalizing the API. This means that API or semantics can change without
-warning or deprecation period. It is also not recommended to use this module in production just yet.
-
-@@@ 
-
 @@project-info{ projectId="akka-persistence-typed" }
 
 ## Introduction
@@ -108,7 +100,7 @@ More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-
 
 In addition to returning the primary `Effect` for the command, `DurableStateBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
-function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
+function e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 ### Completing the example
 
@@ -171,7 +163,7 @@ Note that only one of those can be chosen per incoming command. It is not possib
 
 In addition to returning the primary `Effect` for the command `DurableStateBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
-function that runs the callback passed to it e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`]. 
+function that runs the callback passed to it e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`]. 
 
 All `thenRun` registered callbacks are executed sequentially after successful execution of the persist statement
 (or immediately, in case of `none` and `unhandled`).

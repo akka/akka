@@ -166,7 +166,7 @@ Java
 :   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #partial-graph }
 
 The only new addition is the return value of the builder block, which is a `Shape`. All operators (including
-`Source`, `BidiFlow`, etc) have a shape, which encodes the *typed* ports of the module. In our example
+`Source`, `BidiFlow`, etc.) have a shape, which encodes the *typed* ports of the module. In our example
 there is exactly one input and output port left, so we can declare it to have a `FlowShape` by returning an
 instance of it. While it is possible to create new `Shape` types, it is usually recommended to use one of the
 matching built-in ones.

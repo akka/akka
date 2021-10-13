@@ -256,9 +256,10 @@ import akka.coordination.lease.scaladsl.Lease
 
   def nodesToDown(decision: Decision = decide()): Set[UniqueAddress] = {
     val downable = members
-      .union(joining)
       .filterNot(m => m.status == MemberStatus.Down || m.status == MemberStatus.Exiting)
+      .union(joining)
       .map(_.uniqueAddress)
+
     decision match {
       case DownUnreachable | AcquireLeaseAndDownUnreachable(_)                 => downable.intersect(unreachable)
       case DownReachable                                                       => downable.diff(unreachable)
@@ -271,7 +272,7 @@ import akka.coordination.lease.scaladsl.Lease
         // failure detection observations between the indirectly connected nodes.
         // Also include nodes that corresponds to the decision without the unreachability observations from
         // the indirectly connected nodes
-        downable.intersect(indirectlyConnected.union(additionalNodesToDownWhenIndirectlyConnected))
+        downable.intersect(indirectlyConnected.union(additionalNodesToDownWhenIndirectlyConnected(downable)))
       case ReverseDownIndirectlyConnected =>
         // indirectly connected + all reachable
         downable.intersect(indirectlyConnected).union(downable.diff(unreachable))
@@ -281,23 +282,27 @@ import akka.coordination.lease.scaladsl.Lease
     }
   }
 
-  private def additionalNodesToDownWhenIndirectlyConnected: Set[UniqueAddress] = {
+  private def additionalNodesToDownWhenIndirectlyConnected(downable: Set[UniqueAddress]): Set[UniqueAddress] = {
     if (unreachableButNotIndirectlyConnected.isEmpty)
       Set.empty
     else {
       val originalUnreachable = _unreachable
       val originalReachability = _reachability
+
       try {
         val intersectionOfObserversAndSubjects = indirectlyConnectedFromIntersectionOfObserversAndSubjects
         val haveSeenCurrentGossip = indirectlyConnectedFromSeenCurrentGossip
         // remove records between the indirectly connected
-        _reachability = reachability.filterRecords(
-          r =>
-            !((intersectionOfObserversAndSubjects(r.observer) && intersectionOfObserversAndSubjects(r.subject)) ||
-            (haveSeenCurrentGossip(r.observer) && haveSeenCurrentGossip(r.subject))))
+        _reachability = reachability.filterRecords { r =>
+          // we only retain records for addresses that are still downable
+          downable.contains(r.observer) && downable.contains(r.subject) &&
+          // remove records between the indirectly connected
+          !(intersectionOfObserversAndSubjects(r.observer) && intersectionOfObserversAndSubjects(r.subject) ||
+          haveSeenCurrentGossip(r.observer) && haveSeenCurrentGossip(r.subject))
+        }
         _unreachable = reachability.allUnreachableOrTerminated
-        val additionalDecision = decide()
 
+        val additionalDecision = decide()
         if (additionalDecision.isIndirectlyConnected)
           throw new IllegalStateException(
             s"SBR double $additionalDecision decision, downing all instead. " +
@@ -305,6 +310,7 @@ import akka.coordination.lease.scaladsl.Lease
             s"still indirectlyConnected: [$indirectlyConnected], seenBy: [$seenBy]")
 
         nodesToDown(additionalDecision)
+
       } finally {
         _unreachable = originalUnreachable
         _reachability = originalReachability

@@ -6,16 +6,18 @@ package akka.testkit
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import scala.annotation.nowarn
+
 import com.typesafe.config.ConfigFactory
 import language.postfixOps
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import akka.actor._
 import akka.actor.DeadLetter
 import akka.pattern.ask
+import akka.util.Timeout
 
 @nowarn
 class AkkaSpecSpec extends AnyWordSpec with Matchers {
@@ -66,7 +68,7 @@ class AkkaSpecSpec extends AnyWordSpec with Matchers {
 
       try {
         var locker = Seq.empty[DeadLetter]
-        implicit val timeout = TestKitExtension(system).DefaultTimeout
+        implicit val timeout: Timeout = TestKitExtension(system).DefaultTimeout.duration.dilated(system)
         val davyJones = otherSystem.actorOf(Props(new Actor {
           def receive = {
             case m: DeadLetter => locker :+= m

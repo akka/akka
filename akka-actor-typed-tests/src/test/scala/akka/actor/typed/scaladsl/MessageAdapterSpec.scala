@@ -6,8 +6,11 @@ package akka.actor.typed.scaladsl
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.LoggerFactory
 
+import akka.actor.DeadLetter
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.FishingOutcomes
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -36,6 +39,26 @@ class MessageAdapterSpec
     extends ScalaTestWithActorTestKit(MessageAdapterSpec.config)
     with AnyWordSpecLike
     with LogCapturing {
+
+  private val log = LoggerFactory.getLogger(getClass)
+
+  private def assertDeadLetter(deadLetterProbe: TestProbe[DeadLetter], expectedMessage: Any): Unit = {
+    deadLetterProbe.fishForMessage(deadLetterProbe.remainingOrDefault, s"looking for DeadLetter $expectedMessage") {
+      deadLetter =>
+        deadLetter.message match {
+          case AdaptMessage(msg, _) if msg.getClass == expectedMessage.getClass =>
+            msg shouldBe expectedMessage
+            FishingOutcomes.complete
+          case msg if msg.getClass == expectedMessage.getClass =>
+            msg shouldBe expectedMessage
+            FishingOutcomes.complete
+          case other =>
+            // something else, not from this test
+            log.debug(s"Ignoring other DeadLetter: $other")
+            FishingOutcomes.continueAndIgnore
+        }
+    }
+  }
 
   "Message adapters" must {
 
@@ -210,22 +233,23 @@ class MessageAdapterSpec
           }
       }
 
-      spawn(snitch)
+      val ref = spawn(snitch)
 
       probe.expectMessage(Wrapped(1, Pong("hello")))
       probe.expectMessage(Wrapped(2, Pong("hello")))
       // exception was thrown for  3
 
       probe.expectMessage("stopped")
+      probe.expectTerminated(ref)
     }
 
     "not catch exception thrown after adapter, when processing the message" in {
-      case class Ping(sender: ActorRef[Pong])
+      case class Ping(n: Int, sender: ActorRef[Pong])
       case class Pong(greeting: String)
       case class Wrapped(response: Pong)
 
       val pingPong = spawn(Behaviors.receiveMessage[Ping] { ping =>
-        ping.sender ! Pong("hello")
+        ping.sender ! Pong(s"hello-${ping.n}")
         Behaviors.same
       })
 
@@ -235,8 +259,8 @@ class MessageAdapterSpec
         val replyTo = context.messageAdapter[Pong] { pong =>
           Wrapped(pong)
         }
-        (1 to 5).foreach { _ =>
-          pingPong ! Ping(replyTo)
+        (1 to 5).foreach { n =>
+          pingPong ! Ping(n, replyTo)
         }
 
         def behv(count: Int): Behavior[Wrapped] =
@@ -244,7 +268,7 @@ class MessageAdapterSpec
             .receiveMessage[Wrapped] { _ =>
               probe.ref ! count
               if (count == 3) {
-                throw new TestException("boom")
+                throw TestException("boom")
               }
               behv(count + 1)
             }
@@ -257,8 +281,10 @@ class MessageAdapterSpec
         behv(count = 1)
       }
 
+      val deadLetterProbe = testKit.createDeadLetterProbe()
+
       // Not expecting "Exception thrown out of adapter. Stopping myself"
-      LoggingTestKit.error[TestException].withMessageContains("boom").expect {
+      val ref = LoggingTestKit.error[TestException].withMessageContains("boom").expect {
         spawn(snitch)
       }
 
@@ -267,6 +293,10 @@ class MessageAdapterSpec
       probe.expectMessage(3)
       // exception was thrown for 3
       probe.expectMessage("stopped")
+      probe.expectTerminated(ref)
+
+      assertDeadLetter(deadLetterProbe, Pong("hello-4"))
+      assertDeadLetter(deadLetterProbe, Pong("hello-5"))
     }
 
   }
@@ -290,12 +320,7 @@ class MessageAdapterSpec
     createTestProbe().expectTerminated(ref)
 
     pingProbe.receiveMessage().sender ! Pong("hi")
-    val deadLetter = deadLetterProbe.receiveMessage()
-    deadLetter.message match {
-      case AdaptMessage(Pong("hi"), _) => // passed through the FunctionRef
-      case Pong("hi")                  => // FunctionRef stopped
-      case unexpected                  => fail(s"Unexpected message [$unexpected], expected Pong or AdaptMessage(Pong)")
-    }
+    assertDeadLetter(deadLetterProbe, Pong("hi"))
   }
 
 }

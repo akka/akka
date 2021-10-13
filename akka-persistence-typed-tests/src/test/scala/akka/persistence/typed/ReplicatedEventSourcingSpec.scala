@@ -4,6 +4,8 @@
 
 package akka.persistence.typed
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
@@ -25,8 +27,10 @@ object ReplicatedEventSourcingSpec {
 
   sealed trait Command
   case class GetState(replyTo: ActorRef[State]) extends Command
-  case class StoreMe(description: String, replyTo: ActorRef[Done]) extends Command
-  case class StoreUs(descriptions: List[String], replyTo: ActorRef[Done]) extends Command
+  case class StoreMe(description: String, replyTo: ActorRef[Done], latch: CountDownLatch = new CountDownLatch(1))
+      extends Command
+  case class StoreUs(descriptions: List[String], replyTo: ActorRef[Done], latch: CountDownLatch = new CountDownLatch(1))
+      extends Command
   case class GetReplica(replyTo: ActorRef[(ReplicaId, Set[ReplicaId])]) extends Command
   case object Stop extends Command
 
@@ -49,9 +53,13 @@ object ReplicatedEventSourcingSpec {
           case GetReplica(replyTo) =>
             replyTo.tell((replicationContext.replicaId, replicationContext.allReplicas))
             Effect.none
-          case StoreMe(evt, ack) =>
+          case StoreMe(evt, ack, latch) =>
+            latch.countDown()
+            latch.await(10, TimeUnit.SECONDS)
             Effect.persist(evt).thenRun(_ => ack ! Done)
-          case StoreUs(evts, replyTo) =>
+          case StoreUs(evts, replyTo, latch) =>
+            latch.countDown()
+            latch.await(10, TimeUnit.SECONDS)
             Effect.persist(evts).thenRun(_ => replyTo ! Done)
           case Stop =>
             Effect.stop()
@@ -205,15 +213,21 @@ class ReplicatedEventSourcingSpec
       val probe = createTestProbe[Done]()
       val eventProbeR1 = createTestProbe[EventAndContext]()
 
+      val latch = new CountDownLatch(3)
+
       val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
       val r2 = spawn(testBehavior(entityId, "R2"))
-      r1 ! StoreUs("1 from r1" :: "2 from r1" :: Nil, probe.ref)
-      r2 ! StoreUs("1 from r2" :: "2 from r2" :: Nil, probe.ref)
+      r1 ! StoreUs("1 from r1" :: "2 from r1" :: Nil, probe.ref, latch)
+      r2 ! StoreUs("1 from r2" :: "2 from r2" :: Nil, probe.ref, latch)
+
+      // the commands have arrived in both actors, waiting for the latch,
+      // so that the persist of the events will be concurrent
+      latch.countDown()
+      latch.await(10, TimeUnit.SECONDS)
       probe.receiveMessage()
       probe.receiveMessage()
 
       // events at r2 happened concurrently with events at r1
-
       eventProbeR1.expectMessage(EventAndContext("1 from r1", ReplicaId("R1"), false, concurrent = false))
       eventProbeR1.expectMessage(EventAndContext("2 from r1", ReplicaId("R1"), false, concurrent = false))
       eventProbeR1.expectMessage(EventAndContext("1 from r2", ReplicaId("R2"), false, concurrent = true))
@@ -238,8 +252,15 @@ class ReplicatedEventSourcingSpec
       val eventProbeR2 = createTestProbe[EventAndContext]()
       val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
       val r2 = spawn(testBehavior(entityId, "R2", eventProbeR2.ref))
-      r1 ! StoreMe("from r1", probe.ref) // R1 0 R2 0 -> R1 1 R2 0
-      r2 ! StoreMe("from r2", probe.ref) // R2 0 R1 0 -> R2 1 R1 0
+      val latch1 = new CountDownLatch(1)
+      val latch2 = new CountDownLatch(1)
+      r1 ! StoreMe("from r1", probe.ref, latch1) // R1 0 R2 0 -> R1 1 R2 0
+      r2 ! StoreMe("from r2", probe.ref, latch2) // R2 0 R1 0 -> R2 1 R1 0
+
+      // the commands have arrived in both actors, waiting for the latch,
+      // so that the persist of the events will be concurrent
+      latch1.countDown()
+      latch2.countDown()
 
       // each gets its local event
       eventProbeR1.expectMessage(
@@ -335,8 +356,15 @@ class ReplicatedEventSourcingSpec
       val eventProbeR1 = createTestProbe[EventAndContext]()
       val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
       val r2 = spawn(testBehavior(entityId, "R2"))
-      r1 ! StoreMe("from r1", probe.ref) // R1 0 R2 0 -> R1 1 R2 0
-      r2 ! StoreMe("from r2", probe.ref) // R2 0 R1 0 -> R2 1 R1 0
+      val latch = new CountDownLatch(3)
+      r1 ! StoreMe("from r1", probe.ref, latch) // R1 0 R2 0 -> R1 1 R2 0
+      r2 ! StoreMe("from r2", probe.ref, latch) // R2 0 R1 0 -> R2 1 R1 0
+
+      // the commands have arrived in both actors, waiting for the latch,
+      // so that the persist of the events will be concurrent
+      latch.countDown()
+      latch.await(10, TimeUnit.SECONDS)
+
       // local event isn't concurrent, remote event is
       eventProbeR1.expectMessage(
         EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = false, concurrent = false))
