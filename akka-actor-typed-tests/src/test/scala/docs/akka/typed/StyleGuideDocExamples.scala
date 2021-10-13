@@ -469,7 +469,6 @@ object StyleGuideDocExamples {
       import CountDown._
 
       private def counterWithGuard(remaining: Int): Behavior[Command] = {
-        //#pattern-match-guard
         // no exhaustiveness check because of guard condition
         // FIXME not true anymore since Scala 2.13.5
         Behaviors.receiveMessagePartial {
@@ -479,12 +478,10 @@ object StyleGuideDocExamples {
           case Down =>
             counter(remaining - 1)
         }
-        //#pattern-match-guard
       }
 
       @nowarn
       private def counter(remaining: Int): Behavior[Command] = {
-        //#pattern-match-without-guard
         // `@unchecked` for Scala 3, which doesn't support @nowarn
         Behaviors.receiveMessage(x =>
           (x: @unchecked) match {
@@ -495,7 +492,6 @@ object StyleGuideDocExamples {
               } else
                 counter(remaining - 1)
           })
-        //#pattern-match-without-guard
       }
 
       //#pattern-match-unhandled
