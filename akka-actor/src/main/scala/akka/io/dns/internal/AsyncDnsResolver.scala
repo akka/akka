@@ -48,13 +48,13 @@ private[io] final class AsyncDnsResolver(
       case unknown => throw new IllegalArgumentException(s"Loopback address was [$unknown]")
     }
     cache.put("localhost" -> Ip(),
-      DnsProtocol.Resolved("localhost", Seq(ARecord("localhost", Ttl.effectivelyForever, loopback))),
+      DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, loopback) :: Nil),
       Ttl.effectivelyForever)
     cache.put("localhost" -> Ip(ipv6 = false, ipv4 = true),
-      DnsProtocol.Resolved("localhost", Seq(ARecord("localhost", Ttl.effectivelyForever, ipv4Address))),
+      DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, ipv4Address) :: Nil),
       Ttl.effectivelyForever)
     cache.put("localhost" -> Ip(ipv6 = true, ipv4 = false),
-      DnsProtocol.Resolved("localhost", Seq(ARecord("localhost", Ttl.effectivelyForever, ipv6Address))),
+      DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, ipv6Address) :: Nil),
       Ttl.effectivelyForever)
 
   }
