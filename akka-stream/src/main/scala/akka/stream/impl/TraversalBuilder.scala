@@ -350,8 +350,8 @@ import akka.util.unused
       case _ =>
         graph.traversalBuilder match {
           case l: LinearTraversalBuilder =>
-            l.pendingBuilder.orNull match {
-              case a: AtomicTraversalBuilder =>
+            l.pendingBuilder match {
+              case OptionVal.Some(a: AtomicTraversalBuilder) =>
                 a.module match {
                   case m: GraphStageModule[_, _] =>
                     m.stage match {
