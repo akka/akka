@@ -35,7 +35,12 @@ object Scaladoc extends AutoPlugin {
         // -release caused build failures when generating javadoc:
         Compile / scalacOptions --= Seq("-release", "8"),
         autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
-    Seq(Compile / validateDiagrams := true) ++
+    Seq(
+      // Publishing scala3 docs is broken (https://github.com/akka/akka/issues/30788),
+      // for now we just skip it:
+      Compile / packageDoc / publishArtifact := !scalaVersion.value.startsWith("3."),
+      Compile / validateDiagrams := true
+    ) ++
     CliOptions.scaladocDiagramsEnabled.ifTrue(Compile / doc := {
       val docs = (Compile / doc).value
       if ((Compile / validateDiagrams).value)
