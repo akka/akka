@@ -67,15 +67,14 @@ object AkkaDisciplinePlugin extends AutoPlugin {
 
   lazy val nowarnSettings = Seq(
     Compile / scalacOptions ++= (
-      if (scalaVersion.value.startsWith("3.")) Nil
-      else Seq(defaultScalaOptions)
-    ),
+        if (scalaVersion.value.startsWith("3.")) Nil
+        else Seq(defaultScalaOptions)
+      ),
     Test / scalacOptions ++= (
-      if (scalaVersion.value.startsWith("3.")) Nil
-      else Seq(defaultScalaOptions)
-    ),
-    Compile / doc / scalacOptions := Seq()
-  )
+        if (scalaVersion.value.startsWith("3.")) Nil
+        else Seq(defaultScalaOptions)
+      ),
+    Compile / doc / scalacOptions := Seq())
 
   /**
    * We are a little less strict in docs

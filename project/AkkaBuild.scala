@@ -129,7 +129,11 @@ object AkkaBuild {
     // compile options
     Compile / scalacOptions ++= DefaultScalacOptions.value,
     Compile / scalacOptions ++=
-      JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value, scalaVersion.value),
+      JdkOptions.targetJdkScalacOptions(
+        targetSystemJdk.value,
+        optionalDir(jdk8home.value),
+        fullJavaHomes.value,
+        scalaVersion.value),
     Compile / scalacOptions ++= (if (allWarnings) Seq("-deprecation") else Nil),
     Test / scalacOptions := (Test / scalacOptions).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),

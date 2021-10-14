@@ -413,8 +413,8 @@ lazy val remote =
     .settings(Test / parallelExecution := false)
     .settings(serialversionRemoverPluginSettings)
     .enablePlugins(Jdk9)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
+    // TODO https://github.com/akka/akka/issues/30243
+    .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(
@@ -619,12 +619,10 @@ lazy val serialversionRemoverPlugin =
 
 lazy val serialversionRemoverPluginSettings = Seq(
   Compile / scalacOptions ++= (
-    if (scalaVersion.value.startsWith("3.")) Seq(
-      "-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString
-    )
-    else Nil
-  )
-)
+      if (scalaVersion.value.startsWith("3."))
+        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString)
+      else Nil
+    ))
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
