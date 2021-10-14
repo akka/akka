@@ -319,8 +319,10 @@ object Dependencies {
         // dependency for convenience, we can leave it out for Scala 3 for now,
         // and depend on 2.13.0-rc1 for our tests. Eventually we should consider
         // whether to update all jackson artifacts for Scala 3.
-        if (scalaVersion.value.startsWith("3.")) Nil
-        else Seq("com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0-rc1" % "test")
+        if (scalaVersion.value.startsWith("3."))
+          Seq("com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0-rc1" % "test")
+        else
+          Seq(jacksonScala)
       )
 
   val osgi = l ++= Seq(
