@@ -45,15 +45,18 @@ private[io] final class AsyncDnsResolver(
     val (ipv4Address, ipv6Address) = loopback match {
       case ipv6: Inet6Address => (InetAddress.getByName("127.0.0.1"), ipv6)
       case ipv4: Inet4Address => (ipv4, InetAddress.getByName("::1"))
-      case unknown => throw new IllegalArgumentException(s"Loopback address was [$unknown]")
+      case unknown            => throw new IllegalArgumentException(s"Loopback address was [$unknown]")
     }
-    cache.put("localhost" -> Ip(),
+    cache.put(
+      "localhost" -> Ip(),
       DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, loopback) :: Nil),
       Ttl.effectivelyForever)
-    cache.put("localhost" -> Ip(ipv6 = false, ipv4 = true),
+    cache.put(
+      "localhost" -> Ip(ipv6 = false, ipv4 = true),
       DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, ipv4Address) :: Nil),
       Ttl.effectivelyForever)
-    cache.put("localhost" -> Ip(ipv6 = true, ipv4 = false),
+    cache.put(
+      "localhost" -> Ip(ipv6 = true, ipv4 = false),
       DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, ipv6Address) :: Nil),
       Ttl.effectivelyForever)
 
