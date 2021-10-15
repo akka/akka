@@ -19,9 +19,7 @@ import io.aeron.driver.MediaDriver
 import org.agrona.IoUtil
 
 import akka.actor._
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.stream.KillSwitches
 import akka.stream.scaladsl.Source
@@ -68,7 +66,7 @@ class AeronStreamMaxThroughputSpecMultiJvmNode1 extends AeronStreamMaxThroughput
 class AeronStreamMaxThroughputSpecMultiJvmNode2 extends AeronStreamMaxThroughputSpec
 
 abstract class AeronStreamMaxThroughputSpec
-    extends MultiNodeSpec(AeronStreamMaxThroughputSpec)
+    extends AeronStreamMultiNodeSpec(AeronStreamMaxThroughputSpec)
     with STMultiNodeSpec
     with ImplicitSender {
 
@@ -105,17 +103,6 @@ abstract class AeronStreamMaxThroughputSpec
   def adjustedTotalMessages(n: Long): Long = (n * totalMessagesFactor).toLong
 
   override def initialParticipants = roles.size
-
-  def channel(roleName: RoleName) = {
-    val n = node(roleName)
-    val port = MultiNodeSpec.udpPort match {
-      case None =>
-        system.actorSelection(n / "user" / "updPort") ! UdpPortActor.GetUdpPort
-        expectMsgType[Int]
-      case Some(p) => p
-    }
-    s"aeron:udp?endpoint=${n.address.host.get}:$port"
-  }
 
   val streamId = 1
   val giveUpMessageAfter = 30.seconds

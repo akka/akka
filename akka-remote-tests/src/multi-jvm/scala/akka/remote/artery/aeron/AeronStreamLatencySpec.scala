@@ -26,9 +26,7 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 import akka.Done
 import akka.actor._
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
@@ -72,7 +70,7 @@ class AeronStreamLatencySpecMultiJvmNode1 extends AeronStreamLatencySpec
 class AeronStreamLatencySpecMultiJvmNode2 extends AeronStreamLatencySpec
 
 abstract class AeronStreamLatencySpec
-    extends MultiNodeSpec(AeronStreamLatencySpec)
+    extends AeronStreamMultiNodeSpec(AeronStreamLatencySpec)
     with STMultiNodeSpec
     with ImplicitSender {
 
@@ -105,18 +103,6 @@ abstract class AeronStreamLatencySpec
   }
 
   override def initialParticipants = roles.size
-
-  def channel(roleName: RoleName) = {
-    val n = node(roleName)
-
-    val port = MultiNodeSpec.udpPort match {
-      case None =>
-        system.actorSelection(n / "user" / "updPort") ! UdpPortActor.GetUdpPort
-        expectMsgType[Int]
-      case Some(p) => p
-    }
-    s"aeron:udp?endpoint=${n.address.host.get}:$port"
-  }
 
   val streamId = 1
   val giveUpMessageAfter = 30.seconds

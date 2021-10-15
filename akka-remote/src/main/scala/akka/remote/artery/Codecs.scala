@@ -96,7 +96,7 @@ private[remote] class Encoder(
         headerBuilder.setOutboundActorRefCompression(table)
       }
 
-      private val changeClassManifsetCompressionCb = getAsyncCallback[CompressionTable[String]] { table =>
+      private val changeClassManifestCompressionCb = getAsyncCallback[CompressionTable[String]] { table =>
         headerBuilder.setOutboundClassManifestCompression(table)
       }
 
@@ -219,7 +219,7 @@ private[remote] class Encoder(
        * External call from ChangeOutboundCompression materialized value
        */
       override def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] =
-        changeClassManifsetCompressionCb.invokeWithFeedback(table)
+        changeClassManifestCompressionCb.invokeWithFeedback(table)
 
       /**
        * External call from ChangeOutboundCompression materialized value

@@ -148,6 +148,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     // make sure we only close the driver once or we will crash the JVM
     val maybeDriver = mediaDriver.getAndSet(None)
     maybeDriver.foreach { driver =>
+      log.info("Stopping embedded media driver in directory [{}]", driver.aeronDirectoryName)
       // this is only for embedded media driver
       try driver.close()
       catch {

@@ -572,7 +572,7 @@ object MultiJvmPlugin extends AutoPlugin {
       } else {
         if (hostsFile.exists && hostsFile.canRead)
           s.log.info(
-            "Hosts from setting " + multiNodeHosts.key.label + " is overrriding file " + hostsFile.getAbsolutePath)
+            "Hosts from setting " + multiNodeHosts.key.label + " is overriding file " + hostsFile.getAbsolutePath)
         hosts.toIndexedSeq
       }
 
