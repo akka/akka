@@ -81,9 +81,10 @@ object JoinConfigCompatChecker {
     // retrieve all incompatible keys
     // NOTE: we only check the key if effectively required
     // because config may contain more keys than required for this checker
+    val keySet = keys.toSet
     val incompatibleKeys =
       toCheck.entrySet().asScala.collect {
-        case entry if keys.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
+        case entry if keySet.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
       }
 
     if (incompatibleKeys.isEmpty) Valid
@@ -102,9 +103,10 @@ object JoinConfigCompatChecker {
   @ccompatUsedUntil213
   private[cluster] def filterWithKeys(requiredKeys: im.Seq[String], config: Config): Config = {
 
+    val requiredKeySet = requiredKeys.toSet
     val filtered =
       config.entrySet().asScala.collect {
-        case e if requiredKeys.contains(e.getKey) => (e.getKey, e.getValue)
+        case e if requiredKeySet.contains(e.getKey) => (e.getKey, e.getValue)
       }
 
     ConfigFactory.parseMap(filtered.toMap.asJava)
