@@ -39,9 +39,9 @@ object Scaladoc extends AutoPlugin {
       // Publishing scala3 docs is broken (https://github.com/akka/akka/issues/30788),
       // for now we just skip it:
       Compile / doc / sources := (
-        if (scalaVersion.value.startsWith("3.")) Seq()
-        else (Compile / doc / sources).value
-      ),
+          if (scalaVersion.value.startsWith("3.")) Seq()
+          else (Compile / doc / sources).value
+        ),
       Compile / validateDiagrams := true) ++
     CliOptions.scaladocDiagramsEnabled.ifTrue(Compile / doc := {
       val docs = (Compile / doc).value
