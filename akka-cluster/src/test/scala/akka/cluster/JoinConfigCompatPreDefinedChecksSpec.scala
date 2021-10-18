@@ -15,7 +15,7 @@ class JoinConfigCompatPreDefinedChecksSpec extends AnyWordSpec with Matchers {
   // Test for some of the pre-build helpers we offer
   "JoinConfigCompatChecker.exists" must {
 
-    val requiredKeys = im.Seq(
+    val requiredKeys = im.Set(
       "akka.cluster.min-nr-of-members",
       "akka.cluster.retry-unsuccessful-join-after",
       "akka.cluster.allow-weakly-up-members")
@@ -57,7 +57,7 @@ class JoinConfigCompatPreDefinedChecksSpec extends AnyWordSpec with Matchers {
 
   "JoinConfigCompatChecker.fullMatch" must {
 
-    val requiredKeys = im.Seq(
+    val requiredKeys = im.Set(
       "akka.cluster.min-nr-of-members",
       "akka.cluster.retry-unsuccessful-join-after",
       "akka.cluster.allow-weakly-up-members")

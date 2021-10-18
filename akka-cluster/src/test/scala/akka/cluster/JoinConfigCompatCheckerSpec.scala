@@ -629,14 +629,14 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
 }
 
 class JoinConfigCompatCheckerTest extends JoinConfigCompatChecker {
-  override def requiredKeys = im.Seq("akka.cluster.config-compat-test")
+  override def requiredKeys = im.Set("akka.cluster.config-compat-test")
 
   override def check(toValidate: Config, actualConfig: Config): ConfigValidation =
     JoinConfigCompatChecker.fullMatch(requiredKeys, toValidate, actualConfig)
 }
 
 class JoinConfigCompatCheckerExtraTest extends JoinConfigCompatChecker {
-  override def requiredKeys = im.Seq("akka.cluster.config-compat-test-extra")
+  override def requiredKeys = im.Set("akka.cluster.config-compat-test-extra")
 
   override def check(toValidate: Config, actualConfig: Config): ConfigValidation =
     JoinConfigCompatChecker.fullMatch(requiredKeys, toValidate, actualConfig)
@@ -646,7 +646,7 @@ class JoinConfigCompatCheckerExtraTest extends JoinConfigCompatChecker {
 class RogueJoinConfigCompatCheckerTest extends JoinConfigCompatChecker {
 
   override def requiredKeys =
-    im.Seq("akka.cluster.sensitive.properties.password", "akka.cluster.sensitive.properties.username")
+    im.Set("akka.cluster.sensitive.properties.password", "akka.cluster.sensitive.properties.username")
 
   /** this check always returns Valid. The goal is to try to make the cluster leak those properties */
   override def check(toValidate: Config, actualConfig: Config): ConfigValidation =

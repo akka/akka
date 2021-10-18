@@ -17,8 +17,8 @@ import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker, Valid }
 @InternalApi
 private[akka] final class JoinConfigCompatCheckerClusterSharding extends JoinConfigCompatChecker {
 
-  override def requiredKeys: im.Seq[String] =
-    im.Seq("akka.cluster.sharding.number-of-shards")
+  override def requiredKeys: im.Set[String] =
+    im.Set("akka.cluster.sharding.number-of-shards")
 
   override def check(toCheck: Config, actualConfig: Config): ConfigValidation = {
     if (toCheck.hasPath(requiredKeys.head))

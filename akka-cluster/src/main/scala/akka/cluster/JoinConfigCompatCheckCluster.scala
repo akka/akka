@@ -29,7 +29,7 @@ import akka.cluster.sbr.SplitBrainResolverProvider
 final class JoinConfigCompatCheckCluster extends JoinConfigCompatChecker {
   import JoinConfigCompatCheckCluster._
 
-  override def requiredKeys: im.Seq[String] = List(DowningProviderPath, SbrStrategyPath)
+  override def requiredKeys: im.Set[String] = Set(DowningProviderPath, SbrStrategyPath)
 
   override def check(toCheck: Config, actualConfig: Config): ConfigValidation = {
     val toCheckDowningProvider = toCheck.getString(DowningProviderPath)
@@ -40,11 +40,11 @@ final class JoinConfigCompatCheckCluster extends JoinConfigCompatChecker {
             LightbendSbrProviderClass))
         Valid
       else
-        JoinConfigCompatChecker.checkEquality(List(DowningProviderPath), toCheck, actualConfig)
+        JoinConfigCompatChecker.checkEquality(Set(DowningProviderPath), toCheck, actualConfig)
 
     val sbrStrategyResult =
       if (toCheck.hasPath(SbrStrategyPath) && actualConfig.hasPath(SbrStrategyPath))
-        JoinConfigCompatChecker.checkEquality(List(SbrStrategyPath), toCheck, actualConfig)
+        JoinConfigCompatChecker.checkEquality(Set(SbrStrategyPath), toCheck, actualConfig)
       else Valid
 
     downingProviderResult ++ sbrStrategyResult

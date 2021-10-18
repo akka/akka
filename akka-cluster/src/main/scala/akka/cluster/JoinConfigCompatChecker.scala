@@ -18,7 +18,7 @@ import akka.util.ccompat.JavaConverters._
 abstract class JoinConfigCompatChecker {
 
   /** The configuration keys that are required for this checker */
-  def requiredKeys: im.Seq[String]
+  def requiredKeys: im.Set[String]
 
   /**
    * Runs the Config check.
@@ -41,8 +41,8 @@ object JoinConfigCompatChecker {
    * @param requiredKeys - a Seq of required keys
    * @param toCheck - the Config instance to be checked
    */
-  def exists(requiredKeys: im.Seq[String], toCheck: Config): ConfigValidation = {
-    val allKeys = toCheck.entrySet().asScala.map(_.getKey)
+  def exists(requiredKeys: im.Set[String], toCheck: Config): ConfigValidation = {
+    val allKeys = toCheck.entrySet().asScala.map(_.getKey).toSet
     // return all not found required keys
     val result =
       requiredKeys.collect {
@@ -61,7 +61,7 @@ object JoinConfigCompatChecker {
    * @param toCheck - the Config instance to be checked
    * @param actualConfig - the Config instance containing the expected values
    */
-  def fullMatch(requiredKeys: im.Seq[String], toCheck: Config, actualConfig: Config): ConfigValidation = {
+  def fullMatch(requiredKeys: im.Set[String], toCheck: Config, actualConfig: Config): ConfigValidation = {
     exists(requiredKeys, toCheck) ++ checkEquality(requiredKeys, toCheck, actualConfig)
   }
 
@@ -69,7 +69,7 @@ object JoinConfigCompatChecker {
    * INTERNAL API
    */
   @InternalApi private[akka] def checkEquality(
-      keys: im.Seq[String],
+      keys: im.Set[String],
       toCheck: Config,
       actualConfig: Config): ConfigValidation = {
 
@@ -81,10 +81,9 @@ object JoinConfigCompatChecker {
     // retrieve all incompatible keys
     // NOTE: we only check the key if effectively required
     // because config may contain more keys than required for this checker
-    val keySet = keys.toSet
     val incompatibleKeys =
       toCheck.entrySet().asScala.collect {
-        case entry if keySet.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
+        case entry if keys.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
       }
 
     if (incompatibleKeys.isEmpty) Valid
@@ -101,12 +100,11 @@ object JoinConfigCompatChecker {
    */
   @InternalApi
   @ccompatUsedUntil213
-  private[cluster] def filterWithKeys(requiredKeys: im.Seq[String], config: Config): Config = {
+  private[cluster] def filterWithKeys(requiredKeys: im.Set[String], config: Config): Config = {
 
-    val requiredKeySet = requiredKeys.toSet
     val filtered =
       config.entrySet().asScala.collect {
-        case e if requiredKeySet.contains(e.getKey) => (e.getKey, e.getValue)
+        case e if requiredKeys.contains(e.getKey) => (e.getKey, e.getValue)
       }
 
     ConfigFactory.parseMap(filtered.toMap.asJava)
@@ -119,8 +117,8 @@ object JoinConfigCompatChecker {
    */
   @InternalApi
   private[cluster] def removeSensitiveKeys(
-      requiredKeys: im.Seq[String],
-      clusterSettings: ClusterSettings): im.Seq[String] = {
+      requiredKeys: im.Set[String],
+      clusterSettings: ClusterSettings): im.Set[String] = {
     requiredKeys.filter { key =>
       !clusterSettings.SensitiveConfigPaths.exists(s => key.startsWith(s))
     }
@@ -132,8 +130,8 @@ object JoinConfigCompatChecker {
    * as defined in 'akka.cluster.configuration-compatibility-check.sensitive-config-paths'.
    */
   @InternalApi
-  private[cluster] def removeSensitiveKeys(config: Config, clusterSettings: ClusterSettings): im.Seq[String] = {
-    val existingKeys = config.entrySet().asScala.map(_.getKey).to(im.Seq)
+  private[cluster] def removeSensitiveKeys(config: Config, clusterSettings: ClusterSettings): im.Set[String] = {
+    val existingKeys = config.entrySet().asScala.map(_.getKey).toSet
     removeSensitiveKeys(existingKeys, clusterSettings)
   }
 
@@ -155,9 +153,9 @@ object JoinConfigCompatChecker {
 
     // composite checker
     new JoinConfigCompatChecker {
-      override val requiredKeys: im.Seq[String] = {
+      override val requiredKeys: im.Set[String] = {
         // Always include akka.version (used in join logging)
-        "akka.version" +: checkers.flatMap(_.requiredKeys).to(im.Seq)
+        checkers.flatMap(_.requiredKeys) + "akka.version"
       }
       override def check(toValidate: Config, clusterConfig: Config): ConfigValidation =
         checkers.foldLeft(Valid: ConfigValidation) { (acc, checker) =>

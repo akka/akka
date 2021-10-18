@@ -17,7 +17,7 @@ import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker, Valid }
 @InternalApi
 private[akka] final class ClusterReceptionistConfigCompatChecker extends JoinConfigCompatChecker {
 
-  override def requiredKeys = "akka.cluster.typed.receptionist.distributed-key-count" :: Nil
+  override def requiredKeys = Set("akka.cluster.typed.receptionist.distributed-key-count")
 
   override def check(toCheck: Config, actualConfig: Config): ConfigValidation =
     if (toCheck.hasPath(requiredKeys.head))

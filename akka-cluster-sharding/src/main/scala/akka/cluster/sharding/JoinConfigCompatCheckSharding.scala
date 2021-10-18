@@ -17,8 +17,8 @@ import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker }
 @InternalApi
 final class JoinConfigCompatCheckSharding extends JoinConfigCompatChecker {
 
-  override def requiredKeys: im.Seq[String] =
-    im.Seq("akka.cluster.sharding.state-store-mode")
+  override def requiredKeys: im.Set[String] =
+    im.Set("akka.cluster.sharding.state-store-mode")
 
   override def check(toCheck: Config, actualConfig: Config): ConfigValidation =
     JoinConfigCompatChecker.fullMatch(requiredKeys, toCheck, actualConfig)
