@@ -38,7 +38,7 @@ object JoinConfigCompatChecker {
   /**
    * Checks that all `requiredKeys` are available in `toCheck` Config.
    *
-   * @param requiredKeys - a Seq of required keys
+   * @param requiredKeys - a Set of required keys
    * @param toCheck - the Config instance to be checked
    */
   def exists(requiredKeys: im.Set[String], toCheck: Config): ConfigValidation = {
@@ -57,7 +57,7 @@ object JoinConfigCompatChecker {
    * Checks that all `requiredKeys` are available in `toCheck` Config
    * and its values match exactly the values in `currentConfig`.
    *
-   * @param requiredKeys - a Seq of required keys
+   * @param requiredKeys - a Set of required keys
    * @param toCheck - the Config instance to be checked
    * @param actualConfig - the Config instance containing the expected values
    */
@@ -113,7 +113,7 @@ object JoinConfigCompatChecker {
   /**
    * INTERNAL API
    * Removes sensitive keys, as defined in 'akka.cluster.configuration-compatibility-check.sensitive-config-paths',
-   * from the passed `requiredKeys` Seq.
+   * from the passed `requiredKeys` Set.
    */
   @InternalApi
   private[cluster] def removeSensitiveKeys(
@@ -126,7 +126,7 @@ object JoinConfigCompatChecker {
 
   /**
    * INTERNAL API
-   * Builds a Seq of keys using the passed `Config` not including any sensitive keys,
+   * Builds a Set of keys using the passed `Config` not including any sensitive keys,
    * as defined in 'akka.cluster.configuration-compatibility-check.sensitive-config-paths'.
    */
   @InternalApi
