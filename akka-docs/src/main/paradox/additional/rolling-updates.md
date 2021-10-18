@@ -168,7 +168,7 @@ If you need to change any of the following aspects of sharding it will require a
  * The `extractShardId` function
  * The role that the shard regions run on
  * The persistence mode - It's important to use the same mode on all nodes in the cluster 
- * The [`number-of-shards`](https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#shard-allocation) is changed
+ * The [`number-of-shards`](https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#shard-allocation) is changed which may be required if the [amount of nodes](https://doc.akka.io/docs/akka/2.5/cluster-sharding.html#an-example) are changed
 
 ### Migrating from PersistentFSM to EventSourcedBehavior
 
