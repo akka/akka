@@ -4,8 +4,6 @@
 
 package akka.cluster
 
-import java.util
-
 import scala.collection.{ immutable => im }
 
 import com.typesafe.config.{ Config, ConfigFactory, ConfigValue }
@@ -73,18 +71,18 @@ object JoinConfigCompatChecker {
       toCheck: Config,
       actualConfig: Config): ConfigValidation = {
 
-    def checkCompat(entry: util.Map.Entry[String, ConfigValue]) = {
-      val key = entry.getKey
-      actualConfig.hasPath(key) && actualConfig.getValue(key) == entry.getValue
+    def checkCompat(key: String, value: ConfigValue) = {
+      actualConfig.hasPath(key) && actualConfig.getValue(key) == value
     }
 
     // retrieve all incompatible keys
     // NOTE: we only check the key if effectively required
     // because config may contain more keys than required for this checker
-    val incompatibleKeys =
-      toCheck.entrySet().asScala.collect {
-        case entry if keys.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
-      }
+
+    val incompatibleKeys = for {
+      key <- keys if toCheck.hasPath(key)
+      value = toCheck.getValue(key) if !checkCompat(key, value)
+    } yield s"$key is incompatible"
 
     if (incompatibleKeys.isEmpty) Valid
     else Invalid(incompatibleKeys.to(im.Seq))
@@ -102,10 +100,9 @@ object JoinConfigCompatChecker {
   @ccompatUsedUntil213
   private[cluster] def filterWithKeys(requiredKeys: im.Seq[String], config: Config): Config = {
 
-    val filtered =
-      config.entrySet().asScala.collect {
-        case e if requiredKeys.contains(e.getKey) => (e.getKey, e.getValue)
-      }
+    val filtered = for {
+      key <- requiredKeys if config.hasPath(key)
+    } yield (key, config.getValue(key))
 
     ConfigFactory.parseMap(filtered.toMap.asJava)
   }
