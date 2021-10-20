@@ -252,15 +252,15 @@ class ReplicatedEventSourcingSpec
       val eventProbeR2 = createTestProbe[EventAndContext]()
       val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
       val r2 = spawn(testBehavior(entityId, "R2", eventProbeR2.ref))
-      val latch1 = new CountDownLatch(1)
-      val latch2 = new CountDownLatch(1)
-      r1 ! StoreMe("from r1", probe.ref, latch1) // R1 0 R2 0 -> R1 1 R2 0
-      r2 ! StoreMe("from r2", probe.ref, latch2) // R2 0 R1 0 -> R2 1 R1 0
+      val latch = new CountDownLatch(3)
+      r1 ! StoreMe("from r1", probe.ref, latch) // R1 0 R2 0 -> R1 1 R2 0
+      r2 ! StoreMe("from r2", probe.ref, latch) // R2 0 R1 0 -> R2 1 R1 0
 
       // the commands have arrived in both actors, waiting for the latch,
       // so that the persist of the events will be concurrent
-      latch1.countDown()
-      latch2.countDown()
+      latch.countDown()
+      latch.await(10, TimeUnit.SECONDS)
+      latch.countDown()
 
       // each gets its local event
       eventProbeR1.expectMessage(
