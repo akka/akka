@@ -183,8 +183,6 @@ class AsyncDnsResolverIntegrationSpec
     }
 
     "resolve localhost even though ndots is greater than 0" in {
-      // This currently works because the nameserver resolves localhost, but in future should work because we've
-      // implemented proper support for /etc/hosts
       val name = "localhost"
       val answer = resolve(name, DnsProtocol.Ip(ipv6 = false))
       withClue(answer) {
