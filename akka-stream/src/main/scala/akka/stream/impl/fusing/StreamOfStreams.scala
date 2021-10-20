@@ -704,6 +704,9 @@ import akka.util.ccompat.JavaConverters._
         if (!status.compareAndSet(RequestOneScheduledBeforeMaterialization, newState))
           dispatchCommand(RequestOneScheduledBeforeMaterialization)
 
+      case _: CancelScheduledBeforeMaterialization if newState.isInstanceOf[CancelScheduledBeforeMaterialization] =>
+      // already cancelled, just ignore the new cancel and keep the old cause
+
       case cmd: CommandScheduledBeforeMaterialization =>
         throw new IllegalStateException(
           s"${newState.command} on subsink($name) is illegal when ${cmd.command} is still pending")
