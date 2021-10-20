@@ -51,7 +51,7 @@ object MultiNode extends AutoPlugin {
     // -Dmultinode.Djava.net.preferIPv4Stack=true -Dmultinode.Xmx512m -Dmultinode.XX:MaxPermSize=256M
     // -DMultiJvm.akka.cluster.Stress.nrOfNodes=15
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
-    val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
+    val knownPrefix = Set("akka.", "MultiJvm.")
     val akkaProperties = System.getProperties.stringPropertyNames.asScala.toList.collect {
       case MultinodeJvmArgs(a, b) =>
         val value = System.getProperty("multinode." + a + b)

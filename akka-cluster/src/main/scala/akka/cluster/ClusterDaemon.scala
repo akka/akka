@@ -714,6 +714,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           case _                 => None
         }
         context.become(tryingToJoin(address, joinDeadline))
+        logDebug("Trying to join [{}]", address)
         clusterCore(address) ! Join(selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
       }
     }

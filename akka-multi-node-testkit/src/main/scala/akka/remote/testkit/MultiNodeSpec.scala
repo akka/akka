@@ -160,29 +160,41 @@ object MultiNodeSpec {
   require(selfName != "", "multinode.host must not be empty")
 
   /**
-   * Port number of this node. Defaults to 0 which means a random port.
+   * TCP Port number to be used when running tests on TCP. 0 means a random port.
    *
    * {{{
    * -Dmultinode.port=0
    * }}}
    */
-  val selfPort: Int = Integer.getInteger("multinode.port", 0)
+  val tcpPort: Int = Integer.getInteger("multinode.port", 0)
 
-  require(selfPort >= 0 && selfPort < 65535, "multinode.port is out of bounds: " + selfPort)
+  require(tcpPort >= 0 && tcpPort < 65535, "multinode.port is out of bounds: " + tcpPort)
 
   /**
-   * UDP Port number to be used on this node. 0 means a random port.
+   * UDP Port number to be used when running tests on UDP. 0 means a random port.
    *
    * {{{
-   * -Dmultinode.udp-port=0
+   * -Dmultinode.udp.port=0
    * }}}
    */
-  val udpPort: Option[Int] = Option(System.getProperty("multinode.udp-port")) match {
-    case None    => None
-    case Some(_) => Some(Integer.getInteger("multinode.udp-port", 0))
-  }
+  val udpPort: Option[Int] =
+    Option(System.getProperty("multinode.udp.port")).map { _ =>
+      Integer.getInteger("multinode.udp.port", 0)
+    }
 
-  require(udpPort.getOrElse(1) >= 0 && udpPort.getOrElse(1) < 65535, "multinode.udp-port is out of bounds: " + udpPort)
+  require(udpPort.getOrElse(1) >= 0 && udpPort.getOrElse(1) < 65535, "multinode.udp.port is out of bounds: " + udpPort)
+
+  /**
+   * Port number of this node.
+   *
+   * This is defined in function of property `multinode.protocol`.
+   * If set to 'udp', udpPort will be used. If unset or any other value, it will default to tcpPort.
+   */
+  val selfPort: Int =
+    System.getProperty("multinode.protocol") match {
+      case "udp" => udpPort.getOrElse(0)
+      case _     => tcpPort
+    }
 
   /**
    * Name (or IP address; must be resolvable using InetAddress.getByName)
@@ -227,7 +239,7 @@ object MultiNodeSpec {
       "akka.actor.provider" -> "remote",
       "akka.remote.artery.canonical.hostname" -> selfName,
       "akka.remote.classic.netty.tcp.hostname" -> selfName,
-      "akka.remote.classic.netty.tcp.port" -> selfPort,
+      "akka.remote.classic.netty.tcp.port" -> tcpPort,
       "akka.remote.artery.canonical.port" -> selfPort))
 
   private[testkit] val baseConfig: Config =
@@ -257,9 +269,10 @@ object MultiNodeSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
-  // Multi node tests on kuberenetes require fixed ports to be mapped and exposed
+  // Multi node tests on kubernetes require fixed ports to be mapped and exposed
   // This method change the port bindings to avoid conflicts
-  // Please note that with the current setup only port 5000 and 5001 are exposed in kubernetes
+  // Please note that with the current setup only port 5000 and 5001 (or 6000 and 6001 when using UDP)
+  // are exposed in kubernetes
   def configureNextPortIfFixed(config: Config): Config = {
     val arteryPortConfig = getNextPortString("akka.remote.artery.canonical.port", config)
     val nettyPortConfig = getNextPortString("akka.remote.classic.netty.tcp.port", config)
