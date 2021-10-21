@@ -462,11 +462,10 @@ object StyleGuideDocExamples {
       //#messages-sealed
     }
 
-    private class CountDown(notifyWhenZero: ActorRef[Done]) {
+    private class CountDown() {
       import CountDown._
 
       //#pattern-match-unhandled
-      private val zero: Behavior[Command] = {
         Behaviors.receiveMessage {
           case GetValue(replyTo) =>
             replyTo ! Value(0)
@@ -474,7 +473,6 @@ object StyleGuideDocExamples {
           case Down =>
             Behaviors.unhandled
         }
-      }
       //#pattern-match-unhandled
 
       @nowarn
