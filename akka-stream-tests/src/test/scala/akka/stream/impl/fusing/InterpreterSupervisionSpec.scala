@@ -116,7 +116,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(4)
-      lastEvents() should be(Set(OnNext(Vector(13, 14, 15))))
+      lastEvents() should be(Set(OnNext(Vector(13, 14, 15)), RequestOne))
     }
 
     "complete after resume when Map throws before Grouped" in new OneBoundedSetupWithDecider[Int](

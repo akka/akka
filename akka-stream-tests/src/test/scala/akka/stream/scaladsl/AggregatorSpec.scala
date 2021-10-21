@@ -17,10 +17,11 @@ class AggregatorSpec extends StreamSpec {
     val groupSize = 3
     val result = Source(stream)
       .via(
-        new Aggregator[Int, Seq[Int]](
+        new Aggregator[Int, Seq[Int], Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
-          emitReady = seq => seq.size >= groupSize
+          emitReady = seq => seq.size >= groupSize,
+          harvest = seq => seq
         )
       )
       .runWith(Sink.collection)
@@ -35,11 +36,11 @@ class AggregatorSpec extends StreamSpec {
     val groupSize = 3
     val result = Source(stream)
       .via(
-        new Aggregator[Int, Seq[Int]](
+        new Aggregator[Int, Seq[Int], Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitReady = seq => seq.size >= groupSize,
-          harvest = Some(seq => seq :+ -1) // append -1 to output to demonstrate harvest
+          harvest = seq => seq :+ -1 // append -1 to output to demonstrate harvest
         )
       )
       .runWith(Sink.collection)
@@ -55,13 +56,13 @@ class AggregatorSpec extends StreamSpec {
     // use the value as weight and aggregate
     val result = Source(stream)
       .via(
-        new Aggregator[Int, (Seq[Int], Int)](
+        new Aggregator[Int, (Seq[Int], Int), Seq[Int]](
           seed = i => (Seq(i), i),
           aggregate = (seqAndWeight, i) => (seqAndWeight._1 :+ i, seqAndWeight._2 + i),
-          emitReady = seqAndWeight => seqAndWeight._2 >= weight
+          emitReady = seqAndWeight => seqAndWeight._2 >= weight,
+          harvest = seqAndWeight => seqAndWeight._1
         )
       )
-      .map(_._1)
       .runWith(Sink.collection)
 
     assert(
@@ -91,10 +92,11 @@ class AggregatorSpec extends StreamSpec {
       }
       .async // must use async to not let Thread.sleep block the next stage
       .via(
-        new Aggregator[Int, (Seq[Int])](
+        new Aggregator[Int, (Seq[Int]), Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitReady = _ => false,
+          harvest = seq => seq,
           maxGap = Some(maxGap) // elements with longer gap will put put to next aggregator
         )
       )
@@ -127,10 +129,11 @@ class AggregatorSpec extends StreamSpec {
       }
       .async // must use async to not let Thread.sleep block the next stage
       .via(
-        new Aggregator[Int, (Seq[Int])](
+        new Aggregator[Int, Seq[Int], Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitReady = _ => false,
+          harvest = seq => seq,
           maxDuration = Some(maxDuration) // elements with longer gap will put put to next aggregator
         )
       )

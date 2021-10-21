@@ -224,10 +224,10 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "implement grouped" in new OneBoundedSetup[Int](GroupedWeighted(3, ConstantFun.oneLong)) {
-      lastEvents() should be(Set.empty)
+      lastEvents() should be(Set(RequestOne))
 
       downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
+      lastEvents() should be(Set.empty)
 
       upstream.onNext(0)
       lastEvents() should be(Set(RequestOne))
@@ -236,10 +236,10 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(2)
-      lastEvents() should be(Set(OnNext(Vector(0, 1, 2))))
+      lastEvents() should be(Set(OnNext(Vector(0, 1, 2)), RequestOne))
 
       downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
+      lastEvents() should be(Set.empty)
 
       upstream.onNext(3)
       lastEvents() should be(Set(RequestOne))
