@@ -44,7 +44,9 @@ import akka.util.OptionVal
 
       override def postStop(): Unit = {
         //this covers the case when the nested flow was never materialized
-        matPromise.tryFailure(new AbruptStageTerminationException(this))
+        if (!matPromise.isCompleted) {
+          matPromise.failure(new AbruptStageTerminationException(this))
+        }
         super.postStop()
       }
 
