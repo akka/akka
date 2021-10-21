@@ -270,6 +270,7 @@ private[persistence] trait Eventsourced
   /** INTERNAL API. */
   override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     try {
+      if (recoveryRunning) message.foreach(self.forward(_))
       internalStash.unstashAll()
       unstashAll(unstashFilterPredicate)
     } finally {
