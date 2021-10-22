@@ -31,14 +31,14 @@ import scala.concurrent.duration.FiniteDuration
  * @tparam Agg
  */
 class Aggregator[In, Agg, Out](
-                           val seed: In => Agg,
-                           val aggregate: (Agg, In) => Agg,
-                           val emitReady: Agg => Boolean,
-                           val harvest: Agg => Out,
-                           val maxGap: Option[FiniteDuration] = None,
-                           val maxDuration: Option[FiniteDuration] = None
-                           )
-    extends GraphStage[FlowShape[In, Out]] {
+                                       val seed: In => Agg,
+                                       val aggregate: (Agg, In) => Agg,
+                                       val emitReady: Agg => Boolean,
+                                       val harvest: Agg => Out,
+                                       val maxGap: Option[FiniteDuration] = None,
+                                       val maxDuration: Option[FiniteDuration] = None
+                                     )
+  extends GraphStage[FlowShape[In, Out]] {
 
   // maxDuration must not be smaller than the maxGap, otherwise maxGap is meaningless
   for {
@@ -62,8 +62,9 @@ class Aggregator[In, Agg, Out](
       // there are two timers one for gap one for total duration
       // this can potentially harvest the current aggregator and start the loop from emit
       override protected def onTimer(timerKey: Any): Unit = {
-        //println("onTimer")
-        if (state.harvestAttempt(mode = HarvestMode.OnTimer)) emitAndLoop()
+        //println(s"onTimer $timerKey begin state=$state")
+        if (state.harvestOnTimer()) state.emitAndLoop()
+        //println(s"onTimer $timerKey end state=$state")
       }
 
       setHandler(in, new InHandler {
@@ -71,18 +72,20 @@ class Aggregator[In, Agg, Out](
         // this callback is triggered after upstream push with new data
         // so the loop start from aggregate
         override def onPush(): Unit = {
-          //println("onPush")
-          aggregateAndLoop()
+          //println(s"onPush begin state=$state")
+          state.aggregateAndLoop()
+          state.pullIfNoBackPressure()
+          //println(s"onPush end state=$state")
         }
 
         override def onUpstreamFinish(): Unit = {
-          //println("upstream finish")
-          flush()
+          //println(s"onFinish begin state=$state")
+          state.flush()
+          //println(s"onFinish end state=$state")
           completeStage()
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
-          //println("upstream failure")
           failStage(ex)
         }
 
@@ -93,64 +96,14 @@ class Aggregator[In, Agg, Out](
         // this callback is triggered after downstream pull requesting new emit
         // so the loop start from emit
         override def onPull(): Unit = {
-          //println(s"onPull ${state}")
-          emitAndLoop()
+          state.hasScheduledEmit = false
+          //println(s"onPull begin state=$state")
+          state.aggregateAndLoop()
+          state.pullIfNoBackPressure()
+          //println(s"onPull end state=$state")
         }
 
       })
-
-      private def aggregateAndLoop(): Unit =
-        while (aggregateAndReadyToEmit()
-               && emitAndReadyToAggregate() // this make it ready to aggregate again
-               ) {}
-
-      private def emitAndLoop(): Unit =
-        while (emitAndReadyToAggregate() // this make it ready to aggregate again
-               && aggregateAndReadyToEmit()) {}
-
-      private def emitAndReadyToAggregate(): Boolean = {
-        state.emitAttempt() && {
-          // since the stage is ready to take new data again, signal upstream by pull
-          // it might have already pulled if harvest is done by timer instead og aggregate
-          if (!hasBeenPulled(in)) {
-            // pull is not necessary during onPush
-            // call pull in onPull is sufficient, but it does not hurt to generate a pull event to always keep the stream energized
-            //println("pulling after emit")
-            pull(in)
-          }
-          true
-        }
-      }
-
-      private def aggregateAndReadyToEmit(): Boolean = {
-        // loop until cannot aggregate anymore
-        while (state.aggregateAttempt() &&
-               // attempt harvest after every aggregation to check various conditions
-               state.pendingOutput.isEmpty) {}
-
-        if (state.pendingOutput.isEmpty) {
-          // at the end of aggregation, if not harvested yet
-          // schedule a gap timer to ensure aggregation time not exceeding the gap
-          maxGap.foreach(mg => scheduleOnce(maxGapTimer, mg))
-          //println("not ready to emit")
-          false
-        } else {
-            //println("ready to emit")
-            true
-          }
-      }
-
-      // force flush even condition not met
-      private def flush(): Unit = {
-        //println(s"flushing state=$state")
-        state.harvestAttempt(mode = HarvestMode.Flush) && {
-          state.pendingOutput.exists { output =>
-            //println(s"state=$state, final emit $output")
-            emit(out, output, () => completeStage()) // make sure complete happens after flushing
-            true
-          }
-        }
-      }
 
       // mutable state to keep track of the aggregator status to coordinate the flow
       // input/output handler callbacks are guaranteed to execute without concurrency
@@ -159,42 +112,35 @@ class Aggregator[In, Agg, Out](
 
       /**
        * Three possible states
-       * 1. no aggregator, at the beginning or after pushing to downstream
-       * 2. has non-harvested aggregator
+       * 1. no aggregator, no pendingEmit, happens at the beginning or after pushing to downstream
+       * 2. has aggregator, but no pendingEmit
        * both 1 and 2 can aggregate input, but not ready to push output
-       * 3. has harvested aggregator, must backpressure and wait for output port available
+       * 3. has pendingEmit, no aggregators, must backpressure (not call pull) and wait for output port available
        * 1 -> 2 by aggregating new data
-       * 2 -> 3 by aggregating or by timer data gap
-       * 3 -> 1 by pushing to output port
+       * 2 -> 3 by aggregating or by timer
+       * 3 -> 1 by emitting to output port
        */
       class State {
-        override def toString: String = s"State[aggregator=${
-          val str = aggregator.toString
-          s"${str.take(100)}${if(str.length >100) s"(${str.length})" else ""}"
-        }, pending=${
-          val str = pendingEmit.toString
-          s"${str.take(100)}${if(str.length >100) s"(${str.length})" else ""}"
-        }]"
-        var aggregator: Option[AggregatorState] = None
+        override def toString: String = s"State[agg=$aggregator,emit=$pendingEmit, pending=$hasScheduledEmit]"
+        private var aggregator: Option[AggregatorState] = None
         private var pendingEmit: Option[Out] = None
 
         private def aggregate(input: In): Unit = {
-          //println(s"aggregating $input")
           aggregator match {
             case Some(agg) =>
-              // as long as the stage logic does not pull when not ready, this should not happen
-              if (emitReady(agg.aggregator))
-                throw new Exception(s"already emitReady, cannot aggregate more: $agg, $input")
-              aggregator = Some(agg.aggregate(input)  )
+              aggregator = Some(agg.aggregate(input))
             case None =>
               aggregator = Some(new AggregatorState(input))
               // schedule a timer for max duration
               maxDuration.foreach(md => scheduleOnce(maxDurationTimer, md))
           }
+          // this will close the aggregator right away if emitReady
+          harvestAttempt(HarvestMode.AfterAggregation)
         }
 
+        def harvestOnTimer(): Boolean = harvestAttempt(mode = HarvestMode.OnTimer)
         // state transition to 3 if true
-        def harvestAttempt(mode: HarvestMode.Value): Boolean = pendingEmit.isEmpty && {
+        private def harvestAttempt(mode: HarvestMode.Value): Boolean = pendingEmit.isEmpty && {
           aggregator match {
             case Some(agg) =>
               if (mode == HarvestMode.Flush || emitReady(agg.aggregator) || {
@@ -218,47 +164,71 @@ class Aggregator[In, Agg, Out](
         }
 
         // state transition 1 -> 2 or stay in 2
-        def aggregateAttempt(): Boolean =
-          {if (isAvailable(in)){
-            //println(s"input is available $state")
-            true} else {
-            //println(s"input not available $state")
-            false}} && {
+        private def aggregateAttempt(): Boolean =
+          isAvailable(in) && {
             // always grab after checking available or it will get lost on next callback
             // this is not common sense understanding
             val input = grab(in)
-            //println(s"grabbed $input")
+            //println(s"aggregating $input")
             aggregate(input)
-            harvestAttempt(HarvestMode.AfterAggregation)
-            if (pendingOutput.isEmpty) { // must guarantee pendingOutput is empty before pulling
-              if (!hasBeenPulled(in)) {
-                //println("pulling after aggregate")
-                pull(in)
-              }
-            }
-            //println(s"state=$state")
-
+            //println(s"after aggregate $this")
             true
           }
 
+        var hasScheduledEmit = false
         // transition to state 1 if true
-        def emitAttempt(): Boolean =
-          pendingOutput.exists { output =>
-            {if(isAvailable(out)){
-              //println("out port is available, emit")
-              push(out, output)
-              pendingEmit = None
-              true
-            } else {
-              //println("out port not available")
-              emit(out, output) // follow up emit
-              pendingEmit = None
-              false // this will not pull and no more onPush to prevent from adding too much followup emit
-            }
-            }
+        private def emitRightAway(): Boolean = {
+          val result =
+          !pendingEmit.exists { output =>
+            //println(s"emit $output")
+            hasScheduledEmit = !isAvailable(out)
+            emit(out, output) // if out port not available, it'll follow up as scheduled emit
+            pendingEmit = None
+            hasScheduledEmit
           }
+          //println(s"no backpressure $result $state")
+          result
+        }
 
-        def pendingOutput: Option[Out] = pendingEmit
+        def pullIfNoBackPressure(): Unit = {
+          if (!hasScheduledEmit && !hasBeenPulled(in)) { // pull at the end of loop is there is no hanging emit
+            //println(s"pulling")
+            pull(in)
+          }
+        }
+
+        def aggregateAndLoop(): Unit =
+        {
+          while (aggregateAndReadyToEmit()
+            && emitRightAway() // this make it ready to aggregate again
+          ) {}
+        }
+
+        def emitAndLoop(): Unit = {
+          while (emitRightAway() // this make it ready to aggregate again
+            && aggregateAndReadyToEmit()) {}
+        }
+
+        def aggregateAndReadyToEmit(): Boolean = {
+          // loop until cannot aggregate anymore
+          //println(s"agg attempt begin $state")
+          while (aggregateAttempt() &&
+            // attempt harvest after every aggregation to check various conditions
+            pendingEmit.isEmpty) {}
+
+          //println(s"agg attempt end $state")
+          if (aggregator.nonEmpty) {
+            // if it's still aggregating
+            // schedule a gap timer to ensure aggregation time not exceeding the gap
+            maxGap.foreach(mg => scheduleOnce(maxGapTimer, mg))
+          }
+          pendingEmit.nonEmpty
+        }
+
+        // force flush even condition not met
+        def flush(): Unit = {
+          if (harvestAttempt(mode = HarvestMode.Flush)) emitRightAway()
+        }
 
       }
 
@@ -268,8 +238,7 @@ class Aggregator[In, Agg, Out](
 
       // expose interfaces for control
       class AggregatorState(input: In) {
-
-        override def toString: String = s"aggregator=${aggregator}"
+        override def toString: String = s"agg=${aggregator}"
         val startTime = System.currentTimeMillis()
 
         var aggregator: Agg = seed(input)
@@ -287,29 +256,3 @@ class Aggregator[In, Agg, Out](
     }
 
 }
-
-/*
-[error] 	akka.stream.scaladsl.SourceWithContextSpec // passed
-  [error] 	akka.stream.scaladsl.FlowGroupedWeightedSpec // passed
-[error] 	akka.stream.impl.fusing.InterpreterSupervisionSpec // passed after modification
-[error] 	akka.stream.impl.fusing.InterpreterSpec // passed after modification
-[error] 	akka.stream.scaladsl.FramingSpec // passed
-[error] 	akka.stream.scaladsl.FlowJoinSpec // passed
-[error] 	akka.stream.scaladsl.FlowLimitWeightedSpec // passed
-[error] 	akka.stream.scaladsl.FlowLimitSpec // passed
-[error] 	akka.stream.scaladsl.WithContextUsageSpec // ok failure
-[error] 	akka.stream.javadsl.SourceTest // timeout
-[error] 	akka.stream.scaladsl.BoundedSourceQueueSpec
-[error] 	akka.stream.scaladsl.GraphMergePreferredSpec
-
-[error] 	akka.stream.scaladsl.FlowGroupedWithinSpec
-
-
-[error] 	akka.stream.scaladsl.FlowGroupedWithinSpec
-[error] 	akka.stream.scaladsl.SourceWithContextSpec
-[error] 	akka.stream.javadsl.SourceTest
-[error] 	akka.stream.scaladsl.BoundedSourceQueueSpec
-[error] 	akka.stream.scaladsl.HubSpec
-[error] 	akka.stream.scaladsl.GraphMergePreferredSpec
-[error] 	akka.stream.scaladsl.WithContextUsageSpec
- */
