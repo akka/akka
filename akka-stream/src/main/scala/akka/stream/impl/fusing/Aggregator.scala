@@ -62,7 +62,7 @@ class Aggregator[In, Agg, Out](
       // there are two timers one for gap one for total duration
       // this can potentially harvest the current aggregator and start the loop from emit
       override protected def onTimer(timerKey: Any): Unit = {
-        println("onTimer")
+        //println("onTimer")
         if (state.harvestAttempt(mode = HarvestMode.OnTimer)) emitAndLoop()
       }
 
@@ -71,21 +71,20 @@ class Aggregator[In, Agg, Out](
         // this callback is triggered after upstream push with new data
         // so the loop start from aggregate
         override def onPush(): Unit = {
-          println("onPush")
+          //println("onPush")
           aggregateAndLoop()
         }
 
         override def onUpstreamFinish(): Unit = {
-          println("upstream finish")
+          //println("upstream finish")
           flush()
           completeStage()
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
-          println("upstream failure")
+          //println("upstream failure")
           failStage(ex)
         }
-
 
       })
 
@@ -94,7 +93,7 @@ class Aggregator[In, Agg, Out](
         // this callback is triggered after downstream pull requesting new emit
         // so the loop start from emit
         override def onPull(): Unit = {
-          println(s"onPull ${state}")
+          //println(s"onPull ${state}")
           emitAndLoop()
         }
 
@@ -116,7 +115,7 @@ class Aggregator[In, Agg, Out](
           if (!hasBeenPulled(in)) {
             // pull is not necessary during onPush
             // call pull in onPull is sufficient, but it does not hurt to generate a pull event to always keep the stream energized
-            println("pulling after emit")
+            //println("pulling after emit")
             pull(in)
           }
           true
@@ -133,20 +132,20 @@ class Aggregator[In, Agg, Out](
           // at the end of aggregation, if not harvested yet
           // schedule a gap timer to ensure aggregation time not exceeding the gap
           maxGap.foreach(mg => scheduleOnce(maxGapTimer, mg))
-          println("not ready to emit")
+          //println("not ready to emit")
           false
         } else {
-            println("ready to emit")
+            //println("ready to emit")
             true
           }
       }
 
       // force flush even condition not met
       private def flush(): Unit = {
-        println(s"flushing state=$state")
+        //println(s"flushing state=$state")
         state.harvestAttempt(mode = HarvestMode.Flush) && {
           state.pendingOutput.exists { output =>
-            println(s"state=$state, final emit $output")
+            //println(s"state=$state, final emit $output")
             emit(out, output, () => completeStage()) // make sure complete happens after flushing
             true
           }
@@ -180,7 +179,7 @@ class Aggregator[In, Agg, Out](
         private var pendingEmit: Option[Out] = None
 
         private def aggregate(input: In): Unit = {
-          println(s"aggregating $input")
+          //println(s"aggregating $input")
           aggregator match {
             case Some(agg) =>
               // as long as the stage logic does not pull when not ready, this should not happen
@@ -221,23 +220,23 @@ class Aggregator[In, Agg, Out](
         // state transition 1 -> 2 or stay in 2
         def aggregateAttempt(): Boolean =
           {if (isAvailable(in)){
-            println(s"input is available $state")
+            //println(s"input is available $state")
             true} else {
-            println(s"input not available $state")
+            //println(s"input not available $state")
             false}} && {
             // always grab after checking available or it will get lost on next callback
             // this is not common sense understanding
             val input = grab(in)
-            println(s"grabbed $input")
+            //println(s"grabbed $input")
             aggregate(input)
+            harvestAttempt(HarvestMode.AfterAggregation)
             if (pendingOutput.isEmpty) { // must guarantee pendingOutput is empty before pulling
               if (!hasBeenPulled(in)) {
-                println("pulling after aggregate")
+                //println("pulling after aggregate")
                 pull(in)
               }
             }
-            state.harvestAttempt(HarvestMode.AfterAggregation)
-            println(s"state=$state")
+            //println(s"state=$state")
 
             true
           }
@@ -246,12 +245,12 @@ class Aggregator[In, Agg, Out](
         def emitAttempt(): Boolean =
           pendingOutput.exists { output =>
             {if(isAvailable(out)){
-              println("out port is available, emit")
+              //println("out port is available, emit")
               push(out, output)
               pendingEmit = None
               true
             } else {
-              println("out port not available")
+              //println("out port not available")
               emit(out, output) // follow up emit
               pendingEmit = None
               false // this will not pull and no more onPush to prevent from adding too much followup emit
@@ -290,18 +289,27 @@ class Aggregator[In, Agg, Out](
 }
 
 /*
-[error] 	akka.stream.scaladsl.SourceWithContextSpec // passed, ok failure with pending emit but unavailable out port
-[error] 	akka.stream.scaladsl.FlowGroupedWeightedSpec // passed, ok failure with pending emit but unavailable out port
+[error] 	akka.stream.scaladsl.SourceWithContextSpec // passed
+  [error] 	akka.stream.scaladsl.FlowGroupedWeightedSpec // passed
 [error] 	akka.stream.impl.fusing.InterpreterSupervisionSpec // passed after modification
 [error] 	akka.stream.impl.fusing.InterpreterSpec // passed after modification
 [error] 	akka.stream.scaladsl.FramingSpec // passed
 [error] 	akka.stream.scaladsl.FlowJoinSpec // passed
 [error] 	akka.stream.scaladsl.FlowLimitWeightedSpec // passed
 [error] 	akka.stream.scaladsl.FlowLimitSpec // passed
-[error] 	akka.stream.scaladsl.WithContextUsageSpec // ok failure, the right elements are ready to emit but out port not available due to the test setup
+[error] 	akka.stream.scaladsl.WithContextUsageSpec // ok failure
 [error] 	akka.stream.javadsl.SourceTest // timeout
 [error] 	akka.stream.scaladsl.BoundedSourceQueueSpec
 [error] 	akka.stream.scaladsl.GraphMergePreferredSpec
 
 [error] 	akka.stream.scaladsl.FlowGroupedWithinSpec
+
+
+[error] 	akka.stream.scaladsl.FlowGroupedWithinSpec
+[error] 	akka.stream.scaladsl.SourceWithContextSpec
+[error] 	akka.stream.javadsl.SourceTest
+[error] 	akka.stream.scaladsl.BoundedSourceQueueSpec
+[error] 	akka.stream.scaladsl.HubSpec
+[error] 	akka.stream.scaladsl.GraphMergePreferredSpec
+[error] 	akka.stream.scaladsl.WithContextUsageSpec
  */
