@@ -4,14 +4,15 @@
 
 package akka.persistence.testkit.state.javadsl
 
+import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
-
-import akka.Done
+import scala.compat.java8.OptionConverters._
+import akka.{ Done, NotUsed }
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.Offset
-import akka.persistence.query.javadsl.DurableStateStoreQuery
+import akka.persistence.query.javadsl.{ CurrentDurableStatePersistenceIdsQuery, DurableStateStoreQuery }
 import akka.persistence.state.javadsl.DurableStateUpdateStore
 import akka.persistence.state.javadsl.GetObjectResult
 import akka.persistence.testkit.state.scaladsl.{ PersistenceTestKitDurableStateStore => SStore }
@@ -23,16 +24,17 @@ object PersistenceTestKitDurableStateStore {
 
 class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
     extends DurableStateUpdateStore[A]
-    with DurableStateStoreQuery[A] {
+    with DurableStateStoreQuery[A]
+    with CurrentDurableStatePersistenceIdsQuery[A] {
 
   def getObject(persistenceId: String): CompletionStage[GetObjectResult[A]] =
-    toJava(stateStore.getObject(persistenceId).map(_.toJava)(stateStore.system.dispatcher))
+    stateStore.getObject(persistenceId).map(_.toJava)(stateStore.system.dispatcher).toJava
 
   def upsertObject(persistenceId: String, seqNr: Long, value: A, tag: String): CompletionStage[Done] =
-    toJava(stateStore.upsertObject(persistenceId, seqNr, value, tag))
+    stateStore.upsertObject(persistenceId, seqNr, value, tag).toJava
 
   def deleteObject(persistenceId: String): CompletionStage[Done] =
-    toJava(stateStore.deleteObject(persistenceId))
+    stateStore.deleteObject(persistenceId).toJava
 
   def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
     stateStore.changes(tag, offset).asJava
@@ -40,4 +42,6 @@ class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
   def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
     stateStore.currentChanges(tag, offset).asJava
   }
+  override def currentPersistenceIds(afterId: Optional[String], limit: Long): Source[String, NotUsed] =
+    stateStore.currentPersistenceIds(afterId.asScala, limit).asJava
 }
