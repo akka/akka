@@ -16,7 +16,7 @@ To use Akka in OSGi, you must add the following dependency in your project:
 ## Background
 
 [OSGi](https://www.osgi.org/resources/where-to-start/) is a mature packaging and deployment standard for component-based systems. It
-has similar capabilities as Project Jigsaw (originally scheduled for JDK 1.8), but has far stronger facilities to
+has similar capabilities as [Project Jigsaw](https://openjdk.java.net/projects/jigsaw/) (originally scheduled for JDK 1.8), but has far stronger facilities to
 support legacy Java code. This is to say that while Jigsaw-ready modules require significant changes to most source files
 and on occasion to the structure of the overall application, OSGi can be used to modularize almost any Java code as far
 back as JDK 1.2, usually with no changes at all to the binaries.
@@ -38,7 +38,7 @@ entries <https://docs.osgi.org/reference/bundle-headers.html>* in `MANIFEST.MF` 
 of the bundle and packages for import and export. Since these manifest entries are ignored outside OSGi deployments,
 a bundle can interchangeably be used as a JAR in the JRE.
 
-When a bundle is loaded, a specialized implementation of the Java `ClassLoader` is instantiated for each bundle. Each
+When a bundle is loaded, a specialized implementation of the Java @javadoc[ClassLoader](java.lang.ClassLoader) is instantiated for each bundle. Each
 classloader reads the manifest entries and publishes both capabilities (in the form of the `Bundle-Exports`) and
 requirements (as `Bundle-Imports`) in a container singleton for discovery by other bundles. The process of matching imports to
 exports across bundles through these classloaders is the process of resolution, one of six discrete steps in the lifecycle
@@ -89,7 +89,7 @@ distribution file.
 
  * Resources are not shared across bundles unless they are explicitly exported, as with classes. The common
 case of this is expecting that `getClass().getClassLoader().getResources("foo")` will return all files on the classpath
-named `foo`. The `getResources()` method only returns resources from the current classloader, and since there are
+named `foo`. The @javadoc[getResources()](java.lang.ClassLoader#getResources(java.lang.String)) method only returns resources from the current classloader, and since there are
 separate classloaders for every bundle, resource files such as configurations are no longer searchable in this manner.
 
 ## Configuring the OSGi Framework
@@ -106,11 +106,11 @@ dynamic in this way. ActorRefs may safely be exposed to other bundles.
 
 ## Activator
 
-To bootstrap Akka inside an OSGi environment, you can use the `akka.osgi.ActorSystemActivator` class
-to conveniently set up the ActorSystem.
+To bootstrap Akka inside an OSGi environment, you can use the @apidoc[akka.osgi.ActorSystemActivator](akka.osgi.ActorSystemActivator) class
+to conveniently set up the @apidoc[ActorSystem](akka.actor.ActorSystem).
 
 @@snip [Activator.scala](/akka-osgi/src/test/scala/docs/osgi/Activator.scala) { #Activator }
 
-The goal here is to map the OSGi lifecycle more directly to the Akka lifecycle. The `ActorSystemActivator` creates
+The goal here is to map the OSGi lifecycle more directly to the Akka lifecycle. The @apidoc[ActorSystemActivator](akka.osgi.ActorSystemActivator) creates
 the actor system with a class loader that finds resources (`application.conf` and `reference.conf` files) and classes
 from the application bundle and all transitive dependencies.
