@@ -54,61 +54,33 @@ class FoldWithin[In, Agg, Out](
   val maxGapTimer = "maxGapTimer"
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
-      override protected def onTimer(timerKey: Any): Unit = {
-        //println(s"onTimer $timerKey begin state=$state")
-        state.harvestOnTimer()
-        //println(s"onTimer $timerKey end state=$state")
+      override protected def onTimer(timerKey: Any): Unit = state.harvestOnTimer()
+
+      override def onPush(): Unit = {
+        state.aggregate()
+        if (isAvailable(out)) pull(in) // pull only if there is no backpressure from outlet
       }
 
-      setHandler(in, new InHandler {
+      override def onUpstreamFinish(): Unit = {
+        state.harvestOnFlush()
+        completeStage()
+      }
 
-        // this callback is triggered after upstream push with new data
-        // so the loop start from aggregate
-        override def onPush(): Unit = {
-          //println(s"onPush begin state=$state")
-          state.aggregate()
-          if (isAvailable(out)) pull(in) // pull only if there is no backpressure from outlet
-          // if out is not available, there will be a pull eventually when out is available and we will pull upstream in onPull
-          //println(s"onPush end state=$state")
-        }
+      override def onPull(): Unit = {
+        state.aggregate()
+        if (!hasBeenPulled(in)) pull(in) // always pass through the pull to upstream
+      }
 
-        override def onUpstreamFinish(): Unit = {
-          //println(s"onFinish begin state=$state")
-          state.harvestOnFlush()
-          completeStage()
-        }
-
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          failStage(ex)
-        }
-
-      })
-
-      setHandler(out, new OutHandler {
-
-        // this callback is triggered after downstream pull requesting new emit
-        // so the loop start from emit
-        override def onPull(): Unit = {
-          //println(s"onPull begin state=$state")
-          state.aggregate()
-          if (!hasBeenPulled(in)) pull(in)
-          //println(s"onPull end state=$state")
-        }
-
-      })
+      setHandlers(in, out, this)
 
       // mutable state to keep track of the aggregator status to coordinate the flow
       // input/output handler callbacks are guaranteed to execute without concurrency
       // https://doc.akka.io/docs/akka/current/stream/stream-customize.html#thread-safety-of-custom-operators
       private val state = new State()
 
-      /**
-       * Encapsulate mutable state with aggregate and harvest methods
-       */
       class State {
-        override def toString: String = s"State[agg=$aggregator]"
 
         private var aggregator: Option[AggregatorState] = None
 
@@ -120,50 +92,39 @@ class FoldWithin[In, Agg, Out](
           aggregator foreach {
             case agg =>
               if (mode == HarvestMode.Flush || emitReady(agg.aggregator) || {
-                val currentTime = System.currentTimeMillis()
                 mode == HarvestMode.OnTimer && {
-                  // check gap only on timer, not after aggregation
-                  maxGap.exists(mg => currentTime - agg.lastAggregateTimeMs >= mg.toMillis)
-                } || {
-                  // check duration under all circumstances
-                  maxDuration.exists(md => currentTime - agg.startTime >= md.toMillis)
+                  val currentTime = System.currentTimeMillis()
+                  // check gap only on timer
+                  maxGap.exists(mg => currentTime - agg.lastAggregateTimeMs >= mg.toMillis) ||
+                    maxDuration.exists(md => currentTime - agg.startTime >= md.toMillis)
                 }
               }) {
-                // set to None
                 aggregator = None
                 emit(out, FoldWithin.this.harvest(agg.aggregator)) // if out port not available, it'll follow up as scheduled emit
               } else {
-                // schedule gap timer if the aggregator is not emitted
+                // schedule the next gap timer if the aggregator is not harvested and emitted
                 maxGap.foreach(mg => scheduleOnce(maxGapTimer, mg))
               }
           }
-
         }
 
         def aggregate(): Unit = if (isAvailable(in)) {
           val input = grab(in)
           aggregator match {
-            case Some(agg) =>
-              aggregator = Some(agg.aggregate(input))
-            case None =>
-              aggregator = Some(new AggregatorState(input))
+            case Some(agg) => aggregator = Some(agg.aggregate(input))
+            case None => aggregator = Some(new AggregatorState(input))
               // schedule a timer for max duration for new aggregator
               maxDuration.foreach(md => scheduleOnce(maxDurationTimer, md))
           }
-          // this could emit the aggregator
           harvestWithMode(HarvestMode.AfterAggregation)
-
         }
-
       }
 
       object HarvestMode extends Enumeration {
         val AfterAggregation, OnTimer, Flush = Value
       }
 
-      // expose interfaces for control
       class AggregatorState(input: In) {
-        override def toString: String = s"agg=${aggregator}"
 
         val startTime = System.currentTimeMillis()
 

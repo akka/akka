@@ -771,25 +771,24 @@ private[stream] object Collect {
   }
 }
 
+@InternalApi private[akka] object GroupedWeighted {
+  def nonNegativeCost[T](costFn: T => Long, element: T): Long = {
+    val cost = costFn(element)
+    if (cost < 0) {
+      throw new IllegalArgumentException(s"Negative weight [$cost] for element [$element] is not allowed")
+    }
+    cost
+  }
+}
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] final case class GroupedWeighted[T](minWeight: Long, costFn: T => Long)
     extends FoldWithin[T, (Vector[T], Long), immutable.Seq[T]](
-      seed = i => (Vector(i), {
-        val cost = costFn(i)
-        if (cost < 0) {
-          throw new IllegalArgumentException(s"Negative weight [$cost] for element [$i] is not allowed")
-        }
-        cost
-      }),
-      aggregate = (vectorAndWeight, i) => (vectorAndWeight._1 :+ i, vectorAndWeight._2 + {
-        val cost = costFn(i)
-        if (cost < 0) {
-          throw new IllegalArgumentException(s"Negative weight [$cost] for element [$i] is not allowed")
-        }
-        cost
-      }),
+      seed = i => (Vector(i), GroupedWeighted.nonNegativeCost(costFn, i)),
+      aggregate = (vectorAndWeight, i) => (
+        vectorAndWeight._1 :+ i, vectorAndWeight._2 + GroupedWeighted.nonNegativeCost(costFn, i)
+      ),
       emitReady = vectorAndWeight => vectorAndWeight._2 >= minWeight,
       harvest = vectorAndWeight => vectorAndWeight._1
     ) {
@@ -1697,10 +1696,6 @@ private[stream] object Collect {
 
 }
 
-@InternalApi private[akka] object GroupedWeightedWithin {
-  val groupedWeightedWithinTimer = "GroupedWeightedWithinTimer"
-}
-
 /**
  * INTERNAL API
  */
@@ -1715,24 +1710,15 @@ private[stream] object Collect {
         val buf = new VectorBuilder[T]
         buf += i
         buf
-      }, {
-      val cost = costFn(i)
-      if (cost < 0) {
-        throw new IllegalArgumentException(s"Negative weight [$cost] for element [$i] is not allowed")
-      }
-      cost
-    }),
+      },
+      GroupedWeighted.nonNegativeCost(costFn, i)
+    ),
     aggregate = (vectorAndWeight, i) => ({
       val buf = vectorAndWeight._1
       buf += i
       buf
-    }, vectorAndWeight._2 + {
-      val cost = costFn(i)
-      if (cost < 0) {
-        throw new IllegalArgumentException(s"Negative weight [$cost] for element [$i] is not allowed")
-      }
-      cost
-    }),
+    }, vectorAndWeight._2 + GroupedWeighted.nonNegativeCost(costFn, i)
+    ),
     emitReady = vectorAndWeight => vectorAndWeight._2 >= maxWeight || vectorAndWeight._1.size >= maxNumber,
     harvest = vectorAndWeight => vectorAndWeight._1.result(),
     maxDuration = Some(interval)
