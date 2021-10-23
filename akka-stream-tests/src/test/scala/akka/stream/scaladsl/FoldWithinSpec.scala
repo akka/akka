@@ -4,20 +4,20 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.impl.fusing.Aggregator
+import akka.stream.impl.fusing.FoldWithin
 import akka.stream.testkit.StreamSpec
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class AggregatorSpec extends StreamSpec {
+class FoldWithinSpec extends StreamSpec {
 
   "split aggregator by size" in {
     val stream    = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
     val groupSize = 3
     val result = Source(stream)
       .via(
-        new Aggregator[Int, Seq[Int], Seq[Int]](
+        new FoldWithin[Int, Seq[Int], Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitReady = seq => seq.size >= groupSize,
@@ -36,7 +36,7 @@ class AggregatorSpec extends StreamSpec {
     val groupSize = 3
     val result = Source(stream)
       .via(
-        new Aggregator[Int, Seq[Int], Seq[Int]](
+        new FoldWithin[Int, Seq[Int], Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitReady = seq => seq.size >= groupSize,
@@ -56,7 +56,7 @@ class AggregatorSpec extends StreamSpec {
     // use the value as weight and aggregate
     val result = Source(stream)
       .via(
-        new Aggregator[Int, (Seq[Int], Int), Seq[Int]](
+        new FoldWithin[Int, (Seq[Int], Int), Seq[Int]](
           seed = i => (Seq(i), i),
           aggregate = (seqAndWeight, i) => (seqAndWeight._1 :+ i, seqAndWeight._2 + i),
           emitReady = seqAndWeight => seqAndWeight._2 >= weight,
@@ -92,7 +92,7 @@ class AggregatorSpec extends StreamSpec {
       }
       .async // must use async to not let Thread.sleep block the next stage
       .via(
-        new Aggregator[Int, (Seq[Int]), Seq[Int]](
+        new FoldWithin[Int, (Seq[Int]), Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitReady = _ => false,
@@ -129,7 +129,7 @@ class AggregatorSpec extends StreamSpec {
       }
       .async // must use async to not let Thread.sleep block the next stage
       .via(
-        new Aggregator[Int, Seq[Int], Seq[Int]](
+        new FoldWithin[Int, Seq[Int], Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitReady = _ => false,

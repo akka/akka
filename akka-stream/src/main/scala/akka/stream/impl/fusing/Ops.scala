@@ -775,7 +775,7 @@ private[stream] object Collect {
  * INTERNAL API
  */
 @InternalApi private[akka] final case class GroupedWeighted[T](minWeight: Long, costFn: T => Long)
-    extends Aggregator[T, (Vector[T], Long), immutable.Seq[T]](
+    extends FoldWithin[T, (Vector[T], Long), immutable.Seq[T]](
       seed = i => (Vector(i), {
         val cost = costFn(i)
         if (cost < 0) {
@@ -1709,7 +1709,7 @@ private[stream] object Collect {
     val maxNumber: Int,
     val costFn: T => Long,
     val interval: FiniteDuration)
-  extends Aggregator[T, (VectorBuilder[T], Long), immutable.Seq[T]](
+  extends FoldWithin[T, (VectorBuilder[T], Long), immutable.Seq[T]](
     seed = i => (
       {
         val buf = new VectorBuilder[T]

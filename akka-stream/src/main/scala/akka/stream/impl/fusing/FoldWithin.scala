@@ -30,7 +30,7 @@ import scala.concurrent.duration.FiniteDuration
  * @tparam In
  * @tparam Agg
  */
-class Aggregator[In, Agg, Out](
+class FoldWithin[In, Agg, Out](
                                 val seed: In => Agg,
                                 val aggregate: (Agg, In) => Agg,
                                 val emitReady: Agg => Boolean,
@@ -55,7 +55,7 @@ class Aggregator[In, Agg, Out](
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) {
-      
+
       override protected def onTimer(timerKey: Any): Unit = {
         //println(s"onTimer $timerKey begin state=$state")
         state.harvestOnTimer()
@@ -131,7 +131,7 @@ class Aggregator[In, Agg, Out](
               }) {
                 // set to None
                 aggregator = None
-                emit(out, Aggregator.this.harvest(agg.aggregator)) // if out port not available, it'll follow up as scheduled emit
+                emit(out, FoldWithin.this.harvest(agg.aggregator)) // if out port not available, it'll follow up as scheduled emit
               } else {
                 // schedule gap timer if the aggregator is not emitted
                 maxGap.foreach(mg => scheduleOnce(maxGapTimer, mg))
@@ -172,7 +172,7 @@ class Aggregator[In, Agg, Out](
         var aggregator: Agg = seed(input)
 
         def aggregate(input: In): AggregatorState = {
-          aggregator = Aggregator.this.aggregate(aggregator, input)
+          aggregator = FoldWithin.this.aggregate(aggregator, input)
           lastAggregateTimeMs = System.currentTimeMillis()
           this
         }
