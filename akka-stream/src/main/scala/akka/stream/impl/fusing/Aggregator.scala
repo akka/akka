@@ -56,14 +56,14 @@ class Aggregator[In, Agg, Out](
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) {
       override def preStart() = {
-        pull(in)
+        //pull(in)
       }
 
       // there are two timers one for gap one for total duration
       // this can potentially harvest the current aggregator and start the loop from emit
       override protected def onTimer(timerKey: Any): Unit = {
         //println(s"onTimer $timerKey begin state=$state")
-        if (state.harvestOnTimer()) state.emitAndLoop()
+        if (state.harvestOnTimer()) state.emitRightAway()
         //println(s"onTimer $timerKey end state=$state")
       }
 
@@ -74,7 +74,8 @@ class Aggregator[In, Agg, Out](
         override def onPush(): Unit = {
           //println(s"onPush begin state=$state")
           state.aggregateAndLoop()
-          state.pullIfNoBackPressure()
+          if (isAvailable(out)) pull(in) // pull only if there is no backpressure
+          // if out is not available, there will be a pull eventually when out is available and we will pull upstream in onPull
           //println(s"onPush end state=$state")
         }
 
@@ -96,10 +97,9 @@ class Aggregator[In, Agg, Out](
         // this callback is triggered after downstream pull requesting new emit
         // so the loop start from emit
         override def onPull(): Unit = {
-          state.hasScheduledEmit = false
           //println(s"onPull begin state=$state")
           state.aggregateAndLoop()
-          state.pullIfNoBackPressure()
+          if(!hasBeenPulled(in)) pull(in)
           //println(s"onPull end state=$state")
         }
 
@@ -121,7 +121,7 @@ class Aggregator[In, Agg, Out](
        * 3 -> 1 by emitting to output port
        */
       class State {
-        override def toString: String = s"State[agg=$aggregator,emit=$pendingEmit, pending=$hasScheduledEmit]"
+        override def toString: String = s"State[agg=$aggregator,emit=$pendingEmit]"
         private var aggregator: Option[AggregatorState] = None
         private var pendingEmit: Option[Out] = None
 
@@ -168,53 +168,29 @@ class Aggregator[In, Agg, Out](
           isAvailable(in) && {
             // always grab after checking available or it will get lost on next callback
             // this is not common sense understanding
-            val input = grab(in)
+            val input = grab(in) // after grab, isAvailable(in) will be false, this is different from outlet port
             //println(s"aggregating $input")
             aggregate(input)
             //println(s"after aggregate $this")
             true
           }
 
-        var hasScheduledEmit = false
         // transition to state 1 if true
-        private def emitRightAway(): Boolean = {
-          val result =
-          !pendingEmit.exists { output =>
+        def emitRightAway(): Unit = {
+          pendingEmit.foreach { output =>
             //println(s"emit $output")
-            hasScheduledEmit = !isAvailable(out)
             emit(out, output) // if out port not available, it'll follow up as scheduled emit
             pendingEmit = None
-            hasScheduledEmit
           }
           //println(s"no backpressure $result $state")
-          result
+
         }
 
-        def pullIfNoBackPressure(): Unit = {
-          if (!hasScheduledEmit && !hasBeenPulled(in)) { // pull at the end of loop is there is no hanging emit
-            //println(s"pulling")
-            pull(in)
-          }
-        }
-
-        def aggregateAndLoop(): Unit =
-        {
-          while (aggregateAndReadyToEmit()
-            && emitRightAway() // this make it ready to aggregate again
-          ) {}
-        }
-
-        def emitAndLoop(): Unit = {
-          while (emitRightAway() // this make it ready to aggregate again
-            && aggregateAndReadyToEmit()) {}
-        }
+        def aggregateAndLoop(): Unit = if (aggregateAndReadyToEmit()) emitRightAway() // this make it ready to aggregate again
 
         def aggregateAndReadyToEmit(): Boolean = {
-          // loop until cannot aggregate anymore
           //println(s"agg attempt begin $state")
-          while (aggregateAttempt() &&
-            // attempt harvest after every aggregation to check various conditions
-            pendingEmit.isEmpty) {}
+          aggregateAttempt()
 
           //println(s"agg attempt end $state")
           if (aggregator.nonEmpty) {
