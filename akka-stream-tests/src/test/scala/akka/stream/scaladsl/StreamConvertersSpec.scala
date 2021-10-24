@@ -341,4 +341,30 @@ class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
       is.close()
     }
   }
+
+  "OutputStream Source" must {
+    "ignore empty arrays" in {
+      val source =
+        StreamConverters.asOutputStream().withAttributes(ActorAttributes.dispatcher("akka.test.stream-dispatcher"))
+
+      val (out, result) = source.toMat(Sink.seq)(Keep.both).run()
+
+      out.write(1)
+      out.write(Array[Byte](2, 3, 4))
+      out.write(Array[Byte]())
+      out.write(5)
+      out.write(Array(6, 7, 8), 0, 3)
+      out.write(Array(), 0, 0)
+      out.write(9)
+      out.close()
+
+      result.futureValue should contain theSameElementsInOrderAs Seq(
+        ByteString(1),
+        ByteString(2, 3, 4),
+        ByteString(5),
+        ByteString(6, 7, 8),
+        ByteString(9),
+      )
+    }
+  }
 }
