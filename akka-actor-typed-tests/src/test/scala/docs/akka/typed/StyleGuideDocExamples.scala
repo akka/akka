@@ -462,10 +462,11 @@ object StyleGuideDocExamples {
       //#messages-sealed
     }
 
-    private class CountDown() {
+    class CountDown() {
       import CountDown._
 
       //#pattern-match-unhandled
+      val zero: Behavior[Command] = {
         Behaviors.receiveMessage {
           case GetValue(replyTo) =>
             replyTo ! Value(0)
@@ -473,12 +474,13 @@ object StyleGuideDocExamples {
           case Down =>
             Behaviors.unhandled
         }
+      }
       //#pattern-match-unhandled
 
       @nowarn
       object partial {
         //#pattern-match-partial
-        private val zero: Behavior[Command] = {
+        val zero: Behavior[Command] = {
           Behaviors.receiveMessagePartial {
             case GetValue(replyTo) =>
               replyTo ! Value(0)
