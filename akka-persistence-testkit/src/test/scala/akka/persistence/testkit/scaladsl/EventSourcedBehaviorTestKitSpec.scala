@@ -5,9 +5,7 @@
 package akka.persistence.testkit.scaladsl
 
 import java.io.NotSerializableException
-
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.Done
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -17,7 +15,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKitSpec.TestCounter.NotSerializableState
+import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKitSpec.TestCounter.{NotSerializableState, NullState}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.JournalFailureException
 import akka.persistence.typed.scaladsl.Effect
@@ -29,22 +27,32 @@ object EventSourcedBehaviorTestKitSpec {
 
   object TestCounter {
     sealed trait Command
+
     case object Increment extends Command with CborSerializable
+
     final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command with CborSerializable
+
     final case class IncrementWithNoReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
+
     final case class IncrementWithAsyncReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
+
     case class IncrementSeveral(n: Int) extends Command with CborSerializable
+
     final case class GetValue(replyTo: ActorRef[State]) extends Command with CborSerializable
 
     private case class AsyncReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
 
     sealed trait Event
+
     final case class Incremented(delta: Int) extends Event with CborSerializable
 
     sealed trait State
+
     final case class RealState(value: Int, history: Vector[Int]) extends State with CborSerializable
+    final case class NullState() extends State with CborSerializable
 
     case object IncrementWithNotSerializableEvent extends Command with CborSerializable
+
     final case class NotSerializableEvent(delta: Int) extends Event
 
     case object IncrementWithNotSerializableState extends Command with CborSerializable
@@ -65,9 +73,9 @@ object EventSourcedBehaviorTestKitSpec {
       Behaviors.setup(ctx => counter(ctx, persistenceId, emptyState))
 
     private def counter(
-        ctx: ActorContext[Command],
-        persistenceId: PersistenceId,
-        emptyState: State): EventSourcedBehavior[Command, Event, State] = {
+                         ctx: ActorContext[Command],
+                         persistenceId: PersistenceId,
+                         emptyState: State): EventSourcedBehavior[Command, Event, State] = {
       EventSourcedBehavior.withEnforcedReplies[Command, Event, State](
         persistenceId,
         emptyState,
@@ -120,25 +128,38 @@ object EventSourcedBehaviorTestKitSpec {
             NotSerializableState(value + delta, history :+ value)
           case (state: NotSerializableState, _) =>
             throw new IllegalStateException(state.toString)
+          case (null, _) => NullState()
+          case (NullState(), _) => NullState()
         })
     }
   }
 }
 
 class EventSourcedBehaviorTestKitSpec
-    extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
+  extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
     with AnyWordSpecLike
     with LogCapturing {
+
   import EventSourcedBehaviorTestKitSpec._
 
   private val persistenceId = PersistenceId.ofUniqueId("test")
   private val behavior = TestCounter(persistenceId)
+
+  private def createTestKitNull() = {
+    EventSourcedBehaviorTestKit[TestCounter.Command, TestCounter.Event, TestCounter.State](system, TestCounter(persistenceId, null))
+  }
 
   private def createTestKit() = {
     EventSourcedBehaviorTestKit[TestCounter.Command, TestCounter.Event, TestCounter.State](system, behavior)
   }
 
   "EventSourcedBehaviorTestKit" must {
+
+    "handle null state" in {
+      val eventSourcedTestKit = createTestKitNull()
+      val result = eventSourcedTestKit.runCommand(TestCounter.Increment)
+      result.state shouldBe NullState()
+    }
 
     "run commands" in {
       val eventSourcedTestKit = createTestKit()

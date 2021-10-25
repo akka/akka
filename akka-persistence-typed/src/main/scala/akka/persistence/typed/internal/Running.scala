@@ -9,15 +9,14 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.actor.UnhandledMessage
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.{ Behavior, Signal }
+import akka.actor.typed.{Behavior, Signal}
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
-import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, LoggerOps}
+import akka.annotation.{InternalApi, InternalStableApi}
 import akka.event.Logging
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
@@ -32,32 +31,20 @@ import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
-import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
+import akka.persistence.query.{EventEnvelope, PersistenceQuery}
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
-import akka.persistence.typed.{
-  DeleteEventsCompleted,
-  DeleteEventsFailed,
-  DeleteSnapshotsCompleted,
-  DeleteSnapshotsFailed,
-  DeletionTarget,
-  EventRejectedException,
-  PersistenceId,
-  SnapshotCompleted,
-  SnapshotFailed,
-  SnapshotMetadata,
-  SnapshotSelectionCriteria
-}
-import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
+import akka.persistence.typed.{DeleteEventsCompleted, DeleteEventsFailed, DeleteSnapshotsCompleted, DeleteSnapshotsFailed, DeletionTarget, EventRejectedException, PersistenceId, SnapshotCompleted, SnapshotFailed, SnapshotMetadata, SnapshotSelectionCriteria}
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{GetSeenSequenceNr, GetState, StateWrapper}
 import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.stream.scaladsl.Keep
-import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
+import akka.stream.{RestartSettings, SystemMaterializer, WatchedActorTerminatedException}
 import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.{ RestartSource, Sink }
+import akka.stream.scaladsl.{RestartSource, Sink}
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.OptionVal
 import akka.util.unused
@@ -384,7 +371,7 @@ private[akka] object Running {
 
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
     def onGetState(get: GetState[S]): Behavior[InternalProtocol] = {
-      get.replyTo ! state.state
+      get.replyTo ! StateWrapper(state.state)
       this
     }
 
