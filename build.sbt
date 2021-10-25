@@ -88,14 +88,7 @@ lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .enablePlugins(PublishRsyncPlugin)
   .settings(rootSettings: _*)
-  .settings(
-    unidocRootIgnoreProjects := Seq(
-        remoteTests,
-        benchJmh,
-        protobuf,
-        protobufV3,
-        akkaScalaNightly,
-        docs))
+  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
   // TODO https://github.com/akka/akka/issues/30243
