@@ -27,32 +27,23 @@ object EventSourcedBehaviorTestKitSpec {
 
   object TestCounter {
     sealed trait Command
-
     case object Increment extends Command with CborSerializable
-
     final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command with CborSerializable
-
     final case class IncrementWithNoReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
-
     final case class IncrementWithAsyncReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
-
     case class IncrementSeveral(n: Int) extends Command with CborSerializable
-
     final case class GetValue(replyTo: ActorRef[State]) extends Command with CborSerializable
 
     private case class AsyncReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
 
     sealed trait Event
-
     final case class Incremented(delta: Int) extends Event with CborSerializable
 
     sealed trait State
-
     final case class RealState(value: Int, history: Vector[Int]) extends State with CborSerializable
     final case class NullState() extends State with CborSerializable
 
     case object IncrementWithNotSerializableEvent extends Command with CborSerializable
-
     final case class NotSerializableEvent(delta: Int) extends Event
 
     case object IncrementWithNotSerializableState extends Command with CborSerializable
@@ -73,9 +64,9 @@ object EventSourcedBehaviorTestKitSpec {
       Behaviors.setup(ctx => counter(ctx, persistenceId, emptyState))
 
     private def counter(
-                         ctx: ActorContext[Command],
-                         persistenceId: PersistenceId,
-                         emptyState: State): EventSourcedBehavior[Command, Event, State] = {
+         ctx: ActorContext[Command],
+         persistenceId: PersistenceId,
+         emptyState: State): EventSourcedBehavior[Command, Event, State] = {
       EventSourcedBehavior.withEnforcedReplies[Command, Event, State](
         persistenceId,
         emptyState,
