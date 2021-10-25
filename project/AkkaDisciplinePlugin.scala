@@ -91,7 +91,13 @@ object AkkaDisciplinePlugin extends AutoPlugin {
   lazy val disciplineSettings =
     if (enabled) {
       nowarnSettings ++ Seq(
-        Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
+        Compile / scalacOptions ++= (
+            if (scalaVersion.value.startsWith("3.")) {
+              Seq()
+            } else {
+              Seq("-Xfatal-warnings")
+            }
+          ),
         Test / scalacOptions --= testUndicipline,
         Compile / javacOptions ++= (
             if (scalaVersion.value.startsWith("3.")) {
