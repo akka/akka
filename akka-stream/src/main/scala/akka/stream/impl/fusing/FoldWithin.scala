@@ -56,6 +56,12 @@ class FoldWithin[In, Agg, Out](
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
+      override def preStart(): Unit = {
+        // although we only need this timer when the aggregator is not empty
+        // and this event do not need to be triggered otherwise,
+        // it's more efficient to set up a upfront timer
+        maxGap.foreach(mg => scheduleWithFixedDelay(maxGapTimer, mg, mg))
+      }
       override protected def onTimer(timerKey: Any): Unit = state.harvestOnTimer()
 
       override def onPush(): Unit = {
@@ -101,9 +107,6 @@ class FoldWithin[In, Agg, Out](
               }) {
                 aggregator = None
                 emit(out, FoldWithin.this.harvest(agg.aggregator)) // if out port not available, it'll follow up as scheduled emit
-              } else {
-                // schedule the next gap timer if the aggregator is not harvested and emitted
-                maxGap.foreach(mg => scheduleOnce(maxGapTimer, mg))
               }
           }
         }
