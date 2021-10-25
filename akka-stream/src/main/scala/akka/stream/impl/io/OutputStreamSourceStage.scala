@@ -92,7 +92,9 @@ private[akka] class OutputStreamAdapter(
 
   @scala.throws(classOf[IOException])
   override def write(b: Array[Byte], off: Int, len: Int): Unit = {
-    sendData(ByteString.fromArray(b, off, len))
+    if (b.nonEmpty) {
+      sendData(ByteString.fromArray(b, off, len))
+    }
   }
 
   @scala.throws(classOf[IOException])
