@@ -93,10 +93,10 @@ class FoldWithin[In, Agg, Out](
             case agg =>
               if (mode == HarvestMode.Flush || emitReady(agg.aggregator) || {
                 mode == HarvestMode.OnTimer && {
-                  val currentTime = System.currentTimeMillis()
+                  val currentTime = System.nanoTime()
                   // check gap only on timer
-                  maxGap.exists(mg => currentTime - agg.lastAggregateTimeMs >= mg.toMillis) ||
-                    maxDuration.exists(md => currentTime - agg.startTime >= md.toMillis)
+                  maxGap.exists(mg => currentTime - agg.lastAggregateTime >= mg.toNanos) ||
+                    maxDuration.exists(md => currentTime - agg.startTime >= md.toNanos)
                 }
               }) {
                 aggregator = None
@@ -111,7 +111,7 @@ class FoldWithin[In, Agg, Out](
         def aggregate(): Unit = if (isAvailable(in)) {
           val input = grab(in)
           aggregator match {
-            case Some(agg) => aggregator = Some(agg.aggregate(input))
+            case Some(agg) => agg.aggregate(input)
             case None => aggregator = Some(new AggregatorState(input))
               // schedule a timer for max duration for new aggregator
               maxDuration.foreach(md => scheduleOnce(maxDurationTimer, md))
@@ -126,15 +126,15 @@ class FoldWithin[In, Agg, Out](
 
       class AggregatorState(input: In) {
 
-        val startTime = System.currentTimeMillis()
+        val startTime = System.nanoTime()
 
-        var lastAggregateTimeMs: Long = startTime
+        var lastAggregateTime: Long = startTime
 
         var aggregator: Agg = seed(input)
 
         def aggregate(input: In): AggregatorState = {
           aggregator = FoldWithin.this.aggregate(aggregator, input)
-          lastAggregateTimeMs = System.currentTimeMillis()
+          lastAggregateTime = System.nanoTime()
           this
         }
 

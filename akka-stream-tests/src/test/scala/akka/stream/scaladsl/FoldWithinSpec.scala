@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import akka.stream.impl.fusing.FoldWithin
 import akka.stream.testkit.StreamSpec
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class FoldWithinSpec extends StreamSpec {
@@ -85,12 +85,13 @@ class FoldWithinSpec extends StreamSpec {
     val maxGap = 20.millis
 
     val result = Source(stream)
-      .map {
+      .mapAsync(1) {
         case (i, gap) =>
-          Thread.sleep(gap)
-          i
-      }
-      .async // must use async to not let Thread.sleep block the next stage
+          Future {
+            Thread.sleep(gap)
+            i
+          }(system.dispatcher)
+      } // must use async to not let Thread.sleep block the next stage
       .via(
         new FoldWithin[Int, (Seq[Int]), Seq[Int]](
           seed = i => Seq(i),
@@ -122,12 +123,13 @@ class FoldWithinSpec extends StreamSpec {
     val maxDuration = 400.millis
 
     val result = Source(stream)
-      .map {
+      .mapAsync(1) {
         case (i, gap) =>
-          Thread.sleep(gap)
-          i
-      }
-      .async // must use async to not let Thread.sleep block the next stage
+          Future {
+            Thread.sleep(gap)
+            i
+          }(system.dispatcher)
+      } // must use async to not let Thread.sleep block the next stage
       .via(
         new FoldWithin[Int, Seq[Int], Seq[Int]](
           seed = i => Seq(i),
