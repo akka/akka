@@ -110,13 +110,14 @@ class BalancingSpec extends AkkaSpec("""
       replies2.toSet should be((2 to poolSize).toSet)
       probe.expectNoMessage(500.millis)
     } finally {
+      val watchProbe = TestProbe()
       // careful cleanup since threads may be blocked
-      probe.watch(pool)
+      watchProbe.watch(pool)
       // make sure the latch and promise are not blocking actor threads
       startOthers.trySuccess(())
       latch.open()
       pool ! PoisonPill
-      probe.expectTerminated(pool)
+      watchProbe.expectTerminated(pool)
     }
   }
 
