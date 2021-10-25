@@ -460,46 +460,13 @@ object StyleGuideDocExamples {
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
       //#messages-sealed
-
-      def apply(countDownFrom: Int, notifyWhenZero: ActorRef[Done]): Behavior[Command] =
-        new CountDown(notifyWhenZero).counterWithGuard(countDownFrom)
     }
 
-    private class CountDown(notifyWhenZero: ActorRef[Done]) {
+    class CountDown() {
       import CountDown._
 
-      private def counterWithGuard(remaining: Int): Behavior[Command] = {
-        //#pattern-match-guard
-        // no exhaustiveness check because of guard condition
-        // FIXME not true anymore since Scala 2.13.5
-        Behaviors.receiveMessagePartial {
-          case Down if remaining == 1 =>
-            notifyWhenZero.tell(Done)
-            zero
-          case Down =>
-            counter(remaining - 1)
-        }
-        //#pattern-match-guard
-      }
-
-      @nowarn
-      private def counter(remaining: Int): Behavior[Command] = {
-        //#pattern-match-without-guard
-        // `@unchecked` for Scala 3, which doesn't support @nowarn
-        Behaviors.receiveMessage(x =>
-          (x: @unchecked) match {
-            case Down =>
-              if (remaining == 1) {
-                notifyWhenZero.tell(Done)
-                zero
-              } else
-                counter(remaining - 1)
-          })
-        //#pattern-match-without-guard
-      }
-
       //#pattern-match-unhandled
-      private val zero: Behavior[Command] = {
+      val zero: Behavior[Command] = {
         Behaviors.receiveMessage {
           case GetValue(replyTo) =>
             replyTo ! Value(0)
@@ -513,7 +480,7 @@ object StyleGuideDocExamples {
       @nowarn
       object partial {
         //#pattern-match-partial
-        private val zero: Behavior[Command] = {
+        val zero: Behavior[Command] = {
           Behaviors.receiveMessagePartial {
             case GetValue(replyTo) =>
               replyTo ! Value(0)
