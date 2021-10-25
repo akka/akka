@@ -90,10 +90,10 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     val currentGlobalOffset = lastGlobalOffset.get()
     changes(tag, offset).takeWhile(_.offset match {
       case Sequence(fromOffset) =>
-        fromOffset <= currentGlobalOffset
+        fromOffset < currentGlobalOffset
       case offset =>
         throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
-    })
+    }, inclusive = true)
   }
 }
 

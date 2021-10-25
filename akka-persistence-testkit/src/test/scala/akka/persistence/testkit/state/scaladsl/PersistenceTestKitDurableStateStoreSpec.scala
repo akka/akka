@@ -89,5 +89,26 @@ class PersistenceTestKitDurableStateStoreSpec
           .runWith(TestSink[UpdatedDurableState[Record]]())
       testSinkIllegalOffset.request(1).expectNoMessage()
     }
+
+    "return current changes when there are no further changes" in {
+      val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])
+      val record = Record(1, "name-1")
+      val tag = "tag-1"
+
+      stateStore.upsertObject("record-1", 1L, record, tag)
+
+      val testSinkCurrentChanges =
+        stateStore
+          .currentChanges(tag, NoOffset)
+          .collect { case u: UpdatedDurableState[Record] => u }
+          .runWith(TestSink[UpdatedDurableState[Record]]())
+
+      val currentStateChange = testSinkCurrentChanges.request(1).expectNext()
+
+      currentStateChange.value should be(record)
+      currentStateChange.revision should be(1L)
+      testSinkCurrentChanges.request(1).expectComplete()
+    }
+
   }
 }
