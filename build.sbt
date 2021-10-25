@@ -111,7 +111,6 @@ lazy val actor = akkaModule("akka-actor")
     (Compile / scalaSource).value.getParentFile / s"scala-$ver"
   })
   .settings(VersionGenerator.settings)
-  .settings(serialversionRemoverPluginSettings)
   .enablePlugins(BoilerplatePlugin)
   // TODO https://github.com/akka/akka/issues/30243
   .settings(crossScalaVersions += akka.Dependencies.scala3Version)
@@ -398,7 +397,6 @@ lazy val remote =
     .settings(OSGi.remote)
     .settings(Protobuf.settings)
     .settings(Test / parallelExecution := false)
-    .settings(serialversionRemoverPluginSettings)
     .enablePlugins(Jdk9)
     // TODO https://github.com/akka/akka/issues/30243
     .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
@@ -596,20 +594,6 @@ lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-
     name := "akka-bom",
     bomIncludeProjects := userProjects,
     description := s"${description.value} (depending on Scala ${CrossVersion.binaryScalaVersion(scalaVersion.value)})")
-
-lazy val serialversionRemoverPlugin =
-  Project(id = "serialVersionRemoverPlugin", base = file("plugins/serialversion-remover-plugin")).settings(
-    scalaVersion := akka.Dependencies.scala3Version,
-    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % akka.Dependencies.scala3Version),
-    Compile / doc / sources := Nil,
-    Compile / publishArtifact := false)
-
-lazy val serialversionRemoverPluginSettings = Seq(
-  Compile / scalacOptions ++= (
-      if (scalaVersion.value.startsWith("3."))
-        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString)
-      else Nil
-    ))
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
