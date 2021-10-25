@@ -12,6 +12,7 @@ import akka.persistence.query.Sequence
 import akka.persistence.query.UpdatedDurableState
 import akka.persistence.testkit.state.scaladsl.PersistenceTestKitDurableStateStore
 import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
+import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.TestSink
 
 import com.typesafe.config.ConfigFactory
@@ -34,7 +35,7 @@ class PersistenceTestKitDurableStateStoreSpec
 
   implicit val classic: akka.actor.ActorSystem = system.classicSystem
 
-  "Persistent test kit state store changes query" must {
+  "Persistent test kit state store" must {
 
     "find tagged state changes ordered by upsert" in {
       val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])
@@ -110,5 +111,39 @@ class PersistenceTestKitDurableStateStoreSpec
       testSinkCurrentChanges.request(1).expectComplete()
     }
 
+    "return all current persistence ids" in {
+      val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])
+
+      val record = Record(1, "name-1")
+      val tag = "tag-1"
+      val ids = (1 to 20).map(i => s"id-$i")
+      for (id <- ids) {
+        stateStore.upsertObject(id, 1, record, tag)
+      }
+
+      val resultIds = stateStore.currentPersistenceIds(None, Long.MaxValue).runWith(Sink.seq).futureValue
+      resultIds should have size 20
+      resultIds should contain allElementsOf ids
+    }
+
+    "return paged current persistence ids" in {
+      val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])
+
+      val record = Record(1, "name-1")
+      val tag = "tag-1"
+      val ids = (1 to 20).map(i => s"id-$i")
+      for (id <- ids) {
+        stateStore.upsertObject(id, 1, record, tag)
+      }
+
+      val page1 = stateStore.currentPersistenceIds(None, 9).runWith(Sink.seq).futureValue
+      page1 should have size 9
+      val page2 = stateStore.currentPersistenceIds(page1.lastOption, 9).runWith(Sink.seq).futureValue
+      page2 should have size 9
+      val page3 = stateStore.currentPersistenceIds(page2.lastOption, 9).runWith(Sink.seq).futureValue
+      page3 should have size 2
+
+      (page1 ++ page2 ++ page3) should contain allElementsOf ids
+    }
   }
 }

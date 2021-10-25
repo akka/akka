@@ -7,11 +7,10 @@ package akka.persistence.testkit.state.scaladsl
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.concurrent.Future
-
-import akka.Done
+import akka.{ Done, NotUsed }
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.DurableStateChange
-import akka.persistence.query.scaladsl.DurableStateStoreQuery
+import akka.persistence.query.scaladsl.{ CurrentDurableStatePersistenceIdsQuery, DurableStateStoreQuery }
 import akka.persistence.query.UpdatedDurableState
 import akka.persistence.query.Offset
 import akka.persistence.query.NoOffset
@@ -29,7 +28,8 @@ object PersistenceTestKitDurableStateStore {
 
 class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     extends DurableStateUpdateStore[A]
-    with DurableStateStoreQuery[A] {
+    with DurableStateStoreQuery[A]
+    with CurrentDurableStatePersistenceIdsQuery[A] {
 
   private implicit val sys: ExtendedActorSystem = system
   private var store = Map.empty[String, Record[A]]
@@ -95,6 +95,21 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
         throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
     }, inclusive = true)
   }
+
+  override def currentPersistenceIds(afterId: Option[String], limit: Long): Source[String, NotUsed] =
+    this.synchronized {
+      if (limit < 1) {
+        throw new IllegalArgumentException("Limit must be greater than 0")
+      }
+      val allKeys = store.keys.toVector.sorted
+      val keys = afterId match {
+        case Some(id) => allKeys.dropWhile(_ <= id)
+        case None     => allKeys
+      }
+
+      // Enforce limit in Akka Streams so that we can pass long values to take as is.
+      Source(keys).take(limit)
+    }
 }
 
 private final case class Record[A](
