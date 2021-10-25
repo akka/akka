@@ -363,8 +363,7 @@ class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
         ByteString(2, 3, 4),
         ByteString(5),
         ByteString(6, 7, 8),
-        ByteString(9)
-      )
+        ByteString(9))
     }
   }
 }
