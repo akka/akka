@@ -31,7 +31,7 @@ object Dependencies {
   val scala213Version = "2.13.6"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
-  val scala3Version = "3.1.1-RC1-bin-20211007-c041327-NIGHTLY"
+  val scala3Version = "3.1.1-RC1"
 
   val reactiveStreamsVersion = "1.0.3"
 
