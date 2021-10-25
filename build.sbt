@@ -95,8 +95,7 @@ lazy val root = Project(id = "akka", base = file("."))
         protobuf,
         protobufV3,
         akkaScalaNightly,
-        docs,
-        serialversionRemoverPlugin))
+        docs))
   .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
   // TODO https://github.com/akka/akka/issues/30243
