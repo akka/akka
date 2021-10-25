@@ -175,7 +175,7 @@ import akka.stream.scaladsl.Sink
 
   override def getState(): State = {
     internalActor ! EventSourcedBehaviorImpl.GetState(stateProbe.ref)
-    stateProbe.receiveMessage().s
+    stateProbe.receiveMessage().currentState
   }
 
   private def preCommandCheck(command: Command): Unit = {
@@ -212,7 +212,7 @@ import akka.stream.scaladsl.Sink
     internalActor ! EventSourcedBehaviorImpl.GetState(stateProbe.ref)
     try {
       val state = stateProbe.receiveMessage()
-      RestartResultImpl(state.s)
+      RestartResultImpl(state.currentState)
     } catch {
       case NonFatal(_) =>
         throw new IllegalStateException("Could not restart. Maybe exception from event handler. See logs.")

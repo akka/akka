@@ -74,7 +74,7 @@ private[akka] object EventSourcedBehaviorImpl {
    */
   final case class GetState[State](replyTo: ActorRef[StateWrapper[State]]) extends InternalProtocol
 
-  final case class StateWrapper[State](s: State)
+  final case class StateWrapper[State](currentState: State)
 
   /**
    * Used to start the replication stream at the correct sequence number
