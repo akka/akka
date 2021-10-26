@@ -72,7 +72,12 @@ private[akka] object EventSourcedBehaviorImpl {
    * Used by EventSourcedBehaviorTestKit to retrieve the state.
    * Can't be a Signal because those are not stashed.
    */
-  final case class GetState[State](replyTo: ActorRef[State]) extends InternalProtocol
+  final case class GetState[State](replyTo: ActorRef[GetStateReply[State]]) extends InternalProtocol
+
+  /**
+   * Used to send a state being `null` as an Actor message
+   */
+  final case class GetStateReply[State](currentState: State)
 
   /**
    * Used to start the replication stream at the correct sequence number

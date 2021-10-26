@@ -1,0 +1,7 @@
+# this is an internal api to avoid sending state as null vioa an Actor message
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl#GetState.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl#GetState.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl#GetState.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl#GetState.replyTo")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl#GetState.copy")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl#GetState.copy$default$1")

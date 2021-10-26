@@ -8,7 +8,6 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.SerializationTestKit
 import akka.actor.typed.ActorRef
@@ -26,6 +25,7 @@ import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.Serializati
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetStateReply
 import akka.stream.scaladsl.Sink
 
 /**
@@ -99,7 +99,7 @@ import akka.stream.scaladsl.Sink
     PersistenceQuery(system).readJournalFor[CurrentEventsByPersistenceIdQuery](PersistenceTestKitReadJournal.Identifier)
 
   private val probe = actorTestKit.createTestProbe[Any]()
-  private val stateProbe = actorTestKit.createTestProbe[State]()
+  private val stateProbe = actorTestKit.createTestProbe[GetStateReply[State]]()
   private var actor: ActorRef[Command] = actorTestKit.spawn(behavior)
   private def internalActor = actor.unsafeUpcast[Any]
   private val persistenceId: PersistenceId = {
@@ -175,7 +175,7 @@ import akka.stream.scaladsl.Sink
 
   override def getState(): State = {
     internalActor ! EventSourcedBehaviorImpl.GetState(stateProbe.ref)
-    stateProbe.receiveMessage()
+    stateProbe.receiveMessage().currentState
   }
 
   private def preCommandCheck(command: Command): Unit = {
@@ -212,7 +212,7 @@ import akka.stream.scaladsl.Sink
     internalActor ! EventSourcedBehaviorImpl.GetState(stateProbe.ref)
     try {
       val state = stateProbe.receiveMessage()
-      RestartResultImpl(state)
+      RestartResultImpl(state.currentState)
     } catch {
       case NonFatal(_) =>
         throw new IllegalStateException("Could not restart. Maybe exception from event handler. See logs.")
