@@ -168,9 +168,8 @@ If you need to change any of the following aspects of sharding it will require a
  * The `extractShardId` function
  * The role that the shard regions run on
  * The persistence mode - It's important to use the same mode on all nodes in the cluster
- * If the [`number-of-shards`](https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#shard-allocation) is changed.  Note
- that changing the number of nodes in a cluster does not require changing the number of shards, though as the number of nodes
- approaches the number of shards, it's worth considering increasing the number of shards.
+ * The [`number-of-shards`](https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#shard-allocation) - Note: changing the number
+ of nodes in the cluster does not require changing the number of shards.
  
 ### Cluster configuration change
 
