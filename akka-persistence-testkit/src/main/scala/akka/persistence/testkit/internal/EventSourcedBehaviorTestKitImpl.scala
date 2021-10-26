@@ -25,7 +25,7 @@ import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.Serializati
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
-import akka.persistence.typed.internal.EventSourcedBehaviorImpl.StateWrapper
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetStateReply
 import akka.stream.scaladsl.Sink
 
 /**
@@ -99,7 +99,7 @@ import akka.stream.scaladsl.Sink
     PersistenceQuery(system).readJournalFor[CurrentEventsByPersistenceIdQuery](PersistenceTestKitReadJournal.Identifier)
 
   private val probe = actorTestKit.createTestProbe[Any]()
-  private val stateProbe = actorTestKit.createTestProbe[StateWrapper[State]]()
+  private val stateProbe = actorTestKit.createTestProbe[GetStateReply[State]]()
   private var actor: ActorRef[Command] = actorTestKit.spawn(behavior)
   private def internalActor = actor.unsafeUpcast[Any]
   private val persistenceId: PersistenceId = {
