@@ -15,7 +15,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKitSpec.TestCounter.{NotSerializableState, NullState}
+import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKitSpec.TestCounter.{ NotSerializableState, NullState }
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.JournalFailureException
 import akka.persistence.typed.scaladsl.Effect
@@ -64,9 +64,9 @@ object EventSourcedBehaviorTestKitSpec {
       Behaviors.setup(ctx => counter(ctx, persistenceId, emptyState))
 
     private def counter(
-         ctx: ActorContext[Command],
-         persistenceId: PersistenceId,
-         emptyState: State): EventSourcedBehavior[Command, Event, State] = {
+        ctx: ActorContext[Command],
+        persistenceId: PersistenceId,
+        emptyState: State): EventSourcedBehavior[Command, Event, State] = {
       EventSourcedBehavior.withEnforcedReplies[Command, Event, State](
         persistenceId,
         emptyState,
@@ -119,7 +119,7 @@ object EventSourcedBehaviorTestKitSpec {
             NotSerializableState(value + delta, history :+ value)
           case (state: NotSerializableState, _) =>
             throw new IllegalStateException(state.toString)
-          case (null, _) => NullState()
+          case (null, _)        => NullState()
           case (NullState(), _) => NullState()
         })
     }
@@ -127,7 +127,7 @@ object EventSourcedBehaviorTestKitSpec {
 }
 
 class EventSourcedBehaviorTestKitSpec
-  extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
+    extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
     with AnyWordSpecLike
     with LogCapturing {
 
@@ -137,7 +137,9 @@ class EventSourcedBehaviorTestKitSpec
   private val behavior = TestCounter(persistenceId)
 
   private def createTestKitNull() = {
-    EventSourcedBehaviorTestKit[TestCounter.Command, TestCounter.Event, TestCounter.State](system, TestCounter(persistenceId, null))
+    EventSourcedBehaviorTestKit[TestCounter.Command, TestCounter.Event, TestCounter.State](
+      system,
+      TestCounter(persistenceId, null))
   }
 
   private def createTestKit() = {
