@@ -272,6 +272,8 @@ That is also security best-practice because of its multiple
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
 
+In addition to what is described here, read the blog post about [Securing Akka cluster communication in Kubernetes](https://akka.io/blog/article/2021/10/27/akka-cluster-mtls).
+
 SSL can be used as the remote transport by using the `tls-tcp` transport:
 
 ```
@@ -376,6 +378,7 @@ When using SHA1PRNG on Linux it's recommended specify `-Djava.security.egd=file:
 to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
 
 @@@
+
 
 
 ### Untrusted Mode
