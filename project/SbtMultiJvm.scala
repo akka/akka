@@ -93,7 +93,7 @@ object MultiJvmPlugin extends AutoPlugin {
   private def internalMultiJvmSettings =
     assemblySettings ++ Seq(
       multiJvmMarker := "MultiJvm",
-      loadedTestFrameworks := (loadedTestFrameworks in Test).value,
+      loadedTestFrameworks := (Test / loadedTestFrameworks).value,
       definedTests := Defaults.detectTests.value,
       multiJvmTests := collectMultiJvmTests(
           definedTests.value,
@@ -134,8 +134,8 @@ object MultiJvmPlugin extends AutoPlugin {
       run := multiJvmRun.evaluated,
       runMain := multiJvmRun.evaluated,
       // TODO try to make sure that this is only generated on a need to have basis
-      multiJvmTestJar := (assemblyOutputPath in assembly).map(_.getAbsolutePath).dependsOn(assembly).value,
-      multiJvmTestJarName := (assemblyOutputPath in assembly).value.getAbsolutePath,
+      multiJvmTestJar := (assembly / assemblyOutputPath).map(_.getAbsolutePath).dependsOn(assembly).value,
+      multiJvmTestJarName := (assembly / assemblyOutputPath).value.getAbsolutePath,
       multiNodeTest := {
         implicit val display = Project.showContextKey(state.value)
         showResults(streams.value.log, multiNodeExecuteTests.value, noTestsMessage(resolvedScoped.value))
@@ -155,18 +155,18 @@ object MultiJvmPlugin extends AutoPlugin {
       multiNodeWorkAround := (multiJvmTestJar.value, multiNodeProcessedHosts.value, multiNodeTargetDirName.value),
       // here follows the assembly parts of the config
       // don't run the tests when creating the assembly
-      test in assembly := {},
+      assembly / test := {},
       // we want everything including the tests and test frameworks
-      fullClasspath in assembly := (fullClasspath in MultiJvm).value,
+      assembly / fullClasspath := (MultiJvm / fullClasspath).value,
       // the first class wins just like a classpath
       // just concatenate conflicting text files
-      assemblyMergeStrategy in assembly := {
+      assembly / assemblyMergeStrategy := {
         case n if n.endsWith(".class") => MergeStrategy.first
         case n if n.endsWith(".txt")   => MergeStrategy.concat
         case n if n.endsWith("NOTICE") => MergeStrategy.concat
-        case n                         => (assemblyMergeStrategy in assembly).value.apply(n)
+        case n                         => (assembly / assemblyMergeStrategy).value.apply(n)
       },
-      assemblyJarName in assembly := {
+      assembly / assemblyJarName := {
         name.value + "_" + scalaVersion.value + "-" + version.value + "-multi-jvm-assembly.jar"
       })
 
@@ -348,7 +348,7 @@ object MultiJvmPlugin extends AutoPlugin {
       createLogger: String => Logger,
       log: Logger): (String, sbt.TestResult) = {
     val logName = "* " + name
-    log.info(if (log.ansiCodesSupported) GREEN + logName + RESET else logName)
+    log.info(logName)
     val classesHostsJavas = getClassesHostsJavas(classes, IndexedSeq.empty, IndexedSeq.empty, "")
     val hosts = classesHostsJavas.map(_._2)
     val processes = classes.zipWithIndex.map {
@@ -481,7 +481,7 @@ object MultiJvmPlugin extends AutoPlugin {
       createLogger: String => Logger,
       log: Logger): (String, sbt.TestResult) = {
     val logName = "* " + name
-    log.info(if (log.ansiCodesSupported) GREEN + logName + RESET else logName)
+    log.info(logName)
     val classesHostsJavas = getClassesHostsJavas(classes, hostsAndUsers, javas, defaultJava)
     val hosts = classesHostsJavas.map(_._2)
     // TODO move this out, maybe to the hosts string as well?
@@ -532,7 +532,7 @@ object MultiJvmPlugin extends AutoPlugin {
     if (realSeq.size >= max)
       realSeq
     else
-      (realSeq /: (0 until (max - realSeq.size)))((mySeq, pos) => mySeq :+ realSeq(pos % realSeq.size))
+      (0 until (max - realSeq.size)).foldLeft(realSeq)((mySeq, pos) => mySeq :+ realSeq(pos % realSeq.size))
   }
 
   private def getClassesHostsJavas(
