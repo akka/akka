@@ -63,7 +63,7 @@ along with the implementation of how the messages should be processed.
 Actor classes are implemented by extending the `AbstractActor` class and setting
 the “initial behavior” in the `createReceive` method.
 
-`createReceive` method has no arguments and returns `AbstractActor.Receive`. It defines which messages your Actor can handle, along with the implementation of how the messages should be processed. You can build such behavior with a builder named
+The `createReceive` method has no arguments and returns `AbstractActor.Receive`. It defines which messages your Actor can handle, along with the implementation of how the messages should be processed. You can build such behavior with a builder named
 `ReceiveBuilder`. This build has a convenient factory in `AbstractActor` called `receiveBuilder`.
 
 @@@
@@ -372,7 +372,7 @@ identified by the path *and a UID*.
 It is worth noting about the difference between:
 
 * restart
-* stop, followed by a re-creation of actor
+* stop, followed by a re-creation of the actor
 
 as explained below.
 
@@ -739,13 +739,13 @@ If the actor does not complete the @scala[`Future`]@java[`CompletionStage`], it 
 
 @@@ div { .group-scala }
 
-1. explicitly given timeout as in:
+ 1. explicitly given timeout as in:
 
-   @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
+    @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
 
-2. implicit argument of type `akka.util.Timeout`, e.g.
+ 2. implicit argument of type `akka.util.Timeout`, e.g.
 
-   @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
+    @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
 
 @@@
 
@@ -878,7 +878,7 @@ another message was enqueued; hence it is **not guaranteed** that upon reception
 timeout there must have been an idle period beforehand as configured via this method.
 
 Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
-periods). Pass in `Duration. Undefined` to switch off this feature.
+periods). Pass in `Duration.Undefined` to switch off this feature.
 
 Scala
 :  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #receive-timeout }
@@ -945,7 +945,7 @@ publishing `Terminated` on the @ref:[DeathWatch](#deathwatch), telling
 its supervisor). This procedure ensures that actor system sub-trees terminate
 in an orderly fashion, propagating the stop command to the leaves and
 collecting their confirmation back to the stopped supervisor. If one of the
-actors do not respond (i.e. processing a message for extended periods
+actors do not respond (i.e. processing a message for extended periods of time
 and therefore not receiving the stop command), this whole process will be
 stuck.
 
@@ -1002,7 +1002,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #kill }
 
-In general, though it is not recommended to overly rely on either `PoisonPill` or `Kill` in
+In general, it is not recommended to overly rely on either `PoisonPill` or `Kill` in
 designing your actor interactions, as often a protocol-level message like `PleaseCleanupAndStop`
 which the actor knows how to handle is encouraged. The messages are there for being able to stop actors
 over which design you do not have control over.
@@ -1161,7 +1161,7 @@ actor's state which have the same property.
 
 However, the @scala[`Stash` trait’s] @java[`AbstractActorWithStash`]
 implementation of `preRestart` will call `unstashAll()`. This means
-that before the actor restarting, it will transfer all stashed messages back to the actor's mailbox.
+that before the actor restarts, it will transfer all stashed messages back to the actor's mailbox.
 
 The result of this is that when an actor is restarted, any stashed messages will be delivered to the new incarnation of the actor.
 This is usually the desired behavior.

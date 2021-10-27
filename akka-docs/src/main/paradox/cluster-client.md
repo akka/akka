@@ -113,7 +113,7 @@ of these actors. As always, additional logic should be implemented in the destin
 
 ## An Example
 
-On the cluster nodes, first, start the receptionist. Note, it is recommended to load the extension
+On the cluster nodes, first start the receptionist. Note, it is recommended to load the extension
 when the actor system is started by defining it in the `akka.extensions` configuration property:
 
 ```
