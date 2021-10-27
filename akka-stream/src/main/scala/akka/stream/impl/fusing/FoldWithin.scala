@@ -15,21 +15,23 @@ import scala.concurrent.duration._
  * which groups a stream into vectors based on custom weight and time.
  * The problem with that solution is each grouped vector must fit into memory before emitting to the next stage.
  * That won't work for the use case of writing large files.
- * The desirable behavior is to write data as they come as opposed to accumulate everything until the condition is met.
+ * The desirable behavior is to write data as they come as opposed to accumulate everything until the group slicing condition is met.
  * In this case, the output channel needs to be closed if there is no data arriving within certain time to avoid connection timeout.
  * This custom flow uses custom aggregator to support such use cases.
  * Upstream inputs are continuously aggregated as they arrive.
- * The aggregator is terminated based on custom condition, interval gap and total duration using timers.
+ * The aggregator/grouping can be terminated and emitted in 3 ways
+ * 1. custom emit condition
+ * 2. interval gap and total duration using timers
+ * 3. flush onUpstreamFinish
  *
  * @param seed        initiate the aggregated output with first input
- * @param aggregate   sequentially aggregate input into output
- * @param emitReady   decide whether the current aggregated output can be emitted
+ * @param aggregate   sequentially aggregate input
+ * @param emitReady   decide whether the current aggregator can be emitted
  * @param maxGap      maximum allowed gap between aggregations, will emit if the interval passed this threshold
- * @param maxDuration optional total duration for the entire aggregator, requiring a separate timer.
- * @param harvest     this is invoked as soon as all conditions are met before emitting to next stage, which could take more time.
+ * @param maxDuration total duration for the entire aggregator
+ * @param harvest     this is invoked as soon as all conditions are met before emitting to next stage
+ *                    there can be extra time between harvest and next stage receiving the emitted output
  *                    time sensitive operations can be added here, such as closing an output channel
- * @tparam In
- * @tparam Agg
  */
 class FoldWithin[In, Agg, Out](
                                 val seed: In => Agg,
@@ -124,10 +126,9 @@ class FoldWithin[In, Agg, Out](
 
         var aggregator: Agg = seed(input)
 
-        def aggregate(input: In): AggregatorState = {
+        def aggregate(input: In): Unit = {
           aggregator = FoldWithin.this.aggregate(aggregator, input)
           lastAggregateTime = System.nanoTime()
-          this
         }
 
       }
