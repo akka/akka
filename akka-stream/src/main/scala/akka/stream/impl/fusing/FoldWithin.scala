@@ -6,8 +6,9 @@ package akka.stream.impl.fusing
 
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.util.OptionVal
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
  * This is a more scalable and general case of [[akka.stream.impl.fusing.GroupedWeightedWithin]]
@@ -44,87 +45,75 @@ class FoldWithin[In, Agg, Out](
   for {
     md <- maxDuration
     mg <- maxGap
-  } require(md.gteq(mg), s"maxDuration($md) must not be smaller than maxGap($mg)")
+  } require(md.gteq(mg), s"maxDuration(${md.toCoarsest}) must not be smaller than maxGap(${mg.toCoarsest})")
 
   val in: Inlet[In] = Inlet[In](s"${this.getClass.getName}.in")
   val out: Outlet[Out] = Outlet[Out](s"${this.getClass.getName}.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
-  val maxDurationTimer = "maxDurationTimer"
-  val maxGapTimer = "maxGapTimer"
-
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
+      // mutable state to keep track of the aggregator status to coordinate the flow
+      // input/output handler callbacks are guaranteed to execute without concurrency
+      // https://doc.akka.io/docs/akka/current/stream/stream-customize.html#thread-safety-of-custom-operators
+      private var aggregator: OptionVal[AggregatorState] = OptionVal.None
+
       override def preStart(): Unit = {
-        // although we only need this timer when the aggregator is not empty
-        // and this event do not need to be triggered otherwise,
-        // it's more efficient to set up a upfront timer
-        maxGap.foreach(mg => scheduleWithFixedDelay(maxGapTimer, mg, mg))
+        // although we do not need timer events when the group is empty
+        // it's more efficient to set up a upfront timer with fixed interval
+        // as opposed to time every single event
+        // always pick the smaller of the two intervals and divide by 2
+        Option(maxGap.getOrElse(maxDuration.getOrElse(null))).map(_ / 2).map {
+          delay => scheduleWithFixedDelay("FoldWithinIntervalTimer", delay, delay)
+        }
       }
-      override protected def onTimer(timerKey: Any): Unit = state.harvestOnTimer()
+
+      override protected def onTimer(timerKey: Any): Unit = if (readyToEmitByTimeout) harvestAndEmit()
 
       override def onPush(): Unit = {
-        state.aggregate()
+        aggregateAndEmitIfReady()
         if (isAvailable(out)) pull(in) // pull only if there is no backpressure from outlet
       }
 
       override def onUpstreamFinish(): Unit = {
-        state.harvestOnFlush()
+        harvestAndEmit()
         completeStage()
       }
 
       override def onPull(): Unit = {
-        state.aggregate()
+        aggregateAndEmitIfReady()
         if (!hasBeenPulled(in)) pull(in) // always pass through the pull to upstream
       }
 
       setHandlers(in, out, this)
 
-      // mutable state to keep track of the aggregator status to coordinate the flow
-      // input/output handler callbacks are guaranteed to execute without concurrency
-      // https://doc.akka.io/docs/akka/current/stream/stream-customize.html#thread-safety-of-custom-operators
-      private val state = new State()
+      private def harvestAndEmit(): Unit = {
+        aggregator.toOption.foreach(
+          agg => emit(out, FoldWithin.this.harvest(agg.aggregator)) // if out port not available, it'll follow up as scheduled emit
+        )
+        aggregator = OptionVal.None
+      }
 
-      class State {
-
-        private var aggregator: Option[AggregatorState] = None
-
-        def harvestOnTimer(): Unit = harvestWithMode(mode = HarvestMode.OnTimer)
-
-        def harvestOnFlush(): Unit = harvestWithMode(mode = HarvestMode.Flush)
-
-        private def harvestWithMode(mode: HarvestMode.Value): Unit = {
-          aggregator foreach {
-            case agg =>
-              if (mode == HarvestMode.Flush || emitReady(agg.aggregator) || {
-                mode == HarvestMode.OnTimer && {
-                  val currentTime = System.nanoTime()
-                  // check gap only on timer
-                  maxGap.exists(mg => currentTime - agg.lastAggregateTime >= mg.toNanos) ||
-                    maxDuration.exists(md => currentTime - agg.startTime >= md.toNanos)
-                }
-              }) {
-                aggregator = None
-                emit(out, FoldWithin.this.harvest(agg.aggregator)) // if out port not available, it'll follow up as scheduled emit
-              }
-          }
-        }
-
-        def aggregate(): Unit = if (isAvailable(in)) {
-          val input = grab(in)
-          aggregator match {
-            case Some(agg) => agg.aggregate(input)
-            case None => aggregator = Some(new AggregatorState(input))
-              // schedule a timer for max duration for new aggregator
-              maxDuration.foreach(md => scheduleOnce(maxDurationTimer, md))
-          }
-          harvestWithMode(HarvestMode.AfterAggregation)
+      private def readyToEmitByTimeout: Boolean = {
+        aggregator.toOption.exists { agg =>
+          val currentTime = System.nanoTime()
+          // check gap only on timer
+          maxGap.exists(mg => currentTime - agg.lastAggregateTime >= mg.toNanos) ||
+            maxDuration.exists(md => currentTime - agg.startTime >= md.toNanos)
         }
       }
 
-      object HarvestMode extends Enumeration {
-        val AfterAggregation, OnTimer, Flush = Value
+      private def aggregateAndEmitIfReady(): Unit = if (isAvailable(in)) {
+        val input = grab(in)
+        aggregator.toOption match {
+          case Some(agg) => agg.aggregate(input)
+          case None => aggregator = OptionVal.Some(new AggregatorState(input))
+        }
+
+        aggregator.toOption.foreach {
+          agg => if (emitReady(agg.aggregator)) harvestAndEmit()
+        }
       }
 
       class AggregatorState(input: In) {
