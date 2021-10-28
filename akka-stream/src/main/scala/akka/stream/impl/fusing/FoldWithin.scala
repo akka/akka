@@ -59,7 +59,7 @@ class FoldWithin[In, Agg, Out](
       // mutable state to keep track of the aggregator status to coordinate the flow
       // input/output handler callbacks are guaranteed to execute without concurrency
       // https://doc.akka.io/docs/akka/current/stream/stream-customize.html#thread-safety-of-custom-operators
-      private var aggregator: OptionVal[AggregatorState] = OptionVal.None
+      private[this] var aggregator: OptionVal[AggregatorState] = OptionVal.None
 
       override def preStart(): Unit = {
         // although we do not need timer events when the group is empty
@@ -93,7 +93,7 @@ class FoldWithin[In, Agg, Out](
       private def harvestAndEmit(): Unit = {
         aggregator match {
           case OptionVal.Some(agg) =>
-            emit(out, FoldWithin.this.harvest(agg.aggregator))
+            emit(out, FoldWithin.this.harvest(agg.agg))
             aggregator = OptionVal.None
           case _ =>
         }
@@ -117,16 +117,17 @@ class FoldWithin[In, Agg, Out](
           case _ => aggregator = OptionVal.Some(new AggregatorState(input))
         }
         // aggregator must not be None at this point
-        if (emitReady(aggregator.get.aggregator)) harvestAndEmit()
+        if (emitReady(aggregator.get.agg)) harvestAndEmit()
       }
 
-      class AggregatorState(input: In) {
+      private[this] class AggregatorState(input: In) {
 
         val startTime = System.nanoTime()
 
         var lastAggregateTime: Long = startTime
 
-        var aggregator: Agg = seed(input)
+        private[this] var aggregator: Agg = seed(input)
+        def agg: Agg = aggregator
 
         def aggregate(input: In): Unit = {
           aggregator = FoldWithin.this.aggregate(aggregator, input)
