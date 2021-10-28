@@ -91,31 +91,33 @@ class FoldWithin[In, Agg, Out](
       setHandlers(in, out, this)
 
       private def harvestAndEmit(): Unit = {
-        aggregator.toOption.foreach(
-          agg => emit(out, FoldWithin.this.harvest(agg.aggregator)) // if out port not available, it'll follow up as scheduled emit
-        )
-        aggregator = OptionVal.None
+        aggregator match {
+          case OptionVal.Some(agg) =>
+            emit(out, FoldWithin.this.harvest(agg.aggregator))
+            aggregator = OptionVal.None
+          case _ =>
+        }
+
       }
 
       private def readyToEmitByTimeout: Boolean = {
-        aggregator.toOption.exists { agg =>
-          val currentTime = System.nanoTime()
-          // check gap only on timer
-          maxGap.exists(mg => currentTime - agg.lastAggregateTime >= mg.toNanos) ||
-            maxDuration.exists(md => currentTime - agg.startTime >= md.toNanos)
+        aggregator match {
+          case OptionVal.Some(agg) =>
+            val currentTime = System.nanoTime()
+            maxGap.exists(mg => currentTime - agg.lastAggregateTime >= mg.toNanos) ||
+              maxDuration.exists(md => currentTime - agg.startTime >= md.toNanos)
+          case _ => false
         }
       }
 
       private def aggregateAndEmitIfReady(): Unit = if (isAvailable(in)) {
         val input = grab(in)
-        aggregator.toOption match {
-          case Some(agg) => agg.aggregate(input)
-          case None => aggregator = OptionVal.Some(new AggregatorState(input))
+        aggregator match {
+          case OptionVal.Some(agg) => agg.aggregate(input)
+          case _ => aggregator = OptionVal.Some(new AggregatorState(input))
         }
-
-        aggregator.toOption.foreach {
-          agg => if (emitReady(agg.aggregator)) harvestAndEmit()
-        }
+        // aggregator must not be None at this point
+        if (emitReady(aggregator.get.aggregator)) harvestAndEmit()
       }
 
       class AggregatorState(input: In) {
