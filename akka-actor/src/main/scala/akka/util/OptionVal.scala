@@ -39,12 +39,6 @@ private[akka] object OptionVal {
 @InternalStableApi
 private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
 
-  @inline final def exists(p: A => Boolean): Boolean =
-    x != null && p(x)
-
-  @inline final def foreach[U](f: A => U): Unit = 
-    if (x != null) f(x)
-
   /**
    * Returns true if the option is `OptionVal.None`, false otherwise.
    */

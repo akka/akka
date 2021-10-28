@@ -59,14 +59,14 @@ class FoldWithin[In, Agg, Out](
       // mutable state to keep track of the aggregator status to coordinate the flow
       // input/output handler callbacks are guaranteed to execute without concurrency
       // https://doc.akka.io/docs/akka/current/stream/stream-customize.html#thread-safety-of-custom-operators
-      private[this] var aggregator: OptionVal[AggregatorState] = OptionVal.None
+      private var aggregator: OptionVal[AggregatorState] = OptionVal.None
 
       override def preStart(): Unit = {
         // although we do not need timer events when the group is empty
         // it's more efficient to set up a upfront timer with fixed interval
         // as opposed to time every single event
         // always pick the smaller of the two intervals and divide by 2
-        Option(maxGap.getOrElse(maxDuration.orNull)).map(_ / 2).map {
+        Option(maxGap.getOrElse(maxDuration.getOrElse(null))).map(_ / 2).map {
           delay => scheduleWithFixedDelay("FoldWithinIntervalTimer", delay, delay)
         }
       }
@@ -91,15 +91,16 @@ class FoldWithin[In, Agg, Out](
       setHandlers(in, out, this)
 
       private def harvestAndEmit(): Unit = {
-        aggregator.foreach(
-          agg => emit(out, FoldWithin.this.harvest(agg.agg)) // if out port not available, it'll follow up as scheduled emit
+        aggregator.toOption.foreach(
+          agg => emit(out, FoldWithin.this.harvest(agg.aggregator)) // if out port not available, it'll follow up as scheduled emit
         )
         aggregator = OptionVal.None
       }
 
       private def readyToEmitByTimeout: Boolean = {
-        aggregator.exists { agg =>
+        aggregator.toOption.exists { agg =>
           val currentTime = System.nanoTime()
+          // check gap only on timer
           maxGap.exists(mg => currentTime - agg.lastAggregateTime >= mg.toNanos) ||
             maxDuration.exists(md => currentTime - agg.startTime >= md.toNanos)
         }
@@ -107,13 +108,13 @@ class FoldWithin[In, Agg, Out](
 
       private def aggregateAndEmitIfReady(): Unit = if (isAvailable(in)) {
         val input = grab(in)
-        aggregator match {
-          case OptionVal.Some(agg) => agg.aggregate(input)
-          case OptionVal.None => aggregator = OptionVal.Some(new AggregatorState(input))
+        aggregator.toOption match {
+          case Some(agg) => agg.aggregate(input)
+          case None => aggregator = OptionVal.Some(new AggregatorState(input))
         }
 
-        aggregator.foreach {
-          agg => if (emitReady(agg.agg)) harvestAndEmit()
+        aggregator.toOption.foreach {
+          agg => if (emitReady(agg.aggregator)) harvestAndEmit()
         }
       }
 
@@ -123,9 +124,7 @@ class FoldWithin[In, Agg, Out](
 
         var lastAggregateTime: Long = startTime
 
-        private[this] var aggregator: Agg = seed(input)
-
-        def agg: Agg = aggregator
+        var aggregator: Agg = seed(input)
 
         def aggregate(input: In): Unit = {
           aggregator = FoldWithin.this.aggregate(aggregator, input)
