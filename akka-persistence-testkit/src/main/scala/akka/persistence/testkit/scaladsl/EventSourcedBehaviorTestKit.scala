@@ -15,6 +15,7 @@ import akka.actor.typed.Behavior
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.PersistenceTestKitSnapshotPlugin
 import akka.persistence.testkit.internal.EventSourcedBehaviorTestKitImpl
 
 /**
@@ -36,7 +37,7 @@ object EventSourcedBehaviorTestKit {
   val config: Config = ConfigFactory.parseString("""
     akka.persistence.testkit.events.serialize = off
     akka.persistence.testkit.snapshots.serialize = off
-    """).withFallback(PersistenceTestKitPlugin.config)
+    """).withFallback(PersistenceTestKitPlugin.config).withFallback(PersistenceTestKitSnapshotPlugin.config)
 
   object SerializationSettings {
     val enabled: SerializationSettings = new SerializationSettings(
