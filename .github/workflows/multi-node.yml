@@ -141,6 +141,10 @@ jobs:
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx512M \
             -Dmultinode.Xlog:gc \
+            -Daeron.dir=/opt/volumes/media-driver \
+            -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
+            -Daeron.term.buffer.length=33554432 \
+            -Dmultinode.Daeron.term.buffer.length=33554432 \
             akka-cluster/test \
             akka-distributed-data/test \
             akka-cluster-tools/test \

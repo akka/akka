@@ -33,8 +33,8 @@ spec:
         imagePullPolicy: Always
         name: multi-test-nodeX
         volumeMounts:
-          - mountPath: /dev/shm
-            name: dshm
+          - mountPath: /opt/volumes/media-driver
+            name: media-driver
         ports:
         - name: web
           containerPort: 80
@@ -59,9 +59,8 @@ spec:
           protocol: TCP
       volumes:
         # Needed for Aeron tests: https://github.com/real-logic/aeron/blob/master/README.md#troubleshooting
-        - name: dshm
-          emptyDir:
-            medium: Memory
+        - name: media-driver
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
