@@ -498,12 +498,15 @@ final class ClusterShardingSettings(
       rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode): ClusterShardingSettings =
     copy(rememberEntitiesStoreMode = rememberEntitiesStoreMode)
 
+  @deprecated("See passivationStrategySettings.idleTimeout instead", since = "2.6.18")
+  def passivateIdleEntityAfter: FiniteDuration = passivationStrategySettings.idleTimeout
+
   @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
-  def withPassivateIdleAfter(duration: FiniteDuration): ClusterShardingSettings =
+  def withPassivateIdleEntityAfter(duration: FiniteDuration): ClusterShardingSettings =
     withIdlePassivationStrategy(duration)
 
   @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
-  def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
+  def withPassivateIdleEntityAfter(duration: java.time.Duration): ClusterShardingSettings =
     withIdlePassivationStrategy(duration.asScala)
 
   def withIdlePassivationStrategy(timeout: FiniteDuration): ClusterShardingSettings =

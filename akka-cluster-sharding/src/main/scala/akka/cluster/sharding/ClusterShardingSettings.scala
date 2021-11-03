@@ -582,6 +582,9 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: String): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
+  @deprecated("See passivationStrategySettings.idleTimeout instead", since = "2.6.18")
+  def passivateIdleEntityAfter: FiniteDuration = passivationStrategySettings.idleTimeout
+
   @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
   def withPassivateIdleAfter(duration: FiniteDuration): ClusterShardingSettings =
     withIdlePassivationStrategy(duration)
