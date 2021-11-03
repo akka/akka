@@ -24,7 +24,7 @@ import akka.cluster.ClusterEvent.InitialStateAsEvents
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberPreparingForShutdown
 import akka.cluster.ClusterEvent.MemberReadyForShutdown
-import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.EntityPassivationStrategy
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
 import akka.cluster.sharding.internal.RememberEntitiesProvider
@@ -36,10 +36,8 @@ import akka.pattern.pipe
 import akka.util.MessageBufferMap
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
-import akka.util.RecencyList
 import akka.util.unused
 
-import scala.collection.immutable
 import scala.collection.immutable.Set
 import scala.concurrent.duration._
 
@@ -398,77 +396,6 @@ private[akka] object Shard {
 
     override def toString: EntityId = entities.toString
   }
-
-  type PassivateEntities = immutable.Seq[EntityId]
-
-  object PassivateEntities {
-    val none: PassivateEntities = immutable.Seq.empty[EntityId]
-  }
-
-  sealed abstract class EntityPassivationStrategy {
-    def shardsUpdated(shardIds: Set[ShardRegion.ShardId]): PassivateEntities
-    def entityCreated(id: EntityId): PassivateEntities
-    def entityTouched(id: EntityId): Unit
-    def entityTerminated(id: EntityId): Unit
-    def scheduledInterval: Option[FiniteDuration]
-    def intervalPassed(): PassivateEntities
-  }
-
-  object DisabledEntityPassivationStrategy extends EntityPassivationStrategy {
-    override def shardsUpdated(shardIds: Set[ShardId]): PassivateEntities = PassivateEntities.none
-    override def entityCreated(id: EntityId): PassivateEntities = PassivateEntities.none
-    override def entityTouched(id: EntityId): Unit = ()
-    override def entityTerminated(id: EntityId): Unit = ()
-    override def scheduledInterval: Option[FiniteDuration] = None
-    override def intervalPassed(): PassivateEntities = PassivateEntities.none
-  }
-
-  final class IdleTimeoutEntityPassivationStrategy(timeout: FiniteDuration) extends EntityPassivationStrategy {
-    private val recencyList = RecencyList.empty[EntityId]
-
-    override val scheduledInterval: Option[FiniteDuration] = Some(timeout / 2)
-
-    override def shardsUpdated(shardIds: Set[ShardId]): PassivateEntities = PassivateEntities.none
-
-    override def entityCreated(id: EntityId): PassivateEntities = {
-      recencyList.update(id)
-      PassivateEntities.none
-    }
-
-    override def entityTouched(id: EntityId): Unit = recencyList.update(id)
-
-    override def entityTerminated(id: EntityId): Unit = recencyList.remove(id)
-
-    override def intervalPassed(): PassivateEntities = recencyList.removeLeastRecentOutside(timeout)
-  }
-
-  final class LeastRecentlyUsedEntityPassivationStrategy(perRegionLimit: Int) extends EntityPassivationStrategy {
-    private var perShardLimit: Int = perRegionLimit
-    private val recencyList = RecencyList.empty[EntityId]
-
-    override val scheduledInterval: Option[FiniteDuration] = None
-
-    override def shardsUpdated(shardIds: Set[ShardId]): PassivateEntities = {
-      perShardLimit = perRegionLimit / shardIds.size
-      passivateExcessEntities()
-    }
-
-    override def entityCreated(id: EntityId): PassivateEntities = {
-      recencyList.update(id)
-      passivateExcessEntities()
-    }
-
-    override def entityTouched(id: EntityId): Unit = recencyList.update(id)
-
-    override def entityTerminated(id: EntityId): Unit = recencyList.remove(id)
-
-    override def intervalPassed(): PassivateEntities = PassivateEntities.none
-
-    private def passivateExcessEntities(): PassivateEntities = {
-      val excess = recencyList.size - perShardLimit
-      if (excess > 0) recencyList.removeLeastRecent(excess) else PassivateEntities.none
-    }
-  }
 }
 
 /**
@@ -531,13 +458,7 @@ private[akka] class Shard(
   private var handOffStopper: Option[ActorRef] = None
   private var preparingForShutdown = false
 
-  private val passivationStrategy = settings.passivationStrategy match {
-    case ClusterShardingSettings.IdlePassivationStrategy(timeout) =>
-      new IdleTimeoutEntityPassivationStrategy(timeout)
-    case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit) =>
-      new LeastRecentlyUsedEntityPassivationStrategy(limit)
-    case _ => DisabledEntityPassivationStrategy
-  }
+  private val passivationStrategy = EntityPassivationStrategy(settings)
 
   import context.dispatcher
   private val passivateIntervalTask = passivationStrategy.scheduledInterval.map { interval =>
@@ -1071,7 +992,7 @@ private[akka] class Shard(
     passivateEntities(entitiesToPassivate)
   }
 
-  private def passivateEntities(entitiesToPassivate: PassivateEntities): Unit = {
+  private def passivateEntities(entitiesToPassivate: EntityPassivationStrategy.PassivateEntities): Unit = {
     if (entitiesToPassivate.nonEmpty) {
       val refsToPassivate = entitiesToPassivate.collect {
         case entityId if entities.entity(entityId).isDefined => entities.entity(entityId).get
