@@ -322,7 +322,7 @@ logger available in the 'akka-slf4j' module.
 @@@ note
 
 If `akka-actor-typed` is available on your classpath, logging will automatically switch to @ref:[SLF4J](#slf4j) instead of 
-the default logger. See the [Akka typed logging](typed/logging.md#event-bus) docs for more details.
+the default logger. See the  @ref:[Akka typed logging](typed/logging.md#event-bus) docs for more details.
 
 @@@
 
