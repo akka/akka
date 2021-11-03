@@ -8,7 +8,6 @@ import java.util.function.IntFunction
 import java.util.Optional
 
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -135,7 +134,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         false, // remember entities disabled
         "",
         "",
-        Duration.Zero, // passivation disabled
+        ClusterShardingSettings.PassivationStrategySettings.disabled, // passivation disabled
         shardingBaseSettings.shardRegionQueryTimeout,
         StateStoreModeDData,
         RememberEntitiesStoreModeDData, // not used as remembered entities is off

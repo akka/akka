@@ -90,9 +90,7 @@ object ClusterShardingSettings {
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
-    val passivateIdleAfter =
-      if (config.getString("passivate-idle-entity-after").toLowerCase == "off") Duration.Zero
-      else config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis
+    val passivationStrategySettings = PassivationStrategySettings(config)
 
     val lease = config.getString("use-lease") match {
       case s if s.isEmpty => None
@@ -106,7 +104,7 @@ object ClusterShardingSettings {
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       stateStoreMode = config.getString("state-store-mode"),
       rememberEntitiesStore = config.getString("remember-entities-store"),
-      passivateIdleEntityAfter = passivateIdleAfter,
+      passivationStrategySettings = passivationStrategySettings,
       shardRegionQueryTimeout = config.getDuration("shard-region-query-timeout", MILLISECONDS).millis,
       tuningParameters,
       coordinatorSingletonSettings,
@@ -130,6 +128,72 @@ object ClusterShardingSettings {
    */
   private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
+
+  final class PassivationStrategySettings(
+      val strategy: String,
+      val idleTimeout: FiniteDuration,
+      val leastRecentlyUsedLimit: Int) {
+
+    def withIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
+      copy(strategy = "idle", idleTimeout = timeout)
+
+    def withLeastRecentlyUsedStrategy(limit: Int): PassivationStrategySettings =
+      copy(strategy = "least-recently-used", leastRecentlyUsedLimit = limit)
+
+    private def copy(
+        strategy: String,
+        idleTimeout: FiniteDuration = idleTimeout,
+        leastRecentlyUsedLimit: Int = leastRecentlyUsedLimit): PassivationStrategySettings =
+      new PassivationStrategySettings(strategy, idleTimeout, leastRecentlyUsedLimit)
+  }
+
+  object PassivationStrategySettings {
+    def apply(config: Config): PassivationStrategySettings = {
+      val settings = new PassivationStrategySettings(
+        strategy = config.getString("passivation.strategy").toLowerCase,
+        idleTimeout = config.getDuration("passivation.idle.timeout", MILLISECONDS).millis,
+        leastRecentlyUsedLimit = config.getInt("passivation.least-recently-used.limit"))
+      // default to old setting if it exists (defined in application.conf), overriding the new settings
+      if (config.hasPath("passivate-idle-entity-after")) {
+        val timeout =
+          if (config.getString("passivate-idle-entity-after").toLowerCase == "off") Duration.Zero
+          else config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis
+        settings.withIdleStrategy(timeout)
+      } else {
+        settings
+      }
+    }
+
+    def oldDefault(idleTimeout: FiniteDuration): PassivationStrategySettings =
+      new PassivationStrategySettings("idle", idleTimeout, 0)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  sealed trait PassivationStrategy
+  case object NoPassivationStrategy extends PassivationStrategy
+  case class IdlePassivationStrategy(timeout: FiniteDuration) extends PassivationStrategy
+  case class LeastRecentlyUsedPassivationStrategy(limit: Int) extends PassivationStrategy
+
+  /**
+   * INTERNAL API
+   * Determine the passivation strategy to use from settings.
+   */
+  object PassivationStrategy {
+    def apply(settings: ClusterShardingSettings): PassivationStrategy = {
+      if (settings.rememberEntities) {
+        NoPassivationStrategy
+      } else
+        settings.passivationStrategySettings.strategy match {
+          case "idle" if settings.passivationStrategySettings.idleTimeout > Duration.Zero =>
+            IdlePassivationStrategy(settings.passivationStrategySettings.idleTimeout)
+          case "least-recently-used" =>
+            LeastRecentlyUsedPassivationStrategy(settings.passivationStrategySettings.leastRecentlyUsedLimit)
+          case _ => NoPassivationStrategy
+        }
+    }
+  }
 
   class TuningParameters(
       val coordinatorFailureBackoff: FiniteDuration,
@@ -339,10 +403,7 @@ object ClusterShardingSettings {
  *   be used for the internal persistence of ClusterSharding. If not defined the default
  *   snapshot plugin is used. Note that this is not related to persistence used by the entity
  *   actors.
- * @param passivateIdleEntityAfter Passivate entities that have not received any message in this interval.
- *   Note that only messages sent through sharding are counted, so direct messages
- *   to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity.
- *   Use 0 to disable automatic passivation. It is always disabled if `rememberEntities` is enabled.
+ * @param passivationStrategySettings settings for automatic passivation strategy, see descriptions in reference.conf
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  * @param shardRegionQueryTimeout the timeout for querying a shard region, see descriptions in reference.conf
  */
@@ -353,12 +414,40 @@ final class ClusterShardingSettings(
     val snapshotPluginId: String,
     val stateStoreMode: String,
     val rememberEntitiesStore: String,
-    val passivateIdleEntityAfter: FiniteDuration,
+    val passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings,
     val shardRegionQueryTimeout: FiniteDuration,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
+
+  @deprecated(
+    "Use the ClusterShardingSettings factory methods or the constructor including passivationStrategySettings instead",
+    "2.6.18")
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      rememberEntitiesStore: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      shardRegionQueryTimeout: FiniteDuration,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+      leaseSettings: Option[LeaseUsageSettings]) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      rememberEntitiesStore,
+      ClusterShardingSettings.PassivationStrategySettings.oldDefault(passivateIdleEntityAfter),
+      shardRegionQueryTimeout,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      leaseSettings)
 
   @deprecated(
     "Use the ClusterShardingSettings factory methods or the constructor including rememberedEntitiesStore instead",
@@ -470,10 +559,9 @@ final class ClusterShardingSettings(
   private[akka] def shouldHostShard(cluster: Cluster): Boolean =
     role.forall(cluster.selfMember.roles.contains)
 
-  /** If true, idle entities should be passivated if they have not received any message by this interval, otherwise it is not enabled. */
   @InternalApi
-  private[akka] val shouldPassivateIdleEntities: Boolean =
-    passivateIdleEntityAfter > Duration.Zero && !rememberEntities
+  private[akka] val passivationStrategy: ClusterShardingSettings.PassivationStrategy =
+    ClusterShardingSettings.PassivationStrategy(this)
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 
@@ -494,11 +582,22 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: String): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
+  @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
   def withPassivateIdleAfter(duration: FiniteDuration): ClusterShardingSettings =
-    copy(passivateIdleAfter = duration)
+    withIdlePassivationStrategy(duration)
 
+  @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
-    copy(passivateIdleAfter = duration.asScala)
+    withIdlePassivationStrategy(duration.asScala)
+
+  def withIdlePassivationStrategy(timeout: FiniteDuration): ClusterShardingSettings =
+    copy(passivationStrategySettings = passivationStrategySettings.withIdleStrategy(timeout))
+
+  def withIdlePassivationStrategy(timeout: java.time.Duration): ClusterShardingSettings =
+    withIdlePassivationStrategy(timeout.asScala)
+
+  def withLeastRecentlyUsedPassivationStrategy(limit: Int): ClusterShardingSettings =
+    copy(passivationStrategySettings = passivationStrategySettings.withLeastRecentlyUsedStrategy(limit))
 
   def withShardRegionQueryTimeout(duration: FiniteDuration): ClusterShardingSettings =
     copy(shardRegionQueryTimeout = duration)
@@ -523,7 +622,7 @@ final class ClusterShardingSettings(
       journalPluginId: String = journalPluginId,
       snapshotPluginId: String = snapshotPluginId,
       stateStoreMode: String = stateStoreMode,
-      passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
+      passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings = passivationStrategySettings,
       shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
@@ -535,7 +634,7 @@ final class ClusterShardingSettings(
       snapshotPluginId,
       stateStoreMode,
       rememberEntitiesStore,
-      passivateIdleAfter,
+      passivationStrategySettings,
       shardRegionQueryTimeout,
       tuningParameters,
       coordinatorSingletonSettings,

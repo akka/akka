@@ -288,13 +288,42 @@ The stop message is only sent locally, from the shard to the entity so does not 
 
 ### Automatic Passivation
 
-The entities are automatically passivated if they haven't received a message within the duration configured in
-`akka.cluster.sharding.passivate-idle-entity-after` 
-or by explicitly setting the `passivateIdleEntityAfter` flag on `ClusterShardingSettings` to a suitable
-time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
-to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
-Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
-It is disabled automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
+Entities are automatically passivated based on a passivation strategy. The default passivation strategy is to
+passivate idle entities when they haven't received a message within a specified interval.
+
+Automatic passivation can be disabled by setting `akka.cluster.sharding.passivation.strategy = none`. It is disabled
+automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
+
+@@@ note
+
+Only messages sent through Cluster Sharding are counted as entity activity for automatic passivation. Messages sent
+directly to the `ActorRef`, including messages that the actor sends to itself, are not counted as entity activity.
+
+@@@
+
+Supported passivation strategies are:
+
+#### Idle passivation strategy
+
+The **idle** passivation strategy passivates entities when they have not received a message for a specified length of
+time. This is the default strategy and is enabled automatically with a timeout of 2 minutes. Specify a different idle
+timeout with configuration:
+
+@@snip [passivation idle timeout](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-idle-timeout type=conf }
+
+Or specify the idle timeout as a duration using the `withIdlePassivationStrategy` method on `ClusterShardingSettings`.
+
+#### Least recently used passivation strategy
+
+The **least recently used** passivation strategy passivates those entities that have the least recent activity when the
+number of active entities passes a specified limit. The configurable limit is for a whole shard region and is divided
+among the active shards in each region. Configure automatic passivation to use the least recently used passivation
+strategy, and set the limit for active entities in a shard region:
+
+@@snip [passivation least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-recently-used type=conf }
+
+Or enable the least recently used passivation strategy and set the active entity limit using the
+`withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
 
 ## Sharding State 
 
