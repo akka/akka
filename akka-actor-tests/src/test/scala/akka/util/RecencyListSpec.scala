@@ -7,7 +7,6 @@ package akka.util
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.immutable
 import scala.concurrent.duration._
 
 object RecencyListSpec {
@@ -67,7 +66,7 @@ class RecencyListSpec extends AnyWordSpec with Matchers {
       check(recency, List("a", "c", "e", "h", "i", "j"))
 
       clock.tick() // time = 8
-      recency.removeLeastRecent(3) shouldBe immutable.Seq("a", "c", "e")
+      recency.removeLeastRecent(3) shouldBe List("a", "c", "e")
       check(recency, List("h", "i", "j"))
 
       clock.tick() // time = 9
@@ -75,7 +74,7 @@ class RecencyListSpec extends AnyWordSpec with Matchers {
       check(recency, List("h", "j", "k", "l", "m", "i"))
 
       clock.tick() // time = 10
-      recency.removeMostRecent(3) shouldBe immutable.Seq("i", "m", "l")
+      recency.removeMostRecent(3) shouldBe List("i", "m", "l")
       check(recency, List("h", "j", "k"))
 
       clock.tick() // time = 11
@@ -83,7 +82,7 @@ class RecencyListSpec extends AnyWordSpec with Matchers {
       check(recency, List("h", "j", "k", "n", "o"))
 
       clock.tick() // time = 12
-      recency.removeLeastRecentOutside(3.seconds) shouldBe immutable.Seq("h", "j")
+      recency.removeLeastRecentOutside(3.seconds) shouldBe List("h", "j")
       check(recency, List("k", "n", "o"))
 
       clock.tick() // time = 13
@@ -91,7 +90,7 @@ class RecencyListSpec extends AnyWordSpec with Matchers {
       check(recency, List("n", "o", "p", "q", "k", "r"))
 
       clock.tick() // time = 14
-      recency.removeMostRecentWithin(3.seconds) shouldBe immutable.Seq("r", "k", "q", "p")
+      recency.removeMostRecentWithin(3.seconds) shouldBe List("r", "k", "q", "p")
       check(recency, List("n", "o"))
     }
 

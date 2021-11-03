@@ -4,6 +4,8 @@
 
 package akka.util
 
+import akka.annotation.InternalApi
+
 import scala.collection.{ immutable, mutable }
 import scala.collection.AbstractIterator
 import scala.concurrent.duration.FiniteDuration
@@ -11,11 +13,12 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object RecencyList {
   def empty[A]: RecencyList[A] = new RecencyList[A](new NanoClock)
 
   private class Node[A](val value: A) {
-    var less, more: Node[A] = _
+    var lessRecent, moreRecent: OptionVal[Node[A]] = OptionVal.None
     var timestamp: Long = 0L
   }
 
@@ -37,10 +40,11 @@ private[akka] object RecencyList {
  * Used for tracking recency of elements for implementing least/most recently used eviction policies.
  * Implemented using a doubly-linked list plus hash map for lookup, so that all operations are constant time.
  */
+@InternalApi
 private[akka] class RecencyList[A](clock: RecencyList.Clock) {
   import RecencyList.Node
 
-  private var leastRecent, mostRecent: Node[A] = _
+  private var leastRecent, mostRecent: OptionVal[Node[A]] = OptionVal.None
   private val lookupNode = mutable.Map.empty[A, Node[A]]
 
   def size: Int = lookupNode.size
@@ -69,8 +73,8 @@ private[akka] class RecencyList[A](clock: RecencyList.Clock) {
 
   def contains(value: A): Boolean = lookupNode.contains(value)
 
-  private val lessRecent: Node[A] => Node[A] = _.less
-  private val moreRecent: Node[A] => Node[A] = _.more
+  private val lessRecent: Node[A] => OptionVal[Node[A]] = _.lessRecent
+  private val moreRecent: Node[A] => OptionVal[Node[A]] = _.moreRecent
 
   def removeLeastRecent(n: Int = 1): immutable.Seq[A] =
     removeWhile(start = leastRecent, next = moreRecent, limit = n)
@@ -93,48 +97,49 @@ private[akka] class RecencyList[A](clock: RecencyList.Clock) {
   def mostToLeastRecent: Iterator[A] = iterator(start = mostRecent, shift = lessRecent)
 
   private def addAsMostRecent(node: Node[A]): Unit = {
-    node.more = null
-    node.less = mostRecent
-    if (mostRecent ne null) mostRecent.more = node
-    mostRecent = node
-    if (leastRecent eq null) leastRecent = mostRecent
+    node.moreRecent = OptionVal.None
+    node.lessRecent = mostRecent
+    if (mostRecent.isDefined) mostRecent.get.moreRecent = OptionVal.Some(node)
+    mostRecent = OptionVal.Some(node)
+    if (leastRecent.isEmpty) leastRecent = mostRecent
     node.timestamp = clock.currentTime()
   }
 
   private def removeFromCurrentPosition(node: Node[A]): Unit = {
-    if (node.less eq null) leastRecent = node.more
-    else node.less.more = node.more
-    if (node.more eq null) mostRecent = node.less
-    else node.more.less = node.less
+    if (node.lessRecent.isEmpty) leastRecent = node.moreRecent
+    else node.lessRecent.get.moreRecent = node.moreRecent
+    if (node.moreRecent.isEmpty) mostRecent = node.lessRecent
+    else node.moreRecent.get.lessRecent = node.lessRecent
   }
 
   private val continueToLimit: Node[A] => Boolean = _ => true
 
   private def removeWhile(
-      start: Node[A],
-      next: Node[A] => Node[A],
+      start: OptionVal[Node[A]],
+      next: Node[A] => OptionVal[Node[A]],
       continueWhile: Node[A] => Boolean = continueToLimit,
       limit: Int = size): immutable.Seq[A] = {
     var count = 0
     var node = start
     val values = mutable.ListBuffer.empty[A]
-    while ((node ne null) && continueWhile(node) && (count < limit)) {
+    while (node.isDefined && continueWhile(node.get) && (count < limit)) {
       count += 1
-      removeFromCurrentPosition(node)
-      lookupNode -= node.value
-      values += node.value
-      node = next(node)
+      removeFromCurrentPosition(node.get)
+      lookupNode -= node.get.value
+      values += node.get.value
+      node = next(node.get)
     }
     values.result()
   }
 
-  private def iterator(start: Node[A], shift: Node[A] => Node[A]): Iterator[A] = new AbstractIterator[A] {
-    private[this] var current = start
-    override def hasNext: Boolean = current ne null
-    override def next(): A = {
-      val value = current.value
-      current = shift(current)
-      value
+  private def iterator(start: OptionVal[Node[A]], shift: Node[A] => OptionVal[Node[A]]): Iterator[A] =
+    new AbstractIterator[A] {
+      private[this] var current = start
+      override def hasNext: Boolean = current.isDefined
+      override def next(): A = {
+        val value = current.get.value
+        current = shift(current.get)
+        value
+      }
     }
-  }
 }
