@@ -11,10 +11,11 @@ import com.typesafe.config.Config
 
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.coordination.lease.LeaseUsageSettings
+import akka.util.Helpers.toRootLowerCase
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
@@ -55,7 +56,6 @@ object ClusterShardingSettings {
   def apply(config: Config): ClusterShardingSettings = {
 
     def configMajorityPlus(p: String): Int = {
-      import akka.util.Helpers.toRootLowerCase
       toRootLowerCase(config.getString(p)) match {
         case "all" => Int.MaxValue
         case _     => config.getInt(p)
@@ -129,58 +129,75 @@ object ClusterShardingSettings {
   private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
-  final class PassivationStrategySettings(
+  @ApiMayChange
+  final class PassivationStrategySettings private (
       val strategy: String,
       val idleTimeout: FiniteDuration,
-      val leastRecentlyUsedLimit: Int) {
+      val leastRecentlyUsedLimit: Int,
+      private[akka] val oldSettingUsed: Boolean) {
+
+    def this(strategy: String, idleTimeout: FiniteDuration, leastRecentlyUsedLimit: Int) =
+      this(strategy, idleTimeout, leastRecentlyUsedLimit, oldSettingUsed = false)
 
     def withIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
-      copy(strategy = "idle", idleTimeout = timeout)
+      copy(strategy = "idle", idleTimeout = timeout, oldSettingUsed = false)
 
     def withLeastRecentlyUsedStrategy(limit: Int): PassivationStrategySettings =
       copy(strategy = "least-recently-used", leastRecentlyUsedLimit = limit)
 
+    private[akka] def withOldIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
+      copy(strategy = "idle", idleTimeout = timeout, oldSettingUsed = true)
+
     private def copy(
         strategy: String,
         idleTimeout: FiniteDuration = idleTimeout,
-        leastRecentlyUsedLimit: Int = leastRecentlyUsedLimit): PassivationStrategySettings =
-      new PassivationStrategySettings(strategy, idleTimeout, leastRecentlyUsedLimit)
+        leastRecentlyUsedLimit: Int = leastRecentlyUsedLimit,
+        oldSettingUsed: Boolean = oldSettingUsed): PassivationStrategySettings =
+      new PassivationStrategySettings(strategy, idleTimeout, leastRecentlyUsedLimit, oldSettingUsed)
   }
 
   object PassivationStrategySettings {
+    val disabled = new PassivationStrategySettings(
+      strategy = "none",
+      idleTimeout = Duration.Zero,
+      leastRecentlyUsedLimit = 0,
+      oldSettingUsed = false)
+
     def apply(config: Config): PassivationStrategySettings = {
       val settings = new PassivationStrategySettings(
-        strategy = config.getString("passivation.strategy").toLowerCase,
+        strategy = toRootLowerCase(config.getString("passivation.strategy")),
         idleTimeout = config.getDuration("passivation.idle.timeout", MILLISECONDS).millis,
         leastRecentlyUsedLimit = config.getInt("passivation.least-recently-used.limit"))
       // default to old setting if it exists (defined in application.conf), overriding the new settings
       if (config.hasPath("passivate-idle-entity-after")) {
         val timeout =
-          if (config.getString("passivate-idle-entity-after").toLowerCase == "off") Duration.Zero
+          if (toRootLowerCase(config.getString("passivate-idle-entity-after")) == "off") Duration.Zero
           else config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis
-        settings.withIdleStrategy(timeout)
+        settings.withOldIdleStrategy(timeout)
       } else {
         settings
       }
     }
 
-    def oldDefault(idleTimeout: FiniteDuration): PassivationStrategySettings =
-      new PassivationStrategySettings("idle", idleTimeout, 0)
+    private[akka] def oldDefault(idleTimeout: FiniteDuration): PassivationStrategySettings =
+      disabled.withOldIdleStrategy(idleTimeout)
   }
 
   /**
    * INTERNAL API
    */
-  sealed trait PassivationStrategy
-  case object NoPassivationStrategy extends PassivationStrategy
-  case class IdlePassivationStrategy(timeout: FiniteDuration) extends PassivationStrategy
-  case class LeastRecentlyUsedPassivationStrategy(limit: Int) extends PassivationStrategy
+  @InternalApi
+  private[akka] sealed trait PassivationStrategy
+  private[akka] case object NoPassivationStrategy extends PassivationStrategy
+  private[akka] case class IdlePassivationStrategy(timeout: FiniteDuration) extends PassivationStrategy
+  private[akka] case class LeastRecentlyUsedPassivationStrategy(limit: Int) extends PassivationStrategy
 
   /**
    * INTERNAL API
    * Determine the passivation strategy to use from settings.
    */
-  object PassivationStrategy {
+  @InternalApi
+  private[akka] object PassivationStrategy {
     def apply(settings: ClusterShardingSettings): PassivationStrategy = {
       if (settings.rememberEntities) {
         NoPassivationStrategy
@@ -587,11 +604,11 @@ final class ClusterShardingSettings(
 
   @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
   def withPassivateIdleAfter(duration: FiniteDuration): ClusterShardingSettings =
-    withIdlePassivationStrategy(duration)
+    copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration))
 
   @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
-    withIdlePassivationStrategy(duration.asScala)
+    copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration.asScala))
 
   def withIdlePassivationStrategy(timeout: FiniteDuration): ClusterShardingSettings =
     copy(passivationStrategySettings = passivationStrategySettings.withIdleStrategy(timeout))

@@ -317,8 +317,8 @@ Or specify the idle timeout as a duration using the `withIdlePassivationStrategy
 
 The **least recently used** passivation strategy passivates those entities that have the least recent activity when the
 number of active entities passes a specified limit. The configurable limit is for a whole shard region and is divided
-among the active shards in each region. Configure automatic passivation to use the least recently used passivation
-strategy, and set the limit for active entities in a shard region:
+evenly among the active shards in each region. Configure automatic passivation to use the least recently used
+passivation strategy, and set the limit for active entities in a shard region:
 
 @@snip [passivation least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-recently-used type=conf }
 

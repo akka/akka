@@ -6,7 +6,7 @@ package akka.cluster.sharding.internal
 
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSettings
-import akka.cluster.sharding.ShardRegion.{ EntityId, ShardId }
+import akka.cluster.sharding.ShardRegion.EntityId
 import akka.util.RecencyList
 
 import scala.collection.immutable
@@ -40,10 +40,10 @@ private[akka] sealed abstract class EntityPassivationStrategy {
 
   /**
    * Active shards in this region have been updated, which can trigger passivation.
-   * @param shardIds current set of active shard ids
+   * @param activeShards updated number of active shards
    * @return entities to passivate in the associated shard
    */
-  def shardsUpdated(shardIds: Set[ShardId]): PassivateEntities
+  def shardsUpdated(activeShards: Int): PassivateEntities
 
   /**
    * A new entity instance has been created, which can trigger passivation.
@@ -84,7 +84,7 @@ private[akka] sealed abstract class EntityPassivationStrategy {
 private[akka] object DisabledEntityPassivationStrategy extends EntityPassivationStrategy {
   import EntityPassivationStrategy.PassivateEntities
 
-  override def shardsUpdated(shardIds: Set[ShardId]): PassivateEntities = PassivateEntities.none
+  override def shardsUpdated(activeShards: Int): PassivateEntities = PassivateEntities.none
   override def entityCreated(id: EntityId): PassivateEntities = PassivateEntities.none
   override def entityTouched(id: EntityId): Unit = ()
   override def entityTerminated(id: EntityId): Unit = ()
@@ -104,7 +104,7 @@ private[akka] final class IdleEntityPassivationStrategy(timeout: FiniteDuration)
 
   override val scheduledInterval: Option[FiniteDuration] = Some(timeout / 2)
 
-  override def shardsUpdated(shardIds: Set[ShardId]): PassivateEntities = PassivateEntities.none
+  override def shardsUpdated(activeShards: Int): PassivateEntities = PassivateEntities.none
 
   override def entityCreated(id: EntityId): PassivateEntities = {
     recencyList.update(id)
@@ -133,8 +133,8 @@ private[akka] final class LeastRecentlyUsedEntityPassivationStrategy(perRegionLi
 
   override val scheduledInterval: Option[FiniteDuration] = None
 
-  override def shardsUpdated(shardIds: Set[ShardId]): PassivateEntities = {
-    perShardLimit = perRegionLimit / shardIds.size
+  override def shardsUpdated(activeShards: Int): PassivateEntities = {
+    perShardLimit = perRegionLimit / activeShards
     passivateExcessEntities()
   }
 

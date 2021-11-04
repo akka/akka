@@ -489,10 +489,13 @@ object ShardRegion {
       with DeadLetterSuppression
 
   /**
-   * Updated set of shards sent to all active shards when a shard is started or stopped.
+   * INTERNAL API
+   *
+   * Updated shard details sent to all active shards when a shard is started or stopped.
    * Used for passivation strategies that change limits based on the number of active shards.
    */
-  final case class ShardsUpdated(shardIds: Set[ShardRegion.ShardId])
+  @InternalApi
+  private[akka] final case class ShardsUpdated(activeShards: Int)
 
   /**
    * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of
@@ -668,6 +671,11 @@ private[akka] class ShardRegion(
   }
 
   private def logPassivationStrategy(): Unit = {
+    if (settings.passivationStrategySettings.oldSettingUsed) {
+      log.warning(
+        "The `akka.cluster.sharding.passivate-idle-entity-after` setting and associated methods are deprecated. " +
+        "See automatic passivation strategies and use the `akka.cluster.sharding.passivation.idle.timeout` setting.")
+    }
     if (settings.rememberEntities) {
       log.debug("{}: Entities will not be passivated automatically because 'rememberEntities' is enabled.", typeName)
     } else {
@@ -990,7 +998,7 @@ private[akka] class ShardRegion(
       shardsByRef = shardsByRef - ref
       shards = shards - shardId
       startingShards -= shardId
-      shards.values.foreach(_ ! ShardsUpdated(shards.keySet))
+      shards.values.foreach(_ ! ShardsUpdated(shards.size))
       if (handingOff.contains(ref)) {
         handingOff = handingOff - ref
         log.debug("{}: Shard [{}] handoff complete", typeName, shardId)
@@ -1308,7 +1316,7 @@ private[akka] class ShardRegion(
             shardsByRef = shardsByRef.updated(shard, id)
             shards = shards.updated(id, shard)
             startingShards += id
-            shards.values.foreach(_ ! ShardsUpdated(shards.keySet))
+            shards.values.foreach(_ ! ShardsUpdated(shards.size))
             None
           case Some(_) =>
             None

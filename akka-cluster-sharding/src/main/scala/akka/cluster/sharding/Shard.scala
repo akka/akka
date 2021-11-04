@@ -616,9 +616,9 @@ private[akka] class Shard(
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
     case msg: ShardRegion.StartEntity            => startEntity(msg.entityId, Some(sender()))
+    case msg: ShardRegion.ShardsUpdated          => shardsUpdated(msg)
     case Passivate(stopMessage)                  => passivate(sender(), stopMessage)
     case PassivateIntervalTick                   => passivateEntitiesAfterInterval()
-    case ShardRegion.ShardsUpdated(shardIds)     => shardsUpdated(shardIds)
     case msg: ShardQuery                         => receiveShardQuery(msg)
     case msg: LeaseLost                          => receiveLeaseLost(msg)
     case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
@@ -982,8 +982,8 @@ private[akka] class Shard(
     }
   }
 
-  private def shardsUpdated(shardIds: Set[ShardRegion.ShardId]): Unit = {
-    val entitiesToPassivate = passivationStrategy.shardsUpdated(shardIds)
+  private def shardsUpdated(updated: ShardRegion.ShardsUpdated): Unit = {
+    val entitiesToPassivate = passivationStrategy.shardsUpdated(updated.activeShards)
     passivateEntities(entitiesToPassivate)
   }
 

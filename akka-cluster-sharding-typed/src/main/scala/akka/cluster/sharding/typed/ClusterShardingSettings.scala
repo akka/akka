@@ -9,7 +9,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 import com.typesafe.config.Config
 
 import akka.actor.typed.ActorSystem
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.typed.ClusterShardingSettings.RememberEntitiesStoreModeDData
 import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSettings }
@@ -164,13 +164,18 @@ object ClusterShardingSettings {
   }
   case object RememberEntitiesStoreModeDData extends RememberEntitiesStoreMode { override def name = "ddata" }
 
-  final class PassivationStrategySettings(
+  @ApiMayChange
+  final class PassivationStrategySettings private (
       val strategy: String,
       val idleTimeout: FiniteDuration,
-      val leastRecentlyUsedLimit: Int) {
+      val leastRecentlyUsedLimit: Int,
+      private[akka] val oldSettingUsed: Boolean) {
+
+    def this(strategy: String, idleTimeout: FiniteDuration, leastRecentlyUsedLimit: Int) =
+      this(strategy, idleTimeout, leastRecentlyUsedLimit, oldSettingUsed = false)
 
     def this(classic: ClassicShardingSettings.PassivationStrategySettings) =
-      this(classic.strategy, classic.idleTimeout, classic.leastRecentlyUsedLimit)
+      this(classic.strategy, classic.idleTimeout, classic.leastRecentlyUsedLimit, classic.oldSettingUsed)
 
     def withIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
       copy(strategy = "idle", idleTimeout = timeout)
@@ -178,18 +183,26 @@ object ClusterShardingSettings {
     def withLeastRecentlyUsedStrategy(limit: Int): PassivationStrategySettings =
       copy(strategy = "least-recently-used", leastRecentlyUsedLimit = limit)
 
+    private[akka] def withOldIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
+      copy(strategy = "idle", idleTimeout = timeout, oldSettingUsed = true)
+
     private def copy(
         strategy: String,
         idleTimeout: FiniteDuration = idleTimeout,
-        leastRecentlyUsedLimit: Int = leastRecentlyUsedLimit): PassivationStrategySettings =
-      new PassivationStrategySettings(strategy, idleTimeout, leastRecentlyUsedLimit)
+        leastRecentlyUsedLimit: Int = leastRecentlyUsedLimit,
+        oldSettingUsed: Boolean = oldSettingUsed): PassivationStrategySettings =
+      new PassivationStrategySettings(strategy, idleTimeout, leastRecentlyUsedLimit, oldSettingUsed)
   }
 
   object PassivationStrategySettings {
-    val disabled = new PassivationStrategySettings("none", Duration.Zero, 0)
+    val disabled = new PassivationStrategySettings(
+      strategy = "none",
+      idleTimeout = Duration.Zero,
+      leastRecentlyUsedLimit = 0,
+      oldSettingUsed = false)
 
     def oldDefault(idleTimeout: FiniteDuration): PassivationStrategySettings =
-      new PassivationStrategySettings(ClassicShardingSettings.PassivationStrategySettings.oldDefault(idleTimeout))
+      disabled.withOldIdleStrategy(idleTimeout)
   }
 
   // generated using kaze-class
@@ -503,11 +516,11 @@ final class ClusterShardingSettings(
 
   @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
   def withPassivateIdleEntityAfter(duration: FiniteDuration): ClusterShardingSettings =
-    withIdlePassivationStrategy(duration)
+    copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration))
 
   @deprecated("Use withIdlePassivationStrategy instead", since = "2.6.18")
   def withPassivateIdleEntityAfter(duration: java.time.Duration): ClusterShardingSettings =
-    withIdlePassivationStrategy(duration.asScala)
+    copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration.asScala))
 
   def withIdlePassivationStrategy(timeout: FiniteDuration): ClusterShardingSettings =
     copy(passivationStrategySettings = passivationStrategySettings.withIdleStrategy(timeout))
