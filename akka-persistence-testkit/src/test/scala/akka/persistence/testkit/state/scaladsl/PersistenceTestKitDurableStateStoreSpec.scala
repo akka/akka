@@ -36,6 +36,16 @@ class PersistenceTestKitDurableStateStoreSpec
   implicit val classic: akka.actor.ActorSystem = system.classicSystem
 
   "Persistent test kit state store" must {
+    "find individual objects" in {
+      val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])
+      val record = Record(1, "name-1")
+      val tag = "tag-1"
+      val persistenceId = "record-1"
+      stateStore.upsertObject(persistenceId, 1L, record, tag).futureValue
+      val updated = stateStore.getObject(persistenceId).futureValue
+      updated.value should be(Some(record))
+      updated.revision should be(1L)
+    }
 
     "find tagged state changes ordered by upsert" in {
       val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])

@@ -43,11 +43,14 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
   private val EarliestOffset = 0L
   private val lastGlobalOffset = new AtomicLong(EarliestOffset)
 
-  def getObject(persistenceId: String): Future[GetObjectResult[A]] = this.synchronized {
-    Future.successful(GetObjectResult(store.get(persistenceId).map(_.value), 0))
+  override def getObject(persistenceId: String): Future[GetObjectResult[A]] = this.synchronized {
+    Future.successful(store.get(persistenceId) match {
+      case Some(record) => GetObjectResult(Some(record.value), record.revision)
+      case None => GetObjectResult(None, 0)
+    })
   }
 
-  def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): Future[Done] = this.synchronized {
+  override def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): Future[Done] = this.synchronized {
     val globalOffset = lastGlobalOffset.incrementAndGet()
     val record = Record(globalOffset, persistenceId, revision, value, tag)
     store = store + (persistenceId -> record)
@@ -55,12 +58,12 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     Future.successful(Done)
   }
 
-  def deleteObject(persistenceId: String): Future[Done] = this.synchronized {
+  override def deleteObject(persistenceId: String): Future[Done] = this.synchronized {
     store = store - persistenceId
     Future.successful(Done)
   }
 
-  def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
+  override def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
     val fromOffset = offset match {
       case NoOffset             => EarliestOffset
       case Sequence(fromOffset) => fromOffset
@@ -86,7 +89,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       .map(_.toDurableStateChange)
   }
 
-  def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
+  override def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
     val currentGlobalOffset = lastGlobalOffset.get()
     changes(tag, offset).takeWhile(_.offset match {
       case Sequence(fromOffset) =>
