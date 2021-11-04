@@ -489,6 +489,15 @@ object ShardRegion {
       with DeadLetterSuppression
 
   /**
+   * INTERNAL API
+   *
+   * Updated shard details sent to all active shards when a shard is started or stopped.
+   * Used for passivation strategies that change limits based on the number of active shards.
+   */
+  @InternalApi
+  private[akka] final case class ShardsUpdated(activeShards: Int)
+
+  /**
    * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of
    * them have terminated it replies with `ShardStopped`.
    * If the entities don't terminate after `handoffTimeout` it will try stopping them forcefully.
@@ -650,7 +659,7 @@ private[akka] class ShardRegion(
     cluster.subscribe(self, classOf[MemberEvent])
     timers.startTimerWithFixedDelay(Retry, Retry, retryInterval)
     startRegistration()
-    logPassivateIdleEntities()
+    logPassivationStrategy()
   }
 
   override def postStop(): Unit = {
@@ -661,15 +670,24 @@ private[akka] class ShardRegion(
     gracefulShutdownProgress.trySuccess(Done)
   }
 
-  private def logPassivateIdleEntities(): Unit = {
-    if (settings.shouldPassivateIdleEntities)
-      log.info(
-        "{}: Idle entities will be passivated after [{}]",
-        typeName,
-        PrettyDuration.format(settings.passivateIdleEntityAfter))
-
-    if (settings.rememberEntities)
-      log.debug("{}: Idle entities will not be passivated because 'rememberEntities' is enabled.", typeName)
+  private def logPassivationStrategy(): Unit = {
+    if (settings.passivationStrategySettings.oldSettingUsed) {
+      log.warning(
+        "The `akka.cluster.sharding.passivate-idle-entity-after` setting and associated methods are deprecated. " +
+        "See automatic passivation strategies and use the `akka.cluster.sharding.passivation.idle.timeout` setting.")
+    }
+    if (settings.rememberEntities) {
+      log.debug("{}: Entities will not be passivated automatically because 'rememberEntities' is enabled.", typeName)
+    } else {
+      settings.passivationStrategy match {
+        case ClusterShardingSettings.IdlePassivationStrategy(timeout) =>
+          log.info("{}: Idle entities will be passivated after [{}]", typeName, PrettyDuration.format(timeout))
+        case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit) =>
+          log.info("{}: Least recently used entities will be passivated when over [{}] entities", typeName, limit)
+        case _ =>
+          log.debug("{}: Entities will not be passivated automatically", typeName)
+      }
+    }
   }
 
   // when using proxy the data center can be different from the own data center
@@ -980,6 +998,7 @@ private[akka] class ShardRegion(
       shardsByRef = shardsByRef - ref
       shards = shards - shardId
       startingShards -= shardId
+      shards.values.foreach(_ ! ShardsUpdated(shards.size))
       if (handingOff.contains(ref)) {
         handingOff = handingOff - ref
         log.debug("{}: Shard [{}] handoff complete", typeName, shardId)
@@ -1297,6 +1316,7 @@ private[akka] class ShardRegion(
             shardsByRef = shardsByRef.updated(shard, id)
             shards = shards.updated(id, shard)
             startingShards += id
+            shards.values.foreach(_ ! ShardsUpdated(shards.size))
             None
           case Some(_) =>
             None
