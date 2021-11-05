@@ -13,7 +13,6 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
-import io.aeron.driver.MediaDriver
 import org.agrona.IoUtil
 
 import akka.Done
@@ -54,7 +53,7 @@ abstract class AeronStreamConsistencySpec
 
   import AeronStreamConsistencySpec._
 
-  val driver = MediaDriver.launchEmbedded()
+  val driver = startDriver()
 
   val aeron = {
     val ctx = new Aeron.Context

@@ -19,7 +19,6 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
 import io.aeron.CncFileDescriptor
-import io.aeron.driver.MediaDriver
 import org.HdrHistogram.Histogram
 import org.agrona.IoUtil
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
@@ -46,7 +45,7 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
        akka.test.AeronStreamLatencySpec.totalMessagesFactor = 1.0
        akka.test.AeronStreamLatencySpec.repeatCount = 1
        akka {
-         loglevel = ERROR
+         loglevel = INFO
          testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
          actor {
            provider = remote
@@ -81,7 +80,7 @@ abstract class AeronStreamLatencySpec
 
   var plots = LatencyPlots()
 
-  val driver = MediaDriver.launchEmbedded()
+  val driver = startDriver()
 
   val pool = new EnvelopeBufferPool(1024 * 1024, 128)
 
