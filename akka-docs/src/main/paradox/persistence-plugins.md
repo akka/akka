@@ -14,17 +14,19 @@ Plugins can be selected either by "default" for all persistent actors,
 or "individually", when a persistent actor defines its own set of plugins.
 
 When a persistent actor does NOT override the `journalPluginId` and `snapshotPluginId` methods,
-the persistence extension will use the "default" journal and snapshot-store plugins configured in `reference.conf`:
+the persistence extension will use the "default" journal, snapshot-store and durable-state plugins configured in `reference.conf`:
 
 ```
 akka.persistence.journal.plugin = ""
 akka.persistence.snapshot-store.plugin = ""
+akka.persistence.state.plugin = ""
 ```
 
 However, these entries are provided as empty "", and require explicit user configuration via override in the user `application.conf`.
 
 * For an example of a journal plugin which writes messages to LevelDB see @ref:[Local LevelDB journal](#local-leveldb-journal).
 * For an example of a snapshot store plugin which writes snapshots as individual files to the local filesystem see @ref:[Local snapshot store](#local-snapshot-store).
+* The state store is relatively new, one available implementation is the [akka-persistence-jdbc-plugin](https://doc.akka.io/docs/akka-persistence-jdbc/current/).
 
 ## Eager initialization of persistence plugin
 
