@@ -26,7 +26,7 @@ It is important to note that actors do not stop automatically when no longer
 referenced, every Actor that is created must also explicitly be destroyed.
 The only simplification is that stopping a parent Actor will also recursively
 stop all the child Actors that this parent has created. All actors are also
-stopped automatically when the `ActorSystem` is shut down.
+stopped automatically when the @apidoc[ActorSystem](typed.ActorSystem) is shut down.
 
 @@@ note
 An `ActorSystem` is a heavyweight structure that will allocate threads,
@@ -42,17 +42,17 @@ can stop itself or be stopped at any time but it can never outlive its parent.
 
 ### The ActorContext
 
-The ActorContext can be accessed for many purposes such as:
+The @apidoc[ActorContext](typed.*.ActorContext) can be accessed for many purposes such as:
 
 * Spawning child actors and supervision
-* Watching other actors to receive a `Terminated(otherActor)` event should the watched actor stop permanently
+* Watching other actors to receive a @apidoc[Terminated(otherActor)](typed.Terminated) event should the watched actor stop permanently
 * Logging
 * Creating message adapters
 * Request-response interactions (ask) with another actor
-* Access to the `self` ActorRef
+* Access to the @scala[@scaladoc[self](akka.actor.typed.scaladsl.ActorContext#self:akka.actor.typed.ActorRef[T])]@java[@javadoc[getSelf()](akka.actor.typed.javadsl.ActorContext#getSelf())] ActorRef
 
 If a behavior needs to use the `ActorContext`, for example to spawn child actors, or use
-@scala[`context.self`]@java[`context.getSelf()`], it can be obtained by wrapping construction with `Behaviors.setup`:
+@scala[`context.self`]@java[`context.getSelf()`], it can be obtained by wrapping construction with @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"}:
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
@@ -62,15 +62,15 @@ Java
 
 #### ActorContext Thread Safety
 
-Many of the methods in `ActorContext` are not thread-safe and
+Many of the methods in @apidoc[ActorContext](typed.*.ActorContext) are not thread-safe and
 
-* Must not be accessed by threads from @scala[`scala.concurrent.Future`]@java[`java.util.concurrent.CompletionStage`] callbacks
+* Must not be accessed by threads from @scala[@scaladoc[scala.concurrent.Future](scala.concurrent.Future)]@java[@javadoc[java.util.concurrent.CompletionStage](java.util.concurrent.CompletionStage)] callbacks
 * Must not be shared between several actor instances
 * Must only be used in the ordinary actor message processing thread
 
 ### The Guardian Actor
 
-The top level actor, also called the user guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
+The top level actor, also called the user guardian actor, is created along with the @apidoc[ActorSystem](typed.ActorSystem). Messages sent to the actor
 system are directed to the root actor. The root actor is defined by the behavior used to create the `ActorSystem`,
 named `HelloWorldMain` in the example below:
 
@@ -86,7 +86,7 @@ children and monitor their lifecycles.
 
 When the guardian actor stops this will stop the `ActorSystem`.
 
-When `ActorSystem.terminate` is invoked the @ref:[Coordinated Shutdown](../coordinated-shutdown.md) process will
+When @apidoc[ActorSystem.terminate](typed.ActorSystem) {scala="#terminate():Unit" java="#terminate()"} is invoked the @ref:[Coordinated Shutdown](../coordinated-shutdown.md) process will
 stop actors and services in a specific order.
 
 @@@ Note
@@ -100,7 +100,7 @@ is a tool that mimics the old style of starting up actors.
 
 ### Spawning Children
 
-Child actors are created and started with @apidoc[typed.*.ActorContext]'s `spawn`.
+Child actors are created and started with `ActorContext`'s @apidoc[spawn](typed.*.ActorContext) {scala="#spawn[U](behavior:akka.actor.typed.Behavior[U],name:String,props:akka.actor.typed.Props):akka.actor.typed.ActorRef[U]" java="#spawn(akka.actor.typed.Behavior,java.lang.String)"}.
 In the example below, when the root actor
 is started, it spawns a child actor described by the `HelloWorld` behavior. Additionally, when the root actor receives a
 `SayHello` message, it creates a child actor defined by the behavior `HelloWorldBot`:
@@ -129,11 +129,11 @@ but sometimes you might want to spawn new actors from the outside of the guardia
 per HTTP request.
 
 That is not difficult to implement in your behavior, but since this is a common pattern there is a predefined
-message protocol and implementation of a behavior for this. It can be used as the guardian actor of the `ActorSystem`,
-possibly combined with `Behaviors.setup` to start some initial tasks or actors. Child actors can then be started from
-the outside by `tell`ing or `ask`ing `SpawnProtocol.Spawn` to the actor reference of the system. Using `ask` is
+message protocol and implementation of a behavior for this. It can be used as the guardian actor of the @apidoc[ActorSystem](typed.ActorSystem),
+possibly combined with @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"} to start some initial tasks or actors. Child actors can then be started from
+the outside by @apidoc[tell](typed.ActorRef) {scala="#tell(msg:T):Unit" java="#tell(T)"}ing or `ask`ing @apidoc[SpawnProtocol.Spawn] to the actor reference of the system. Using `ask` is
 similar to how `ActorSystem.actorOf` can be used in classic actors with the difference that a
-@scala[`Future`]@java[`CompletionStage`] of the `ActorRef` is returned.
+@scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionStage](java.util.concurrent.CompletionStage)] of the @apidoc[ActorRef](typed.ActorRef) is returned.
 
 The guardian behavior can be defined as:
 
@@ -143,7 +143,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/SpawnProtocolDocTest.java) { #imports1 #main }
 
-and the `ActorSystem` can be created with that `main` behavior and asked to spawn other actors:
+and the @apidoc[ActorSystem](typed.ActorSystem) can be created with that `main` behavior and asked to spawn other actors:
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/SpawnProtocolDocSpec.scala) { #imports2 #system-spawn }
@@ -151,21 +151,21 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/SpawnProtocolDocTest.java) { #imports2 #system-spawn }
 
-The `SpawnProtocol` can also be used at other places in the actor hierarchy. It doesn't have to be the root
+The @apidoc[SpawnProtocol$] can also be used at other places in the actor hierarchy. It doesn't have to be the root
 guardian actor.
 
 A way to find running actors is described in @ref:[Actor discovery](actor-discovery.md).
 
 ## Stopping Actors
 
-An actor can stop itself by returning `Behaviors.stopped` as the next behavior.
+An actor can stop itself by returning @apidoc[Behaviors.stopped](typed.*.Behaviors$) {scala="#stopped[T]:akka.actor.typed.Behavior[T]" java="#stopped()"} as the next behavior.
 
 A child actor can be forced to stop after it finishes processing its current message by using the
-`stop` method of the `ActorContext` from the parent actor. Only child actors can be stopped in that way.
+@apidoc[stop](typed.*.ActorContext) {scala="#stop[U](child:akka.actor.typed.ActorRef[U]):Unit" java="#stop(akka.actor.typed.ActorRef)"} method of the `ActorContext` from the parent actor. Only child actors can be stopped in that way.
 
 All child actors will be stopped when their parent is stopped.
 
-When an actor is stopped, it receives the `PostStop` signal that can be used for cleaning up resources.
+When an actor is stopped, it receives the @apidoc[PostStop](typed.PostStop) signal that can be used for cleaning up resources.
 
 Here is an illustrating example:
 
@@ -183,14 +183,14 @@ Java
    #worker-actor
  }
 
-When cleaning up resources from `PostStop` you should also consider doing the same for the `PreRestart` signal,
+When cleaning up resources from `PostStop` you should also consider doing the same for the @apidoc[PreRestart](typed.PreRestart) signal,
 which is emitted when the @ref:[actor is restarted](fault-tolerance.md#the-prerestart-signal). Note that `PostStop`
 is not emitted for a restart. 
 
 ## Watching Actors
 
 In order to be notified when another actor terminates (i.e. stops permanently, not temporary failure and restart),
-an actor can `watch` another actor. It will receive the @apidoc[akka.actor.typed.Terminated] signal upon
+an actor can @apidoc[watch](typed.*.ActorContext) {scala="#watch[U](other:akka.actor.typed.ActorRef[U]):Unit" java="#watch(akka.actor.typed.ActorRef)"} another actor. It will receive the @apidoc[akka.actor.typed.Terminated] signal upon
 termination (see @ref:[Stopping Actors](#stopping-actors)) of the watched actor.
 
 Scala
@@ -199,7 +199,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/GracefulStopDocTest.java)  { #master-actor-watch }
 
-An alternative to `watch` is `watchWith`, which allows specifying a custom message instead of the `Terminated`.
+An alternative to @apidoc[watch](typed.*.ActorContext) {scala="#watch[U](other:akka.actor.typed.ActorRef[U]):Unit" java="#watch(akka.actor.typed.ActorRef)"} is @apidoc[watchWith](typed.*.ActorContext) {scala="#watchWith[U](other:akka.actor.typed.ActorRef[U],msg:T):Unit" java="#watchWith(akka.actor.typed.ActorRef,T)"}, which allows specifying a custom message instead of the `Terminated`.
 This is often preferred over using `watch` and the `Terminated` signal because additional information can
 be included in the message that can be used later when receiving it.
 
@@ -214,7 +214,7 @@ Java
 Note how the `replyToWhenDone` is included in the `watchWith` message and then used later when receiving the
 `JobTerminated` message. 
 
-The watched actor can be any `ActorRef`, it doesn't have to be a child actor as in the above example.
+The watched actor can be any @apidoc[ActorRef](typed.ActorRef), it doesn't have to be a child actor as in the above example.
 
 It should be noted that the terminated message is generated independent of the order in which registration
 and termination occur. In particular, the watching actor will receive a terminated message even if the
@@ -226,7 +226,7 @@ the message, and another registration is done before this message has been proce
 queued, because registering for monitoring of an already terminated actor leads to the immediate generation of
 the terminated message.
 
-It is also possible to deregister from watching another actor’s liveliness using `context.unwatch(target)`.
+It is also possible to deregister from watching another actor’s liveliness using @apidoc[context.unwatch(target)](typed.*.ActorContext) {scala="#unwatch[U](other:akka.actor.typed.ActorRef[U]):Unit" java="#unwatch(akka.actor.typed.ActorRef)"}.
 This works even if the terminated message has already been enqueued in the mailbox; after calling `unwatch`
 no terminated message for that actor will be processed anymore.
 
