@@ -96,19 +96,19 @@ To maintain isolation, actors should communicate with immutable objects only. @a
 immutable container for bytes. It is used by Akka's I/O system as an efficient, immutable alternative
 the traditional byte containers used for I/O on the JVM, such as @scala[@scaladoc[Array](scala.Array)[@scaladoc[Byte](scala.Byte)]]@java[`byte[]`] and @javadoc[ByteBuffer](java.nio.ByteBuffer).
 
-@apidoc[ByteString](akka.util.ByteString) is a [rope-like](https://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
-and provides fast concatenation and slicing operations (perfect for I/O). When two @apidoc[ByteString](akka.util.ByteString)s are concatenated
-together they are both stored within the resulting @apidoc[ByteString](akka.util.ByteString) instead of copying both to a new @scala[@scaladoc[Array](scala.Array)]@java[array]. Operations
-such as @apidoc[drop](akka.util.ByteString) {scala="#drop(n:Int):akka.util.ByteString" java="#drop(int)"} and @apidoc[take](akka.util.ByteString) {scala="#take(n:Int):akka.util.ByteString" java="#take(int)"} return @apidoc[ByteString](akka.util.ByteString)s that still reference the original @scala[@scaladoc[Array](scala.Array)]@java[array], but just change the
-offset and length that is visible. Great care has also been taken to make sure that the internal @scala[@scaladoc[Array](scala.Array)]@java[array] cannot be
-modified. Whenever a potentially unsafe @scala[@scaladoc[Array](scala.Array)]@java[array] is used to create a new @apidoc[ByteString](akka.util.ByteString) a defensive copy is created. If
-you require a @apidoc[ByteString](akka.util.ByteString) that only blocks as much memory as necessary for its content, use the @apidoc[compact](akka.util.ByteString) {scala="#compact:akka.util.CompactByteString" java="#compact()"} method to
-get a @apidoc[CompactByteString](akka.util.CompactByteString) instance. If the @apidoc[ByteString](akka.util.ByteString) represented only a slice of the original array, this will
+`ByteString` is a [rope-like](https://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
+and provides fast concatenation and slicing operations (perfect for I/O). When two `ByteString`s are concatenated
+together they are both stored within the resulting `ByteString` instead of copying both to a new @scala[`Array`]@java[array]. Operations
+such as @apidoc[drop](akka.util.ByteString) {scala="#drop(n:Int):akka.util.ByteString" java="#drop(int)"} and @apidoc[take](akka.util.ByteString) {scala="#take(n:Int):akka.util.ByteString" java="#take(int)"} return `ByteString`s that still reference the original @scala[`Array`]@java[array], but just change the
+offset and length that is visible. Great care has also been taken to make sure that the internal @scala[`Array`]@java[array] cannot be
+modified. Whenever a potentially unsafe @scala[`Array`]@java[array] is used to create a new `ByteString` a defensive copy is created. If
+you require a `ByteString` that only blocks as much memory as necessary for its content, use the @apidoc[compact](akka.util.ByteString) {scala="#compact:akka.util.CompactByteString" java="#compact()"} method to
+get a @apidoc[CompactByteString](akka.util.CompactByteString) instance. If the `ByteString` represented only a slice of the original array, this will
 result in copying all bytes in that slice.
 
-@apidoc[ByteString](akka.util.ByteString) inherits all methods from @scaladoc[IndexedSeq](scala.collection.immutable.IndexedSeq), and it also has some new ones. For more information, look up the @apidoc[akka.util.ByteString](akka.util.ByteString) class and @scaladoc[its companion object](akka.util.ByteString$) in the ScalaDoc.
+`ByteString` inherits all methods from @scaladoc[IndexedSeq](scala.collection.immutable.IndexedSeq), and it also has some new ones. For more information, look up the @apidoc[akka.util.ByteString](akka.util.ByteString) class and @scaladoc[its companion object](akka.util.ByteString$) in the ScalaDoc.
 
-@apidoc[ByteString](akka.util.ByteString) also comes with its own optimized builder and iterator classes @apidoc[ByteStringBuilder](akka.util.ByteStringBuilder) and
+`ByteString` also comes with its own optimized builder and iterator classes @apidoc[ByteStringBuilder](akka.util.ByteStringBuilder) and
 @apidoc[ByteIterator](akka.util.ByteIterator) which provide extra features in addition to those of normal builders and iterators.
 
 #### Compatibility with java.io
