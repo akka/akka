@@ -1,0 +1,2 @@
+# internal
+ProblemFilters.exclude[DirectMissingMethodProblem]("com.typesafe.sslconfig.akka.AkkaSSLConfig.validateDefaultTrustManager")
