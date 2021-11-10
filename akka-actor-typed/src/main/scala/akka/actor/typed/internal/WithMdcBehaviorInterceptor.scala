@@ -54,7 +54,7 @@ import akka.annotation.InternalApi
           // eliminate that interceptor
           loop(i.nestedBehavior)
 
-        case i: InterceptorImpl[T, T] =>
+        case i: InterceptorImpl[T @unchecked, T @unchecked] =>
           val nested = i.nestedBehavior
           val inner = loop(nested)
           if (inner eq nested) i

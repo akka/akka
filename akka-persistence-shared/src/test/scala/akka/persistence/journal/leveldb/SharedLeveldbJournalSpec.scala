@@ -4,8 +4,8 @@
 
 package akka.persistence.journal.leveldb
 
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
-
 import akka.actor._
 import akka.persistence._
 import akka.testkit.{ AkkaSpec, TestProbe }
@@ -90,7 +90,9 @@ class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config)
       val probeB = new TestProbe(systemB)
 
       val storeConfig = system.settings.config.getConfig("akka.persistence.journal.leveldb-shared")
-      system.actorOf(Props(classOf[SharedLeveldbStore], storeConfig), "store")
+      @nowarn
+      val sharedLeveldbStoreCls = classOf[SharedLeveldbStore]
+      system.actorOf(Props(sharedLeveldbStoreCls, storeConfig), "store")
       val storePath = RootActorPath(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress) / "user" / "store"
 
       val appA = systemA.actorOf(Props(classOf[ExampleApp], probeA.ref, storePath))

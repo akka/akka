@@ -102,15 +102,20 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
         case x => testActor ! x
       }
     }))
-    localSystem.eventStream.subscribe(eventForwarder, classOf[AssociationErrorEvent])
-    localSystem.eventStream.subscribe(eventForwarder, classOf[DisassociatedEvent])
+    @nowarn
+    val associationErrorEventCls = classOf[AssociationErrorEvent]
+    @nowarn
+    val disassociatedEventCls = classOf[DisassociatedEvent]
+
+    localSystem.eventStream.subscribe(eventForwarder, associationErrorEventCls)
+    localSystem.eventStream.subscribe(eventForwarder, disassociatedEventCls)
     try {
       bigBounceHere ! msg
       afterSend
       expectNoMessage(500.millis)
     } finally {
-      localSystem.eventStream.unsubscribe(eventForwarder, classOf[AssociationErrorEvent])
-      localSystem.eventStream.unsubscribe(eventForwarder, classOf[DisassociatedEvent])
+      localSystem.eventStream.unsubscribe(eventForwarder, associationErrorEventCls)
+      localSystem.eventStream.unsubscribe(eventForwarder, disassociatedEventCls)
       eventForwarder ! PoisonPill
       bigBounceOther ! PoisonPill
     }
