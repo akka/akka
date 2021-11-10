@@ -175,7 +175,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   }
 
   implicit class FormattedDouble(val d: Double) extends AnyVal {
-    def form: String = d.formatted("%.2f")
+    def form: String = "%.2f".format(d)
   }
 
   final case class ClusterResult(address: Address, duration: Duration, clusterStats: GossipStats)
