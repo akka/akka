@@ -43,7 +43,8 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
     akka.cluster.testkit.auto-down-unreachable-after = 0s
-                                          """))
+    akka.remote.artery.advanced.aeron.idle-cpu-level = 3
+    """))
 
   nodeConfig(first, second, third, fourth, fifth, sixth)(ConfigFactory.parseString("akka.cluster.roles =[worker]"))
 
