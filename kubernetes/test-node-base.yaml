@@ -19,8 +19,8 @@ spec:
         command: ["sleep", "infinity"]
         resources:
           requests:
-            memory: "2Gi"
-            cpu: "1"
+            memory: "4Gi"
+            cpu: "1800m"
           limits:
             memory: "4Gi"
         lifecycle:
