@@ -36,7 +36,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
       object Unserializable
       EventFilter[NotSerializableException](pattern = ".*No configured serialization.*", occurrences = 1).intercept {
         verifySend(Unserializable) {
-          expectNoMessage(1.second) // No AssocitionErrorEvent should be published
+          expectNoMessage(1.second) // No AssociationErrorEvent should be published
         }
       }
     }
@@ -56,7 +56,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
       EventFilter[OversizedPayloadException](start = "Failed to serialize oversized message", occurrences = 1)
         .intercept {
           verifySend(oversized) {
-            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
+            expectNoMessage(1.second) // No AssociationErrorEvent should be published
           }
         }
       droppedProbe.expectMsgType[Dropped].message should ===(oversized)
@@ -68,7 +68,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
       EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload received.*", occurrences = 1)
         .intercept {
           verifySend(maxPayloadBytes + 1) {
-            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
+            expectNoMessage(1.second) // No AssociationErrorEvent should be published
           }
         }
     }
