@@ -26,7 +26,7 @@ class Member private[cluster] (
     private[cluster] val upNumber: Int, // INTERNAL API
     val status: MemberStatus,
     val roles: Set[String],
-    private[akka] val appVersion: Version) // INTERNAL API
+    val appVersion: Version)
     extends Serializable {
 
   lazy val dataCenter: DataCenter = roles
