@@ -36,8 +36,8 @@ jobs:
 
       - name: Setup Pods
         run: |
-          # Stress tests are using 13 nodes.
-          ./kubernetes/setup.sh 15 multi-node-test.hosts tcp
+          # Start 10 pods. At most 10 MultiJvmNode (akka.cluster.StressSpec is currently disabled).
+          ./kubernetes/setup.sh 10 multi-node-test.hosts tcp
 
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
@@ -117,8 +117,8 @@ jobs:
 
       - name: Setup Pods
         run: |
-          # Stress tests are using 13 nodes
-          ./kubernetes/setup.sh 15 multi-node-test.hosts udp
+          # Start 10 pods. At most 10 MultiJvmNode (akka.cluster.StressSpec is currently disabled).
+          ./kubernetes/setup.sh 10 multi-node-test.hosts udp
 
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
