@@ -7,6 +7,7 @@ package akka.persistence.query
 import java.time.Instant
 import java.util.UUID
 
+import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.util.UUIDComparator
 
@@ -82,6 +83,8 @@ object TimestampOffset {
  * in the returned stream. This means that you can use the offset that is returned in `EventEnvelope`
  * as the `offset` parameter in a subsequent query.
  *
+ * API May Change
+ *
  * @param timestamp
  *   time when the event was stored, microsecond granularity database timestamp
  * @param readTimestamp
@@ -89,6 +92,7 @@ object TimestampOffset {
  * @param seen
  *   List of sequence nrs for every persistence id seen at this timestamp
  */
+@ApiMayChange
 final case class TimestampOffset(timestamp: Instant, readTimestamp: Instant, seen: Map[String, Long])
     extends Offset
     with Ordered[TimestampOffset] {

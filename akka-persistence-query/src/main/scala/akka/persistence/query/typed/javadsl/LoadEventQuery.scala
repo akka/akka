@@ -7,12 +7,16 @@ package akka.persistence.query.typed.javadsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.ApiMayChange
 import akka.persistence.query.javadsl.ReadJournal
 import akka.persistence.query.typed.EventEnvelope
 
 /**
  * [[EventsBySliceQuery]] that is using a timestamp based offset should also implement this query.
+ *
+ * API May Change
  */
+@ApiMayChange
 trait LoadEventQuery extends ReadJournal {
 
   def loadEnvelope[Event](persistenceId: String, sequenceNr: Long): CompletionStage[Optional[EventEnvelope[Event]]]
