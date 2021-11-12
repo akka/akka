@@ -14,15 +14,27 @@ spec:
       labels:
         host: test-nodeX
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - multi-node-test
+                topologyKey: kubernetes.io/hostname
       containers:
       - image: openjdk:11
         command: ["sleep", "infinity"]
         resources:
           requests:
-            memory: "4Gi"
-            cpu: "1800m"
+            memory: "3Gi"
+            cpu: "1400m"
           limits:
-            memory: "4Gi"
+            memory: "3Gi"
         lifecycle:
           postStart:
             exec:
