@@ -7,12 +7,13 @@ package akka.persistence.query.javadsl
 import java.util.Optional
 
 import akka.NotUsed
+import akka.persistence.state.javadsl.DurableStateStore
 import akka.stream.javadsl.Source
 
 /**
- * A ReadJournal may optionally support this query by implementing this trait.
+ * A DurableStateStore may optionally support this query by implementing this trait.
  */
-trait PagedPersistenceIdsQuery extends ReadJournal {
+trait DurableStateStorePagedPersistenceIdsQuery[A] extends DurableStateStore[A] {
 
   /**
    * Get the current persistence ids.
