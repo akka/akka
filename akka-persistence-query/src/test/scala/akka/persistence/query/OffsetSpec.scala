@@ -4,6 +4,7 @@
 
 package akka.persistence.query
 
+import java.time.Instant
 import java.util.UUID
 
 import scala.util.Random
@@ -34,4 +35,14 @@ class OffsetSpec extends AnyWordSpecLike with Matchers {
       Random.shuffle(sequenceBasedList).sorted shouldEqual sequenceBasedList
     }
   }
+
+  "Timestamp offset" must {
+
+    "be ordered correctly" in {
+      val now = Instant.now()
+      val offsets = List(now, now.plusNanos(1000), now.plusMillis(2)).map(Offset.timestamp)
+      Random.shuffle(offsets).sorted shouldEqual offsets
+    }
+  }
+
 }
