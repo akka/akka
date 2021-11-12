@@ -7,6 +7,8 @@ package akka.stream
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
+import scala.annotation.nowarn
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -92,6 +94,7 @@ class DslConsistencySpec extends AnyWordSpec with Matchers {
     sSubSourceClass -> Set(),
     sRunnableGraphClass -> Set("builder"))
 
+  @nowarn
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 
   def assertHasMethod(c: Class[_], name: String): Unit = {

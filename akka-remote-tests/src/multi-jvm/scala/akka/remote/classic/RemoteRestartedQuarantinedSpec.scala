@@ -4,6 +4,7 @@
 
 package akka.remote.classic
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -96,7 +97,9 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
       runOn(second) {
         val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val firstAddress = node(first).address
-        system.eventStream.subscribe(testActor, classOf[ThisActorSystemQuarantinedEvent])
+        @nowarn
+        val thisActorSystemQuarantinedEventCls = classOf[ThisActorSystemQuarantinedEvent]
+        system.eventStream.subscribe(testActor, thisActorSystemQuarantinedEventCls)
 
         val (_, ref) = identifyWithUid(first, "subject")
 

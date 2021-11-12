@@ -92,7 +92,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     if (enabled) {
       nowarnSettings ++ Seq(
         Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
-        Test / scalacOptions --= testUndicipline,
+        Test / scalacOptions --= testUndiscipline,
         Compile / javacOptions ++= (
             if (scalaVersion.value.startsWith("3.")) {
               Seq()
@@ -131,7 +131,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
       nowarnSettings ++ Seq(Compile / scalacOptions += "-deprecation")
     }
 
-  val testUndicipline = Seq("-Ywarn-dead-code" // '???' used in compile only specs
+  val testUndiscipline = Seq("-Ywarn-dead-code" // '???' used in compile only specs
   )
 
   /**

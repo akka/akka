@@ -36,7 +36,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
       object Unserializable
       EventFilter[NotSerializableException](pattern = ".*No configured serialization.*", occurrences = 1).intercept {
         verifySend(Unserializable) {
-          expectNoMessage(1.second) // No AssocitionErrorEvent should be published
+          expectNoMessage(1.second) // No AssociationErrorEvent should be published
         }
       }
     }
@@ -56,7 +56,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
       EventFilter[OversizedPayloadException](start = "Failed to serialize oversized message", occurrences = 1)
         .intercept {
           verifySend(oversized) {
-            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
+            expectNoMessage(1.second) // No AssociationErrorEvent should be published
           }
         }
       droppedProbe.expectMsgType[Dropped].message should ===(oversized)
@@ -68,7 +68,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
       EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload received.*", occurrences = 1)
         .intercept {
           verifySend(maxPayloadBytes + 1) {
-            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
+            expectNoMessage(1.second) // No AssociationErrorEvent should be published
           }
         }
     }
@@ -102,15 +102,20 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
         case x => testActor ! x
       }
     }))
-    localSystem.eventStream.subscribe(eventForwarder, classOf[AssociationErrorEvent])
-    localSystem.eventStream.subscribe(eventForwarder, classOf[DisassociatedEvent])
+    @nowarn
+    val associationErrorEventCls = classOf[AssociationErrorEvent]
+    @nowarn
+    val disassociatedEventCls = classOf[DisassociatedEvent]
+
+    localSystem.eventStream.subscribe(eventForwarder, associationErrorEventCls)
+    localSystem.eventStream.subscribe(eventForwarder, disassociatedEventCls)
     try {
       bigBounceHere ! msg
       afterSend
       expectNoMessage(500.millis)
     } finally {
-      localSystem.eventStream.unsubscribe(eventForwarder, classOf[AssociationErrorEvent])
-      localSystem.eventStream.unsubscribe(eventForwarder, classOf[DisassociatedEvent])
+      localSystem.eventStream.unsubscribe(eventForwarder, associationErrorEventCls)
+      localSystem.eventStream.unsubscribe(eventForwarder, disassociatedEventCls)
       eventForwarder ! PoisonPill
       bigBounceOther ! PoisonPill
     }
