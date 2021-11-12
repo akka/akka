@@ -4,8 +4,9 @@
 
 package akka.persistence.testkit
 
-import java.util.{ List => JList }
+import akka.NotUsed
 
+import java.util.{ List => JList }
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 import akka.annotation.InternalApi
@@ -13,6 +14,7 @@ import akka.persistence.PersistentRepr
 import akka.persistence.journal.Tagged
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
+import akka.stream.scaladsl.Source
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -20,7 +22,6 @@ import akka.util.ccompat.JavaConverters._
  */
 @InternalApi
 private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, PersistentRepr] {
-
   import EventStorage._
 
   def addAny(key: String, elem: Any): Unit =
@@ -117,6 +118,19 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
       case Reject(ex)         => throw ex
       case StorageFailure(ex) => throw ex
     }
+  }
+
+  def currentPersistenceIds(afterId: Option[String], limit: Long): Source[String, NotUsed] = {
+    afterId match {
+      case Some(id) =>
+        keys().sorted.dropWhile(_ != id) match {
+          case s if s.size < 2 => Source.empty
+          case s               => Source(s.tail).take(limit)
+        }
+      case None =>
+        Source(keys().sorted).take(limit)
+    }
+
   }
 
   private def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {

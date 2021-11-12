@@ -12,7 +12,7 @@ import scala.compat.java8.OptionConverters._
 import akka.{ Done, NotUsed }
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.Offset
-import akka.persistence.query.javadsl.{ CurrentDurableStatePersistenceIdsQuery, DurableStateStoreQuery }
+import akka.persistence.query.javadsl.{ DurableStateStoreQuery, PagedPersistenceIdsQuery }
 import akka.persistence.state.javadsl.DurableStateUpdateStore
 import akka.persistence.state.javadsl.GetObjectResult
 import akka.persistence.testkit.state.scaladsl.{ PersistenceTestKitDurableStateStore => SStore }
@@ -25,7 +25,7 @@ object PersistenceTestKitDurableStateStore {
 class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
     extends DurableStateUpdateStore[A]
     with DurableStateStoreQuery[A]
-    with CurrentDurableStatePersistenceIdsQuery[A] {
+    with PagedPersistenceIdsQuery {
 
   def getObject(persistenceId: String): CompletionStage[GetObjectResult[A]] =
     stateStore.getObject(persistenceId).map(_.toJava)(stateStore.system.dispatcher).toJava

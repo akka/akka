@@ -707,6 +707,17 @@ class EventSourcedBehaviorSpec
       }
     }
 
+    "allow enumerating all ids" in {
+      val all = queries.currentPersistenceIds(None, Long.MaxValue).runWith(Sink.seq).futureValue
+      all.size should be > 5
+
+      val firstThree = queries.currentPersistenceIds(None, 3).runWith(Sink.seq).futureValue
+      firstThree.size shouldBe 3
+      val others = queries.currentPersistenceIds(Some(firstThree.last), Long.MaxValue).runWith(Sink.seq).futureValue
+
+      firstThree ++ others should contain theSameElementsInOrderAs (all)
+    }
+
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
       val probe = TestProbe[String]()
       val w = Behaviors.setup[Any] { ctx =>
