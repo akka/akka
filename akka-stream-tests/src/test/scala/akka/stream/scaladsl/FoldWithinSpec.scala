@@ -42,7 +42,7 @@ class FoldWithSpec extends StreamSpec {
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitOnAgg = seq => seq.size >= groupSize,
-          harvest = seq => seq :+ -1 // append -1 to output to demonstrate harvest
+          harvest = seq => seq :+ -1 // append -1 to output to demonstrate the effect of harvest
         )
       )
       .runWith(Sink.collection)
@@ -55,7 +55,7 @@ class FoldWithSpec extends StreamSpec {
   "split aggregator by custom weight condition" in {
     val stream = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
     val weight = 10
-    // use the value as weight and aggregate
+
     val result = Source(stream)
       .via(
         new FoldWith[Int, (Seq[Int], Int), Seq[Int]](
@@ -101,7 +101,7 @@ class FoldWithinSpec extends StreamSpec(
 
     val result = Source.fromPublisher(p)
       .via(
-        new FoldWithin[Int, Seq[Int]    , Seq[Int]](
+        new FoldWithin[Int, Seq[Int], Seq[Int]](
           seed = i => Seq(i),
           aggregate = (seq, i) => seq :+ i,
           emitOnAgg = _ => false,
@@ -125,7 +125,7 @@ class FoldWithinSpec extends StreamSpec(
     p.sendNext(5)
     timePasses(maxGap/2) // less than maxGap should not cause emit
     p.sendNext(6)
-    timePasses(maxGap/2) // less than maxGap should not cause emit and does not accumulate
+    timePasses(maxGap/2) // less than maxGap should not cause emit and it does not accumulate
     p.sendNext(7)
     p.sendComplete()
 
@@ -158,7 +158,7 @@ class FoldWithinSpec extends StreamSpec(
     p.sendNext(3)
     timePasses(maxDuration/4)
     p.sendNext(4)
-    timePasses(maxDuration/4) // maxDuration will accumulate
+    timePasses(maxDuration/4) // maxDuration will accumulate and reach threshold here
 
     p.sendNext(5)
     p.sendNext(6)
@@ -174,14 +174,14 @@ class FoldWithinSpec extends StreamSpec(
     val maxGap = 1.second
     val upstream = TestPublisher.probe[Int]()
     val downstream = TestSubscriber.probe[Seq[Int]]()
-    // Note that the cost function set to zero here means the stream will accumulate elements until completed
+
     Source.fromPublisher(upstream).via(
       new FoldWithin[Int, Seq[Int], Seq[Int]](
         seed = i => Seq(i),
         aggregate = (seq, i) => seq :+ i,
         emitOnAgg = _ => false,
         harvest = seq => seq,
-        maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
+        maxGap = Some(maxGap),
         getSystemTimeMs = getSystemTimeMs,
         pullOnStart = false
       )
@@ -209,14 +209,14 @@ class FoldWithinSpec extends StreamSpec(
     val maxGap = 1.second
     val upstream = TestPublisher.probe[Int]()
     val downstream = TestSubscriber.probe[Seq[Int]]()
-    // Note that the cost function set to zero here means the stream will accumulate elements until completed
+
     Source.fromPublisher(upstream).via(
       new FoldWithin[Int, Seq[Int], Seq[Int]](
         seed = i => Seq(i),
         aggregate = (seq, i) => seq :+ i,
         emitOnAgg = _ => false,
         harvest = seq => seq,
-        maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
+        maxGap = Some(maxGap),
         getSystemTimeMs = getSystemTimeMs,
         pullOnStart = true
       )
