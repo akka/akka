@@ -123,4 +123,9 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
   }
 
   override def maxFrequency: Double = 42
+
+  /**
+   * The scheduler need to expose its internal time for testing.
+   */
+  def currentTimeEpochMs: Long = currentTime.get()
 }

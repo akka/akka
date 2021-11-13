@@ -784,13 +784,14 @@ private[stream] object Collect {
  * INTERNAL API
  */
 @InternalApi private[akka] final case class GroupedWeighted[T](minWeight: Long, costFn: T => Long)
-    extends FoldWithin[T, (Vector[T], Long), immutable.Seq[T]](
+    extends FoldWith[T, (Vector[T], Long), immutable.Seq[T]](
       seed = i => (Vector(i), GroupedWeighted.nonNegativeCost(costFn, i)),
       aggregate = (vectorAndWeight, i) => (
         vectorAndWeight._1 :+ i, vectorAndWeight._2 + GroupedWeighted.nonNegativeCost(costFn, i)
       ),
-      emitReady = vectorAndWeight => vectorAndWeight._2 >= minWeight,
-      harvest = vectorAndWeight => vectorAndWeight._1
+      emitOnAgg = vectorAndWeight => vectorAndWeight._2 >= minWeight,
+      harvest = vectorAndWeight => vectorAndWeight._1,
+      pullOnStart = false
     ) {
   require(minWeight > 0, "minWeight must be greater than 0")
 }
@@ -1719,7 +1720,7 @@ private[stream] object Collect {
       buf
     }, vectorAndWeight._2 + GroupedWeighted.nonNegativeCost(costFn, i)
     ),
-    emitReady = vectorAndWeight => vectorAndWeight._2 >= maxWeight || vectorAndWeight._1.size >= maxNumber,
+    emitOnAgg = vectorAndWeight => vectorAndWeight._2 >= maxWeight || vectorAndWeight._1.size >= maxNumber,
     harvest = vectorAndWeight => vectorAndWeight._1.result(),
     maxDuration = Some(interval)
   )
