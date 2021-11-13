@@ -12,7 +12,6 @@ import com.typesafe.config.ConfigValueFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-// akka.scheduler.implementation
 class FoldWithSpec extends StreamSpec {
 
   "split aggregator by size" in {
