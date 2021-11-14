@@ -169,41 +169,6 @@ class FoldWithinSpec extends StreamSpec(
 
   }
 
-  "down stream back pressure should not miss data on completion without pull on start" in {
-
-    val maxGap = 1.second
-    val upstream = TestPublisher.probe[Int]()
-    val downstream = TestSubscriber.probe[Seq[Int]]()
-
-    Source.fromPublisher(upstream).via(
-      new FoldWithin[Int, Seq[Int], Seq[Int]](
-        seed = i => Seq(i),
-        aggregate = (seq, i) => seq :+ i,
-        emitOnAgg = _ => false,
-        harvest = seq => seq,
-        maxGap = Some(maxGap),
-        getSystemTimeMs = getSystemTimeMs,
-        pullOnStart = false
-      )
-    ).to(Sink.fromSubscriber(downstream)).run()
-
-    downstream.ensureSubscription()
-    upstream.sendNext(1)
-    timePasses(maxGap) // this will not cause emit, without eager pull the data does not make to the next stage until downstream request
-    upstream.sendNext(2)
-    downstream.request(1)
-    downstream.expectNoMessage() // no emit
-    timePasses(maxGap) // this will cause emit
-    downstream.expectNext(Seq(1, 2))
-    upstream.sendNext(3)
-    upstream.sendNext(4)
-    downstream.request(1)
-    downstream.expectNoMessage()
-    upstream.sendComplete() // flush the pending data
-    downstream.expectNext(Seq(3, 4))
-    downstream.expectComplete()
-  }
-
   "down stream back pressure should not miss data on completion with pull on start" in {
 
     val maxGap = 1.second
@@ -217,28 +182,31 @@ class FoldWithinSpec extends StreamSpec(
         emitOnAgg = _ => false,
         harvest = seq => seq,
         maxGap = Some(maxGap),
-        getSystemTimeMs = getSystemTimeMs,
-        pullOnStart = true
+        getSystemTimeMs = getSystemTimeMs
       )
     ).to(Sink.fromSubscriber(downstream)).run()
 
     downstream.ensureSubscription()
-    upstream.sendNext(1)
-    timePasses(maxGap) // with pull on start this will cause emit later
-    upstream.sendNext(2) // this will be back pressured
-    timePasses(maxGap) // this gap will not cause emit due to back pressure
-    downstream.request(1)
-    downstream.expectNext(Seq(1)) // emit due to the first gap
-    upstream.sendNext(3)
-    downstream.request(1)
-    downstream.expectNoMessage()
-    timePasses(maxGap)
-    downstream.expectNext(Seq(2, 3))
-    upstream.sendNext(4)
-    downstream.request(1)
-    downstream.expectNoMessage()
-    upstream.sendComplete() // flush the pending data
-    downstream.expectNext(Seq(4))
+    upstream.sendNext(1) // onPush(1) -> aggregator=Seq(1), due to the preStart pull, will pull upstream again since queue is empty
+    timePasses(maxGap) // harvest onTimer, queue=Queue(Seq(1)), aggregator=null
+    upstream.sendNext(2) // onPush(2) -> aggregator=Seq(2), due to the previous pull, even the queue is already full at this point due to timer, but it won't pull upstream again
+    timePasses(maxGap) // harvest onTimer, queue=(Seq(1), Seq(2)), aggregator=null, note queue size can be 1 more than the threshold
+    upstream.sendNext(3) // 3 will not be pushed to the stage until the stage pull upstream
+    timePasses(maxGap) // since 3 stayed outside of the stage, this gap will not cause 3 to be emitted
+    downstream.request(1).expectNext(Seq(1)) // onPull emit Seq(1), queue=(Seq(2))
+    downstream.request(1).expectNext(Seq(2)) // onPull emit Seq(2). queue is empty now, pull upstream and 3 will be pushed into the stage
+    // onPush(3) -> aggregator=Seq(3) pull upstream again since queue is empty
+    upstream.sendNext(4) // onPush(4) -> aggregator=Seq(3, 4) will follow, and pull upstream again
+    downstream.request(1).expectNoMessage()// onPull won't emit since queue is empty, wont't pull upstream again since it's already pulled
+    timePasses(maxGap) // harvest onTimer and emit Seq(3, 4) right away since there is pending request, queue becomes empty, aggregator=null
+    downstream.expectNext(Seq(3, 4))
+    upstream.sendNext(5) // onPush(5) -> aggregator=Seq(5) will happen right after due to the previous pull from onPush(4)
+    timePasses(maxGap) // harvest onTimer, queue=(Seq(5)), aggregator=null, no emit since isAvailable(out)=false
+    upstream.sendNext(6) // onPush(6) -> aggregator=Seq(6) will happen right after due to the previous pull from onPush(5), even the queue is full at this point
+    // upstream.sendNext(7) // if send another element from upstream, thre will be pending push which prevents the upstream from completing and instead the onPull from downstream will come first, this is the behavior of upstream stage
+    upstream.sendComplete() // emit remaining queue=Queue(Seq(5)) + harvest and emit aggregator=Seq(6)
+    // since there is no pending push from upstream, onUpstreamFinish will be triggered to emit the queu and pending aggregator
+    downstream.request(2).expectNext(Seq(5), Seq(6)) // clean up the emit queue and complete downstream
     downstream.expectComplete()
   }
 }
