@@ -9,6 +9,7 @@ import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.testkit.{AkkaSpec, ExplicitlyTriggeredScheduler}
 import com.typesafe.config.ConfigValueFactory
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -20,11 +21,13 @@ class FoldWithSpec extends StreamSpec {
     val groupSize = 3
     val result = Source(stream)
       .via(
-        new FoldWith[Int, Seq[Int], Seq[Int]](
-          seed = i => Seq(i),
-          aggregate = (seq, i) => seq :+ i,
-          emitOnAgg = seq => seq.size >= groupSize,
-          harvest = seq => seq
+        new FoldWith[Int, ListBuffer[Int], Seq[Int]](
+          zero = ListBuffer.empty,
+          aggregate = (buffer, i) => {
+            buffer.addOne(i)
+            buffer.size >= groupSize
+          },
+          harvest = buffer => buffer.toSeq
         )
       )
       .runWith(Sink.collection)
@@ -38,11 +41,13 @@ class FoldWithSpec extends StreamSpec {
     val groupSize = 3
     val result = Source(stream)
       .via(
-        new FoldWith[Int, Seq[Int], Seq[Int]](
-          seed = i => Seq(i),
-          aggregate = (seq, i) => seq :+ i,
-          emitOnAgg = seq => seq.size >= groupSize,
-          harvest = seq => seq :+ -1 // append -1 to output to demonstrate the effect of harvest
+        new FoldWith[Int, ListBuffer[Int], Seq[Int]](
+          zero = ListBuffer.empty,
+          aggregate = (buffer, i) => {
+            buffer.addOne(i)
+            buffer.size >= groupSize
+          },
+          harvest = buffer => buffer.toSeq :+ -1 // append -1 to output to demonstrate the effect of harvest
         )
       )
       .runWith(Sink.collection)
@@ -58,11 +63,13 @@ class FoldWithSpec extends StreamSpec {
 
     val result = Source(stream)
       .via(
-        new FoldWith[Int, (Seq[Int], Int), Seq[Int]](
-          seed = i => (Seq(i), i),
-          aggregate = (seqAndWeight, i) => (seqAndWeight._1 :+ i, seqAndWeight._2 + i),
-          emitOnAgg = seqAndWeight => seqAndWeight._2 >= weight,
-          harvest = seqAndWeight => seqAndWeight._1
+        new FoldWith[Int, ListBuffer[Int], Seq[Int]](
+          zero = ListBuffer.empty,
+          aggregate = (buffer, i) => {
+            buffer.addOne(i)
+            buffer.sum >= weight
+          },
+          harvest = buffer => buffer.toSeq
         )
       )
       .runWith(Sink.collection)
@@ -101,11 +108,13 @@ class FoldWithinSpec extends StreamSpec(
 
     val result = Source.fromPublisher(p)
       .via(
-        new FoldWithin[Int, Seq[Int], Seq[Int]](
-          seed = i => Seq(i),
-          aggregate = (seq, i) => seq :+ i,
-          emitOnAgg = _ => false,
-          harvest = seq => seq,
+        new FoldWithin[Int, ListBuffer[Int], Seq[Int]](
+          zero = ListBuffer.empty,
+          aggregate = (buffer, i) => {
+            buffer.addOne(i)
+            false
+          },
+          harvest = seq => seq.toSeq,
           maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
           getSystemTimeMs = getSystemTimeMs
         )
@@ -140,11 +149,13 @@ class FoldWithinSpec extends StreamSpec(
 
     val result = Source.fromPublisher(p)
       .via(
-        new FoldWithin[Int, Seq[Int], Seq[Int]](
-          seed = i => Seq(i),
-          aggregate = (seq, i) => seq :+ i,
-          emitOnAgg = _ => false,
-          harvest = seq => seq,
+        new FoldWithin[Int, ListBuffer[Int], Seq[Int]](
+          zero = ListBuffer.empty,
+          aggregate = (buffer, i) => {
+            buffer.addOne(i)
+            false
+          },
+          harvest = seq => seq.toSeq,
           maxDuration = Some(maxDuration), // elements with longer gap will put put to next aggregator
           getSystemTimeMs = getSystemTimeMs
         )
@@ -176,11 +187,13 @@ class FoldWithinSpec extends StreamSpec(
     val downstream = TestSubscriber.probe[Seq[Int]]()
 
     Source.fromPublisher(upstream).via(
-      new FoldWithin[Int, Seq[Int], Seq[Int]](
-        seed = i => Seq(i),
-        aggregate = (seq, i) => seq :+ i,
-        emitOnAgg = _ => false,
-        harvest = seq => seq,
+      new FoldWithin[Int, ListBuffer[Int], Seq[Int]](
+        zero = ListBuffer.empty,
+        aggregate = (buffer, i) => {
+          buffer.addOne(i)
+          false
+        },
+        harvest = seq => seq.toSeq,
         maxGap = Some(maxGap),
         getSystemTimeMs = getSystemTimeMs
       )

@@ -21,21 +21,19 @@ import scala.concurrent.duration._
  * Upstream inputs are continuously aggregated as they arrive.
  * The aggregator/grouping can be terminated and emitted based on custom coditions
  *
- * @param seed        initiate the aggregated output with first input
+ * @param zero        initiate the aggregated output with first input
  * @param aggregate   sequentially aggregate input
- * @param emitOnAgg   decide whether the current aggregator can be emitted, invoked after each aggregate
  * @param emitOnTimer decide whether the current aggregator can be emitted, invoked after each timer event
  * @param harvest     this is invoked as soon as all conditions are met before emitting to next stage
  *                    there can be extra time between harvest and next stage receiving the emitted output
  *                    time sensitive operations can be added here, such as closing an output channel
  */
 class FoldWith[In, Agg, Out](
-    seed: In => Agg,
-    aggregate: (Agg, In) => Agg,
-    emitOnAgg: Agg => Boolean,
-    harvest: Agg => Out,
-    emitOnTimer: Option[(Agg => Boolean, FiniteDuration)] = None,
-    var maxBufferSize: Int = 1)
+                              zero: => Agg,
+                              aggregate: (Agg, In) => Boolean,
+                              harvest: Agg => Out,
+                              emitOnTimer: Option[(Agg => Boolean, FiniteDuration)] = None,
+                              var maxBufferSize: Int = 1)
     extends GraphStage[FlowShape[In, Out]] {
 
   require(maxBufferSize >= 1, s"maxBufferSize=$maxBufferSize, must be positive")
@@ -66,31 +64,19 @@ class FoldWith[In, Agg, Out](
 
       override protected def onTimer(timerKey: Any): Unit = {
         emitOnTimer.foreach {
-          case (isReadyOnTimer, _) => if (aggregator != null && isReadyOnTimer(aggregator)) {
-            println(s"onTimer before harvest $state")
-            harvestAndEnqueue()
-            println(s"onTimer after harvest $state")
-            if (isAvailable(out)) push(out, buffer.dequeue())
-            println(s"onTimer final $state")
-          }
+          case (isReadyOnTimer, _) => if (aggregator != null && isReadyOnTimer(aggregator)) harvestAndEmitOrEnqueue()
         }
       }
-
-      private def state = s"buffer=$buffer, agg=$aggregator, isAvailable(out)=${isAvailable(out)}"
 
       // at onPush, isAvailable(in)=true hasBeenPulled(in)=false, isAvailable(out) could be true or false
       override def onPush(): Unit = {
         val input = grab(in)
-        println(s"onPush($input) before $state")
-        aggregator = if (aggregator == null) seed(input) else aggregate(aggregator, input)
-        if (emitOnAgg(aggregator)) harvestAndEnqueue()
-        if (isAvailable(out) && buffer.nonEmpty) push(out, buffer.dequeue())
+        if (aggregator == null) aggregator = zero
+        if (aggregate(aggregator, input)) harvestAndEmitOrEnqueue()
         if (!bufferFull) pull(in)
-        println(s"onPush($input) after $state")
       }
 
       override def onUpstreamFinish(): Unit = {
-        println(s"onComplete $state")
         if (buffer.nonEmpty) emitMultiple(out, buffer.iterator)
         if (aggregator != null) emit(out, harvest(aggregator))
         completeStage()
@@ -99,16 +85,15 @@ class FoldWith[In, Agg, Out](
       // at onPull, isAvailable(out) is always true indicating downstream is waiting
       // isAvailable(in) and hasBeenPulled(in) can be (true, false) (false, true) or (false, false)
       override def onPull(): Unit = {
-        println(s"onPull before $state")
         if (buffer.nonEmpty) push(out, buffer.dequeue())
         if (!bufferFull && !hasBeenPulled(in)) pull(in)
-        println(s"onPull after $state")
       }
 
       setHandlers(in, out, this)
 
-      private def harvestAndEnqueue(): Unit = {
-        buffer.enqueue(harvest(aggregator))
+      private def harvestAndEmitOrEnqueue(): Unit = {
+        val output = harvest(aggregator)
+        if (isAvailable(out)) push(out, output) else buffer.enqueue(output)
         aggregator = null.asInstanceOf[Agg]
       }
 
@@ -118,9 +103,9 @@ class FoldWith[In, Agg, Out](
 
 /**
  * This is a convenient wrapper of [[FoldWith]] to handle timing constraints
- * @param seed        initiate the aggregated output with first input
+ * @param zero        initiate the aggregated output with first input
  * @param aggregate   sequentially aggregate input
- * @param emitOnAgg   decide whether the current aggregator can be emitted, invoked after each aggregate
+
  * @param harvest     this is invoked as soon as all conditions are met before emitting to next stage
  *                    there can be extra time between harvest and next stage receiving the emitted output
  *                    time sensitive operations can be added here, such as closing an output channel
@@ -130,24 +115,20 @@ class FoldWith[In, Agg, Out](
  * @param getSystemTimeMs source of the system time, in case of testing simulated time can be used
  */
 class FoldWithin[In, Agg, Out](
-    seed: In => Agg,
-    aggregate: (Agg, In) => Agg,
-    emitOnAgg: Agg => Boolean,
+    zero: => Agg,
+    aggregate: (Agg, In) => Boolean,
     harvest: Agg => Out,
     maxGap: Option[FiniteDuration] = None,
     maxDuration: Option[FiniteDuration] = None,
     interval: FiniteDuration = 1.milli,
     getSystemTimeMs: => Long = System.currentTimeMillis())
     extends FoldWith[In, ValueTimeWrapper[Agg], Out](
-      seed = in => new ValueTimeWrapper(firstTime = getSystemTimeMs, value = seed(in)),
+      zero = new ValueTimeWrapper(value = zero),
       aggregate = (agg, in) => {
+        agg.updateTime(getSystemTimeMs)
         // user provided aggregate lambda needs to avoid allocation for better performance
-        agg.value = aggregate(agg.value, in)
-        agg.lastTime = getSystemTimeMs
-        // avoid allocation on each aggregate
-        agg
+        aggregate(agg.value, in)
       },
-      emitOnAgg = agg => emitOnAgg(agg.value),
       harvest = agg => harvest(agg.value),
       emitOnTimer = Some((agg => {
         val currentTime = getSystemTimeMs
@@ -159,8 +140,11 @@ class FoldWithin[In, Agg, Out](
 }
 
 // mutable class to avoid allocating new objects on each aggregate
-class ValueTimeWrapper[T](val firstTime: Long, var value: T) {
-  var lastTime: Long = firstTime
-
-  override def toString: String = s"($value,first=$firstTime,last$lastTime)"
+class ValueTimeWrapper[T](var value: T) {
+  var firstTime: Long = -1
+  var lastTime: Long = -1
+  def updateTime(time: Long): Unit = {
+    if (firstTime == -1) firstTime = time
+    lastTime = time
+  }
 }
