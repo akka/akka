@@ -462,7 +462,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     math.abs(persistenceId.hashCode % numberOfSlices)
 
   /**
-   * Scala API: Slit the total number of slices into ranges by the given `numberOfRanges`.
+   * Scala API: Split the total number of slices into ranges by the given `numberOfRanges`.
    *
    * For example, `numberOfSlices` is 128 and given 4 `numberOfRanges` this method will
    * return ranges (0 to 31), (32 to 63), (64 to 93) and (94 to 127).
@@ -478,7 +478,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * Java API: Slit the total number of slices into ranges by the given `numberOfRanges`.
+   * Java API: Split the total number of slices into ranges by the given `numberOfRanges`.
    *
    * For example, `numberOfSlices` is 128 and given 4 `numberOfRanges` this method will
    * return ranges (0 to 31), (32 to 63), (64 to 93) and (94 to 127).
