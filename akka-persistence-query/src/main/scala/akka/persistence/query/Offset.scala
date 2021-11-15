@@ -8,7 +8,6 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.annotation.ApiMayChange
-import akka.annotation.InternalApi
 import akka.util.UUIDComparator
 
 object Offset {
@@ -60,9 +59,9 @@ object TimestampOffset {
     TimestampOffset(timestamp, Instant.EPOCH, seen)
 
   /**
-   * INTERNAL API
+   * Try to convert the Offset to a TimestampOffset. Epoch timestamp is used for `NoOffset`.
    */
-  @InternalApi private[akka] def toTimestampOffset(offset: Offset): TimestampOffset = {
+  def toTimestampOffset(offset: Offset): TimestampOffset = {
     offset match {
       case t: TimestampOffset => t
       case NoOffset           => TimestampOffset.Zero
