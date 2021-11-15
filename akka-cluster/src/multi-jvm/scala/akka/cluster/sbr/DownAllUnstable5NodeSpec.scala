@@ -12,7 +12,6 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 
 object DownAllUnstable5NodeSpec extends MultiNodeConfig {
@@ -54,7 +53,7 @@ class DownAllUnstable5NodeSpecMultiJvmNode3 extends DownAllUnstable5NodeSpec
 class DownAllUnstable5NodeSpecMultiJvmNode4 extends DownAllUnstable5NodeSpec
 class DownAllUnstable5NodeSpecMultiJvmNode5 extends DownAllUnstable5NodeSpec
 
-class DownAllUnstable5NodeSpec extends MultiNodeSpec(DownAllUnstable5NodeSpec) with MultiNodeClusterSpec {
+class DownAllUnstable5NodeSpec extends MultiNodeClusterSpec(DownAllUnstable5NodeSpec) {
   import DownAllUnstable5NodeSpec._
 
   "A 5-node cluster with down-all-when-unstable" should {

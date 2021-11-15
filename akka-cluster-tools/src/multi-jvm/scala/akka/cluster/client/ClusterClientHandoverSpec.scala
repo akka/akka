@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.{ ActorPath, ActorRef }
 import akka.cluster.{ Cluster, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
+import akka.remote.testkit.{ MultiNodeConfig, STMultiNodeSpec }
 import akka.testkit.{ ImplicitSender, TestActors }
 
 object ClusterClientHandoverSpec extends MultiNodeConfig {
@@ -40,10 +40,9 @@ class ClusterClientHandoverSpecMultiJvmNode3 extends ClusterClientHandoverSpec
 
 @nowarn("msg=deprecated")
 class ClusterClientHandoverSpec
-    extends MultiNodeSpec(ClusterClientHandoverSpec)
+    extends MultiNodeClusterSpec(ClusterClientHandoverSpec)
     with STMultiNodeSpec
-    with ImplicitSender
-    with MultiNodeClusterSpec {
+    with ImplicitSender {
 
   import ClusterClientHandoverSpec._
 

@@ -12,7 +12,6 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 
 object DownAllIndirectlyConnected5NodeSpec extends MultiNodeConfig {
@@ -48,9 +47,7 @@ class DownAllIndirectlyConnected5NodeSpecMultiJvmNode3 extends DownAllIndirectly
 class DownAllIndirectlyConnected5NodeSpecMultiJvmNode4 extends DownAllIndirectlyConnected5NodeSpec
 class DownAllIndirectlyConnected5NodeSpecMultiJvmNode5 extends DownAllIndirectlyConnected5NodeSpec
 
-class DownAllIndirectlyConnected5NodeSpec
-    extends MultiNodeSpec(DownAllIndirectlyConnected5NodeSpec)
-    with MultiNodeClusterSpec {
+class DownAllIndirectlyConnected5NodeSpec extends MultiNodeClusterSpec(DownAllIndirectlyConnected5NodeSpec) {
   import DownAllIndirectlyConnected5NodeSpec._
 
   "A 5-node cluster with keep-one-indirectly-connected = off" should {

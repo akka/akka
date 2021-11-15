@@ -82,8 +82,7 @@ class SplitBrainResolverIntegrationSpecMultiJvmNode8 extends SplitBrainResolverI
 class SplitBrainResolverIntegrationSpecMultiJvmNode9 extends SplitBrainResolverIntegrationSpec
 
 class SplitBrainResolverIntegrationSpec
-    extends MultiNodeSpec(SplitBrainResolverIntegrationSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(SplitBrainResolverIntegrationSpec)
     with ImplicitSender
     with BeforeAndAfterEach {
   import GlobalRegistry._

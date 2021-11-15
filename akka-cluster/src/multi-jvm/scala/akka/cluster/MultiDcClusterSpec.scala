@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import akka.cluster.MemberStatus.Up
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
@@ -50,7 +50,7 @@ class MultiDcFewCrossDcMultiJvmNode3 extends MultiDcSpec(MultiDcFewCrossDcConnec
 class MultiDcFewCrossDcMultiJvmNode4 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
 class MultiDcFewCrossDcMultiJvmNode5 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
 
-abstract class MultiDcSpec(config: MultiDcSpecConfig) extends MultiNodeSpec(config) with MultiNodeClusterSpec {
+abstract class MultiDcSpec(config: MultiDcSpecConfig) extends MultiNodeClusterSpec(config) {
 
   import config._
 

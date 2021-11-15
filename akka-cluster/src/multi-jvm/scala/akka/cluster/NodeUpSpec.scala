@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import akka.actor.Actor
 import akka.actor.Props
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object NodeUpMultiJvmSpec extends MultiNodeConfig {
@@ -25,7 +24,7 @@ object NodeUpMultiJvmSpec extends MultiNodeConfig {
 class NodeUpMultiJvmNode1 extends NodeUpSpec
 class NodeUpMultiJvmNode2 extends NodeUpSpec
 
-abstract class NodeUpSpec extends MultiNodeSpec(NodeUpMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class NodeUpSpec extends MultiNodeClusterSpec(NodeUpMultiJvmSpec) {
 
   import ClusterEvent._
   import NodeUpMultiJvmSpec._

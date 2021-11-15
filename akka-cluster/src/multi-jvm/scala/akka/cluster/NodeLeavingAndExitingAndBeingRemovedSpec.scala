@@ -7,7 +7,6 @@ package akka.cluster
 import scala.concurrent.duration._
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec extends MultiNodeConfig {
@@ -23,8 +22,7 @@ class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode2 extends NodeLeavingAndEx
 class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode3 extends NodeLeavingAndExitingAndBeingRemovedSpec
 
 abstract class NodeLeavingAndExitingAndBeingRemovedSpec
-    extends MultiNodeSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec) {
 
   import NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec._
 

@@ -20,7 +20,6 @@ import akka.remote.RARP
 import akka.remote.artery.QuarantinedEvent
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
@@ -81,8 +80,7 @@ class SurviveNetworkInstabilityMultiJvmNode7 extends SurviveNetworkInstabilitySp
 class SurviveNetworkInstabilityMultiJvmNode8 extends SurviveNetworkInstabilitySpec
 
 abstract class SurviveNetworkInstabilitySpec
-    extends MultiNodeSpec(SurviveNetworkInstabilityMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(SurviveNetworkInstabilityMultiJvmSpec)
     with ImplicitSender {
 
   import SurviveNetworkInstabilityMultiJvmSpec._

@@ -5,7 +5,6 @@
 package akka.cluster
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.util.ccompat._
 
@@ -22,7 +21,7 @@ class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
-abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class NodeMembershipSpec extends MultiNodeClusterSpec(NodeMembershipMultiJvmSpec) {
 
   import NodeMembershipMultiJvmSpec._
 

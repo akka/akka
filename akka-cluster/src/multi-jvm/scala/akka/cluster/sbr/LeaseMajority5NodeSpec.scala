@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 import com.typesafe.config.ConfigFactory
 
@@ -70,7 +69,7 @@ class LeaseMajority5NodeSpecMultiJvmNode3 extends LeaseMajority5NodeSpec
 class LeaseMajority5NodeSpecMultiJvmNode4 extends LeaseMajority5NodeSpec
 class LeaseMajority5NodeSpecMultiJvmNode5 extends LeaseMajority5NodeSpec
 
-class LeaseMajority5NodeSpec extends MultiNodeSpec(LeaseMajority5NodeSpec) with MultiNodeClusterSpec {
+class LeaseMajority5NodeSpec extends MultiNodeClusterSpec(LeaseMajority5NodeSpec) {
   import LeaseMajority5NodeSpec._
 
   private val testLeaseName = "LeaseMajority5NodeSpec-akka-sbr"

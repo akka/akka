@@ -9,7 +9,6 @@ import akka.actor.Deploy
 import akka.actor.Props
 import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
@@ -25,8 +24,7 @@ class MembershipChangeListenerExitingMultiJvmNode2 extends MembershipChangeListe
 class MembershipChangeListenerExitingMultiJvmNode3 extends MembershipChangeListenerExitingSpec
 
 abstract class MembershipChangeListenerExitingSpec
-    extends MultiNodeSpec(MembershipChangeListenerExitingMultiJvmSpec)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(MembershipChangeListenerExitingMultiJvmSpec) {
 
   import ClusterEvent._
   import MembershipChangeListenerExitingMultiJvmSpec._

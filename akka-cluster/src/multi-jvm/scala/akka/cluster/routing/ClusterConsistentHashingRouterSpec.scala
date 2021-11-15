@@ -15,7 +15,6 @@ import akka.actor.Props
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.routing.ActorRefRoutee
 import akka.routing.ConsistentHashingPool
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
@@ -61,8 +60,7 @@ class ClusterConsistentHashingRouterMultiJvmNode2 extends ClusterConsistentHashi
 class ClusterConsistentHashingRouterMultiJvmNode3 extends ClusterConsistentHashingRouterSpec
 
 abstract class ClusterConsistentHashingRouterSpec
-    extends MultiNodeSpec(ClusterConsistentHashingRouterMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterConsistentHashingRouterMultiJvmSpec)
     with ImplicitSender
     with DefaultTimeout {
   import ClusterConsistentHashingRouterMultiJvmSpec._

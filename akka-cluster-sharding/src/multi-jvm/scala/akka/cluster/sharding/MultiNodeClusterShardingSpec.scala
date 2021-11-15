@@ -13,7 +13,6 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.{ TestActors, TestProbe }
 import akka.util.ccompat._
@@ -79,8 +78,7 @@ object MultiNodeClusterShardingSpec {
  * for new or refactored multi-node sharding specs
  */
 abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterShardingConfig)
-    extends MultiNodeSpec(config)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(config) {
 
   import MultiNodeClusterShardingSpec._
   import config._

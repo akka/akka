@@ -18,7 +18,6 @@ import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteWatcher
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent._
 
@@ -53,8 +52,7 @@ class ClusterDeathWatchMultiJvmNode4 extends ClusterDeathWatchSpec
 class ClusterDeathWatchMultiJvmNode5 extends ClusterDeathWatchSpec
 
 abstract class ClusterDeathWatchSpec
-    extends MultiNodeSpec(ClusterDeathWatchMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterDeathWatchMultiJvmSpec)
     with ImplicitSender
     with ScalaFutures {
 
