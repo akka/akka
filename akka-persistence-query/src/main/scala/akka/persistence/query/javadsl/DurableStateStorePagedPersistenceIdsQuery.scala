@@ -11,14 +11,14 @@ import akka.persistence.state.javadsl.DurableStateStore
 import akka.stream.javadsl.Source
 
 /**
- * A plugin may optionally support this query by implementing this trait.
+ * A DurableStateStore may optionally support this query by implementing this trait.
  */
-trait CurrentDurableStatePersistenceIdsQuery[A] extends DurableStateStore[A] {
+trait DurableStateStorePagedPersistenceIdsQuery[A] extends DurableStateStore[A] {
 
   /**
    * Get the current persistence ids.
    *
-   * Not all durable state plugins may support in database paging, and may simply use drop/take Akka streams operators
+   * Not all plugins may support in database paging, and may simply use drop/take Akka streams operators
    * to manipulate the result set according to the paging parameters.
    *
    * @param afterId The ID to start returning results from, or empty to return all ids. This should be an id returned

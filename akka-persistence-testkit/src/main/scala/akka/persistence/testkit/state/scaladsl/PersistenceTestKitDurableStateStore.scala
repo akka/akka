@@ -10,7 +10,7 @@ import scala.concurrent.Future
 import akka.{ Done, NotUsed }
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.DurableStateChange
-import akka.persistence.query.scaladsl.{ CurrentDurableStatePersistenceIdsQuery, DurableStateStoreQuery }
+import akka.persistence.query.scaladsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }
 import akka.persistence.query.UpdatedDurableState
 import akka.persistence.query.Offset
 import akka.persistence.query.NoOffset
@@ -29,7 +29,7 @@ object PersistenceTestKitDurableStateStore {
 class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     extends DurableStateUpdateStore[A]
     with DurableStateStoreQuery[A]
-    with CurrentDurableStatePersistenceIdsQuery[A] {
+    with DurableStateStorePagedPersistenceIdsQuery[A] {
 
   private implicit val sys: ExtendedActorSystem = system
   private var store = Map.empty[String, Record[A]]

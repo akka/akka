@@ -8,9 +8,14 @@ import akka.actor.ExtendedActorSystem
 import akka.persistence.journal.Tagged
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Offset
-import akka.persistence.query.scaladsl.CurrentEventsByTagQuery
+import akka.persistence.query.scaladsl.{
+  CurrentEventsByPersistenceIdQuery,
+  CurrentEventsByTagQuery,
+  EventsByPersistenceIdQuery,
+  PagedPersistenceIdsQuery,
+  ReadJournal
+}
 import akka.persistence.query.{ EventEnvelope, Sequence }
-import akka.persistence.query.scaladsl.{ CurrentEventsByPersistenceIdQuery, EventsByPersistenceIdQuery, ReadJournal }
 import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage
@@ -27,7 +32,8 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     extends ReadJournal
     with EventsByPersistenceIdQuery
     with CurrentEventsByPersistenceIdQuery
-    with CurrentEventsByTagQuery {
+    with CurrentEventsByTagQuery
+    with PagedPersistenceIdsQuery {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -81,4 +87,19 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
         pr.metadata)
     }
   }
+
+  /**
+   * Get the current persistence ids.
+   *
+   * Not all plugins may support in database paging, and may simply use drop/take Akka streams operators
+   * to manipulate the result set according to the paging parameters.
+   *
+   * @param afterId The ID to start returning results from, or [[None]] to return all ids. This should be an id
+   *                returned from a previous invocation of this command. Callers should not assume that ids are
+   *                returned in sorted order.
+   * @param limit   The maximum results to return. Use Long.MaxValue to return all results. Must be greater than zero.
+   * @return A source containing all the persistence ids, limited as specified.
+   */
+  override def currentPersistenceIds(afterId: Option[String], limit: Long): Source[String, NotUsed] =
+    storage.currentPersistenceIds(afterId, limit)
 }
