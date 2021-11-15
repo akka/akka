@@ -47,6 +47,27 @@ class PersistenceIdSpec extends AnyWordSpec with Matchers with LogCapturing {
         PersistenceId("SomeType", "A#B", "#")
       }
     }
+
+    "be able to extract entityTypeHint" in {
+      PersistenceId.extractEntityType("SomeType|abc") should ===("SomeType")
+      PersistenceId.extractEntityType("abc") should ===("")
+      PersistenceId("SomeType", "abc").entityTypeHint should ===("SomeType")
+    }
+
+    "be able to extract entityId" in {
+      PersistenceId.extractEntityId("SomeType|abc") should ===("abc")
+      PersistenceId.extractEntityId("abc") should ===("abc")
+      PersistenceId("SomeType", "abc").entityId should ===("abc")
+    }
+
+    "extract entityTypeHint and entityId via unapply" in {
+      PersistenceId("SomeType", "abc") match {
+        case PersistenceId(entityTypeHint, entityId) =>
+          entityTypeHint should ===("SomeType")
+          entityId should ===("abc")
+        case _ => fail()
+      }
+    }
   }
 
 }
