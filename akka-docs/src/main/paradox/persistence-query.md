@@ -169,6 +169,13 @@ that is able to order events by insertion time it could treat the Long as a time
 
 If your usage does not require a live stream, you can use the `currentEventsByTag` query.
 
+#### EventsBySlice and CurrentEventsBySlice
+
+Query events for given entity type and slices. A slice is deterministically defined based on the persistence id.
+The purpose is to evenly distribute all persistence ids over the slices.
+
+See @apidoc[akka.persistence.query.typed.*.EventsBySliceQuery] and @apidoc[akka.persistence.query.typed.*.CurrentEventsBySliceQuery]. 
+
 ### Materialized values of queries
 
 Journals are able to provide additional information related to a query by exposing @ref:[Materialized values](stream/stream-quickstart.md#materialized-values-quick),
