@@ -65,14 +65,19 @@ final class EventEnvelope[Event](
       case Some(evt) => evt
       case None =>
         throw new IllegalStateException(
-          "Event was not loaded. Use getOptionalEvent and load the event on demand with LoadEventQuery.")
+          "Event was not loaded. Use eventOption and load the event on demand with LoadEventQuery.")
     }
 
   /**
    * Java API
    */
   def getEvent(): Event =
-    event
+    eventOption match {
+      case Some(evt) => evt
+      case None =>
+        throw new IllegalStateException(
+          "Event was not loaded. Use getOptionalEvent and load the event on demand with LoadEventQuery.")
+    }
 
   /**
    * Java API

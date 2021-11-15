@@ -4,7 +4,6 @@
 
 package akka.persistence.query.typed.javadsl
 
-import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import akka.annotation.ApiMayChange
@@ -19,5 +18,9 @@ import akka.persistence.query.typed.EventEnvelope
 @ApiMayChange
 trait LoadEventQuery extends ReadJournal {
 
-  def loadEnvelope[Event](persistenceId: String, sequenceNr: Long): CompletionStage[Optional[EventEnvelope[Event]]]
+  /**
+   * Load a single event on demand. The `CompletionStage` is completed with an `IllegalArgumentException` if
+   * the event for the given `persistenceId` and `sequenceNr` doesn't exist.
+   */
+  def loadEnvelope[Event](persistenceId: String, sequenceNr: Long): CompletionStage[EventEnvelope[Event]]
 }
