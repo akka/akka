@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.impl.fusing.{FoldWith, FoldWithin}
+import akka.stream.impl.fusing.{AggregateWithBoundary, AggregateWithTimeBoundary}
 import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.testkit.{AkkaSpec, ExplicitlyTriggeredScheduler}
 import com.typesafe.config.ConfigValueFactory
@@ -13,7 +13,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class FoldWithSpec extends StreamSpec {
+class AggregateWithBoundarySpec extends StreamSpec {
 
   "split aggregator by size" in {
 
@@ -21,13 +21,15 @@ class FoldWithSpec extends StreamSpec {
     val groupSize = 3
     val result = Source(stream)
       .via(
-        new FoldWith[Int, ListBuffer[Int], Seq[Int]](
-          zero = ListBuffer.empty,
+        new AggregateWithBoundary[Int, ListBuffer[Int], Seq[Int]](
+          allocate = ListBuffer.empty,
           aggregate = (buffer, i) => {
             buffer.addOne(i)
             buffer.size >= groupSize
           },
-          harvest = buffer => buffer.toSeq
+          harvest = buffer => buffer.toSeq,
+          emitOnTimer = None,
+          bufferSize = 1
         )
       )
       .runWith(Sink.collection)
@@ -41,13 +43,15 @@ class FoldWithSpec extends StreamSpec {
     val groupSize = 3
     val result = Source(stream)
       .via(
-        new FoldWith[Int, ListBuffer[Int], Seq[Int]](
-          zero = ListBuffer.empty,
+        new AggregateWithBoundary[Int, ListBuffer[Int], Seq[Int]](
+          allocate = ListBuffer.empty,
           aggregate = (buffer, i) => {
             buffer.addOne(i)
             buffer.size >= groupSize
           },
-          harvest = buffer => buffer.toSeq :+ -1 // append -1 to output to demonstrate the effect of harvest
+          harvest = buffer => buffer.toSeq :+ -1, // append -1 to output to demonstrate the effect of harvest
+          emitOnTimer = None,
+          bufferSize = 1
         )
       )
       .runWith(Sink.collection)
@@ -63,13 +67,15 @@ class FoldWithSpec extends StreamSpec {
 
     val result = Source(stream)
       .via(
-        new FoldWith[Int, ListBuffer[Int], Seq[Int]](
-          zero = ListBuffer.empty,
+        new AggregateWithBoundary[Int, ListBuffer[Int], Seq[Int]](
+          allocate = ListBuffer.empty,
           aggregate = (buffer, i) => {
             buffer.addOne(i)
             buffer.sum >= weight
           },
-          harvest = buffer => buffer.toSeq
+          harvest = buffer => buffer.toSeq,
+          emitOnTimer = None,
+          bufferSize = 1
         )
       )
       .runWith(Sink.collection)
@@ -79,7 +85,7 @@ class FoldWithSpec extends StreamSpec {
 
 }
 
-class FoldWithinSpec extends StreamSpec(
+class AggregateWithTimeBoundarySpec extends StreamSpec(
   AkkaSpec.testConf.withValue(
     "akka.scheduler.implementation",
     ConfigValueFactory.fromAnyRef( "akka.testkit.ExplicitlyTriggeredScheduler")
@@ -108,15 +114,18 @@ class FoldWithinSpec extends StreamSpec(
 
     val result = Source.fromPublisher(p)
       .via(
-        new FoldWithin[Int, ListBuffer[Int], Seq[Int]](
-          zero = ListBuffer.empty,
+        new AggregateWithTimeBoundary[Int, ListBuffer[Int], Seq[Int]](
+          allocate = ListBuffer.empty,
           aggregate = (buffer, i) => {
             buffer.addOne(i)
             false
           },
           harvest = seq => seq.toSeq,
           maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
-          getSystemTimeMs = getSystemTimeMs
+          maxDuration = None,
+          currentTimeMs = getSystemTimeMs,
+          interval = 1.milli,
+          bufferSize = 1
         )
       )
       .runWith(Sink.collection)
@@ -149,15 +158,18 @@ class FoldWithinSpec extends StreamSpec(
 
     val result = Source.fromPublisher(p)
       .via(
-        new FoldWithin[Int, ListBuffer[Int], Seq[Int]](
-          zero = ListBuffer.empty,
+        new AggregateWithTimeBoundary[Int, ListBuffer[Int], Seq[Int]](
+          allocate = ListBuffer.empty,
           aggregate = (buffer, i) => {
             buffer.addOne(i)
             false
           },
           harvest = seq => seq.toSeq,
+          maxGap = None,
           maxDuration = Some(maxDuration), // elements with longer gap will put put to next aggregator
-          getSystemTimeMs = getSystemTimeMs
+          currentTimeMs = getSystemTimeMs,
+          interval = 1.milli,
+          bufferSize = 1
         )
       )
       .runWith(Sink.collection)
@@ -187,15 +199,18 @@ class FoldWithinSpec extends StreamSpec(
     val downstream = TestSubscriber.probe[Seq[Int]]()
 
     Source.fromPublisher(upstream).via(
-      new FoldWithin[Int, ListBuffer[Int], Seq[Int]](
-        zero = ListBuffer.empty,
+      new AggregateWithTimeBoundary[Int, ListBuffer[Int], Seq[Int]](
+        allocate = ListBuffer.empty,
         aggregate = (buffer, i) => {
           buffer.addOne(i)
           false
         },
         harvest = seq => seq.toSeq,
         maxGap = Some(maxGap),
-        getSystemTimeMs = getSystemTimeMs
+        maxDuration = None,
+        currentTimeMs = getSystemTimeMs,
+        interval = 1.milli,
+        bufferSize = 1
       )
     ).to(Sink.fromSubscriber(downstream)).run()
 
