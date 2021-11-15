@@ -98,8 +98,7 @@ class RandomizedSplitBrainResolverIntegrationSpecMultiJvmNode8 extends Randomize
 class RandomizedSplitBrainResolverIntegrationSpecMultiJvmNode9 extends RandomizedSplitBrainResolverIntegrationSpec
 
 class RandomizedSplitBrainResolverIntegrationSpec
-    extends MultiNodeSpec(RandomizedSplitBrainResolverIntegrationSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(RandomizedSplitBrainResolverIntegrationSpec)
     with ImplicitSender
     with BeforeAndAfterEach {
   import GlobalRegistry._

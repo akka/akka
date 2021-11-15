@@ -9,7 +9,7 @@ import scala.concurrent.Await
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.routing.{ Broadcast, ConsistentHashingGroup, GetRoutees, Routees }
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.testkit._
@@ -41,8 +41,7 @@ class ClusterConsistentHashingGroupMultiJvmNode2 extends ClusterConsistentHashin
 class ClusterConsistentHashingGroupMultiJvmNode3 extends ClusterConsistentHashingGroupSpec
 
 abstract class ClusterConsistentHashingGroupSpec
-    extends MultiNodeSpec(ClusterConsistentHashingGroupMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterConsistentHashingGroupMultiJvmSpec)
     with ImplicitSender
     with DefaultTimeout {
   import ClusterConsistentHashingGroupMultiJvmSpec._

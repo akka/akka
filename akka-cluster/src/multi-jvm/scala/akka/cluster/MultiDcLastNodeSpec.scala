@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 
 object MultiDcLastNodeSpec extends MultiNodeConfig {
   val first = role("first")
@@ -33,7 +33,7 @@ class MultiDcLastNodeMultiJvmNode1 extends MultiDcLastNodeSpec
 class MultiDcLastNodeMultiJvmNode2 extends MultiDcLastNodeSpec
 class MultiDcLastNodeMultiJvmNode3 extends MultiDcLastNodeSpec
 
-abstract class MultiDcLastNodeSpec extends MultiNodeSpec(MultiDcLastNodeSpec) with MultiNodeClusterSpec {
+abstract class MultiDcLastNodeSpec extends MultiNodeClusterSpec(MultiDcLastNodeSpec) {
 
   import MultiDcLastNodeSpec._
 

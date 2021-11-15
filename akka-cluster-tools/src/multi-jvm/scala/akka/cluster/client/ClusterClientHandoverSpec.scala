@@ -40,10 +40,9 @@ class ClusterClientHandoverSpecMultiJvmNode3 extends ClusterClientHandoverSpec
 
 @nowarn("msg=deprecated")
 class ClusterClientHandoverSpec
-    extends MultiNodeSpec(ClusterClientHandoverSpec)
+    extends MultiNodeClusterSpec(ClusterClientHandoverSpec)
     with STMultiNodeSpec
-    with ImplicitSender
-    with MultiNodeClusterSpec {
+    with ImplicitSender {
 
   import ClusterClientHandoverSpec._
 

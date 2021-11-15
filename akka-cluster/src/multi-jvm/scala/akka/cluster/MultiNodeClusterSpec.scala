@@ -20,6 +20,7 @@ import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
 import akka.event.Logging.ErrorLevel
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
@@ -91,8 +92,11 @@ object MultiNodeClusterSpec {
   }
 }
 
-trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner {
-  self: MultiNodeSpec =>
+abstract class MultiNodeClusterSpec(multiNodeconfig: MultiNodeConfig)
+    extends MultiNodeSpec(multiNodeconfig)
+    with Suite
+    with STMultiNodeSpec
+    with WatchedByCoroner {
 
   override def initialParticipants: Int = roles.size
 
@@ -101,11 +105,11 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   override protected def atStartup(): Unit = {
     startCoroner()
     muteLog()
-    self.atStartup()
+    super.atStartup()
   }
 
   override protected def afterTermination(): Unit = {
-    self.afterTermination()
+    super.afterTermination()
     stopCoroner()
   }
 

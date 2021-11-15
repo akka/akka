@@ -433,11 +433,7 @@ class StressMultiJvmNode8 extends StressSpec
 class StressMultiJvmNode9 extends StressSpec
 class StressMultiJvmNode10 extends StressSpec
 
-abstract class StressSpec
-    extends MultiNodeSpec(StressMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with BeforeAndAfterEach
-    with ImplicitSender {
+abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with BeforeAndAfterEach with ImplicitSender {
 
   import StressMultiJvmSpec._
 

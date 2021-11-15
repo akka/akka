@@ -14,7 +14,6 @@ import javax.management.ObjectName
 import language.postfixOps
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object MBeanMultiJvmSpec extends MultiNodeConfig {
@@ -36,7 +35,7 @@ class MBeanMultiJvmNode2 extends MBeanSpec
 class MBeanMultiJvmNode3 extends MBeanSpec
 class MBeanMultiJvmNode4 extends MBeanSpec
 
-abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class MBeanSpec extends MultiNodeClusterSpec(MBeanMultiJvmSpec) {
 
   import MBeanMultiJvmSpec._
 

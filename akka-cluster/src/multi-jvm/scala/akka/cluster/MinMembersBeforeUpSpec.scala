@@ -9,7 +9,6 @@ import com.typesafe.config.ConfigFactory
 import akka.cluster.MemberStatus._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.util.ccompat._
 
@@ -104,9 +103,7 @@ abstract class MinMembersOfRoleBeforeUpSpec extends MinMembersBeforeUpBase(MinMe
   }
 }
 
-abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec {
+abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig) extends MultiNodeClusterSpec(multiNodeConfig) {
 
   def first: RoleName
   def second: RoleName

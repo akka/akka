@@ -10,7 +10,6 @@ import com.typesafe.config.ConfigFactory
 import language.postfixOps
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 
@@ -48,8 +47,7 @@ class SplitBrainWithAccrualFailureDetectorMultiJvmNode4 extends SplitBrainSpec(f
 class SplitBrainWithAccrualFailureDetectorMultiJvmNode5 extends SplitBrainSpec(failureDetectorPuppet = false)
 
 abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(multiNodeConfig) {
 
   def this(failureDetectorPuppet: Boolean) = this(SplitBrainMultiNodeConfig(failureDetectorPuppet))
 

@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import akka.remote.artery.ArterySettings
 import akka.remote.artery.ThisActorSystemQuarantinedEvent
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit.LongRunningTest
 import com.typesafe.config.ConfigFactory
@@ -49,8 +48,7 @@ class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode3
     extends DowningWhenOtherHasQuarantinedThisActorSystemSpec
 
 abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
-    extends MultiNodeSpec(DowningWhenOtherHasQuarantinedThisActorSystemSpec)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(DowningWhenOtherHasQuarantinedThisActorSystemSpec) {
   import DowningWhenOtherHasQuarantinedThisActorSystemSpec._
 
   "Cluster node downed by other" must {

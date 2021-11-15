@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object LeaderDowningAllOtherNodesMultiJvmSpec extends MultiNodeConfig {
@@ -37,9 +36,7 @@ class LeaderDowningAllOtherNodesMultiJvmNode4 extends LeaderDowningAllOtherNodes
 class LeaderDowningAllOtherNodesMultiJvmNode5 extends LeaderDowningAllOtherNodesSpec
 class LeaderDowningAllOtherNodesMultiJvmNode6 extends LeaderDowningAllOtherNodesSpec
 
-abstract class LeaderDowningAllOtherNodesSpec
-    extends MultiNodeSpec(LeaderDowningAllOtherNodesMultiJvmSpec)
-    with MultiNodeClusterSpec {
+abstract class LeaderDowningAllOtherNodesSpec extends MultiNodeClusterSpec(LeaderDowningAllOtherNodesMultiJvmSpec) {
 
   import LeaderDowningAllOtherNodesMultiJvmSpec._
 

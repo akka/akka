@@ -79,8 +79,7 @@ object MultiNodeClusterShardingSpec {
  * for new or refactored multi-node sharding specs
  */
 abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterShardingConfig)
-    extends MultiNodeSpec(config)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(config) {
 
   import MultiNodeClusterShardingSpec._
   import config._

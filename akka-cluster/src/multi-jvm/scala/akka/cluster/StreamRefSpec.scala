@@ -14,7 +14,6 @@ import com.typesafe.config.ConfigFactory
 import akka.Done
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Identify, Props }
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.stream.Materializer
@@ -141,7 +140,7 @@ class StreamRefMultiJvmNode1 extends StreamRefSpec
 class StreamRefMultiJvmNode2 extends StreamRefSpec
 class StreamRefMultiJvmNode3 extends StreamRefSpec
 
-abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNodeClusterSpec with ImplicitSender {
+abstract class StreamRefSpec extends MultiNodeClusterSpec(StreamRefSpec) with ImplicitSender {
   import StreamRefSpec._
 
   "A cluster with Stream Refs" must {

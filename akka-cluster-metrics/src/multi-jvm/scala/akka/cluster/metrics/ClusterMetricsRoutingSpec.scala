@@ -20,7 +20,7 @@ import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.routing.ClusterRouterPool
 import akka.cluster.routing.ClusterRouterPoolSettings
 import akka.pattern.ask
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.routing.ActorRefRoutee
 import akka.routing.FromConfig
 import akka.routing.GetRoutees
@@ -121,8 +121,7 @@ class AdaptiveLoadBalancingRouterMultiJvmNode3 extends AdaptiveLoadBalancingRout
 
 @nowarn
 abstract class AdaptiveLoadBalancingRouterSpec
-    extends MultiNodeSpec(AdaptiveLoadBalancingRouterConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(AdaptiveLoadBalancingRouterConfig)
     with RedirectLogging
     with ImplicitSender
     with DefaultTimeout {

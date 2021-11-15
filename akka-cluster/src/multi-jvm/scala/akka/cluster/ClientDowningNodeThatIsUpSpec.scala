@@ -5,7 +5,6 @@
 package akka.cluster
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 final case class ClientDowningNodeThatIsUpMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
@@ -36,8 +35,7 @@ class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode4
     extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
 
 abstract class ClientDowningNodeThatIsUpSpec(multiNodeConfig: ClientDowningNodeThatIsUpMultiNodeConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(multiNodeConfig) {
 
   def this(failureDetectorPuppet: Boolean) = this(ClientDowningNodeThatIsUpMultiNodeConfig(failureDetectorPuppet))
 

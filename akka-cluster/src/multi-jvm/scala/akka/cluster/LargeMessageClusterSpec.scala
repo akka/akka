@@ -15,7 +15,6 @@ import akka.remote.RARP
 import akka.remote.artery.ArterySettings
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
 import akka.util.unused
@@ -86,8 +85,7 @@ class LargeMessageClusterMultiJvmNode2 extends LargeMessageClusterSpec
 class LargeMessageClusterMultiJvmNode3 extends LargeMessageClusterSpec
 
 abstract class LargeMessageClusterSpec
-    extends MultiNodeSpec(LargeMessageClusterMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(LargeMessageClusterMultiJvmSpec)
     with ImplicitSender {
   import LargeMessageClusterMultiJvmSpec._
 

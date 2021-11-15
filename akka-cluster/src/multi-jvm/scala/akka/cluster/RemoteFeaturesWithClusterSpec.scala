@@ -63,8 +63,7 @@ class ClassicClusterRemoteFeaturesMultiJvmNode3
     extends ClusterRemoteFeaturesSpec(new ClusterRemoteFeaturesConfig(false))
 
 abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(multiNodeConfig)
     with ImplicitSender
     with ScalaFutures {
 

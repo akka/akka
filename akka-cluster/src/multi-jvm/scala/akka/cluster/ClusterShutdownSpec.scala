@@ -6,7 +6,6 @@ package akka.cluster
 
 import akka.cluster.MemberStatus.Removed
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.util.ccompat._
 import org.scalatest.concurrent.Eventually
 
@@ -27,10 +26,7 @@ class ClusterShutdownSpecMultiJvmNode3 extends ClusterShutdownSpec
 class ClusterShutdownSpecMultiJvmNode4 extends ClusterShutdownSpec
 
 @ccompatUsedUntil213
-abstract class ClusterShutdownSpec
-    extends MultiNodeSpec(ClusterShutdownSpec)
-    with MultiNodeClusterSpec
-    with Eventually {
+abstract class ClusterShutdownSpec extends MultiNodeClusterSpec(ClusterShutdownSpec) with Eventually {
 
   import ClusterShutdownSpec._
 

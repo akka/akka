@@ -81,8 +81,7 @@ class ClusterMetricsEnabledMultiJvmNode4 extends ClusterMetricsEnabledSpec
 class ClusterMetricsEnabledMultiJvmNode5 extends ClusterMetricsEnabledSpec
 
 abstract class ClusterMetricsEnabledSpec
-    extends MultiNodeSpec(ClusterMetricsEnabledConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterMetricsEnabledConfig)
     with RedirectLogging {
   import ClusterMetricsEnabledConfig._
 
@@ -139,8 +138,7 @@ class ClusterMetricsDisabledMultiJvmNode4 extends ClusterMetricsDisabledSpec
 class ClusterMetricsDisabledMultiJvmNode5 extends ClusterMetricsDisabledSpec
 
 abstract class ClusterMetricsDisabledSpec
-    extends MultiNodeSpec(ClusterMetricsDisabledConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterMetricsDisabledConfig)
     with RedirectLogging {
 
   val metricsView = new ClusterMetricsView(cluster.system)

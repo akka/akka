@@ -13,7 +13,6 @@ import akka.cluster.MemberStatus
 import akka.cluster.MemberStatus.Removed
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
@@ -63,8 +62,7 @@ class ClusterSingletonManagerPreparingForShutdownMultiJvmNode2 extends ClusterSi
 class ClusterSingletonManagerPreparingForShutdownMultiJvmNode3 extends ClusterSingletonManagerPreparingForShutdownSpec
 
 class ClusterSingletonManagerPreparingForShutdownSpec
-    extends MultiNodeSpec(ClusterSingletonManagerPreparingForShutdownSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterSingletonManagerPreparingForShutdownSpec)
     with STMultiNodeSpec
     with ImplicitSender {
   import ClusterSingletonManagerPreparingForShutdownSpec._

@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object JoinInProgressMultiJvmSpec extends MultiNodeConfig {
@@ -31,7 +30,7 @@ object JoinInProgressMultiJvmSpec extends MultiNodeConfig {
 class JoinInProgressMultiJvmNode1 extends JoinInProgressSpec
 class JoinInProgressMultiJvmNode2 extends JoinInProgressSpec
 
-abstract class JoinInProgressSpec extends MultiNodeSpec(JoinInProgressMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class JoinInProgressSpec extends MultiNodeClusterSpec(JoinInProgressMultiJvmSpec) {
 
   import JoinInProgressMultiJvmSpec._
 
