@@ -157,7 +157,7 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
     eventsMap.keys.foreach(removePreservingSeqNumber)
   }
 
-  def keys(): immutable.Seq[K] = eventsMap.keys.toSeq
+  def keys(): immutable.Seq[K] = eventsMap.keys.toList
 
   private def getLastSeqNumber(elems: immutable.Seq[R]): Long =
     elems.lastOption.map(reprToSeqNum).getOrElse(0L)
