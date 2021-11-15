@@ -93,9 +93,7 @@ object TimestampOffset {
  *   List of sequence nrs for every persistence id seen at this timestamp
  */
 @ApiMayChange
-final case class TimestampOffset(timestamp: Instant, readTimestamp: Instant, seen: Map[String, Long])
-    extends Offset
-    with Ordered[TimestampOffset] {
+final case class TimestampOffset(timestamp: Instant, readTimestamp: Instant, seen: Map[String, Long]) extends Offset {
 
   /** Java API */
   def getSeen(): java.util.Map[String, java.lang.Long] = {
@@ -103,8 +101,13 @@ final case class TimestampOffset(timestamp: Instant, readTimestamp: Instant, see
     seen.map { case (pid, seqNr) => pid -> java.lang.Long.valueOf(seqNr) }.asJava
   }
 
-  override def compare(that: TimestampOffset): Int =
-    timestamp.compareTo(that.timestamp)
+  override def hashCode(): Int = timestamp.hashCode()
+
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case other: TimestampOffset => timestamp == other.timestamp && seen == other.seen
+      case _                      => false
+    }
 }
 
 /**
