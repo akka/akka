@@ -79,8 +79,8 @@ case class MockitoSigarProvider(
     // Note "thenReturn(0)" invocation is consumed in collector construction.
 
     val cpuPerc = mock[CpuPerc]
-    when(cpuPerc.getCombined).thenReturn(0, increase(cpuCombined): _*)
-    when(cpuPerc.getStolen).thenReturn(0, increase(cpuStolen): _*)
+    when(cpuPerc.getCombined).thenReturn(0.0, increase(cpuCombined): _*)
+    when(cpuPerc.getStolen).thenReturn(0.0, increase(cpuStolen): _*)
 
     val sigar = mock[SigarProxy]
     when(sigar.getPid).thenReturn(pid)
