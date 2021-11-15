@@ -7,7 +7,6 @@ package akka.stream.impl.fusing
 import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
-import scala.collection.mutable
 import scala.concurrent.duration._
 
 /**
@@ -25,18 +24,13 @@ import scala.concurrent.duration._
  * @param aggregate   update the aggregated elements, return true if ready to emit after update
  * @param emitOnTimer decide whether the currently aggregated elements can be emitted on each timer event
  * @param harvest     this is invoked before emit within the current stage/operator
- * @param bufferSize  internal buffer to decouple upstream and downstream
  */
 class AggregateWithBoundary[T, Agg, Emit](
     allocate: => Agg,
     aggregate: (Agg, T) => Boolean,
     harvest: Agg => Emit,
-    emitOnTimer: Option[(Agg => Boolean, FiniteDuration)],
-    bufferSize: Int)
+    emitOnTimer: Option[(Agg => Boolean, FiniteDuration)])
     extends GraphStage[FlowShape[T, Emit]] {
-
-  require(bufferSize >= 1, s"maxBufferSize=$bufferSize, must be positive")
-
   emitOnTimer.foreach {
     case (_, interval) => require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
   }
@@ -49,10 +43,8 @@ class AggregateWithBoundary[T, Agg, Emit](
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
       private[this] var aggregated: Agg = null.asInstanceOf[Agg]
-
-      private val buffer = mutable.Queue[Emit]()
-
-      private def bufferFull: Boolean = buffer.size >= bufferSize
+      private[this] var hasEmitted: Boolean = false
+      private def backPressure: Boolean = hasEmitted && !isAvailable(out)
 
       override def preStart(): Unit = {
         pull(in)
@@ -72,28 +64,24 @@ class AggregateWithBoundary[T, Agg, Emit](
         val input = grab(in)
         if (aggregated == null) aggregated = allocate
         if (aggregate(aggregated, input)) harvestAndEmitOrEnqueue()
-        if (!bufferFull) pull(in)
+        if (!backPressure) pull(in)
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (buffer.nonEmpty) emitMultiple(out, buffer.iterator)
         if (aggregated != null) emit(out, harvest(aggregated))
         completeStage()
       }
 
       // at onPull, isAvailable(out) is always true indicating downstream is waiting
       // isAvailable(in) and hasBeenPulled(in) can be (true, false) (false, true) or (false, false)
-      override def onPull(): Unit = {
-        if (buffer.nonEmpty) push(out, buffer.dequeue())
-        if (!bufferFull && !hasBeenPulled(in)) pull(in)
-      }
+      override def onPull(): Unit = if (!hasBeenPulled(in)) pull(in)
 
       setHandlers(in, out, this)
 
       private def harvestAndEmitOrEnqueue(): Unit = {
-        val output = harvest(aggregated)
-        if (isAvailable(out)) push(out, output) else buffer.enqueue(output)
+        emit(out, harvest(aggregated))
         aggregated = null.asInstanceOf[Agg]
+        hasEmitted = true
       }
 
     }
@@ -115,8 +103,7 @@ class AggregateWithTimeBoundary[T, Agg, Emit](
     maxGap: Option[FiniteDuration],
     maxDuration: Option[FiniteDuration],
     interval: FiniteDuration,
-    currentTimeMs: => Long,
-    bufferSize: Int)
+    currentTimeMs: => Long)
     extends AggregateWithBoundary[T, ValueTimeWrapper[Agg], Emit](
       allocate = new ValueTimeWrapper(value = allocate),
       aggregate = (agg, in) => {
@@ -129,8 +116,8 @@ class AggregateWithTimeBoundary[T, Agg, Emit](
         val currentTime = currentTimeMs
         maxDuration.exists(md => currentTime - agg.firstTime >= md.toMillis) ||
         maxGap.exists(mg => currentTime - agg.lastTime >= mg.toMillis)
-      }, interval)),
-      bufferSize = bufferSize) {
+      }, interval))
+    ) {
   require(
     maxDuration.nonEmpty || maxGap.nonEmpty,
     s"requires timing condition otherwise should use ${classOf[AggregateWithBoundary[T, Agg, Emit]]}")
@@ -144,4 +131,5 @@ class ValueTimeWrapper[T](var value: T) {
     if (firstTime == -1) firstTime = time
     lastTime = time
   }
+
 }
