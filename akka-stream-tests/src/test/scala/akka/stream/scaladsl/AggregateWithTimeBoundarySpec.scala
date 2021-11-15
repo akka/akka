@@ -92,19 +92,14 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
   )
 ) {
 
-  def timePasses(amount: FiniteDuration): Unit = {
-    system.scheduler match {
-      case ets: ExplicitlyTriggeredScheduler => ets.timePasses(amount)
-      case other => throw new Exception(s"expecting ${classOf[ExplicitlyTriggeredScheduler]} but got ${other.getClass}")
-    }
+  val scheduler: ExplicitlyTriggeredScheduler = system.scheduler match {
+    case ets: ExplicitlyTriggeredScheduler => ets
+    case other => throw new Exception(s"expecting ${classOf[ExplicitlyTriggeredScheduler]} but got ${other.getClass}")
   }
 
-  def getSystemTimeMs: Long = {
-    system.scheduler match {
-      case ets: ExplicitlyTriggeredScheduler => ets.currentTimeEpochMs
-      case other => throw new Exception(s"expecting ${classOf[ExplicitlyTriggeredScheduler]} but got ${other.getClass}")
-    }
-  }
+  def timePasses(amount: FiniteDuration): Unit = scheduler.timePasses(amount)
+
+  def schedulerTimeMs: Long = scheduler.currentTimeMs
 
   "split aggregator by gap for slow upstream" in {
 
@@ -123,7 +118,7 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
           harvest = seq => seq.toSeq,
           maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
           maxDuration = None,
-          currentTimeMs = getSystemTimeMs,
+          currentTimeMs = schedulerTimeMs,
           interval = 1.milli,
           bufferSize = 1
         )
@@ -167,7 +162,7 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
           harvest = seq => seq.toSeq,
           maxGap = None,
           maxDuration = Some(maxDuration), // elements with longer gap will put put to next aggregator
-          currentTimeMs = getSystemTimeMs,
+          currentTimeMs = schedulerTimeMs,
           interval = 1.milli,
           bufferSize = 1
         )
@@ -208,7 +203,7 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
         harvest = seq => seq.toSeq,
         maxGap = Some(maxGap),
         maxDuration = None,
-        currentTimeMs = getSystemTimeMs,
+        currentTimeMs = schedulerTimeMs,
         interval = 1.milli,
         bufferSize = 1
       )

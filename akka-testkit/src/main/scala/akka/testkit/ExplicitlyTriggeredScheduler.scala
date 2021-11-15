@@ -127,5 +127,5 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
   /**
    * The scheduler need to expose its internal time for testing.
    */
-  def currentTimeEpochMs: Long = currentTime.get()
+  def currentTimeMs: Long = currentTime.get()
 }
