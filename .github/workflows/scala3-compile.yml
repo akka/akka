@@ -19,7 +19,7 @@ jobs:
           - akka-testkit/Test/compile akka-actor-tests/Test/compile
           - akka-actor-testkit-typed/Test/compile akka-actor-typed-tests/Test/compile
           - akka-bench-jmh/Test/compile
-          - akka-cluster/Test/compile akka-cluster-tools/Test/compile akka-cluster-typed/Test/compile akka-distributed-data/Test/compile akka-cluster-metrics/Test/compile akka-cluster-sharding/Test/compile akka-cluster-sharding-typed/Tets/compile
+          - akka-cluster/Test/compile akka-cluster-tools/Test/compile akka-cluster-typed/Test/compile akka-distributed-data/Test/compile akka-cluster-metrics/Test/compile akka-cluster-sharding/Test/compile akka-cluster-sharding-typed/Test/compile
           - akka-discovery/Test/compile akka-coordination/Test/compile
           - akka-persistence/Test/compile akka-persistence-shared/Test/compile akka-persistence-query/Test/compile akka-persistence-typed/Test/compile akka-persistence-testkit/Test/compile
           - akka-pki/Test/compile akka-slf4j/Test/compile
