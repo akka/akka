@@ -34,4 +34,5 @@ class OffsetSpec extends AnyWordSpecLike with Matchers {
       Random.shuffle(sequenceBasedList).sorted shouldEqual sequenceBasedList
     }
   }
+
 }
