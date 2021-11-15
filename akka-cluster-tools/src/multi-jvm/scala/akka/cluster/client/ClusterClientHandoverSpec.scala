@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.{ ActorPath, ActorRef }
 import akka.cluster.{ Cluster, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
+import akka.remote.testkit.{ MultiNodeConfig, STMultiNodeSpec }
 import akka.testkit.{ ImplicitSender, TestActors }
 
 object ClusterClientHandoverSpec extends MultiNodeConfig {

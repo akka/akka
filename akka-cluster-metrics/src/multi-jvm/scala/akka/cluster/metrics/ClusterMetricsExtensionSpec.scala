@@ -12,7 +12,6 @@ import com.typesafe.config.ConfigFactory
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 
 trait ClusterMetricsCommonConfig extends MultiNodeConfig {
   import ConfigFactory._
