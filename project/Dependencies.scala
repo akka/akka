@@ -183,7 +183,7 @@ object Dependencies {
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "test"
 
       // YCSB (Yahoo Cloud Serving Benchmark https://ycsb.site)
-      val ycsb = "site.ycsb" % "core" % "0.17.0" % "test"
+      val ycsb = "site.ycsb" % "core" % "0.17.0" % "test" // ApacheV2
     }
 
     object Provided {
