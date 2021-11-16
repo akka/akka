@@ -13,7 +13,6 @@ import sbtassembly.AssemblyPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import JdkOptions.autoImport._
-import scala.collection.breakOut
 
 object AkkaBuild {
 
@@ -211,11 +210,14 @@ object AkkaBuild {
         .ifTrue(jvmGCLogOptions(JdkOptions.isJdk11orHigher, JdkOptions.isJdk8))
         .getOrElse(Nil)
     },
-    // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
+    // all system properties passed to sbt prefixed with "akka." or "aeron." will be passed on to the forked jvms as is
     Test / javaOptions := {
       val base = (Test / javaOptions).value
+      val knownPrefix = Set("akka.", "aeron.")
       val akkaSysProps: Seq[String] =
-        sys.props.filter(_._1.startsWith("akka")).map { case (key, value) => s"-D$key=$value" }(breakOut)
+        sys.props.iterator.collect {
+          case (key, value) if knownPrefix.exists(pre => key.startsWith(pre)) => s"-D$key=$value"
+        }.toList
 
       base ++ akkaSysProps
     },
