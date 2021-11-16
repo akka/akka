@@ -181,6 +181,9 @@ object Dependencies {
       val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % "test" // CC0
 
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "test"
+
+      // YCSB (Yahoo Cloud Serving Benchmark https://ycsb.site)
+      val ycsb = "site.ycsb" % "core" % "0.17.0" % "test" // ApacheV2
     }
 
     object Provided {
@@ -262,7 +265,8 @@ object Dependencies {
         Provided.levelDBNative,
         Test.junit,
         Test.scalatest.value,
-        Test.commonsIo)
+        Test.commonsIo,
+        Test.ycsb)
 
   val clusterMetrics = l ++= Seq(
         Provided.sigarLoader,

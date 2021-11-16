@@ -125,7 +125,8 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         // https://github.com/akka/akka/issues/26119
         Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings",
         // having discipline warnings in console is just an annoyance
-        Compile / console / scalacOptions --= disciplineScalacOptions.toSeq)
+        Compile / console / scalacOptions --= disciplineScalacOptions.toSeq,
+        Test / console / scalacOptions --= disciplineScalacOptions.toSeq)
     } else {
       // we still need these in opt-out since the annotations are present
       nowarnSettings ++ Seq(Compile / scalacOptions += "-deprecation")
