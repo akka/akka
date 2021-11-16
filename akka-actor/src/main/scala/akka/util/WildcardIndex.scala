@@ -44,7 +44,8 @@ private[akka] object WildcardTree {
 
 private[akka] final case class WildcardTree[T](
     data: Option[T] = None,
-    children: Map[String, WildcardTree[T]] = HashMap[String, WildcardTree[T]]()) {
+    children: Map[String, WildcardTree[T]] = HashMap[String, WildcardTree[T]](),
+    wildcardSuffixChildren: Map[String, WildcardTree[T]] = HashMap[String, WildcardTree[T]]()) {
 
   def isEmpty: Boolean = data.isEmpty && children.isEmpty
 
@@ -53,18 +54,34 @@ private[akka] final case class WildcardTree[T](
       copy(data = Some(d))
     } else {
       val e = elems.next()
-      copy(children = children.updated(e, children.getOrElse(e, WildcardTree[T]()).insert(elems, d)))
+      if (e != "**" && e.endsWith("**"))
+        throw new IllegalArgumentException(
+          "double wildcard can't be used as a suffix (e.g. /user/actor**), only as a full subPath element (e.g. /user/actor/**)")
+      else if (e != "*" && e != "**" && e.endsWith("*"))
+        copy(
+          wildcardSuffixChildren = wildcardSuffixChildren
+            .updated(e.stripSuffix("*"), wildcardSuffixChildren.getOrElse(e, WildcardTree[T]()).insert(elems, d)))
+      else
+        copy(children = children.updated(e, children.getOrElse(e, WildcardTree[T]()).insert(elems, d)))
     }
 
   @tailrec def findWithSingleWildcard(elems: Iterator[String]): WildcardTree[T] =
     if (!elems.hasNext) this
     else {
-      children.get(elems.next()) match {
+      val nextElement = elems.next()
+      children.get(nextElement) match {
         case Some(branch) => branch.findWithSingleWildcard(elems)
         case None =>
           children.get("*") match {
             case Some(branch) => branch.findWithSingleWildcard(elems)
-            case None         => WildcardTree[T]()
+            case None =>
+              val maybeWildcardSuffixMatchingBranch = wildcardSuffixChildren.collectFirst {
+                case (key, branch) if nextElement.startsWith(key) => branch
+              }
+              maybeWildcardSuffixMatchingBranch match {
+                case Some(branch) => branch.findWithSingleWildcard(elems)
+                case None         => WildcardTree[T]()
+              }
           }
       }
     }
