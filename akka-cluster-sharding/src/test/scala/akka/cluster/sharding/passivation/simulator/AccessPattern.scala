@@ -18,10 +18,11 @@ trait AccessPattern {
 abstract class SyntheticGenerator(events: Int) extends AccessPattern {
   protected def createGenerator(): site.ycsb.generator.NumberGenerator
 
-  override def entityIds: Source[EntityId, NotUsed] = Source.unfold(createGenerator() -> 0) {
-    case (_, count) if count >= events => None
-    case (generator, count)            => Option(generator.nextValue().longValue.toString).map(generator -> (count + 1) -> _)
+  private def generateEntityIds: Source[EntityId, NotUsed] = Source.unfold(createGenerator()) { generator =>
+    Option(generator.nextValue()).map(generator -> _.longValue.toString)
   }
+
+  override def entityIds: Source[EntityId, NotUsed] = generateEntityIds.take(events)
 }
 
 object SyntheticGenerator {
@@ -32,6 +33,13 @@ object SyntheticGenerator {
    */
   final class Sequence(start: Long, events: Int) extends SyntheticGenerator(events) {
     override protected def createGenerator(): NumberGenerator = new CounterGenerator(start)
+  }
+
+  /**
+   * Generate a looping sequence of id events.
+   */
+  final class Loop(start: Long, end: Long, events: Int) extends SyntheticGenerator(events) {
+    override protected def createGenerator(): NumberGenerator = new SequentialGenerator(start, end)
   }
 
   /**

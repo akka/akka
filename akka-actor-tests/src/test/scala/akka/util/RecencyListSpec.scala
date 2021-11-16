@@ -92,6 +92,18 @@ class RecencyListSpec extends AnyWordSpec with Matchers {
       clock.tick() // time = 14
       recency.removeMostRecentWithin(3.seconds) shouldBe List("r", "k", "q", "p")
       check(recency, List("n", "o"))
+
+      clock.tick() // time = 15
+      recency.update("s").update("t").update("u").update("v").update("w").update("x").update("y").update("z")
+      check(recency, List("n", "o", "s", "t", "u", "v", "w", "x", "y", "z"))
+
+      clock.tick() // time = 16
+      recency.removeLeastRecent(3, skip = 3) shouldBe List("t", "u", "v")
+      check(recency, List("n", "o", "s", "w", "x", "y", "z"))
+
+      clock.tick() // time = 17
+      recency.removeMostRecent(3, skip = 2) shouldBe List("x", "w", "s")
+      check(recency, List("n", "o", "y", "z"))
     }
 
   }

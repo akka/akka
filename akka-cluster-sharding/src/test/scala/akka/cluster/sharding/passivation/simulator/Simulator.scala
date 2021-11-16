@@ -6,7 +6,11 @@ package akka.cluster.sharding.passivation.simulator
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.cluster.sharding.internal.{ EntityPassivationStrategy, LeastRecentlyUsedEntityPassivationStrategy }
+import akka.cluster.sharding.internal.{
+  EntityPassivationStrategy,
+  LeastRecentlyUsedEntityPassivationStrategy,
+  MostRecentlyUsedEntityPassivationStrategy
+}
 import akka.stream.scaladsl.{ Flow, Source }
 import com.typesafe.config.ConfigFactory
 
@@ -76,6 +80,8 @@ object Simulator {
         generator match {
           case SimulatorSettings.PatternSettings.Synthetic.Sequence(start) =>
             new SyntheticGenerator.Sequence(start, events)
+          case SimulatorSettings.PatternSettings.Synthetic.Loop(start, end) =>
+            new SyntheticGenerator.Loop(start, end, events)
           case SimulatorSettings.PatternSettings.Synthetic.Uniform(min, max) =>
             new SyntheticGenerator.Uniform(min, max, events)
           case SimulatorSettings.PatternSettings.Synthetic.Exponential(mean) =>
@@ -98,6 +104,8 @@ object Simulator {
       runSettings.strategy match {
         case SimulatorSettings.StrategySettings.LeastRecentlyUsed(perRegionLimit) =>
           () => new LeastRecentlyUsedEntityPassivationStrategy(perRegionLimit)
+        case SimulatorSettings.StrategySettings.MostRecentlyUsed(perRegionLimit) =>
+          () => new MostRecentlyUsedEntityPassivationStrategy(perRegionLimit)
       }
   }
 

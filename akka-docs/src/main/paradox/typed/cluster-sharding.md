@@ -325,6 +325,20 @@ passivation strategy, and set the limit for active entities in a shard region:
 Or enable the least recently used passivation strategy and set the active entity limit using the
 `withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
 
+#### Most recently used passivation strategy
+
+The **most recently used** passivation strategy passivates those entities that have the most recent activity when the
+number of active entities passes a specified limit. The configurable limit is for a whole shard region and is divided
+evenly among the active shards in each region. This strategy is most useful when the older an entity is, the more
+likely that entity will be accessed again; as seen in cyclic access patterns. Configure automatic passivation to use
+the most recently used passivation strategy, and set the limit for active entities in a shard region:
+
+@@snip [passivation most recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-most-recently-used type=conf }
+
+Or enable the most recently used passivation strategy and set the active entity limit using the
+`withMostRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+
+
 ## Sharding State 
 
 There are two types of state managed:

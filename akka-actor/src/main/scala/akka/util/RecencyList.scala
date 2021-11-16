@@ -76,11 +76,11 @@ private[akka] class RecencyList[A](clock: RecencyList.Clock) {
   private val lessRecent: Node[A] => OptionVal[Node[A]] = _.lessRecent
   private val moreRecent: Node[A] => OptionVal[Node[A]] = _.moreRecent
 
-  def removeLeastRecent(n: Int = 1): immutable.Seq[A] =
-    removeWhile(start = leastRecent, next = moreRecent, limit = n)
+  def removeLeastRecent(n: Int = 1, skip: Int = 0): immutable.Seq[A] =
+    removeWhile(start = leastRecent, next = moreRecent, limit = n, skip = skip)
 
-  def removeMostRecent(n: Int = 1): immutable.Seq[A] =
-    removeWhile(start = mostRecent, next = lessRecent, limit = n)
+  def removeMostRecent(n: Int = 1, skip: Int = 0): immutable.Seq[A] =
+    removeWhile(start = mostRecent, next = lessRecent, limit = n, skip = skip)
 
   def removeLeastRecentOutside(duration: FiniteDuration): immutable.Seq[A] = {
     val min = clock.earlierTime(duration)
@@ -118,15 +118,19 @@ private[akka] class RecencyList[A](clock: RecencyList.Clock) {
       start: OptionVal[Node[A]],
       next: Node[A] => OptionVal[Node[A]],
       continueWhile: Node[A] => Boolean = continueToLimit,
-      limit: Int = size): immutable.Seq[A] = {
+      limit: Int = size,
+      skip: Int = 0): immutable.Seq[A] = {
     var count = 0
     var node = start
+    val max = limit + skip
     val values = mutable.ListBuffer.empty[A]
-    while (node.isDefined && continueWhile(node.get) && (count < limit)) {
+    while (node.isDefined && continueWhile(node.get) && (count < max)) {
       count += 1
-      removeFromCurrentPosition(node.get)
-      lookupNode -= node.get.value
-      values += node.get.value
+      if (count > skip) {
+        removeFromCurrentPosition(node.get)
+        lookupNode -= node.get.value
+        values += node.get.value
+      }
       node = next(node.get)
     }
     values.result()
