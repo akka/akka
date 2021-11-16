@@ -19,7 +19,7 @@ import akka.persistence.query.typed.EventEnvelope
 trait LoadEventQuery extends ReadJournal {
 
   /**
-   * Load a single event on demand. The `Future` is completed with an `IllegalArgumentException` if
+   * Load a single event on demand. The `Future` is completed with a `NoSuchElementException` if
    * the event for the given `persistenceId` and `sequenceNr` doesn't exist.
    */
   def loadEnvelope[Event](persistenceId: String, sequenceNr: Long): Future[EventEnvelope[Event]]
