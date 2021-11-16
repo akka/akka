@@ -84,7 +84,7 @@ Java
 ## Applicability
 
 The sky is the limit!
-By the way, did you know that Akka @ref:[Cluster](typed/cluster.md), @ref:[Serialization](serialization.md) and other features are implemented as Akka Extensions?
+By the way, did you know that Akka @ref:[Cluster](cluster-usage.md), @ref:[Serialization](serialization.md) and other features are implemented as Akka Extensions?
 
 <a id="extending-akka-settings"></a>
 ### Application specific settings
