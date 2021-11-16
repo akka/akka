@@ -4,11 +4,11 @@ project.description: How to extend Akka with Akka Extensions.
 # Classic Akka Extensions
 
 If you want to add features to Akka, there is a very elegant, but powerful mechanism for doing so.
-It's called Akka Extensions and comprises 2 basic components: an `Extension` and an `ExtensionId`.
+It's called Akka Extensions and comprises 2 basic components: an @apidoc[Extension](actor.Extension) and an @apidoc[ExtensionId](actor.ExtensionId).
 
-Extensions will only be loaded once per `ActorSystem`, which will be managed by Akka.
-You can choose to have your Extension loaded on-demand or at `ActorSystem` creation time through the Akka configuration.
-Details on how to make that happens are below, in the "Loading from Configuration" section.
+Extensions will only be loaded once per @apidoc[ActorSystem](actor.ActorSystem), which will be managed by Akka.
+You can choose to have your Extension loaded on-demand or at @apidoc[ActorSystem](actor.ActorSystem) creation time through the Akka configuration.
+Details on how to make that happens are below, in the @ref:[Loading from Configuration](extending-akka.md#loading) section.
 
 @@@ warning
 
@@ -21,7 +21,7 @@ ensure the thread safety of his/her extension.
 
 So let's create a sample extension that lets us count the number of times something has happened.
 
-First, we define what our `Extension` should do:
+First, we define what our @apidoc[Extension](actor.Extension) should do:
 
 Scala
 :  @@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #extension }
@@ -29,7 +29,7 @@ Scala
 Java
 :  @@snip [ExtensionDocTest.java](/akka-docs/src/test/java/jdocs/extension/ExtensionDocTest.java) { #imports #extension }
 
-Then we need to create an `ExtensionId` for our extension so we can grab a hold of it.
+Then we need to create an @apidoc[ExtensionId](actor.ExtensionId) for our extension so we can grab a hold of it.
 
 Scala
 :  @@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #extensionid }
@@ -63,10 +63,11 @@ You can also hide extension behind traits:
 
 That's all there is to it!
 
+<a id="loading"></a>
 ## Loading from Configuration
 
-To be able to load extensions from your Akka configuration you must add FQCNs of implementations of either `ExtensionId` or `ExtensionIdProvider`
-in the `akka.extensions` section of the config you provide to your `ActorSystem`.
+To be able to load extensions from your Akka configuration you must add FQCNs of implementations of either @apidoc[ExtensionId](actor.ExtensionId) or @apidoc[ExtensionIdProvider](ExtensionIdProvider)
+in the `akka.extensions` section of the config you provide to your @apidoc[ActorSystem](actor.ActorSystem).
 
 Scala
 :  @@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #config }
@@ -83,7 +84,7 @@ Java
 ## Applicability
 
 The sky is the limit!
-By the way, did you know that Akka `Cluster`, `Serialization` and other features are implemented as Akka Extensions?
+By the way, did you know that Akka @ref:[Cluster](cluster-usage.md), @ref:[Serialization](serialization.md) and other features are implemented as Akka Extensions?
 
 <a id="extending-akka-settings"></a>
 ### Application specific settings
@@ -94,7 +95,7 @@ Sample configuration:
 
 @@snip [SettingsExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/SettingsExtensionDocSpec.scala) { #config }
 
-The `Extension`:
+The @apidoc[Extension](actor.Extension):
 
 Scala
 :  @@snip [SettingsExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/SettingsExtensionDocSpec.scala) { #imports #extension #extensionid }
