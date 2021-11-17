@@ -73,9 +73,9 @@ object InmemJournal {
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     try {
       for (w <- messages; p <- w.payload) {
-        val payload  = p.payload match {
+        val payload = p.payload match {
           case Tagged(payload, _) => payload
-          case _ => p.payload
+          case _                  => p.payload
         }
         verifySerialization(payload)
         add(p)
