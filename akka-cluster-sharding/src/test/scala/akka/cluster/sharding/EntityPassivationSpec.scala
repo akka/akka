@@ -10,6 +10,8 @@ import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.Cluster
 import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
+import org.scalatest.concurrent.Eventually
+
 import scala.concurrent.duration._
 
 object EntityPassivationSpec {
@@ -38,6 +40,15 @@ object EntityPassivationSpec {
       passivation {
         strategy = least-recently-used
         least-recently-used.limit = 10
+      }
+    }
+    """).withFallback(config)
+
+  val mostRecentlyUsedConfig = ConfigFactory.parseString("""
+    akka.cluster.sharding {
+      passivation {
+        strategy = most-recently-used
+        most-recently-used.limit = 10
       }
     }
     """).withFallback(config)
@@ -88,6 +99,7 @@ object EntityPassivationSpec {
 
 abstract class AbstractEntityPassivationSpec(config: Config, expectedEntities: Int)
     extends AkkaSpec(config)
+    with Eventually
     with WithLogCapturing {
 
   import EntityPassivationSpec._
@@ -98,6 +110,7 @@ abstract class AbstractEntityPassivationSpec(config: Config, expectedEntities: I
 
   val probes: Map[Int, TestProbe] = (1 to expectedEntities).map(id => id -> TestProbe()).toMap
   val probeRefs: Map[String, ActorRef] = probes.map { case (id, probe) => id.toString -> probe.ref }
+  val stateProbe: TestProbe = TestProbe()
 
   def expectReceived(id: Int, message: Any, within: FiniteDuration = patience.timeout): Entity.Received = {
     val received = probes(id).expectMsgType[Entity.Received](within)
@@ -107,6 +120,18 @@ abstract class AbstractEntityPassivationSpec(config: Config, expectedEntities: I
 
   def expectNoMessage(id: Int, within: FiniteDuration): Unit =
     probes(id).expectNoMessage(within)
+
+  def getState(region: ActorRef): ShardRegion.CurrentShardRegionState = {
+    region.tell(ShardRegion.GetShardRegionState, stateProbe.ref)
+    stateProbe.expectMsgType[ShardRegion.CurrentShardRegionState]
+  }
+
+  def expectState(region: ActorRef)(expectedShards: (Int, Iterable[Int])*): Unit =
+    eventually {
+      getState(region).shards should contain theSameElementsAs expectedShards.map {
+        case (shardId, entityIds) => ShardRegion.ShardState(shardId.toString, entityIds.map(_.toString).toSet)
+      }
+    }
 
   def start(): ActorRef = {
     // single node cluster
@@ -185,7 +210,7 @@ class LeastRecentlyUsedEntityPassivationSpec
         if (id > 10) expectReceived(id = id - 10, message = Stop)
       }
 
-      // shard 1 active ids: 11-20
+      expectState(region)(1 -> (11 to 20))
 
       // activating a second shard will divide the per-shard limit in two, passivating half of the first shard
       region ! Envelope(shard = 2, id = 21, message = "B")
@@ -194,8 +219,7 @@ class LeastRecentlyUsedEntityPassivationSpec
         expectReceived(id = id, message = Stop)
       }
 
-      // shard 1 active ids: 16-20
-      // shard 2 active ids: 21
+      expectState(region)(1 -> (16 to 20), 2 -> Set(21))
 
       // shards now have a limit of 5 entities
       for (id <- 1 to 20) {
@@ -205,8 +229,7 @@ class LeastRecentlyUsedEntityPassivationSpec
         expectReceived(id = passivatedId, message = Stop)
       }
 
-      // shard 1 active ids: 16-20
-      // shard 2 active ids: 21
+      expectState(region)(1 -> (16 to 20), 2 -> Set(21))
 
       // shards now have a limit of 5 entities
       for (id <- 21 to 24) {
@@ -214,8 +237,7 @@ class LeastRecentlyUsedEntityPassivationSpec
         expectReceived(id = id, message = "D")
       }
 
-      // shard 1 active ids: 16-20
-      // shard 2 active ids: 21-24
+      expectState(region)(1 -> (16 to 20), 2 -> (21 to 24))
 
       // activating a third shard will divide the per-shard limit in three, passivating entities over the new limits
       region ! Envelope(shard = 3, id = 31, message = "E")
@@ -224,9 +246,7 @@ class LeastRecentlyUsedEntityPassivationSpec
         expectReceived(id = id, message = Stop)
       }
 
-      // shard 1 active ids: 18, 19, 20
-      // shard 2 active ids: 22, 23, 24
-      // shard 3 active ids: 31
+      expectState(region)(1 -> Set(18, 19, 20), 2 -> Set(22, 23, 24), 3 -> Set(31))
 
       // shards now have a limit of 3 entities
       for (id <- 25 to 30) {
@@ -235,9 +255,7 @@ class LeastRecentlyUsedEntityPassivationSpec
         expectReceived(id = id - 3, message = Stop)
       }
 
-      // shard 1 active ids: 18, 19, 20
-      // shard 2 active ids: 28, 29, 30
-      // shard 3 active ids: 31
+      expectState(region)(1 -> Set(18, 19, 20), 2 -> Set(28, 29, 30), 3 -> Set(31))
 
       // shards now have a limit of 3 entities
       for (id <- 31 to 40) {
@@ -246,9 +264,7 @@ class LeastRecentlyUsedEntityPassivationSpec
         if (id > 33) expectReceived(id = id - 3, message = Stop)
       }
 
-      // shard 1 active ids: 18, 19, 20
-      // shard 2 active ids: 28, 29, 30
-      // shard 3 active ids: 38, 39, 40
+      expectState(region)(1 -> Set(18, 19, 20), 2 -> Set(28, 29, 30), 3 -> Set(38, 39, 40))
 
       // manually passivate some entities
       region ! Envelope(shard = 1, id = 19, message = ManuallyPassivate)
@@ -261,9 +277,7 @@ class LeastRecentlyUsedEntityPassivationSpec
       expectReceived(id = 29, message = Stop)
       expectReceived(id = 39, message = Stop)
 
-      // shard 1 active ids: 18, 20
-      // shard 2 active ids: 28, 30
-      // shard 3 active ids: 38, 40
+      expectState(region)(1 -> Set(18, 20), 2 -> Set(28, 30), 3 -> Set(38, 40))
 
       for (i <- 1 to 3) {
         region ! Envelope(shard = 1, id = 10 + i, message = "H")
@@ -283,17 +297,114 @@ class LeastRecentlyUsedEntityPassivationSpec
         }
       }
 
-      // shard 1 active ids: 11, 12, 13
-      // shard 2 active ids: 21, 22, 23
-      // shard 3 active ids: 31, 32, 33
+      expectState(region)(1 -> Set(11, 12, 13), 2 -> Set(21, 22, 23), 3 -> Set(31, 32, 33))
+    }
+  }
+}
 
-      val statsProbe = TestProbe()
-      region.tell(ShardRegion.GetShardRegionState, statsProbe.ref)
-      val state = statsProbe.expectMsgType[ShardRegion.CurrentShardRegionState]
-      state.shards shouldBe Set(
-        ShardRegion.ShardState("1", Set("11", "12", "13")),
-        ShardRegion.ShardState("2", Set("21", "22", "23")),
-        ShardRegion.ShardState("3", Set("31", "32", "33")))
+class MostRecentlyUsedEntityPassivationSpec
+    extends AbstractEntityPassivationSpec(EntityPassivationSpec.mostRecentlyUsedConfig, expectedEntities = 40) {
+
+  import EntityPassivationSpec.Entity.{ Envelope, ManuallyPassivate, Stop }
+
+  "Passivation of most recently used entities" must {
+    "passivate the most recently used entities when the per-shard entity limit is reached" in {
+      val region = start()
+
+      // only one active shard at first, most recently used entities passivated once the limit is reached
+      for (id <- 1 to 20) {
+        region ! Envelope(shard = 1, id = id, message = "A")
+        expectReceived(id, message = "A")
+        if (id > 10) expectReceived(id = id - 1, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 20))
+
+      // activating a second shard will divide the per-shard limit in two, passivating half of the first shard
+      region ! Envelope(shard = 2, id = 21, message = "B")
+      expectReceived(id = 21, message = "B")
+      for (id <- Seq(20, 9, 8, 7, 6)) {
+        expectReceived(id, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3, 4, 5), 2 -> Set(21))
+
+      // shards now have a limit of 5 entities
+      for (id <- 1 to 20) {
+        region ! Envelope(shard = 1, id = id, message = "C")
+        expectReceived(id = id, message = "C")
+        if (id > 5) expectReceived(id = id - 1, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3, 4, 20), 2 -> Set(21))
+
+      // shards now have a limit of 5 entities
+      for (id <- 21 to 24) {
+        region ! Envelope(shard = 2, id = id, message = "D")
+        expectReceived(id = id, message = "D")
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3, 4, 20), 2 -> Set(21, 22, 23, 24))
+
+      // activating a third shard will divide the per-shard limit in three, passivating entities over the new limits
+      region ! Envelope(shard = 3, id = 31, message = "E")
+      expectReceived(id = 31, message = "E")
+      for (id <- Seq(24, 20, 4)) {
+        expectReceived(id = id, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3), 2 -> Set(21, 22, 23), 3 -> Set(31))
+
+      // shards now have a limit of 3 entities
+      for (id <- 24 to 30) {
+        region ! Envelope(shard = 2, id = id, message = "F")
+        expectReceived(id = id, message = "F")
+        expectReceived(id = id - 1, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3), 2 -> Set(21, 22, 30), 3 -> Set(31))
+
+      // shards now have a limit of 3 entities
+      for (id <- 31 to 40) {
+        region ! Envelope(shard = 3, id = id, message = "G")
+        expectReceived(id = id, message = "G")
+        if (id > 33) expectReceived(id = id - 1, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3), 2 -> Set(21, 22, 30), 3 -> Set(31, 32, 40))
+
+      // manually passivate some entities
+      region ! Envelope(shard = 1, id = 2, message = ManuallyPassivate)
+      region ! Envelope(shard = 2, id = 22, message = ManuallyPassivate)
+      region ! Envelope(shard = 3, id = 32, message = ManuallyPassivate)
+      expectReceived(id = 2, message = ManuallyPassivate)
+      expectReceived(id = 22, message = ManuallyPassivate)
+      expectReceived(id = 32, message = ManuallyPassivate)
+      expectReceived(id = 2, message = Stop)
+      expectReceived(id = 22, message = Stop)
+      expectReceived(id = 32, message = Stop)
+
+      expectState(region)(1 -> Set(1, 3), 2 -> Set(21, 30), 3 -> Set(31, 40))
+
+      for (i <- 1 to 3) {
+        region ! Envelope(shard = 1, id = 11 + i, message = "H")
+        region ! Envelope(shard = 2, id = 22 + i, message = "H")
+        region ! Envelope(shard = 3, id = 33 + i, message = "H")
+        expectReceived(id = 11 + i, message = "H")
+        expectReceived(id = 22 + i, message = "H")
+        expectReceived(id = 33 + i, message = "H")
+        if (i == 2) {
+          expectReceived(id = 12, message = Stop)
+          expectReceived(id = 23, message = Stop)
+          expectReceived(id = 34, message = Stop)
+        } else if (i == 3) {
+          expectReceived(id = 13, message = Stop)
+          expectReceived(id = 24, message = Stop)
+          expectReceived(id = 35, message = Stop)
+        }
+      }
+
+      expectState(region)(1 -> Set(1, 3, 14), 2 -> Set(21, 30, 25), 3 -> Set(31, 40, 36))
     }
   }
 }

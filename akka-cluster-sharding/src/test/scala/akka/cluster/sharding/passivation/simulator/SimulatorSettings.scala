@@ -45,11 +45,13 @@ object SimulatorSettings {
 
   object StrategySettings {
     final case class LeastRecentlyUsed(perRegionLimit: Int) extends StrategySettings
+    final case class MostRecentlyUsed(perRegionLimit: Int) extends StrategySettings
 
     def apply(simulatorConfig: Config, strategy: String): StrategySettings = {
       val config = simulatorConfig.getConfig(strategy).withFallback(simulatorConfig.getConfig("strategy-defaults"))
       lowerCase(config.getString("strategy")) match {
         case "least-recently-used" => LeastRecentlyUsed(config.getInt("least-recently-used.per-region-limit"))
+        case "most-recently-used"  => MostRecentlyUsed(config.getInt("most-recently-used.per-region-limit"))
         case _                     => sys.error(s"Unknown strategy for [$strategy]")
       }
     }
@@ -63,6 +65,7 @@ object SimulatorSettings {
     object Synthetic {
       sealed trait Generator
       final case class Sequence(start: Long) extends Generator
+      final case class Loop(start: Long, end: Long) extends Generator
       final case class Uniform(min: Long, max: Long) extends Generator
       final case class Exponential(mean: Double) extends Generator
       final case class Hotspot(min: Long, max: Long, hot: Double, rate: Double) extends Generator
@@ -74,6 +77,10 @@ object SimulatorSettings {
           case "sequence" =>
             val start = config.getLong("sequence.start")
             Sequence(start)
+          case "loop" =>
+            val start = config.getLong("loop.start")
+            val end = config.getLong("loop.end")
+            Loop(start, end)
           case "uniform" =>
             val min = config.getLong("uniform.min")
             val max = config.getLong("uniform.max")

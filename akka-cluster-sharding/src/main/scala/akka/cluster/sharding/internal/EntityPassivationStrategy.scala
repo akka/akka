@@ -26,6 +26,8 @@ private[akka] object EntityPassivationStrategy {
         new IdleEntityPassivationStrategy(timeout)
       case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit) =>
         new LeastRecentlyUsedEntityPassivationStrategy(limit)
+      case ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(limit) =>
+        new MostRecentlyUsedEntityPassivationStrategy(limit)
       case _ => DisabledEntityPassivationStrategy
     }
   }
@@ -152,5 +154,42 @@ private[akka] final class LeastRecentlyUsedEntityPassivationStrategy(perRegionLi
   private def passivateExcessEntities(): PassivateEntities = {
     val excess = recencyList.size - perShardLimit
     if (excess > 0) recencyList.removeLeastRecent(excess) else PassivateEntities.none
+  }
+}
+
+/**
+ * Passivate the most recently used entities when the number of active entities in a shard region
+ * reaches a limit. The per-region limit is divided evenly among the active shards in a region.
+ * @param perRegionLimit active entity capacity for a shard region
+ */
+@InternalApi
+private[akka] final class MostRecentlyUsedEntityPassivationStrategy(perRegionLimit: Int)
+    extends EntityPassivationStrategy {
+  import EntityPassivationStrategy.PassivateEntities
+
+  private var perShardLimit: Int = perRegionLimit
+  private val recencyList = RecencyList.empty[EntityId]
+
+  override val scheduledInterval: Option[FiniteDuration] = None
+
+  override def shardsUpdated(activeShards: Int): PassivateEntities = {
+    perShardLimit = perRegionLimit / activeShards
+    passivateExcessEntities()
+  }
+
+  override def entityCreated(id: EntityId): PassivateEntities = {
+    recencyList.update(id)
+    passivateExcessEntities(skip = 1) // remove most recent before adding this created entity
+  }
+
+  override def entityTouched(id: EntityId): Unit = recencyList.update(id)
+
+  override def entityTerminated(id: EntityId): Unit = recencyList.remove(id)
+
+  override def intervalPassed(): PassivateEntities = PassivateEntities.none
+
+  private def passivateExcessEntities(skip: Int = 0): PassivateEntities = {
+    val excess = recencyList.size - perShardLimit
+    if (excess > 0) recencyList.removeMostRecent(excess, skip) else PassivateEntities.none
   }
 }
