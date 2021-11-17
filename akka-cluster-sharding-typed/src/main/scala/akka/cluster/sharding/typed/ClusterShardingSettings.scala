@@ -73,7 +73,8 @@ object ClusterShardingSettings {
         strategy = settings.passivationStrategySettings.strategy,
         idleTimeout = settings.passivationStrategySettings.idleTimeout,
         leastRecentlyUsedLimit = settings.passivationStrategySettings.leastRecentlyUsedLimit,
-        mostRecentlyUsedLimit = settings.passivationStrategySettings.mostRecentlyUsedLimit),
+        mostRecentlyUsedLimit = settings.passivationStrategySettings.mostRecentlyUsedLimit,
+        leastFrequentlyUsedLimit = settings.passivationStrategySettings.leastFrequentlyUsedLimit),
       shardRegionQueryTimeout = settings.shardRegionQueryTimeout,
       new ClassicShardingSettings.TuningParameters(
         bufferSize = settings.tuningParameters.bufferSize,
@@ -171,10 +172,22 @@ object ClusterShardingSettings {
       val idleTimeout: FiniteDuration,
       val leastRecentlyUsedLimit: Int,
       val mostRecentlyUsedLimit: Int,
+      val leastFrequentlyUsedLimit: Int,
       private[akka] val oldSettingUsed: Boolean) {
 
-    def this(strategy: String, idleTimeout: FiniteDuration, leastRecentlyUsedLimit: Int, mostRecentlyUsedLimit: Int) =
-      this(strategy, idleTimeout, leastRecentlyUsedLimit, mostRecentlyUsedLimit, oldSettingUsed = false)
+    def this(
+        strategy: String,
+        idleTimeout: FiniteDuration,
+        leastRecentlyUsedLimit: Int,
+        mostRecentlyUsedLimit: Int,
+        leastFrequentlyUsedLimit: Int) =
+      this(
+        strategy,
+        idleTimeout,
+        leastRecentlyUsedLimit,
+        mostRecentlyUsedLimit,
+        leastFrequentlyUsedLimit,
+        oldSettingUsed = false)
 
     def this(classic: ClassicShardingSettings.PassivationStrategySettings) =
       this(
@@ -182,6 +195,7 @@ object ClusterShardingSettings {
         classic.idleTimeout,
         classic.leastRecentlyUsedLimit,
         classic.mostRecentlyUsedLimit,
+        classic.leastFrequentlyUsedLimit,
         classic.oldSettingUsed)
 
     def withIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
@@ -193,6 +207,9 @@ object ClusterShardingSettings {
     def withMostRecentlyUsedStrategy(limit: Int): PassivationStrategySettings =
       copy(strategy = "most-recently-used", mostRecentlyUsedLimit = limit)
 
+    def withLeastFrequentlyUsedStrategy(limit: Int): PassivationStrategySettings =
+      copy(strategy = "least-frequently-used", leastFrequentlyUsedLimit = limit)
+
     private[akka] def withOldIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
       copy(strategy = "idle", idleTimeout = timeout, oldSettingUsed = true)
 
@@ -201,12 +218,14 @@ object ClusterShardingSettings {
         idleTimeout: FiniteDuration = idleTimeout,
         leastRecentlyUsedLimit: Int = leastRecentlyUsedLimit,
         mostRecentlyUsedLimit: Int = mostRecentlyUsedLimit,
+        leastFrequentlyUsedLimit: Int = leastFrequentlyUsedLimit,
         oldSettingUsed: Boolean = oldSettingUsed): PassivationStrategySettings =
       new PassivationStrategySettings(
         strategy,
         idleTimeout,
         leastRecentlyUsedLimit,
         mostRecentlyUsedLimit,
+        leastFrequentlyUsedLimit,
         oldSettingUsed)
   }
 
@@ -216,6 +235,7 @@ object ClusterShardingSettings {
       idleTimeout = Duration.Zero,
       leastRecentlyUsedLimit = 0,
       mostRecentlyUsedLimit = 0,
+      leastFrequentlyUsedLimit = 0,
       oldSettingUsed = false)
 
     def oldDefault(idleTimeout: FiniteDuration): PassivationStrategySettings =
@@ -550,6 +570,9 @@ final class ClusterShardingSettings(
 
   def withMostRecentlyUsedPassivationStrategy(limit: Int): ClusterShardingSettings =
     copy(passivationStrategySettings = passivationStrategySettings.withMostRecentlyUsedStrategy(limit))
+
+  def withLeastFrequentlyUsedPassivationStrategy(limit: Int): ClusterShardingSettings =
+    copy(passivationStrategySettings = passivationStrategySettings.withLeastFrequentlyUsedStrategy(limit))
 
   def withShardRegionQueryTimeout(duration: FiniteDuration): ClusterShardingSettings =
     copy(shardRegionQueryTimeout = duration)

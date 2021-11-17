@@ -17,7 +17,7 @@ import scala.concurrent.duration.FiniteDuration
 private[akka] object RecencyList {
   def empty[A]: RecencyList[A] = new RecencyList[A](new NanoClock)
 
-  private class Node[A](val value: A) {
+  private final class Node[A](val value: A) {
     var lessRecent, moreRecent: OptionVal[Node[A]] = OptionVal.None
     var timestamp: Long = 0L
   }
@@ -41,7 +41,7 @@ private[akka] object RecencyList {
  * Implemented using a doubly-linked list plus hash map for lookup, so that all operations are constant time.
  */
 @InternalApi
-private[akka] class RecencyList[A](clock: RecencyList.Clock) {
+private[akka] final class RecencyList[A](clock: RecencyList.Clock) {
   import RecencyList.Node
 
   private var leastRecent, mostRecent: OptionVal[Node[A]] = OptionVal.None
