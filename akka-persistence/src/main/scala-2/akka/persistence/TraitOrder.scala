@@ -18,6 +18,7 @@ private[persistence] object TraitOrder {
     val i = interfaces.indexOf(other)
     val j = interfaces.indexOf(one)
     if (i != -1 && j != -1 && i < j)
-      throw new IllegalStateException(s"For $clazz, use $one with $other, instead of $other with $one")
+      throw new IllegalStateException(
+        s"For ${clazz.getName}, use ${one.getName} with ${other.getName}, instead of ${other.getName} with ${one.getName}")
   }
 }
