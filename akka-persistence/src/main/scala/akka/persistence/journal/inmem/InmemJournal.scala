@@ -73,7 +73,11 @@ object InmemJournal {
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     try {
       for (w <- messages; p <- w.payload) {
-        verifySerialization(p.payload)
+        val payload = p.payload match {
+          case Tagged(payload, _) => payload
+          case _                  => p.payload
+        }
+        verifySerialization(payload)
         add(p)
         eventStream.publish(InmemJournal.Write(p.payload, p.persistenceId, p.sequenceNr))
       }
