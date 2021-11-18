@@ -16,13 +16,15 @@ private[akka] object FrequencyList {
   def empty[A]: FrequencyList[A] = new FrequencyList[A]
 
   private final class FrequencyNode[A](val count: Int) {
-    var lessFrequent, moreFrequent: OptionVal[FrequencyNode[A]] = OptionVal.None
-    var leastRecent, mostRecent: OptionVal[Node[A]] = OptionVal.None
+    var lessFrequent, moreFrequent: FrequencyNode[A] = this
+    val empty = new Node[A](null.asInstanceOf[A], this)
+    def leastRecent: Node[A] = empty.moreRecent
+    def mostRecent: Node[A] = empty.lessRecent
   }
 
-  private final class Node[A](val value: A) {
-    var frequencyNode: OptionVal[FrequencyNode[A]] = OptionVal.None
-    var lessRecent, moreRecent: OptionVal[Node[A]] = OptionVal.None
+  private final class Node[A](val value: A, initialFrequency: FrequencyNode[A]) {
+    var frequency: FrequencyNode[A] = initialFrequency
+    var lessRecent, moreRecent: Node[A] = this
   }
 }
 
@@ -37,7 +39,7 @@ private[akka] object FrequencyList {
 private[akka] final class FrequencyList[A] {
   import FrequencyList.{ FrequencyNode, Node }
 
-  private var leastFrequent, mostFrequent: OptionVal[FrequencyNode[A]] = OptionVal.None
+  private val zero = new FrequencyNode[A](count = 0)
   private val lookupNode = mutable.Map.empty[A, Node[A]]
 
   def size: Int = lookupNode.size
@@ -47,8 +49,7 @@ private[akka] final class FrequencyList[A] {
       val node = lookupNode(value)
       increaseFrequency(node)
     } else {
-      val node = new Node(value)
-      addAsLeastFrequent(node)
+      val node = addAsLeastFrequent(value)
       lookupNode += value -> node
     }
     this
@@ -65,149 +66,112 @@ private[akka] final class FrequencyList[A] {
 
   def contains(value: A): Boolean = lookupNode.contains(value)
 
-  private def leastNode: OptionVal[Node[A]] = leastFrequent match {
-    case OptionVal.Some(frequencyNode) => frequencyNode.leastRecent
-    case _                             => OptionVal.None
+  private def leastFrequent: FrequencyNode[A] = zero.moreFrequent
+  private def mostFrequent: FrequencyNode[A] = zero.lessFrequent
+
+  private def leastNode: Node[A] = leastFrequent.leastRecent
+  private def mostNode: Node[A] = mostFrequent.mostRecent
+
+  private val lessFrequent: Node[A] => Node[A] = { node =>
+    if (node.lessRecent ne node.frequency.empty) node.lessRecent
+    else node.frequency.lessFrequent.mostRecent
   }
 
-  private def mostNode: OptionVal[Node[A]] = mostFrequent match {
-    case OptionVal.Some(frequencyNode) => frequencyNode.mostRecent
-    case _                             => OptionVal.None
-  }
-
-  private val lessDirection: Node[A] => OptionVal[Node[A]] = { node =>
-    if (node.lessRecent.isDefined) node.lessRecent
-    else if (node.frequencyNode.isDefined && node.frequencyNode.get.lessFrequent.isDefined)
-      node.frequencyNode.get.lessFrequent.get.mostRecent
-    else OptionVal.None
-  }
-
-  private val moreDirection: Node[A] => OptionVal[Node[A]] = { node =>
-    if (node.moreRecent.isDefined) node.moreRecent
-    else if (node.frequencyNode.isDefined && node.frequencyNode.get.moreFrequent.isDefined)
-      node.frequencyNode.get.moreFrequent.get.leastRecent
-    else OptionVal.None
+  private val moreFrequent: Node[A] => Node[A] = { node =>
+    if (node.moreRecent ne node.frequency.empty) node.moreRecent
+    else node.frequency.moreFrequent.leastRecent
   }
 
   def removeLeastFrequent(n: Int = 1, skip: OptionVal[A] = OptionVal.none[A]): immutable.Seq[A] =
-    removeWhile(start = leastNode, next = moreDirection, limit = n, skip = skip)
+    removeWhile(start = leastNode, next = moreFrequent, limit = n, skip = skip)
 
   def removeMostFrequent(n: Int = 1, skip: OptionVal[A] = OptionVal.none[A]): immutable.Seq[A] =
-    removeWhile(start = mostNode, next = lessDirection, limit = n, skip = skip)
+    removeWhile(start = mostNode, next = lessFrequent, limit = n, skip = skip)
 
-  def leastToMostFrequent: Iterator[A] = iterator(start = leastNode, shift = moreDirection)
+  def leastToMostFrequent: Iterator[A] = iterator(start = leastNode, shift = moreFrequent)
 
-  def mostToLeastFrequent: Iterator[A] = iterator(start = mostNode, shift = lessDirection)
+  def mostToLeastFrequent: Iterator[A] = iterator(start = mostNode, shift = lessFrequent)
 
-  private def hasFrequency(frequencyNode: OptionVal[FrequencyNode[A]], count: Int): Boolean = frequencyNode match {
-    case OptionVal.Some(node) => node.count == count
-    case _                    => false
-  }
-
-  private def addAsLeastFrequent(node: Node[A]): Unit = {
-    if (hasFrequency(leastFrequent, count = 1)) {
-      addToFrequency(node, leastFrequent.get)
+  private def addAsLeastFrequent(value: A): Node[A] = {
+    val frequency = if (leastFrequent.count == 1) {
+      leastFrequent
     } else {
       val frequencyOne = new FrequencyNode[A](count = 1)
+      frequencyOne.lessFrequent = zero
       frequencyOne.moreFrequent = leastFrequent
-      if (leastFrequent.isDefined) leastFrequent.get.lessFrequent = OptionVal.Some(frequencyOne)
-      leastFrequent = OptionVal.Some(frequencyOne)
-      if (mostFrequent.isEmpty) mostFrequent = leastFrequent
-      addToFrequency(node, frequencyOne)
+      frequencyOne.lessFrequent.moreFrequent = frequencyOne
+      frequencyOne.moreFrequent.lessFrequent = frequencyOne
+      frequencyOne
     }
+    val node = new Node(value, frequency)
+    addToFrequency(node, frequency)
+    node
   }
 
-  private def increaseFrequency(node: Node[A]): Unit = node.frequencyNode match {
-    case OptionVal.Some(currentFrequencyNode) =>
-      val nextFrequencyNode = getOrInsertFrequencyAfter(currentFrequencyNode)
-      removeFromCurrentPosition(node)
-      addToFrequency(node, nextFrequencyNode)
-    case _ =>
+  private def increaseFrequency(node: Node[A]): Unit = {
+    val nextFrequency = getOrInsertFrequencyAfter(node.frequency)
+    removeFromCurrentPosition(node)
+    addToFrequency(node, nextFrequency)
   }
 
-  private def getOrInsertFrequencyAfter(frequencyNode: FrequencyNode[A]): FrequencyNode[A] = {
-    val nextCount = frequencyNode.count + 1
-    if (hasFrequency(frequencyNode.moreFrequent, nextCount)) {
-      frequencyNode.moreFrequent.get
+  private def getOrInsertFrequencyAfter(frequency: FrequencyNode[A]): FrequencyNode[A] = {
+    val nextCount = frequency.count + 1
+    if (frequency.moreFrequent.count == nextCount) {
+      frequency.moreFrequent
     } else {
       val nextFrequencyNode = new FrequencyNode[A](nextCount)
-      nextFrequencyNode.lessFrequent = OptionVal.Some(frequencyNode)
-      nextFrequencyNode.moreFrequent = frequencyNode.moreFrequent
-      frequencyNode.moreFrequent = OptionVal.Some(nextFrequencyNode)
-      nextFrequencyNode.moreFrequent match {
-        case OptionVal.Some(moreFrequent) => moreFrequent.lessFrequent = OptionVal.Some(nextFrequencyNode)
-        case _                            => mostFrequent = OptionVal.Some(nextFrequencyNode)
-      }
+      nextFrequencyNode.lessFrequent = frequency
+      nextFrequencyNode.moreFrequent = frequency.moreFrequent
+      nextFrequencyNode.moreFrequent.lessFrequent = nextFrequencyNode
+      frequency.moreFrequent = nextFrequencyNode
       nextFrequencyNode
     }
   }
 
-  private def addToFrequency(node: Node[A], frequencyNode: FrequencyNode[A]): Unit = {
-    node.frequencyNode = OptionVal.Some(frequencyNode)
-    node.moreRecent = OptionVal.None
-    node.lessRecent = frequencyNode.mostRecent
-    if (frequencyNode.mostRecent.isDefined) frequencyNode.mostRecent.get.moreRecent = OptionVal.Some(node)
-    frequencyNode.mostRecent = OptionVal.Some(node)
-    if (frequencyNode.leastRecent.isEmpty) frequencyNode.leastRecent = frequencyNode.mostRecent
+  private def addToFrequency(node: Node[A], frequency: FrequencyNode[A]): Unit = {
+    node.frequency = frequency
+    node.moreRecent = frequency.empty
+    node.lessRecent = frequency.mostRecent
+    node.moreRecent.lessRecent = node
+    node.lessRecent.moreRecent = node
   }
 
-  private def removeFromCurrentPosition(node: Node[A]): Unit = node.frequencyNode match {
-    case OptionVal.Some(frequencyNode) =>
-      removeFromFrequency(node, frequencyNode)
-      removeFrequencyIfEmpty(frequencyNode)
-    case _ =>
-  }
-
-  private def removeFromFrequency(node: Node[A], frequencyNode: FrequencyNode[A]): Unit = {
-    node.lessRecent match {
-      case OptionVal.Some(lessRecent) => lessRecent.moreRecent = node.moreRecent
-      case _                          => frequencyNode.leastRecent = node.moreRecent
-    }
-    node.moreRecent match {
-      case OptionVal.Some(moreRecent) => moreRecent.lessRecent = node.lessRecent
-      case _                          => frequencyNode.mostRecent = node.lessRecent
+  private def removeFromCurrentPosition(node: Node[A]): Unit = {
+    node.lessRecent.moreRecent = node.moreRecent
+    node.moreRecent.lessRecent = node.lessRecent
+    if (node.frequency.mostRecent eq node.frequency.empty) {
+      node.frequency.lessFrequent.moreFrequent = node.frequency.moreFrequent
+      node.frequency.moreFrequent.lessFrequent = node.frequency.lessFrequent
     }
   }
-
-  private def removeFrequencyIfEmpty(frequencyNode: FrequencyNode[A]): Unit =
-    if (frequencyNode.mostRecent.isEmpty) {
-      frequencyNode.lessFrequent match {
-        case OptionVal.Some(lessFrequent) => lessFrequent.moreFrequent = frequencyNode.moreFrequent
-        case _                            => leastFrequent = frequencyNode.moreFrequent
-      }
-      frequencyNode.moreFrequent match {
-        case OptionVal.Some(moreFrequent) => moreFrequent.lessFrequent = frequencyNode.lessFrequent
-        case _                            => mostFrequent = frequencyNode.lessFrequent
-      }
-    }
 
   private def removeWhile(
-      start: OptionVal[Node[A]],
-      next: Node[A] => OptionVal[Node[A]],
+      start: Node[A],
+      next: Node[A] => Node[A],
       limit: Int,
       skip: OptionVal[A]): immutable.Seq[A] = {
     var count = 0
     var node = start
     val values = mutable.ListBuffer.empty[A]
-    while (node.isDefined && (count < limit)) {
-      if (!skip.contains(node.get.value)) {
+    while ((node ne zero.empty) && (count < limit)) {
+      if (!skip.contains(node.value)) {
         count += 1
-        removeFromCurrentPosition(node.get)
-        lookupNode -= node.get.value
-        values += node.get.value
+        removeFromCurrentPosition(node)
+        lookupNode -= node.value
+        values += node.value
       }
-      node = next(node.get)
+      node = next(node)
     }
     values.result()
   }
 
-  private def iterator(start: OptionVal[Node[A]], shift: Node[A] => OptionVal[Node[A]]): Iterator[A] =
+  private def iterator(start: Node[A], shift: Node[A] => Node[A]): Iterator[A] =
     new AbstractIterator[A] {
       private[this] var current = start
-      override def hasNext: Boolean = current.isDefined
+      override def hasNext: Boolean = current ne zero.empty
       override def next(): A = {
-        val value = current.get.value
-        current = shift(current.get)
+        val value = current.value
+        current = shift(current)
         value
       }
     }
