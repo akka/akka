@@ -65,11 +65,15 @@ private[akka] final class FrequencyList[A] {
 
   def contains(value: A): Boolean = lookupNode.contains(value)
 
-  private def leastNode: OptionVal[Node[A]] =
-    if (leastFrequent.isDefined) leastFrequent.get.leastRecent else OptionVal.None
+  private def leastNode: OptionVal[Node[A]] = leastFrequent match {
+    case OptionVal.Some(frequencyNode) => frequencyNode.leastRecent
+    case _                             => OptionVal.None
+  }
 
-  private def mostNode: OptionVal[Node[A]] =
-    if (mostFrequent.isDefined) mostFrequent.get.mostRecent else OptionVal.None
+  private def mostNode: OptionVal[Node[A]] = mostFrequent match {
+    case OptionVal.Some(frequencyNode) => frequencyNode.mostRecent
+    case _                             => OptionVal.None
+  }
 
   private val lessDirection: Node[A] => OptionVal[Node[A]] = { node =>
     if (node.lessRecent.isDefined) node.lessRecent
@@ -95,8 +99,10 @@ private[akka] final class FrequencyList[A] {
 
   def mostToLeastFrequent: Iterator[A] = iterator(start = mostNode, shift = lessDirection)
 
-  private def hasFrequency(frequencyNode: OptionVal[FrequencyNode[A]], count: Int): Boolean =
-    frequencyNode.isDefined && frequencyNode.get.count == count
+  private def hasFrequency(frequencyNode: OptionVal[FrequencyNode[A]], count: Int): Boolean = frequencyNode match {
+    case OptionVal.Some(node) => node.count == count
+    case _                    => false
+  }
 
   private def addAsLeastFrequent(node: Node[A]): Unit = {
     if (hasFrequency(leastFrequent, count = 1)) {
@@ -111,25 +117,28 @@ private[akka] final class FrequencyList[A] {
     }
   }
 
-  private def increaseFrequency(node: Node[A]): Unit = {
-    if (node.frequencyNode.isDefined) {
-      val currentFrequencyNode = node.frequencyNode.get
-      val nextCount = currentFrequencyNode.count + 1
-      val nextFrequencyNode =
-        if (hasFrequency(currentFrequencyNode.moreFrequent, nextCount)) {
-          currentFrequencyNode.moreFrequent.get
-        } else {
-          val frequencyNode = new FrequencyNode[A](nextCount)
-          frequencyNode.lessFrequent = OptionVal.Some(currentFrequencyNode)
-          frequencyNode.moreFrequent = currentFrequencyNode.moreFrequent
-          currentFrequencyNode.moreFrequent = OptionVal.Some(frequencyNode)
-          if (frequencyNode.moreFrequent.isDefined)
-            frequencyNode.moreFrequent.get.lessFrequent = OptionVal.Some(frequencyNode)
-          else mostFrequent = OptionVal.Some(frequencyNode)
-          frequencyNode
-        }
+  private def increaseFrequency(node: Node[A]): Unit = node.frequencyNode match {
+    case OptionVal.Some(currentFrequencyNode) =>
+      val nextFrequencyNode = getOrInsertFrequencyAfter(currentFrequencyNode)
       removeFromCurrentPosition(node)
       addToFrequency(node, nextFrequencyNode)
+    case _ =>
+  }
+
+  private def getOrInsertFrequencyAfter(frequencyNode: FrequencyNode[A]): FrequencyNode[A] = {
+    val nextCount = frequencyNode.count + 1
+    if (hasFrequency(frequencyNode.moreFrequent, nextCount)) {
+      frequencyNode.moreFrequent.get
+    } else {
+      val nextFrequencyNode = new FrequencyNode[A](nextCount)
+      nextFrequencyNode.lessFrequent = OptionVal.Some(frequencyNode)
+      nextFrequencyNode.moreFrequent = frequencyNode.moreFrequent
+      frequencyNode.moreFrequent = OptionVal.Some(nextFrequencyNode)
+      nextFrequencyNode.moreFrequent match {
+        case OptionVal.Some(moreFrequent) => moreFrequent.lessFrequent = OptionVal.Some(nextFrequencyNode)
+        case _                            => mostFrequent = OptionVal.Some(nextFrequencyNode)
+      }
+      nextFrequencyNode
     }
   }
 
@@ -142,21 +151,35 @@ private[akka] final class FrequencyList[A] {
     if (frequencyNode.leastRecent.isEmpty) frequencyNode.leastRecent = frequencyNode.mostRecent
   }
 
-  private def removeFromCurrentPosition(node: Node[A]): Unit = {
-    if (node.frequencyNode.isDefined) {
-      val frequencyNode = node.frequencyNode.get
-      if (node.lessRecent.isEmpty) frequencyNode.leastRecent = node.moreRecent
-      else node.lessRecent.get.moreRecent = node.moreRecent
-      if (node.moreRecent.isEmpty) frequencyNode.mostRecent = node.lessRecent
-      else node.moreRecent.get.lessRecent = node.lessRecent
-      if (frequencyNode.mostRecent.isEmpty) {
-        if (frequencyNode.lessFrequent.isEmpty) leastFrequent = frequencyNode.moreFrequent
-        else frequencyNode.lessFrequent.get.moreFrequent = frequencyNode.moreFrequent
-        if (frequencyNode.moreFrequent.isEmpty) mostFrequent = frequencyNode.lessFrequent
-        else frequencyNode.moreFrequent.get.lessFrequent = frequencyNode.lessFrequent
-      }
+  private def removeFromCurrentPosition(node: Node[A]): Unit = node.frequencyNode match {
+    case OptionVal.Some(frequencyNode) =>
+      removeFromFrequency(node, frequencyNode)
+      removeFrequencyIfEmpty(frequencyNode)
+    case _ =>
+  }
+
+  private def removeFromFrequency(node: Node[A], frequencyNode: FrequencyNode[A]): Unit = {
+    node.lessRecent match {
+      case OptionVal.Some(lessRecent) => lessRecent.moreRecent = node.moreRecent
+      case _                          => frequencyNode.leastRecent = node.moreRecent
+    }
+    node.moreRecent match {
+      case OptionVal.Some(moreRecent) => moreRecent.lessRecent = node.lessRecent
+      case _                          => frequencyNode.mostRecent = node.lessRecent
     }
   }
+
+  private def removeFrequencyIfEmpty(frequencyNode: FrequencyNode[A]): Unit =
+    if (frequencyNode.mostRecent.isEmpty) {
+      frequencyNode.lessFrequent match {
+        case OptionVal.Some(lessFrequent) => lessFrequent.moreFrequent = frequencyNode.moreFrequent
+        case _                            => leastFrequent = frequencyNode.moreFrequent
+      }
+      frequencyNode.moreFrequent match {
+        case OptionVal.Some(moreFrequent) => moreFrequent.lessFrequent = frequencyNode.lessFrequent
+        case _                            => mostFrequent = frequencyNode.lessFrequent
+      }
+    }
 
   private def removeWhile(
       start: OptionVal[Node[A]],
