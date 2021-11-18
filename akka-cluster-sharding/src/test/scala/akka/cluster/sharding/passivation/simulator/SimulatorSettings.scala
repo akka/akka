@@ -46,13 +46,15 @@ object SimulatorSettings {
   object StrategySettings {
     final case class LeastRecentlyUsed(perRegionLimit: Int) extends StrategySettings
     final case class MostRecentlyUsed(perRegionLimit: Int) extends StrategySettings
+    final case class LeastFrequentlyUsed(perRegionLimit: Int) extends StrategySettings
 
     def apply(simulatorConfig: Config, strategy: String): StrategySettings = {
       val config = simulatorConfig.getConfig(strategy).withFallback(simulatorConfig.getConfig("strategy-defaults"))
       lowerCase(config.getString("strategy")) match {
-        case "least-recently-used" => LeastRecentlyUsed(config.getInt("least-recently-used.per-region-limit"))
-        case "most-recently-used"  => MostRecentlyUsed(config.getInt("most-recently-used.per-region-limit"))
-        case _                     => sys.error(s"Unknown strategy for [$strategy]")
+        case "least-recently-used"   => LeastRecentlyUsed(config.getInt("least-recently-used.per-region-limit"))
+        case "most-recently-used"    => MostRecentlyUsed(config.getInt("most-recently-used.per-region-limit"))
+        case "least-frequently-used" => LeastFrequentlyUsed(config.getInt("least-frequently-used.per-region-limit"))
+        case _                       => sys.error(s"Unknown strategy for [$strategy]")
       }
     }
   }

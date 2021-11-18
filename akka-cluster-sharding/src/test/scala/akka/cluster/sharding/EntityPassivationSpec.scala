@@ -53,6 +53,15 @@ object EntityPassivationSpec {
     }
     """).withFallback(config)
 
+  val leastFrequentlyUsedConfig = ConfigFactory.parseString("""
+    akka.cluster.sharding {
+      passivation {
+        strategy = least-frequently-used
+        least-frequently-used.limit = 10
+      }
+    }
+    """).withFallback(config)
+
   val disabledConfig = ConfigFactory.parseString("""
     akka.cluster.sharding {
       passivation {
@@ -405,6 +414,155 @@ class MostRecentlyUsedEntityPassivationSpec
       }
 
       expectState(region)(1 -> Set(1, 3, 14), 2 -> Set(21, 30, 25), 3 -> Set(31, 40, 36))
+    }
+  }
+}
+
+class LeastFrequentlyUsedEntityPassivationSpec
+    extends AbstractEntityPassivationSpec(EntityPassivationSpec.leastFrequentlyUsedConfig, expectedEntities = 40) {
+
+  import EntityPassivationSpec.Entity.{ Envelope, ManuallyPassivate, Stop }
+
+  "Passivation of least frequently used entities" must {
+    "passivate the least frequently used entities when the per-shard entity limit is reached" in {
+      val region = start()
+
+      // only one active shard at first, least frequently used entities passivated once the limit is reached
+      for (id <- 1 to 20) {
+        val accesses = (id - 1) % 4 + 1 // vary frequency between 1 and 4 accesses
+        for (x <- 1 to accesses) {
+          region ! Envelope(shard = 1, id = id, message = s"A$x")
+          expectReceived(id = id, message = s"A$x")
+        }
+        val expectPassivated =
+          Map(11 -> 1, 12 -> 5, 13 -> 9, 14 -> 13, 15 -> 2, 16 -> 6, 17 -> 10, 18 -> 17, 19 -> 14, 20 -> 18)
+        expectPassivated.get(id).foreach(passivated => expectReceived(id = passivated, message = Stop))
+      }
+
+      // shard 1: frequency 3 = (3, 7, 11, 15, 19), frequency 4 = (4, 8, 12, 16, 20)
+      expectState(region)(1 -> Set(3, 7, 11, 15, 19, 4, 8, 12, 16, 20))
+
+      // activating a second shard will divide the per-shard limit in two, passivating half of the first shard
+      region ! Envelope(shard = 2, id = 21, message = "B")
+      expectReceived(id = 21, message = "B")
+      for (id <- Seq(3, 7, 11, 15, 19)) {
+        expectReceived(id = id, message = Stop)
+      }
+
+      // shard 1: frequency 4 = (4, 8, 12, 16, 20)
+      // shard 2: frequency 1 = (21)
+      expectState(region)(1 -> Set(4, 8, 12, 16, 20), 2 -> Set(21))
+
+      // shards now have a limit of 5 entities
+      // note: newly added entities are not counted as least frequent for passivation
+      for (id <- 1 to 20) {
+        val accesses = (id - 1) % 4 + 1 // vary frequency between 1 and 4 accesses
+        for (x <- 1 to accesses) {
+          region ! Envelope(shard = 1, id = id, message = s"C$x")
+          expectReceived(id = id, message = s"C$x")
+        }
+        val passivated = if (accesses == 1) id + 3 else id - 1
+        expectReceived(id = passivated, message = Stop)
+      }
+
+      // shard 1: frequency 4 = (4, 8, 12, 16, 20)
+      // shard 2: frequency 1 = (21)
+      expectState(region)(1 -> Set(4, 8, 12, 16, 20), 2 -> Set(21))
+
+      // shards now have a limit of 5 entities
+      for (id <- 21 to 24) {
+        region ! Envelope(shard = 2, id = id, message = "D")
+        expectReceived(id = id, message = "D")
+      }
+
+      // shard 1: frequency 4 = (4, 8, 12, 16, 20)
+      // shard 2: frequency 1 = (22, 23, 24), frequency 2 = (21)
+      expectState(region)(1 -> Set(4, 8, 12, 16, 20), 2 -> Set(22, 23, 24, 21))
+
+      // activating a third shard will divide the per-shard limit in three, passivating entities over the new limits
+      region ! Envelope(shard = 3, id = 31, message = "E")
+      expectReceived(id = 31, message = "E")
+      for (id <- Seq(4, 8, 22)) {
+        expectReceived(id = id, message = Stop)
+      }
+
+      // shard 1: frequency 4 = (12, 16, 20)
+      // shard 2: frequency 1 = (23, 24), frequency 2 = (21)
+      // shard 3: frequency 1 = (31)
+      expectState(region)(1 -> Set(12, 16, 20), 2 -> Set(23, 24, 21), 3 -> Set(31))
+
+      // shards now have a limit of 3 entities
+      for (id <- 21 to 30) {
+        val accesses = (id - 1) % 4 + 1 // vary frequency between 1 and 4 accesses
+        for (x <- 1 to accesses) {
+          region ! Envelope(shard = 2, id = id, message = s"F$x")
+          expectReceived(id = id, message = s"F$x")
+        }
+        val expectPassivated =
+          Map(22 -> 23, 23 -> 24, 24 -> 22, 25 -> 21, 26 -> 25, 27 -> 26, 28 -> 23, 29 -> 27, 30 -> 29)
+        expectPassivated.get(id).foreach(passivated => expectReceived(id = passivated, message = Stop))
+      }
+
+      // shard 1: frequency 4 = (12, 16, 20)
+      // shard 2: frequency 2 = (30), frequency 4 = (24, 28)
+      // shard 3: frequency 1 = (31)
+      expectState(region)(1 -> Set(12, 16, 20), 2 -> Set(30, 24, 28), 3 -> Set(31))
+
+      // shards now have a limit of 3 entities
+      for (id <- 31 to 40) {
+        val accesses = 4 - (id - 1) % 4 // vary frequency between 1 and 4 accesses
+        for (x <- 1 to accesses) {
+          region ! Envelope(shard = 3, id = id, message = s"G$x")
+          expectReceived(id = id, message = s"G$x")
+        }
+        val expectPassivated = Map(34 -> 32, 35 -> 31, 36 -> 35, 37 -> 36, 38 -> 34, 39 -> 38, 40 -> 39)
+        expectPassivated.get(id).foreach(passivated => expectReceived(id = passivated, message = Stop))
+      }
+
+      // shard 1: frequency 4 = (12, 16, 20)
+      // shard 2: frequency 2 = (30), frequency 4 = (24, 28)
+      // shard 3: frequency 1 = (40), frequency 4 = (33, 37)
+      expectState(region)(1 -> Set(12, 16, 20), 2 -> Set(30, 24, 28), 3 -> Set(40, 33, 37))
+
+      // manually passivate some entities
+      region ! Envelope(shard = 1, id = 16, message = ManuallyPassivate)
+      region ! Envelope(shard = 2, id = 24, message = ManuallyPassivate)
+      region ! Envelope(shard = 3, id = 33, message = ManuallyPassivate)
+      expectReceived(id = 16, message = ManuallyPassivate)
+      expectReceived(id = 24, message = ManuallyPassivate)
+      expectReceived(id = 33, message = ManuallyPassivate)
+      expectReceived(id = 16, message = Stop)
+      expectReceived(id = 24, message = Stop)
+      expectReceived(id = 33, message = Stop)
+
+      // shard 1: frequency 4 = (12, 20)
+      // shard 2: frequency 2 = (30), frequency 4 = (28)
+      // shard 3: frequency 1 = (40), frequency 4 = (37)
+      expectState(region)(1 -> Set(12, 20), 2 -> Set(30, 28), 3 -> Set(40, 37))
+
+      for (i <- 1 to 3) {
+        for (x <- 1 to i) {
+          region ! Envelope(shard = 1, id = 10 + i, message = s"H$x")
+          region ! Envelope(shard = 2, id = 20 + i, message = s"H$x")
+          region ! Envelope(shard = 3, id = 30 + i, message = s"H$x")
+          expectReceived(id = 10 + i, message = s"H$x")
+          expectReceived(id = 20 + i, message = s"H$x")
+          expectReceived(id = 30 + i, message = s"H$x")
+        }
+        if (i == 2) {
+          expectReceived(id = 21, message = Stop)
+          expectReceived(id = 40, message = Stop)
+        } else if (i == 3) {
+          expectReceived(id = 11, message = Stop)
+          expectReceived(id = 30, message = Stop)
+          expectReceived(id = 31, message = Stop)
+        }
+      }
+
+      // shard 1: frequency 3 = (13), frequency 4 = (20), frequency 6 = (12)
+      // shard 2: frequency 2 = (22), frequency 3 = (23), frequency 4 = (28)
+      // shard 3: frequency 2 = (32), frequency 3 = (33), frequency 4 = (37)
+      expectState(region)(1 -> Set(13, 20, 12), 2 -> Set(22, 23, 28), 3 -> Set(32, 33, 37))
     }
   }
 }

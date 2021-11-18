@@ -338,6 +338,18 @@ the most recently used passivation strategy, and set the limit for active entiti
 Or enable the most recently used passivation strategy and set the active entity limit using the
 `withMostRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
 
+#### Least frequently used passivation strategy
+
+The **least frequently used** passivation strategy passivates those entities that have the least frequent activity when
+the number of active entities passes a specified limit. The configurable limit is for a whole shard region and is
+divided evenly among the active shards in each region. Configure automatic passivation to use the least frequently used
+passivation strategy, and set the limit for active entities in a shard region:
+
+@@snip [passivation least frequently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-frequently-used type=conf }
+
+Or enable the least frequently used passivation strategy and set the active entity limit using the
+`withLeastFrequentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+
 
 ## Sharding State 
 

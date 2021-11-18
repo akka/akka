@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.cluster.sharding.internal.{
   EntityPassivationStrategy,
+  LeastFrequentlyUsedEntityPassivationStrategy,
   LeastRecentlyUsedEntityPassivationStrategy,
   MostRecentlyUsedEntityPassivationStrategy
 }
@@ -106,6 +107,8 @@ object Simulator {
           () => new LeastRecentlyUsedEntityPassivationStrategy(perRegionLimit)
         case SimulatorSettings.StrategySettings.MostRecentlyUsed(perRegionLimit) =>
           () => new MostRecentlyUsedEntityPassivationStrategy(perRegionLimit)
+        case SimulatorSettings.StrategySettings.LeastFrequentlyUsed(perRegionLimit) =>
+          () => new LeastFrequentlyUsedEntityPassivationStrategy(perRegionLimit)
       }
   }
 

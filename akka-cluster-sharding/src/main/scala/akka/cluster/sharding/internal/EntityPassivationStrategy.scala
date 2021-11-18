@@ -7,7 +7,7 @@ package akka.cluster.sharding.internal
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.EntityId
-import akka.util.RecencyList
+import akka.util.{ FrequencyList, OptionVal, RecencyList }
 
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
@@ -28,6 +28,8 @@ private[akka] object EntityPassivationStrategy {
         new LeastRecentlyUsedEntityPassivationStrategy(limit)
       case ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(limit) =>
         new MostRecentlyUsedEntityPassivationStrategy(limit)
+      case ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(limit) =>
+        new LeastFrequentlyUsedEntityPassivationStrategy(limit)
       case _ => DisabledEntityPassivationStrategy
     }
   }
@@ -191,5 +193,42 @@ private[akka] final class MostRecentlyUsedEntityPassivationStrategy(perRegionLim
   private def passivateExcessEntities(skip: Int = 0): PassivateEntities = {
     val excess = recencyList.size - perShardLimit
     if (excess > 0) recencyList.removeMostRecent(excess, skip) else PassivateEntities.none
+  }
+}
+
+/**
+ * Passivate the least frequently used entities when the number of active entities in a shard region
+ * reaches a limit. The per-region limit is divided evenly among the active shards in a region.
+ * @param perRegionLimit active entity capacity for a shard region
+ */
+@InternalApi
+private[akka] final class LeastFrequentlyUsedEntityPassivationStrategy(perRegionLimit: Int)
+    extends EntityPassivationStrategy {
+  import EntityPassivationStrategy.PassivateEntities
+
+  private var perShardLimit: Int = perRegionLimit
+  private val frequencyList = FrequencyList.empty[EntityId]
+
+  override val scheduledInterval: Option[FiniteDuration] = None
+
+  override def shardsUpdated(activeShards: Int): PassivateEntities = {
+    perShardLimit = perRegionLimit / activeShards
+    passivateExcessEntities()
+  }
+
+  override def entityCreated(id: EntityId): PassivateEntities = {
+    frequencyList.update(id)
+    passivateExcessEntities(skip = OptionVal.Some(id)) // make sure the newly created entity is still active
+  }
+
+  override def entityTouched(id: EntityId): Unit = frequencyList.update(id)
+
+  override def entityTerminated(id: EntityId): Unit = frequencyList.remove(id)
+
+  override def intervalPassed(): PassivateEntities = PassivateEntities.none
+
+  private def passivateExcessEntities(skip: OptionVal[EntityId] = OptionVal.none[EntityId]): PassivateEntities = {
+    val excess = frequencyList.size - perShardLimit
+    if (excess > 0) frequencyList.removeLeastFrequent(excess, skip) else PassivateEntities.none
   }
 }

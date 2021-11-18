@@ -86,6 +86,25 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
         .passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(42000)
     }
 
+    "allow least frequently used passivation strategy to be configured (via config)" in {
+      settings("""
+        #passivation-least-frequently-used
+        akka.cluster.sharding {
+          passivation {
+            strategy = least-frequently-used
+            least-frequently-used.limit = 1000000
+          }
+        }
+        #passivation-least-frequently-used
+      """).passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(1000000)
+    }
+
+    "allow least frequently used passivation strategy to be configured (via factory method)" in {
+      defaultSettings
+        .withLeastFrequentlyUsedPassivationStrategy(limit = 42000)
+        .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(42000)
+    }
+
     "disable automatic passivation if `remember-entities` is enabled (via config)" in {
       settings("""
         akka.cluster.sharding.remember-entities = on
