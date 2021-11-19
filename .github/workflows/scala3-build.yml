@@ -26,7 +26,7 @@ jobs:
           - akka-persistence/test akka-persistence-shared/test akka-persistence-query/test akka-persistence-typed/test akka-persistence-testkit/test
           - akka-pki/test akka-slf4j/test
           - akka-serialization-jackson/test
-          - akka-stream/test akka-stream-testkit/test akka-stream-tests/test
+          - akka-stream/test akka-stream-testkit/test akka-stream-tests/test akka-stream-typed/test
           - akka-stream-tests-tck/test
           - akka-remote/test akka-remote-tests/test akka-protobuf/test akka-protobuf-v3/test
       fail-fast: true
