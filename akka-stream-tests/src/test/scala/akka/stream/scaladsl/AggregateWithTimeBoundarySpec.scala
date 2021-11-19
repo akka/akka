@@ -4,7 +4,8 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.impl.fusing.{AggregateWithBoundary, AggregateWithTimeBoundary}
+import akka.stream.OverflowStrategy
+import akka.stream.impl.fusing.{AggregateWithBoundary, AggregateWithTimeBoundary, Buffer}
 import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.testkit.{AkkaSpec, ExplicitlyTriggeredScheduler}
 import com.typesafe.config.ConfigValueFactory
@@ -201,7 +202,8 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
         currentTimeMs = schedulerTimeMs,
         interval = 1.milli
       )
-    ).to(Sink.fromSubscriber(downstream)).run()
+    ).via(Buffer(1, OverflowStrategy.backpressure))
+      .to(Sink.fromSubscriber(downstream)).run()
 
     downstream.ensureSubscription()
     upstream.sendNext(1) // onPush(1) -> aggregator=Seq(1), due to the preStart pull, will pull upstream again since queue is empty
@@ -211,19 +213,21 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
     upstream.sendNext(3) // 3 will not be pushed to the stage until the stage pull upstream
     timePasses(maxGap) // since 3 stayed outside of the stage, this gap will not cause 3 to be emitted
     downstream.request(1).expectNext(Seq(1)) // onPull emit Seq(1), queue=(Seq(2))
+    timePasses(maxGap) // since 3 stayed outside of the stage, this gap will not cause 3 to be emitted
     downstream.request(1).expectNext(Seq(2)) // onPull emit Seq(2). queue is empty now, pull upstream and 3 will be pushed into the stage
-    // onPush(3) -> aggregator=Seq(3) pull upstream again since queue is empty
-    upstream.sendNext(4) // onPush(4) -> aggregator=Seq(3, 4) will follow, and pull upstream again
-    downstream.request(1).expectNoMessage()// onPull won't emit since queue is empty, wont't pull upstream again since it's already pulled
-    timePasses(maxGap) // harvest onTimer and emit Seq(3, 4) right away since there is pending request, queue becomes empty, aggregator=null
-    downstream.expectNext(Seq(3, 4))
-    upstream.sendNext(5) // onPush(5) -> aggregator=Seq(5) will happen right after due to the previous pull from onPush(4)
-    timePasses(maxGap) // harvest onTimer, queue=(Seq(5)), aggregator=null, no emit since isAvailable(out)=false
-    upstream.sendNext(6) // onPush(6) -> aggregator=Seq(6) will happen right after due to the previous pull from onPush(5), even the queue is full at this point
-    // upstream.sendNext(7) // if send another element from upstream, thre will be pending push which prevents the upstream from completing and instead the onPull from downstream will come first, this is the behavior of upstream stage
-    upstream.sendComplete() // emit remaining queue=Queue(Seq(5)) + harvest and emit aggregator=Seq(6)
-    // since there is no pending push from upstream, onUpstreamFinish will be triggered to emit the queu and pending aggregator
-    downstream.request(2).expectNext(Seq(5), Seq(6)) // clean up the emit queue and complete downstream
+    // onPush(3) -> aggregator=Seq(3) pull upstream since queue is empty
+    downstream.request(1).expectNoMessage() // onPull, no data to emit, won't pull upstream again since it's already pulled
+    timePasses(maxGap) // emit Seq(3) onTimer
+    downstream.expectNext(Seq(3))
+    upstream.sendNext(4) // onPush(4) -> aggregator=Seq(4) will follow, and pull upstream again
+    upstream.sendNext(5) // onPush(5) -> aggregator=Seq(4,5) will happen right after due to the previous pull from onPush(4), eagerly pull even out is not available
+    upstream.sendNext(6) // onPush(6) -> aggregator=Seq(4,5,6) will happen right after due to the previous pull from onPush(5), even the queue is full at this point
+    timePasses(maxGap) // harvest queue=(Seq(4,5,6))
+    upstream.sendNext(7) // onPush(7), aggregator=Seq(7), queue=(Seq(4,5,6) no pulling upstream due to queue is full
+    // if sending another message it will stay in upstream, prevent the upstream completion from happening
+    upstream.sendComplete() // emit remaining queue=Queue(Seq(4,5,6)) + harvest and emit aggregator=Seq(7)
+    // since there is no pending push from upstream, onUpstreamFinish will be triggered to emit the queue and pending aggregator
+    downstream.request(2).expectNext(Seq(4,5,6), Seq(7)) // clean up the emit queue and complete downstream
     downstream.expectComplete()
   }
 }

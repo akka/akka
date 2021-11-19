@@ -31,6 +31,7 @@ class AggregateWithBoundary[T, Agg, Emit](
     harvest: Agg => Emit,
     emitOnTimer: Option[(Agg => Boolean, FiniteDuration)])
     extends GraphStage[FlowShape[T, Emit]] {
+
   emitOnTimer.foreach {
     case (_, interval) => require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
   }
@@ -43,11 +44,8 @@ class AggregateWithBoundary[T, Agg, Emit](
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
       private[this] var aggregated: Agg = null.asInstanceOf[Agg]
-      private[this] var hasEmitted: Boolean = false
-      private def backPressure: Boolean = hasEmitted && !isAvailable(out)
 
       override def preStart(): Unit = {
-        pull(in)
         emitOnTimer.foreach {
           case (_, interval) => scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", interval, interval)
         }
@@ -55,7 +53,7 @@ class AggregateWithBoundary[T, Agg, Emit](
 
       override protected def onTimer(timerKey: Any): Unit = {
         emitOnTimer.foreach {
-          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) harvestAndEmitOrEnqueue()
+          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) harvestAndEmit()
         }
       }
 
@@ -63,8 +61,8 @@ class AggregateWithBoundary[T, Agg, Emit](
       override def onPush(): Unit = {
         val input = grab(in)
         if (aggregated == null) aggregated = allocate
-        if (aggregate(aggregated, input)) harvestAndEmitOrEnqueue()
-        if (!backPressure) pull(in)
+        if (aggregate(aggregated, input)) harvestAndEmit()
+        if (isAvailable(out)) pull(in)
       }
 
       override def onUpstreamFinish(): Unit = {
@@ -78,10 +76,10 @@ class AggregateWithBoundary[T, Agg, Emit](
 
       setHandlers(in, out, this)
 
-      private def harvestAndEmitOrEnqueue(): Unit = {
-        emit(out, harvest(aggregated))
+      private def harvestAndEmit(): Unit = {
+        val output = harvest(aggregated)
+        emit(out, output)
         aggregated = null.asInstanceOf[Agg]
-        hasEmitted = true
       }
 
     }
