@@ -47,7 +47,7 @@ object ReplicatedAuctionExampleSpec {
     final case class OfferBid(bidder: String, offer: MoneyAmount) extends Command
     final case class GetHighestBid(replyTo: ActorRef[Bid]) extends Command
     final case class IsClosed(replyTo: ActorRef[Boolean]) extends Command
-    private final case object Close extends Command // Internal, should not be sent from the outside
+    private case object Close extends Command // Internal, should not be sent from the outside
     //#commands
 
     //#events

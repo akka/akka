@@ -31,7 +31,7 @@ object DurableStateBehaviorReplySpec {
   final case class IncrementReplyLater(replyTo: ActorRef[Done]) extends Command[Done]
   final case class ReplyNow(replyTo: ActorRef[Done]) extends Command[Done]
   final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
-  final case object Increment extends Command[Nothing]
+  case object Increment extends Command[Nothing]
   case class IncrementBy(by: Int) extends Command[Nothing]
 
   final case class State(value: Int) extends CborSerializable

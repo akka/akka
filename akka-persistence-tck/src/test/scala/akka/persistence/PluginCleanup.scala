@@ -9,7 +9,7 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterAll
 
-trait PluginCleanup extends BeforeAndAfterAll { _: PluginSpec =>
+trait PluginCleanup extends BeforeAndAfterAll { self: PluginSpec =>
   val storageLocations =
     List("akka.persistence.journal.leveldb.dir", "akka.persistence.snapshot-store.local.dir").map(s =>
       new File(system.settings.config.getString(s)))

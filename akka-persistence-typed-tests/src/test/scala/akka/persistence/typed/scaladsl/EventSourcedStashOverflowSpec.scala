@@ -76,7 +76,8 @@ class EventSourcedStashOverflowSpec
       // capacity + 1 should mean that we get a dropped last message when all stash is filled
       // while the actor is stuck in replay because journal isn't responding
       droppedMessageProbe.receiveMessage()
-      implicit val classicSystem = testKit.system.toClassic
+      implicit val classicSystem: akka.actor.ActorSystem =
+        testKit.system.toClassic
       // we only need to do this one step and recovery completes
       SteppingInmemJournal.step(journal)
 
