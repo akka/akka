@@ -4,7 +4,8 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.impl.fusing.{AggregateWithBoundary, AggregateWithTimeBoundary}
+import akka.stream.OverflowStrategy
+import akka.stream.impl.fusing.{AggregateWithBoundary, AggregateWithTimeBoundary, Buffer}
 import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.testkit.{AkkaSpec, ExplicitlyTriggeredScheduler}
 import com.typesafe.config.ConfigValueFactory
@@ -29,7 +30,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
           },
           harvest = buffer => buffer.toSeq,
           emitOnTimer = None,
-          bufferSize = 1
+          bufferSize = 0
         )
       )
       .runWith(Sink.collection)
@@ -51,7 +52,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
           },
           harvest = buffer => buffer.toSeq :+ -1, // append -1 to output to demonstrate the effect of harvest
           emitOnTimer = None,
-          bufferSize = 1
+          bufferSize = 0
         )
       )
       .runWith(Sink.collection)
@@ -75,7 +76,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
           },
           harvest = buffer => buffer.toSeq,
           emitOnTimer = None,
-          bufferSize = 1
+          bufferSize = 0
         )
       )
       .runWith(Sink.collection)
@@ -120,7 +121,7 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
           maxDuration = None,
           currentTimeMs = schedulerTimeMs,
           interval = 1.milli,
-          bufferSize = 1
+          bufferSize = 0
         )
       )
       .runWith(Sink.collection)
@@ -164,7 +165,7 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
           maxDuration = Some(maxDuration), // elements with longer gap will put put to next aggregator
           currentTimeMs = schedulerTimeMs,
           interval = 1.milli,
-          bufferSize = 1
+          bufferSize = 0
         )
       )
       .runWith(Sink.collection)
@@ -205,9 +206,9 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
         maxDuration = None,
         currentTimeMs = schedulerTimeMs,
         interval = 1.milli,
-        bufferSize = 1
+        bufferSize = 0
       )
-    ).to(Sink.fromSubscriber(downstream)).run()
+    ).via(Buffer(1, OverflowStrategy.backpressure)).to(Sink.fromSubscriber(downstream)).run()
 
     downstream.ensureSubscription()
     upstream.sendNext(1) // onPush(1) -> aggregator=Seq(1), due to the preStart pull, will pull upstream again since queue is empty

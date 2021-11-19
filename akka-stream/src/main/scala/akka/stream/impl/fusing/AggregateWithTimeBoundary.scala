@@ -35,7 +35,7 @@ class AggregateWithBoundary[T, Agg, Emit](
     bufferSize: Int)
     extends GraphStage[FlowShape[T, Emit]] {
 
-  require(bufferSize >= 1, s"maxBufferSize=$bufferSize, must be positive")
+  // require(bufferSize >= 1, s"maxBufferSize=$bufferSize, must be positive")
 
   emitOnTimer.foreach {
     case (_, interval) => require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
@@ -52,12 +52,16 @@ class AggregateWithBoundary[T, Agg, Emit](
 
       private val buffer = mutable.Queue[Emit]()
 
-      private def bufferFull: Boolean = buffer.size >= bufferSize
+      private def bufferFull: Boolean = if (bufferSize > 0) {
+        buffer.size >= bufferSize
+      } else { // without using buffer, the only signal of backpressure is to look at output
+        !isAvailable(out)
+      }
 
       private def state: String = s"agg=$aggregated,buffer=$buffer,isAvailable(out)=${isAvailable(out)},hasBeenPulled(in)=${hasBeenPulled(in)}"
 
       override def preStart(): Unit = {
-        pull(in)
+        if (bufferSize > 0) pull(in) // do no eagerly pull with bufferSize=0
         emitOnTimer.foreach {
           case (_, interval) => scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", interval, interval)
         }
@@ -104,7 +108,12 @@ class AggregateWithBoundary[T, Agg, Emit](
 
       private def harvestAndEmitOrEnqueue(): Unit = {
         val output = harvest(aggregated)
-        if (isAvailable(out)) push(out, output) else buffer.enqueue(output)
+        if (bufferSize > 0) {
+          if (isAvailable(out)) push(out, output) else buffer.enqueue(output)
+        } else { // do not use buffr
+          emit(out, output)
+        }
+
         aggregated = null.asInstanceOf[Agg]
       }
 
