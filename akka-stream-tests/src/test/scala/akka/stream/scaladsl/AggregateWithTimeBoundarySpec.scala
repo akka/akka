@@ -29,8 +29,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
             buffer.size >= groupSize
           },
           harvest = buffer => buffer.toSeq,
-          emitOnTimer = None,
-          bufferSize = 0
+          emitOnTimer = None
         )
       )
       .runWith(Sink.collection)
@@ -51,8 +50,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
             buffer.size >= groupSize
           },
           harvest = buffer => buffer.toSeq :+ -1, // append -1 to output to demonstrate the effect of harvest
-          emitOnTimer = None,
-          bufferSize = 0
+          emitOnTimer = None
         )
       )
       .runWith(Sink.collection)
@@ -75,8 +73,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
             buffer.sum >= weight
           },
           harvest = buffer => buffer.toSeq,
-          emitOnTimer = None,
-          bufferSize = 0
+          emitOnTimer = None
         )
       )
       .runWith(Sink.collection)
@@ -120,8 +117,7 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
           maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
           maxDuration = None,
           currentTimeMs = schedulerTimeMs,
-          interval = 1.milli,
-          bufferSize = 0
+          interval = 1.milli
         )
       )
       .runWith(Sink.collection)
@@ -164,8 +160,7 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
           maxGap = None,
           maxDuration = Some(maxDuration), // elements with longer gap will put put to next aggregator
           currentTimeMs = schedulerTimeMs,
-          interval = 1.milli,
-          bufferSize = 0
+          interval = 1.milli
         )
       )
       .runWith(Sink.collection)
@@ -205,10 +200,10 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
         maxGap = Some(maxGap),
         maxDuration = None,
         currentTimeMs = schedulerTimeMs,
-        interval = 1.milli,
-        bufferSize = 0
+        interval = 1.milli
       )
-    ).via(Buffer(1, OverflowStrategy.backpressure)).to(Sink.fromSubscriber(downstream)).run()
+    ).via(Buffer(1, OverflowStrategy.backpressure))
+      .to(Sink.fromSubscriber(downstream)).run()
 
     downstream.ensureSubscription()
     upstream.sendNext(1) // onPush(1) -> aggregator=Seq(1), due to the preStart pull, will pull upstream again since queue is empty

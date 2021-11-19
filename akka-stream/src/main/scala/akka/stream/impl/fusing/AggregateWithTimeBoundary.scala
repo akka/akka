@@ -7,7 +7,6 @@ package akka.stream.impl.fusing
 import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
-import scala.collection.mutable
 import scala.concurrent.duration._
 
 /**
@@ -25,14 +24,12 @@ import scala.concurrent.duration._
  * @param aggregate   update the aggregated elements, return true if ready to emit after update
  * @param emitOnTimer decide whether the currently aggregated elements can be emitted on each timer event
  * @param harvest     this is invoked before emit within the current stage/operator
- * @param bufferSize  internal buffer to decouple upstream and downstream
  */
 class AggregateWithBoundary[T, Agg, Emit](
     allocate: => Agg,
     aggregate: (Agg, T) => Boolean,
     harvest: Agg => Emit,
-    emitOnTimer: Option[(Agg => Boolean, FiniteDuration)],
-    bufferSize: Int)
+    emitOnTimer: Option[(Agg => Boolean, FiniteDuration)])
     extends GraphStage[FlowShape[T, Emit]] {
 
   // require(bufferSize >= 1, s"maxBufferSize=$bufferSize, must be positive")
@@ -50,18 +47,7 @@ class AggregateWithBoundary[T, Agg, Emit](
 
       private[this] var aggregated: Agg = null.asInstanceOf[Agg]
 
-      private val buffer = mutable.Queue[Emit]()
-
-      private def bufferFull: Boolean = if (bufferSize > 0) {
-        buffer.size >= bufferSize
-      } else { // without using buffer, the only signal of backpressure is to look at output
-        !isAvailable(out)
-      }
-
-      private def state: String = s"agg=$aggregated,buffer=$buffer,isAvailable(out)=${isAvailable(out)},hasBeenPulled(in)=${hasBeenPulled(in)}"
-
       override def preStart(): Unit = {
-        if (bufferSize > 0) pull(in) // do no eagerly pull with bufferSize=0
         emitOnTimer.foreach {
           case (_, interval) => scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", interval, interval)
         }
@@ -69,51 +55,32 @@ class AggregateWithBoundary[T, Agg, Emit](
 
       override protected def onTimer(timerKey: Any): Unit = {
         emitOnTimer.foreach {
-          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) {
-            println(s"onTimer harvest begin $state")
-            harvestAndEmitOrEnqueue()
-            println(s"onTimer end $state")
-          }
+          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) harvestAndEmit()
         }
       }
 
       // at onPush, isAvailable(in)=true hasBeenPulled(in)=false, isAvailable(out) could be true or false
       override def onPush(): Unit = {
         val input = grab(in)
-        println(s"onPush($input) begin $state")
         if (aggregated == null) aggregated = allocate
-        if (aggregate(aggregated, input)) harvestAndEmitOrEnqueue()
-        if (!bufferFull) pull(in)
-        println(s"onPush($input) end $state")
+        if (aggregate(aggregated, input)) harvestAndEmit()
+        if (isAvailable(out)) pull(in)
       }
 
       override def onUpstreamFinish(): Unit = {
-        println(s"onUpstreamFinish begin $state")
-        if (buffer.nonEmpty) emitMultiple(out, buffer.iterator)
         if (aggregated != null) emit(out, harvest(aggregated))
         completeStage()
-        println(s"onUpstreamFinish end $state")
       }
 
       // at onPull, isAvailable(out) is always true indicating downstream is waiting
       // isAvailable(in) and hasBeenPulled(in) can be (true, false) (false, true) or (false, false)
-      override def onPull(): Unit = {
-        println(s"onPull begin $state")
-        if (buffer.nonEmpty) push(out, buffer.dequeue())
-        if (!bufferFull && !hasBeenPulled(in)) pull(in)
-        println(s"onPull end $state")
-      }
+      override def onPull(): Unit = if (!hasBeenPulled(in)) pull(in)
 
       setHandlers(in, out, this)
 
-      private def harvestAndEmitOrEnqueue(): Unit = {
+      private def harvestAndEmit(): Unit = {
         val output = harvest(aggregated)
-        if (bufferSize > 0) {
-          if (isAvailable(out)) push(out, output) else buffer.enqueue(output)
-        } else { // do not use buffr
-          emit(out, output)
-        }
-
+        emit(out, output)
         aggregated = null.asInstanceOf[Agg]
       }
 
@@ -136,8 +103,7 @@ class AggregateWithTimeBoundary[T, Agg, Emit](
     maxGap: Option[FiniteDuration],
     maxDuration: Option[FiniteDuration],
     interval: FiniteDuration,
-    currentTimeMs: => Long,
-    bufferSize: Int)
+    currentTimeMs: => Long)
     extends AggregateWithBoundary[T, ValueTimeWrapper[Agg], Emit](
       allocate = new ValueTimeWrapper(value = allocate),
       aggregate = (agg, in) => {
@@ -150,8 +116,8 @@ class AggregateWithTimeBoundary[T, Agg, Emit](
         val currentTime = currentTimeMs
         maxDuration.exists(md => currentTime - agg.firstTime >= md.toMillis) ||
         maxGap.exists(mg => currentTime - agg.lastTime >= mg.toMillis)
-      }, interval)),
-      bufferSize = bufferSize) {
+      }, interval))
+    ) {
   require(
     maxDuration.nonEmpty || maxGap.nonEmpty,
     s"requires timing condition otherwise should use ${classOf[AggregateWithBoundary[T, Agg, Emit]]}")
@@ -165,6 +131,4 @@ class ValueTimeWrapper[T](var value: T) {
     if (firstTime == -1) firstTime = time
     lastTime = time
   }
-
-  override def toString: String = s"($value,first=$firstTime,last=$lastTime)"
 }
