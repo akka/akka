@@ -54,6 +54,8 @@ class AggregateWithBoundary[T, Agg, Emit](
 
       private def bufferFull: Boolean = buffer.size >= bufferSize
 
+      private def state: String = s"agg=$aggregated,buffer=$buffer,isAvailable(out)=${isAvailable(out)},hasBeenPulled(in)=${hasBeenPulled(in)}"
+
       override def preStart(): Unit = {
         pull(in)
         emitOnTimer.foreach {
@@ -63,29 +65,39 @@ class AggregateWithBoundary[T, Agg, Emit](
 
       override protected def onTimer(timerKey: Any): Unit = {
         emitOnTimer.foreach {
-          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) harvestAndEmitOrEnqueue()
+          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) {
+            println(s"onTimer harvest begin $state")
+            harvestAndEmitOrEnqueue()
+            println(s"onTimer end $state")
+          }
         }
       }
 
       // at onPush, isAvailable(in)=true hasBeenPulled(in)=false, isAvailable(out) could be true or false
       override def onPush(): Unit = {
         val input = grab(in)
+        println(s"onPush($input) begin $state")
         if (aggregated == null) aggregated = allocate
         if (aggregate(aggregated, input)) harvestAndEmitOrEnqueue()
         if (!bufferFull) pull(in)
+        println(s"onPush($input) end $state")
       }
 
       override def onUpstreamFinish(): Unit = {
+        println(s"onUpstreamFinish begin $state")
         if (buffer.nonEmpty) emitMultiple(out, buffer.iterator)
         if (aggregated != null) emit(out, harvest(aggregated))
         completeStage()
+        println(s"onUpstreamFinish end $state")
       }
 
       // at onPull, isAvailable(out) is always true indicating downstream is waiting
       // isAvailable(in) and hasBeenPulled(in) can be (true, false) (false, true) or (false, false)
       override def onPull(): Unit = {
+        println(s"onPull begin $state")
         if (buffer.nonEmpty) push(out, buffer.dequeue())
         if (!bufferFull && !hasBeenPulled(in)) pull(in)
+        println(s"onPull end $state")
       }
 
       setHandlers(in, out, this)
@@ -144,4 +156,6 @@ class ValueTimeWrapper[T](var value: T) {
     if (firstTime == -1) firstTime = time
     lastTime = time
   }
+
+  override def toString: String = s"($value,first=$firstTime,last=$lastTime)"
 }
