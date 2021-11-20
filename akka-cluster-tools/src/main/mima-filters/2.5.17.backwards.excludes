@@ -1,3 +1,0 @@
-# #27411 changes not caught by previous mima versions
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.client.ClusterClientReceptionist.get")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.pubsub.DistributedPubSub.get")

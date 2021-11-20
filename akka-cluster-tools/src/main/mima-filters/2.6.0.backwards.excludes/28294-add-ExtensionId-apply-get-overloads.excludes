@@ -1,5 +1,0 @@
-# Incompatibilities against Akka < 2.5.17 where extra static bridge methods were generated that
-# Mima now wrongly correlates with the new ones added in the PR
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClientReceptionist.get")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.pubsub.DistributedPubSub.get")
-
