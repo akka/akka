@@ -1,3 +1,0 @@
-# Scala 3 is stricter about checking generics, so we made the generics
-# of this internal method a bit more specific:
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.ddata.Replicator.receiveUpdate")

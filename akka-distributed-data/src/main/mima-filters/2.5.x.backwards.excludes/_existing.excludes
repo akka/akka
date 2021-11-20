@@ -1,3 +1,0 @@
-# This file contains all excludes added before changing to the subdirectory style
-# Upgrade to protobuf 3
-ProblemFilters.exclude[Problem]("akka.cluster.ddata.protobuf.*")

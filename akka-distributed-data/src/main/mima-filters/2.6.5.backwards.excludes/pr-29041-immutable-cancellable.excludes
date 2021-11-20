@@ -1,6 +1,0 @@
-# Change internal methods of the Replicator actor
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ReadWriteAggregator.sendToSecondarySchedule")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ReadWriteAggregator.sendToSecondarySchedule_=")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ReadWriteAggregator.timeoutSchedule")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ReadWriteAggregator.timeoutSchedule_=")
-

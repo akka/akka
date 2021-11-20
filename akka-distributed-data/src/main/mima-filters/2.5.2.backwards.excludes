@@ -1,2 +1,0 @@
-# #23025 OversizedPayloadException DeltaPropagation
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.DeltaPropagationSelector.maxDeltaSize")

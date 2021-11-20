@@ -1,3 +1,0 @@
-# #28421 Gossip entries based on size
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.PruningState.estimatedSize")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.VersionVector.estimatedSize")
