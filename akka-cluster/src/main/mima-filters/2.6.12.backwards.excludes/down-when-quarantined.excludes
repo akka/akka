@@ -1,7 +1,0 @@
-# internals only
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sbr.KeepMajority.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sbr.DownAllNodes.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sbr.StaticQuorum.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sbr.DowningStrategy.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sbr.LeaseMajority.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sbr.KeepOldest.this")

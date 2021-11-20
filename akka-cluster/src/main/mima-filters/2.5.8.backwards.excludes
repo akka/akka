@@ -1,1 +1,0 @@
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.GossipTargetSelector.selectDcLocalNodes")

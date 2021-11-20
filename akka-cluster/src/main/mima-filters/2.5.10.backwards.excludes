@@ -1,6 +1,0 @@
-# #24622 wire compat regression
-ProblemFilters.exclude[FinalClassProblem]("akka.cluster.protobuf.ClusterMessageSerializer")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.protobuf.ClusterMessageSerializer.clusterRouterPoolFromBinary")
-# these are needed because of bug #196 in MiMa
-ProblemFilters.exclude[FinalMethodProblem]("akka.serialization.SerializerWithStringManifest.includeManifest")
-ProblemFilters.exclude[FinalMethodProblem]("akka.serialization.SerializerWithStringManifest.fromBinary")

@@ -1,8 +1,0 @@
-# #27788 Remove AutoDowning
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.AutoDown$UnreachableTimeout")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.AutoDown$UnreachableTimeout$")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterSettings.AutoDownUnreachableAfter")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.AutoDownBase")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.AutoDown$")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.AutoDown")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.AutoDowning")

@@ -1,3 +1,0 @@
-# #26570 Promote IncompatibleConfigurationDetected to public API (moved package and made public)
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.IncompatibleConfigurationDetected")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.IncompatibleConfigurationDetected$")

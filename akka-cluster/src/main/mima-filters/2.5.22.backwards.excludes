@@ -1,2 +1,0 @@
-# Remove warnings, changing type in private class
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.CrossDcHeartbeatingState.init")

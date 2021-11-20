@@ -1,4 +1,0 @@
-# #30090 adding releaseAfter to LeaseMajority
-ProblemFilters.exclude[Problem]("akka.cluster.sbr.LeaseMajoritySettings$")
-ProblemFilters.exclude[Problem]("akka.cluster.sbr.LeaseMajoritySettings.*")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sbr.LeaseMajority.this")

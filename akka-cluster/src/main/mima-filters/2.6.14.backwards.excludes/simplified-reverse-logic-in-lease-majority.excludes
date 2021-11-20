@@ -1,3 +1,0 @@
-# #30155 simplified reverse logic in lease majority
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sbr.SplitBrainResolverBase.waitingForLease")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sbr.DowningStrategy.reverseDecision")

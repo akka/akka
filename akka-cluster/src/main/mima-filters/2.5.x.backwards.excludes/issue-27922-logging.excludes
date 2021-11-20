@@ -1,8 +1,0 @@
-# #27922 More structured logger names, remove usage of ActorLogging
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ClusterHeartbeatSender")
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ClusterHeartbeatReceiver")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterHeartbeatReceiver.log")
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.CrossDcHeartbeatSender")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.CrossDcHeartbeatSender.log")
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ClusterDomainEventPublisher")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterDomainEventPublisher.log")
