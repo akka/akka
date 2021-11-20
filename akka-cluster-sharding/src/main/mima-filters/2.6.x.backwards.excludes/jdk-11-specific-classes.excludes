@@ -1,7 +1,0 @@
-# Java 11 only flight recorder classes added in 2.6.7
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.jfr.Passivate")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.jfr.RememberEntityWrite")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.jfr.JFRShardingFlightRecorder")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.jfr.RememberEntityAdd")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.jfr.RememberEntityRemove")
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.jfr.PassivateRestart")

@@ -1,5 +1,0 @@
-# Rename internal method #25840
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.getEntity")
-
-# #27411 changes not caught by previous mima versions
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ClusterSharding.get")

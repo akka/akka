@@ -1,4 +1,0 @@
-# Add methods to trait not for user extension
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.external.javadsl.ExternalShardAllocationClient.setShardLocations")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.external.scaladsl.ExternalShardAllocationClient.updateShardLocations")
-

@@ -1,6 +1,0 @@
-# @InternalApi private[akka] val
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ClusterShardingSettings.shouldPassivateIdleEntities")
-
-# Shard internal implementation
-ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.Shard$PassivateIdleTick$")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.touchLastMessageTimestamp")

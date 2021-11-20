@@ -1,4 +1,0 @@
-# #23231 multi-DC Sharding
-ProblemFilters.exclude[Problem]("akka.cluster.sharding.ClusterShardingGuardian*")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.proxyProps")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.this")

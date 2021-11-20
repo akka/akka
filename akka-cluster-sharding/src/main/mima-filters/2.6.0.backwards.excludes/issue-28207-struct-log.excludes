@@ -1,8 +1,0 @@
-# #28207 logging with markers
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.sharding.PersistentShardCoordinator")
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.sharding.DDataShardCoordinator")
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.sharding.ShardCoordinator")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardCoordinator.log")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.typeName")
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.sharding.ShardRegion")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardRegion.log")
