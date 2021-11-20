@@ -1,3 +1,0 @@
-# ask with status #29133, safe since EntityRef not user extendable
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.javadsl.EntityRef.askWithStatus")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.scaladsl.EntityRef.askWithStatus")

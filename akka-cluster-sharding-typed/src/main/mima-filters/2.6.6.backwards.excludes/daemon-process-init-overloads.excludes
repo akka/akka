@@ -1,5 +1,0 @@
-# ShardedDaemonProcess: Use Interger in javadsl function #29235
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.typed.javadsl.ShardedDaemonProcess.init")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.javadsl.ShardedDaemonProcess.init")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl.init")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.javadsl.ShardedDaemonProcess.init")

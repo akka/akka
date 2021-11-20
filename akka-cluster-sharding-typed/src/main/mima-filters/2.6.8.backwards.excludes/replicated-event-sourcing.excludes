@@ -1,2 +1,0 @@
-# new private method on type that is do not inherit
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.scaladsl.EntityRef.asJava")

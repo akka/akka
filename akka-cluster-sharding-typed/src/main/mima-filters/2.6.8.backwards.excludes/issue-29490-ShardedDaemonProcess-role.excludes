@@ -1,2 +1,0 @@
-# #29490 Add withRole to ShardedDaemonProcessSettings, internal constructor
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.typed.ShardedDaemonProcessSettings.this")

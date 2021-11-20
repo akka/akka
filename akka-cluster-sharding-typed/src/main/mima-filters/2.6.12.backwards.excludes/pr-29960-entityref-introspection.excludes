@@ -1,8 +1,0 @@
-# Changes to @DoNotInherit classes
-
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.scaladsl.EntityRef.entityId")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.scaladsl.EntityRef.typeKey")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.scaladsl.EntityRef.dataCenter")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.typed.internal.EntityRefImpl.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.typed.internal.testkit.TestEntityRefImpl.this")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.scaladsl.EntityTypeKey.asJava")
