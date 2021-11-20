@@ -1,3 +1,0 @@
-# Generics changed, but not runtime behaviour
-# (and is in 'internal' anyway)
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.typed.internal.receptionist.ClusterReceptionist#State.removeSubscriber")

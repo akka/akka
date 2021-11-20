@@ -1,3 +1,0 @@
-# The 'ServiceRegistry' value class was dropped from the signature in 2.13.1.
-# That's fine since it's internal and shouldn't have a run-time effect anyway.
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.typed.internal.receptionist.ShardedServiceRegistry.*")

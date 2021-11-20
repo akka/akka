@@ -1,3 +1,0 @@
-# #28792 Changes to internals of ClusterReceptionist
-ProblemFilters.exclude[Problem]("akka.cluster.typed.internal.receptionist.*")
-ProblemFilters.exclude[Problem]("akka.cluster.typed.internal.protobuf.*")
