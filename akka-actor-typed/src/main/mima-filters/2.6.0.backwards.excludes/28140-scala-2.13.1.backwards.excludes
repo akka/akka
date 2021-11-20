@@ -1,4 +1,0 @@
-# The value class 'OptionVal' was dropped from the signature in 2.13.1.
-# That's fine since it's internal and shouldn't have a run-time effect anyway.
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.typed.javadsl.ReceiveBuilder#Case.unapply")
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.typed.javadsl.BehaviorBuilder#Case.unapply")

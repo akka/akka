@@ -1,6 +1,0 @@
-# internal changes
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.ActorMdc.SourceKey")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.ActorMdc.TagsKey")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.ActorMdc.TagsKey")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.ActorMdc.SourceKey")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.ActorMdc.setMdc")

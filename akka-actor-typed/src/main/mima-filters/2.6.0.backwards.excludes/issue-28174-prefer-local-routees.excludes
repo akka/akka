@@ -1,7 +1,0 @@
-# Those are new methods required for prefer local routees.
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.javadsl.GroupRouter.withRandomRouting")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.javadsl.GroupRouter.withRoundRobinRouting")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.scaladsl.GroupRouter.withRandomRouting")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.scaladsl.GroupRouter.withRoundRobinRouting")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.routing.GroupRouterImpl.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.routing.InitialGroupRouterImpl.this")

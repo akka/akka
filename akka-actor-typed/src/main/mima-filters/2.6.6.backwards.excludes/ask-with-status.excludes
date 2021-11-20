@@ -1,3 +1,0 @@
-# actor ask with status #29190 - safe because ActorContext is not for user extension
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.javadsl.ActorContext.askWithStatus")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.scaladsl.ActorContext.askWithStatus")

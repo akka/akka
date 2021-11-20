@@ -1,2 +1,0 @@
-# target actor name in the temporary ask actor name #29205, changes to ask internals
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.scaladsl.AskPattern.AskPath")

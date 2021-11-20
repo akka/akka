@@ -1,5 +1,0 @@
-ProblemFilters.exclude[MissingClassProblem]("akka.actor.typed.internal.BehaviorImpl$StoppedBehavior$")
-ProblemFilters.exclude[FinalClassProblem]("akka.actor.typed.internal.BehaviorImpl$StoppedBehavior")
-
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.typed.internal.receptionist.LocalReceptionist#State.serviceInstanceAdded")
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.typed.internal.receptionist.LocalReceptionist#State.serviceInstanceRemoved")

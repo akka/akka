@@ -1,2 +1,0 @@
-# Java API with classtag so have likely not been used from Java
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.delivery.WorkPullingProducerController.apply")

@@ -1,7 +1,0 @@
-# add internal currentActorThread to ActorContext
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.scaladsl.ActorContext.setCurrentActorThread")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.scaladsl.ActorContext.clearCurrentActorThread")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.scaladsl.ActorContext.checkCurrentActorThread")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.internal.ActorContextImpl.akka$actor$typed$internal$ActorContextImpl$$_currentActorThread_=")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.internal.ActorContextImpl.akka$actor$typed$internal$ActorContextImpl$$_currentActorThread")
-

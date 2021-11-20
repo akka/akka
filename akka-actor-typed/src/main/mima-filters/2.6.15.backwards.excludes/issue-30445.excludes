@@ -1,4 +1,0 @@
-# #30445 Backoff supervision with critical log level
-ProblemFilters.exclude[Problem]("akka.actor.typed.SupervisorStrategy#Backoff*")
-ProblemFilters.exclude[MissingTypesProblem]("akka.actor.typed.SupervisorStrategy$Backoff$")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.BackoffSupervisorStrategy.withCriticalLogLevel")
