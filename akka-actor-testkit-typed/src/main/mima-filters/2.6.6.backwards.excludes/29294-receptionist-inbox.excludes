@@ -1,4 +1,0 @@
-# #29294 Add receptionist inbox to BehaviourTestKit
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.BehaviorTestKit.receptionistInbox")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.BehaviorTestKit.receptionistInbox")
- 

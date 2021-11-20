@@ -1,4 +1,0 @@
-# Scala 2.13.7 generates different binary when using type wildcards, see https://github.com/scala/bug/issues/12488
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.testkit.typed.Effect#SpawnedAnonymousAdapter.productIterator")
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit.theSameElementsAs")
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit.theSameElementsInOrderAs")

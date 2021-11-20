@@ -1,6 +1,0 @@
-# Extra methods on interfaces not for user extension:
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.LoggingTestKit.withCheckExcess")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.LoggingTestKit.withCheckExcess")
-
-# Impl
-ProblemFilters.exclude[Problem]("akka.actor.testkit.typed.internal.LoggingTestKitImpl.*")

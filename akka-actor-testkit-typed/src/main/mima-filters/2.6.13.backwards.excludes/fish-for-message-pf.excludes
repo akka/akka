@@ -1,2 +1,0 @@
-# 2 new methods, TestProbe is not for user extension
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.TestProbe.fishForMessagePF")

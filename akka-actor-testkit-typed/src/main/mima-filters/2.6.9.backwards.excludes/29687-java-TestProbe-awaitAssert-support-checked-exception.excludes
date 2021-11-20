@@ -1,4 +1,0 @@
-# Support throwing exception in Java TestProbe.awaitAssert (#29687)
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.testkit.typed.javadsl.TestProbe.awaitAssert")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.TestProbe.awaitAssert")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.testkit.typed.internal.TestProbeImpl.awaitAssert")

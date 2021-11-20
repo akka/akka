@@ -1,3 +1,0 @@
-# #27338 allow passing ActorSystem to ActorTestKit
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.testkit.typed.scaladsl.ActorTestKit.internalSystem")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.testkit.typed.scaladsl.ActorTestKit.this")

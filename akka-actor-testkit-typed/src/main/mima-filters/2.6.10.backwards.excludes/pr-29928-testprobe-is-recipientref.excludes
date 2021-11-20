@@ -1,4 +1,0 @@
-# Changes to @DoNotInherit classes
-
-ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.testkit.typed.scaladsl.TestProbe.tell")
-ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.testkit.typed.javadsl.TestProbe.tell")

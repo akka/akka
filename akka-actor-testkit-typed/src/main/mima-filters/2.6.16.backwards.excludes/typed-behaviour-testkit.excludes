@@ -1,4 +1,0 @@
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.testkit.typed.internal.BehaviorTestKitImpl.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.testkit.typed.internal.StubbedActorContext.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.testkit.typed.internal.ActorSystemStub.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.testkit.typed.internal.EffectfulActorContext.this")
