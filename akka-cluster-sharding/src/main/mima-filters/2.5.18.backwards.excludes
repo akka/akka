@@ -1,7 +1,0 @@
-# #23751 warn if handOffStopMessage not handled
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion#HandOffStopper.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.handOffStopperProps")
-
-# ##25809 Save EntityStarted when StartEntity requested via remembered entities
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.getEntity")
-

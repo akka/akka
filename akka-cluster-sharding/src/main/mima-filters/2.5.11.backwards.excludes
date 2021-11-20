@@ -1,2 +1,0 @@
-# #23952 automatically choose startProxy in ClusterSharding
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ClusterSharding.requireClusterRole")

@@ -1,6 +1,0 @@
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#RebalanceWorker.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.rebalanceWorkerProps")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardCoordinator#RebalanceWorker.this")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardCoordinator.rebalanceWorkerProps")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.requestShardBufferHomes")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.sendGracefulShutdownToCoordinator")

@@ -1,8 +1,0 @@
-
-# #24470 Sharding entityId => Behavior factory
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.Shard.props")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.DDataShard.this")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShard.this")
-ProblemFilters.exclude[Problem]("akka.cluster.sharding.ClusterShardingGuardian*")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.props")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.Shard.this")

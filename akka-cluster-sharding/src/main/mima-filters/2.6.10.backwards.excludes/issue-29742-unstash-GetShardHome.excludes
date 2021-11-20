@@ -1,2 +1,0 @@
-# #29742 Unstash GetShardHome requests one-by-one
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.unstashOneGetShardHomeRequest")

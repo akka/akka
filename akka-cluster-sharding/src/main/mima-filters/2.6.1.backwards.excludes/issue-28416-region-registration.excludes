@@ -1,3 +1,0 @@
-# #28416 change of coordinatorSelection in internal ShardRegion actor
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardRegion.coordinatorSelection")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.gracefulShutdownCoordinatorSelections")

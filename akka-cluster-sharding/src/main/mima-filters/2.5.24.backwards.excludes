@@ -1,2 +1,0 @@
-# #27411 changes not caught by previous mima versions
-ProblemFilters.exclude[IncompatibleSignatureProblem]("*")
