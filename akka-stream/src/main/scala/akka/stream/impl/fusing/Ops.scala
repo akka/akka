@@ -5,6 +5,7 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
+
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.Logging.LogLevel
@@ -15,13 +16,13 @@ import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer => BufferImpl, ContextPropagation }
+import akka.stream.impl.{ ContextPropagation, ReactiveStreamsCompliance, Buffer => BufferImpl }
 import akka.stream.scaladsl.{ DelayStrategy, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 import akka.util.{ unused, OptionVal }
-import scala.annotation.nowarn
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
@@ -2268,5 +2269,72 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
   }
 
   override def toString = "StatefulMapConcat"
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] class AggregateWithBoundary[T, Agg, Emit](
+    allocate: => Agg,
+    aggregate: (Agg, T) => Boolean,
+    harvest: Agg => Emit,
+    emitOnTimer: Option[(Agg => Boolean, FiniteDuration)])
+    extends GraphStage[FlowShape[T, Emit]] {
+
+  emitOnTimer.foreach {
+    case (_, interval) => require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
+  }
+
+  val in: Inlet[T] = Inlet[T](s"${this.getClass.getName}.in")
+  val out: Outlet[Emit] = Outlet[Emit](s"${this.getClass.getName}.out")
+  override val shape: FlowShape[T, Emit] = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+
+      private[this] var aggregated: Agg = null.asInstanceOf[Agg]
+
+      override def preStart(): Unit = {
+        emitOnTimer.foreach {
+          case (_, interval) => scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", interval, interval)
+        }
+      }
+
+      override protected def onTimer(timerKey: Any): Unit = {
+        emitOnTimer.foreach {
+          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) harvestAndEmit()
+        }
+      }
+
+      // at onPush, isAvailable(in)=true hasBeenPulled(in)=false, isAvailable(out) could be true or false due to timer triggered emit
+      override def onPush(): Unit = {
+        if (aggregated == null) aggregated = allocate
+        if (aggregate(aggregated, grab(in))) harvestAndEmit()
+        // the decision to pull entirely depend on isAvailable(out)=true, regardless of result of aggregate
+        // 1. aggregate=true: isAvailable(out) will be false
+        // 2. aggregate=false: if isAvailable(out)=false, this means timer has caused emit, cannot pull or it could emit indefinitely bypassing back pressure
+        if (isAvailable(out)) pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        // Note that emit is asynchronous, it will keep the stage alive until downstream actually take the element
+        if (aggregated != null) emit(out, harvest(aggregated))
+        completeStage()
+      }
+
+      // at onPull, isAvailable(out) is always true indicating downstream is waiting
+      // isAvailable(in) and hasBeenPulled(in) can be (true, false) (false, true) or (false, false)
+      override def onPull(): Unit = if (!hasBeenPulled(in)) pull(in)
+
+      setHandlers(in, out, this)
+
+      private def harvestAndEmit(): Unit = {
+        emit(out, harvest(aggregated))
+        aggregated = null.asInstanceOf[Agg]
+      }
+
+    }
 
 }

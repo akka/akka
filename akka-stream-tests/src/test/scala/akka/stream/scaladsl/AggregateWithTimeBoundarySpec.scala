@@ -5,7 +5,6 @@
 package akka.stream.scaladsl
 
 import akka.stream.OverflowStrategy
-import akka.stream.impl.fusing.{AggregateWithBoundary, AggregateWithTimeBoundary, Buffer}
 import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.testkit.{AkkaSpec, ExplicitlyTriggeredScheduler}
 import com.typesafe.config.ConfigValueFactory
@@ -18,45 +17,39 @@ class AggregateWithBoundarySpec extends StreamSpec {
 
   "split aggregator by size" in {
 
-    val stream    = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
+    val stream = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
     val groupSize = 3
     val result = Source(stream)
-      .via(
-        new AggregateWithBoundary[Int, ListBuffer[Int], Seq[Int]](
-          allocate = ListBuffer.empty,
-          aggregate = (buffer, i) => {
-            buffer.addOne(i)
-            buffer.size >= groupSize
-          },
-          harvest = buffer => buffer.toSeq,
-          emitOnTimer = None
-        )
+      .aggregateWithBoundary(allocate = ListBuffer.empty[Int])(
+        aggregate = (buffer, i) => {
+          buffer.addOne(i)
+          buffer.size >= groupSize
+        },
+        harvest = buffer => buffer.toSeq,
+        emitOnTimer = None
       )
       .runWith(Sink.collection)
 
-    Await.result(result, 10.seconds) should be (stream.grouped(groupSize).toSeq)
+    Await.result(result, 10.seconds) should be(stream.grouped(groupSize).toSeq)
 
   }
 
   "split aggregator by size and harvest" in {
-    val stream    = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
+    val stream = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
     val groupSize = 3
     val result = Source(stream)
-      .via(
-        new AggregateWithBoundary[Int, ListBuffer[Int], Seq[Int]](
-          allocate = ListBuffer.empty,
-          aggregate = (buffer, i) => {
-            buffer.addOne(i)
-            buffer.size >= groupSize
-          },
-          harvest = buffer => buffer.toSeq :+ -1, // append -1 to output to demonstrate the effect of harvest
-          emitOnTimer = None
-        )
+      .aggregateWithBoundary(allocate = ListBuffer.empty[Int])(
+        aggregate = (buffer, i) => {
+          buffer.addOne(i)
+          buffer.size >= groupSize
+        },
+        harvest = buffer => buffer.toSeq :+ -1, // append -1 to output to demonstrate the effect of harvest
+        emitOnTimer = None
       )
       .runWith(Sink.collection)
 
 
-    Await.result(result, 10.seconds) should be (stream.grouped(groupSize).toSeq.map(seq => seq :+ -1))
+    Await.result(result, 10.seconds) should be(stream.grouped(groupSize).toSeq.map(seq => seq :+ -1))
 
   }
 
@@ -65,28 +58,27 @@ class AggregateWithBoundarySpec extends StreamSpec {
     val weight = 10
 
     val result = Source(stream)
-      .via(
-        new AggregateWithBoundary[Int, ListBuffer[Int], Seq[Int]](
-          allocate = ListBuffer.empty,
-          aggregate = (buffer, i) => {
-            buffer.addOne(i)
-            buffer.sum >= weight
-          },
-          harvest = buffer => buffer.toSeq,
-          emitOnTimer = None
-        )
+      .aggregateWithBoundary(allocate = ListBuffer.empty[Int])(
+        aggregate = (buffer, i) => {
+          buffer.addOne(i)
+          buffer.sum >= weight
+        },
+        harvest = buffer => buffer.toSeq,
+        emitOnTimer = None
       )
       .runWith(Sink.collection)
 
-      Await.result(result, 10.seconds) should be (Seq(Seq(1, 2, 3, 4), Seq(5, 6), Seq(7)))
+    Await.result(result, 10.seconds) should be(Seq(Seq(1, 2, 3, 4), Seq(5, 6), Seq(7)))
   }
 
 }
 
-class AggregateWithTimeBoundarySpec extends StreamSpec(
+// To run multiple tests in parallel using simulated timer,
+// the tests must be in separate Specs with different instances of the ActorSystem
+class StreamWithSimulatedTimeSpec extends StreamSpec(
   AkkaSpec.testConf.withValue(
     "akka.scheduler.implementation",
-    ConfigValueFactory.fromAnyRef( "akka.testkit.ExplicitlyTriggeredScheduler")
+    ConfigValueFactory.fromAnyRef("akka.testkit.ExplicitlyTriggeredScheduler")
   )
 ) {
 
@@ -98,6 +90,9 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
   def timePasses(amount: FiniteDuration): Unit = scheduler.timePasses(amount)
 
   def schedulerTimeMs: Long = scheduler.currentTimeMs
+}
+
+class AggregateWithTimeBoundarySpec1 extends StreamWithSimulatedTimeSpec {
 
   "split aggregator by gap for slow upstream" in {
 
@@ -106,42 +101,43 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
     val p = TestPublisher.probe[Int]()
 
     val result = Source.fromPublisher(p)
-      .via(
-        new AggregateWithTimeBoundary[Int, ListBuffer[Int], Seq[Int]](
-          allocate = ListBuffer.empty,
-          aggregate = (buffer, i) => {
-            buffer.addOne(i)
-            false
-          },
-          harvest = seq => seq.toSeq,
-          maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
-          maxDuration = None,
-          currentTimeMs = schedulerTimeMs,
-          interval = 1.milli
-        )
+      .aggregateWithTimeBoundary(allocate = ListBuffer.empty[Int])(
+        aggregate = (buffer, i) => {
+          buffer.addOne(i)
+          false
+        },
+        harvest = seq => seq.toSeq,
+        maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
+        maxDuration = None,
+        currentTimeMs = schedulerTimeMs,
+        interval = 1.milli
       )
+      .buffer(1, OverflowStrategy.backpressure)
       .runWith(Sink.collection)
 
     p.sendNext(1)
-    timePasses(maxGap/2) // less than maxGap should not cause emit
+    timePasses(maxGap / 2) // less than maxGap should not cause emit
     p.sendNext(2)
     timePasses(maxGap)
 
     p.sendNext(3)
-    timePasses(maxGap/2) // less than maxGap should not cause emit
+    timePasses(maxGap / 2) // less than maxGap should not cause emit
     p.sendNext(4)
     timePasses(maxGap)
 
     p.sendNext(5)
-    timePasses(maxGap/2) // less than maxGap should not cause emit
+    timePasses(maxGap / 2) // less than maxGap should not cause emit
     p.sendNext(6)
-    timePasses(maxGap/2) // less than maxGap should not cause emit and it does not accumulate
+    timePasses(maxGap / 2) // less than maxGap should not cause emit and it does not accumulate
     p.sendNext(7)
     p.sendComplete()
 
-    Await.result(result, 10.seconds) should be (Seq(Seq(1, 2), Seq(3, 4), Seq(5, 6, 7)))
+    Await.result(result, 10.seconds) should be(Seq(Seq(1, 2), Seq(3, 4), Seq(5, 6, 7)))
 
   }
+}
+
+class AggregateWithTimeBoundarySpec2 extends StreamWithSimulatedTimeSpec {
 
   "split aggregator by total duration" in {
     val maxDuration = 400.seconds
@@ -149,39 +145,40 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
     val p = TestPublisher.probe[Int]()
 
     val result = Source.fromPublisher(p)
-      .via(
-        new AggregateWithTimeBoundary[Int, ListBuffer[Int], Seq[Int]](
-          allocate = ListBuffer.empty,
-          aggregate = (buffer, i) => {
-            buffer.addOne(i)
-            false
-          },
-          harvest = seq => seq.toSeq,
-          maxGap = None,
-          maxDuration = Some(maxDuration), // elements with longer gap will put put to next aggregator
-          currentTimeMs = schedulerTimeMs,
-          interval = 1.milli
-        )
+      .aggregateWithTimeBoundary(allocate = ListBuffer.empty[Int])(
+        aggregate = (buffer, i) => {
+          buffer.addOne(i)
+          false
+        },
+        harvest = seq => seq.toSeq,
+        maxGap = None,
+        maxDuration = Some(maxDuration), // elements with longer gap will put put to next aggregator
+        currentTimeMs = schedulerTimeMs,
+        interval = 1.milli
       )
+      .buffer(1, OverflowStrategy.backpressure)
       .runWith(Sink.collection)
 
     p.sendNext(1)
-    timePasses(maxDuration/4)
+    timePasses(maxDuration / 4)
     p.sendNext(2)
-    timePasses(maxDuration/4)
+    timePasses(maxDuration / 4)
     p.sendNext(3)
-    timePasses(maxDuration/4)
+    timePasses(maxDuration / 4)
     p.sendNext(4)
-    timePasses(maxDuration/4) // maxDuration will accumulate and reach threshold here
+    timePasses(maxDuration / 4) // maxDuration will accumulate and reach threshold here
 
     p.sendNext(5)
     p.sendNext(6)
     p.sendNext(7)
     p.sendComplete()
 
-    Await.result(result, 10.seconds) should be (Seq(Seq(1, 2, 3, 4), Seq(5, 6, 7)))
+    Await.result(result, 10.seconds) should be(Seq(Seq(1, 2, 3, 4), Seq(5, 6, 7)))
 
   }
+}
+
+class AggregateWithTimeBoundarySpec3 extends StreamWithSimulatedTimeSpec {
 
   "down stream back pressure should not miss data on completion with pull on start" in {
 
@@ -189,20 +186,19 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
     val upstream = TestPublisher.probe[Int]()
     val downstream = TestSubscriber.probe[Seq[Int]]()
 
-    Source.fromPublisher(upstream).via(
-      new AggregateWithTimeBoundary[Int, ListBuffer[Int], Seq[Int]](
-        allocate = ListBuffer.empty,
-        aggregate = (buffer, i) => {
-          buffer.addOne(i)
-          false
-        },
-        harvest = seq => seq.toSeq,
-        maxGap = Some(maxGap),
-        maxDuration = None,
-        currentTimeMs = schedulerTimeMs,
-        interval = 1.milli
-      )
-    ).via(Buffer(1, OverflowStrategy.backpressure))
+    Source.fromPublisher(upstream).aggregateWithTimeBoundary(
+      allocate = ListBuffer.empty[Int]
+    )(
+      aggregate = (buffer, i) => {
+        buffer.addOne(i)
+        false
+      },
+      harvest = buffer => buffer.toSeq,
+      maxGap = Some(maxGap),
+      maxDuration = None,
+      currentTimeMs = schedulerTimeMs,
+      interval = 1.milli
+    ).buffer(1, OverflowStrategy.backpressure)
       .to(Sink.fromSubscriber(downstream)).run()
 
     downstream.ensureSubscription()
@@ -227,7 +223,7 @@ class AggregateWithTimeBoundarySpec extends StreamSpec(
     // if sending another message it will stay in upstream, prevent the upstream completion from happening
     upstream.sendComplete() // emit remaining queue=Queue(Seq(4,5,6)) + harvest and emit aggregator=Seq(7)
     // since there is no pending push from upstream, onUpstreamFinish will be triggered to emit the queue and pending aggregator
-    downstream.request(2).expectNext(Seq(4,5,6), Seq(7)) // clean up the emit queue and complete downstream
+    downstream.request(2).expectNext(Seq(4, 5, 6), Seq(7)) // clean up the emit queue and complete downstream
     downstream.expectComplete()
   }
 }

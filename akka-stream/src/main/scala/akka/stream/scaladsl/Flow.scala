@@ -1422,7 +1422,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * Note that the `zero` value must be immutable.
    *
-   * '''Emits when''' the function scanning the element returns a new element
+   * '''Emits when''' the function scanscanning the element returns a new element
    *
    * '''Backpressures when''' downstream backpressures
    *
@@ -3725,5 +3725,65 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def monitor: ReprMat[Out, (Mat, FlowMonitor[Out])] =
     monitorMat(Keep.both)
+
+  /**
+   * This is a more scalable and general case of [[groupedWeightedWithin]]
+   * which groups a stream into vectors based on custom weight and time.
+   * The problem with that solution is each grouped vector must fit into memory before emitting to the next stage.
+   * That won't work for the use case of writing large files.
+   * The desirable behavior is to write data as they come as opposed to accumulate everything until the group slicing condition is met.
+   * In this case, the output channel needs to be closed if there is no data arriving within certain time to avoid connection timeout.
+   * This custom flow uses custom aggregator to support such use cases.
+   * Upstream inputs are continuously aggregated as they arrive.
+   * The currently aggregated elements can be terminated and emitted based on custom conditions
+   *
+   * @param allocate    allocate the initial data structure for aggregated elements
+   * @param aggregate   update the aggregated elements, return true if ready to emit after update
+   * @param emitOnTimer decide whether the currently aggregated elements can be emitted on each timer event
+   * @param harvest     this is invoked before emit within the current stage/operator
+   */
+  def aggregateWithBoundary[Agg, Emit](allocate: => Agg)(
+      aggregate: (Agg, Out) => Boolean,
+      harvest: Agg => Emit,
+      emitOnTimer: Option[(Agg => Boolean, FiniteDuration)]): Repr[Emit] =
+    via(new AggregateWithBoundary(allocate, aggregate, harvest, emitOnTimer))
+
+  /**
+   * This is a convenient wrapper of [[aggregateWithBoundary]] to handle 2 additional time constraints
+   * @param maxGap        the gap allowed between consecutive aggregate operations
+   * @param maxDuration   the duration of the sequence of aggregate operations from initial seed until emit is triggered
+   * @param interval      interval of the timer to check the maxGap and maxDuration condition
+   * @param currentTimeMs source of the system time, can be simulated time in testing
+   */
+  def aggregateWithTimeBoundary[Agg, Emit](allocate: => Agg)(
+      aggregate: (Agg, Out) => Boolean,
+      harvest: Agg => Emit,
+      maxGap: Option[FiniteDuration],
+      maxDuration: Option[FiniteDuration],
+      interval: FiniteDuration,
+      currentTimeMs: => Long): Repr[Emit] = {
+    require(
+      maxDuration.nonEmpty || maxGap.nonEmpty,
+      s"required timing condition maxGap and maxDuration are both missing, use aggregateWithBoundary if it's intended")
+
+    class ValueTimeWrapper[T](var value: T) {
+      var firstTime: Long = -1
+      var lastTime: Long = -1
+      def updateTime(time: Long): Unit = {
+        if (firstTime == -1) firstTime = time
+        lastTime = time
+      }
+    }
+
+    aggregateWithBoundary(allocate = new ValueTimeWrapper(value = allocate))(aggregate = (agg, in) => {
+      agg.updateTime(currentTimeMs)
+      // user provided Agg type must be mutable
+      aggregate(agg.value, in)
+    }, harvest = agg => harvest(agg.value), emitOnTimer = Some((agg => {
+      val currentTime = currentTimeMs
+      maxDuration.exists(md => currentTime - agg.firstTime >= md.toMillis) ||
+      maxGap.exists(mg => currentTime - agg.lastTime >= mg.toMillis)
+    }, interval)))
+  }
 
 }
