@@ -20,7 +20,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
     val stream = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
     val groupSize = 3
     val result = Source(stream)
-      .aggregateWithBoundary(allocate = ListBuffer.empty[Int])(
+      .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(
         aggregate = (buffer, i) => {
           buffer.addOne(i)
           buffer.size >= groupSize
@@ -38,7 +38,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
     val stream = collection.immutable.Seq(1, 2, 3, 4, 5, 6, 7)
     val groupSize = 3
     val result = Source(stream)
-      .aggregateWithBoundary(allocate = ListBuffer.empty[Int])(
+      .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(
         aggregate = (buffer, i) => {
           buffer.addOne(i)
           buffer.size >= groupSize
@@ -58,7 +58,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
     val weight = 10
 
     val result = Source(stream)
-      .aggregateWithBoundary(allocate = ListBuffer.empty[Int])(
+      .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(
         aggregate = (buffer, i) => {
           buffer.addOne(i)
           buffer.sum >= weight
@@ -90,6 +90,47 @@ class StreamWithSimulatedTimeSpec extends StreamSpec(
   def timePasses(amount: FiniteDuration): Unit = scheduler.timePasses(amount)
 
   def schedulerTimeMs: Long = scheduler.currentTimeMs
+
+  implicit class FlowsMatWrapper[+Out, +Mat](val flow: Source[Out, Mat]) {
+    /**
+     * This is a convenient wrapper of [[aggregateWithBoundary]] to handle additional time constraints
+     * @param maxGap        the gap allowed between consecutive aggregate operations
+     * @param maxDuration   the duration of the sequence of aggregate operations from initial seed until emit is triggered
+     * @param interval      interval of the timer to check the maxGap and maxDuration condition
+     * @param currentTimeMs source of the system time, can be simulated time in testing
+     */
+    def aggregateWithTimeBoundary[Agg, Emit](allocate: => Agg)(
+      aggregate: (Agg, Out) => Boolean,
+      harvest: Agg => Emit,
+      maxGap: Option[FiniteDuration],
+      maxDuration: Option[FiniteDuration],
+      interval: FiniteDuration,
+      currentTimeMs: => Long): flow.Repr[Emit] = {
+      require(
+        maxDuration.nonEmpty || maxGap.nonEmpty,
+        s"required timing condition maxGap and maxDuration are both missing, use aggregateWithBoundary if it's intended")
+
+      class ValueTimeWrapper[T](var value: T) {
+        var firstTime: Long = -1
+        var lastTime: Long = -1
+        def updateTime(time: Long): Unit = {
+          if (firstTime == -1) firstTime = time
+          lastTime = time
+        }
+      }
+
+      flow.aggregateWithBoundary(allocate = new ValueTimeWrapper(value = allocate))(aggregate = (agg, in) => {
+        agg.updateTime(currentTimeMs)
+        // user provided Agg type must be mutable
+        aggregate(agg.value, in)
+      }, harvest = agg => harvest(agg.value), emitOnTimer = Some((agg => {
+        val currentTime = currentTimeMs
+        maxDuration.exists(md => currentTime - agg.firstTime >= md.toMillis) ||
+          maxGap.exists(mg => currentTime - agg.lastTime >= mg.toMillis)
+      }, interval)))
+    }
+  }
+
 }
 
 class AggregateWithTimeBoundarySpec1 extends StreamWithSimulatedTimeSpec {
