@@ -104,11 +104,11 @@ object Simulator {
     def strategyCreator(runSettings: SimulatorSettings.RunSettings): () => EntityPassivationStrategy =
       runSettings.strategy match {
         case SimulatorSettings.StrategySettings.LeastRecentlyUsed(perRegionLimit) =>
-          () => new LeastRecentlyUsedEntityPassivationStrategy(perRegionLimit)
+          () => new LeastRecentlyUsedEntityPassivationStrategy(perRegionLimit, idleCheck = None)
         case SimulatorSettings.StrategySettings.MostRecentlyUsed(perRegionLimit) =>
-          () => new MostRecentlyUsedEntityPassivationStrategy(perRegionLimit)
+          () => new MostRecentlyUsedEntityPassivationStrategy(perRegionLimit, idleCheck = None)
         case SimulatorSettings.StrategySettings.LeastFrequentlyUsed(perRegionLimit) =>
-          () => new LeastFrequentlyUsedEntityPassivationStrategy(perRegionLimit)
+          () => new LeastFrequentlyUsedEntityPassivationStrategy(perRegionLimit, idleCheck = None)
       }
   }
 

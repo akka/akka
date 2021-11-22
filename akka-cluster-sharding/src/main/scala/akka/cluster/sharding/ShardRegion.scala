@@ -679,16 +679,30 @@ private[akka] class ShardRegion(
     if (settings.rememberEntities) {
       log.debug("{}: Entities will not be passivated automatically because 'rememberEntities' is enabled.", typeName)
     } else {
-      settings.passivationStrategy match {
-        case ClusterShardingSettings.IdlePassivationStrategy(timeout) =>
-          log.info("{}: Idle entities will be passivated after [{}]", typeName, PrettyDuration.format(timeout))
-        case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit) =>
-          log.info("{}: Least recently used entities will be passivated when over [{}] entities", typeName, limit)
-        case _ =>
-          log.debug("{}: Entities will not be passivated automatically", typeName)
-      }
+      logPassivation(settings.passivationStrategy)
     }
   }
+
+  private def logPassivation(strategy: ClusterShardingSettings.PassivationStrategy): Unit =
+    strategy match {
+      case ClusterShardingSettings.IdlePassivationStrategy(timeout, interval) =>
+        log.info(
+          "{}: Idle entities will be passivated after [{}], checked every [{}]",
+          typeName,
+          PrettyDuration.format(timeout),
+          PrettyDuration.format(interval))
+      case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit, idle) =>
+        log.info("{}: Least recently used entities will be passivated when over [{}] entities", typeName, limit)
+        idle.foreach(logPassivation)
+      case ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(limit, idle) =>
+        log.info("{}: Most recently used entities will be passivated when over [{}] entities", typeName, limit)
+        idle.foreach(logPassivation)
+      case ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(limit, idle) =>
+        log.info("{}: Least frequently used entities will be passivated when over [{}] entities", typeName, limit)
+        idle.foreach(logPassivation)
+      case _ =>
+        log.debug("{}: Entities will not be passivated automatically", typeName)
+    }
 
   // when using proxy the data center can be different from the own data center
   private val targetDcRole = dataCenter match {
