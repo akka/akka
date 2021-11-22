@@ -3746,7 +3746,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
       aggregate: (Agg, Out) => Boolean,
       harvest: Agg => Emit,
       emitOnTimer: Option[(Agg => Boolean, FiniteDuration)]): Repr[Emit] =
-    via(new AggregateWithBoundary(allocate, aggregate, harvest, emitOnTimer))
+    via(AggregateWithBoundary(() => allocate, aggregate, harvest, emitOnTimer))
 
   /**
    * This is a convenient wrapper of [[aggregateWithBoundary]] to handle 2 additional time constraints

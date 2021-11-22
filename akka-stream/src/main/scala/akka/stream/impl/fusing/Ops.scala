@@ -2276,20 +2276,20 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
  * INTERNAL API
  */
 @InternalApi
-private[akka] class AggregateWithBoundary[T, Agg, Emit](
-    allocate: => Agg,
-    aggregate: (Agg, T) => Boolean,
-    harvest: Agg => Emit,
+private[akka] final case class AggregateWithBoundary[In, Agg, Out](
+    allocate: () => Agg,
+    aggregate: (Agg, In) => Boolean,
+    harvest: Agg => Out,
     emitOnTimer: Option[(Agg => Boolean, FiniteDuration)])
-    extends GraphStage[FlowShape[T, Emit]] {
+    extends GraphStage[FlowShape[In, Out]] {
 
   emitOnTimer.foreach {
     case (_, interval) => require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
   }
 
-  val in: Inlet[T] = Inlet[T](s"${this.getClass.getName}.in")
-  val out: Outlet[Emit] = Outlet[Emit](s"${this.getClass.getName}.out")
-  override val shape: FlowShape[T, Emit] = FlowShape(in, out)
+  val in: Inlet[In] = Inlet[In](s"${this.getClass.getName}.in")
+  val out: Outlet[Out] = Outlet[Out](s"${this.getClass.getName}.out")
+  override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
@@ -2310,7 +2310,7 @@ private[akka] class AggregateWithBoundary[T, Agg, Emit](
 
       // at onPush, isAvailable(in)=true hasBeenPulled(in)=false, isAvailable(out) could be true or false due to timer triggered emit
       override def onPush(): Unit = {
-        if (aggregated == null) aggregated = allocate
+        if (aggregated == null) aggregated = allocate()
         if (aggregate(aggregated, grab(in))) harvestAndEmit()
         // the decision to pull entirely depend on isAvailable(out)=true, regardless of result of aggregate
         // 1. aggregate=true: isAvailable(out) will be false
