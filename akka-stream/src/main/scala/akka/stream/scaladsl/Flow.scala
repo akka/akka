@@ -1422,7 +1422,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * Note that the `zero` value must be immutable.
    *
-   * '''Emits when''' the function scanscanning the element returns a new element
+   * '''Emits when''' the function scanning the element returns a new element
    *
    * '''Backpressures when''' downstream backpressures
    *
