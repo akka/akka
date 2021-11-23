@@ -27,7 +27,9 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
   "ClusterShardingSettings" must {
 
     "have default passivation strategy (passivate idle entities after 120 seconds)" in {
-      defaultSettings.passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(120.seconds)
+      defaultSettings.passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(
+        timeout = 120.seconds,
+        interval = 60.seconds)
     }
 
     "allow timeout for (default) idle passivation strategy to be configured (via config)" in {
@@ -39,13 +41,40 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           }
         }
         #passivation-idle-timeout
-      """).passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(3.minutes)
+      """).passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(
+        timeout = 3.minutes,
+        interval = 90.seconds)
     }
 
     "allow timeout for (default) idle passivation strategy to be configured (via factory method)" in {
       defaultSettings
         .withIdlePassivationStrategy(timeout = 42.seconds)
-        .passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(42.seconds)
+        .passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(
+        timeout = 42.seconds,
+        interval = 21.seconds)
+    }
+
+    "allow timeout and interval for (default) idle passivation strategy to be configured (via config)" in {
+      settings("""
+        akka.cluster.sharding {
+          passivation {
+            idle {
+              timeout = 3 minutes
+              interval = 1 minute
+            }
+          }
+        }
+      """).passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(
+        timeout = 3.minutes,
+        interval = 1.minute)
+    }
+
+    "allow timeout and interval for (default) idle passivation strategy to be configured (via factory method)" in {
+      defaultSettings
+        .withIdlePassivationStrategy(timeout = 42.seconds, interval = 42.millis)
+        .passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(
+        timeout = 42.seconds,
+        interval = 42.millis)
     }
 
     "allow least recently used passivation strategy to be configured (via config)" in {
@@ -58,13 +87,43 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           }
         }
         #passivation-least-recently-used
-      """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(1000000)
+      """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+        limit = 1000000,
+        idle = None)
     }
 
     "allow least recently used passivation strategy to be configured (via factory method)" in {
       defaultSettings
         .withLeastRecentlyUsedPassivationStrategy(limit = 42000)
-        .passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(42000)
+        .passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+        limit = 42000,
+        idle = None)
+    }
+
+    "allow least recently used passivation strategy with idle timeout to be configured (via config)" in {
+      settings("""
+        #passivation-least-recently-used-with-idle
+        akka.cluster.sharding {
+          passivation {
+            strategy = least-recently-used
+            least-recently-used {
+              limit = 1000000
+              idle.timeout = 30.minutes
+            }
+          }
+        }
+        #passivation-least-recently-used-with-idle
+      """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+        limit = 1000000,
+        idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 30.minutes, interval = 15.minutes)))
+    }
+
+    "allow least recently used passivation strategy with idle timeout to be configured (via factory method)" in {
+      defaultSettings
+        .withLeastRecentlyUsedPassivationStrategy(limit = 42000, idleTimeout = 42.minutes)
+        .passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+        limit = 42000,
+        idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
     }
 
     "allow most recently used passivation strategy to be configured (via config)" in {
@@ -77,13 +136,43 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           }
         }
         #passivation-most-recently-used
-      """).passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(1000000)
+      """).passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(
+        limit = 1000000,
+        idle = None)
     }
 
     "allow most recently used passivation strategy to be configured (via factory method)" in {
       defaultSettings
         .withMostRecentlyUsedPassivationStrategy(limit = 42000)
-        .passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(42000)
+        .passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(
+        limit = 42000,
+        idle = None)
+    }
+
+    "allow most recently used passivation strategy with idle timeout to be configured (via config)" in {
+      settings("""
+        #passivation-most-recently-used-with-idle
+        akka.cluster.sharding {
+          passivation {
+            strategy = most-recently-used
+            most-recently-used {
+              limit = 1000000
+              idle.timeout = 30.minutes
+            }
+          }
+        }
+        #passivation-most-recently-used-with-idle
+      """).passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(
+        limit = 1000000,
+        idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 30.minutes, interval = 15.minutes)))
+    }
+
+    "allow most recently used passivation strategy with idle timeout to be configured (via factory method)" in {
+      defaultSettings
+        .withMostRecentlyUsedPassivationStrategy(limit = 42000, idleTimeout = 42.minutes)
+        .passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(
+        limit = 42000,
+        idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
     }
 
     "allow least frequently used passivation strategy to be configured (via config)" in {
@@ -96,13 +185,43 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           }
         }
         #passivation-least-frequently-used
-      """).passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(1000000)
+      """).passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
+        limit = 1000000,
+        idle = None)
     }
 
     "allow least frequently used passivation strategy to be configured (via factory method)" in {
       defaultSettings
         .withLeastFrequentlyUsedPassivationStrategy(limit = 42000)
-        .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(42000)
+        .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
+        limit = 42000,
+        idle = None)
+    }
+
+    "allow least frequently used passivation strategy with idle timeout to be configured (via config)" in {
+      settings("""
+        #passivation-least-frequently-used-with-idle
+        akka.cluster.sharding {
+          passivation {
+            strategy = least-frequently-used
+            least-frequently-used {
+              limit = 1000000
+              idle.timeout = 30.minutes
+            }
+          }
+        }
+        #passivation-least-frequently-used-with-idle
+      """).passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
+        limit = 1000000,
+        idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 30.minutes, interval = 15.minutes)))
+    }
+
+    "allow least frequently used passivation strategy with idle timeout to be configured (via factory method)" in {
+      defaultSettings
+        .withLeastFrequentlyUsedPassivationStrategy(limit = 42000, idleTimeout = 42.minutes)
+        .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
+        limit = 42000,
+        idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
     }
 
     "disable automatic passivation if `remember-entities` is enabled (via config)" in {
@@ -135,7 +254,9 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           passivate-idle-entity-after = 5 minutes
           passivation-strategy = least-recently-used
         }
-      """).passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(5.minutes)
+      """).passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(
+        timeout = 5.minutes,
+        interval = 2.5.minutes)
     }
 
   }
