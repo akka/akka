@@ -202,6 +202,8 @@ class ReplicatedEventSourcingSpec
       r1 ! StoreMe("Event", replyProbe.ref)
       eventProbeR1.expectMessage(EventAndContext("Event", ReplicaId("R1"), recoveryRunning = false, false))
       replyProbe.expectMessage(Done)
+      r1 ! Stop
+      replyProbe.expectTerminated(r1)
 
       val recoveryProbe = createTestProbe[EventAndContext]()
       spawn(testBehavior(entityId, "R1", recoveryProbe.ref))
@@ -370,6 +372,11 @@ class ReplicatedEventSourcingSpec
         EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = false, concurrent = false))
       eventProbeR1.expectMessage(
         EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = false, concurrent = true))
+
+      r1 ! Stop
+      r2 ! Stop
+      probe.expectTerminated(r1)
+      probe.expectTerminated(r2)
 
       // take 2
       val eventProbeR1Take2 = createTestProbe[EventAndContext]()
