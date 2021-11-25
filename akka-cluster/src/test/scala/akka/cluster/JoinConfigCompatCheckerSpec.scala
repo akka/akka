@@ -20,6 +20,7 @@ object JoinConfigCompatCheckerSpec {
      akka.remote.classic.netty.tcp.port = 0
      akka.remote.artery.canonical.port = 0
      akka.cluster.jmx.multi-mbeans-in-same-jvm = on
+     akka.remote.artery.advanced.aeron.idle-cpu-level = 3
      """)
 
   val configWithChecker: Config =

@@ -17,13 +17,14 @@ object JoinConfigCompatCheckerRollingUpdateSpec {
       akka.log-dead-letters = off
       akka.log-dead-letters-during-shutdown = off
       akka.remote.log-remote-lifecycle-events = off
-      akka.cluster.jmx.enabled = off
-      akka.cluster.gossip-interval                   = 100 ms
-      akka.cluster.leader-actions-interval           = 100 ms
-      akka.cluster.unreachable-nodes-reaper-interval = 100 ms
-      akka.cluster.periodic-tasks-initial-delay      = 100 ms
-      akka.cluster.publish-stats-interval            = 0 s
-      failure-detector.heartbeat-interval            = 100 ms
+      akka.cluster {
+        jmx.enabled                         = off
+        gossip-interval                     = 200 ms
+        leader-actions-interval             = 200 ms
+        unreachable-nodes-reaper-interval   = 500 ms
+        periodic-tasks-initial-delay        = 300 ms
+        publish-stats-interval              = 0 s # always, when it happens
+      }
     """).withFallback(JoinConfigCompatCheckerSpec.baseConfig)
 
   val v1Config: Config = baseConfig.withFallback(JoinConfigCompatCheckerSpec.configWithChecker)
@@ -47,7 +48,7 @@ class JoinConfigCompatCheckerRollingUpdateSpec
   import JoinConfigCompatCheckerRollingUpdateSpec._
 
   "A Node" must {
-    val timeout = 15.seconds
+    val timeout = 20.seconds
     "NOT be allowed to re-join a cluster if it has a new, additional configuration the others do not have and not the old" taggedAs LongRunningTest in {
       // confirms the 2 attempted re-joins fail with both nodes being terminated
       upgradeCluster(3, v1Config, v2ConfigIncompatible, timeout, timeout, enforced = true, shouldRejoin = false)
