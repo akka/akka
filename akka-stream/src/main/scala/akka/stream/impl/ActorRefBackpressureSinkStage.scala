@@ -4,13 +4,14 @@
 
 package akka.stream.impl
 
-import java.util
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.stream._
 import akka.stream.Attributes.InputBuffer
+import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
+
+import java.util
 
 /**
  * INTERNAL API
@@ -21,7 +22,7 @@ import akka.stream.stage._
     onInitMessage: ActorRef => Any,
     ackMessage: Option[Any],
     onCompleteMessage: Any,
-    onFailureMessage: (Throwable) => Any)
+    onFailureMessage: Throwable => Any)
     extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
   override def initialAttributes: Attributes = DefaultAttributes.actorRefWithBackpressureSink
@@ -43,8 +44,10 @@ import akka.stream.stage._
         evt._2 match {
           case Terminated(`ref`) => completeStage()
           case ackMsg if ackMessage.isEmpty || ackMessage.contains(ackMsg) =>
-            if (buffer.isEmpty) acknowledgementReceived = true
-            else {
+            if (buffer.isEmpty) {
+              acknowledgementReceived = true
+              if (completeReceived) finish()
+            } else {
               // onPush might have filled the buffer up and
               // stopped pulling, so we pull here
               if (buffer.size() == maxBuffer) tryPull(in)
@@ -63,7 +66,6 @@ import akka.stream.stage._
 
       private def dequeueAndSend(): Unit = {
         ref ! messageAdapter(self)(buffer.poll())
-        if (buffer.isEmpty && completeReceived) finish()
       }
 
       private def finish(): Unit = {
