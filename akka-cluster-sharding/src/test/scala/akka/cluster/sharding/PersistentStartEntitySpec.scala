@@ -20,6 +20,8 @@ import akka.testkit.WithLogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import akka.testkit.GHExcludeTest
+
 object PersistentStartEntitySpec {
   class EntityActor extends Actor {
     override def receive: Receive = {
@@ -71,7 +73,8 @@ class PersistentStartEntitySpec
 
   "Persistent Shard" must {
 
-    "remember entities started with StartEntity" in {
+    // FIXME https://github.com/akka/akka/issues/30393
+    "remember entities started with StartEntity" taggedAs GHExcludeTest in {
       val sharding = ClusterSharding(system).start(
         s"startEntity",
         Props[EntityActor](),

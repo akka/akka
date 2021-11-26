@@ -26,6 +26,7 @@ import akka.routing.FromConfig
 import akka.routing.GetRoutees
 import akka.routing.Routees
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.GHExcludeTest
 import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
 import akka.util.unused
 
