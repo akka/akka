@@ -265,7 +265,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       coord.actorSystemJvmHook = OptionVal.Some(coord.addCancellableJvmShutdownHook {
         runningJvmHook = true // avoid System.exit from PhaseActorSystemTerminate task
         if (!system.whenTerminated.isCompleted) {
-          coord.log.info("Starting coordinated shutdown from JVM shutdown hook")
+          coord.log.debug("Starting coordinated shutdown from JVM shutdown hook")
           try {
             // totalTimeout will be 0 when no tasks registered, so at least 3.seconds
             val totalTimeout = coord.totalTimeout().max(3.seconds)
@@ -687,7 +687,7 @@ final class CoordinatedShutdown private[akka] (
     if (runStarted.compareAndSet(None, Some(reason))) {
       implicit val ec: ExecutionContext = system.dispatchers.internalDispatcher
       val debugEnabled = log.isDebugEnabled
-      log.debug("Running CoordinatedShutdown with reason [{}]", reason)
+      log.info("Running CoordinatedShutdown with reason [{}]", reason)
       def loop(remainingPhases: List[String]): Future[Done] = {
         remainingPhases match {
           case Nil => Future.successful(Done)
