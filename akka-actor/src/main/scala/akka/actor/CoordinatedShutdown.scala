@@ -265,7 +265,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       coord.actorSystemJvmHook = OptionVal.Some(coord.addCancellableJvmShutdownHook {
         runningJvmHook = true // avoid System.exit from PhaseActorSystemTerminate task
         if (!system.whenTerminated.isCompleted) {
-          coord.log.debug("Starting coordinated shutdown from JVM shutdown hook")
+          coord.log.info("Starting coordinated shutdown from JVM shutdown hook")
           try {
             // totalTimeout will be 0 when no tasks registered, so at least 3.seconds
             val totalTimeout = coord.totalTimeout().max(3.seconds)
