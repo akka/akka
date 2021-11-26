@@ -972,7 +972,11 @@ private[remote] class Association(
         // don't restart after shutdown, but log some details so we notice
         // for the TCP transport the ShutdownSignal is "converted" to StreamTcpException
         if (!cause.isInstanceOf[StreamTcpException])
-          log.error(cause, s"{} to [{}] failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
+          log.warning(s"{} to [{}] failed after shutdown. {}: {}",
+            streamName,
+            remoteAddress,
+            cause.getClass.getName,
+            cause.getMessage)
         cancelAllTimers()
         // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
         materializing.countDown()
