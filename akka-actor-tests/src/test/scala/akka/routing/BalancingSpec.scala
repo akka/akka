@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.testkit.AkkaSpec
-import akka.testkit.GHExcludeTest
 import akka.testkit.ImplicitSender
 import akka.testkit.TestLatch
 import org.scalatest.BeforeAndAfterEach
@@ -135,7 +134,7 @@ class BalancingSpec extends AkkaSpec("""
       test(pool, startOthers, latch)
     }
 
-    "deliver messages in a balancing fashion when defined in config" taggedAs GHExcludeTest in {
+    "deliver messages in a balancing fashion when defined in config" in {
       val latch = TestLatch(poolSize)
       val startOthers = Promise[Unit]()
       val pool =
@@ -145,7 +144,7 @@ class BalancingSpec extends AkkaSpec("""
       test(pool, startOthers, latch)
     }
 
-    "deliver messages in a balancing fashion when overridden in config" taggedAs GHExcludeTest in {
+    "deliver messages in a balancing fashion when overridden in config" in {
       val latch = TestLatch(poolSize)
       val startOthers = Promise[Unit]()
       val pool =

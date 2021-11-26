@@ -29,7 +29,6 @@ import akka.cluster.typed.Join
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.delivery.EventSourcedProducerQueue
-import akka.testkit.GHExcludeTest
 
 object DurableShardingSpec {
   def conf: Config =
@@ -81,8 +80,7 @@ class DurableShardingSpec
       Cluster(system).manager ! Join(Cluster(system).selfMember.address)
     }
 
-    // GHExclude tracked in https://github.com/akka/akka/issues/30489
-    "load initial state and resend unconfirmed" taggedAs GHExcludeTest in {
+    "load initial state and resend unconfirmed" in {
       pending // FIXME issue #30489, this could be a real problem
       nextId()
       val typeKey = EntityTypeKey[SequencedMessage[TestConsumer.Job]](s"TestConsumer-$idCount")
