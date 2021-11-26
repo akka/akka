@@ -972,7 +972,8 @@ private[remote] class Association(
         // don't restart after shutdown, but log some details so we notice
         // for the TCP transport the ShutdownSignal is "converted" to StreamTcpException
         if (!cause.isInstanceOf[StreamTcpException])
-          log.warning(s"{} to [{}] failed after shutdown. {}: {}",
+          log.warning(
+            s"{} to [{}] failed after shutdown. {}: {}",
             streamName,
             remoteAddress,
             cause.getClass.getName,
