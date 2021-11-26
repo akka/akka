@@ -62,6 +62,7 @@ jobs:
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx512M \
             -Dmultinode.Xlog:gc \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             -Daeron.dir=/opt/volumes/media-driver \
             -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
             -Daeron.term.buffer.length=33554432 \
@@ -145,6 +146,7 @@ jobs:
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx512M \
             -Dmultinode.Xlog:gc \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             -Daeron.dir=/opt/volumes/media-driver \
             -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
             -Daeron.term.buffer.length=33554432 \

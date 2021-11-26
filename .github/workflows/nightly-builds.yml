@@ -39,6 +39,7 @@ jobs:
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx256M \
             -Dmultinode.Xlog:gc \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             clean akka-cluster-metrics/test
 
       - name: Test Reports
@@ -105,6 +106,7 @@ jobs:
           -Dmultinode.Xms256M \
           -Dmultinode.Xmx256M \
           -Dmultinode.Xlog:gc \
+          -Dmultinode.XX:+AlwaysActAsServerClassMachine \
           clean ${{ matrix.command }}
 
   jdk-nightly-build:
@@ -151,6 +153,7 @@ jobs:
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx256M \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             ${{ matrix.extraOpts }} \
             clean Test/compile test checkTestsHaveRun
 
