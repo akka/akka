@@ -53,6 +53,7 @@ jobs:
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
+            -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.cluster.assert=on \
             -Dsbt.override.build.repos=false \
             -Dakka.test.multi-node=true \
@@ -62,6 +63,7 @@ jobs:
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx512M \
             -Dmultinode.Xlog:gc \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             -Daeron.dir=/opt/volumes/media-driver \
             -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
             -Daeron.term.buffer.length=33554432 \
@@ -134,6 +136,7 @@ jobs:
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
+            -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.cluster.assert=on \
             -Dakka.remote.artery.transport=aeron-udp \
             -Dsbt.override.build.repos=false \
@@ -145,6 +148,7 @@ jobs:
             -Dmultinode.Xms512M \
             -Dmultinode.Xmx512M \
             -Dmultinode.Xlog:gc \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             -Daeron.dir=/opt/volumes/media-driver \
             -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
             -Daeron.term.buffer.length=33554432 \

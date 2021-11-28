@@ -39,6 +39,7 @@ jobs:
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx256M \
             -Dmultinode.Xlog:gc \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             clean akka-cluster-metrics/test
 
       - name: Test Reports
@@ -98,13 +99,14 @@ jobs:
           -Dakka.remote.artery.enabled=off \
           -Dakka.test.timefactor=2 \
           -Dakka.actor.testkit.typed.timefactor=2 \
-          -Dakka.cluster.assert=on \
           -Dakka.test.tags.exclude=gh-exclude \
+          -Dakka.cluster.assert=on \
           -Dakka.test.names.exclude=akka.cluster.Stress \
           -Dmultinode.XX:MetaspaceSize=128M \
           -Dmultinode.Xms256M \
           -Dmultinode.Xmx256M \
           -Dmultinode.Xlog:gc \
+          -Dmultinode.XX:+AlwaysActAsServerClassMachine \
           clean ${{ matrix.command }}
 
   jdk-nightly-build:
@@ -147,10 +149,12 @@ jobs:
             -Dakka.log.timestamps=true \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
+            -Dakka.test.tags.exclude=gh-exclude \
             -Dakka.test.multi-in-test=false \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx256M \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             ${{ matrix.extraOpts }} \
             clean Test/compile test checkTestsHaveRun
 

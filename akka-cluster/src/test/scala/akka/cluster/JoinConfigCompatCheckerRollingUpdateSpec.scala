@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import akka.testkit.LongRunningTest
+import akka.testkit.GHExcludeTest
 
 object JoinConfigCompatCheckerRollingUpdateSpec {
 
@@ -47,16 +47,17 @@ class JoinConfigCompatCheckerRollingUpdateSpec
 
   import JoinConfigCompatCheckerRollingUpdateSpec._
 
+  // FIXME https://github.com/akka/akka/issues/30939 (tag as LongRunningTest instead when fixed)
   "A Node" must {
     val timeout = 20.seconds
-    "NOT be allowed to re-join a cluster if it has a new, additional configuration the others do not have and not the old" taggedAs LongRunningTest in {
+    "NOT be allowed to re-join a cluster if it has a new, additional configuration the others do not have and not the old" taggedAs GHExcludeTest in {
       // confirms the 2 attempted re-joins fail with both nodes being terminated
       upgradeCluster(3, v1Config, v2ConfigIncompatible, timeout, timeout, enforced = true, shouldRejoin = false)
     }
-    "be allowed to re-join a cluster if it has a new, additional property and checker the others do not have" taggedAs LongRunningTest in {
+    "be allowed to re-join a cluster if it has a new, additional property and checker the others do not have" taggedAs GHExcludeTest in {
       upgradeCluster(3, v1Config, v2Config, timeout, timeout * 3, enforced = true, shouldRejoin = true)
     }
-    "be allowed to re-join a cluster if it has a new, additional configuration the others do not have and configured to NOT enforce it" taggedAs LongRunningTest in {
+    "be allowed to re-join a cluster if it has a new, additional configuration the others do not have and configured to NOT enforce it" taggedAs GHExcludeTest in {
       upgradeCluster(3, v1Config, v2Config, timeout, timeout * 3, enforced = false, shouldRejoin = true)
     }
   }

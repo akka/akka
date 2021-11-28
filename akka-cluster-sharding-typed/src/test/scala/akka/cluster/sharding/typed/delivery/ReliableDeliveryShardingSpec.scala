@@ -29,6 +29,7 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
+import akka.testkit.GHExcludeTest
 
 object ReliableDeliveryShardingSpec {
   val config = ConfigFactory.parseString("""
@@ -335,7 +336,8 @@ class ReliableDeliveryShardingSpec
       testKit.stop(shardingProducerController)
     }
 
-    "deliver unconfirmed if ShardingConsumerController is terminated" in {
+    // FIXME issue https://github.com/akka/akka/issues/30567
+    "deliver unconfirmed if ShardingConsumerController is terminated" taggedAs GHExcludeTest in {
       // for example if ShardingConsumerController is rebalanced, but no more messages are sent to the entity
       nextId()
 
