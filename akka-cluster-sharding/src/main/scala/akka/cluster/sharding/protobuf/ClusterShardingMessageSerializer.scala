@@ -68,6 +68,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private val ShardStoppedManifest = "BK"
   private val GracefulShutdownReqManifest = "BL"
   private val RegionStoppedManifest = "BM"
+  private val ShardHomesManifest = "BN"
 
   private val EntityStateManifest = "CA"
   private val EntityStartedManifest = "CB"
@@ -132,6 +133,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
       GetShardHome(shardIdMessageFromBinary(bytes))
     },
     ShardHomeManifest -> shardHomeFromBinary,
+    ShardHomesManifest -> shardHomesFromBinary,
     HostShardManifest -> { bytes =>
       HostShard(shardIdMessageFromBinary(bytes))
     },
@@ -222,6 +224,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case _: RegisterAck         => RegisterAckManifest
     case _: GetShardHome        => GetShardHomeManifest
     case _: ShardHome           => ShardHomeManifest
+    case _: ShardHomes          => ShardHomesManifest
     case _: HostShard           => HostShardManifest
     case _: ShardStarted        => ShardStartedManifest
     case _: BeginHandOff        => BeginHandOffManifest
@@ -270,6 +273,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case RegisterAck(ref)         => actorRefMessageToProto(ref).toByteArray
     case GetShardHome(shardId)    => shardIdMessageToProto(shardId).toByteArray
     case m: ShardHome             => shardHomeToProto(m).toByteArray
+    case sh: ShardHomes => shardHomesToProto(sh).toByteArray
     case HostShard(shardId)       => shardIdMessageToProto(shardId).toByteArray
     case ShardStarted(shardId)    => shardIdMessageToProto(shardId).toByteArray
     case BeginHandOff(shardId)    => shardIdMessageToProto(shardId).toByteArray
@@ -403,6 +407,26 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private def shardHomeFromBinary(bytes: Array[Byte]): ShardHome = {
     val m = sm.ShardHome.parseFrom(bytes)
     ShardHome(m.getShard, resolveActorRef(m.getRegion))
+  }
+
+  private def shardHomesToProto(sh: ShardHomes): sm.ShardHomes = {
+    sm.ShardHomes.newBuilder()
+      .addAllHomes(sh.homes.map { case (regionRef, shards) =>
+        sm.ShardHomesEntry.newBuilder()
+          .setRegion(Serialization.serializedActorPath(regionRef))
+          .addAllShard(shards.asJava)
+          .build()
+        }.asJava
+      ).build()
+  }
+
+  private def shardHomesFromBinary(bytes: Array[Byte]): ShardHomes = {
+    val sh = sm.ShardHomes.parseFrom(bytes)
+    ShardHomes(
+      sh.getHomesList.asScala.map { she =>
+        resolveActorRef(she.getRegion) -> she.getShardList.asScala.toVector
+      }.toMap
+    )
   }
 
   private def entityStateToProto(m: EntityState): sm.EntityState = {

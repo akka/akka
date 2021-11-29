@@ -833,24 +833,16 @@ private[akka] class ShardRegion(
       }
 
     case ShardHome(shard, shardRegionRef) =>
-      log.debug("{}: Shard [{}] located at [{}]", typeName, shard, shardRegionRef)
-      regionByShard.get(shard) match {
-        case Some(r) if r == self && shardRegionRef != self =>
-          // should not happen, inconsistency between ShardRegion and ShardCoordinator
-          throw new IllegalStateException(
-            s"$typeName: Unexpected change of shard [$shard] from self to [$shardRegionRef]")
-        case _ =>
+      receiveShardHome(shard, shardRegionRef)
+
+    case ShardHomes(homes) =>
+      if (log.isDebugEnabled)
+        log.debug("Got shard homes for regions [{}]", homes.keySet.mkString(", "))
+      homes.foreach { case (shardRegionRef, shards) =>
+        shards.foreach(shardId =>
+          receiveShardHome(shardId, shardRegionRef)
+        )
       }
-      regionByShard = regionByShard.updated(shard, shardRegionRef)
-      regions = regions.updated(shardRegionRef, regions.getOrElse(shardRegionRef, Set.empty) + shard)
-
-      if (shardRegionRef != self)
-        context.watch(shardRegionRef)
-
-      if (shardRegionRef == self)
-        getShard(shard).foreach(deliverBufferedMessages(shard, _))
-      else
-        deliverBufferedMessages(shard, shardRegionRef)
 
     case RegisterAck(coord) =>
       context.watch(coord)
@@ -1028,6 +1020,27 @@ private[akka] class ShardRegion(
       // If so, we can try to speed-up the region shutdown. We don't need to wait for the next tick.
       tryCompleteGracefulShutdownIfInProgress()
     }
+  }
+
+  def receiveShardHome(shard: ShardId, shardRegionRef: ActorRef): Unit = {
+    log.debug("{}: Shard [{}] located at [{}]", typeName, shard, shardRegionRef)
+    regionByShard.get(shard) match {
+      case Some(r) if r == self && shardRegionRef != self =>
+        // should not happen, inconsistency between ShardRegion and ShardCoordinator
+        throw new IllegalStateException(
+          s"$typeName: Unexpected change of shard [$shard] from self to [$shardRegionRef]")
+      case _ =>
+    }
+    regionByShard = regionByShard.updated(shard, shardRegionRef)
+    regions = regions.updated(shardRegionRef, regions.getOrElse(shardRegionRef, Set.empty) + shard)
+
+    if (shardRegionRef != self)
+      context.watch(shardRegionRef)
+
+    if (shardRegionRef == self)
+      getShard(shard).foreach(deliverBufferedMessages(shard, _))
+    else
+      deliverBufferedMessages(shard, shardRegionRef)
   }
 
   def replyToRegionStateQuery(ref: ActorRef): Unit = {

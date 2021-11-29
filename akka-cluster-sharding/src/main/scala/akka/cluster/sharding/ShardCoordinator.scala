@@ -366,6 +366,11 @@ object ShardCoordinator {
     @SerialVersionUID(1L) final case class ShardHome(shard: ShardId, ref: ActorRef) extends CoordinatorMessage
 
     /**
+     * One or more sent to region directly after registration to speed up new shard startup.
+     */
+    final case class ShardHomes(homes: Map[ActorRef, immutable.Seq[ShardId]]) extends CoordinatorMessage with DeadLetterSuppression
+
+    /**
      * `ShardCoordinator` informs a `ShardRegion` that it is hosting this shard
      */
     @SerialVersionUID(1L) final case class HostShard(shard: ShardId) extends CoordinatorMessage
@@ -719,9 +724,11 @@ abstract class ShardCoordinator(
           aliveRegions += region
           if (state.regions.contains(region)) {
             region ! RegisterAck(self)
+            informAboutCurrentShards(region)
             allocateShardHomesForRememberEntities()
           } else {
             gracefulShutdownInProgress -= region
+            informAboutCurrentShards(region) // we don't have to wait for updated state for this
             update(ShardRegionRegistered(region)) { evt =>
               state = state.updated(evt)
               context.watch(region)
@@ -739,6 +746,7 @@ abstract class ShardCoordinator(
       case RegisterProxy(proxy) =>
         if (isMember(proxy)) {
           log.debug("{}: ShardRegion proxy registered: [{}]", typeName, proxy)
+          informAboutCurrentShards(proxy) // we don't have to wait for updated state for this
           if (state.regionProxies.contains(proxy))
             proxy ! RegisterAck(self)
           else {
@@ -980,6 +988,28 @@ abstract class ShardCoordinator(
       shard,
       from)
     rebalanceInProgress = rebalanceInProgress.updated(shard, rebalanceInProgress(shard) + from)
+  }
+
+  private def informAboutCurrentShards(ref: ActorRef): Unit = {
+    // FIXME weight per shard depends on length of used shard ids, make this configurable
+    val batchSize = 1000
+    if (state.shards.isEmpty || batchSize == 0) {
+      // No shards - NOP
+    } else if (state.shards.size <= batchSize) {
+      log.debug("{}: Informing [{}] about all [{}] shards", typeName, ref, state.shards.size)
+      ref ! ShardHomes(state.regions)
+    } else {
+      // split up into multiple messages, to not get a too large message
+      // but go by region to send the same region actor as few times as possible
+      log.debug("{}: Informing [{}] about all [{}] shards in batches of [{}]", typeName, ref, state.shards.size, batchSize)
+      state.regions.iterator.flatMap {
+        case (regionRef, shards) =>
+          shards.map(shard => regionRef -> shard)
+      }.grouped(batchSize).foreach { regions =>
+        val shardsSubMap = regions.groupMap { case (regionRef, _) => regionRef } { case (_, shardId) => shardId }
+        ref ! ShardHomes(shardsSubMap)
+      }
+    }
   }
 
   /**
