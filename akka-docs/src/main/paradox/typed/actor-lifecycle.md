@@ -131,7 +131,7 @@ per HTTP request.
 That is not difficult to implement in your behavior, but since this is a common pattern there is a predefined
 message protocol and implementation of a behavior for this. It can be used as the guardian actor of the @apidoc[ActorSystem](typed.ActorSystem),
 possibly combined with @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"} to start some initial tasks or actors. Child actors can then be started from
-the outside by @apidoc[tell](typed.ActorRef) {scala="#tell(msg:T):Unit" java="#tell(T)"}ing or `ask`ing @apidoc[SpawnProtocol.Spawn] to the actor reference of the system. Using `ask` is
+the outside by @apidoc[tell](typed.ActorRef) {scala="#tell(msg:T):Unit" java="#tell(T)"}ing or @scala[@scaladoc[ask](akka.actor.typed.scaladsl.AskPattern.Askable#ask[Res](replyTo:akka.actor.typed.ActorRef[Res]=%3EReq)(implicittimeout:akka.util.Timeout,implicitscheduler:akka.actor.typed.Scheduler):scala.concurrent.Future[Res])]@java[@javadoc[ask](akka.actor.typed.javadsl.AskPattern#ask(akka.actor.typed.RecipientRef,akka.japi.function.Function,java.time.Duration,akka.actor.typed.Scheduler))]ing @apidoc[SpawnProtocol.Spawn] to the actor reference of the system. Using `ask` is
 similar to how `ActorSystem.actorOf` can be used in classic actors with the difference that a
 @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionStage](java.util.concurrent.CompletionStage)] of the @apidoc[ActorRef](typed.ActorRef) is returned.
 
