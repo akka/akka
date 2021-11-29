@@ -584,11 +584,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       case _: AeronTerminated  => // shutdown already in progress
       case cause if isShutdown =>
         // don't restart after shutdown, but log some details so we notice
-        log.error(cause, s"{} failed after shutdown. {}", streamName, cause.getMessage)
+        log.warning(s"{} failed after shutdown. {}: {}", streamName, cause.getClass.getName, cause.getMessage)
       case _: AbruptTerminationException => // ActorSystem shutdown
       case cause =>
         if (restartCounter.restart()) {
-          log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
+          log.warning("{} failed. Restarting it. {}: {}", streamName, cause.getClass.getName, cause.getMessage)
           flightRecorder.transportRestartInbound(localAddress, streamName)
           restart()
         } else {
