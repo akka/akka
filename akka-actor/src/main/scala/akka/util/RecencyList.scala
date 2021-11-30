@@ -7,7 +7,6 @@ package akka.util
 import akka.annotation.InternalApi
 
 import scala.collection.{ immutable, mutable }
-import scala.collection.AbstractIterator
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -18,7 +17,7 @@ private[akka] object RecencyList {
   def empty[A]: RecencyList[A] = new RecencyList[A](new NanoClock)
 
   private final class Node[A](val value: A) {
-    var lessRecent, moreRecent: Node[A] = this
+    var lessRecent, moreRecent: OptionVal[Node[A]] = OptionVal.None
     var timestamp: Long = 0L
   }
 
@@ -44,7 +43,12 @@ private[akka] object RecencyList {
 private[akka] final class RecencyList[A](clock: RecencyList.Clock) {
   import RecencyList.Node
 
-  private val empty = new Node[A](null.asInstanceOf[A])
+  private val recency = new DoubleLinkedList[Node[A]](
+    getPrevious = _.lessRecent,
+    getNext = _.moreRecent,
+    setPrevious = _.lessRecent = _,
+    setNext = _.moreRecent = _)
+
   private val lookupNode = mutable.Map.empty[A, Node[A]]
 
   def size: Int = lookupNode.size
@@ -52,11 +56,12 @@ private[akka] final class RecencyList[A](clock: RecencyList.Clock) {
   def update(value: A): RecencyList[A] = {
     if (lookupNode.contains(value)) {
       val node = lookupNode(value)
-      removeFromCurrentPosition(node)
-      addAsMostRecent(node)
+      node.timestamp = clock.currentTime()
+      recency.moveToBack(node)
     } else {
       val node = new Node(value)
-      addAsMostRecent(node)
+      node.timestamp = clock.currentTime()
+      recency.append(node)
       lookupNode += value -> node
     }
     this
@@ -64,86 +69,55 @@ private[akka] final class RecencyList[A](clock: RecencyList.Clock) {
 
   def remove(value: A): RecencyList[A] = {
     if (lookupNode.contains(value)) {
-      val node = lookupNode(value)
-      removeFromCurrentPosition(node)
-      lookupNode -= value
+      removeNode(lookupNode(value))
     }
     this
   }
 
   def contains(value: A): Boolean = lookupNode.contains(value)
 
-  private def leastRecent: Node[A] = empty.moreRecent
-  private def mostRecent: Node[A] = empty.lessRecent
+  def leastToMostRecent: Iterator[A] = recency.forwardIterator.map(_.value)
 
-  private val lessRecent: Node[A] => Node[A] = _.lessRecent
-  private val moreRecent: Node[A] => Node[A] = _.moreRecent
+  def mostToLeastRecent: Iterator[A] = recency.backwardIterator.map(_.value)
 
-  def removeLeastRecent(n: Int = 1, skip: Int = 0): immutable.Seq[A] =
-    removeWhile(start = leastRecent, next = moreRecent, limit = n, skip = skip)
+  def removeLeastRecent(n: Int): immutable.Seq[A] =
+    if (n == 1) removeLeastRecent() // optimised removal of just 1 node
+    else recency.forwardIterator.take(n).map(removeNode).toList
 
-  def removeMostRecent(n: Int = 1, skip: Int = 0): immutable.Seq[A] =
-    removeWhile(start = mostRecent, next = lessRecent, limit = n, skip = skip)
+  def removeLeastRecent(n: Int, skip: Int): immutable.Seq[A] =
+    recency.forwardIterator.slice(skip, skip + n).map(removeNode).toList
+
+  def removeLeastRecent(): immutable.Seq[A] = recency.getFirst match {
+    case OptionVal.Some(first) => List(removeNode(first))
+    case _                     => Nil
+  }
+
+  def removeMostRecent(n: Int): immutable.Seq[A] =
+    if (n == 1) removeMostRecent() // optimised removal of just 1 node
+    else recency.backwardIterator.take(n).map(removeNode).toList
+
+  def removeMostRecent(n: Int, skip: Int): immutable.Seq[A] =
+    recency.backwardIterator.slice(skip, skip + n).map(removeNode).toList
+
+  def removeMostRecent(): immutable.Seq[A] = recency.getLast match {
+    case OptionVal.Some(last) => List(removeNode(last))
+    case _                    => Nil
+  }
 
   def removeLeastRecentOutside(duration: FiniteDuration): immutable.Seq[A] = {
     val min = clock.earlierTime(duration)
-    removeWhile(start = leastRecent, next = moreRecent, continueWhile = _.timestamp < min)
+    recency.forwardIterator.takeWhile(_.timestamp < min).map(removeNode).toList
   }
 
   def removeMostRecentWithin(duration: FiniteDuration): immutable.Seq[A] = {
     val max = clock.earlierTime(duration)
-    removeWhile(start = mostRecent, next = lessRecent, continueWhile = _.timestamp > max)
+    recency.backwardIterator.takeWhile(_.timestamp > max).map(removeNode).toList
   }
 
-  def leastToMostRecent: Iterator[A] = iterator(start = leastRecent, shift = moreRecent)
-
-  def mostToLeastRecent: Iterator[A] = iterator(start = mostRecent, shift = lessRecent)
-
-  private def addAsMostRecent(node: Node[A]): Unit = {
-    node.moreRecent = empty
-    node.lessRecent = mostRecent
-    node.moreRecent.lessRecent = node
-    node.lessRecent.moreRecent = node
-    node.timestamp = clock.currentTime()
+  private def removeNode(node: Node[A]): A = {
+    val value = node.value
+    recency.remove(node)
+    lookupNode -= value
+    value
   }
-
-  private def removeFromCurrentPosition(node: Node[A]): Unit = {
-    node.lessRecent.moreRecent = node.moreRecent
-    node.moreRecent.lessRecent = node.lessRecent
-  }
-
-  private val continueToLimit: Node[A] => Boolean = _ => true
-
-  private def removeWhile(
-      start: Node[A],
-      next: Node[A] => Node[A],
-      continueWhile: Node[A] => Boolean = continueToLimit,
-      limit: Int = size,
-      skip: Int = 0): immutable.Seq[A] = {
-    var count = 0
-    var node = start
-    val max = limit + skip
-    val values = mutable.ListBuffer.empty[A]
-    while ((node ne empty) && continueWhile(node) && (count < max)) {
-      count += 1
-      if (count > skip) {
-        removeFromCurrentPosition(node)
-        lookupNode -= node.value
-        values += node.value
-      }
-      node = next(node)
-    }
-    values.result()
-  }
-
-  private def iterator(start: Node[A], shift: Node[A] => Node[A]): Iterator[A] =
-    new AbstractIterator[A] {
-      private[this] var current = start
-      override def hasNext: Boolean = current ne empty
-      override def next(): A = {
-        val value = current.value
-        current = shift(current)
-        value
-      }
-    }
 }
