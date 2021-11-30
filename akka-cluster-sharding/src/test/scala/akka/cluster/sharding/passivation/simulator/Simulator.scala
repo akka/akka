@@ -90,8 +90,9 @@ object Simulator {
           case SimulatorSettings.PatternSettings.Synthetic.Hotspot(min, max, hot, rate) =>
             new SyntheticGenerator.Hotspot(min, max, hot, rate, events)
           case SimulatorSettings.PatternSettings.Synthetic.Zipfian(min, max, constant, scrambled) =>
-            if (scrambled) new SyntheticGenerator.ScrambledZipfian(min, max, constant, events)
-            else new SyntheticGenerator.Zipfian(min, max, constant, events)
+            new SyntheticGenerator.Zipfian(min, max, constant, scrambled, events)
+          case SimulatorSettings.PatternSettings.Synthetic.ShiftingZipfian(min, max, constant, shifts, scrambled) =>
+            new SyntheticGenerator.ShiftingZipfian(min, max, constant, shifts, scrambled, events)
         }
       case SimulatorSettings.PatternSettings.Trace(path, format) =>
         format match {
@@ -107,8 +108,8 @@ object Simulator {
           () => new LeastRecentlyUsedEntityPassivationStrategy(perRegionLimit, idleCheck = None)
         case SimulatorSettings.StrategySettings.MostRecentlyUsed(perRegionLimit) =>
           () => new MostRecentlyUsedEntityPassivationStrategy(perRegionLimit, idleCheck = None)
-        case SimulatorSettings.StrategySettings.LeastFrequentlyUsed(perRegionLimit) =>
-          () => new LeastFrequentlyUsedEntityPassivationStrategy(perRegionLimit, idleCheck = None)
+        case SimulatorSettings.StrategySettings.LeastFrequentlyUsed(perRegionLimit, dynamicAging) =>
+          () => new LeastFrequentlyUsedEntityPassivationStrategy(perRegionLimit, dynamicAging, idleCheck = None)
       }
   }
 

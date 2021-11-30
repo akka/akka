@@ -199,6 +199,7 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
         #passivation-least-frequently-used
       """).passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
         limit = 1000000,
+        dynamicAging = false,
         idle = None)
     }
 
@@ -208,6 +209,7 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           ClusterShardingSettings.PassivationStrategySettings.LeastFrequentlyUsedSettings.defaults.withLimit(42000))
         .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
         limit = 42000,
+        dynamicAging = false,
         idle = None)
     }
 
@@ -226,6 +228,7 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
         #passivation-least-frequently-used-with-idle
       """).passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
         limit = 1000000,
+        dynamicAging = false,
         idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 30.minutes, interval = 15.minutes)))
     }
 
@@ -237,7 +240,39 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
             .withIdle(timeout = 42.minutes))
         .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
         limit = 42000,
+        dynamicAging = false,
         idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
+    }
+
+    "allow least frequently used passivation strategy with dynamic aging to be configured (via config)" in {
+      settings("""
+        #passivation-least-frequently-used-with-dynamic-aging
+        akka.cluster.sharding {
+          passivation {
+            strategy = least-frequently-used
+            least-frequently-used {
+              limit = 1000
+              dynamic-aging = on
+            }
+          }
+        }
+        #passivation-least-frequently-used-with-dynamic-aging
+      """).passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
+        limit = 1000,
+        dynamicAging = true,
+        idle = None)
+    }
+
+    "allow least frequently used passivation strategy with dynamic aging to be configured (via factory method)" in {
+      defaultSettings
+        .withLeastFrequentlyUsedPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.LeastFrequentlyUsedSettings.defaults
+            .withLimit(42000)
+            .withDynamicAging())
+        .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
+        limit = 42000,
+        dynamicAging = true,
+        idle = None)
     }
 
     "disable automatic passivation if `remember-entities` is enabled (via config)" in {

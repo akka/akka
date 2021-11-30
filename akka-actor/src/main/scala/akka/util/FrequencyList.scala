@@ -14,13 +14,15 @@ import scala.concurrent.duration.FiniteDuration
  */
 @InternalApi
 private[akka] object FrequencyList {
-  def empty[A]: FrequencyList[A] = new FrequencyList[A](OptionVal.None)
+  def empty[A](dynamicAging: Boolean = false): FrequencyList[A] =
+    new FrequencyList[A](dynamicAging, clock = OptionVal.None)
 
   object withOverallRecency {
-    def empty[A]: FrequencyList[A] = new FrequencyList[A](OptionVal.Some(new RecencyList.NanoClock))
+    def empty[A](dynamicAging: Boolean = false): FrequencyList[A] =
+      new FrequencyList[A](dynamicAging, OptionVal.Some(new RecencyList.NanoClock))
   }
 
-  private final class FrequencyNode[A](val count: Int) {
+  private final class FrequencyNode[A](val priority: Long) {
     var lessFrequent, moreFrequent: OptionVal[FrequencyNode[A]] = OptionVal.None
     val nodes = new DoubleLinkedList[Node[A]](
       getPrevious = _.lessRecent,
@@ -30,6 +32,7 @@ private[akka] object FrequencyList {
   }
 
   private final class Node[A](val value: A, initialFrequency: FrequencyNode[A]) {
+    var accesses: Long = 1L
     var frequency: FrequencyNode[A] = initialFrequency
     var lessRecent, moreRecent: OptionVal[Node[A]] = OptionVal.None
     var overallLessRecent, overallMoreRecent: OptionVal[Node[A]] = OptionVal.None
@@ -45,9 +48,10 @@ private[akka] object FrequencyList {
  * Implemented using a doubly-linked list of doubly-linked lists, with lookup, so that all operations are constant time.
  * Elements with the same frequency are stored in order of update (recency within the same frequency count).
  * Overall recency can also be enabled, to support time-based eviction policies, without using a secondary recency list.
+ * Dynamic aging can be enabled for least frequently used policies, to automatically 'age' the whole cache on evictions.
  */
 @InternalApi
-private[akka] final class FrequencyList[A](clock: OptionVal[RecencyList.Clock]) {
+private[akka] final class FrequencyList[A](dynamicAging: Boolean, clock: OptionVal[RecencyList.Clock]) {
   import FrequencyList.{ FrequencyNode, Node }
 
   private val frequency = new DoubleLinkedList[FrequencyNode[A]](
@@ -64,6 +68,8 @@ private[akka] final class FrequencyList[A](clock: OptionVal[RecencyList.Clock]) 
 
   private val lookupNode = mutable.Map.empty[A, Node[A]]
 
+  private var age = 0L
+
   def size: Int = lookupNode.size
 
   def update(value: A): FrequencyList[A] = {
@@ -75,7 +81,7 @@ private[akka] final class FrequencyList[A](clock: OptionVal[RecencyList.Clock]) 
         overallRecency.moveToBack(node)
       }
     } else {
-      val node = addAsLeastFrequent(value)
+      val node = addInitialFrequency(value)
       lookupNode += value -> node
       if (clock.isDefined) {
         node.timestamp = clock.get.currentTime()
@@ -100,15 +106,15 @@ private[akka] final class FrequencyList[A](clock: OptionVal[RecencyList.Clock]) 
 
   def removeLeastFrequent(n: Int): immutable.Seq[A] =
     if (n == 1) removeLeastFrequent() // optimised removal of just 1 node
-    else forwardIterator.take(n).map(removeNode).toList
+    else forwardIterator.take(n).map(removeLeastFrequentNode).toList
 
   def removeLeastFrequent(n: Int = 1, skip: OptionVal[A]): immutable.Seq[A] =
-    forwardIterator.filterNot(node => skip.contains(node.value)).take(n).map(removeNode).toList
+    forwardIterator.filterNot(node => skip.contains(node.value)).take(n).map(removeLeastFrequentNode).toList
 
   def removeLeastFrequent(): immutable.Seq[A] = frequency.getFirst match {
     case OptionVal.Some(least) =>
       least.nodes.getFirst match {
-        case OptionVal.Some(first) => List(removeNode(first))
+        case OptionVal.Some(first) => List(removeLeastFrequentNode(first))
         case _                     => Nil
       }
     case _ => Nil
@@ -156,18 +162,55 @@ private[akka] final class FrequencyList[A](clock: OptionVal[RecencyList.Clock]) 
     overallRecency.backwardIterator.takeWhile(_.timestamp > max).map(removeNode).toList
   }
 
+  private def addInitialFrequency(value: A): Node[A] =
+    if (dynamicAging) addInitialAdjustedFrequency(value) else addAsLeastFrequent(value)
+
   private def addAsLeastFrequent(value: A): Node[A] = {
-    val one = frequency.getFirstOrElsePrepend(_.count == 1, new FrequencyNode[A](count = 1))
+    val one = frequency.getFirstOrElsePrepend(_.priority == 1, new FrequencyNode[A](priority = 1))
     val node = new Node(value, one)
     addToFrequency(node, one)
     node
   }
 
-  private def increaseFrequency(node: Node[A]): Unit = {
-    val nextCount = node.frequency.count + 1
-    val next = frequency.getNextOrElseInsert(node.frequency, _.count == nextCount, new FrequencyNode[A](nextCount))
+  private def addInitialAdjustedFrequency(value: A): Node[A] = {
+    val priority = 1 + age
+    val frequencyNode = frequency.getFirst match {
+      case OptionVal.Some(first) if first.priority < priority =>
+        frequency.findNextOrElseInsert(
+          first,
+          _.priority < priority,
+          _.priority == priority,
+          new FrequencyNode[A](priority))
+      case _ =>
+        frequency.getFirstOrElsePrepend(_.priority == priority, new FrequencyNode[A](priority))
+    }
+    val node = new Node(value, frequencyNode)
+    addToFrequency(node, frequencyNode)
+    node
+  }
+
+  private def increaseFrequency(node: Node[A]): Unit =
+    if (dynamicAging) increaseAdjustedFrequency(node) else increaseToNextFrequency(node)
+
+  private def increaseAdjustedFrequency(node: Node[A]): Unit = {
+    node.accesses += 1
+    val priority = node.accesses + age
+    val frequencyNode = frequency.findNextOrElseInsert(
+      node.frequency,
+      _.priority < priority,
+      _.priority == priority,
+      new FrequencyNode[A](priority))
     removeFromFrequency(node)
-    addToFrequency(node, next)
+    addToFrequency(node, frequencyNode)
+  }
+
+  private def increaseToNextFrequency(node: Node[A]): Unit = {
+    node.accesses += 1
+    val priority = node.accesses
+    val frequencyNode =
+      frequency.getNextOrElseInsert(node.frequency, _.priority == priority, new FrequencyNode[A](priority))
+    removeFromFrequency(node)
+    addToFrequency(node, frequencyNode)
   }
 
   private def addToFrequency(node: Node[A], frequencyNode: FrequencyNode[A]): Unit = {
@@ -187,6 +230,11 @@ private[akka] final class FrequencyList[A](clock: OptionVal[RecencyList.Clock]) 
     if (clock.isDefined) overallRecency.remove(node)
     lookupNode -= value
     value
+  }
+
+  private def removeLeastFrequentNode(node: Node[A]): A = {
+    if (dynamicAging) age = node.frequency.priority
+    removeNode(node)
   }
 
   private def forwardIterator: Iterator[Node[A]] = frequency.forwardIterator.flatMap(_.nodes.forwardIterator)

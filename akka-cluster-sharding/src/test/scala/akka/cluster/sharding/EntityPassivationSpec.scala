@@ -86,6 +86,18 @@ object EntityPassivationSpec {
     }
     """).withFallback(config)
 
+  val leastFrequentlyUsedWithDynamicAgingConfig = ConfigFactory.parseString("""
+    akka.cluster.sharding {
+      passivation {
+        strategy = least-frequently-used
+        least-frequently-used {
+          limit = 10
+          dynamic-aging = on
+        }
+      }
+    }
+    """).withFallback(config)
+
   val leastFrequentlyUsedWithIdleConfig = ConfigFactory.parseString("""
     akka.cluster.sharding {
       passivation {
@@ -687,6 +699,84 @@ class LeastFrequentlyUsedEntityPassivationSpec
       // shard 2: frequency 2 = (22), frequency 3 = (23), frequency 4 = (28)
       // shard 3: frequency 2 = (32), frequency 3 = (33), frequency 4 = (37)
       expectState(region)(1 -> Set(13, 20, 12), 2 -> Set(22, 23, 28), 3 -> Set(32, 33, 37))
+    }
+  }
+}
+
+class LeastFrequentlyUsedWithDynamicAgingEntityPassivationSpec
+    extends AbstractEntityPassivationSpec(
+      EntityPassivationSpec.leastFrequentlyUsedWithDynamicAgingConfig,
+      expectedEntities = 21) {
+
+  import EntityPassivationSpec.Entity.{ Envelope, Stop }
+
+  "Passivation of least frequently used entities with dynamic aging" must {
+    "passivate the least frequently used entities when the per-shard entity limit is reached" in {
+      val region = start()
+
+      // only one active shard at first
+      // ids 1 and 2 are quite popular initially
+      for (id <- 1 to 2) {
+        for (x <- 1 to 5) {
+          region ! Envelope(shard = 1, id = id, message = s"A$x")
+          expectReceived(id = id, message = s"A$x")
+        }
+      }
+      // ids 3, 4, and 5 are very popular initially
+      for (id <- 3 to 5) {
+        for (x <- 1 to 10) {
+          region ! Envelope(shard = 1, id = id, message = s"A$x")
+          expectReceived(id = id, message = s"A$x")
+        }
+      }
+
+      // shard 1: age = 0, @5 (5 + 0) = (1, 2), @10 (10 + 0) = (3, 4, 5)
+      expectState(region)(1 -> Set(1, 2, 3, 4, 5))
+
+      for (id <- 6 to 20) {
+        region ! Envelope(shard = 1, id = id, message = s"B")
+        expectReceived(id = id, message = s"B")
+        if (id > 10) expectReceived(id = id - 5, message = Stop)
+      }
+
+      // shard 1: age = 2, @3 (1 + 2) = (16, 17, 18, 19, 20), @5 (5 + 0) = (1, 2), @10 (10 + 0) = (3, 4, 5)
+      expectState(region)(1 -> Set(1, 2, 3, 4, 5, 16, 17, 18, 19, 20))
+
+      // activating a second shard will divide the per-shard limit in two, passivating half of the first shard
+      region ! Envelope(shard = 2, id = 21, message = "C")
+      expectReceived(id = 21, message = "C")
+      for (id <- 16 to 20) expectReceived(id, message = Stop)
+
+      // shard 1: age = 3, @5 (5 + 0) = (1, 2), @10 (10 + 0) = (3, 4, 5)
+      // shard 2: age = 0, @1 (1 + 0) = (21)
+      expectState(region)(1 -> Set(1, 2, 3, 4, 5), 2 -> Set(21))
+
+      for (id <- 6 to 10) {
+        region ! Envelope(shard = 1, id = id, message = s"D")
+        expectReceived(id = id, message = s"D")
+      }
+
+      // shard 1: age = 7, @7 (1 + 6) = (9), @8 (1 + 7) = (10), @10 (10 + 0) = (3, 4, 5)
+      // shard 2: age = 0, @1 (1 + 0) = (21)
+      expectState(region)(1 -> Set(9, 10, 3, 4, 5), 2 -> Set(21))
+
+      for (id <- 11 to 15) {
+        region ! Envelope(shard = 1, id = id, message = s"E")
+        expectReceived(id = id, message = s"E")
+      }
+
+      // shard 1: age = 9, @10 (10 + 0) = (3, 4, 5), @10 (1 + 9) = (14, 15)
+      // shard 2: age = 0, @1 (1 + 0) = (21)
+      expectState(region)(1 -> Set(3, 4, 5, 14, 15), 2 -> Set(21))
+
+      for (id <- 16 to 20) {
+        region ! Envelope(shard = 1, id = id, message = s"F")
+        expectReceived(id = id, message = s"F")
+      }
+
+      // shard 1: age = 10, @11 (1 + 10) = (16, 17, 18, 19, 20)
+      // shard 2: age = 0, @1 (1 + 0) = (21)
+      expectState(region)(1 -> Set(16, 17, 18, 19, 20), 2 -> Set(21))
     }
   }
 }

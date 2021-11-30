@@ -39,7 +39,7 @@ class FrequencyListSpec extends AnyWordSpec with Matchers {
   "FrequencyList" must {
 
     "track frequency of elements" in {
-      val frequency = FrequencyList.empty[String]
+      val frequency = FrequencyList.empty[String]()
 
       check(frequency, Nil)
 
@@ -94,7 +94,7 @@ class FrequencyListSpec extends AnyWordSpec with Matchers {
 
     "track overall recency of elements when enabled" in {
       val clock = new RecencyListSpec.TestClock
-      val frequency = new FrequencyList[String](OptionVal.Some(clock))
+      val frequency = new FrequencyList[String](dynamicAging = false, OptionVal.Some(clock))
 
       check(frequency, Nil)
 
@@ -134,7 +134,7 @@ class FrequencyListSpec extends AnyWordSpec with Matchers {
       checkRecency(frequency, List("a", "c", "e", "h", "i"))
 
       clock.tick() // time = 8
-      frequency.removeOverallLeastRecent()
+      frequency.removeOverallLeastRecent() shouldBe List("a")
       check(frequency, List( /* 1: */ "h", "i", /* 2: */ "e", /* 3: */ "c"))
       checkRecency(frequency, List("c", "e", "h", "i"))
 
@@ -144,12 +144,12 @@ class FrequencyListSpec extends AnyWordSpec with Matchers {
       checkRecency(frequency, List("c", "e", "h", "i", "j", "k"))
 
       clock.tick() // time = 10
-      frequency.removeOverallMostRecent()
+      frequency.removeOverallMostRecent() shouldBe List("k")
       check(frequency, List( /* 1: */ "h", "j", /* 2: */ "e", "i", /* 3: */ "c"))
       checkRecency(frequency, List("c", "e", "h", "i", "j"))
 
       clock.tick() // time = 11
-      frequency.removeOverallLeastRecentOutside(3.seconds)
+      frequency.removeOverallLeastRecentOutside(3.seconds) shouldBe List("c", "e", "h")
       check(frequency, List( /* 1: */ "j", /* 2: */ "i"))
       checkRecency(frequency, List("i", "j"))
 
@@ -159,7 +159,7 @@ class FrequencyListSpec extends AnyWordSpec with Matchers {
       checkRecency(frequency, List("i", "j", "l", "m"))
 
       clock.tick() // time = 13
-      frequency.removeOverallMostRecentWithin(3.seconds)
+      frequency.removeOverallMostRecentWithin(3.seconds) shouldBe List("m", "l")
       check(frequency, List( /* 1: */ "j", /* 2: */ "i"))
       checkRecency(frequency, List("i", "j"))
 
@@ -167,6 +167,92 @@ class FrequencyListSpec extends AnyWordSpec with Matchers {
       frequency.update("n").update("o").update("n")
       check(frequency, List( /* 1: */ "j", "o", /* 2: */ "i", "n"))
       checkRecency(frequency, List("i", "j", "o", "n"))
+    }
+
+    "support dynamic aging with least frequently used eviction" in {
+      val regular = FrequencyList.empty[String]()
+      val aging = FrequencyList.empty[String](dynamicAging = true)
+
+      check(regular, Nil)
+      check(aging, Nil)
+
+      for (_ <- 1 to 10) regular.update("a").update("b").update("c")
+      check(regular, List( /*10*/ "a", "b", "c"))
+
+      for (_ <- 1 to 10) aging.update("a").update("b").update("c")
+      check(aging, List( /*10+0*/ "a", "b", "c"))
+
+      // age = 0
+
+      regular.update("x").update("y").update("z")
+      check(regular, List( /*1*/ "x", "y", "z", /*10*/ "a", "b", "c"))
+
+      aging.update("x").update("y").update("z")
+      check(aging, List( /*1+0*/ "x", "y", "z", /*10+0*/ "a", "b", "c"))
+
+      regular.removeLeastFrequent() shouldBe List("x")
+      check(regular, List( /*1*/ "y", "z", /*10*/ "a", "b", "c"))
+
+      aging.removeLeastFrequent() shouldBe List("x")
+      check(aging, List( /*1+0*/ "y", "z", /*10+0*/ "a", "b", "c"))
+
+      // age = 1 (from last removal of "x")
+
+      regular.update("x").update("y").update("z").update("z")
+      check(regular, List( /*1*/ "x", /*2*/ "y", /*3*/ "z", /*10*/ "a", "b", "c"))
+
+      aging.update("x").update("y").update("z").update("z")
+      check(aging, List( /*1+1*/ "x", /*2+1*/ "y", /*3+1*/ "z", /*10+0*/ "a", "b", "c"))
+
+      regular.removeLeastFrequent(2) shouldBe List("x", "y")
+      check(regular, List( /*3*/ "z", /*10*/ "a", "b", "c"))
+
+      aging.removeLeastFrequent(2) shouldBe List("x", "y")
+      check(aging, List( /*3+1*/ "z", /*10+0*/ "a", "b", "c"))
+
+      // age = 3 (from last removal of "y")
+
+      regular.update("x").update("y").update("z")
+      check(regular, List( /*1*/ "x", "y", /*4*/ "z", /*10*/ "a", "b", "c"))
+
+      aging.update("x").update("y").update("z")
+      check(aging, List( /*1+3*/ "x", "y", /*4+3*/ "z", /*10+0*/ "a", "b", "c"))
+
+      regular.removeLeastFrequent(3) shouldBe List("x", "y", "z")
+      check(regular, List( /*10*/ "a", "b", "c"))
+
+      aging.removeLeastFrequent(3) shouldBe List("x", "y", "z")
+      check(aging, List( /*10+0*/ "a", "b", "c"))
+
+      // age = 7 (from last removal of "z")
+
+      regular.update("x").update("y").update("y").update("z").update("z").update("z")
+      check(regular, List( /*1*/ "x", /*2*/ "y", /*3*/ "z", /*10*/ "a", "b", "c"))
+
+      aging.update("x").update("y").update("y").update("z").update("z").update("z")
+      check(aging, List( /*1+7*/ "x", /*2+7*/ "y", /*10+0*/ "a", "b", "c", /*3+7*/ "z"))
+
+      regular.removeLeastFrequent(2) shouldBe List("x", "y")
+      check(regular, List( /*3*/ "z", /*10*/ "a", "b", "c"))
+
+      aging.removeLeastFrequent(2) shouldBe List("x", "y")
+      check(aging, List( /*10+0*/ "a", "b", "c", /*3+7*/ "z"))
+
+      // age = 9 (from last removal of "y")
+
+      regular.update("x").update("y").update("z")
+      check(regular, List( /*1*/ "x", "y", /*4*/ "z", /*10*/ "a", "b", "c"))
+
+      aging.update("x").update("y").update("z")
+      check(aging, List( /*10+0*/ "a", "b", "c", /*1+9*/ "x", "y", /*4+9*/ "z"))
+
+      regular.removeLeastFrequent(3) shouldBe List("x", "y", "z")
+      check(regular, List( /*10*/ "a", "b", "c"))
+
+      aging.removeLeastFrequent(3) shouldBe List("a", "b", "c")
+      check(aging, List( /*1+9*/ "x", "y", /*4+9*/ "z"))
+
+      // age = 10 (from last removal of "c")
     }
 
   }

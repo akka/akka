@@ -341,21 +341,32 @@ object ClusterShardingSettings {
 
     object LeastFrequentlyUsedSettings {
       val defaults: LeastFrequentlyUsedSettings =
-        new LeastFrequentlyUsedSettings(limit = 100000, idleSettings = None)
+        new LeastFrequentlyUsedSettings(limit = 100000, dynamicAging = false, idleSettings = None)
 
       def apply(classic: ClassicPassivationStrategySettings.LeastFrequentlyUsedSettings): LeastFrequentlyUsedSettings =
-        new LeastFrequentlyUsedSettings(classic.limit, classic.idleSettings.map(IdleSettings.apply))
+        new LeastFrequentlyUsedSettings(
+          classic.limit,
+          classic.dynamicAging,
+          classic.idleSettings.map(IdleSettings.apply))
 
       def toClassic(
           settings: LeastFrequentlyUsedSettings): ClassicPassivationStrategySettings.LeastFrequentlyUsedSettings =
         new ClassicPassivationStrategySettings.LeastFrequentlyUsedSettings(
           settings.limit,
+          settings.dynamicAging,
           settings.idleSettings.map(IdleSettings.toClassic))
     }
 
-    final class LeastFrequentlyUsedSettings(val limit: Int, val idleSettings: Option[IdleSettings]) {
+    final class LeastFrequentlyUsedSettings(
+        val limit: Int,
+        val dynamicAging: Boolean,
+        val idleSettings: Option[IdleSettings]) {
 
       def withLimit(limit: Int): LeastFrequentlyUsedSettings = copy(limit = limit)
+
+      def withDynamicAging(): LeastFrequentlyUsedSettings = withDynamicAging(enabled = true)
+
+      def withDynamicAging(enabled: Boolean): LeastFrequentlyUsedSettings = copy(dynamicAging = enabled)
 
       def withIdle(timeout: FiniteDuration): LeastFrequentlyUsedSettings =
         copy(idleSettings = Some(new IdleSettings(timeout, None)))
@@ -371,8 +382,9 @@ object ClusterShardingSettings {
 
       private def copy(
           limit: Int = limit,
+          dynamicAging: Boolean = dynamicAging,
           idleSettings: Option[IdleSettings] = idleSettings): LeastFrequentlyUsedSettings =
-        new LeastFrequentlyUsedSettings(limit, idleSettings)
+        new LeastFrequentlyUsedSettings(limit, dynamicAging, idleSettings)
     }
 
     private[akka] def oldDefault(idleTimeout: FiniteDuration): PassivationStrategySettings =

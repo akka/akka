@@ -46,15 +46,18 @@ object SimulatorSettings {
   object StrategySettings {
     final case class LeastRecentlyUsed(perRegionLimit: Int) extends StrategySettings
     final case class MostRecentlyUsed(perRegionLimit: Int) extends StrategySettings
-    final case class LeastFrequentlyUsed(perRegionLimit: Int) extends StrategySettings
+    final case class LeastFrequentlyUsed(perRegionLimit: Int, dynamicAging: Boolean) extends StrategySettings
 
     def apply(simulatorConfig: Config, strategy: String): StrategySettings = {
       val config = simulatorConfig.getConfig(strategy).withFallback(simulatorConfig.getConfig("strategy-defaults"))
       lowerCase(config.getString("strategy")) match {
-        case "least-recently-used"   => LeastRecentlyUsed(config.getInt("least-recently-used.per-region-limit"))
-        case "most-recently-used"    => MostRecentlyUsed(config.getInt("most-recently-used.per-region-limit"))
-        case "least-frequently-used" => LeastFrequentlyUsed(config.getInt("least-frequently-used.per-region-limit"))
-        case _                       => sys.error(s"Unknown strategy for [$strategy]")
+        case "least-recently-used" => LeastRecentlyUsed(config.getInt("least-recently-used.per-region-limit"))
+        case "most-recently-used"  => MostRecentlyUsed(config.getInt("most-recently-used.per-region-limit"))
+        case "least-frequently-used" =>
+          LeastFrequentlyUsed(
+            config.getInt("least-frequently-used.per-region-limit"),
+            config.getBoolean("least-frequently-used.dynamic-aging"))
+        case _ => sys.error(s"Unknown strategy for [$strategy]")
       }
     }
   }
@@ -72,6 +75,8 @@ object SimulatorSettings {
       final case class Exponential(mean: Double) extends Generator
       final case class Hotspot(min: Long, max: Long, hot: Double, rate: Double) extends Generator
       final case class Zipfian(min: Long, max: Long, constant: Double, scrambled: Boolean) extends Generator
+      final case class ShiftingZipfian(min: Long, max: Long, constant: Double, shifts: Int, scrambled: Boolean)
+          extends Generator
 
       def apply(patternConfig: Config): Synthetic = {
         val config = patternConfig.getConfig("synthetic")
@@ -101,7 +106,12 @@ object SimulatorSettings {
             val max = config.getLong("zipfian.max")
             val constant = config.getDouble("zipfian.constant")
             val scrambled = config.getBoolean("zipfian.scrambled")
-            Zipfian(min, max, constant, scrambled)
+            if (lowerCase(config.getString("zipfian.shifts")) != "off") {
+              val shifts = config.getInt("zipfian.shifts")
+              ShiftingZipfian(min, max, constant, shifts, scrambled)
+            } else {
+              Zipfian(min, max, constant, scrambled)
+            }
         }
         Synthetic(generator, config.getInt("events"))
       }
