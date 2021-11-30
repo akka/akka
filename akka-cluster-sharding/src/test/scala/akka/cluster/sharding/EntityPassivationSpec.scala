@@ -44,6 +44,21 @@ object EntityPassivationSpec {
     }
     """).withFallback(config)
 
+  val segmentedLeastRecentlyUsedConfig = ConfigFactory.parseString("""
+    akka.cluster.sharding {
+      passivation {
+        strategy = least-recently-used
+        least-recently-used {
+          limit = 10
+          segmented {
+            levels = 2
+            proportions = [0.2, 0.8]
+          }
+        }
+      }
+    }
+    """).withFallback(config)
+
   val leastRecentlyUsedWithIdleConfig = ConfigFactory.parseString("""
     akka.cluster.sharding {
       passivation {
@@ -355,6 +370,76 @@ class LeastRecentlyUsedEntityPassivationSpec
       }
 
       expectState(region)(1 -> Set(11, 12, 13), 2 -> Set(21, 22, 23), 3 -> Set(31, 32, 33))
+    }
+  }
+}
+
+class SegmentedLeastRecentlyUsedEntityPassivationSpec
+    extends AbstractEntityPassivationSpec(EntityPassivationSpec.segmentedLeastRecentlyUsedConfig, expectedEntities = 21) {
+
+  import EntityPassivationSpec.Entity.{ Envelope, Stop }
+
+  "Passivation of segmented least recently used entities" must {
+    "passivate the (segmented) least recently used entities when the per-shard entity limit is reached" in {
+      val region = start()
+
+      // only one active shard at first
+      // entities are only accessed once (so all in lowest segment)
+      // least recently used entities passivated once the total limit is reached
+      for (id <- 1 to 20) {
+        region ! Envelope(shard = 1, id = id, message = "A")
+        expectReceived(id = id, message = "A")
+        if (id > 10) expectReceived(id = id - 10, message = Stop)
+      }
+
+      // shard 1: level 0: 11-20, level 1: empty
+      expectState(region)(1 -> (11 to 20))
+
+      // accessing entities a second time moves them to the higher "protected" segment
+      // when limit for higher segment is reached, entities are demoted to lower "probationary" segment
+      for (id <- 11 to 20) {
+        region ! Envelope(shard = 1, id = id, message = "B")
+        expectReceived(id = id, message = "B")
+      }
+
+      // shard 1: level 0: 11-12, level 1: 13-20
+      expectState(region)(1 -> (11 to 20))
+
+      // newly activated entities will just cycle through the lower segment
+      for (id <- 1 to 5) {
+        region ! Envelope(shard = 1, id = id, message = "C")
+        expectReceived(id = id, message = "C")
+        val passivatedId = if (id < 3) id + 10 else id - 2
+        expectReceived(passivatedId, message = Stop)
+      }
+
+      // shard 1: level 0: 4-5, level 1: 13-20
+      expectState(region)(1 -> ((4 to 5) ++ (13 to 20)))
+
+      // activating a second shard will divide the per-shard limit in two, passivating half of the first shard
+      region ! Envelope(shard = 2, id = 21, message = "D")
+      expectReceived(id = 21, message = "D")
+      for (id <- List(4, 5, 13, 14, 15)) {
+        expectReceived(id = id, message = Stop)
+      }
+
+      // shard 1: level 0: 16, level 1: 17-20
+      // shard 2: level 0: 21, level 1: empty
+      expectState(region)(1 -> (16 to 20), 2 -> Set(21))
+
+      // entities in higher "protected" segment accessed again move to most recent position
+      // entities in lower "probationary" segment accessed again are promoted
+      // lower segment only has space for one entity
+      for (id <- (11 to 20).reverse) {
+        region ! Envelope(shard = 1, id = id, message = "E")
+        expectReceived(id = id, message = "E")
+        if (id == 15) expectReceived(id = 20, message = Stop)
+        else if (id < 15) expectReceived(id = id + 1, message = Stop)
+      }
+
+      // shard 1: level 0: 11, level 1: 19, 18, 17, 16
+      // shard 2: level 0: 21, level 1: empty
+      expectState(region)(1 -> Set(11, 19, 18, 17, 16), 2 -> Set(21))
     }
   }
 }

@@ -93,6 +93,7 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
         #passivation-least-recently-used
       """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
         limit = 1000000,
+        segmented = Nil,
         idle = None)
     }
 
@@ -102,6 +103,60 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults.withLimit(42000))
         .passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
         limit = 42000,
+        segmented = Nil,
+        idle = None)
+    }
+
+    "allow segmented least recently used passivation strategy to be configured (via config)" in {
+      settings("""
+        #passivation-segmented-least-recently-used
+        akka.cluster.sharding {
+          passivation {
+            strategy = least-recently-used
+            least-recently-used {
+              limit = 1000000
+              segmented {
+                levels = 2
+                proportions = [0.2, 0.8]
+              }
+            }
+          }
+        }
+        #passivation-segmented-least-recently-used
+      """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+        limit = 1000000,
+        segmented = List(0.2, 0.8),
+        idle = None)
+    }
+
+    "allow 4-level segmented least recently used passivation strategy to be configured (via config)" in {
+      settings("""
+        #passivation-s4-least-recently-used
+        akka.cluster.sharding {
+          passivation {
+            strategy = least-recently-used
+            least-recently-used {
+              limit = 1000000
+              segmented.levels = 4
+            }
+          }
+        }
+        #passivation-s4-least-recently-used
+      """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+        limit = 1000000,
+        segmented = List(0.25, 0.25, 0.25, 0.25),
+        idle = None)
+    }
+
+    "allow segmented least recently used passivation strategy to be configured (via factory method)" in {
+      defaultSettings
+        .withLeastRecentlyUsedPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults
+            .withLimit(42000)
+            .withSegmented(levels = 4, proportions = List(0.4, 0.3, 0.2, 0.1)))
+        .passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+        limit = 42000,
+        segmented = List(0.4, 0.3, 0.2, 0.1),
         idle = None)
     }
 
@@ -120,6 +175,7 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
         #passivation-least-recently-used-with-idle
       """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
         limit = 1000000,
+        segmented = Nil,
         idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 30.minutes, interval = 15.minutes)))
     }
 
@@ -131,6 +187,7 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
             .withIdle(timeout = 42.minutes))
         .passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
         limit = 42000,
+        segmented = Nil,
         idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
     }
 

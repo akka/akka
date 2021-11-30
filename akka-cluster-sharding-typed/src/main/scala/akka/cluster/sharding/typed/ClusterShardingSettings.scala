@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.typed
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 
 import com.typesafe.config.Config
@@ -17,6 +18,7 @@ import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicCluste
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings
 import akka.coordination.lease.LeaseUsageSettings
+import akka.japi.Util.immutableSeq
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
@@ -272,20 +274,63 @@ object ClusterShardingSettings {
     }
 
     object LeastRecentlyUsedSettings {
-      val defaults: LeastRecentlyUsedSettings = new LeastRecentlyUsedSettings(limit = 100000, idleSettings = None)
+      val defaults: LeastRecentlyUsedSettings =
+        new LeastRecentlyUsedSettings(limit = 100000, segmentedSettings = None, idleSettings = None)
 
       def apply(classic: ClassicPassivationStrategySettings.LeastRecentlyUsedSettings): LeastRecentlyUsedSettings =
-        new LeastRecentlyUsedSettings(classic.limit, classic.idleSettings.map(IdleSettings.apply))
+        new LeastRecentlyUsedSettings(
+          classic.limit,
+          classic.segmentedSettings.map(SegmentedSettings.apply),
+          classic.idleSettings.map(IdleSettings.apply))
 
       def toClassic(settings: LeastRecentlyUsedSettings): ClassicPassivationStrategySettings.LeastRecentlyUsedSettings =
         new ClassicPassivationStrategySettings.LeastRecentlyUsedSettings(
           settings.limit,
+          settings.segmentedSettings.map(SegmentedSettings.toClassic),
           settings.idleSettings.map(IdleSettings.toClassic))
+
+      object SegmentedSettings {
+        def apply(classic: ClassicPassivationStrategySettings.LeastRecentlyUsedSettings.SegmentedSettings)
+            : SegmentedSettings =
+          new SegmentedSettings(classic.levels, classic.proportions)
+
+        def toClassic(settings: SegmentedSettings)
+            : ClassicPassivationStrategySettings.LeastRecentlyUsedSettings.SegmentedSettings =
+          new ClassicPassivationStrategySettings.LeastRecentlyUsedSettings.SegmentedSettings(
+            settings.levels,
+            settings.proportions)
+      }
+
+      final class SegmentedSettings(val levels: Int, val proportions: immutable.Seq[Double]) {
+
+        def withLevels(levels: Int): SegmentedSettings = copy(levels = levels)
+
+        def withProportions(proportions: immutable.Seq[Double]): SegmentedSettings = copy(proportions = proportions)
+
+        def withProportions(proportions: java.util.List[java.lang.Double]): SegmentedSettings =
+          copy(proportions = immutableSeq(proportions).map(_.toDouble))
+
+        private def copy(levels: Int = levels, proportions: immutable.Seq[Double] = proportions): SegmentedSettings =
+          new SegmentedSettings(levels, proportions)
+      }
     }
 
-    final class LeastRecentlyUsedSettings(val limit: Int, val idleSettings: Option[IdleSettings]) {
+    final class LeastRecentlyUsedSettings(
+        val limit: Int,
+        val segmentedSettings: Option[LeastRecentlyUsedSettings.SegmentedSettings],
+        val idleSettings: Option[IdleSettings]) {
 
       def withLimit(limit: Int): LeastRecentlyUsedSettings = copy(limit = limit)
+
+      def withSegmented(levels: Int): LeastRecentlyUsedSettings = withSegmented(levels, Nil)
+
+      def withSegmented(levels: Int, proportions: immutable.Seq[Double]): LeastRecentlyUsedSettings =
+        copy(segmentedSettings = Some(new LeastRecentlyUsedSettings.SegmentedSettings(levels, proportions)))
+
+      def withSegmentedProportions(
+          levels: Int,
+          proportions: java.util.List[java.lang.Double]): LeastRecentlyUsedSettings =
+        withSegmented(levels, immutableSeq(proportions).map(_.toDouble))
 
       def withIdle(timeout: FiniteDuration): LeastRecentlyUsedSettings =
         copy(idleSettings = Some(new IdleSettings(timeout, None)))
@@ -301,8 +346,9 @@ object ClusterShardingSettings {
 
       private def copy(
           limit: Int = limit,
+          segmentedSettings: Option[LeastRecentlyUsedSettings.SegmentedSettings] = segmentedSettings,
           idleSettings: Option[IdleSettings] = idleSettings): LeastRecentlyUsedSettings =
-        new LeastRecentlyUsedSettings(limit, idleSettings)
+        new LeastRecentlyUsedSettings(limit, segmentedSettings, idleSettings)
     }
 
     object MostRecentlyUsedSettings {

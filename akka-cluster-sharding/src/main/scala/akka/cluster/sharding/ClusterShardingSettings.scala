@@ -10,10 +10,12 @@ import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.coordination.lease.LeaseUsageSettings
+import akka.japi.Util.immutableSeq
 import akka.util.Helpers.toRootLowerCase
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 
 object ClusterShardingSettings {
@@ -225,18 +227,61 @@ object ClusterShardingSettings {
     }
 
     object LeastRecentlyUsedSettings {
-      val defaults: LeastRecentlyUsedSettings = new LeastRecentlyUsedSettings(limit = 100000, idleSettings = None)
+      val defaults: LeastRecentlyUsedSettings =
+        new LeastRecentlyUsedSettings(limit = 100000, segmentedSettings = None, idleSettings = None)
 
       def apply(config: Config): LeastRecentlyUsedSettings = {
         val limit = config.getInt("limit")
         val idleSettings = IdleSettings.optional(config.getConfig("idle"))
-        new LeastRecentlyUsedSettings(limit, idleSettings)
+        val segmentedSettings = SegmentedSettings.optional(config.getConfig("segmented"))
+        new LeastRecentlyUsedSettings(limit, segmentedSettings, idleSettings)
+      }
+
+      object SegmentedSettings {
+        def apply(config: Config): SegmentedSettings = {
+          val levels = config.getInt("levels")
+          val proportions = immutableSeq(config.getDoubleList("proportions")).map(_.toDouble)
+          new SegmentedSettings(levels, proportions)
+        }
+
+        def optional(config: Config): Option[SegmentedSettings] = {
+          toRootLowerCase(config.getString("levels")) match {
+            case "off" | "none" => None
+            case _              => Some(SegmentedSettings(config))
+          }
+        }
+      }
+
+      final class SegmentedSettings(val levels: Int, val proportions: immutable.Seq[Double]) {
+
+        def withLevels(levels: Int): SegmentedSettings = copy(levels = levels)
+
+        def withProportions(proportions: immutable.Seq[Double]): SegmentedSettings = copy(proportions = proportions)
+
+        def withProportions(proportions: java.util.List[java.lang.Double]): SegmentedSettings =
+          copy(proportions = immutableSeq(proportions).map(_.toDouble))
+
+        private def copy(levels: Int = levels, proportions: immutable.Seq[Double] = proportions): SegmentedSettings =
+          new SegmentedSettings(levels, proportions)
       }
     }
 
-    final class LeastRecentlyUsedSettings(val limit: Int, val idleSettings: Option[IdleSettings]) {
+    final class LeastRecentlyUsedSettings(
+        val limit: Int,
+        val segmentedSettings: Option[LeastRecentlyUsedSettings.SegmentedSettings],
+        val idleSettings: Option[IdleSettings]) {
 
       def withLimit(limit: Int): LeastRecentlyUsedSettings = copy(limit = limit)
+
+      def withSegmented(levels: Int): LeastRecentlyUsedSettings = withSegmented(levels, Nil)
+
+      def withSegmented(levels: Int, proportions: immutable.Seq[Double]): LeastRecentlyUsedSettings =
+        copy(segmentedSettings = Some(new LeastRecentlyUsedSettings.SegmentedSettings(levels, proportions)))
+
+      def withSegmentedProportions(
+          levels: Int,
+          proportions: java.util.List[java.lang.Double]): LeastRecentlyUsedSettings =
+        withSegmented(levels, immutableSeq(proportions).map(_.toDouble))
 
       def withIdle(timeout: FiniteDuration): LeastRecentlyUsedSettings =
         copy(idleSettings = Some(new IdleSettings(timeout, None)))
@@ -252,8 +297,9 @@ object ClusterShardingSettings {
 
       private def copy(
           limit: Int = limit,
+          segmentedSettings: Option[LeastRecentlyUsedSettings.SegmentedSettings] = segmentedSettings,
           idleSettings: Option[IdleSettings] = idleSettings): LeastRecentlyUsedSettings =
-        new LeastRecentlyUsedSettings(limit, idleSettings)
+        new LeastRecentlyUsedSettings(limit, segmentedSettings, idleSettings)
     }
 
     object MostRecentlyUsedSettings {
@@ -371,11 +417,25 @@ object ClusterShardingSettings {
       extends PassivationStrategy
 
   private[akka] object LeastRecentlyUsedPassivationStrategy {
-    def apply(settings: PassivationStrategySettings.LeastRecentlyUsedSettings): LeastRecentlyUsedPassivationStrategy =
-      LeastRecentlyUsedPassivationStrategy(settings.limit, settings.idleSettings.map(IdlePassivationStrategy.apply))
+    def apply(settings: PassivationStrategySettings.LeastRecentlyUsedSettings): LeastRecentlyUsedPassivationStrategy = {
+      val limit = settings.limit
+      val idle = settings.idleSettings.map(IdlePassivationStrategy.apply)
+      settings.segmentedSettings match {
+        case Some(segmented) =>
+          val proportions =
+            if (segmented.levels < 2) Nil
+            else if (segmented.proportions.isEmpty) List.fill(segmented.levels)(1.0 / segmented.levels)
+            else segmented.proportions
+          LeastRecentlyUsedPassivationStrategy(limit, proportions, idle)
+        case _ => LeastRecentlyUsedPassivationStrategy(limit, Nil, idle)
+      }
+    }
   }
 
-  private[akka] case class LeastRecentlyUsedPassivationStrategy(limit: Int, idle: Option[IdlePassivationStrategy])
+  private[akka] case class LeastRecentlyUsedPassivationStrategy(
+      limit: Int,
+      segmented: immutable.Seq[Double],
+      idle: Option[IdlePassivationStrategy])
       extends PassivationStrategy
 
   private[akka] object MostRecentlyUsedPassivationStrategy {

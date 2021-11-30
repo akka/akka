@@ -691,8 +691,15 @@ private[akka] class ShardRegion(
           typeName,
           PrettyDuration.format(timeout),
           PrettyDuration.format(interval))
-      case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit, idle) =>
+      case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit, segmented, idle) =>
         log.info("{}: Least recently used entities will be passivated when over [{}] entities", typeName, limit)
+        if (segmented.nonEmpty) {
+          log.info(
+            "{}: Least recently used strategy is segmented with [{}] levels with proportions of [{}]",
+            typeName,
+            segmented.size,
+            segmented.map(proportion => "%.2f".format(proportion)).mkString(", "))
+        }
         idle.foreach(logPassivation)
       case ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(limit, idle) =>
         log.info("{}: Most recently used entities will be passivated when over [{}] entities", typeName, limit)

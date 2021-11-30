@@ -10,7 +10,8 @@ import akka.cluster.sharding.internal.{
   EntityPassivationStrategy,
   LeastFrequentlyUsedEntityPassivationStrategy,
   LeastRecentlyUsedEntityPassivationStrategy,
-  MostRecentlyUsedEntityPassivationStrategy
+  MostRecentlyUsedEntityPassivationStrategy,
+  SegmentedLeastRecentlyUsedEntityPassivationStrategy
 }
 import akka.stream.scaladsl.{ Flow, Source }
 import com.typesafe.config.ConfigFactory
@@ -104,8 +105,10 @@ object Simulator {
 
     def strategyCreator(runSettings: SimulatorSettings.RunSettings): () => EntityPassivationStrategy =
       runSettings.strategy match {
-        case SimulatorSettings.StrategySettings.LeastRecentlyUsed(perRegionLimit) =>
+        case SimulatorSettings.StrategySettings.LeastRecentlyUsed(perRegionLimit, Nil) =>
           () => new LeastRecentlyUsedEntityPassivationStrategy(perRegionLimit, idleCheck = None)
+        case SimulatorSettings.StrategySettings.LeastRecentlyUsed(perRegionLimit, segmented) =>
+          () => new SegmentedLeastRecentlyUsedEntityPassivationStrategy(perRegionLimit, segmented, idleCheck = None)
         case SimulatorSettings.StrategySettings.MostRecentlyUsed(perRegionLimit) =>
           () => new MostRecentlyUsedEntityPassivationStrategy(perRegionLimit, idleCheck = None)
         case SimulatorSettings.StrategySettings.LeastFrequentlyUsed(perRegionLimit, dynamicAging) =>
@@ -115,7 +118,7 @@ object Simulator {
 
   object Id {
     def hashed(id: String, n: Int): String =
-      padded(math.abs(id.hashCode % n), n - 1)
+      padded(math.abs(id.hashCode % n), (n - 1) max 1)
 
     def padded(id: Int, max: Int): String = {
       val maxDigits = math.floor(math.log10(max)).toInt + 1

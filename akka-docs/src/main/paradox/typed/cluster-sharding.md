@@ -325,6 +325,29 @@ passivation strategy, and set the limit for active entities in a shard region:
 Or enable the least recently used passivation strategy and set the active entity limit using the
 `withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
 
+#### Segmented least recently used strategy
+
+A variation of the least recently used passivation strategy can be enabled that divides the active entity space into
+multiple segments to introduce frequency information into the strategy. Higher-level segments contain entities that
+have been accessed more often. The first segment is for entities that have only been accessed once, the second segment
+for entities that have been accessed at least twice, and so on. When an entity is accessed again, it will be promoted
+to the most recent position of the next-level or highest-level segment. The higher-level segments are limited, where
+the total limit is either evenly divided among segments, or proportions of the segments can be configured. When a
+higher-level segment exceeds its limit, the least recently used active entity tracked in that segment will be demoted
+to the level below. Only the least recently used entities in the lowest level will be candidates for passivation. The
+higher levels are considered "protected", where entities will have additional opportunities to be accessed before being
+considered for passivation.
+
+To configure a segmented least recently used (SLRU) strategy, with two levels and a protected segment limited to 80% of the total limit:
+
+@@snip [passivation segmented least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-segmented-least-recently-used type=conf }
+
+Or to configure a 4-level segmented least recently used (S4LRU) strategy, with 4 evenly divided levels:
+
+@@snip [passivation segmented least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-s4-least-recently-used type=conf }
+
+Or using the `withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+
 #### Idle timeouts (with least recently used strategy)
 
 Passivating idle entities (when they have not received a message for a specified length of time) can also be enabled by configuring the least recently used passivation strategy with an idle timeout:
