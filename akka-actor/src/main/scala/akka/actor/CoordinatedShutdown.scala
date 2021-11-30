@@ -687,7 +687,7 @@ final class CoordinatedShutdown private[akka] (
     if (runStarted.compareAndSet(None, Some(reason))) {
       implicit val ec: ExecutionContext = system.dispatchers.internalDispatcher
       val debugEnabled = log.isDebugEnabled
-      log.debug("Running CoordinatedShutdown with reason [{}]", reason)
+      log.info("Running CoordinatedShutdown with reason [{}]", reason)
       def loop(remainingPhases: List[String]): Future[Done] = {
         remainingPhases match {
           case Nil => Future.successful(Done)
