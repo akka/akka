@@ -48,7 +48,8 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "allow timeout for (default) idle passivation strategy to be configured (via factory method)" in {
       defaultSettings
-        .withIdlePassivationStrategy(timeout = 42.seconds)
+        .withIdlePassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.IdleSettings.defaults.withTimeout(42.seconds))
         .passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(
         timeout = 42.seconds,
         interval = 21.seconds)
@@ -71,7 +72,10 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "allow timeout and interval for (default) idle passivation strategy to be configured (via factory method)" in {
       defaultSettings
-        .withIdlePassivationStrategy(timeout = 42.seconds, interval = 42.millis)
+        .withIdlePassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.IdleSettings.defaults
+            .withTimeout(42.seconds)
+            .withInterval(42.millis))
         .passivationStrategy shouldBe ClusterShardingSettings.IdlePassivationStrategy(
         timeout = 42.seconds,
         interval = 42.millis)
@@ -94,7 +98,8 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "allow least recently used passivation strategy to be configured (via factory method)" in {
       defaultSettings
-        .withLeastRecentlyUsedPassivationStrategy(limit = 42000)
+        .withLeastRecentlyUsedPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults.withLimit(42000))
         .passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
         limit = 42000,
         idle = None)
@@ -120,7 +125,10 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "allow least recently used passivation strategy with idle timeout to be configured (via factory method)" in {
       defaultSettings
-        .withLeastRecentlyUsedPassivationStrategy(limit = 42000, idleTimeout = 42.minutes)
+        .withLeastRecentlyUsedPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults
+            .withLimit(42000)
+            .withIdle(timeout = 42.minutes))
         .passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
         limit = 42000,
         idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
@@ -143,7 +151,8 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "allow most recently used passivation strategy to be configured (via factory method)" in {
       defaultSettings
-        .withMostRecentlyUsedPassivationStrategy(limit = 42000)
+        .withMostRecentlyUsedPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.MostRecentlyUsedSettings.defaults.withLimit(42000))
         .passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(
         limit = 42000,
         idle = None)
@@ -169,7 +178,10 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "allow most recently used passivation strategy with idle timeout to be configured (via factory method)" in {
       defaultSettings
-        .withMostRecentlyUsedPassivationStrategy(limit = 42000, idleTimeout = 42.minutes)
+        .withMostRecentlyUsedPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.MostRecentlyUsedSettings.defaults
+            .withLimit(42000)
+            .withIdle(timeout = 42.minutes))
         .passivationStrategy shouldBe ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(
         limit = 42000,
         idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
@@ -192,7 +204,8 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "allow least frequently used passivation strategy to be configured (via factory method)" in {
       defaultSettings
-        .withLeastFrequentlyUsedPassivationStrategy(limit = 42000)
+        .withLeastFrequentlyUsedPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.LeastFrequentlyUsedSettings.defaults.withLimit(42000))
         .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
         limit = 42000,
         idle = None)
@@ -218,7 +231,10 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "allow least frequently used passivation strategy with idle timeout to be configured (via factory method)" in {
       defaultSettings
-        .withLeastFrequentlyUsedPassivationStrategy(limit = 42000, idleTimeout = 42.minutes)
+        .withLeastFrequentlyUsedPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.LeastFrequentlyUsedSettings.defaults
+            .withLimit(42000)
+            .withIdle(timeout = 42.minutes))
         .passivationStrategy shouldBe ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(
         limit = 42000,
         idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
@@ -244,7 +260,14 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 
     "disable automatic passivation if idle timeout is set to zero (via factory method)" in {
       defaultSettings
-        .withIdlePassivationStrategy(Duration.Zero)
+        .withIdlePassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.IdleSettings.defaults.withTimeout(Duration.Zero))
+        .passivationStrategy shouldBe ClusterShardingSettings.NoPassivationStrategy
+    }
+
+    "disable automatic passivation if disabled (via factory method)" in {
+      defaultSettings
+        .withNoPassivationStrategy()
         .passivationStrategy shouldBe ClusterShardingSettings.NoPassivationStrategy
     }
 
