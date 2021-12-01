@@ -368,7 +368,9 @@ object ShardCoordinator {
     /**
      * One or more sent to region directly after registration to speed up new shard startup.
      */
-    final case class ShardHomes(homes: Map[ActorRef, immutable.Seq[ShardId]]) extends CoordinatorMessage with DeadLetterSuppression
+    final case class ShardHomes(homes: Map[ActorRef, immutable.Seq[ShardId]])
+        extends CoordinatorMessage
+        with DeadLetterSuppression
 
     /**
      * `ShardCoordinator` informs a `ShardRegion` that it is hosting this shard
@@ -995,24 +997,33 @@ abstract class ShardCoordinator(
     val batchSize = 500
     if (state.shards.isEmpty) {
       // No shards - NOP
-    } else if (state.shards.size <= batchSize) {
-      log.debug("{}: Informing [{}] about all [{}] shards", typeName, ref, state.shards.size)
-      ref ! ShardHomes(state.regions)
     } else {
-      // split up into multiple messages, to not get a too large message
-      // but go by region to send the same region actor as few times as possible
-      log.debug("{}: Informing [{}] about all [{}] shards in batches of [{}]", typeName, ref, state.shards.size, batchSize)
-      state.regions.iterator.flatMap {
-        case (regionRef, shards) =>
-          shards.map(shard => regionRef -> shard)
-      }.grouped(batchSize).foreach { regions =>
-        val shardsSubMap = regions.foldLeft(Map.empty[ActorRef, List[ShardId]]) {
-          case (map, (regionRef, shardId)) =>
-            if (map.contains(regionRef)) map.updated(regionRef, shardId :: map(regionRef))
-            else map.updated(regionRef, shardId :: Nil)
+      log.debug(
+        "{}: Informing [{}] about (up to) [{}] shards in batches of [{}]",
+        typeName,
+        ref,
+        state.shards.size,
+        batchSize)
+      // Filter out shards currently rebalancing and then split up into multiple messages
+      // if needed, to not get a single too large message, but group by region to send the
+      // same region actor as few times as possible.
+      state.regions.iterator
+        .flatMap {
+          case (regionRef, shards) =>
+            shards.filterNot(rebalanceInProgress.contains).map(shard => regionRef -> shard)
         }
-        ref ! ShardHomes(shardsSubMap)
-      }
+        .grouped(batchSize)
+        // cap how much is sent in case of a large number of shards (> 5 000)
+        // to not delay registration ack too much
+        .take(10)
+        .foreach { regions =>
+          val shardsSubMap = regions.foldLeft(Map.empty[ActorRef, List[ShardId]]) {
+            case (map, (regionRef, shardId)) =>
+              if (map.contains(regionRef)) map.updated(regionRef, shardId :: map(regionRef))
+              else map.updated(regionRef, shardId :: Nil)
+          }
+          ref ! ShardHomes(shardsSubMap)
+        }
     }
   }
 

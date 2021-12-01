@@ -838,10 +838,9 @@ private[akka] class ShardRegion(
     case ShardHomes(homes) =>
       if (log.isDebugEnabled)
         log.debug("Got shard homes for regions [{}]", homes.keySet.mkString(", "))
-      homes.foreach { case (shardRegionRef, shards) =>
-        shards.foreach(shardId =>
-          receiveShardHome(shardId, shardRegionRef)
-        )
+      homes.foreach {
+        case (shardRegionRef, shards) =>
+          shards.foreach(shardId => receiveShardHome(shardId, shardRegionRef))
       }
 
     case RegisterAck(coord) =>

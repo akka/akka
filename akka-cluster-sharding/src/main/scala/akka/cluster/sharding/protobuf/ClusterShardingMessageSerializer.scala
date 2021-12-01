@@ -273,7 +273,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case RegisterAck(ref)         => actorRefMessageToProto(ref).toByteArray
     case GetShardHome(shardId)    => shardIdMessageToProto(shardId).toByteArray
     case m: ShardHome             => shardHomeToProto(m).toByteArray
-    case sh: ShardHomes => shardHomesToProto(sh).toByteArray
+    case sh: ShardHomes           => shardHomesToProto(sh).toByteArray
     case HostShard(shardId)       => shardIdMessageToProto(shardId).toByteArray
     case ShardStarted(shardId)    => shardIdMessageToProto(shardId).toByteArray
     case BeginHandOff(shardId)    => shardIdMessageToProto(shardId).toByteArray
@@ -410,23 +410,24 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   }
 
   private def shardHomesToProto(sh: ShardHomes): sm.ShardHomes = {
-    sm.ShardHomes.newBuilder()
-      .addAllHomes(sh.homes.map { case (regionRef, shards) =>
-        sm.ShardHomesEntry.newBuilder()
-          .setRegion(Serialization.serializedActorPath(regionRef))
-          .addAllShard(shards.asJava)
-          .build()
-        }.asJava
-      ).build()
+    sm.ShardHomes
+      .newBuilder()
+      .addAllHomes(sh.homes.map {
+        case (regionRef, shards) =>
+          sm.ShardHomesEntry
+            .newBuilder()
+            .setRegion(Serialization.serializedActorPath(regionRef))
+            .addAllShard(shards.asJava)
+            .build()
+      }.asJava)
+      .build()
   }
 
   private def shardHomesFromBinary(bytes: Array[Byte]): ShardHomes = {
     val sh = sm.ShardHomes.parseFrom(bytes)
-    ShardHomes(
-      sh.getHomesList.asScala.map { she =>
-        resolveActorRef(she.getRegion) -> she.getShardList.asScala.toVector
-      }.toMap
-    )
+    ShardHomes(sh.getHomesList.asScala.map { she =>
+      resolveActorRef(she.getRegion) -> she.getShardList.asScala.toVector
+    }.toMap)
   }
 
   private def entityStateToProto(m: EntityState): sm.EntityState = {
