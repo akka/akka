@@ -22,7 +22,7 @@ import akka.stream.scaladsl.Source
  * API May Change
  */
 @ApiMayChange
-trait EventsBySliceQuery extends ReadJournal with EventTimestampQuery with LoadEventQuery {
+trait EventsBySliceQuery extends ReadJournal {
 
   /**
    * Query events for given slices. A slice is deterministically defined based on the persistence id. The purpose is to
