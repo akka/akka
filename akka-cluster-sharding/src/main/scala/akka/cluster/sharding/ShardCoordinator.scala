@@ -1006,7 +1006,11 @@ abstract class ShardCoordinator(
         case (regionRef, shards) =>
           shards.map(shard => regionRef -> shard)
       }.grouped(batchSize).foreach { regions =>
-        val shardsSubMap = regions.groupMap { case (regionRef, _) => regionRef } { case (_, shardId) => shardId }
+        val shardsSubMap = regions.foldLeft(Map.empty[ActorRef, List[ShardId]]) {
+          case (map, (regionRef, shardId)) =>
+            if (map.contains(regionRef)) map.updated(regionRef, shardId :: map(regionRef))
+            else map.updated(regionRef, shardId :: Nil)
+        }
         ref ! ShardHomes(shardsSubMap)
       }
     }
