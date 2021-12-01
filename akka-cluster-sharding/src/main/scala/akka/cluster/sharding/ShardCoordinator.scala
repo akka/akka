@@ -991,9 +991,9 @@ abstract class ShardCoordinator(
   }
 
   private def informAboutCurrentShards(ref: ActorRef): Unit = {
-    // FIXME weight per shard depends on length of used shard ids, make this configurable
-    val batchSize = 1000
-    if (state.shards.isEmpty || batchSize == 0) {
+    // hardcoded to a safe low value rather than configurable, for now
+    val batchSize = 500
+    if (state.shards.isEmpty) {
       // No shards - NOP
     } else if (state.shards.size <= batchSize) {
       log.debug("{}: Informing [{}] about all [{}] shards", typeName, ref, state.shards.size)
