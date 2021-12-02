@@ -3272,6 +3272,32 @@ trait FlowOps[+Out, +Mat] {
    * asynchronously.
    */
   def async: Repr[Out]
+
+  /**
+   * Aggregate input elements into an arbitrary data structure that can be completed and emitted downstream
+   * when custom condition is met which can be triggered by aggregate or timer.
+   * It can be thought of a more general [[groupedWeightedWithin]].
+   *
+   * '''Emits when''' the aggregation function decides the aggregate is complete or the timer function returns true
+   *
+   * '''Backpressures when''' downstream backpressures and the aggregate is complete
+   *
+   * '''Completes when''' upstream completes and the last aggregate has been emitted downstream
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param allocate    allocate the initial data structure for aggregated elements
+   * @param aggregate   update the aggregated elements, return true if ready to emit after update. [[Agg]] must be mutable.
+   * @param harvest     this is invoked before emit within the current stage/operator
+   * @param emitOnTimer decide whether the current aggregated elements can be emitted, the custom function is invoked on every interval
+   */
+  @ApiMayChange
+  def aggregateWithBoundary[Agg, Emit](allocate: () => Agg)(
+      aggregate: (Agg, Out) => (Agg, Boolean),
+      harvest: Agg => Emit,
+      emitOnTimer: Option[(Agg => Boolean, FiniteDuration)]): Repr[Emit] =
+    via(AggregateWithBoundary(allocate, aggregate, harvest, emitOnTimer))
+
 }
 
 /**
@@ -3725,30 +3751,4 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def monitor: ReprMat[Out, (Mat, FlowMonitor[Out])] =
     monitorMat(Keep.both)
-
-  /**
-   * Aggregate input elements into an arbitrary data structure that can be completed and emitted downstream
-   * when custom condition is met which can be triggered by aggregate or timer.
-   * It can be thought of a more general [[groupedWeightedWithin]].
-   *
-   * '''Emits when''' the aggregation function decides the aggregate is complete or the timer function returns true
-   *
-   * '''Backpressures when''' downstream backpressures and the aggregate is complete
-   *
-   * '''Completes when''' upstream completes and the last aggregate has been emitted downstream
-   *
-   * '''Cancels when''' downstream cancels
-   *
-   * @param allocate    allocate the initial data structure for aggregated elements
-   * @param aggregate   update the aggregated elements, return true if ready to emit after update. [[Agg]] must be mutable.
-   * @param harvest     this is invoked before emit within the current stage/operator
-   * @param emitOnTimer decide whether the current aggregated elements can be emitted, the custom function is invoked on every interval
-   */
-  @ApiMayChange
-  def aggregateWithBoundary[Agg, Emit](allocate: () => Agg)(
-      aggregate: (Agg, Out) => (Agg, Boolean),
-      harvest: Agg => Emit,
-      emitOnTimer: Option[(Agg => Boolean, FiniteDuration)]): Repr[Emit] =
-    via(AggregateWithBoundary(allocate, aggregate, harvest, emitOnTimer))
-
 }
