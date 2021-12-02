@@ -14,7 +14,7 @@ import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
-import akka.annotation.DoNotInherit
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream.Attributes.SourceLocation
 import akka.stream._
@@ -3742,12 +3742,13 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * @param allocate    allocate the initial data structure for aggregated elements
    * @param aggregate   update the aggregated elements, return true if ready to emit after update. [[Agg]] must be mutable.
    * @param harvest     this is invoked before emit within the current stage/operator
-   * @param emitOnTimer decide whether the currently aggregated elements can be emitted on each timer event
+   * @param emitOnTimer decide whether the current aggregated elements can be emitted, the custom function is invoked on every interval
    */
+  @ApiMayChange
   def aggregateWithBoundary[Agg, Emit](allocate: () => Agg)(
-      aggregate: (Agg, Out) => Boolean,
+      aggregate: (Agg, Out) => (Agg, Boolean),
       harvest: Agg => Emit,
       emitOnTimer: Option[(Agg => Boolean, FiniteDuration)]): Repr[Emit] =
-    via(AggregateWithBoundary(() => allocate, aggregate, harvest, emitOnTimer))
+    via(AggregateWithBoundary(allocate, aggregate, harvest, emitOnTimer))
 
 }

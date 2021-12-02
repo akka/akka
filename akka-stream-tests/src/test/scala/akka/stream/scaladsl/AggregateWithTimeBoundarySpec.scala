@@ -23,7 +23,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
       .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(
         aggregate = (buffer, i) => {
           buffer.addOne(i)
-          buffer.size >= groupSize
+          (buffer, buffer.size >= groupSize)
         },
         harvest = buffer => buffer.toSeq,
         emitOnTimer = None
@@ -41,7 +41,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
       .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(
         aggregate = (buffer, i) => {
           buffer.addOne(i)
-          buffer.size >= groupSize
+          (buffer, buffer.size >= groupSize)
         },
         harvest = buffer => buffer.toSeq :+ -1, // append -1 to output to demonstrate the effect of harvest
         emitOnTimer = None
@@ -61,7 +61,7 @@ class AggregateWithBoundarySpec extends StreamSpec {
       .aggregateWithBoundary(allocate = () => ListBuffer.empty[Int])(
         aggregate = (buffer, i) => {
           buffer.addOne(i)
-          buffer.sum >= weight
+          (buffer, buffer.sum >= weight)
         },
         harvest = buffer => buffer.toSeq,
         emitOnTimer = None
@@ -100,7 +100,7 @@ class StreamWithSimulatedTimeSpec extends StreamSpec(
      * @param currentTimeMs source of the system time, can be simulated time in testing
      */
     def aggregateWithTimeBoundary[Agg, Emit](allocate: => Agg)(
-      aggregate: (Agg, Out) => Boolean,
+      aggregate: (Agg, Out) => (Agg, Boolean),
       harvest: Agg => Emit,
       maxGap: Option[FiniteDuration],
       maxDuration: Option[FiniteDuration],
@@ -119,10 +119,13 @@ class StreamWithSimulatedTimeSpec extends StreamSpec(
         }
       }
 
-      flow.aggregateWithBoundary(allocate = new ValueTimeWrapper(value = allocate))(aggregate = (agg, in) => {
+      flow.aggregateWithBoundary(allocate = () => new ValueTimeWrapper(value = allocate))(
+        aggregate = (agg, in) => {
         agg.updateTime(currentTimeMs)
         // user provided Agg type must be mutable
-        aggregate(agg.value, in)
+        val (updated, result) = aggregate(agg.value, in)
+          agg.value = updated
+          (agg, result)
       }, harvest = agg => harvest(agg.value), emitOnTimer = Some((agg => {
         val currentTime = currentTimeMs
         maxDuration.exists(md => currentTime - agg.firstTime >= md.toMillis) ||
@@ -145,7 +148,7 @@ class AggregateWithTimeBoundarySpec1 extends StreamWithSimulatedTimeSpec {
       .aggregateWithTimeBoundary(allocate = ListBuffer.empty[Int])(
         aggregate = (buffer, i) => {
           buffer.addOne(i)
-          false
+          (buffer, false)
         },
         harvest = seq => seq.toSeq,
         maxGap = Some(maxGap), // elements with longer gap will put put to next aggregator
@@ -189,7 +192,7 @@ class AggregateWithTimeBoundarySpec2 extends StreamWithSimulatedTimeSpec {
       .aggregateWithTimeBoundary(allocate = ListBuffer.empty[Int])(
         aggregate = (buffer, i) => {
           buffer.addOne(i)
-          false
+          (buffer, false)
         },
         harvest = seq => seq.toSeq,
         maxGap = None,
@@ -232,7 +235,7 @@ class AggregateWithTimeBoundarySpec3 extends StreamWithSimulatedTimeSpec {
     )(
       aggregate = (buffer, i) => {
         buffer.addOne(i)
-        false
+        (buffer, false)
       },
       harvest = buffer => buffer.toSeq,
       maxGap = Some(maxGap),
