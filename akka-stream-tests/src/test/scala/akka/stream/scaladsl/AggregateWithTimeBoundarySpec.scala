@@ -91,7 +91,7 @@ class StreamWithSimulatedTimeSpec extends StreamSpec(
 
   def schedulerTimeMs: Long = scheduler.currentTimeMs
 
-  implicit class FlowsMatWrapper[+Out, +Mat](val flow: Source[Out, Mat]) {
+  implicit class SourceWrapper[+Out, +Mat](val source: Source[Out, Mat]) {
     /**
      * This is a convenient wrapper of [[aggregateWithBoundary]] to handle additional time constraints
      * @param maxGap        the gap allowed between consecutive aggregate operations
@@ -105,7 +105,7 @@ class StreamWithSimulatedTimeSpec extends StreamSpec(
       maxGap: Option[FiniteDuration],
       maxDuration: Option[FiniteDuration],
       interval: FiniteDuration,
-      currentTimeMs: => Long): flow.Repr[Emit] = {
+      currentTimeMs: => Long): source.Repr[Emit] = {
       require(
         maxDuration.nonEmpty || maxGap.nonEmpty,
         s"required timing condition maxGap and maxDuration are both missing, use aggregateWithBoundary if it's intended")
@@ -119,7 +119,7 @@ class StreamWithSimulatedTimeSpec extends StreamSpec(
         }
       }
 
-      flow.aggregateWithBoundary(allocate = () => new ValueTimeWrapper(value = allocate))(
+      source.aggregateWithBoundary(allocate = () => new ValueTimeWrapper(value = allocate))(
         aggregate = (agg, in) => {
         agg.updateTime(currentTimeMs)
         // user provided Agg type must be mutable
