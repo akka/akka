@@ -23,13 +23,13 @@ To use Scheduler, you must add the following dependency in your project:
 
 Sometimes the need for making things happen in the future arises, and where do
 you go look then?  Look no further than @apidoc[actor.ActorSystem]! There you find the
-@apidoc[scheduler](akka.actor.ActorSystem) {scala="#scheduler:akka.actor.Scheduler" java="#getScheduler()"} method that returns an instance of
+@scala[@scaladoc[scheduler](akka.actor.ActorSystem#scheduler:akka.actor.Scheduler)]@java[@javadoc[getScheduler()](akka.actor.ActorSystem#getScheduler())] method that returns an instance of
 @apidoc[akka.actor.Scheduler], this instance is unique per ActorSystem and is
 used internally for scheduling things to happen at specific points in time.
 
 You can schedule sending of messages to actors and execution of tasks
 (functions or Runnable).  You will get a @apidoc[Cancellable] back that you can call
-@apidoc[cancel](Cancellable) {scala="#cancel():Boolean" java="#cancel()"} on to cancel the execution of the scheduled operation.
+@scala[@scaladoc[cancel](akka.actor.Cancellable#cancel():Boolean)]@java[@javadoc[cancel()](akka.actor.Cancellable#cancel())] on to cancel the execution of the scheduled operation.
 
 When scheduling periodic or single messages in an actor to itself it is recommended to
 use the @ref:[Actor Timers](actors.md#actors-timers) instead of using the @apidoc[akka.actor.Scheduler]
@@ -95,9 +95,9 @@ Java
 
 If you schedule functions or Runnable instances you should be extra careful
 to not close over unstable references. In practice this means not using `this`
-inside the closure in the scope of an Actor instance, not accessing @apidoc[sender()](actor.Actor) {scala="#sender():akka.actor.ActorRef" java="#sender()"} directly
+inside the closure in the scope of an Actor instance, not accessing @scala[@scaladoc[sender](akka.actor.Actor#sender():akka.actor.ActorRef)]@java[@javadoc[sender()](akka.actor.Actor#sender())] directly
 and not calling the methods of the Actor instance directly. If you need to
-schedule an invocation schedule a message to @apidoc[self()](actor.Actor) {scala="#self:akka.actor.ActorRef" java="#self()"} instead (containing the
+schedule an invocation schedule a message to @scala[@scaladoc[self](akka.actor.Actor#self:akka.actor.ActorRef)]@java[@javadoc[self()](akka.actor.Actor#self())] instead (containing the
 necessary parameters) and then call the method when the message is received.
 
 @@@
@@ -169,7 +169,7 @@ This allows you to cancel something that has been scheduled for execution.
 @@@ warning
 
 This does not abort the execution of the task, if it had already been
-started.  Check the return value of @apidoc[cancel](Cancellable) {scala="#cancel():Boolean" java="#cancel()"} to detect whether the
+started.  Check the return value of @scala[@scaladoc[cancel](akka.actor.Cancellable#cancel():Boolean)]@java[@javadoc[cancel()](akka.actor.Cancellable#cancel())] to detect whether the
 scheduled task was canceled or will (eventually) have run.
 
 @@@
