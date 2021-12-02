@@ -1,10 +1,14 @@
+/*
+ * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API
