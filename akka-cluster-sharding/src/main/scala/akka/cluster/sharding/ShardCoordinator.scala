@@ -366,6 +366,13 @@ object ShardCoordinator {
     @SerialVersionUID(1L) final case class ShardHome(shard: ShardId, ref: ActorRef) extends CoordinatorMessage
 
     /**
+     * One or more sent to region directly after registration to speed up new shard startup.
+     */
+    final case class ShardHomes(homes: Map[ActorRef, immutable.Seq[ShardId]])
+        extends CoordinatorMessage
+        with DeadLetterSuppression
+
+    /**
      * `ShardCoordinator` informs a `ShardRegion` that it is hosting this shard
      */
     @SerialVersionUID(1L) final case class HostShard(shard: ShardId) extends CoordinatorMessage
@@ -719,9 +726,11 @@ abstract class ShardCoordinator(
           aliveRegions += region
           if (state.regions.contains(region)) {
             region ! RegisterAck(self)
+            informAboutCurrentShards(region)
             allocateShardHomesForRememberEntities()
           } else {
             gracefulShutdownInProgress -= region
+            informAboutCurrentShards(region) // we don't have to wait for updated state for this
             update(ShardRegionRegistered(region)) { evt =>
               state = state.updated(evt)
               context.watch(region)
@@ -739,6 +748,7 @@ abstract class ShardCoordinator(
       case RegisterProxy(proxy) =>
         if (isMember(proxy)) {
           log.debug("{}: ShardRegion proxy registered: [{}]", typeName, proxy)
+          informAboutCurrentShards(proxy) // we don't have to wait for updated state for this
           if (state.regionProxies.contains(proxy))
             proxy ! RegisterAck(self)
           else {
@@ -980,6 +990,41 @@ abstract class ShardCoordinator(
       shard,
       from)
     rebalanceInProgress = rebalanceInProgress.updated(shard, rebalanceInProgress(shard) + from)
+  }
+
+  private def informAboutCurrentShards(ref: ActorRef): Unit = {
+    // hardcoded to a safe low value rather than configurable, for now
+    val batchSize = 500
+    if (state.shards.isEmpty) {
+      // No shards - NOP
+    } else {
+      log.debug(
+        "{}: Informing [{}] about (up to) [{}] shards in batches of [{}]",
+        typeName,
+        ref,
+        state.shards.size,
+        batchSize)
+      // Filter out shards currently rebalancing and then split up into multiple messages
+      // if needed, to not get a single too large message, but group by region to send the
+      // same region actor as few times as possible.
+      state.regions.iterator
+        .flatMap {
+          case (regionRef, shards) =>
+            shards.filterNot(rebalanceInProgress.contains).map(shard => regionRef -> shard)
+        }
+        .grouped(batchSize)
+        // cap how much is sent in case of a large number of shards (> 5 000)
+        // to not delay registration ack too much
+        .take(10)
+        .foreach { regions =>
+          val shardsSubMap = regions.foldLeft(Map.empty[ActorRef, List[ShardId]]) {
+            case (map, (regionRef, shardId)) =>
+              if (map.contains(regionRef)) map.updated(regionRef, shardId :: map(regionRef))
+              else map.updated(regionRef, shardId :: Nil)
+          }
+          ref ! ShardHomes(shardsSubMap)
+        }
+    }
   }
 
   /**

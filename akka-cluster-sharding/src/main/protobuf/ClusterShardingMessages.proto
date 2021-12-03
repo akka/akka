@@ -38,6 +38,16 @@ message ShardHome {
   required string region = 2;
 }
 
+// only used nested in ShardHomes
+message ShardHomesEntry {
+  required string region = 1;
+  repeated string shard = 2;
+}
+
+message ShardHomes {
+  repeated ShardHomesEntry homes = 1;
+}
+
 message EntityState {
   repeated string entities = 1;
 }
