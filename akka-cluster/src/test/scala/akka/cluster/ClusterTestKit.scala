@@ -10,7 +10,6 @@ import scala.util.Random
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.ActorSystem
-import akka.cluster.MemberStatus.Removed
 import akka.testkit.{ AkkaSpec, TestKitBase }
 
 /**
@@ -116,14 +115,22 @@ trait ClusterTestKit extends TestKitBase {
       val port = cluster.selfAddress.port.get
 
       // remove old before starting the new one
-      cluster.leave(cluster.readView.selfAddress)
-      awaitCond(
-        cluster.readView.status == Removed,
-        message =
-          s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]")
+      cluster.leave(cluster.selfAddress)
+      awaitCond(cluster.isTerminated, message = s"awaiting node [${cluster.selfAddress}] to leave and be terminated")
+
+      awaitAssert {
+        actorSystems.foreach { sys =>
+          if (sys != actorSystem && Cluster(sys).selfMember.status == MemberStatus.Up) {
+            // check that it's removed from members
+            if (Cluster(sys).state.members.exists(_.uniqueAddress == cluster.selfUniqueAddress))
+              throw new AssertionError(
+                s"awaiting node [${cluster.selfAddress}] to be removed, " +
+                s"still member in [${Cluster(sys).selfAddress}]: ${Cluster(sys).state}")
+          }
+        }
+      }
 
       shutdown(actorSystem)
-      awaitCond(cluster.isTerminated)
 
       // remove from internal list
       actorSystems = actorSystems.filterNot(_ == actorSystem)
@@ -140,12 +147,12 @@ trait ClusterTestKit extends TestKitBase {
     /**
      * Returns true if the cluster instance for the provided [[ActorSystem]] is [[MemberStatus.Up]].
      */
-    def isMemberUp(system: ActorSystem): Boolean = Cluster(system).readView.status == MemberStatus.Up
+    def isMemberUp(system: ActorSystem): Boolean = Cluster(system).selfMember.status == MemberStatus.Up
 
     /**
      * Returns true if the cluster instance for the provided [[ActorSystem]] has be shutdown.
      */
-    def isTerminated(system: ActorSystem): Boolean = Cluster(system).readView.isTerminated
+    def isTerminated(system: ActorSystem): Boolean = Cluster(system).isTerminated
 
   }
 }
