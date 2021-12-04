@@ -3287,7 +3287,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    * @param allocate    allocate the initial data structure for aggregated elements
-   * @param aggregate   update the aggregated elements, return true if ready to emit after update. [[Agg]] must be mutable.
+   * @param aggregate   update the aggregated elements, return true if ready to emit after update.
    * @param harvest     this is invoked before emit within the current stage/operator
    * @param emitOnTimer decide whether the current aggregated elements can be emitted, the custom function is invoked on every interval
    */
