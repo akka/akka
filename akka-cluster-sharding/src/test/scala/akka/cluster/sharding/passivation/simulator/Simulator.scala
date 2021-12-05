@@ -211,7 +211,7 @@ object Simulator {
         Nil
       } else {
         activeEntities += entityId
-        val passivateEntities = strategy.entityCreated(entityId)
+        val passivateEntities = strategy.entityTouched(entityId)
         passivateEntities.foreach(activeEntities.remove)
         val passivated =
           if (passivateEntities.isEmpty) Nil
