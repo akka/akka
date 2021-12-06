@@ -214,4 +214,4 @@ Java
     @@@
 
 will probably fail; you will have to allow for some time to pass and retry the
-check à la @scala[@scaladoc[TestKit.awaitCond](akka.testkit.TestKit#awaitCond(p:=%3EBoolean,max:scala.concurrent.duration.Duration,interval:scala.concurrent.duration.Duration,message:String):Unit)]@java[@javadoc[TesKit.awaitCond)](akka.testkit.javadsl.TestKit#awaitCond(java.time.Duration,java.time.Duration,java.lang.String,java.util.function.Supplier))].
+check à la @scala[@scaladoc[TestKit.awaitCond](akka.testkit.TestKit#awaitCond(p:=%3EBoolean,max:scala.concurrent.duration.Duration,interval:scala.concurrent.duration.Duration,message:String):Unit)]@java[@javadoc[TestKit.awaitCond](akka.testkit.javadsl.TestKit#awaitCond(java.time.Duration,java.time.Duration,java.lang.String,java.util.function.Supplier))].
