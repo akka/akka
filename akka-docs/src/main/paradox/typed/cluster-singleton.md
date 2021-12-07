@@ -122,7 +122,7 @@ Scala
 Java
 :  @@snip [SingletonCompileOnlyTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/SingletonCompileOnlyTest.java) { #counter }
 
-Then on every node in the cluster, or every node with a given role, use the @apidoc[ClusterSingleton](typed.ClusterSingleton) extension
+Then on every node in the cluster, or every node with a given role, use the @apidoc[ClusterSingleton$] extension
 to spawn the singleton. An instance will per data centre of the cluster:
 
 
@@ -154,7 +154,7 @@ See @ref[Fault Tolerance](./fault-tolerance.md) for a full list of supervision o
 An application specific `stopMessage` can be used to close the resources before actually stopping the singleton actor. 
 This `stopMessage` is sent to the singleton actor to tell it to finish its work, close resources, and stop. The hand-over to the new oldest node is completed when the
 singleton actor is terminated.
-If the shutdown logic does not include any asynchronous actions it can be executed in the @apidoc[PostStop] signal handler.
+If the shutdown logic does not include any asynchronous actions it can be executed in the @apidoc[PostStop$] signal handler.
 
 Scala
 :  @@snip [SingletonCompileOnlySpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/SingletonCompileOnlySpec.scala) { #stop-message }
