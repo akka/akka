@@ -277,7 +277,11 @@ private[akka] final class LeastFrequentlyUsedEntityPassivationStrategy(
   }
 
   override def entityTouched(id: EntityId): PassivateEntities = {
-    val passivated = passivateExcessEntities(adjustment = +1)
+    // first remove excess entities so that dynamic aging is updated
+    // and the adjusted age is applied to any new entities on update
+    // adjust the expected size by 1 if this is a newly activated entity
+    val adjustment = if (frequencyList.contains(id)) 0 else 1
+    val passivated = passivateExcessEntities(adjustment)
     frequencyList.update(id)
     passivated
   }
