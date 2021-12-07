@@ -46,8 +46,8 @@ private[akka] final class RecencyList[A](clock: RecencyList.Clock) {
   private val recency = new DoubleLinkedList[Node[A]](
     getPrevious = _.lessRecent,
     getNext = _.moreRecent,
-    setPrevious = _.lessRecent = _,
-    setNext = _.moreRecent = _)
+    setPrevious = (node, previous) => node.lessRecent = previous,
+    setNext = (node, next) => node.moreRecent = next)
 
   private val lookupNode = mutable.Map.empty[A, Node[A]]
 

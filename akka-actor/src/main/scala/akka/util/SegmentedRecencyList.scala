@@ -54,16 +54,16 @@ private[akka] final class SegmentedRecencyList[A](
     new DoubleLinkedList[Node[A]](
       getPrevious = _.lessRecent,
       getNext = _.moreRecent,
-      setPrevious = _.lessRecent = _,
-      setNext = _.moreRecent = _))
+      setPrevious = (node, previous) => node.lessRecent = previous,
+      setNext = (node, next) => node.moreRecent = next))
 
   private val sizes = mutable.IndexedSeq.fill(levels)(0)
 
   private val overallRecency = new DoubleLinkedList[Node[A]](
     getPrevious = _.overallLessRecent,
     getNext = _.overallMoreRecent,
-    setPrevious = _.overallLessRecent = _,
-    setNext = _.overallMoreRecent = _)
+    setPrevious = (node, previous) => node.overallLessRecent = previous,
+    setNext = (node, next) => node.overallMoreRecent = next)
 
   private val lookupNode = mutable.Map.empty[A, Node[A]]
 
