@@ -195,12 +195,10 @@ private[akka] final class SegmentedLeastRecentlyUsedEntityPassivationStrategy(
     passivateExcessEntities()
   }
 
-  override def entityCreated(id: EntityId): PassivateEntities = {
+  override def entityTouched(id: EntityId): PassivateEntities = {
     segmentedRecencyList.update(id)
     passivateExcessEntities()
   }
-
-  override def entityTouched(id: EntityId): Unit = segmentedRecencyList.update(id)
 
   override def entityTerminated(id: EntityId): Unit = segmentedRecencyList.remove(id)
 
@@ -279,6 +277,7 @@ private[akka] final class LeastFrequentlyUsedEntityPassivationStrategy(
   }
 
   override def entityTouched(id: EntityId): PassivateEntities = {
+    val passivated = passivateExcessEntities(adjustment = +1)
     frequencyList.update(id)
     passivated
   }
@@ -293,4 +292,5 @@ private[akka] final class LeastFrequentlyUsedEntityPassivationStrategy(
     val excess = frequencyList.size - perShardLimit + adjustment
     if (excess > 0) frequencyList.removeLeastFrequent(excess) else PassivateEntities.none
   }
+
 }
