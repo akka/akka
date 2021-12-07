@@ -76,8 +76,5 @@ It is possible to release a revised documentation to the already existing releas
     ```sh
     sbt akka-docs/paradoxBrowse
     ```
-1. If the generated documentation looks good, create a PR to the `docs/v2.6.4` branch you created earlier:
-    ```sh
-    sbt akka-docs/publishRsync
-    ```
+1. If the generated documentation looks good, create a PR to the `docs/v2.6.4` branch you created earlier.
 1. It should automatically be published by GitHub Actions on merge.

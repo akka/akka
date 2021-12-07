@@ -54,17 +54,11 @@ private[akka] sealed abstract class EntityPassivationStrategy {
   def shardsUpdated(activeShards: Int): PassivateEntities
 
   /**
-   * A new entity instance has been created, which can trigger passivation.
-   * @param id entity id for the new entity instance
-   * @return entities to passivate, when active capacity has been reached
-   */
-  def entityCreated(id: EntityId): PassivateEntities
-
-  /**
    * An entity instance has been touched. Recorded before message delivery.
    * @param id entity id for the touched entity instance
+   * @return entities to passivate, when active capacity has been reached
    */
-  def entityTouched(id: EntityId): Unit
+  def entityTouched(id: EntityId): PassivateEntities
 
   /**
    * An entity instance has been terminated and should be removed from active tracking.
@@ -93,8 +87,7 @@ private[akka] object DisabledEntityPassivationStrategy extends EntityPassivation
   import EntityPassivationStrategy.PassivateEntities
 
   override def shardsUpdated(activeShards: Int): PassivateEntities = PassivateEntities.none
-  override def entityCreated(id: EntityId): PassivateEntities = PassivateEntities.none
-  override def entityTouched(id: EntityId): Unit = ()
+  override def entityTouched(id: EntityId): PassivateEntities = PassivateEntities.none
   override def entityTerminated(id: EntityId): Unit = ()
   override def scheduledInterval: Option[FiniteDuration] = None
   override def intervalPassed(): PassivateEntities = PassivateEntities.none
@@ -118,12 +111,10 @@ private[akka] final class IdleEntityPassivationStrategy(idleCheck: IdleCheck) ex
 
   override def shardsUpdated(activeShards: Int): PassivateEntities = PassivateEntities.none
 
-  override def entityCreated(id: EntityId): PassivateEntities = {
+  override def entityTouched(id: EntityId): PassivateEntities = {
     recencyList.update(id)
     PassivateEntities.none
   }
-
-  override def entityTouched(id: EntityId): Unit = recencyList.update(id)
 
   override def entityTerminated(id: EntityId): Unit = recencyList.remove(id)
 
@@ -152,12 +143,10 @@ private[akka] final class LeastRecentlyUsedEntityPassivationStrategy(perRegionLi
     passivateExcessEntities()
   }
 
-  override def entityCreated(id: EntityId): PassivateEntities = {
+  override def entityTouched(id: EntityId): PassivateEntities = {
     recencyList.update(id)
     passivateExcessEntities()
   }
-
-  override def entityTouched(id: EntityId): Unit = recencyList.update(id)
 
   override def entityTerminated(id: EntityId): Unit = recencyList.remove(id)
 
@@ -244,12 +233,10 @@ private[akka] final class MostRecentlyUsedEntityPassivationStrategy(perRegionLim
     passivateExcessEntities()
   }
 
-  override def entityCreated(id: EntityId): PassivateEntities = {
+  override def entityTouched(id: EntityId): PassivateEntities = {
     recencyList.update(id)
     passivateExcessEntities(skip = 1) // remove most recent before adding this created entity
   }
-
-  override def entityTouched(id: EntityId): Unit = recencyList.update(id)
 
   override def entityTerminated(id: EntityId): Unit = recencyList.remove(id)
 
@@ -291,13 +278,10 @@ private[akka] final class LeastFrequentlyUsedEntityPassivationStrategy(
     passivateExcessEntities()
   }
 
-  override def entityCreated(id: EntityId): PassivateEntities = {
-    val passivated = passivateExcessEntities(adjustment = +1)
+  override def entityTouched(id: EntityId): PassivateEntities = {
     frequencyList.update(id)
     passivated
   }
-
-  override def entityTouched(id: EntityId): Unit = frequencyList.update(id)
 
   override def entityTerminated(id: EntityId): Unit = frequencyList.remove(id)
 
