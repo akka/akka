@@ -289,7 +289,10 @@ The stop message is only sent locally, from the shard to the entity so does not 
 ## Automatic Passivation
 
 Entities are automatically passivated based on a passivation strategy. The default passivation strategy is to
-passivate idle entities when they haven't received a message within a specified interval.
+[passivate idle entities](#idle-entity-passivation) when they haven't received a message within a specified interval,
+and this is the current default strategy to maintain compatibility with earlier versions. It's recommended to switch to
+a [passivation strategy with an active entity limit](#active-entity-limits) and a pre-configured default strategy is
+provided. Active entity limits and idle entity timeouts can also be used together.
 
 Automatic passivation can be disabled by setting `akka.cluster.sharding.passivation.strategy = none`. It is disabled
 automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
