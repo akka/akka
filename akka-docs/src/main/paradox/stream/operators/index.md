@@ -215,6 +215,7 @@ These operators are aware of the backpressure provided by their downstreams and 
 
 | |Operator|Description|
 |--|--|--|
+|Source/Flow|<a name="aggregatewithboundary"></a>@ref[aggregateWithBoundary](Source-or-Flow/aggregateWithBoundary.md)|Aggregate and emit until custom boundary condition met.|
 |Source/Flow|<a name="batch"></a>@ref[batch](Source-or-Flow/batch.md)|Allow for a slower downstream by passing incoming elements and a summary into an aggregate function as long as there is backpressure and a maximum number of batched elements is not yet reached.|
 |Source/Flow|<a name="batchweighted"></a>@ref[batchWeighted](Source-or-Flow/batchWeighted.md)|Allow for a slower downstream by passing incoming elements and a summary into an aggregate function as long as there is backpressure and a maximum weight batched elements is not yet reached.|
 |Source/Flow|<a name="buffer"></a>@ref[buffer](Source-or-Flow/buffer.md)|Allow for a temporarily faster upstream events by buffering `size` elements.|
@@ -366,6 +367,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRefWithBackpressure](Sink/actorRefWithBackpressure.md)
 * [actorRefWithBackpressure](ActorSource/actorRefWithBackpressure.md)
 * [actorRefWithBackpressure](ActorSink/actorRefWithBackpressure.md)
+* [aggregateWithBoundary](Source-or-Flow/aggregateWithBoundary.md)
 * [alsoTo](Source-or-Flow/alsoTo.md)
 * [asFlowWithContext](Flow/asFlowWithContext.md)
 * [asInputStream](StreamConverters/asInputStream.md)
