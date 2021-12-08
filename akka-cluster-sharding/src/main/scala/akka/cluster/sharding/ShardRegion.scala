@@ -495,7 +495,7 @@ object ShardRegion {
    * Used for passivation strategies that change limits based on the number of active shards.
    */
   @InternalApi
-  private[akka] final case class ShardsUpdated(activeShards: Int)
+  private[akka] final case class ShardsUpdated(activeShards: Int) extends DeadLetterSuppression
 
   /**
    * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of
