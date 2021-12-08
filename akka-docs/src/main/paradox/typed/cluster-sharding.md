@@ -286,7 +286,7 @@ message if the entity needs to perform some asynchronous cleanup or interactions
 
 The stop message is only sent locally, from the shard to the entity so does not require an entity id to end up in the right actor. When using a custom `ShardingMessageExtractor` without envelopes, the extractor will still have to handle the stop message type to please the compiler, even though it will never actually be passed to the extractor.
 
-### Automatic Passivation
+## Automatic Passivation
 
 Entities are automatically passivated based on a passivation strategy. The default passivation strategy is to
 passivate idle entities when they haven't received a message within a specified interval.
@@ -303,7 +303,7 @@ directly to the `ActorRef`, including messages that the actor sends to itself, a
 
 Supported passivation strategies are:
 
-#### Idle passivation strategy
+### Idle passivation strategy
 
 The **idle** passivation strategy passivates entities when they have not received a message for a specified length of
 time. This is the default strategy and is enabled automatically with a timeout of 2 minutes. Specify a different idle
@@ -313,7 +313,7 @@ timeout with configuration:
 
 Or specify the idle timeout as a duration using the `withIdlePassivationStrategy` method on `ClusterShardingSettings`.
 
-#### Least recently used passivation strategy
+### Least recently used passivation strategy
 
 The **least recently used** passivation strategy passivates those entities that have the least recent activity when the
 number of active entities passes a specified limit. The configurable limit is for a whole shard region and is divided
@@ -325,6 +325,31 @@ passivation strategy, and set the limit for active entities in a shard region:
 Or enable the least recently used passivation strategy and set the active entity limit using the
 `withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
 
+#### Segmented least recently used strategy
+
+A variation of the least recently used passivation strategy can be enabled that divides the active entity space into
+multiple segments to introduce frequency information into the strategy. Higher-level segments contain entities that
+have been accessed more often. The first segment is for entities that have only been accessed once, the second segment
+for entities that have been accessed at least twice, and so on. When an entity is accessed again, it will be promoted
+to the most recent position of the next-level or highest-level segment. The higher-level segments are limited, where
+the total limit is either evenly divided among segments, or proportions of the segments can be configured. When a
+higher-level segment exceeds its limit, the least recently used active entity tracked in that segment will be demoted
+to the level below. Only the least recently used entities in the lowest level will be candidates for passivation. The
+higher levels are considered "protected", where entities will have additional opportunities to be accessed before being
+considered for passivation.
+
+To configure a segmented least recently used (SLRU) strategy, with two levels and a protected segment limited to 80% of the total limit:
+
+@@snip [passivation segmented least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-segmented-least-recently-used type=conf }
+
+Or to configure a 4-level segmented least recently used (S4LRU) strategy, with 4 evenly divided levels:
+
+@@snip [passivation segmented least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-s4-least-recently-used type=conf }
+
+Or using the `withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+
+#### Idle timeouts (with least recently used strategy)
+
 Passivating idle entities (when they have not received a message for a specified length of time) can also be enabled by configuring the least recently used passivation strategy with an idle timeout:
 
 @@snip [passivation least recently used with idle](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-recently-used-with-idle type=conf }
@@ -332,7 +357,7 @@ Passivating idle entities (when they have not received a message for a specified
 Or enable the least recently used passivation strategy with both an active entity limit and an idle timeout using the
 `withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
 
-#### Most recently used passivation strategy
+### Most recently used passivation strategy
 
 The **most recently used** passivation strategy passivates those entities that have the most recent activity when the
 number of active entities passes a specified limit. The configurable limit is for a whole shard region and is divided
@@ -345,6 +370,8 @@ the most recently used passivation strategy, and set the limit for active entiti
 Or enable the most recently used passivation strategy and set the active entity limit using the
 `withMostRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
 
+#### Idle timeouts (with most recently used strategy)
+
 Passivating idle entities (when they have not received a message for a specified length of time) can also be enabled by configuring the most recently used passivation strategy with an idle timeout:
 
 @@snip [passivation most recently used with idle](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-most-recently-used-with-idle type=conf }
@@ -352,7 +379,7 @@ Passivating idle entities (when they have not received a message for a specified
 Or enable the most recently used passivation strategy with both an active entity limit and an idle timeout using the
 `withMostRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
 
-#### Least frequently used passivation strategy
+### Least frequently used passivation strategy
 
 The **least frequently used** passivation strategy passivates those entities that have the least frequent activity when
 the number of active entities passes a specified limit. The configurable limit is for a whole shard region and is
@@ -363,6 +390,21 @@ passivation strategy, and set the limit for active entities in a shard region:
 
 Or enable the least frequently used passivation strategy and set the active entity limit using the
 `withLeastFrequentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+
+#### Dynamic aging for least frequently used strategy
+
+A variation of the least frequently used passivation strategy can be enabled that uses "dynamic aging" to adapt to
+shifts in the set of popular entities, which is useful for smaller active entity limits and when shifts in popularity
+are common. If entities were frequently accessed in the past but then become unpopular, they can still remain active
+for a long time given their high frequency counts. Dynamic aging effectively increases the frequencies for recently
+accessed entities so they can more easily become higher priority over entities that are no longer accessed. Configure
+dynamic aging with the least frequently used passivation strategy:
+
+@@snip [passivation least frequently used with dynamic aging](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-frequently-used-with-dynamic-aging type=conf }
+
+Or when using the `withLeastFrequentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+
+#### Idle timeouts (with least frequently used strategy)
 
 Passivating idle entities (when they have not received a message for a specified length of time) can also be enabled by configuring the least frequently used passivation strategy with an idle timeout:
 
@@ -436,7 +478,7 @@ used for new projects and existing projects should migrate as soon as possible.
 Remembering entities automatically restarts entities after a rebalance or entity crash. 
 Without remembered entities restarts happen on the arrival of a message.
 
-Enabling remembered entities disables @ref:[Automatic Passivation](#passivation).
+Enabling remembered entities disables @ref:[Automatic Passivation](#automatic-passivation).
 
 The state of the entities themselves is not restored unless they have been made persistent,
 for example with @ref:[Event Sourcing](persistence.md).

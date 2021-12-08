@@ -16,13 +16,11 @@ trait AccessPattern {
 }
 
 abstract class SyntheticGenerator(events: Int) extends AccessPattern {
-  protected def createGenerator(): site.ycsb.generator.NumberGenerator
+  protected def nextValue(event: Int): Long
 
-  private def generateEntityIds: Source[EntityId, NotUsed] = Source.unfold(createGenerator()) { generator =>
-    Option(generator.nextValue()).map(generator -> _.longValue.toString)
-  }
+  protected def generateEntityIds: Source[Long, NotUsed] = Source.fromIterator(() => Iterator.from(1)).map(nextValue)
 
-  override def entityIds: Source[EntityId, NotUsed] = generateEntityIds.take(events)
+  override def entityIds: Source[EntityId, NotUsed] = generateEntityIds.take(events).map(_.toString)
 }
 
 object SyntheticGenerator {
@@ -32,50 +30,72 @@ object SyntheticGenerator {
    * Generate a sequence of unique id events.
    */
   final class Sequence(start: Long, events: Int) extends SyntheticGenerator(events) {
-    override protected def createGenerator(): NumberGenerator = new CounterGenerator(start)
+    private val generator = new CounterGenerator(start)
+    override protected def nextValue(event: Int): Long = generator.nextValue()
   }
 
   /**
    * Generate a looping sequence of id events.
    */
   final class Loop(start: Long, end: Long, events: Int) extends SyntheticGenerator(events) {
-    override protected def createGenerator(): NumberGenerator = new SequentialGenerator(start, end)
+    private val generator = new SequentialGenerator(start, end)
+    override protected def nextValue(event: Int): Long = generator.nextValue().longValue
   }
 
   /**
    * Generate id events randomly using a uniform distribution, from the inclusive range min to max.
    */
   final class Uniform(min: Long, max: Long, events: Int) extends SyntheticGenerator(events) {
-    override protected def createGenerator(): NumberGenerator = new UniformLongGenerator(min, max)
+    private val generator = new UniformLongGenerator(min, max)
+    override protected def nextValue(event: Int): Long = generator.nextValue()
   }
 
   /**
    * Generate id events based on an exponential distribution given the mean (expected value) of the distribution.
    */
   final class Exponential(mean: Double, events: Int) extends SyntheticGenerator(events) {
-    override protected def createGenerator(): NumberGenerator = new ExponentialGenerator(mean)
+    private val generator = new ExponentialGenerator(mean)
+    override protected def nextValue(event: Int): Long = generator.nextValue().longValue
   }
 
   /**
    * Generate id events for a hotspot distribution, where x% ('rate') of operations access y% ('hot') of the id space.
    */
   final class Hotspot(min: Long, max: Long, hot: Double, rate: Double, events: Int) extends SyntheticGenerator(events) {
-    override protected def createGenerator(): NumberGenerator = new HotspotIntegerGenerator(min, max, hot, rate)
+    private val generator = new HotspotIntegerGenerator(min, max, hot, rate)
+    override protected def nextValue(event: Int): Long = generator.nextValue()
   }
 
   /**
    * Generate id events where some ids in the id space are more popular than others, based on a zipfian distribution.
+   * If scrambled, the popular ids are scattered over the id space.
    */
-  final class Zipfian(min: Long, max: Long, constant: Double, events: Int) extends SyntheticGenerator(events) {
-    override protected def createGenerator(): NumberGenerator = new ZipfianGenerator(min, max, constant)
+  final class Zipfian(min: Long, max: Long, constant: Double, scrambled: Boolean, events: Int)
+      extends SyntheticGenerator(events) {
+    private val generator =
+      if (scrambled) new ScrambledZipfianGenerator(min, max, constant) else new ZipfianGenerator(min, max, constant)
+    override protected def nextValue(event: Int): Long = generator.nextValue().longValue
   }
 
   /**
    * Generate id events where some ids are more popular than others, based on a zipfian distribution, and the popular
-   * ids are scattered over the id space.
+   * ids are shifted periodically (divided evenly across the id space and the total number of events).
+   * If scrambled, the popular ids are also scattered over the id space.
    */
-  final class ScrambledZipfian(min: Long, max: Long, constant: Double, events: Int) extends SyntheticGenerator(events) {
-    override protected def createGenerator(): NumberGenerator = new ScrambledZipfianGenerator(min, max, constant)
+  final class ShiftingZipfian(min: Long, max: Long, constant: Double, shifts: Int, scrambled: Boolean, events: Int)
+      extends SyntheticGenerator(events) {
+    private val numberOfIds = max - min + 1
+    private val shiftBy = numberOfIds / shifts
+    private val shiftEvery = events / shifts
+
+    private val generator =
+      if (scrambled) new ScrambledZipfianGenerator(0, numberOfIds - 1, constant)
+      else new ZipfianGenerator(numberOfIds, constant)
+
+    override protected def nextValue(event: Int): Long = {
+      val shift = event / shiftEvery * shiftBy
+      min + ((generator.nextValue().longValue + shift) % numberOfIds)
+    }
   }
 }
 
