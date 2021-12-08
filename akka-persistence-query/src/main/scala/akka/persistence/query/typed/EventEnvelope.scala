@@ -112,5 +112,5 @@ final class EventEnvelope[Event](
   }
 
   override def toString: String =
-    s"EventBySliceEnvelope($offset,$persistenceId,$sequenceNr,$eventOption,$timestamp,$eventMetadata,$entityType,$slice)"
+    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventOption,$timestamp,$eventMetadata,$entityType,$slice)"
 }

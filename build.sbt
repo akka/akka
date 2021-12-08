@@ -291,10 +291,18 @@ lazy val persistence = akkaModule("akka-persistence")
   .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val persistenceQuery = akkaModule("akka-persistence-query")
-  .dependsOn(stream, persistence % "compile->compile;test->test", streamTestkit % "test")
+  .dependsOn(
+    stream,
+    persistence % "compile->compile;test->test",
+    remote % "provided",
+    protobufV3 % "provided",
+    streamTestkit % "test")
   .settings(Dependencies.persistenceQuery)
   .settings(AutomaticModuleName.settings("akka.persistence.query"))
   .settings(OSGi.persistenceQuery)
+  .settings(Protobuf.settings)
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(Test / fork := true)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
