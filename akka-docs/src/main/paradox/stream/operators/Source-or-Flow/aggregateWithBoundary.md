@@ -15,3 +15,16 @@ This operator can be customized into a broad class of aggregate/group/fold opera
 ## Example
 
 ## Reactive Streams semantics
+
+
+@@@div { .callout }
+
+**emits** when the aggregation function decides the aggregate is complete or the timer function returns true
+
+**backpressures** when downstream backpressures and the aggregate is complete
+
+**completes** when upstream completes and the last aggregate has been emitted downstream
+
+**cancels** when downstream cancels
+
+@@@
