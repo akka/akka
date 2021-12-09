@@ -25,7 +25,7 @@ class FutureFlow {
 
     val source: Source[String, NotUsed] =
       Source(1 to 10).prefixAndTail(1).flatMapConcat {
-        case (List(id), tail) =>
+        case (List(id: Int), tail) =>
           // base the Future flow creation on the first element
           tail.via(Flow.futureFlow(processingFlow(id)))
       }

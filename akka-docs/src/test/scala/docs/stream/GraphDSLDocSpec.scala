@@ -74,7 +74,7 @@ class GraphDSLDocSpec extends AkkaSpec {
     // format: OFF
     val g =
     //#graph-dsl-reusing-a-flow
-    RunnableGraph.fromGraph(GraphDSL.create(topHeadSink, bottomHeadSink)((_, _)) { implicit builder =>
+    RunnableGraph.fromGraph(GraphDSL.createGraph(topHeadSink, bottomHeadSink)((_, _)) { implicit builder =>
       (topHS, bottomHS) =>
       import GraphDSL.Implicits._
       val broadcast = builder.add(Broadcast[Int](2))
@@ -192,7 +192,7 @@ class GraphDSLDocSpec extends AkkaSpec {
   "access to materialized value" in {
     //#graph-dsl-matvalue
     import GraphDSL.Implicits._
-    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) {
+    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.createGraph(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder => fold =>
         FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
     })
@@ -204,7 +204,7 @@ class GraphDSLDocSpec extends AkkaSpec {
     import GraphDSL.Implicits._
     // This cannot produce any value:
     val cyclicFold: Source[Int, Future[Int]] =
-      Source.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) { implicit builder => fold =>
+      Source.fromGraph(GraphDSL.createGraph(Sink.fold[Int, Int](0)(_ + _)) { implicit builder => fold =>
         // - Fold cannot complete until its upstream mapAsync completes
         // - mapAsync cannot complete until the materialized Future produced by
         //   fold completes

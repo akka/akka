@@ -42,8 +42,8 @@ class CoordinatedActorShutdownSpec {
     val myActor = context.spawn(MyActor.behavior, "my-actor")
     //#coordinated-shutdown-addTask
     CoordinatedShutdown(context.system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
-      implicit val timeout = Timeout(5.seconds)
-      myActor.ask(MyActor.Stop)
+      implicit val timeout: Timeout = 5.seconds
+      myActor.ask(MyActor.Stop(_))
     }
     //#coordinated-shutdown-addTask
 

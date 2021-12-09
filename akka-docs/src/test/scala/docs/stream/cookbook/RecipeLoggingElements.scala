@@ -5,6 +5,7 @@
 package docs.stream.cookbook
 
 import akka.event.Logging
+import akka.event.LoggingAdapter
 import akka.stream.Attributes
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.{ EventFilter, TestProbe }
@@ -42,7 +43,7 @@ class RecipeLoggingElements extends RecipeSpec {
         .map(analyse)
 
       // or provide custom logging adapter
-      implicit val adapter = Logging(system, "customLogger")
+      implicit val adapter: LoggingAdapter = Logging(system, "customLogger")
       mySource.log("custom")
       //#log-custom
 

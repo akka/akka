@@ -16,6 +16,7 @@ import akka.testkit.TestProbe
 //#imports-test-probe
 
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.util.control.NonFatal
 
 object TestKitDocSpec {
@@ -169,7 +170,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     val actorRef = TestActorRef(new MyActor)
     // hypothetical message stimulating a '42' answer
-    val future = actorRef ? Say42
+    val future: Future[Any] = actorRef ? Say42
     future.futureValue should be(42)
     //#test-behavior
   }
@@ -321,7 +322,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.EventFilter
     import com.typesafe.config.ConfigFactory
 
-    implicit val system = ActorSystem(
+    implicit val system: ActorSystem = ActorSystem(
       "testsystem",
       ConfigFactory.parseString("""
       akka.loggers = ["akka.testkit.TestEventListener"]

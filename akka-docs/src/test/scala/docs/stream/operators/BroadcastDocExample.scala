@@ -34,7 +34,7 @@ object BroadcastDocExample {
 
   val (count: Future[Int], min: Future[Int], max: Future[Int]) =
     RunnableGraph
-      .fromGraph(GraphDSL.create(countSink, minSink, maxSink)(Tuple3.apply) {
+      .fromGraph(GraphDSL.createGraph(countSink, minSink, maxSink)(Tuple3.apply) {
         implicit builder => (countS, minS, maxS) =>
           import GraphDSL.Implicits._
           val broadcast = builder.add(Broadcast[Int](3))
@@ -48,7 +48,7 @@ object BroadcastDocExample {
   //#broadcast
 
   //#broadcast-async
-  RunnableGraph.fromGraph(GraphDSL.create(countSink, minSink, maxSink)(Tuple3.apply) {
+  RunnableGraph.fromGraph(GraphDSL.createGraph(countSink, minSink, maxSink)(Tuple3.apply) {
     implicit builder => (countS, minS, maxS) =>
       import GraphDSL.Implicits._
       val broadcast = builder.add(Broadcast[Int](3))

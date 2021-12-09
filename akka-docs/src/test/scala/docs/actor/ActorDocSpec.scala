@@ -485,7 +485,7 @@ class ActorDocSpec extends AkkaSpec("""
     import scala.concurrent.duration._
     import akka.util.Timeout
     import akka.pattern.ask
-    implicit val timeout = Timeout(5 seconds)
+    implicit val timeout: Timeout = 5.seconds
     val future = myActor ? "hello"
     //#using-implicit-timeout
     Await.result(future, timeout.duration) should be("hello")
@@ -683,7 +683,7 @@ class ActorDocSpec extends AkkaSpec("""
     final case class Result(x: Int, s: String, d: Double)
     case object Request
 
-    implicit val timeout = Timeout(5 seconds) // needed for `?` below
+    implicit val timeout: Timeout = 5.seconds // needed for `?` below
 
     val f: Future[Result] =
       for {
