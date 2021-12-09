@@ -14,3 +14,13 @@ message ShardingEnvelope {
   required string entityId = 1;
   required Payload message = 2;
 }
+
+
+message EntityEnvelope {
+  required string entityId = 1;
+  required Payload message = 2;
+}
+
+message StartEntity {
+  required string entityId = 1;
+}

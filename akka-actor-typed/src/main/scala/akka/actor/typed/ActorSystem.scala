@@ -10,13 +10,13 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
-
 import akka.{ Done, actor => classic }
 import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
 import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
+import akka.actor.typed.internal.entity.EntityExtension
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
@@ -169,6 +169,14 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def receptionist: ActorRef[Receptionist.Command] =
     Receptionist(this).ref
+
+  // TODO: adds docs
+  def initEntity[M, E](entity: Entity[M, E]): ActorRef[E] =
+    EntityExtension(this).initEntity(entity)
+
+  // TODO: adds docs
+  def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M] =
+    EntityExtension(this).entityRefFor(typeKey, entityId)
 
   /**
    * Main event bus of this actor system, used for example for logging.

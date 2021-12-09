@@ -19,6 +19,7 @@ import akka.actor.InternalActorRef
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.EntityEnvelope
 import akka.actor.typed.Props
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.internal.InternalRecipientRef
@@ -34,6 +35,7 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
 import akka.cluster.sharding.typed.scaladsl.EntityContext
+import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.typed.Cluster
 import akka.event.Logging
 import akka.event.LoggingAdapter
@@ -53,6 +55,7 @@ import akka.util.JavaDurationConverters._
     extends ShardingMessageExtractor[Any, M] {
   override def entityId(message: Any): String = {
     message match {
+      case EntityEnvelope(entityId, _)   => entityId
       case ShardingEnvelope(entityId, _) => entityId //also covers ClassicStartEntity in ShardingEnvelope
       case ClassicStartEntity(entityId)  => entityId
       case msg                           => delegate.entityId(msg.asInstanceOf[E])
@@ -63,6 +66,7 @@ import akka.util.JavaDurationConverters._
 
   override def unwrapMessage(message: Any): M = {
     message match {
+      case EntityEnvelope(_, msg: M @unchecked)   => msg
       case ShardingEnvelope(_, msg: M @unchecked) =>
         //also covers ClassicStartEntity in ShardingEnvelope
         msg

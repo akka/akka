@@ -361,7 +361,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code Join}
    */
-  public  static final class Join extends
+  public static final class Join extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Join)
       JoinOrBuilder {
@@ -476,6 +476,7 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress node = 1;</code>
      * @return Whether the node field is set.
      */
+    @java.lang.Override
     public boolean hasNode() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -483,12 +484,14 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress node = 1;</code>
      * @return The node.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getNode() {
       return node_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : node_;
     }
     /**
      * <code>required .UniqueAddress node = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getNodeOrBuilder() {
       return node_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : node_;
     }
@@ -534,6 +537,7 @@ public final class ClusterMessages {
      * <code>optional string appVersion = 3;</code>
      * @return Whether the appVersion field is set.
      */
+    @java.lang.Override
     public boolean hasAppVersion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -541,6 +545,7 @@ public final class ClusterMessages {
      * <code>optional string appVersion = 3;</code>
      * @return The appVersion.
      */
+    @java.lang.Override
     public java.lang.String getAppVersion() {
       java.lang.Object ref = appVersion_;
       if (ref instanceof java.lang.String) {
@@ -559,6 +564,7 @@ public final class ClusterMessages {
      * <code>optional string appVersion = 3;</code>
      * @return The bytes for appVersion.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getAppVersionBytes() {
       java.lang.Object ref = appVersion_;
@@ -1382,7 +1388,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code Welcome}
    */
-  public  static final class Welcome extends
+  public static final class Welcome extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Welcome)
       WelcomeOrBuilder {
@@ -1490,6 +1496,7 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress from = 1;</code>
      * @return Whether the from field is set.
      */
+    @java.lang.Override
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -1497,12 +1504,14 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress from = 1;</code>
      * @return The from.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getFromOrBuilder() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
     }
@@ -1513,6 +1522,7 @@ public final class ClusterMessages {
      * <code>required .Gossip gossip = 2;</code>
      * @return Whether the gossip field is set.
      */
+    @java.lang.Override
     public boolean hasGossip() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -1520,12 +1530,14 @@ public final class ClusterMessages {
      * <code>required .Gossip gossip = 2;</code>
      * @return The gossip.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.Gossip getGossip() {
       return gossip_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Gossip.getDefaultInstance() : gossip_;
     }
     /**
      * <code>required .Gossip gossip = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.GossipOrBuilder getGossipOrBuilder() {
       return gossip_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Gossip.getDefaultInstance() : gossip_;
     }
@@ -2241,7 +2253,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code InitJoin}
    */
-  public  static final class InitJoin extends
+  public static final class InitJoin extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:InitJoin)
       InitJoinOrBuilder {
@@ -2330,6 +2342,7 @@ public final class ClusterMessages {
      * <code>optional string currentConfig = 1;</code>
      * @return Whether the currentConfig field is set.
      */
+    @java.lang.Override
     public boolean hasCurrentConfig() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -2337,6 +2350,7 @@ public final class ClusterMessages {
      * <code>optional string currentConfig = 1;</code>
      * @return The currentConfig.
      */
+    @java.lang.Override
     public java.lang.String getCurrentConfig() {
       java.lang.Object ref = currentConfig_;
       if (ref instanceof java.lang.String) {
@@ -2355,6 +2369,7 @@ public final class ClusterMessages {
      * <code>optional string currentConfig = 1;</code>
      * @return The bytes for currentConfig.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getCurrentConfigBytes() {
       java.lang.Object ref = currentConfig_;
@@ -2867,7 +2882,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code InitJoinAck}
    */
-  public  static final class InitJoinAck extends
+  public static final class InitJoinAck extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:InitJoinAck)
       InitJoinAckOrBuilder {
@@ -2975,6 +2990,7 @@ public final class ClusterMessages {
      * <code>required .Address address = 1;</code>
      * @return Whether the address field is set.
      */
+    @java.lang.Override
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -2982,12 +2998,14 @@ public final class ClusterMessages {
      * <code>required .Address address = 1;</code>
      * @return The address.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.Address getAddress() {
       return address_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : address_;
     }
     /**
      * <code>required .Address address = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.AddressOrBuilder getAddressOrBuilder() {
       return address_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : address_;
     }
@@ -2998,6 +3016,7 @@ public final class ClusterMessages {
      * <code>required .ConfigCheck configCheck = 2;</code>
      * @return Whether the configCheck field is set.
      */
+    @java.lang.Override
     public boolean hasConfigCheck() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -3005,12 +3024,14 @@ public final class ClusterMessages {
      * <code>required .ConfigCheck configCheck = 2;</code>
      * @return The configCheck.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck getConfigCheck() {
       return configCheck_ == null ? akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.getDefaultInstance() : configCheck_;
     }
     /**
      * <code>required .ConfigCheck configCheck = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheckOrBuilder getConfigCheckOrBuilder() {
       return configCheck_ == null ? akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.getDefaultInstance() : configCheck_;
     }
@@ -3732,7 +3753,7 @@ public final class ClusterMessages {
   /**
    * Protobuf type {@code ConfigCheck}
    */
-  public  static final class ConfigCheck extends
+  public static final class ConfigCheck extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:ConfigCheck)
       ConfigCheckOrBuilder {
@@ -3939,14 +3960,14 @@ public final class ClusterMessages {
      * <code>required .ConfigCheck.Type type = 1;</code>
      * @return Whether the type field is set.
      */
-    public boolean hasType() {
+    @java.lang.Override public boolean hasType() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ConfigCheck.Type type = 1;</code>
      * @return The type.
      */
-    public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type getType() {
+    @java.lang.Override public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type getType() {
       @SuppressWarnings("deprecation")
       akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type result = akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type.valueOf(type_);
       return result == null ? akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type.UncheckedConfig : result;
@@ -3958,6 +3979,7 @@ public final class ClusterMessages {
      * <code>optional string clusterConfig = 2;</code>
      * @return Whether the clusterConfig field is set.
      */
+    @java.lang.Override
     public boolean hasClusterConfig() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -3965,6 +3987,7 @@ public final class ClusterMessages {
      * <code>optional string clusterConfig = 2;</code>
      * @return The clusterConfig.
      */
+    @java.lang.Override
     public java.lang.String getClusterConfig() {
       java.lang.Object ref = clusterConfig_;
       if (ref instanceof java.lang.String) {
@@ -3983,6 +4006,7 @@ public final class ClusterMessages {
      * <code>optional string clusterConfig = 2;</code>
      * @return The bytes for clusterConfig.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getClusterConfigBytes() {
       java.lang.Object ref = clusterConfig_;
@@ -4348,13 +4372,14 @@ public final class ClusterMessages {
        * <code>required .ConfigCheck.Type type = 1;</code>
        * @return Whether the type field is set.
        */
-      public boolean hasType() {
+      @java.lang.Override public boolean hasType() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ConfigCheck.Type type = 1;</code>
        * @return The type.
        */
+      @java.lang.Override
       public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type getType() {
         @SuppressWarnings("deprecation")
         akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type result = akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type.valueOf(type_);
@@ -4572,7 +4597,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code Heartbeat}
    */
-  public  static final class Heartbeat extends
+  public static final class Heartbeat extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Heartbeat)
       HeartbeatOrBuilder {
@@ -4677,6 +4702,7 @@ public final class ClusterMessages {
      * <code>required .Address from = 1;</code>
      * @return Whether the from field is set.
      */
+    @java.lang.Override
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -4684,12 +4710,14 @@ public final class ClusterMessages {
      * <code>required .Address from = 1;</code>
      * @return The from.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.Address getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : from_;
     }
     /**
      * <code>required .Address from = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.AddressOrBuilder getFromOrBuilder() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : from_;
     }
@@ -4700,6 +4728,7 @@ public final class ClusterMessages {
      * <code>optional int64 sequenceNr = 2;</code>
      * @return Whether the sequenceNr field is set.
      */
+    @java.lang.Override
     public boolean hasSequenceNr() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -4707,6 +4736,7 @@ public final class ClusterMessages {
      * <code>optional int64 sequenceNr = 2;</code>
      * @return The sequenceNr.
      */
+    @java.lang.Override
     public long getSequenceNr() {
       return sequenceNr_;
     }
@@ -4717,6 +4747,7 @@ public final class ClusterMessages {
      * <code>optional sint64 creationTime = 3;</code>
      * @return Whether the creationTime field is set.
      */
+    @java.lang.Override
     public boolean hasCreationTime() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -4724,6 +4755,7 @@ public final class ClusterMessages {
      * <code>optional sint64 creationTime = 3;</code>
      * @return The creationTime.
      */
+    @java.lang.Override
     public long getCreationTime() {
       return creationTime_;
     }
@@ -5249,6 +5281,7 @@ public final class ClusterMessages {
        * <code>optional int64 sequenceNr = 2;</code>
        * @return Whether the sequenceNr field is set.
        */
+      @java.lang.Override
       public boolean hasSequenceNr() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -5256,6 +5289,7 @@ public final class ClusterMessages {
        * <code>optional int64 sequenceNr = 2;</code>
        * @return The sequenceNr.
        */
+      @java.lang.Override
       public long getSequenceNr() {
         return sequenceNr_;
       }
@@ -5286,6 +5320,7 @@ public final class ClusterMessages {
        * <code>optional sint64 creationTime = 3;</code>
        * @return Whether the creationTime field is set.
        */
+      @java.lang.Override
       public boolean hasCreationTime() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -5293,6 +5328,7 @@ public final class ClusterMessages {
        * <code>optional sint64 creationTime = 3;</code>
        * @return The creationTime.
        */
+      @java.lang.Override
       public long getCreationTime() {
         return creationTime_;
       }
@@ -5421,7 +5457,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code HeartBeatResponse}
    */
-  public  static final class HeartBeatResponse extends
+  public static final class HeartBeatResponse extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:HeartBeatResponse)
       HeartBeatResponseOrBuilder {
@@ -5526,6 +5562,7 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress from = 1;</code>
      * @return Whether the from field is set.
      */
+    @java.lang.Override
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -5533,12 +5570,14 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress from = 1;</code>
      * @return The from.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getFromOrBuilder() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
     }
@@ -5549,6 +5588,7 @@ public final class ClusterMessages {
      * <code>optional int64 sequenceNr = 2;</code>
      * @return Whether the sequenceNr field is set.
      */
+    @java.lang.Override
     public boolean hasSequenceNr() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -5556,6 +5596,7 @@ public final class ClusterMessages {
      * <code>optional int64 sequenceNr = 2;</code>
      * @return The sequenceNr.
      */
+    @java.lang.Override
     public long getSequenceNr() {
       return sequenceNr_;
     }
@@ -5566,6 +5607,7 @@ public final class ClusterMessages {
      * <code>optional int64 creationTime = 3;</code>
      * @return Whether the creationTime field is set.
      */
+    @java.lang.Override
     public boolean hasCreationTime() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -5573,6 +5615,7 @@ public final class ClusterMessages {
      * <code>optional int64 creationTime = 3;</code>
      * @return The creationTime.
      */
+    @java.lang.Override
     public long getCreationTime() {
       return creationTime_;
     }
@@ -6098,6 +6141,7 @@ public final class ClusterMessages {
        * <code>optional int64 sequenceNr = 2;</code>
        * @return Whether the sequenceNr field is set.
        */
+      @java.lang.Override
       public boolean hasSequenceNr() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -6105,6 +6149,7 @@ public final class ClusterMessages {
        * <code>optional int64 sequenceNr = 2;</code>
        * @return The sequenceNr.
        */
+      @java.lang.Override
       public long getSequenceNr() {
         return sequenceNr_;
       }
@@ -6135,6 +6180,7 @@ public final class ClusterMessages {
        * <code>optional int64 creationTime = 3;</code>
        * @return Whether the creationTime field is set.
        */
+      @java.lang.Override
       public boolean hasCreationTime() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -6142,6 +6188,7 @@ public final class ClusterMessages {
        * <code>optional int64 creationTime = 3;</code>
        * @return The creationTime.
        */
+      @java.lang.Override
       public long getCreationTime() {
         return creationTime_;
       }
@@ -6272,7 +6319,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code GossipEnvelope}
    */
-  public  static final class GossipEnvelope extends
+  public static final class GossipEnvelope extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:GossipEnvelope)
       GossipEnvelopeOrBuilder {
@@ -6386,6 +6433,7 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress from = 1;</code>
      * @return Whether the from field is set.
      */
+    @java.lang.Override
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -6393,12 +6441,14 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress from = 1;</code>
      * @return The from.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getFromOrBuilder() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
     }
@@ -6409,6 +6459,7 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress to = 2;</code>
      * @return Whether the to field is set.
      */
+    @java.lang.Override
     public boolean hasTo() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -6416,12 +6467,14 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress to = 2;</code>
      * @return The to.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getTo() {
       return to_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : to_;
     }
     /**
      * <code>required .UniqueAddress to = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getToOrBuilder() {
       return to_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : to_;
     }
@@ -6432,6 +6485,7 @@ public final class ClusterMessages {
      * <code>required bytes serializedGossip = 3;</code>
      * @return Whether the serializedGossip field is set.
      */
+    @java.lang.Override
     public boolean hasSerializedGossip() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -6439,6 +6493,7 @@ public final class ClusterMessages {
      * <code>required bytes serializedGossip = 3;</code>
      * @return The serializedGossip.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString getSerializedGossip() {
       return serializedGossip_;
     }
@@ -7110,6 +7165,7 @@ public final class ClusterMessages {
        * <code>required bytes serializedGossip = 3;</code>
        * @return Whether the serializedGossip field is set.
        */
+      @java.lang.Override
       public boolean hasSerializedGossip() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -7117,6 +7173,7 @@ public final class ClusterMessages {
        * <code>required bytes serializedGossip = 3;</code>
        * @return The serializedGossip.
        */
+      @java.lang.Override
       public akka.protobufv3.internal.ByteString getSerializedGossip() {
         return serializedGossip_;
       }
@@ -7275,7 +7332,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code GossipStatus}
    */
-  public  static final class GossipStatus extends
+  public static final class GossipStatus extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:GossipStatus)
       GossipStatusOrBuilder {
@@ -7402,6 +7459,7 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress from = 1;</code>
      * @return Whether the from field is set.
      */
+    @java.lang.Override
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -7409,12 +7467,14 @@ public final class ClusterMessages {
      * <code>required .UniqueAddress from = 1;</code>
      * @return The from.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getFromOrBuilder() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
     }
@@ -7460,6 +7520,7 @@ public final class ClusterMessages {
      * <code>required .VectorClock version = 3;</code>
      * @return Whether the version field is set.
      */
+    @java.lang.Override
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -7467,12 +7528,14 @@ public final class ClusterMessages {
      * <code>required .VectorClock version = 3;</code>
      * @return The version.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.VectorClock getVersion() {
       return version_ == null ? akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance() : version_;
     }
     /**
      * <code>required .VectorClock version = 3;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.VectorClockOrBuilder getVersionOrBuilder() {
       return version_ == null ? akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance() : version_;
     }
@@ -7483,6 +7546,7 @@ public final class ClusterMessages {
      * <code>optional bytes seenDigest = 4;</code>
      * @return Whether the seenDigest field is set.
      */
+    @java.lang.Override
     public boolean hasSeenDigest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -7490,6 +7554,7 @@ public final class ClusterMessages {
      * <code>optional bytes seenDigest = 4;</code>
      * @return The seenDigest.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString getSeenDigest() {
       return seenDigest_;
     }
@@ -8297,6 +8362,7 @@ public final class ClusterMessages {
        * <code>optional bytes seenDigest = 4;</code>
        * @return Whether the seenDigest field is set.
        */
+      @java.lang.Override
       public boolean hasSeenDigest() {
         return ((bitField0_ & 0x00000008) != 0);
       }
@@ -8304,6 +8370,7 @@ public final class ClusterMessages {
        * <code>optional bytes seenDigest = 4;</code>
        * @return The seenDigest.
        */
+      @java.lang.Override
       public akka.protobufv3.internal.ByteString getSeenDigest() {
         return seenDigest_;
       }
@@ -8573,7 +8640,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code Gossip}
    */
-  public  static final class Gossip extends
+  public static final class Gossip extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Gossip)
       GossipOrBuilder {
@@ -8758,12 +8825,14 @@ public final class ClusterMessages {
     /**
      * <code>repeated .UniqueAddress allAddresses = 1;</code>
      */
+    @java.lang.Override
     public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress> getAllAddressesList() {
       return allAddresses_;
     }
     /**
      * <code>repeated .UniqueAddress allAddresses = 1;</code>
      */
+    @java.lang.Override
     public java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder> 
         getAllAddressesOrBuilderList() {
       return allAddresses_;
@@ -8771,18 +8840,21 @@ public final class ClusterMessages {
     /**
      * <code>repeated .UniqueAddress allAddresses = 1;</code>
      */
+    @java.lang.Override
     public int getAllAddressesCount() {
       return allAddresses_.size();
     }
     /**
      * <code>repeated .UniqueAddress allAddresses = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getAllAddresses(int index) {
       return allAddresses_.get(index);
     }
     /**
      * <code>repeated .UniqueAddress allAddresses = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getAllAddressesOrBuilder(
         int index) {
       return allAddresses_.get(index);
@@ -8863,12 +8935,14 @@ public final class ClusterMessages {
     /**
      * <code>repeated .Member members = 4;</code>
      */
+    @java.lang.Override
     public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.Member> getMembersList() {
       return members_;
     }
     /**
      * <code>repeated .Member members = 4;</code>
      */
+    @java.lang.Override
     public java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.MemberOrBuilder> 
         getMembersOrBuilderList() {
       return members_;
@@ -8876,18 +8950,21 @@ public final class ClusterMessages {
     /**
      * <code>repeated .Member members = 4;</code>
      */
+    @java.lang.Override
     public int getMembersCount() {
       return members_.size();
     }
     /**
      * <code>repeated .Member members = 4;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.Member getMembers(int index) {
       return members_.get(index);
     }
     /**
      * <code>repeated .Member members = 4;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.MemberOrBuilder getMembersOrBuilder(
         int index) {
       return members_.get(index);
@@ -8899,6 +8976,7 @@ public final class ClusterMessages {
      * <code>required .GossipOverview overview = 5;</code>
      * @return Whether the overview field is set.
      */
+    @java.lang.Override
     public boolean hasOverview() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -8906,12 +8984,14 @@ public final class ClusterMessages {
      * <code>required .GossipOverview overview = 5;</code>
      * @return The overview.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.GossipOverview getOverview() {
       return overview_ == null ? akka.cluster.protobuf.msg.ClusterMessages.GossipOverview.getDefaultInstance() : overview_;
     }
     /**
      * <code>required .GossipOverview overview = 5;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.GossipOverviewOrBuilder getOverviewOrBuilder() {
       return overview_ == null ? akka.cluster.protobuf.msg.ClusterMessages.GossipOverview.getDefaultInstance() : overview_;
     }
@@ -8922,6 +9002,7 @@ public final class ClusterMessages {
      * <code>required .VectorClock version = 6;</code>
      * @return Whether the version field is set.
      */
+    @java.lang.Override
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -8929,12 +9010,14 @@ public final class ClusterMessages {
      * <code>required .VectorClock version = 6;</code>
      * @return The version.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.VectorClock getVersion() {
       return version_ == null ? akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance() : version_;
     }
     /**
      * <code>required .VectorClock version = 6;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.VectorClockOrBuilder getVersionOrBuilder() {
       return version_ == null ? akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance() : version_;
     }
@@ -8944,12 +9027,14 @@ public final class ClusterMessages {
     /**
      * <code>repeated .Tombstone tombstones = 7;</code>
      */
+    @java.lang.Override
     public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.Tombstone> getTombstonesList() {
       return tombstones_;
     }
     /**
      * <code>repeated .Tombstone tombstones = 7;</code>
      */
+    @java.lang.Override
     public java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder> 
         getTombstonesOrBuilderList() {
       return tombstones_;
@@ -8957,18 +9042,21 @@ public final class ClusterMessages {
     /**
      * <code>repeated .Tombstone tombstones = 7;</code>
      */
+    @java.lang.Override
     public int getTombstonesCount() {
       return tombstones_.size();
     }
     /**
      * <code>repeated .Tombstone tombstones = 7;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.Tombstone getTombstones(int index) {
       return tombstones_.get(index);
     }
     /**
      * <code>repeated .Tombstone tombstones = 7;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder getTombstonesOrBuilder(
         int index) {
       return tombstones_.get(index);
@@ -11103,7 +11191,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code GossipOverview}
    */
-  public  static final class GossipOverview extends
+  public static final class GossipOverview extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:GossipOverview)
       GossipOverviewOrBuilder {
@@ -11226,6 +11314,7 @@ public final class ClusterMessages {
      * <code>repeated int32 seen = 1;</code>
      * @return A list containing the seen.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Integer>
         getSeenList() {
       return seen_;
@@ -11259,12 +11348,14 @@ public final class ClusterMessages {
     /**
      * <code>repeated .ObserverReachability observerReachability = 2;</code>
      */
+    @java.lang.Override
     public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.ObserverReachability> getObserverReachabilityList() {
       return observerReachability_;
     }
     /**
      * <code>repeated .ObserverReachability observerReachability = 2;</code>
      */
+    @java.lang.Override
     public java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.ObserverReachabilityOrBuilder> 
         getObserverReachabilityOrBuilderList() {
       return observerReachability_;
@@ -11272,18 +11363,21 @@ public final class ClusterMessages {
     /**
      * <code>repeated .ObserverReachability observerReachability = 2;</code>
      */
+    @java.lang.Override
     public int getObserverReachabilityCount() {
       return observerReachability_.size();
     }
     /**
      * <code>repeated .ObserverReachability observerReachability = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.ObserverReachability getObserverReachability(int index) {
       return observerReachability_.get(index);
     }
     /**
      * <code>repeated .ObserverReachability observerReachability = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.ObserverReachabilityOrBuilder getObserverReachabilityOrBuilder(
         int index) {
       return observerReachability_.get(index);
@@ -12139,7 +12233,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code ObserverReachability}
    */
-  public  static final class ObserverReachability extends
+  public static final class ObserverReachability extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:ObserverReachability)
       ObserverReachabilityOrBuilder {
@@ -12244,6 +12338,7 @@ public final class ClusterMessages {
      * <code>required int32 addressIndex = 1;</code>
      * @return Whether the addressIndex field is set.
      */
+    @java.lang.Override
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -12251,6 +12346,7 @@ public final class ClusterMessages {
      * <code>required int32 addressIndex = 1;</code>
      * @return The addressIndex.
      */
+    @java.lang.Override
     public int getAddressIndex() {
       return addressIndex_;
     }
@@ -12261,6 +12357,7 @@ public final class ClusterMessages {
      * <code>required int64 version = 4;</code>
      * @return Whether the version field is set.
      */
+    @java.lang.Override
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -12268,6 +12365,7 @@ public final class ClusterMessages {
      * <code>required int64 version = 4;</code>
      * @return The version.
      */
+    @java.lang.Override
     public long getVersion() {
       return version_;
     }
@@ -12277,12 +12375,14 @@ public final class ClusterMessages {
     /**
      * <code>repeated .SubjectReachability subjectReachability = 2;</code>
      */
+    @java.lang.Override
     public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.SubjectReachability> getSubjectReachabilityList() {
       return subjectReachability_;
     }
     /**
      * <code>repeated .SubjectReachability subjectReachability = 2;</code>
      */
+    @java.lang.Override
     public java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.SubjectReachabilityOrBuilder> 
         getSubjectReachabilityOrBuilderList() {
       return subjectReachability_;
@@ -12290,18 +12390,21 @@ public final class ClusterMessages {
     /**
      * <code>repeated .SubjectReachability subjectReachability = 2;</code>
      */
+    @java.lang.Override
     public int getSubjectReachabilityCount() {
       return subjectReachability_.size();
     }
     /**
      * <code>repeated .SubjectReachability subjectReachability = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.SubjectReachability getSubjectReachability(int index) {
       return subjectReachability_.get(index);
     }
     /**
      * <code>repeated .SubjectReachability subjectReachability = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.SubjectReachabilityOrBuilder getSubjectReachabilityOrBuilder(
         int index) {
       return subjectReachability_.get(index);
@@ -12737,6 +12840,7 @@ public final class ClusterMessages {
        * <code>required int32 addressIndex = 1;</code>
        * @return Whether the addressIndex field is set.
        */
+      @java.lang.Override
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -12744,6 +12848,7 @@ public final class ClusterMessages {
        * <code>required int32 addressIndex = 1;</code>
        * @return The addressIndex.
        */
+      @java.lang.Override
       public int getAddressIndex() {
         return addressIndex_;
       }
@@ -12774,6 +12879,7 @@ public final class ClusterMessages {
        * <code>required int64 version = 4;</code>
        * @return Whether the version field is set.
        */
+      @java.lang.Override
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -12781,6 +12887,7 @@ public final class ClusterMessages {
        * <code>required int64 version = 4;</code>
        * @return The version.
        */
+      @java.lang.Override
       public long getVersion() {
         return version_;
       }
@@ -13138,7 +13245,7 @@ public final class ClusterMessages {
   /**
    * Protobuf type {@code SubjectReachability}
    */
-  public  static final class SubjectReachability extends
+  public static final class SubjectReachability extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:SubjectReachability)
       SubjectReachabilityOrBuilder {
@@ -13243,6 +13350,7 @@ public final class ClusterMessages {
      * <code>required int32 addressIndex = 1;</code>
      * @return Whether the addressIndex field is set.
      */
+    @java.lang.Override
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -13250,6 +13358,7 @@ public final class ClusterMessages {
      * <code>required int32 addressIndex = 1;</code>
      * @return The addressIndex.
      */
+    @java.lang.Override
     public int getAddressIndex() {
       return addressIndex_;
     }
@@ -13260,14 +13369,14 @@ public final class ClusterMessages {
      * <code>required .ReachabilityStatus status = 3;</code>
      * @return Whether the status field is set.
      */
-    public boolean hasStatus() {
+    @java.lang.Override public boolean hasStatus() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .ReachabilityStatus status = 3;</code>
      * @return The status.
      */
-    public akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus getStatus() {
+    @java.lang.Override public akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus getStatus() {
       @SuppressWarnings("deprecation")
       akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus result = akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus.valueOf(status_);
       return result == null ? akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus.Reachable : result;
@@ -13279,6 +13388,7 @@ public final class ClusterMessages {
      * <code>required int64 version = 4;</code>
      * @return Whether the version field is set.
      */
+    @java.lang.Override
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -13286,6 +13396,7 @@ public final class ClusterMessages {
      * <code>required int64 version = 4;</code>
      * @return The version.
      */
+    @java.lang.Override
     public long getVersion() {
       return version_;
     }
@@ -13680,6 +13791,7 @@ public final class ClusterMessages {
        * <code>required int32 addressIndex = 1;</code>
        * @return Whether the addressIndex field is set.
        */
+      @java.lang.Override
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -13687,6 +13799,7 @@ public final class ClusterMessages {
        * <code>required int32 addressIndex = 1;</code>
        * @return The addressIndex.
        */
+      @java.lang.Override
       public int getAddressIndex() {
         return addressIndex_;
       }
@@ -13717,13 +13830,14 @@ public final class ClusterMessages {
        * <code>required .ReachabilityStatus status = 3;</code>
        * @return Whether the status field is set.
        */
-      public boolean hasStatus() {
+      @java.lang.Override public boolean hasStatus() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .ReachabilityStatus status = 3;</code>
        * @return The status.
        */
+      @java.lang.Override
       public akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus getStatus() {
         @SuppressWarnings("deprecation")
         akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus result = akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus.valueOf(status_);
@@ -13759,6 +13873,7 @@ public final class ClusterMessages {
        * <code>required int64 version = 4;</code>
        * @return Whether the version field is set.
        */
+      @java.lang.Override
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -13766,6 +13881,7 @@ public final class ClusterMessages {
        * <code>required int64 version = 4;</code>
        * @return The version.
        */
+      @java.lang.Override
       public long getVersion() {
         return version_;
       }
@@ -13872,7 +13988,7 @@ public final class ClusterMessages {
   /**
    * Protobuf type {@code Tombstone}
    */
-  public  static final class Tombstone extends
+  public static final class Tombstone extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Tombstone)
       TombstoneOrBuilder {
@@ -13964,6 +14080,7 @@ public final class ClusterMessages {
      * <code>required int32 addressIndex = 1;</code>
      * @return Whether the addressIndex field is set.
      */
+    @java.lang.Override
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -13971,6 +14088,7 @@ public final class ClusterMessages {
      * <code>required int32 addressIndex = 1;</code>
      * @return The addressIndex.
      */
+    @java.lang.Override
     public int getAddressIndex() {
       return addressIndex_;
     }
@@ -13981,6 +14099,7 @@ public final class ClusterMessages {
      * <code>required int64 timestamp = 2;</code>
      * @return Whether the timestamp field is set.
      */
+    @java.lang.Override
     public boolean hasTimestamp() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -13988,6 +14107,7 @@ public final class ClusterMessages {
      * <code>required int64 timestamp = 2;</code>
      * @return The timestamp.
      */
+    @java.lang.Override
     public long getTimestamp() {
       return timestamp_;
     }
@@ -14351,6 +14471,7 @@ public final class ClusterMessages {
        * <code>required int32 addressIndex = 1;</code>
        * @return Whether the addressIndex field is set.
        */
+      @java.lang.Override
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -14358,6 +14479,7 @@ public final class ClusterMessages {
        * <code>required int32 addressIndex = 1;</code>
        * @return The addressIndex.
        */
+      @java.lang.Override
       public int getAddressIndex() {
         return addressIndex_;
       }
@@ -14388,6 +14510,7 @@ public final class ClusterMessages {
        * <code>required int64 timestamp = 2;</code>
        * @return Whether the timestamp field is set.
        */
+      @java.lang.Override
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -14395,6 +14518,7 @@ public final class ClusterMessages {
        * <code>required int64 timestamp = 2;</code>
        * @return The timestamp.
        */
+      @java.lang.Override
       public long getTimestamp() {
         return timestamp_;
       }
@@ -14545,7 +14669,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code Member}
    */
-  public  static final class Member extends
+  public static final class Member extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Member)
       MemberOrBuilder {
@@ -14680,6 +14804,7 @@ public final class ClusterMessages {
      * <code>required int32 addressIndex = 1;</code>
      * @return Whether the addressIndex field is set.
      */
+    @java.lang.Override
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -14687,6 +14812,7 @@ public final class ClusterMessages {
      * <code>required int32 addressIndex = 1;</code>
      * @return The addressIndex.
      */
+    @java.lang.Override
     public int getAddressIndex() {
       return addressIndex_;
     }
@@ -14697,6 +14823,7 @@ public final class ClusterMessages {
      * <code>required int32 upNumber = 2;</code>
      * @return Whether the upNumber field is set.
      */
+    @java.lang.Override
     public boolean hasUpNumber() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -14704,6 +14831,7 @@ public final class ClusterMessages {
      * <code>required int32 upNumber = 2;</code>
      * @return The upNumber.
      */
+    @java.lang.Override
     public int getUpNumber() {
       return upNumber_;
     }
@@ -14714,14 +14842,14 @@ public final class ClusterMessages {
      * <code>required .MemberStatus status = 3;</code>
      * @return Whether the status field is set.
      */
-    public boolean hasStatus() {
+    @java.lang.Override public boolean hasStatus() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required .MemberStatus status = 3;</code>
      * @return The status.
      */
-    public akka.cluster.protobuf.msg.ClusterMessages.MemberStatus getStatus() {
+    @java.lang.Override public akka.cluster.protobuf.msg.ClusterMessages.MemberStatus getStatus() {
       @SuppressWarnings("deprecation")
       akka.cluster.protobuf.msg.ClusterMessages.MemberStatus result = akka.cluster.protobuf.msg.ClusterMessages.MemberStatus.valueOf(status_);
       return result == null ? akka.cluster.protobuf.msg.ClusterMessages.MemberStatus.Joining : result;
@@ -14733,6 +14861,7 @@ public final class ClusterMessages {
      * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
      * @return A list containing the rolesIndexes.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Integer>
         getRolesIndexesList() {
       return rolesIndexes_;
@@ -14760,6 +14889,7 @@ public final class ClusterMessages {
      * <code>optional int32 appVersionIndex = 5;</code>
      * @return Whether the appVersionIndex field is set.
      */
+    @java.lang.Override
     public boolean hasAppVersionIndex() {
       return ((bitField0_ & 0x00000008) != 0);
     }
@@ -14767,6 +14897,7 @@ public final class ClusterMessages {
      * <code>optional int32 appVersionIndex = 5;</code>
      * @return The appVersionIndex.
      */
+    @java.lang.Override
     public int getAppVersionIndex() {
       return appVersionIndex_;
     }
@@ -15235,6 +15366,7 @@ public final class ClusterMessages {
        * <code>required int32 addressIndex = 1;</code>
        * @return Whether the addressIndex field is set.
        */
+      @java.lang.Override
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -15242,6 +15374,7 @@ public final class ClusterMessages {
        * <code>required int32 addressIndex = 1;</code>
        * @return The addressIndex.
        */
+      @java.lang.Override
       public int getAddressIndex() {
         return addressIndex_;
       }
@@ -15272,6 +15405,7 @@ public final class ClusterMessages {
        * <code>required int32 upNumber = 2;</code>
        * @return Whether the upNumber field is set.
        */
+      @java.lang.Override
       public boolean hasUpNumber() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -15279,6 +15413,7 @@ public final class ClusterMessages {
        * <code>required int32 upNumber = 2;</code>
        * @return The upNumber.
        */
+      @java.lang.Override
       public int getUpNumber() {
         return upNumber_;
       }
@@ -15309,13 +15444,14 @@ public final class ClusterMessages {
        * <code>required .MemberStatus status = 3;</code>
        * @return Whether the status field is set.
        */
-      public boolean hasStatus() {
+      @java.lang.Override public boolean hasStatus() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .MemberStatus status = 3;</code>
        * @return The status.
        */
+      @java.lang.Override
       public akka.cluster.protobuf.msg.ClusterMessages.MemberStatus getStatus() {
         @SuppressWarnings("deprecation")
         akka.cluster.protobuf.msg.ClusterMessages.MemberStatus result = akka.cluster.protobuf.msg.ClusterMessages.MemberStatus.valueOf(status_);
@@ -15430,6 +15566,7 @@ public final class ClusterMessages {
        * <code>optional int32 appVersionIndex = 5;</code>
        * @return Whether the appVersionIndex field is set.
        */
+      @java.lang.Override
       public boolean hasAppVersionIndex() {
         return ((bitField0_ & 0x00000010) != 0);
       }
@@ -15437,6 +15574,7 @@ public final class ClusterMessages {
        * <code>optional int32 appVersionIndex = 5;</code>
        * @return The appVersionIndex.
        */
+      @java.lang.Override
       public int getAppVersionIndex() {
         return appVersionIndex_;
       }
@@ -15783,6 +15921,7 @@ public final class ClusterMessages {
        * <code>required int32 hashIndex = 1;</code>
        * @return Whether the hashIndex field is set.
        */
+      @java.lang.Override
       public boolean hasHashIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -15790,6 +15929,7 @@ public final class ClusterMessages {
        * <code>required int32 hashIndex = 1;</code>
        * @return The hashIndex.
        */
+      @java.lang.Override
       public int getHashIndex() {
         return hashIndex_;
       }
@@ -15800,6 +15940,7 @@ public final class ClusterMessages {
        * <code>required int64 timestamp = 2;</code>
        * @return Whether the timestamp field is set.
        */
+      @java.lang.Override
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -15807,6 +15948,7 @@ public final class ClusterMessages {
        * <code>required int64 timestamp = 2;</code>
        * @return The timestamp.
        */
+      @java.lang.Override
       public long getTimestamp() {
         return timestamp_;
       }
@@ -15977,23 +16119,23 @@ public final class ClusterMessages {
       }
 
       @java.lang.Override
-      public Version.Builder newBuilderForType() { return newBuilder(); }
-      public static Version.Builder newBuilder() {
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
       }
       public static Builder newBuilder(akka.cluster.protobuf.msg.ClusterMessages.VectorClock.Version prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
       @java.lang.Override
-      public Version.Builder toBuilder() {
+      public Builder toBuilder() {
         return this == DEFAULT_INSTANCE
-            ? new Version.Builder() : new Version.Builder().mergeFrom(this);
+            ? new Builder() : new Builder().mergeFrom(this);
       }
 
       @java.lang.Override
-      protected Version.Builder newBuilderForType(
+      protected Builder newBuilderForType(
           akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
-        Version.Builder builder = new Version.Builder(parent);
+        Builder builder = new Builder(parent);
         return builder;
       }
       /**
@@ -16170,6 +16312,7 @@ public final class ClusterMessages {
          * <code>required int32 hashIndex = 1;</code>
          * @return Whether the hashIndex field is set.
          */
+        @java.lang.Override
         public boolean hasHashIndex() {
           return ((bitField0_ & 0x00000001) != 0);
         }
@@ -16177,6 +16320,7 @@ public final class ClusterMessages {
          * <code>required int32 hashIndex = 1;</code>
          * @return The hashIndex.
          */
+        @java.lang.Override
         public int getHashIndex() {
           return hashIndex_;
         }
@@ -16207,6 +16351,7 @@ public final class ClusterMessages {
          * <code>required int64 timestamp = 2;</code>
          * @return Whether the timestamp field is set.
          */
+        @java.lang.Override
         public boolean hasTimestamp() {
           return ((bitField0_ & 0x00000002) != 0);
         }
@@ -16214,6 +16359,7 @@ public final class ClusterMessages {
          * <code>required int64 timestamp = 2;</code>
          * @return The timestamp.
          */
+        @java.lang.Override
         public long getTimestamp() {
           return timestamp_;
         }
@@ -16302,6 +16448,7 @@ public final class ClusterMessages {
      * <code>optional int64 timestamp = 1;</code>
      * @return Whether the timestamp field is set.
      */
+    @java.lang.Override
     public boolean hasTimestamp() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -16313,6 +16460,7 @@ public final class ClusterMessages {
      * <code>optional int64 timestamp = 1;</code>
      * @return The timestamp.
      */
+    @java.lang.Override
     public long getTimestamp() {
       return timestamp_;
     }
@@ -16322,12 +16470,14 @@ public final class ClusterMessages {
     /**
      * <code>repeated .VectorClock.Version versions = 2;</code>
      */
+    @java.lang.Override
     public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.VectorClock.Version> getVersionsList() {
       return versions_;
     }
     /**
      * <code>repeated .VectorClock.Version versions = 2;</code>
      */
+    @java.lang.Override
     public java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.VectorClock.VersionOrBuilder> 
         getVersionsOrBuilderList() {
       return versions_;
@@ -16335,18 +16485,21 @@ public final class ClusterMessages {
     /**
      * <code>repeated .VectorClock.Version versions = 2;</code>
      */
+    @java.lang.Override
     public int getVersionsCount() {
       return versions_.size();
     }
     /**
      * <code>repeated .VectorClock.Version versions = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.VectorClock.Version getVersions(int index) {
       return versions_.get(index);
     }
     /**
      * <code>repeated .VectorClock.Version versions = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.VectorClock.VersionOrBuilder getVersionsOrBuilder(
         int index) {
       return versions_.get(index);
@@ -16747,6 +16900,7 @@ public final class ClusterMessages {
        * <code>optional int64 timestamp = 1;</code>
        * @return Whether the timestamp field is set.
        */
+      @java.lang.Override
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -16758,6 +16912,7 @@ public final class ClusterMessages {
        * <code>optional int64 timestamp = 1;</code>
        * @return The timestamp.
        */
+      @java.lang.Override
       public long getTimestamp() {
         return timestamp_;
       }
@@ -17095,7 +17250,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code Empty}
    */
-  public  static final class Empty extends
+  public static final class Empty extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Empty)
       EmptyOrBuilder {
@@ -17585,7 +17740,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code Address}
    */
-  public  static final class Address extends
+  public static final class Address extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Address)
       AddressOrBuilder {
@@ -17693,6 +17848,7 @@ public final class ClusterMessages {
      * <code>required string system = 1;</code>
      * @return Whether the system field is set.
      */
+    @java.lang.Override
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -17700,6 +17856,7 @@ public final class ClusterMessages {
      * <code>required string system = 1;</code>
      * @return The system.
      */
+    @java.lang.Override
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
       if (ref instanceof java.lang.String) {
@@ -17718,6 +17875,7 @@ public final class ClusterMessages {
      * <code>required string system = 1;</code>
      * @return The bytes for system.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getSystemBytes() {
       java.lang.Object ref = system_;
@@ -17738,6 +17896,7 @@ public final class ClusterMessages {
      * <code>required string hostname = 2;</code>
      * @return Whether the hostname field is set.
      */
+    @java.lang.Override
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -17745,6 +17904,7 @@ public final class ClusterMessages {
      * <code>required string hostname = 2;</code>
      * @return The hostname.
      */
+    @java.lang.Override
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
       if (ref instanceof java.lang.String) {
@@ -17763,6 +17923,7 @@ public final class ClusterMessages {
      * <code>required string hostname = 2;</code>
      * @return The bytes for hostname.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
       java.lang.Object ref = hostname_;
@@ -17783,6 +17944,7 @@ public final class ClusterMessages {
      * <code>required uint32 port = 3;</code>
      * @return Whether the port field is set.
      */
+    @java.lang.Override
     public boolean hasPort() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -17790,6 +17952,7 @@ public final class ClusterMessages {
      * <code>required uint32 port = 3;</code>
      * @return The port.
      */
+    @java.lang.Override
     public int getPort() {
       return port_;
     }
@@ -17800,6 +17963,7 @@ public final class ClusterMessages {
      * <code>optional string protocol = 4;</code>
      * @return Whether the protocol field is set.
      */
+    @java.lang.Override
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000008) != 0);
     }
@@ -17807,6 +17971,7 @@ public final class ClusterMessages {
      * <code>optional string protocol = 4;</code>
      * @return The protocol.
      */
+    @java.lang.Override
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
       if (ref instanceof java.lang.String) {
@@ -17825,6 +17990,7 @@ public final class ClusterMessages {
      * <code>optional string protocol = 4;</code>
      * @return The bytes for protocol.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
       java.lang.Object ref = protocol_;
@@ -18430,6 +18596,7 @@ public final class ClusterMessages {
        * <code>required uint32 port = 3;</code>
        * @return Whether the port field is set.
        */
+      @java.lang.Override
       public boolean hasPort() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -18437,6 +18604,7 @@ public final class ClusterMessages {
        * <code>required uint32 port = 3;</code>
        * @return The port.
        */
+      @java.lang.Override
       public int getPort() {
         return port_;
       }
@@ -18655,7 +18823,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code UniqueAddress}
    */
-  public  static final class UniqueAddress extends
+  public static final class UniqueAddress extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:UniqueAddress)
       UniqueAddressOrBuilder {
@@ -18760,6 +18928,7 @@ public final class ClusterMessages {
      * <code>required .Address address = 1;</code>
      * @return Whether the address field is set.
      */
+    @java.lang.Override
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -18767,12 +18936,14 @@ public final class ClusterMessages {
      * <code>required .Address address = 1;</code>
      * @return The address.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.Address getAddress() {
       return address_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : address_;
     }
     /**
      * <code>required .Address address = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.AddressOrBuilder getAddressOrBuilder() {
       return address_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : address_;
     }
@@ -18783,6 +18954,7 @@ public final class ClusterMessages {
      * <code>required uint32 uid = 2;</code>
      * @return Whether the uid field is set.
      */
+    @java.lang.Override
     public boolean hasUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -18790,6 +18962,7 @@ public final class ClusterMessages {
      * <code>required uint32 uid = 2;</code>
      * @return The uid.
      */
+    @java.lang.Override
     public int getUid() {
       return uid_;
     }
@@ -18804,6 +18977,7 @@ public final class ClusterMessages {
      * <code>optional uint32 uid2 = 3;</code>
      * @return Whether the uid2 field is set.
      */
+    @java.lang.Override
     public boolean hasUid2() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -18815,6 +18989,7 @@ public final class ClusterMessages {
      * <code>optional uint32 uid2 = 3;</code>
      * @return The uid2.
      */
+    @java.lang.Override
     public int getUid2() {
       return uid2_;
     }
@@ -19343,6 +19518,7 @@ public final class ClusterMessages {
        * <code>required uint32 uid = 2;</code>
        * @return Whether the uid field is set.
        */
+      @java.lang.Override
       public boolean hasUid() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -19350,6 +19526,7 @@ public final class ClusterMessages {
        * <code>required uint32 uid = 2;</code>
        * @return The uid.
        */
+      @java.lang.Override
       public int getUid() {
         return uid_;
       }
@@ -19384,6 +19561,7 @@ public final class ClusterMessages {
        * <code>optional uint32 uid2 = 3;</code>
        * @return Whether the uid2 field is set.
        */
+      @java.lang.Override
       public boolean hasUid2() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -19395,6 +19573,7 @@ public final class ClusterMessages {
        * <code>optional uint32 uid2 = 3;</code>
        * @return The uid2.
        */
+      @java.lang.Override
       public int getUid2() {
         return uid2_;
       }
@@ -19517,7 +19696,7 @@ public final class ClusterMessages {
   /**
    * Protobuf type {@code ClusterRouterPool}
    */
-  public  static final class ClusterRouterPool extends
+  public static final class ClusterRouterPool extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:ClusterRouterPool)
       ClusterRouterPoolOrBuilder {
@@ -19625,6 +19804,7 @@ public final class ClusterMessages {
      * <code>required .Pool pool = 1;</code>
      * @return Whether the pool field is set.
      */
+    @java.lang.Override
     public boolean hasPool() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -19632,12 +19812,14 @@ public final class ClusterMessages {
      * <code>required .Pool pool = 1;</code>
      * @return The pool.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.Pool getPool() {
       return pool_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Pool.getDefaultInstance() : pool_;
     }
     /**
      * <code>required .Pool pool = 1;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.PoolOrBuilder getPoolOrBuilder() {
       return pool_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Pool.getDefaultInstance() : pool_;
     }
@@ -19648,6 +19830,7 @@ public final class ClusterMessages {
      * <code>required .ClusterRouterPoolSettings settings = 2;</code>
      * @return Whether the settings field is set.
      */
+    @java.lang.Override
     public boolean hasSettings() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -19655,12 +19838,14 @@ public final class ClusterMessages {
      * <code>required .ClusterRouterPoolSettings settings = 2;</code>
      * @return The settings.
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings getSettings() {
       return settings_ == null ? akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings.getDefaultInstance() : settings_;
     }
     /**
      * <code>required .ClusterRouterPoolSettings settings = 2;</code>
      */
+    @java.lang.Override
     public akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettingsOrBuilder getSettingsOrBuilder() {
       return settings_ == null ? akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings.getDefaultInstance() : settings_;
     }
@@ -20388,7 +20573,7 @@ public final class ClusterMessages {
   /**
    * Protobuf type {@code Pool}
    */
-  public  static final class Pool extends
+  public static final class Pool extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:Pool)
       PoolOrBuilder {
@@ -20488,6 +20673,7 @@ public final class ClusterMessages {
      * <code>required uint32 serializerId = 1;</code>
      * @return Whether the serializerId field is set.
      */
+    @java.lang.Override
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -20495,6 +20681,7 @@ public final class ClusterMessages {
      * <code>required uint32 serializerId = 1;</code>
      * @return The serializerId.
      */
+    @java.lang.Override
     public int getSerializerId() {
       return serializerId_;
     }
@@ -20505,6 +20692,7 @@ public final class ClusterMessages {
      * <code>required string manifest = 2;</code>
      * @return Whether the manifest field is set.
      */
+    @java.lang.Override
     public boolean hasManifest() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -20512,6 +20700,7 @@ public final class ClusterMessages {
      * <code>required string manifest = 2;</code>
      * @return The manifest.
      */
+    @java.lang.Override
     public java.lang.String getManifest() {
       java.lang.Object ref = manifest_;
       if (ref instanceof java.lang.String) {
@@ -20530,6 +20719,7 @@ public final class ClusterMessages {
      * <code>required string manifest = 2;</code>
      * @return The bytes for manifest.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getManifestBytes() {
       java.lang.Object ref = manifest_;
@@ -20550,6 +20740,7 @@ public final class ClusterMessages {
      * <code>required bytes data = 3;</code>
      * @return Whether the data field is set.
      */
+    @java.lang.Override
     public boolean hasData() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -20557,6 +20748,7 @@ public final class ClusterMessages {
      * <code>required bytes data = 3;</code>
      * @return The data.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString getData() {
       return data_;
     }
@@ -20952,6 +21144,7 @@ public final class ClusterMessages {
        * <code>required uint32 serializerId = 1;</code>
        * @return Whether the serializerId field is set.
        */
+      @java.lang.Override
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -20959,6 +21152,7 @@ public final class ClusterMessages {
        * <code>required uint32 serializerId = 1;</code>
        * @return The serializerId.
        */
+      @java.lang.Override
       public int getSerializerId() {
         return serializerId_;
       }
@@ -21073,6 +21267,7 @@ public final class ClusterMessages {
        * <code>required bytes data = 3;</code>
        * @return Whether the data field is set.
        */
+      @java.lang.Override
       public boolean hasData() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -21080,6 +21275,7 @@ public final class ClusterMessages {
        * <code>required bytes data = 3;</code>
        * @return The data.
        */
+      @java.lang.Override
       public akka.protobufv3.internal.ByteString getData() {
         return data_;
       }
@@ -21242,7 +21438,7 @@ public final class ClusterMessages {
   /**
    * Protobuf type {@code ClusterRouterPoolSettings}
    */
-  public  static final class ClusterRouterPoolSettings extends
+  public static final class ClusterRouterPoolSettings extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:ClusterRouterPoolSettings)
       ClusterRouterPoolSettingsOrBuilder {
@@ -21359,6 +21555,7 @@ public final class ClusterMessages {
      * <code>required uint32 totalInstances = 1;</code>
      * @return Whether the totalInstances field is set.
      */
+    @java.lang.Override
     public boolean hasTotalInstances() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -21366,6 +21563,7 @@ public final class ClusterMessages {
      * <code>required uint32 totalInstances = 1;</code>
      * @return The totalInstances.
      */
+    @java.lang.Override
     public int getTotalInstances() {
       return totalInstances_;
     }
@@ -21376,6 +21574,7 @@ public final class ClusterMessages {
      * <code>required uint32 maxInstancesPerNode = 2;</code>
      * @return Whether the maxInstancesPerNode field is set.
      */
+    @java.lang.Override
     public boolean hasMaxInstancesPerNode() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -21383,6 +21582,7 @@ public final class ClusterMessages {
      * <code>required uint32 maxInstancesPerNode = 2;</code>
      * @return The maxInstancesPerNode.
      */
+    @java.lang.Override
     public int getMaxInstancesPerNode() {
       return maxInstancesPerNode_;
     }
@@ -21393,6 +21593,7 @@ public final class ClusterMessages {
      * <code>required bool allowLocalRoutees = 3;</code>
      * @return Whether the allowLocalRoutees field is set.
      */
+    @java.lang.Override
     public boolean hasAllowLocalRoutees() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -21400,6 +21601,7 @@ public final class ClusterMessages {
      * <code>required bool allowLocalRoutees = 3;</code>
      * @return The allowLocalRoutees.
      */
+    @java.lang.Override
     public boolean getAllowLocalRoutees() {
       return allowLocalRoutees_;
     }
@@ -21410,6 +21612,7 @@ public final class ClusterMessages {
      * <code>optional string useRole = 4;</code>
      * @return Whether the useRole field is set.
      */
+    @java.lang.Override
     public boolean hasUseRole() {
       return ((bitField0_ & 0x00000008) != 0);
     }
@@ -21417,6 +21620,7 @@ public final class ClusterMessages {
      * <code>optional string useRole = 4;</code>
      * @return The useRole.
      */
+    @java.lang.Override
     public java.lang.String getUseRole() {
       java.lang.Object ref = useRole_;
       if (ref instanceof java.lang.String) {
@@ -21435,6 +21639,7 @@ public final class ClusterMessages {
      * <code>optional string useRole = 4;</code>
      * @return The bytes for useRole.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getUseRoleBytes() {
       java.lang.Object ref = useRole_;
@@ -21935,6 +22140,7 @@ public final class ClusterMessages {
        * <code>required uint32 totalInstances = 1;</code>
        * @return Whether the totalInstances field is set.
        */
+      @java.lang.Override
       public boolean hasTotalInstances() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -21942,6 +22148,7 @@ public final class ClusterMessages {
        * <code>required uint32 totalInstances = 1;</code>
        * @return The totalInstances.
        */
+      @java.lang.Override
       public int getTotalInstances() {
         return totalInstances_;
       }
@@ -21972,6 +22179,7 @@ public final class ClusterMessages {
        * <code>required uint32 maxInstancesPerNode = 2;</code>
        * @return Whether the maxInstancesPerNode field is set.
        */
+      @java.lang.Override
       public boolean hasMaxInstancesPerNode() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -21979,6 +22187,7 @@ public final class ClusterMessages {
        * <code>required uint32 maxInstancesPerNode = 2;</code>
        * @return The maxInstancesPerNode.
        */
+      @java.lang.Override
       public int getMaxInstancesPerNode() {
         return maxInstancesPerNode_;
       }
@@ -22009,6 +22218,7 @@ public final class ClusterMessages {
        * <code>required bool allowLocalRoutees = 3;</code>
        * @return Whether the allowLocalRoutees field is set.
        */
+      @java.lang.Override
       public boolean hasAllowLocalRoutees() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -22016,6 +22226,7 @@ public final class ClusterMessages {
        * <code>required bool allowLocalRoutees = 3;</code>
        * @return The allowLocalRoutees.
        */
+      @java.lang.Override
       public boolean getAllowLocalRoutees() {
         return allowLocalRoutees_;
       }
