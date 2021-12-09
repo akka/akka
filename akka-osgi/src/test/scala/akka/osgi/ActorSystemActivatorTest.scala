@@ -45,7 +45,7 @@ class PingPongActorSystemActivatorTest extends AnyWordSpec with Matchers with Po
         val system = serviceForType[ActorSystem]
         val actor = system.actorSelection("/user/pong")
 
-        implicit val timeout = Timeout(5 seconds)
+        implicit val timeout: Timeout = 5.seconds
         Await.result(actor ? Ping, timeout.duration) should be(Pong)
       }
     }

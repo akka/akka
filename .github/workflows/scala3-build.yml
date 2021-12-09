@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         command:
-          - akka-testkit/test akka-actor-tests/test
+          - akka-testkit/test akka-actor-tests/test akka-osgi/test
           - akka-actor-testkit-typed/test akka-actor-typed-tests/test
           - akka-bench-jmh/test
           - akka-cluster/test akka-cluster-tools/test akka-cluster-typed/test akka-distributed-data/test akka-cluster-metrics/test akka-cluster-sharding/test akka-cluster-sharding-typed/test
