@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 
 import PojoSRTestSupport.bundle
 import de.kalpatec.pojosr.framework.launch.BundleDescriptor
-import language.postfixOps
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import test.{ PingPongActorSystemActivator, RuntimeNameActorSystemActivator, TestActivators }
