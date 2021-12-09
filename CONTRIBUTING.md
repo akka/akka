@@ -297,7 +297,7 @@ Akka includes a shaded version of protobuf `3` that is used for internal communi
 run `protobufGenerate`. The generated files are put in each project's `src/main/java` and need to be committed.
 The generated files are automatically transformed to use the shaded version of protobuf.
 
-Generation depends on protoc `3.9.0` being on the path. See [protobuf project](https://github.com/protocolbuffers/protobuf#protocol-compiler-installation) for installation instructions, and
+Generation depends on protoc `3.11.4` being on the path. See [protobuf project](https://github.com/protocolbuffers/protobuf#protocol-compiler-installation) for installation instructions, and
 [Protobuf.scala](https://github.com/akka/akka/blob/main/project/Protobuf.scala) for details of how to override
 the settings for generation.
 
