@@ -45,6 +45,7 @@ import akka.serialization.Serializers
   private final val TimestampOffsetManifest = "TSO"
   private final val NoOffsetManifest = "NO"
 
+  private val manifestSeparator = ':'
   // persistenceId and timestamp must not contain this separator char
   private val timestampOffsetSeparator = ';'
 
@@ -120,22 +121,22 @@ import akka.serialization.Serializers
       case TimeBasedUUIDOffsetManifest => Offset.timeBasedUUID(UUID.fromString(offsetStr))
       case NoOffsetManifest            => NoOffset
       case _ =>
-        val parts = manifest.split(':')
-        if (parts.length != 2)
-          throw new NotSerializableException(
-            s"Unimplemented deserialization of offset with manifest [$manifest] " +
-            s"in [${getClass.getName}]. [$manifest] doesn't contain two parts.")
-        val serializerId = parts(0).toInt
-        val serializerManifest = parts(1)
-        val bytes = Base64.getDecoder.decode(offsetStr)
-        serialization.deserialize(bytes, serializerId, serializerManifest).get match {
-          case offset: Offset => offset
-          case other =>
+        manifest.split(manifestSeparator) match {
+          case Array(serializerIdStr, serializerManifest) =>
+            val serializerId = serializerIdStr.toInt
+            val bytes = Base64.getDecoder.decode(offsetStr)
+            serialization.deserialize(bytes, serializerId, serializerManifest).get match {
+              case offset: Offset => offset
+              case other =>
+                throw new NotSerializableException(
+                  s"Unimplemented deserialization of offset with serializerId [$serializerId] and manifest [$manifest] " +
+                  s"in [${getClass.getName}]. [${other.getClass.getName}] is not an Offset.")
+            }
+          case _ =>
             throw new NotSerializableException(
-              s"Unimplemented deserialization of offset with serializerId [$serializerId] and manifest [$manifest] " +
-              s"in [${getClass.getName}]. [${other.getClass.getName}] is not an Offset.")
+              s"Unimplemented deserialization of offset with manifest [$manifest] " +
+              s"in [${getClass.getName}]. [$manifest] doesn't contain two parts.")
         }
-
     }
   }
 
@@ -156,32 +157,36 @@ import akka.serialization.Serializers
         val serializerManifest = Serializers.manifestFor(serializer, obj)
         val bytes = serializer.toBinary(obj)
         val offsetStr = Base64.getEncoder.encodeToString(bytes)
-        (offsetStr, s"$serializerId:$serializerManifest")
+        if (serializerManifest.contains(manifestSeparator))
+          throw new IllegalArgumentException(
+            s"Serializer manifest [$serializerManifest] for " +
+            s"offset [${offset.getClass.getName}] must not contain [$manifestSeparator] character.")
+        (offsetStr, s"$serializerId$manifestSeparator$serializerManifest")
     }
   }
 
   private def timestampOffsetFromStorageRepresentation(str: String): TimestampOffset = {
     try {
-      val parts = str.split(timestampOffsetSeparator)
-      if (parts.length == 4) {
-        // optimized for the normal case
-        TimestampOffset(Instant.parse(parts(0)), Instant.parse(parts(1)), Map(parts(2) -> parts(3).toLong))
-      } else if (parts.length == 1) {
-        TimestampOffset(Instant.parse(parts(0)), Map.empty)
-      } else if (parts.length == 2) {
-        TimestampOffset(Instant.parse(parts(0)), Instant.parse(parts(1)), Map.empty)
-      } else {
-        val seen = parts.toList
-          .drop(2)
-          .grouped(2)
-          .map {
-            case pid :: seqNr :: Nil => pid -> seqNr.toLong
-            case _ =>
-              throw new IllegalArgumentException(
-                s"Invalid representation of Map(pid -> seqNr) [${parts.toList.drop(1).mkString(",")}]")
-          }
-          .toMap
-        TimestampOffset(Instant.parse(parts(0)), Instant.parse(parts(1)), seen)
+      str.split(timestampOffsetSeparator) match {
+        case Array(timestamp, readTimestamp, pid, seqNr) =>
+          // optimized for the normal case
+          TimestampOffset(Instant.parse(timestamp), Instant.parse(readTimestamp), Map(pid -> seqNr.toLong))
+        case Array(timestamp) =>
+          TimestampOffset(Instant.parse(timestamp), Map.empty)
+        case Array(timestamp, readTimestamp) =>
+          TimestampOffset(Instant.parse(timestamp), Instant.parse(readTimestamp), Map.empty)
+        case parts =>
+          val seen = parts.toList
+            .drop(2)
+            .grouped(2)
+            .map {
+              case pid :: seqNr :: Nil => pid -> seqNr.toLong
+              case _ =>
+                throw new IllegalArgumentException(
+                  s"Invalid representation of Map(pid -> seqNr) [${parts.toList.drop(1).mkString(",")}]")
+            }
+            .toMap
+          TimestampOffset(Instant.parse(parts(0)), Instant.parse(parts(1)), seen)
       }
     } catch {
       case NonFatal(e) =>
@@ -190,16 +195,24 @@ import akka.serialization.Serializers
   }
 
   private def timestampOffsetToStorageRepresentation(offset: TimestampOffset): String = {
+    def checkSeparator(pid: String): Unit =
+      if (pid.contains(timestampOffsetSeparator))
+        throw new IllegalArgumentException(
+          s"persistenceId [$pid] in offset [$offset] " +
+          s"must not contain [$timestampOffsetSeparator] character")
+
     val str = new java.lang.StringBuilder
     str.append(offset.timestamp).append(timestampOffsetSeparator).append(offset.readTimestamp)
     if (offset.seen.size == 1) {
       // optimized for the normal case
       val pid = offset.seen.head._1
+      checkSeparator(pid)
       val seqNr = offset.seen.head._2
       str.append(timestampOffsetSeparator).append(pid).append(timestampOffsetSeparator).append(seqNr)
     } else if (offset.seen.nonEmpty) {
       offset.seen.toList.sortBy(_._1).foreach {
         case (pid, seqNr) =>
+          checkSeparator(pid)
           str.append(timestampOffsetSeparator).append(pid).append(timestampOffsetSeparator).append(seqNr)
       }
     }
