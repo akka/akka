@@ -289,7 +289,10 @@ The stop message is only sent locally, from the shard to the entity so does not 
 ## Automatic Passivation
 
 Entities are automatically passivated based on a passivation strategy. The default passivation strategy is to
-passivate idle entities when they haven't received a message within a specified interval.
+[passivate idle entities](#idle-entity-passivation) when they haven't received a message within a specified interval,
+and this is the current default strategy to maintain compatibility with earlier versions. It's recommended to switch to
+a [passivation strategy with an active entity limit](#active-entity-limits) and a pre-configured default strategy is
+provided. Active entity limits and idle entity timeouts can also be used together.
 
 Automatic passivation can be disabled by setting `akka.cluster.sharding.passivation.strategy = none`. It is disabled
 automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
@@ -301,34 +304,78 @@ directly to the `ActorRef`, including messages that the actor sends to itself, a
 
 @@@
 
-Supported passivation strategies are:
+### Idle entity passivation
 
-### Idle passivation strategy
-
-The **idle** passivation strategy passivates entities when they have not received a message for a specified length of
-time. This is the default strategy and is enabled automatically with a timeout of 2 minutes. Specify a different idle
-timeout with configuration:
+Idle entities can be automatically passivated when they have not received a message for a specified length of time.
+This is currently the default strategy, for compatibility, and is enabled automatically with a timeout of 2 minutes.
+Specify a different idle timeout with configuration:
 
 @@snip [passivation idle timeout](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-idle-timeout type=conf }
 
-Or specify the idle timeout as a duration using the `withIdlePassivationStrategy` method on `ClusterShardingSettings`.
+Or specify the idle timeout as a duration using the `withPassivationStrategy` method on `ClusterShardingSettings`.
 
-### Least recently used passivation strategy
+Idle entity timeouts can be enabled and configured for any passivation strategy.
 
-The **least recently used** passivation strategy passivates those entities that have the least recent activity when the
-number of active entities passes a specified limit. The configurable limit is for a whole shard region and is divided
-evenly among the active shards in each region. Configure automatic passivation to use the least recently used
-passivation strategy, and set the limit for active entities in a shard region:
+### Active entity limits
 
-@@snip [passivation least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-recently-used type=conf }
+Automatic passivation strategies can limit the number of active entities. Limit-based passivation strategies use a
+replacement policy to determine which active entities should be passivated when the active entity limit is exceeded.
+The configurable limit is for a whole shard region and is divided evenly among the active shards in each region.
 
-Or enable the least recently used passivation strategy and set the active entity limit using the
-`withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+A recommended passivation strategy, which will become the new default passivation strategy in future versions of Akka
+Cluster Sharding, can be enabled with configuration:
 
-#### Segmented least recently used strategy
+@@snip [passivation new default strategy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy type=conf }
 
-A variation of the least recently used passivation strategy can be enabled that divides the active entity space into
-multiple segments to introduce frequency information into the strategy. Higher-level segments contain entities that
+This default strategy uses a [segmented least recently used policy](#segmented-least-recently-used-policy). The active
+entity limit can be configured:
+
+@@snip [passivation new default strategy configured](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy-configured type=conf }
+
+Or using the `withActiveEntityLimit` method on `ClusterShardingSettings.PassivationStrategySettings`.
+
+An [idle entity timeout](#idle-entity-passivation) can also be enabled and configured for this strategy:
+
+@@snip [passivation new default strategy with idle](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy-with-idle type=conf }
+
+Or using the `withIdleEntityPassivation` method on `ClusterShardingSettings.PassivationStrategySettings`.
+
+If the default strategy is not appropriate for particular workloads and access patterns, a [custom passivation
+strategy](#custom-passivation-strategies) can be created with configurable replacement policies, active entity limits,
+and idle entity timeouts.
+
+### Custom passivation strategies
+
+To configure a custom passivation strategy, create a configuration section for the strategy under
+`akka.cluster.sharding.passivation` and select this strategy using the `strategy` setting. The strategy needs a
+_replacement policy_ to be chosen, an _active entity limit_ to be set, and can optionally [passivate idle
+entities](#idle-entity-passivation). For example, a custom strategy can be configured to use the [least recently used
+policy](#least-recently-used-policy):
+
+@@snip [custom passivation strategy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #custom-passivation-strategy type=conf }
+
+The active entity limit and replacement policy can also be configured using the `withPassivationStrategy` method on
+`ClusterShardingSettings`, passing custom `ClusterShardingSettings.PassivationStrategySettings`.
+
+### Least recently used policy
+
+The **least recently used** policy passivates those entities that have the least recent activity when the number of
+active entities passes the specified limit.
+
+**When to use**: the least recently used policy should be used when access patterns are recency biased, where entities
+that were recently accessed are likely to be accessed again. See the [segmented least recently used
+policy](#segmented-least-recently-used-policy) for a variation that also distinguishes frequency of access.
+
+Configure a passivation strategy to use the least recently used policy:
+
+@@snip [LRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lru-policy type=conf }
+
+Or using the `withLeastRecentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
+
+#### Segmented least recently used policy
+
+A variation of the least recently used policy can be enabled that divides the active entity space into multiple
+segments to introduce frequency information into the passivation strategy. Higher-level segments contain entities that
 have been accessed more often. The first segment is for entities that have only been accessed once, the second segment
 for entities that have been accessed at least twice, and so on. When an entity is accessed again, it will be promoted
 to the most recent position of the next-level or highest-level segment. The higher-level segments are limited, where
@@ -338,80 +385,66 @@ to the level below. Only the least recently used entities in the lowest level wi
 higher levels are considered "protected", where entities will have additional opportunities to be accessed before being
 considered for passivation.
 
-To configure a segmented least recently used (SLRU) strategy, with two levels and a protected segment limited to 80% of the total limit:
+**When to use**: the segmented least recently used policy can be used for workloads where some entities are more
+popular than others, to prioritize those entities that are accessed more frequently.
 
-@@snip [passivation segmented least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-segmented-least-recently-used type=conf }
+To configure a segmented least recently used (SLRU) policy, with two levels and a protected segment limited to 80% of
+the total limit:
 
-Or to configure a 4-level segmented least recently used (S4LRU) strategy, with 4 evenly divided levels:
+@@snip [SLRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #slru-policy type=conf }
 
-@@snip [passivation segmented least recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-s4-least-recently-used type=conf }
+Or to configure a 4-level segmented least recently used (S4LRU) policy, with 4 evenly divided levels:
 
-Or using the `withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+@@snip [S4LRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #s4lru-policy type=conf }
 
-#### Idle timeouts (with least recently used strategy)
+Or using custom `ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings`.
 
-Passivating idle entities (when they have not received a message for a specified length of time) can also be enabled by configuring the least recently used passivation strategy with an idle timeout:
+### Most recently used policy
 
-@@snip [passivation least recently used with idle](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-recently-used-with-idle type=conf }
+The **most recently used** policy passivates those entities that have the most recent activity when the number of
+active entities passes the specified limit.
 
-Or enable the least recently used passivation strategy with both an active entity limit and an idle timeout using the
-`withLeastRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+**When to use**: the most recently used policy is most useful when the older an entity is, the more likely that entity
+will be accessed again; as seen in cyclic access patterns.
 
-### Most recently used passivation strategy
+Configure a passivation strategy to use the most recently used policy:
 
-The **most recently used** passivation strategy passivates those entities that have the most recent activity when the
-number of active entities passes a specified limit. The configurable limit is for a whole shard region and is divided
-evenly among the active shards in each region. This strategy is most useful when the older an entity is, the more
-likely that entity will be accessed again; as seen in cyclic access patterns. Configure automatic passivation to use
-the most recently used passivation strategy, and set the limit for active entities in a shard region:
+@@snip [MRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #mru-policy type=conf }
 
-@@snip [passivation most recently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-most-recently-used type=conf }
+Or using the `withMostRecentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
 
-Or enable the most recently used passivation strategy and set the active entity limit using the
-`withMostRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+### Least frequently used policy
 
-#### Idle timeouts (with most recently used strategy)
+The **least frequently used** policy passivates those entities that have the least frequent activity when the number of
+active entities passes the specified limit.
 
-Passivating idle entities (when they have not received a message for a specified length of time) can also be enabled by configuring the most recently used passivation strategy with an idle timeout:
+**When to use**: the least frequently used policy should be used when access patterns are frequency biased, where some
+entities are much more popular than others and should be prioritized. See the [least frequently used with dynamic aging
+policy](#least-frequently-used-with-dynamic-aging-policy) for a variation that also handles shifts in popularity.
 
-@@snip [passivation most recently used with idle](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-most-recently-used-with-idle type=conf }
+Configure automatic passivation to use the least frequently used policy:
 
-Or enable the most recently used passivation strategy with both an active entity limit and an idle timeout using the
-`withMostRecentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+@@snip [LFU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lfu-policy type=conf }
 
-### Least frequently used passivation strategy
+Or using the `withLeastFrequentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
 
-The **least frequently used** passivation strategy passivates those entities that have the least frequent activity when
-the number of active entities passes a specified limit. The configurable limit is for a whole shard region and is
-divided evenly among the active shards in each region. Configure automatic passivation to use the least frequently used
-passivation strategy, and set the limit for active entities in a shard region:
+#### Least frequently used with dynamic aging policy
 
-@@snip [passivation least frequently used](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-frequently-used type=conf }
+A variation of the least frequently used policy can be enabled that uses "dynamic aging" to adapt to shifts in the set
+of popular entities, which is useful for smaller active entity limits and when shifts in popularity are common. If
+entities were frequently accessed in the past but then become unpopular, they can still remain active for a long time
+given their high frequency counts. Dynamic aging effectively increases the frequencies for recently accessed entities
+so they can more easily become higher priority over entities that are no longer accessed.
 
-Or enable the least frequently used passivation strategy and set the active entity limit using the
-`withLeastFrequentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+**When to use**: the least frequently used with dynamic aging policy can be used when workloads are frequency biased
+(there are some entities that are much more popular), but which entities are most popular changes over time. Shifts in
+popularity can have more impact on a least frequently used policy if the active entity limit is small.
 
-#### Dynamic aging for least frequently used strategy
+Configure dynamic aging with the least frequently used policy:
 
-A variation of the least frequently used passivation strategy can be enabled that uses "dynamic aging" to adapt to
-shifts in the set of popular entities, which is useful for smaller active entity limits and when shifts in popularity
-are common. If entities were frequently accessed in the past but then become unpopular, they can still remain active
-for a long time given their high frequency counts. Dynamic aging effectively increases the frequencies for recently
-accessed entities so they can more easily become higher priority over entities that are no longer accessed. Configure
-dynamic aging with the least frequently used passivation strategy:
+@@snip [LFUDA policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lfuda-policy type=conf }
 
-@@snip [passivation least frequently used with dynamic aging](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-frequently-used-with-dynamic-aging type=conf }
-
-Or when using the `withLeastFrequentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
-
-#### Idle timeouts (with least frequently used strategy)
-
-Passivating idle entities (when they have not received a message for a specified length of time) can also be enabled by configuring the least frequently used passivation strategy with an idle timeout:
-
-@@snip [passivation least frequently used with idle](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-least-frequently-used-with-idle type=conf }
-
-Or enable the least frequently used passivation strategy with both an active entity limit and an idle timeout using the
-`withLeastFrequentlyUsedPassivationStrategy` method on `ClusterShardingSettings`.
+Or using custom `ClusterShardingSettings.PassivationStrategySettings.LeastFrequentlyUsedSettings`.
 
 
 ## Sharding State 

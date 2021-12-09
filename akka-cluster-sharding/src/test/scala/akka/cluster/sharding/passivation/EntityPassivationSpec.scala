@@ -36,7 +36,6 @@ object EntityPassivationSpec {
     akka.cluster.sharding {
       passivation {
         strategy = none
-        idle.timeout = 1s
       }
     }
     """).withFallback(config)
@@ -84,8 +83,9 @@ abstract class AbstractEntityPassivationSpec(config: Config, expectedEntities: I
   import EntityPassivationSpec._
 
   val settings: ClusterShardingSettings = ClusterShardingSettings(system)
-  val configuredIdleTimeout: FiniteDuration = settings.passivationStrategySettings.idleSettings.timeout
-  val configuredLeastRecentlyUsedLimit: Int = settings.passivationStrategySettings.leastRecentlyUsedSettings.limit
+  val configuredIdleTimeout: FiniteDuration =
+    settings.passivationStrategySettings.idleEntitySettings.fold(Duration.Zero)(_.timeout)
+  val configuredActiveEntityLimit: Int = settings.passivationStrategySettings.activeEntityLimit.getOrElse(0)
 
   val probes: Map[Int, TestProbe] = (1 to expectedEntities).map(id => id -> TestProbe()).toMap
   val probeRefs: Map[String, ActorRef] = probes.map { case (id, probe) => id.toString -> probe.ref }
@@ -137,7 +137,7 @@ class DisabledEntityPassivationSpec
       val region = start()
       region ! Envelope(shard = 1, id = 1, message = "A")
       expectReceived(id = 1, message = "A")
-      expectNoMessage(id = 1, configuredIdleTimeout * 2)
+      expectNoMessage(id = 1, 1.second)
     }
   }
 }

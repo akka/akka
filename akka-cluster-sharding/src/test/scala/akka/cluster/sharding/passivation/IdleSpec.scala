@@ -13,8 +13,7 @@ object IdleSpec {
   val config: Config = ConfigFactory.parseString("""
     akka.cluster.sharding {
       passivation {
-        strategy = idle
-        idle.timeout = 1s
+        default-idle-strategy.idle-entity.timeout = 1s
       }
     }
     """).withFallback(EntityPassivationSpec.config)

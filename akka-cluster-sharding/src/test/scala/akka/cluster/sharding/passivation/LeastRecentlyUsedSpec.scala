@@ -14,8 +14,11 @@ object LeastRecentlyUsedSpec {
   val config: Config = ConfigFactory.parseString("""
     akka.cluster.sharding {
       passivation {
-        strategy = least-recently-used
-        least-recently-used.limit = 10
+        strategy = lru
+        lru {
+          active-entity-limit = 10
+          replacement.policy = least-recently-used
+        }
       }
     }
     """).withFallback(EntityPassivationSpec.config)
@@ -23,12 +26,17 @@ object LeastRecentlyUsedSpec {
   val segmentedConfig: Config = ConfigFactory.parseString("""
     akka.cluster.sharding {
       passivation {
-        strategy = least-recently-used
-        least-recently-used {
-          limit = 10
-          segmented {
-            levels = 2
-            proportions = [0.2, 0.8]
+        strategy = slru
+        slru {
+          active-entity-limit = 10
+          replacement {
+            policy = least-recently-used
+            least-recently-used {
+              segmented {
+                levels = 2
+                proportions = [0.2, 0.8]
+              }
+            }
           }
         }
       }
@@ -38,10 +46,11 @@ object LeastRecentlyUsedSpec {
   val idleConfig: Config = ConfigFactory.parseString("""
     akka.cluster.sharding {
       passivation {
-        strategy = least-recently-used
-        least-recently-used {
-          limit = 3
-          idle.timeout = 1s
+        strategy = lru-idle
+        lru-idle {
+          active-entity-limit = 3
+          replacement.policy = least-recently-used
+          idle-entity.timeout = 1s
         }
       }
     }
@@ -238,19 +247,17 @@ class LeastRecentlyUsedWithIdleSpec
     "passivate entities when they haven't seen messages for the configured timeout" in {
       val region = start()
 
-      val idleTimeout = settings.passivationStrategySettings.leastRecentlyUsedSettings.idleSettings.get.timeout
-
       val lastSendNanoTime1 = System.nanoTime()
       region ! Envelope(shard = 1, id = 1, message = "A")
       region ! Envelope(shard = 1, id = 2, message = "B")
 
       // keep entity 3 active to prevent idle passivation
       region ! Envelope(shard = 1, id = 3, message = "C")
-      Thread.sleep((idleTimeout / 2).toMillis)
+      Thread.sleep((configuredIdleTimeout / 2).toMillis)
       region ! Envelope(shard = 1, id = 3, message = "D")
-      Thread.sleep((idleTimeout / 2).toMillis)
+      Thread.sleep((configuredIdleTimeout / 2).toMillis)
       region ! Envelope(shard = 1, id = 3, message = "E")
-      Thread.sleep((idleTimeout / 2).toMillis)
+      Thread.sleep((configuredIdleTimeout / 2).toMillis)
       val lastSendNanoTime2 = System.nanoTime()
       region ! Envelope(shard = 1, id = 3, message = "F")
 
@@ -262,13 +269,13 @@ class LeastRecentlyUsedWithIdleSpec
       expectReceived(id = 3, message = "F")
       val passivate1 = expectReceived(id = 1, message = Stop)
       val passivate2 = expectReceived(id = 2, message = Stop)
-      val passivate3 = expectReceived(id = 3, message = Stop, within = idleTimeout * 2)
+      val passivate3 = expectReceived(id = 3, message = Stop, within = configuredIdleTimeout * 2)
 
       // note: touched timestamps are when the shard receives the message, not the entity itself
       // so look at the time from before sending the last message until receiving the passivate message
-      (passivate1.nanoTime - lastSendNanoTime1).nanos should be > idleTimeout
-      (passivate2.nanoTime - lastSendNanoTime1).nanos should be > idleTimeout
-      (passivate3.nanoTime - lastSendNanoTime2).nanos should be > idleTimeout
+      (passivate1.nanoTime - lastSendNanoTime1).nanos should be > configuredIdleTimeout
+      (passivate2.nanoTime - lastSendNanoTime1).nanos should be > configuredIdleTimeout
+      (passivate3.nanoTime - lastSendNanoTime2).nanos should be > configuredIdleTimeout
     }
   }
 }
