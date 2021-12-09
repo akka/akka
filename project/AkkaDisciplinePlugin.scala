@@ -36,6 +36,8 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-cluster-sharding-typed",
     // references to deprecated PARSER fields in generated message formats?
     "akka-persistence-typed",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-persistence-query",
     "akka-docs")
 
   val looseProjects = Set(
