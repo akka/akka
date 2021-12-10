@@ -27,7 +27,7 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
-  lazy val buildSettings = Def.settings(organization := "com.typesafe.akka", Dependencies.Versions)
+  lazy val buildSettings = Def.settings(organization := "com.typesafe.akka")
 
   lazy val rootSettings = Def.settings(
     commands += switchVersion,
@@ -124,6 +124,7 @@ object AkkaBuild {
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
 
   lazy val defaultSettings: Seq[Setting[_]] = Def.settings(
+    Dependencies.Versions,
     resolverSettings,
     TestExtras.Filter.settings,
     // compile options
