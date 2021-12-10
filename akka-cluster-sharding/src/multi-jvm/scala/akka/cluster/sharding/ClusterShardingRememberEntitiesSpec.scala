@@ -130,14 +130,15 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
 
   lazy val region = ClusterSharding(system).shardRegion(dataType)
 
-  def expectEntityRestarted(
-      sys: ActorSystem,
-      event: Int,
-      probe: TestProbe,
-      entityProbe: TestProbe): EntityActor.Started = {
+  def expectEntityRestarted(sys: ActorSystem, event: Int, entityProbe: TestProbe): EntityActor.Started = {
     if (!multiNodeConfig.rememberEntities) {
-      probe.send(ClusterSharding(sys).shardRegion(dataType), event)
-      probe.expectMsg(1)
+      val probe = TestProbe()(sys)
+      within(20.seconds) {
+        awaitAssert {
+          probe.send(ClusterSharding(sys).shardRegion(dataType), event)
+          probe.expectMsg(1.second, 1)
+        }
+      }
     }
 
     entityProbe.expectMsgType[EntityActor.Started](30.seconds)
@@ -185,7 +186,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
       enterBarrier("crash-second")
 
       runOn(third) {
-        expectEntityRestarted(system, 1, probe, entityProbe)
+        expectEntityRestarted(system, 1, entityProbe)
       }
 
       enterBarrier("after-2")
@@ -203,7 +204,6 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
 
         val sys2 = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
         val entityProbe2 = TestProbe()(sys2)
-        val probe2 = TestProbe()(sys2)
 
         if (persistenceIsNeeded) setStore(sys2, storeOn = first)
 
@@ -211,7 +211,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
 
         startSharding(sys2, entityProbe2.ref)
 
-        expectEntityRestarted(sys2, 1, probe2, entityProbe2)
+        expectEntityRestarted(sys2, 1, entityProbe2)
 
         shutdown(sys2)
       }
