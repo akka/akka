@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The versions of scala specified here are only used as `-Dakka.build.scalaVersion=...`
+        # The versions of scala specified here are only used as `+~...`
         # which ignores the PATCH portion of the version id. These Scala versions don't need
         # to be fully defined here then since Akka build handles which patch version will be used.
         scalaVersion: [ "2.12", "2.13" ]
@@ -37,4 +37,4 @@ jobs:
         uses: coursier/cache-action@v6.2
 
       - name: Report MiMa Binary Issues
-        run: sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} mimaReportBinaryIssues
+        run: sbt -jvm-opts .jvmopts-ci "+~ ${{ matrix.scalaVersion }} mimaReportBinaryIssues"

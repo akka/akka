@@ -144,7 +144,6 @@ jobs:
         # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
         run: |-
           sbt -jvm-opts .jvmopts-ci \
-            -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
             -Dakka.cluster.assert=on \
             -Dakka.log.timestamps=true \
             -Dakka.test.timefactor=2 \
@@ -156,7 +155,7 @@ jobs:
             -Dmultinode.Xmx256M \
             -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             ${{ matrix.extraOpts }} \
-            clean Test/compile test checkTestsHaveRun
+            "+~ ${{ matrix.scalaVersion }} clean Test/compile test checkTestsHaveRun"
 
       - name: Test Reports
         # Makes it easier to spot failures instead of looking at the logs.
@@ -175,16 +174,15 @@ jobs:
         run: |-
           sudo apt-get install graphviz
           sbt -jvm-opts .jvmopts-ci \
-            -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
             -Dakka.genjavadoc.enabled=true \
-            doc
+            "+~ ${{ matrix.scalaVersion }} doc"
 
       - name: Publish
         run: |-
           sudo apt-get install graphviz
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
-            publishLocal publishM2
+            "+~ ${{ matrix.scalaVersion }} publishLocal publishM2"
 
       - name: Email on failure
         if: ${{ failure() }}

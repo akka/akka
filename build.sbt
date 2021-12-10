@@ -99,8 +99,7 @@ lazy val root = Project(id = "akka", base = file("."))
         serialversionRemoverPlugin))
   .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions := Nil)
+  //.settings(crossScalaVersions := Nil)
 
 lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
@@ -113,8 +112,6 @@ lazy val actor = akkaModule("akka-actor")
   .settings(VersionGenerator.settings)
   .settings(serialversionRemoverPluginSettings)
   .enablePlugins(BoilerplatePlugin)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions += akka.Dependencies.scala3Version)
 
 lazy val actorTests = akkaModule("akka-actor-tests")
   .dependsOn(testkit % "compile->compile;test->test")
@@ -150,8 +147,6 @@ lazy val cluster = akkaModule("akka-cluster")
   .settings(Test / parallelExecution := false)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val clusterMetrics = akkaModule("akka-cluster-metrics")
   .dependsOn(
@@ -214,7 +209,7 @@ lazy val docs = akkaModule("akka-docs")
     cluster,
     clusterMetrics,
     slf4j,
-    osgi,
+    //osgi,
     persistenceTck,
     persistenceQuery,
     distributedData,
@@ -263,8 +258,6 @@ lazy val jackson = akkaModule("akka-serialization-jackson")
   .settings(OSGi.jackson)
   .settings(javacOptions += "-parameters")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
@@ -278,7 +271,10 @@ lazy val osgi = akkaModule("akka-osgi")
   .settings(Dependencies.osgi)
   .settings(AutomaticModuleName.settings("akka.osgi"))
   .settings(OSGi.osgi)
-  .settings(Test / parallelExecution := false)
+  .settings(
+    Test / parallelExecution := false,
+    crossScalaVersions -= akka.Dependencies.scala3Version
+  )
 
 lazy val persistence = akkaModule("akka-persistence")
   .dependsOn(actor, stream, testkit % "test->test")
@@ -287,8 +283,6 @@ lazy val persistence = akkaModule("akka-persistence")
   .settings(OSGi.persistence)
   .settings(Protobuf.settings)
   .settings(Test / fork := true)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val persistenceQuery = akkaModule("akka-persistence-query")
   .dependsOn(
@@ -344,8 +338,6 @@ lazy val persistenceTypedTests = akkaModule("akka-persistence-typed-tests")
   .settings(javacOptions += "-parameters") // for Jackson
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val protobuf = akkaModule("akka-protobuf")
   .settings(OSGi.protobuf)
@@ -408,8 +400,6 @@ lazy val remote =
     .settings(Test / parallelExecution := false)
     .settings(serialversionRemoverPluginSettings)
     .enablePlugins(Jdk9)
-    // TODO https://github.com/akka/akka/issues/30243
-    .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(
@@ -424,8 +414,6 @@ lazy val remoteTests = akkaModule("akka-remote-tests")
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest, NoPublish)
   .disablePlugins(MimaPlugin)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val slf4j = akkaModule("akka-slf4j")
   .dependsOn(actor, testkit % "test->test")
@@ -446,8 +434,6 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .settings(Dependencies.streamTestkit)
   .settings(AutomaticModuleName.settings("akka.stream.testkit"))
   .settings(OSGi.streamTestkit)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val streamTests = akkaModule("akka-stream-tests")
   .configs(akka.Jdk9.TestJdk9)
@@ -509,8 +495,6 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(OSGi.persistenceTyped)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
@@ -552,8 +536,6 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val streamTyped = akkaModule("akka-stream-typed")
   .dependsOn(
@@ -569,8 +551,6 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .dependsOn(actorTyped, slf4j, testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.actor.testkit.typed"))
   .settings(Dependencies.actorTestkitTyped)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test")
@@ -583,16 +563,12 @@ lazy val discovery = akkaModule("akka-discovery")
   .settings(Dependencies.discovery)
   .settings(AutomaticModuleName.settings("akka.discovery"))
   .settings(OSGi.discovery)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val coordination = akkaModule("akka-coordination")
   .dependsOn(actor, testkit % "test->test", actorTests % "test->test")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
-  // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-materials"))
   .enablePlugins(BillOfMaterialsPlugin)

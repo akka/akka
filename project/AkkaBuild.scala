@@ -30,6 +30,7 @@ object AkkaBuild {
   lazy val buildSettings = Def.settings(organization := "com.typesafe.akka", Dependencies.Versions)
 
   lazy val rootSettings = Def.settings(
+    commands += switchVersion,
     UnidocRoot.akkaSettings,
     Protobuf.settings,
     GlobalScope / parallelExecution := System
@@ -286,4 +287,26 @@ object AkkaBuild {
   }
 
   def majorMinor(version: String): Option[String] = """\d+\.\d+""".r.findFirstIn(version)
+
+  // So we can `sbt "+~ 2.13 clean compile"`
+  val switchVersion: Command = Command.args("+~", "<version> <args>")({
+    (initialState: State, args: Seq[String]) => {
+      val requestedVersionPrefix = args.head
+      val requestedVersion = Dependencies.allScalaVersions
+        .filter(_.startsWith(requestedVersionPrefix))
+        .head
+
+      def run(state: State, command: String): State = {
+        val parsed = s"++ $requestedVersion $command".foldLeft(Cross.switchVersion.parser(state))((p, i) => p.derive(i))
+        parsed.resultEmpty match {
+          case e: sbt.internal.util.complete.Parser.Failure =>
+            throw new IllegalStateException(e.errors.mkString(", "))
+          case sbt.internal.util.complete.Parser.Value(v) =>
+            v()
+        }
+      }
+      val commands = args.tail
+      commands.foldLeft(initialState)(run)
+    }
+  })
 }

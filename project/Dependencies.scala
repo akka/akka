@@ -32,6 +32,7 @@ object Dependencies {
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
   val scala3Version = "3.1.1-RC1"
+  val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -55,15 +56,7 @@ object Dependencies {
 
   val Versions =
     Seq(
-      crossScalaVersions := Seq(scala212Version, scala213Version),
-      scalaVersion := {
-        System.getProperty("akka.build.scalaVersion", "default") match {
-          case v if v.startsWith("2.13") => scala213Version
-          case v if v.startsWith("2.12") => scala212Version
-          case v if v.startsWith("3.")   => scala3Version
-          case "default"                 => scala213Version
-        }
-      },
+      crossScalaVersions := allScalaVersions,
       java8CompatVersion := {
         CrossVersion.partialVersion(scalaVersion.value) match {
           // java8-compat is only used in a couple of places for 2.13,
