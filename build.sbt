@@ -99,7 +99,6 @@ lazy val root = Project(id = "akka", base = file("."))
         serialversionRemoverPlugin))
   .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
-  //.settings(crossScalaVersions := Nil)
 
 lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
@@ -271,10 +270,7 @@ lazy val osgi = akkaModule("akka-osgi")
   .settings(Dependencies.osgi)
   .settings(AutomaticModuleName.settings("akka.osgi"))
   .settings(OSGi.osgi)
-  .settings(
-    Test / parallelExecution := false,
-    crossScalaVersions -= akka.Dependencies.scala3Version
-  )
+  .settings(Test / parallelExecution := false, crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val persistence = akkaModule("akka-persistence")
   .dependsOn(actor, stream, testkit % "test->test")

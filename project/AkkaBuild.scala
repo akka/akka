@@ -290,12 +290,10 @@ object AkkaBuild {
   def majorMinor(version: String): Option[String] = """\d+\.\d+""".r.findFirstIn(version)
 
   // So we can `sbt "+~ 2.13 clean compile"`
-  val switchVersion: Command = Command.args("+~", "<version> <args>")({
-    (initialState: State, args: Seq[String]) => {
+  val switchVersion: Command = Command.args("+~", "<version> <args>")({ (initialState: State, args: Seq[String]) =>
+    {
       val requestedVersionPrefix = args.head
-      val requestedVersion = Dependencies.allScalaVersions
-        .filter(_.startsWith(requestedVersionPrefix))
-        .head
+      val requestedVersion = Dependencies.allScalaVersions.filter(_.startsWith(requestedVersionPrefix)).head
 
       def run(state: State, command: String): State = {
         val parsed = s"++ $requestedVersion $command".foldLeft(Cross.switchVersion.parser(state))((p, i) => p.derive(i))

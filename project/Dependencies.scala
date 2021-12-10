@@ -55,17 +55,15 @@ object Dependencies {
   val scalaCheckVersion = "1.15.1"
 
   val Versions =
-    Seq(
-      crossScalaVersions := allScalaVersions,
-      java8CompatVersion := {
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          // java8-compat is only used in a couple of places for 2.13,
-          // it is probably possible to remove the dependency if needed.
-          case Some((3, _))            => "1.0.0"
-          case Some((2, n)) if n >= 13 => "1.0.0"
-          case _                       => "0.8.0"
-        }
-      })
+    Seq(crossScalaVersions := allScalaVersions, java8CompatVersion := {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        // java8-compat is only used in a couple of places for 2.13,
+        // it is probably possible to remove the dependency if needed.
+        case Some((3, _))            => "1.0.0"
+        case Some((2, n)) if n >= 13 => "1.0.0"
+        case _                       => "0.8.0"
+      }
+    })
 
   object Compile {
     // Compile
