@@ -208,7 +208,7 @@ lazy val docs = akkaModule("akka-docs")
     cluster,
     clusterMetrics,
     slf4j,
-    //osgi,
+    osgi,
     persistenceTck,
     persistenceQuery,
     distributedData,
