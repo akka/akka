@@ -2,6 +2,8 @@ import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgn
 
 ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
 
+scalaVersion := Dependencies.allScalaVersions.head
+
 enablePlugins(
   UnidocRoot,
   UnidocWithPrValidation,
