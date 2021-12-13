@@ -289,7 +289,13 @@ object AkkaBuild {
 
   def majorMinor(version: String): Option[String] = """\d+\.\d+""".r.findFirstIn(version)
 
-  // So we can `sbt "+~ 2.13 clean compile"`
+  // So we can `sbt "+~ 3 clean compile"`
+  //
+  // The advantage over `++` is twofold:
+  // * `++` also requires the patch version, `+~` finds the first supported Scala version that matches the prefix (if any)
+  // * When subprojects need to be excluded, ++ needs to be specified for each command
+  //
+  // So the `++` equivalent of the above example is `sbt "++ 3.1.1-RC1 clean" "++ 3.1.1-RC1 compile"`
   val switchVersion: Command = Command.args("+~", "<version> <args>")({ (initialState: State, args: Seq[String]) =>
     {
       val requestedVersionPrefix = args.head
