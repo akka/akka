@@ -4,6 +4,7 @@
 
 package akka.remote.artery.aeron
 
+import java.io.File
 import java.util.UUID
 
 import io.aeron.CommonContext
@@ -19,7 +20,7 @@ abstract class AeronStreamMultiNodeSpec(config: MultiNodeConfig) extends MultiNo
     val driverContext = new MediaDriver.Context
     // create a random name but include the actor system name for easier debugging
     val uniquePart = UUID.randomUUID().toString
-    val randomName = s"${CommonContext.getAeronDirectoryName}-${system.name}-$uniquePart"
+    val randomName = s"${CommonContext.getAeronDirectoryName}${File.separator}${system.name}-$uniquePart"
     driverContext.aeronDirectoryName(randomName)
     val d = MediaDriver.launchEmbedded(driverContext)
     log.info("Started embedded media driver in directory [{}]", d.aeronDirectoryName)
