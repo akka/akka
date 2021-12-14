@@ -27,9 +27,10 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
-  lazy val buildSettings = Def.settings(organization := "com.typesafe.akka", Dependencies.Versions)
+  lazy val buildSettings = Def.settings(organization := "com.typesafe.akka")
 
   lazy val rootSettings = Def.settings(
+    commands += switchVersion,
     UnidocRoot.akkaSettings,
     Protobuf.settings,
     GlobalScope / parallelExecution := System
@@ -123,6 +124,7 @@ object AkkaBuild {
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
 
   lazy val defaultSettings: Seq[Setting[_]] = Def.settings(
+    Dependencies.Versions,
     resolverSettings,
     TestExtras.Filter.settings,
     // compile options
@@ -286,4 +288,30 @@ object AkkaBuild {
   }
 
   def majorMinor(version: String): Option[String] = """\d+\.\d+""".r.findFirstIn(version)
+
+  // So we can `sbt "+~ 3 clean compile"`
+  //
+  // The advantage over `++` is twofold:
+  // * `++` also requires the patch version, `+~` finds the first supported Scala version that matches the prefix (if any)
+  // * When subprojects need to be excluded, ++ needs to be specified for each command
+  //
+  // So the `++` equivalent of the above example is `sbt "++ 3.1.1-RC1 clean" "++ 3.1.1-RC1 compile"`
+  val switchVersion: Command = Command.args("+~", "<version> <args>")({ (initialState: State, args: Seq[String]) =>
+    {
+      val requestedVersionPrefix = args.head
+      val requestedVersion = Dependencies.allScalaVersions.filter(_.startsWith(requestedVersionPrefix)).head
+
+      def run(state: State, command: String): State = {
+        val parsed = s"++ $requestedVersion $command".foldLeft(Cross.switchVersion.parser(state))((p, i) => p.derive(i))
+        parsed.resultEmpty match {
+          case e: sbt.internal.util.complete.Parser.Failure =>
+            throw new IllegalStateException(e.errors.mkString(", "))
+          case sbt.internal.util.complete.Parser.Value(v) =>
+            v()
+        }
+      }
+      val commands = args.tail
+      commands.foldLeft(initialState)(run)
+    }
+  })
 }
