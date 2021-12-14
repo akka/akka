@@ -449,9 +449,9 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * different slice for a persistence id than what was used before, which would
    * result in invalid eventsBySlices.
    *
-   * `numberOfSlices` is 128
+   * `numberOfSlices` is 1024
    */
-  final def numberOfSlices: Int = 128
+  final def numberOfSlices: Int = 1024
 
   /**
    * A slice is deterministically defined based on the persistence id. The purpose is to
@@ -464,8 +464,8 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   /**
    * Scala API: Split the total number of slices into ranges by the given `numberOfRanges`.
    *
-   * For example, `numberOfSlices` is 128 and given 4 `numberOfRanges` this method will
-   * return ranges (0 to 31), (32 to 63), (64 to 93) and (94 to 127).
+   * For example, `numberOfSlices` is 1024 and given 4 `numberOfRanges` this method will
+   * return ranges (0 to 255), (256 to 511), (512 to 767) and (768 to 1023).
    */
   final def sliceRanges(numberOfRanges: Int): immutable.IndexedSeq[Range] = {
     val rangeSize = numberOfSlices / numberOfRanges
@@ -481,7 +481,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Java API: Split the total number of slices into ranges by the given `numberOfRanges`.
    *
    * For example, `numberOfSlices` is 128 and given 4 `numberOfRanges` this method will
-   * return ranges (0 to 31), (32 to 63), (64 to 93) and (94 to 127).
+   * return ranges (0 to 255), (256 to 511), (512 to 767) and (768 to 1023).
    */
   final def getSliceRanges(numberOfRanges: Int): java.util.List[Pair[Integer, Integer]] = {
     import akka.util.ccompat.JavaConverters._
