@@ -287,7 +287,7 @@ lazy val persistenceQuery = akkaModule("akka-persistence-query")
     stream,
     persistence % "compile->compile;test->test",
     remote % "provided",
-    protobufV3 % "provided",
+    protobufV3,
     streamTestkit % "test")
   .settings(Dependencies.persistenceQuery)
   .settings(AutomaticModuleName.settings("akka.persistence.query"))

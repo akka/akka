@@ -35,7 +35,7 @@ import akka.serialization.Serializers
     extends SerializerWithStringManifest
     with BaseSerializer {
 
-  private val payloadSupport = new WrappedPayloadSupport(system)
+  private lazy val payloadSupport = new WrappedPayloadSupport(system)
   private lazy val serialization = SerializationExtension(system)
 
   private final val EventEnvelopeManifest = "a"
