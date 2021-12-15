@@ -16,7 +16,7 @@ class SliceRangesSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "L
 
   "Persistence slices" must {
     "have fixed numberOfSlices" in {
-      persistence.numberOfSlices should ===(128)
+      persistence.numberOfSlices should ===(1024)
     }
 
     "be deterministic from persistence id" in {
@@ -35,13 +35,13 @@ class SliceRangesSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "L
     }
 
     "create ranges" in {
-      persistence.sliceRanges(4) should ===(Vector(0 to 31, 32 to 63, 64 to 95, 96 to 127))
-      persistence.sliceRanges(1) should ===(Vector(0 to 127))
+      persistence.sliceRanges(4) should ===(Vector(0 to 255, 256 to 511, 512 to 767, 768 to 1023))
+      persistence.sliceRanges(1) should ===(Vector(0 to 1023))
     }
 
     "create ranges for Java" in {
       persistence.getSliceRanges(4) shouldBe
-      util.Arrays.asList(Pair.create(0, 31), Pair.create(32, 63), Pair.create(64, 95), Pair.create(96, 127))
+      util.Arrays.asList(Pair.create(0, 255), Pair.create(256, 511), Pair.create(512, 767), Pair.create(768, 1023))
     }
   }
 }
