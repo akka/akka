@@ -1,0 +1,4 @@
+# #30833 internal changes for lastSequenceNumber
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.state.internal.Recovering.createBehavior")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.state.internal.Recovering.onGetSuccess")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.state.internal.Recovering.this")
