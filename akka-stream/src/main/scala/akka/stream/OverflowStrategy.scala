@@ -114,9 +114,8 @@ object OverflowStrategy {
 
   /**
    * If the buffer is full when a new element arrives, drops the new element.
-   *
-   * Deprecated since 2.6.11. Use Source.queue instead.
    */
+  @deprecated("Use Source.queue instead", "2.6.11")
   def dropNew: OverflowStrategy = DropNew(Logging.DebugLevel)
 
   /**
