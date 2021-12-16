@@ -152,4 +152,19 @@ object TraceFileReader {
   final class Lirs(path: String) extends TraceFileReader(path: String) {
     override def entityIds: Source[EntityId, NotUsed] = lines // just simple id per line format
   }
+
+  /**
+   * Read binary traces provided with the "LIRS2" paper:
+   * LIRS2: An Improved LIRS Replacement Algorithm
+   * Chen Zhong, Xingsheng Zhao, and Song Jiang
+   */
+  final class Lirs2(path: String) extends AccessPattern {
+    override val isSynthetic = false
+
+    override def entityIds: Source[EntityId, NotUsed] =
+      FileIO // binary file of unsigned ints
+        .fromPath(Paths.get(path), chunkSize = 4)
+        .map(bytes => Integer.toUnsignedLong(bytes.toByteBuffer.getInt).toString)
+        .mapMaterializedValue(_ => NotUsed)
+  }
 }
