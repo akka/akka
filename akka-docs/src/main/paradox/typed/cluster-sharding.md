@@ -294,6 +294,16 @@ and this is the current default strategy to maintain compatibility with earlier 
 a [passivation strategy with an active entity limit](#active-entity-limits) and a pre-configured default strategy is
 provided. Active entity limits and idle entity timeouts can also be used together.
 
+@@@ note
+
+The automatic passivation strategies, except [passivate idle entities](#idle-entity-passivation)
+are marked as @ref:[may change](../common/may-change.md) in the sense of being the subject of final development.
+This means that the configuration or semantics can change without warning or deprecation period. The passivation
+strategies can be used in production, but we reserve the right to adjust the configuration after additional
+testing and feedback.
+
+@@@
+
 Automatic passivation can be disabled by setting `akka.cluster.sharding.passivation.strategy = none`. It is disabled
 automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
 
