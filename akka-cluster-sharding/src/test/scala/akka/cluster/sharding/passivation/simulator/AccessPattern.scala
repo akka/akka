@@ -12,10 +12,13 @@ import akka.util.ByteString
 import java.nio.file.Paths
 
 trait AccessPattern {
+  def isSynthetic: Boolean
   def entityIds: Source[EntityId, NotUsed]
 }
 
 abstract class SyntheticGenerator(events: Int) extends AccessPattern {
+  override val isSynthetic = true
+
   protected def nextValue(event: Int): Long
 
   protected def generateEntityIds: Source[Long, NotUsed] = Source.fromIterator(() => Iterator.from(1)).map(nextValue)
@@ -100,6 +103,8 @@ object SyntheticGenerator {
 }
 
 abstract class TraceFileReader(path: String) extends AccessPattern {
+  override val isSynthetic = false
+
   protected def lines: Source[String, NotUsed] =
     FileIO
       .fromPath(Paths.get(path))

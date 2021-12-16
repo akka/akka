@@ -45,6 +45,7 @@ object SimulatorSettings {
   sealed trait StrategySettings
 
   object StrategySettings {
+    final case class Optimal(perRegionLimit: Int) extends StrategySettings
     final case class LeastRecentlyUsed(perRegionLimit: Int, segmented: immutable.Seq[Double]) extends StrategySettings
     final case class MostRecentlyUsed(perRegionLimit: Int) extends StrategySettings
     final case class LeastFrequentlyUsed(perRegionLimit: Int, dynamicAging: Boolean) extends StrategySettings
@@ -52,6 +53,7 @@ object SimulatorSettings {
     def apply(simulatorConfig: Config, strategy: String): StrategySettings = {
       val config = simulatorConfig.getConfig(strategy).withFallback(simulatorConfig.getConfig("strategy-defaults"))
       lowerCase(config.getString("strategy")) match {
+        case "optimal" => Optimal(config.getInt("optimal.per-region-limit"))
         case "least-recently-used" =>
           val limit = config.getInt("least-recently-used.per-region-limit")
           val segmented = lowerCase(config.getString("least-recently-used.segmented.levels")) match {
