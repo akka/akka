@@ -4,12 +4,12 @@
 
 package akka.remote.artery
 
-import scala.concurrent.duration._
 import akka.remote.RARP
 import akka.testkit.DeadLettersFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestEvent.Mute
+import akka.testkit.TestDuration
 import akka.pattern.ask
 import akka.util.Timeout
 
@@ -23,7 +23,7 @@ class ActorRefResolveCacheQuarantineSpec
     with ImplicitSender {
   import RemoteFailureSpec._
 
-  private implicit val timeout: Timeout = 3.seconds
+  private implicit val timeout: Timeout = testKitSettings.SingleExpectDefaultTimeout.dilated
 
   system.eventStream.publish(Mute(DeadLettersFilter(classOf[Ping])(occurrences = Int.MaxValue)))
 
