@@ -163,6 +163,9 @@ object ClusterShardingSettings {
   }
   case object RememberEntitiesStoreModeDData extends RememberEntitiesStoreMode { override def name = "ddata" }
 
+  /**
+   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
+   */
   @ApiMayChange
   final class PassivationStrategySettings private (
       val idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
@@ -225,6 +228,10 @@ object ClusterShardingSettings {
       new PassivationStrategySettings(idleEntitySettings, activeEntityLimit, replacementPolicySettings, oldSettingUsed)
   }
 
+  /**
+   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
+   */
+  @ApiMayChange
   object PassivationStrategySettings {
     import ClassicShardingSettings.{ PassivationStrategySettings => ClassicPassivationStrategySettings }
 
@@ -705,6 +712,10 @@ final class ClusterShardingSettings(
   def withPassivateIdleEntityAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration.asScala))
 
+  /**
+   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
+   */
+  @ApiMayChange
   def withPassivationStrategy(settings: ClusterShardingSettings.PassivationStrategySettings): ClusterShardingSettings =
     copy(passivationStrategySettings = settings)
 

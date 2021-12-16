@@ -12,6 +12,9 @@ import akka.util.{ FrequencyList, RecencyList, SegmentedRecencyList }
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[akka] object EntityPassivationStrategy {
   type PassivateEntities = immutable.Seq[EntityId]
@@ -40,7 +43,7 @@ private[akka] object EntityPassivationStrategy {
 }
 
 /**
- * An entity passivation strategy, which is instantiated per active shard.
+ * INTERNAL API: An entity passivation strategy, which is instantiated per active shard.
  */
 @InternalApi
 private[akka] sealed abstract class EntityPassivationStrategy {
@@ -80,7 +83,7 @@ private[akka] sealed abstract class EntityPassivationStrategy {
 }
 
 /**
- * No-op passivation strategy for when automatic passivation is disabled.
+ * INTERNAL API: No-op passivation strategy for when automatic passivation is disabled.
  */
 @InternalApi
 private[akka] object DisabledEntityPassivationStrategy extends EntityPassivationStrategy {
@@ -93,11 +96,14 @@ private[akka] object DisabledEntityPassivationStrategy extends EntityPassivation
   override def intervalPassed(): PassivateEntities = PassivateEntities.none
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[akka] final class IdleCheck(val timeout: FiniteDuration, val interval: FiniteDuration)
 
 /**
- * Passivates entities when they have not received a message for a specified length of time.
+ * INTERNAL API: Passivates entities when they have not received a message for a specified length of time.
  * @param idleCheck passivate idle entities after the given timeout, checking every interval
  */
 @InternalApi
@@ -122,7 +128,7 @@ private[akka] final class IdleEntityPassivationStrategy(idleCheck: IdleCheck) ex
 }
 
 /**
- * Passivate the least recently used entities when the number of active entities in a shard region
+ * INTERNAL API: Passivate the least recently used entities when the number of active entities in a shard region
  * reaches a limit. The per-region limit is divided evenly among the active shards in a region.
  * @param perRegionLimit active entity capacity for a shard region
  * @param idleCheck optionally passivate idle entities after the given timeout, checking every interval
@@ -161,6 +167,8 @@ private[akka] final class LeastRecentlyUsedEntityPassivationStrategy(perRegionLi
 }
 
 /**
+ * INTERNAL API
+ *
  * Passivate the least recently used entities when the number of active entities in a shard region
  * reaches a limit. The per-region limit is divided evenly among the active shards in a region.
  * Active entities are tracked in multiple recency lists, where entities are promoted to higher-level
@@ -210,6 +218,8 @@ private[akka] final class SegmentedLeastRecentlyUsedEntityPassivationStrategy(
 }
 
 /**
+ * INTERNAL API
+ *
  * Passivate the most recently used entities when the number of active entities in a shard region
  * reaches a limit. The per-region limit is divided evenly among the active shards in a region.
  * @param perRegionLimit active entity capacity for a shard region
@@ -249,6 +259,8 @@ private[akka] final class MostRecentlyUsedEntityPassivationStrategy(perRegionLim
 }
 
 /**
+ * INTERNAL API
+ *
  * Passivate the least frequently used entities when the number of active entities in a shard region
  * reaches a limit. The per-region limit is divided evenly among the active shards in a region.
  * @param perRegionLimit active entity capacity for a shard region

@@ -129,6 +129,9 @@ object ClusterShardingSettings {
   private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
+  /**
+   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
+   */
   @ApiMayChange
   final class PassivationStrategySettings private[akka] (
       val idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
@@ -191,6 +194,10 @@ object ClusterShardingSettings {
       new PassivationStrategySettings(idleEntitySettings, activeEntityLimit, replacementPolicySettings, oldSettingUsed)
   }
 
+  /**
+   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
+   */
+  @ApiMayChange
   object PassivationStrategySettings {
     val defaults = new PassivationStrategySettings(
       idleEntitySettings = None,
@@ -333,6 +340,11 @@ object ClusterShardingSettings {
         new LeastFrequentlyUsedSettings(dynamicAging)
     }
 
+    /**
+     * API MAY CHANGE: Settings and configuration for passivation strategies may change after additional
+     * testing and feedback.
+     */
+    @ApiMayChange
     def apply(config: Config): PassivationStrategySettings = {
       toRootLowerCase(config.getString("strategy")) match {
         case "off" | "none" => PassivationStrategySettings.disabled
@@ -371,16 +383,32 @@ object ClusterShardingSettings {
   @InternalApi
   private[akka] sealed trait PassivationStrategy
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] case object NoPassivationStrategy extends PassivationStrategy
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] object IdlePassivationStrategy {
     def apply(settings: PassivationStrategySettings.IdleSettings): IdlePassivationStrategy =
       IdlePassivationStrategy(settings.timeout, settings.interval.getOrElse(settings.timeout / 2))
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] case class IdlePassivationStrategy(timeout: FiniteDuration, interval: FiniteDuration)
       extends PassivationStrategy
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] object LeastRecentlyUsedPassivationStrategy {
     def apply(
         settings: PassivationStrategySettings.LeastRecentlyUsedSettings,
@@ -398,15 +426,27 @@ object ClusterShardingSettings {
     }
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] case class LeastRecentlyUsedPassivationStrategy(
       limit: Int,
       segmented: immutable.Seq[Double],
       idle: Option[IdlePassivationStrategy])
       extends PassivationStrategy
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] case class MostRecentlyUsedPassivationStrategy(limit: Int, idle: Option[IdlePassivationStrategy])
       extends PassivationStrategy
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] object LeastFrequentlyUsedPassivationStrategy {
     def apply(
         settings: PassivationStrategySettings.LeastFrequentlyUsedSettings,
@@ -415,6 +455,10 @@ object ClusterShardingSettings {
       LeastFrequentlyUsedPassivationStrategy(limit, settings.dynamicAging, idle)
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] case class LeastFrequentlyUsedPassivationStrategy(
       limit: Int,
       dynamicAging: Boolean,
@@ -850,6 +894,10 @@ final class ClusterShardingSettings(
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivationStrategySettings = passivationStrategySettings.withOldIdleStrategy(duration.asScala))
 
+  /**
+   * API MAY CHANGE: Settings for passivation strategies may change after additional testing and feedback.
+   */
+  @ApiMayChange
   def withPassivationStrategy(settings: ClusterShardingSettings.PassivationStrategySettings): ClusterShardingSettings =
     copy(passivationStrategySettings = settings)
 
