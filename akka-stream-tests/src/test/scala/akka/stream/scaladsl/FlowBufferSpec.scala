@@ -7,12 +7,13 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.stream.BufferOverflowException
 import akka.stream.OverflowStrategy
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+
+import scala.annotation.nowarn
 
 class FlowBufferSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
@@ -171,6 +172,7 @@ class FlowBufferSpec extends StreamSpec("""
     }
 
     "drop new elements if buffer is full and configured so" in {
+      @nowarn("msg=deprecated")
       val (publisher, subscriber) = TestSource
         .probe[Int]
         .buffer(100, overflowStrategy = OverflowStrategy.dropNew)

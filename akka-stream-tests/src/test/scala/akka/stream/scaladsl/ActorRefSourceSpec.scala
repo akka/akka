@@ -5,9 +5,7 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-
 import org.reactivestreams.Publisher
-
 import akka.Done
 import akka.actor.{ ActorRef, Status }
 import akka.stream.{ OverflowStrategy, _ }
@@ -15,6 +13,8 @@ import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+
+import scala.annotation.nowarn
 
 class ActorRefSourceSpec extends StreamSpec {
 
@@ -38,6 +38,7 @@ class ActorRefSourceSpec extends StreamSpec {
 
     "buffer when needed" in {
       val s = TestSubscriber.manualProbe[Int]()
+      @nowarn("msg=deprecated")
       val ref = Source
         .actorRef(PartialFunction.empty, PartialFunction.empty, 100, OverflowStrategy.dropHead)
         .to(Sink.fromSubscriber(s))
