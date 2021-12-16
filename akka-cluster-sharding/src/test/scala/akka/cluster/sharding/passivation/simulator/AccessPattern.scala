@@ -123,6 +123,15 @@ object TraceFileReader {
   }
 
   /**
+   * Text trace file format with a simple word tokenizer for ASCII text.
+   */
+  final class Text(path: String) extends TraceFileReader(path: String) {
+    override def entityIds: Source[EntityId, NotUsed] = lines.mapConcat { line =>
+      line.split("[^\\w-]+").filter(_.nonEmpty).map(_.toLowerCase)
+    }
+  }
+
+  /**
    * Read traces provided with the "ARC" paper.
    * Nimrod Megiddo and Dharmendra S. Modha, "ARC: A Self-Tuning, Low Overhead Replacement Cache".
    */
