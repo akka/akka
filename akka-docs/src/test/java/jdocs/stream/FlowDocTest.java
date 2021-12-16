@@ -90,7 +90,7 @@ public class FlowDocTest extends AbstractJavaTest {
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
     final Sink<Integer, CompletionStage<Integer>> sink = Sink.fold(0, Integer::sum);
 
-    // materialize the flow, getting the Sinks materialized value
+    // materialize the flow, getting the Sink's materialized value
     final CompletionStage<Integer> sum = source.runWith(sink, system);
     // #materialization-runWith
 

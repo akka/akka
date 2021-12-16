@@ -52,7 +52,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     val source = Source(1 to 10)
     val sink = Sink.fold[Int, Int](0)(_ + _)
 
-    // materialize the flow, getting the Sinks materialized value
+    // materialize the flow, getting the Sink's materialized value
     val sum: Future[Int] = source.runWith(sink)
     //#materialization-runWith
   }
