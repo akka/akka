@@ -143,4 +143,13 @@ object TraceFileReader {
       (startId until (startId + numberOfIds)).map(_.toString)
     }
   }
+
+  /**
+   * Read traces provided with the "LIRS" (or "LIRS2") paper:
+   * LIRS: An Efficient Low Inter-reference Recency Set Replacement Policy to Improve Buffer Cache Performance
+   * Song Jiang and Xiaodong Zhang
+   */
+  final class Lirs(path: String) extends TraceFileReader(path: String) {
+    override def entityIds: Source[EntityId, NotUsed] = lines // just simple id per line format
+  }
 }

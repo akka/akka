@@ -99,6 +99,7 @@ object Simulator {
       case SimulatorSettings.PatternSettings.Trace(path, format) =>
         format match {
           case "arc"    => new TraceFileReader.Arc(path)
+          case "lirs"   => new TraceFileReader.Lirs(path)
           case "simple" => new TraceFileReader.Simple(path)
           case "text"   => new TraceFileReader.Text(path)
           case _        => sys.error(s"Unknown trace file format [$format]")
