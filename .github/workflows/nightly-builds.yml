@@ -155,7 +155,7 @@ jobs:
             -Dmultinode.Xmx256M \
             -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             ${{ matrix.extraOpts }} \
-            "+~ ${{ matrix.scalaVersion }} clean Test/compile test checkTestsHaveRun"
+            clean "+~ ${{ matrix.scalaVersion }} test" checkTestsHaveRun
 
       - name: Test Reports
         # Makes it easier to spot failures instead of looking at the logs.
