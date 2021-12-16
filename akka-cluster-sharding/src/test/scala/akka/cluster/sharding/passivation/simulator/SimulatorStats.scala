@@ -20,7 +20,7 @@ object SimulatorStats {
     }
 }
 
-final case class EntityStats(accesses: Int = 0, activations: Int = 0, passivations: Int = 0) {
+final case class EntityStats(accesses: Long = 0, activations: Long = 0, passivations: Long = 0) {
   def accessed(): EntityStats = copy(accesses + 1, activations, passivations)
   def activated(): EntityStats = copy(accesses, activations + 1, passivations)
   def passivated(n: Int): EntityStats = copy(accesses, activations, passivations + n)

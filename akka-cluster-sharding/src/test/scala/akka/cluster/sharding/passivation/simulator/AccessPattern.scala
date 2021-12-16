@@ -167,4 +167,15 @@ object TraceFileReader {
         .map(bytes => Integer.toUnsignedLong(bytes.toByteBuffer.getInt).toString)
         .mapMaterializedValue(_ => NotUsed)
   }
+
+  /**
+   * Read Wikipedia traces as used in the "LRB" paper:
+   * Learning Relaxed Belady for Content Distribution Network Caching
+   * Zhenyu Song, Daniel S. Berger, Kai Li, Wyatt Lloyd
+   */
+  final class Wikipedia(path: String) extends TraceFileReader(path: String) {
+    override def entityIds: Source[EntityId, NotUsed] = lines.map { line =>
+      line.split(" ")(1) // second number is the id
+    }
+  }
 }
