@@ -56,6 +56,7 @@ class ActorRefSourceSpec extends StreamSpec {
     }
 
     "drop new when full and with dropNew strategy" in {
+      @nowarn("msg=deprecated")
       val (ref, sub) = Source
         .actorRef(PartialFunction.empty, PartialFunction.empty, 100, OverflowStrategy.dropNew)
         .toMat(TestSink.probe[Int])(Keep.both)
