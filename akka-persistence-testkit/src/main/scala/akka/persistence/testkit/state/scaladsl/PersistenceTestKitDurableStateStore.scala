@@ -7,15 +7,19 @@ package akka.persistence.testkit.state.scaladsl
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.concurrent.Future
+
 import akka.{ Done, NotUsed }
 import akka.actor.ExtendedActorSystem
+import akka.persistence.Persistence
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.scaladsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }
 import akka.persistence.query.UpdatedDurableState
 import akka.persistence.query.Offset
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Sequence
+import akka.persistence.query.typed.scaladsl.DurableStateStoreBySliceQuery
 import akka.persistence.state.scaladsl.{ DurableStateUpdateStore, GetObjectResult }
+import akka.persistence.typed.PersistenceId
 import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
@@ -29,9 +33,11 @@ object PersistenceTestKitDurableStateStore {
 class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     extends DurableStateUpdateStore[A]
     with DurableStateStoreQuery[A]
+    with DurableStateStoreBySliceQuery[A]
     with DurableStateStorePagedPersistenceIdsQuery[A] {
 
   private implicit val sys: ExtendedActorSystem = system
+  private val persistence = Persistence(system)
   private var store = Map.empty[String, Record[A]]
 
   private val (publisher, changesSource) =
@@ -74,9 +80,9 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     def byTagFromOffset(rec: Record[A]) = rec.tag == tag && rec.globalOffset > fromOffset
     def byTagFromOffsetNotDeleted(rec: Record[A]) = byTagFromOffset(rec) && store.contains(rec.persistenceId)
 
-    Source(store.values.toVector.filter(byTagFromOffset _).sortBy(_.globalOffset))
+    Source(store.values.toVector.filter(byTagFromOffset).sortBy(_.globalOffset))
       .concat(changesSource)
-      .filter(byTagFromOffsetNotDeleted _)
+      .filter(byTagFromOffsetNotDeleted)
       .statefulMapConcat { () =>
         var globalOffsetSeen = EarliestOffset
 
@@ -101,6 +107,62 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       }, inclusive = true)
     }
 
+  override def currentChangesBySlices(
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset): Source[DurableStateChange[A], NotUsed] =
+    this.synchronized {
+      val currentGlobalOffset = lastGlobalOffset.get()
+      changesBySlices(entityType, minSlice, maxSlice, offset).takeWhile(_.offset match {
+        case Sequence(fromOffset) =>
+          fromOffset < currentGlobalOffset
+        case offset =>
+          throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
+      }, inclusive = true)
+    }
+
+  override def changesBySlices(
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset): Source[DurableStateChange[A], NotUsed] =
+    this.synchronized {
+      val fromOffset = offset match {
+        case NoOffset             => EarliestOffset
+        case Sequence(fromOffset) => fromOffset
+        case offset =>
+          throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
+      }
+      def bySliceFromOffset(rec: Record[A]) = {
+        val slice = persistence.sliceForPersistenceId(rec.persistenceId)
+        PersistenceId.extractEntityType(rec.persistenceId) == entityType && slice >= minSlice && slice <= maxSlice && rec.globalOffset > fromOffset
+      }
+      def bySliceFromOffsetNotDeleted(rec: Record[A]) =
+        bySliceFromOffset(rec) && store.contains(rec.persistenceId)
+
+      Source(store.values.toVector.filter(bySliceFromOffset).sortBy(_.globalOffset))
+        .concat(changesSource)
+        .filter(bySliceFromOffsetNotDeleted)
+        .statefulMapConcat { () =>
+          var globalOffsetSeen = EarliestOffset
+
+          { (record: Record[A]) =>
+            if (record.globalOffset > globalOffsetSeen) {
+              globalOffsetSeen = record.globalOffset
+              record :: Nil
+            } else Nil
+          }
+        }
+        .map(_.toDurableStateChange)
+    }
+
+  override def sliceForPersistenceId(persistenceId: String): Int =
+    persistence.sliceForPersistenceId(persistenceId)
+
+  override def sliceRanges(numberOfRanges: Int): Seq[Range] =
+    persistence.sliceRanges(numberOfRanges)
+
   override def currentPersistenceIds(afterId: Option[String], limit: Long): Source[String, NotUsed] =
     this.synchronized {
       if (limit < 1) {
@@ -115,6 +177,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       // Enforce limit in Akka Streams so that we can pass long values to take as is.
       Source(keys).take(limit)
     }
+
 }
 
 private final case class Record[A](

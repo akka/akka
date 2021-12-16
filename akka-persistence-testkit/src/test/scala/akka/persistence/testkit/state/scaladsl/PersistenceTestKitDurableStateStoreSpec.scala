@@ -2,7 +2,7 @@
  * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.testkit.query
+package akka.persistence.testkit.state.scaladsl
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -111,6 +111,81 @@ class PersistenceTestKitDurableStateStoreSpec
       val testSinkCurrentChanges =
         stateStore
           .currentChanges(tag, NoOffset)
+          .collect { case u: UpdatedDurableState[Record] => u }
+          .runWith(TestSink[UpdatedDurableState[Record]]())
+
+      val currentStateChange = testSinkCurrentChanges.request(1).expectNext()
+
+      currentStateChange.value should be(record)
+      currentStateChange.revision should be(1L)
+      testSinkCurrentChanges.request(1).expectComplete()
+    }
+
+    "find state changes by slice ordered by upsert" in {
+      val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])
+      val record = Record(1, "name-1")
+      val recordChange = Record(1, "my-name-1")
+      stateStore.upsertObject("Test|record-1", 1L, record, "")
+      val maxSlice = stateStore.sliceRanges(1).head.max
+      val testSink = stateStore
+        .changesBySlices("Test", 0, maxSlice, NoOffset)
+        .collect { case u: UpdatedDurableState[Record] => u }
+        .runWith(TestSink[UpdatedDurableState[Record]]())
+
+      val firstStateChange = testSink.request(1).expectNext()
+      firstStateChange.value should be(record)
+      firstStateChange.revision should be(1L)
+
+      stateStore.upsertObject("Test|record-1", 2L, recordChange, "")
+      val secondStateChange = testSink.request(1).expectNext()
+      secondStateChange.value should be(recordChange)
+      secondStateChange.revision should be(2L)
+      secondStateChange.offset
+        .asInstanceOf[Sequence]
+        .value should be >= (firstStateChange.offset.asInstanceOf[Sequence].value)
+    }
+
+    "find current state changes by slice ordered by upsert" in {
+      val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])
+      val record = Record(1, "name-1")
+
+      stateStore.upsertObject("Test|record-1", 1L, record, "")
+
+      val maxSlice = stateStore.sliceRanges(1).head.max
+      val testSinkCurrentChanges =
+        stateStore
+          .currentChangesBySlices("Test", 0, maxSlice, NoOffset)
+          .collect { case u: UpdatedDurableState[Record] => u }
+          .runWith(TestSink[UpdatedDurableState[Record]]())
+
+      stateStore.upsertObject("record-1", 2L, record.copy(name = "my-name-1-2"), "")
+      stateStore.upsertObject("record-1", 3L, record.copy(name = "my-name-1-3"), "")
+
+      val currentStateChange = testSinkCurrentChanges.request(1).expectNext()
+
+      currentStateChange.value should be(record)
+      currentStateChange.revision should be(1L)
+      testSinkCurrentChanges.request(1).expectComplete()
+
+      val testSinkIllegalOffset =
+        stateStore
+          .currentChangesBySlices("Test", 0, maxSlice, Sequence(100L))
+          .collect { case u: UpdatedDurableState[Record] => u }
+          .runWith(TestSink[UpdatedDurableState[Record]]())
+      testSinkIllegalOffset.request(1).expectNoMessage()
+    }
+
+    "return current changes by slice when there are no further changes" in {
+      val stateStore = new PersistenceTestKitDurableStateStore[Record](classic.asInstanceOf[ExtendedActorSystem])
+      val record = Record(1, "name-1")
+      val tag = "tag-1"
+
+      stateStore.upsertObject("Test|record-1", 1L, record, tag)
+
+      val maxSlice = stateStore.sliceRanges(1).head.max
+      val testSinkCurrentChanges =
+        stateStore
+          .currentChangesBySlices("Test", 0, maxSlice, NoOffset)
           .collect { case u: UpdatedDurableState[Record] => u }
           .runWith(TestSink[UpdatedDurableState[Record]]())
 
