@@ -12,10 +12,13 @@ import akka.util.ByteString
 import java.nio.file.Paths
 
 trait AccessPattern {
+  def isSynthetic: Boolean
   def entityIds: Source[EntityId, NotUsed]
 }
 
 abstract class SyntheticGenerator(events: Int) extends AccessPattern {
+  override val isSynthetic = true
+
   protected def nextValue(event: Int): Long
 
   protected def generateEntityIds: Source[Long, NotUsed] = Source.fromIterator(() => Iterator.from(1)).map(nextValue)
@@ -100,6 +103,8 @@ object SyntheticGenerator {
 }
 
 abstract class TraceFileReader(path: String) extends AccessPattern {
+  override val isSynthetic = false
+
   protected def lines: Source[String, NotUsed] =
     FileIO
       .fromPath(Paths.get(path))
@@ -118,6 +123,15 @@ object TraceFileReader {
   }
 
   /**
+   * Text trace file format with a simple word tokenizer for ASCII text.
+   */
+  final class Text(path: String) extends TraceFileReader(path: String) {
+    override def entityIds: Source[EntityId, NotUsed] = lines.mapConcat { line =>
+      line.split("[^\\w-]+").filter(_.nonEmpty).map(_.toLowerCase)
+    }
+  }
+
+  /**
    * Read traces provided with the "ARC" paper.
    * Nimrod Megiddo and Dharmendra S. Modha, "ARC: A Self-Tuning, Low Overhead Replacement Cache".
    */
@@ -127,6 +141,41 @@ object TraceFileReader {
       val startId = parts(0).toLong
       val numberOfIds = parts(1).toInt
       (startId until (startId + numberOfIds)).map(_.toString)
+    }
+  }
+
+  /**
+   * Read traces provided with the "LIRS" (or "LIRS2") paper:
+   * LIRS: An Efficient Low Inter-reference Recency Set Replacement Policy to Improve Buffer Cache Performance
+   * Song Jiang and Xiaodong Zhang
+   */
+  final class Lirs(path: String) extends TraceFileReader(path: String) {
+    override def entityIds: Source[EntityId, NotUsed] = lines // just simple id per line format
+  }
+
+  /**
+   * Read binary traces provided with the "LIRS2" paper:
+   * LIRS2: An Improved LIRS Replacement Algorithm
+   * Chen Zhong, Xingsheng Zhao, and Song Jiang
+   */
+  final class Lirs2(path: String) extends AccessPattern {
+    override val isSynthetic = false
+
+    override def entityIds: Source[EntityId, NotUsed] =
+      FileIO // binary file of unsigned ints
+        .fromPath(Paths.get(path), chunkSize = 4)
+        .map(bytes => Integer.toUnsignedLong(bytes.toByteBuffer.getInt).toString)
+        .mapMaterializedValue(_ => NotUsed)
+  }
+
+  /**
+   * Read Wikipedia traces as used in the "LRB" paper:
+   * Learning Relaxed Belady for Content Distribution Network Caching
+   * Zhenyu Song, Daniel S. Berger, Kai Li, Wyatt Lloyd
+   */
+  final class Wikipedia(path: String) extends TraceFileReader(path: String) {
+    override def entityIds: Source[EntityId, NotUsed] = lines.map { line =>
+      line.split(" ")(1) // second number is the id
     }
   }
 }
