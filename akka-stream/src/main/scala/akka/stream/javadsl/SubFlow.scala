@@ -2640,17 +2640,15 @@ class SubFlow[In, Out, Mat](
    */
   @ApiMayChange
   def aggregateWithBoundary[Agg, Emit](allocate: java.util.function.Supplier[Agg])(
-    aggregate: function.Function2[Agg, Out, Pair[Agg, Boolean]],
-    harvest: function.Function[Agg, Emit],
-    emitOnTimer: Pair[java.util.function.Predicate[Agg], java.time.Duration]): javadsl.SubFlow[In, Emit, Mat] =
+      aggregate: function.Function2[Agg, Out, Pair[Agg, Boolean]],
+      harvest: function.Function[Agg, Emit],
+      emitOnTimer: Pair[java.util.function.Predicate[Agg], java.time.Duration]): javadsl.SubFlow[In, Emit, Mat] =
     new SubFlow(
-    asScala
-      .aggregateWithBoundary(() => allocate.get())(
+      asScala.aggregateWithBoundary(() => allocate.get())(
         aggregate = (agg, out) => aggregate.apply(agg, out).toScala,
         harvest = agg => harvest.apply(agg),
         emitOnTimer = Option(emitOnTimer).map {
           case Pair(predicate, duration) => (agg => predicate.test(agg), duration.asScala)
-        })
-    )
+        }))
 
 }
