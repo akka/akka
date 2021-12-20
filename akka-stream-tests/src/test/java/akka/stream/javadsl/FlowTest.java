@@ -1176,6 +1176,7 @@ public class FlowTest extends StreamTest {
                 }));
 
     final TestKit probe = new TestKit(system);
+    @SuppressWarnings("deprecation")
     Source<String, ActorRef> source =
         Source.actorRef(
             msg -> Optional.empty(), msg -> Optional.empty(), 1, OverflowStrategy.dropNew());
