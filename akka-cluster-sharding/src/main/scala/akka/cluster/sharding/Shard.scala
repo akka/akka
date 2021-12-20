@@ -616,6 +616,7 @@ private[akka] class Shard(
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
     case msg: ShardRegion.StartEntity            => startEntity(msg.entityId, Some(sender()))
+    case msg: ShardRegion.SetActiveEntityLimit   => activeEntityLimitUpdated(msg)
     case msg: ShardRegion.ShardsUpdated          => shardsUpdated(msg)
     case Passivate(stopMessage)                  => passivate(sender(), stopMessage)
     case PassivateIntervalTick                   => passivateEntitiesAfterInterval()
@@ -624,6 +625,7 @@ private[akka] class Shard(
     case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender())
   }
+
   def rememberUpdate(add: Set[EntityId] = Set.empty, remove: Set[EntityId] = Set.empty): Unit = {
     rememberEntitiesStore match {
       case None =>
@@ -979,6 +981,11 @@ private[akka] class Shard(
       case _ =>
         log.debug("{}: Unknown entity passivating [{}]. Not sending stopMessage back to entity", typeName, entity)
     }
+  }
+
+  private def activeEntityLimitUpdated(updated: ShardRegion.SetActiveEntityLimit): Unit = {
+    val entitiesToPassivate = passivationStrategy.limitUpdated(updated.perRegionLimit)
+    passivateEntities(entitiesToPassivate)
   }
 
   private def shardsUpdated(updated: ShardRegion.ShardsUpdated): Unit = {

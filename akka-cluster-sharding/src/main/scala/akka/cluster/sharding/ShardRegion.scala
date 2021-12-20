@@ -15,6 +15,7 @@ import scala.runtime.AbstractFunction1
 import scala.util.{ Failure, Success }
 import akka.Done
 import akka.actor._
+import akka.annotation.ApiMayChange
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
@@ -489,6 +490,14 @@ object ShardRegion {
       with DeadLetterSuppression
 
   /**
+   * API MAY CHANGE: Messages for passivation strategies may change after additional testing and feedback.
+   *
+   * When limit-based automatic passivation is enabled, set a new active entity limit for a shard region.
+   */
+  @ApiMayChange
+  final case class SetActiveEntityLimit(perRegionLimit: Int)
+
+  /**
    * INTERNAL API
    *
    * Updated shard details sent to all active shards when a shard is started or stopped.
@@ -774,6 +783,7 @@ private[akka] class ShardRegion(
     case query: ShardRegionQuery                 => receiveQuery(query)
     case msg: RestartShard                       => deliverMessage(msg, sender())
     case msg: StartEntity                        => deliverStartEntity(msg, sender())
+    case msg: SetActiveEntityLimit               => deliverToAllShards(msg, sender())
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender())
     case unknownMsg =>
       log.warning("{}: Message does not have an extractor defined in shard so it was ignored: {}", typeName, unknownMsg)
@@ -1276,6 +1286,9 @@ private[akka] class ShardRegion(
           typeName)
     }
   }
+
+  def deliverToAllShards(msg: Any, snd: ActorRef): Unit =
+    shards.values.foreach(_.tell(msg, snd))
 
   def deliverMessage(msg: Any, snd: ActorRef): Unit =
     msg match {
