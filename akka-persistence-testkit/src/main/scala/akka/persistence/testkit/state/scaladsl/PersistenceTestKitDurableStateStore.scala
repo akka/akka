@@ -5,26 +5,26 @@
 package akka.persistence.testkit.state.scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
-
 import scala.concurrent.Future
-
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import akka.actor.ExtendedActorSystem
 import akka.persistence.Persistence
 import akka.persistence.query.DurableStateChange
-import akka.persistence.query.scaladsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }
+import akka.persistence.query.scaladsl.{DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery}
 import akka.persistence.query.UpdatedDurableState
 import akka.persistence.query.Offset
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Sequence
 import akka.persistence.query.typed.scaladsl.DurableStateStoreBySliceQuery
-import akka.persistence.state.scaladsl.{ DurableStateUpdateStore, GetObjectResult }
+import akka.persistence.state.scaladsl.{DurableStateUpdateStore, GetObjectResult}
 import akka.persistence.typed.PersistenceId
 import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorSource
 import akka.stream.OverflowStrategy
+
+import scala.collection.immutable
 
 object PersistenceTestKitDurableStateStore {
   val Identifier = "akka.persistence.testkit.state"
@@ -164,7 +164,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
   override def sliceForPersistenceId(persistenceId: String): Int =
     persistence.sliceForPersistenceId(persistenceId)
 
-  override def sliceRanges(numberOfRanges: Int): Seq[Range] =
+  override def sliceRanges(numberOfRanges: Int): immutable.Seq[Range] =
     persistence.sliceRanges(numberOfRanges)
 
   override def currentPersistenceIds(afterId: Option[String], limit: Long): Source[String, NotUsed] =
