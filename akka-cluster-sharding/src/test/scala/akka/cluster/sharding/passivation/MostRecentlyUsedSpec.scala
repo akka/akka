@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.passivation
 
+import akka.cluster.sharding.ShardRegion
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -184,6 +185,66 @@ class MostRecentlyUsedWithIdleSpec
       (passivate1.nanoTime - lastSendNanoTime1).nanos should be > configuredIdleTimeout
       (passivate2.nanoTime - lastSendNanoTime1).nanos should be > configuredIdleTimeout
       (passivate3.nanoTime - lastSendNanoTime2).nanos should be > configuredIdleTimeout
+    }
+  }
+}
+
+class MostRecentlyUsedLimitAdjustmentSpec
+    extends AbstractEntityPassivationSpec(MostRecentlyUsedSpec.config, expectedEntities = 21) {
+
+  import EntityPassivationSpec.Entity.Envelope
+  import EntityPassivationSpec.Entity.Stop
+
+  "Passivation of most recently used entities" must {
+    "adjust per-shard entity limits when the per-region limit is dynamically adjusted" in {
+      val region = start()
+
+      // only one active shard at first, initial per-shard limit of 10
+      for (id <- 1 to 20) {
+        region ! Envelope(shard = 1, id = id, message = "A")
+        expectReceived(id = id, message = "A")
+        if (id > 10) expectReceived(id = id - 1, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 20))
+
+      // activating a second shard will divide the per-shard limit in two, passivating half of the first shard
+      region ! Envelope(shard = 2, id = 21, message = "B")
+      expectReceived(id = 21, message = "B")
+      for (id <- Seq(20, 9, 8, 7, 6)) {
+        expectReceived(id, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3, 4, 5), 2 -> Set(21))
+
+      // reduce the per-region limit from 10 to 6, per-shard limit becomes 3
+      region ! ShardRegion.SetActiveEntityLimit(6)
+      for (id <- Seq(5, 4)) { // passivate entities over new limit
+        expectReceived(id = id, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 3), 2 -> Set(21))
+
+      for (id <- 1 to 10) {
+        region ! Envelope(shard = 1, id = id, message = "C")
+        expectReceived(id = id, message = "C")
+        if (id > 5) expectReceived(id = id - 1, message = Stop)
+      }
+
+      expectState(region)(1 -> Set(1, 2, 10), 2 -> Set(21))
+
+      // increase the per-region limit from 6 to 12, per-shard limit becomes 6
+      region ! ShardRegion.SetActiveEntityLimit(12)
+
+      for (id <- 11 to 20) {
+        region ! Envelope(shard = 1, id = id, message = "D")
+        expectReceived(id = id, message = "D")
+        if (id > 13) { // start passivating at new higher limit of 6
+          expectReceived(id = id - 1, message = Stop)
+        }
+      }
+
+      expectState(region)(1 -> Set(1, 2, 10, 11, 12, 20), 2 -> Set(21))
     }
   }
 }
