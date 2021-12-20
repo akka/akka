@@ -24,6 +24,11 @@ import akka.util.unused
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
+import akka.persistence.Persistence
+import akka.persistence.query.typed
+import akka.persistence.query.typed.scaladsl.CurrentEventsBySliceQuery
+import akka.persistence.typed.PersistenceId
+
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"
 }
@@ -33,6 +38,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     with EventsByPersistenceIdQuery
     with CurrentEventsByPersistenceIdQuery
     with CurrentEventsByTagQuery
+    with CurrentEventsBySliceQuery
     with PagedPersistenceIdsQuery {
 
   private val log = LoggerFactory.getLogger(getClass)
@@ -43,6 +49,8 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     log.debug("Using in memory storage [{}] for test kit read journal", storagePluginId)
     InMemStorageExtension(system).storageFor(storagePluginId)
   }
+
+  private val persistence = Persistence(system)
 
   private def unwrapTaggedPayload(payload: Any): Any = payload match {
     case Tagged(payload, _) => payload
@@ -88,6 +96,41 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     }
   }
 
+  override def currentEventsBySlices[Event](
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset): Source[typed.EventEnvelope[Event], NotUsed] = {
+    offset match {
+      case NoOffset =>
+      case _ =>
+        throw new UnsupportedOperationException("Offsets not supported for persistence test kit currentEventsByTag yet")
+    }
+    val prs = storage.tryRead(entityType, repr => {
+      val pid = repr.persistenceId
+      val slice = persistence.sliceForPersistenceId(pid)
+      PersistenceId.extractEntityType(pid) == entityType && slice >= minSlice && slice <= maxSlice
+    })
+    Source(prs).map { pr =>
+      val slice = persistence.sliceForPersistenceId(pr.persistenceId)
+      new typed.EventEnvelope[Event](
+        Sequence(pr.sequenceNr),
+        pr.persistenceId,
+        pr.sequenceNr,
+        Some(pr.payload.asInstanceOf[Event]),
+        pr.timestamp,
+        pr.metadata,
+        entityType,
+        slice)
+    }
+  }
+
+  override def sliceForPersistenceId(persistenceId: String): Int =
+    persistence.sliceForPersistenceId(persistenceId)
+
+  override def sliceRanges(numberOfRanges: Int): Seq[Range] =
+    persistence.sliceRanges(numberOfRanges)
+
   /**
    * Get the current persistence ids.
    *
@@ -102,4 +145,5 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
    */
   override def currentPersistenceIds(afterId: Option[String], limit: Long): Source[String, NotUsed] =
     storage.currentPersistenceIds(afterId, limit)
+
 }

@@ -104,6 +104,16 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
     }
   }
 
+  def tryRead(processId: String, predicate: PersistentRepr => Boolean): immutable.Seq[PersistentRepr] = {
+    val batch = readAll().filter(predicate).toVector.sortBy(_.timestamp)
+
+    currentPolicy.tryProcess(processId, ReadEvents(batch)) match {
+      case ProcessingSuccess  => batch
+      case Reject(ex)         => throw ex
+      case StorageFailure(ex) => throw ex
+    }
+  }
+
   def tryReadSeqNumber(persistenceId: String): Long = {
     currentPolicy.tryProcess(persistenceId, ReadSeqNum) match {
       case ProcessingSuccess  => getHighestSeqNumber(persistenceId)
