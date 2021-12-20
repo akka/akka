@@ -23,11 +23,12 @@ import akka.stream.scaladsl.Source
 import akka.util.unused
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
-
 import akka.persistence.Persistence
 import akka.persistence.query.typed
 import akka.persistence.query.typed.scaladsl.CurrentEventsBySliceQuery
 import akka.persistence.typed.PersistenceId
+
+import scala.collection.immutable
 
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"
@@ -128,7 +129,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
   override def sliceForPersistenceId(persistenceId: String): Int =
     persistence.sliceForPersistenceId(persistenceId)
 
-  override def sliceRanges(numberOfRanges: Int): Seq[Range] =
+  override def sliceRanges(numberOfRanges: Int): immutable.Seq[Range] =
     persistence.sliceRanges(numberOfRanges)
 
   /**
