@@ -8,8 +8,14 @@ import akka.actor.ExtendedActorSystem
 import akka.persistence.journal.Tagged
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Offset
-import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentEventsByTagQuery, EventsByPersistenceIdQuery, PagedPersistenceIdsQuery, ReadJournal}
-import akka.persistence.query.{EventEnvelope, Sequence}
+import akka.persistence.query.scaladsl.{
+  CurrentEventsByPersistenceIdQuery,
+  CurrentEventsByTagQuery,
+  EventsByPersistenceIdQuery,
+  PagedPersistenceIdsQuery,
+  ReadJournal
+}
+import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage

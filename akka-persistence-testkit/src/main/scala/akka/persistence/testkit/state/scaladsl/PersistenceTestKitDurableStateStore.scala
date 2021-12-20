@@ -6,17 +6,17 @@ package akka.persistence.testkit.state.scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.Future
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.actor.ExtendedActorSystem
 import akka.persistence.Persistence
 import akka.persistence.query.DurableStateChange
-import akka.persistence.query.scaladsl.{DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery}
+import akka.persistence.query.scaladsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }
 import akka.persistence.query.UpdatedDurableState
 import akka.persistence.query.Offset
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Sequence
 import akka.persistence.query.typed.scaladsl.DurableStateStoreBySliceQuery
-import akka.persistence.state.scaladsl.{DurableStateUpdateStore, GetObjectResult}
+import akka.persistence.state.scaladsl.{ DurableStateUpdateStore, GetObjectResult }
 import akka.persistence.typed.PersistenceId
 import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Keep
