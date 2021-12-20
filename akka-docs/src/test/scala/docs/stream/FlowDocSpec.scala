@@ -41,7 +41,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     // connect the Source to the Sink, obtaining a RunnableGraph
     val runnable: RunnableGraph[Future[Int]] = source.toMat(sink)(Keep.right)
 
-    // materialize the flow and get the value of the FoldSink
+    // materialize the flow and get the value of the sink
     val sum: Future[Int] = runnable.run()
 
     //#materialization-in-steps
@@ -64,7 +64,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     val runnable: RunnableGraph[Future[Int]] =
       Source(1 to 10).toMat(sink)(Keep.right)
 
-    // get the materialized value of the FoldSink
+    // get the materialized value of the sink
     val sum1: Future[Int] = runnable.run()
     val sum2: Future[Int] = runnable.run()
 
