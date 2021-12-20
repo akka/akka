@@ -70,6 +70,10 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     Future.successful(Done)
   }
 
+  private def storeContains(persistenceId: String): Boolean = this.synchronized {
+    store.contains(persistenceId)
+  }
+
   override def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
     val fromOffset = offset match {
       case NoOffset             => EarliestOffset
@@ -78,7 +82,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
         throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
     }
     def byTagFromOffset(rec: Record[A]) = rec.tag == tag && rec.globalOffset > fromOffset
-    def byTagFromOffsetNotDeleted(rec: Record[A]) = byTagFromOffset(rec) && store.contains(rec.persistenceId)
+    def byTagFromOffsetNotDeleted(rec: Record[A]) = byTagFromOffset(rec) && storeContains(rec.persistenceId)
 
     Source(store.values.toVector.filter(byTagFromOffset).sortBy(_.globalOffset))
       .concat(changesSource)
@@ -139,7 +143,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
         PersistenceId.extractEntityType(rec.persistenceId) == entityType && slice >= minSlice && slice <= maxSlice && rec.globalOffset > fromOffset
       }
       def bySliceFromOffsetNotDeleted(rec: Record[A]) =
-        bySliceFromOffset(rec) && store.contains(rec.persistenceId)
+        bySliceFromOffset(rec) && storeContains(rec.persistenceId)
 
       Source(store.values.toVector.filter(bySliceFromOffset).sortBy(_.globalOffset))
         .concat(changesSource)
