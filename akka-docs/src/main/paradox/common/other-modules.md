@@ -28,15 +28,14 @@ Akka Projections let you process a stream of events or records from a source to 
 
 An Akka Persistence journal and snapshot store backed by Apache Cassandra.
 
-## [Couchbase Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-couchbase/current/)
-
-An Akka Persistence journal and snapshot store backed by Couchbase.
-
 
 ## [JDBC Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
 
 An Akka Persistence journal and snapshot store for use with JDBC-compatible databases. This implementation relies on [Slick](https://scala-slick.org/).
 
+## [R2DBC Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-r2dbc/current/)
+
+An Akka Persistence journal and snapshot store for use with R2DBC-compatible databases. This implementation relies on [R2DBC](https://r2dbc.io/).
 
 ## [Google Cloud Spanner Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-spanner/current/)
 
