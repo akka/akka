@@ -96,7 +96,9 @@ jobs:
   akka-artery-aeron-cluster-tests:
     name: Artery Aeron UDP Cluster
     runs-on: ubuntu-20.04
-    if: github.repository == 'akka/akka'
+    # FIXME disabled due to https://github.com/akka/akka/issues/31010
+    #if: github.repository == 'akka/akka'
+    if: ${{ false }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
