@@ -775,7 +775,11 @@ private final case class SavedIslandData(
 
   override def takePublisher(slot: Int, publisher: Publisher[Any], publisherAttributes: Attributes): Unit = {
     val connection = conn(slot)
-    val bufferSize = publisherAttributes.mandatoryAttribute[InputBuffer].max
+    // if the publisher is a source of elements, use the buffer size attributes from itself (#30076)
+    // for all other cases, pick up the buffer size from the destination logic
+    val bufferSize =
+      (if (connection.inOwner.outCount == 0) publisherAttributes
+      else connection.inOwner.attributes).mandatoryAttribute[InputBuffer].max
     val boundary =
       new BatchingActorInputBoundary(bufferSize, shell, publisher, "publisher.in")
     logics.add(boundary)
