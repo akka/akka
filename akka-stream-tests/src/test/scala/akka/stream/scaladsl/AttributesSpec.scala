@@ -22,7 +22,6 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
 import scala.annotation.nowarn
 
-
 object AttributesSpec {
 
   class AttributesSource(_initialAttributes: Attributes = Attributes.none)
@@ -363,8 +362,7 @@ class AttributesSpec
       val materializer = Materializer(system) // for isolation
       try {
         val pub = TestPublisher.probe()
-        Source.fromPublisher(pub).withAttributes(Attributes.inputBuffer(1, 1))
-          .run()(materializer)
+        Source.fromPublisher(pub).withAttributes(Attributes.inputBuffer(1, 1)).run()(materializer)
 
         val streamSnapshot = awaitAssert {
           val snapshot = MaterializerState.streamSnapshots(materializer).futureValue
@@ -434,12 +432,14 @@ class AttributesSpec
       val materializer = Materializer(system) // for isolation
       try {
         val (sourcePromise, complete) = Source.maybe
-          .viaMat(Flow[Int].map { n =>
-            // something else than identity so it's not optimized away
-            n
-          }.async(Dispatchers.DefaultBlockingDispatcherId)
-            .addAttributes(Attributes.inputBuffer(1, 1))
-          )(Keep.left)
+          .viaMat(
+            Flow[Int]
+              .map { n =>
+                // something else than identity so it's not optimized away
+                n
+              }
+              .async(Dispatchers.DefaultBlockingDispatcherId)
+              .addAttributes(Attributes.inputBuffer(1, 1)))(Keep.left)
           .toMat(Sink.ignore)(Keep.both)
           .run()(materializer)
 
@@ -452,7 +452,8 @@ class AttributesSpec
         val islandByDispatcher =
           snapshot.groupBy(_.activeInterpreters.head.logics.head.attributes.mandatoryAttribute[Dispatcher])
 
-        val logicsOnBlocking = islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
+        val logicsOnBlocking =
+          islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
         val blockingInputBoundary = logicsOnBlocking.find(_.label.startsWith("BatchingActorInputBoundary")).get
         blockingInputBoundary.label should include("fill=0/1,") // dodgy but see no other way to inspect from snapshot
 
@@ -467,10 +468,12 @@ class AttributesSpec
       val materializer = Materializer(system) // for isolation
       try {
         val (sourcePromise, complete) = Source.maybe
-          .viaMat(Flow[Int].map { n =>
-            // something else than identity so it's not optimized away
-            n
-          }.async(Dispatchers.DefaultBlockingDispatcherId))(Keep.left)
+          .viaMat(Flow[Int]
+            .map { n =>
+              // something else than identity so it's not optimized away
+              n
+            }
+            .async(Dispatchers.DefaultBlockingDispatcherId))(Keep.left)
           .addAttributes(Attributes.inputBuffer(1, 1))
           .toMat(Sink.ignore)(Keep.both)
           .run()(SystemMaterializer(system).materializer)
@@ -484,7 +487,8 @@ class AttributesSpec
         val islandByDispatcher =
           snapshot.groupBy(_.activeInterpreters.head.logics.head.attributes.mandatoryAttribute[Dispatcher])
 
-        val logicsOnBlocking = islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
+        val logicsOnBlocking =
+          islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
         val blockingInputBoundary = logicsOnBlocking.find(_.label.startsWith("BatchingActorInputBoundary")).get
         blockingInputBoundary.label should include("fill=0/1,") // dodgy but see no other way to inspect from snapshot
 
@@ -499,10 +503,12 @@ class AttributesSpec
       val materializer = Materializer(system) // for isolation
       try {
         val (sourcePromise, complete) = Source.maybe
-          .viaMat(Flow[Int].map { n =>
-            // something else than identity so it's not optimized away
-            n
-          }.async(Dispatchers.DefaultBlockingDispatcherId, 1))(Keep.left)
+          .viaMat(Flow[Int]
+            .map { n =>
+              // something else than identity so it's not optimized away
+              n
+            }
+            .async(Dispatchers.DefaultBlockingDispatcherId, 1))(Keep.left)
           .toMat(Sink.ignore)(Keep.both)
           .run()(SystemMaterializer(system).materializer)
 
@@ -515,7 +521,8 @@ class AttributesSpec
         val islandByDispatcher =
           snapshot.groupBy(_.activeInterpreters.head.logics.head.attributes.mandatoryAttribute[Dispatcher])
 
-        val logicsOnBlocking = islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
+        val logicsOnBlocking =
+          islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
         val blockingInputBoundary = logicsOnBlocking.find(_.label.startsWith("BatchingActorInputBoundary")).get
         blockingInputBoundary.label should include("fill=0/1,") // dodgy but see no other way to inspect from snapshot
 

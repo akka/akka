@@ -779,7 +779,7 @@ private final case class SavedIslandData(
     // for all other cases, pick up the buffer size from the destination logic
     val bufferSize =
       (if (connection.inOwner.outCount == 0) publisherAttributes
-      else connection.inOwner.attributes).mandatoryAttribute[InputBuffer].max
+       else connection.inOwner.attributes).mandatoryAttribute[InputBuffer].max
     val boundary =
       new BatchingActorInputBoundary(bufferSize, shell, publisher, "publisher.in")
     logics.add(boundary)
