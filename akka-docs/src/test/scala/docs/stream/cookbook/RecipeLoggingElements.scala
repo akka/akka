@@ -30,10 +30,9 @@ class RecipeLoggingElements extends RecipeSpec {
       printProbe.expectMsgAllOf("1", "2", "3")
     }
 
+    val mySource = Source(List("1", "2", "3"))
+    def analyse(s: String) = s
     "use log()" in {
-      val mySource = Source(List("1", "2", "3"))
-      def analyse(s: String) = s
-
       //#log-custom
       // customise log levels
       mySource
@@ -41,7 +40,11 @@ class RecipeLoggingElements extends RecipeSpec {
         .withAttributes(Attributes
           .logLevels(onElement = Logging.WarningLevel, onFinish = Logging.InfoLevel, onFailure = Logging.DebugLevel))
         .map(analyse)
+      //#log-custom
+    }
 
+    "use log() with custom adapter" in {
+      //#log-custom
       // or provide custom logging adapter
       implicit val adapter: LoggingAdapter = Logging(system, "customLogger")
       mySource.log("custom")
