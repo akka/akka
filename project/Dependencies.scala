@@ -241,7 +241,12 @@ object Dependencies {
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
 
-  val remote = l ++= Seq(agrona, TestDependencies.junit, TestDependencies.scalatest.value, TestDependencies.jimfs, TestDependencies.protobufRuntime) ++ remoteOptionalDependencies
+  val remote = l ++= Seq(
+        agrona,
+        TestDependencies.junit,
+        TestDependencies.scalatest.value,
+        TestDependencies.jimfs,
+        TestDependencies.protobufRuntime) ++ remoteOptionalDependencies
 
   val remoteTests = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest.value) ++ remoteDependencies
 
@@ -331,7 +336,12 @@ object Dependencies {
         TestDependencies.scalatest.value,
         TestDependencies.junit)
 
-  val docs = l ++= Seq(TestDependencies.scalatest.value, TestDependencies.junit, Docs.sprayJson, Docs.gson, Provided.levelDB)
+  val docs = l ++= Seq(
+        TestDependencies.scalatest.value,
+        TestDependencies.junit,
+        Docs.sprayJson,
+        Docs.gson,
+        Provided.levelDB)
 
   val benchJmh = l ++= Seq(logback, Provided.levelDB, Provided.levelDBNative, Compile.jctools)
 
@@ -339,7 +349,10 @@ object Dependencies {
 
   lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore, TestDependencies.scalatest.value)
 
-  lazy val streamTestkit = l ++= Seq(TestDependencies.scalatest.value, TestDependencies.scalatestScalaCheck.value, TestDependencies.junit)
+  lazy val streamTestkit = l ++= Seq(
+        TestDependencies.scalatest.value,
+        TestDependencies.scalatestScalaCheck.value,
+        TestDependencies.junit)
 
   lazy val streamTests = l ++= Seq(
         TestDependencies.scalatest.value,
