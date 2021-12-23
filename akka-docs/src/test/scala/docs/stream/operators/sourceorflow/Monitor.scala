@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 
 class Monitor {
 
-  implicit val system = ActorSystem("monitor-sample-sys2")
+  implicit val system: ActorSystem = ActorSystem("monitor-sample-sys2")
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   // #monitor

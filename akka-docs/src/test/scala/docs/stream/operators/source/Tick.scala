@@ -45,7 +45,7 @@ object Tick {
       .tick(1.second, 1.second, "tick")
       .mapAsync(1) { _ =>
         implicit val timeout: Timeout = 3.seconds
-        val response: Future[MyActor.Response] = myActor.ask(MyActor.Query)
+        val response: Future[MyActor.Response] = myActor.ask(MyActor.Query(_))
         response
       }
       .map(_.text);

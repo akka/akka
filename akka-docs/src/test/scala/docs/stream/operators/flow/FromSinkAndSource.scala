@@ -34,7 +34,7 @@ object FromSinkAndSource {
 
     val serverFlow = Flow.fromSinkAndSource(sink, source)
 
-    Tcp().bind("127.0.0.1", 9999, halfClose = true).runForeach { incomingConnection =>
+    Tcp(system).bind("127.0.0.1", 9999, halfClose = true).runForeach { incomingConnection =>
       incomingConnection.handleWith(serverFlow)
     }
     // #halfClosedTcpServer
@@ -51,7 +51,7 @@ object FromSinkAndSource {
 
     val serverFlow = Flow.fromSinkAndSource(sinkWithFraming, sourceWithFraming)
 
-    Tcp().bind("127.0.0.1", 9999).runForeach { incomingConnection =>
+    Tcp(system).bind("127.0.0.1", 9999).runForeach { incomingConnection =>
       incomingConnection.handleWith(serverFlow)
     }
     // #chat

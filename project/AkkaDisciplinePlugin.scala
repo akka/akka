@@ -84,10 +84,16 @@ object AkkaDisciplinePlugin extends AutoPlugin {
   val docs =
     Seq(
       Compile / scalacOptions -= defaultScalaOptions,
-      Compile / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
+      Compile / scalacOptions ++= (
+          if (scalaVersion.value.startsWith("3.")) Nil
+          else Seq("-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e")
+        ),
       Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
       Test / scalacOptions -= defaultScalaOptions,
-      Test / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
+      Test / scalacOptions ++= (
+          if (scalaVersion.value.startsWith("3.")) Nil
+          else Seq("-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e")
+        ),
       Compile / doc / scalacOptions := Seq())
 
   lazy val disciplineSettings =

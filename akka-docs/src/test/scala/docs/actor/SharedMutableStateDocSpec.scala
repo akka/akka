@@ -46,7 +46,7 @@ class SharedMutableStateDocSpec {
     def receive = {
       case _ =>
         implicit val ec = context.dispatcher
-        implicit val timeout = Timeout(5 seconds) // needed for `?` below
+        implicit val timeout: Timeout = 5.seconds // needed for `?` below
 
         // Example of incorrect approach
         // Very bad: shared mutable state will cause your
