@@ -10,7 +10,6 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Sequence
 import akka.persistence.query.UpdatedDurableState
-import akka.persistence.testkit.state.scaladsl.PersistenceTestKitDurableStateStore
 import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.TestSink
