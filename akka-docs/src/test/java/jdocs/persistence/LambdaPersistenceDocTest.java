@@ -23,6 +23,9 @@ public class LambdaPersistenceDocTest {
     public String persistenceId();
 
     // #persistence-id
+  }
+
+  public interface PersistenceActorRecoveryMethods {
     // #recovery-status
     public boolean recoveryRunning();
 
