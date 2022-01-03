@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic
@@ -7,23 +7,23 @@ package akka.remote.classic
 import java.io.NotSerializableException
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+import com.typesafe.config._
+
 import akka.actor._
 import akka.event.AddressTerminatedTopic
 import akka.pattern.ask
+import akka.remote._
+import akka.remote.transport._
 import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener }
 import akka.remote.transport.Transport.InvalidAssociationException
-import akka.remote.transport._
-import akka.remote._
-import akka.testkit.SocketUtil.temporaryServerAddress
 import akka.testkit._
+import akka.testkit.SocketUtil.temporaryServerAddress
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
-import com.typesafe.config._
-
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-
-import scala.util.control.NonFatal
 
 object RemotingSpec {
 
@@ -33,7 +33,7 @@ object RemotingSpec {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
-      case (_: Props, n: String) => sender() ! context.actorOf(Props[Echo1], n)
+      case (_: Props, n: String) => sender() ! context.actorOf(Props[Echo1](), n)
       case ex: Exception         => throw ex
       case ActorSelReq(s)        => sender() ! context.actorSelection(s)
       case x                     => target = sender(); sender() ! x
@@ -73,7 +73,7 @@ object RemotingSpec {
       key-password = "changeme"
       trust-store-password = "changeme"
       protocol = "TLSv1.2"
-      enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
+      enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA, TLS_DHE_RSA_WITH_AES_256_GCM_SHA384]
     }
 
     common-netty-settings {
@@ -134,7 +134,7 @@ object RemotingSpec {
   }
 }
 
-@silent
+@nowarn
 class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with DefaultTimeout {
 
   import RemotingSpec._
@@ -158,7 +158,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     sys.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].deployer.deploy(d)
   }
 
-  val remote = remoteSystem.actorOf(Props[Echo2], "echo")
+  val remote = remoteSystem.actorOf(Props[Echo2](), "echo")
 
   val here = RARP(system).provider.resolveActorRef("akka.test://remote-sys@localhost:12346/user/echo")
 
@@ -226,7 +226,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     "support ask" in {
       Await.result(here ? "ping", timeout.duration) match {
         case ("pong", _: akka.pattern.PromiseActorRef) => // good
-        case m                                         => fail(m + " was not (pong, AskActorRef)")
+        case m                                         => fail("" + m + " was not (pong, AskActorRef)")
       }
     }
 
@@ -246,7 +246,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       moreSystems.foreach { sys =>
         sys.eventStream.publish(TestEvent
           .Mute(EventFilter[EndpointDisassociatedException](), EventFilter.warning(pattern = "received dead letter.*")))
-        sys.actorOf(Props[Echo2], name = "echo")
+        sys.actorOf(Props[Echo2](), name = "echo")
       }
       val moreRefs =
         moreSystems.map(sys => system.actorSelection(RootActorPath(getOtherAddress(sys, "tcp")) / "user" / "echo"))
@@ -284,7 +284,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "create and supervise children on remote node" in {
-      val r = system.actorOf(Props[Echo1], "blub")
+      val r = system.actorOf(Props[Echo1](), "blub")
       r.path.toString should ===(
         "akka.test://remote-sys@localhost:12346/remote/akka.test/RemotingSpec@localhost:12345/user/blub")
       r ! 42
@@ -300,7 +300,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "not send to remote re-created actor with same name" in {
-      val echo = remoteSystem.actorOf(Props[Echo1], "otherEcho1")
+      val echo = remoteSystem.actorOf(Props[Echo1](), "otherEcho1")
       echo ! 71
       expectMsg(71)
       echo ! PoisonPill
@@ -308,7 +308,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       echo ! 72
       expectNoMessage(1.second)
 
-      val echo2 = remoteSystem.actorOf(Props[Echo1], "otherEcho1")
+      val echo2 = remoteSystem.actorOf(Props[Echo1](), "otherEcho1")
       echo2 ! 73
       expectMsg(73)
       // msg to old ActorRef (different uid) should not get through
@@ -337,10 +337,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         }
       }), "looker2")
       // child is configured to be deployed on remoteSystem
-      l ! ((Props[Echo1], "child"))
+      l ! ((Props[Echo1](), "child"))
       val child = expectMsgType[ActorRef]
       // grandchild is configured to be deployed on RemotingSpec (system)
-      child ! ((Props[Echo1], "grandchild"))
+      child ! ((Props[Echo1](), "grandchild"))
       val grandchild = expectMsgType[ActorRef]
       grandchild.asInstanceOf[ActorRefScope].isLocal should ===(true)
       grandchild ! 53
@@ -362,7 +362,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsgType[ActorSelection] ! Identify(None)
       (expectMsgType[ActorIdentity].ref.get should be).theSameInstanceAs(l)
 
-      grandchild ! ((Props[Echo1], "grandgrandchild"))
+      grandchild ! ((Props[Echo1](), "grandgrandchild"))
       val grandgrandchild = expectMsgType[ActorRef]
 
       system.actorSelection("/user/looker2/child") ! Identify("idReq1")
@@ -404,7 +404,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       child ! PoisonPill
       expectMsg("postStop")
       expectMsgType[Terminated].actor should ===(child)
-      l ! ((Props[Echo1], "child"))
+      l ! ((Props[Echo1](), "child"))
       val child2 = expectMsgType[ActorRef]
       child2 ! Identify("idReq15")
       expectMsg(ActorIdentity("idReq15", Some(child2)))
@@ -425,12 +425,12 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "not fail ask across node boundaries" in within(5.seconds) {
       import system.dispatcher
-      val f = for (_ <- 1 to 1000) yield (here ? "ping").mapTo(manifest[(String, ActorRef)])
+      val f = for (_ <- 1 to 1000) yield (here ? "ping").mapTo[(String, ActorRef)]
       Await.result(Future.sequence(f), timeout.duration).map(_._1).toSet should ===(Set("pong"))
     }
 
     "be able to use multiple transports and use the appropriate one (TCP)" in {
-      val r = system.actorOf(Props[Echo1], "gonk")
+      val r = system.actorOf(Props[Echo1](), "gonk")
       r.path.toString should ===(
         s"akka.tcp://remote-sys@localhost:${port(remoteSystem, "tcp")}/remote/akka.tcp/RemotingSpec@localhost:${port(system, "tcp")}/user/gonk")
       r ! 42
@@ -446,7 +446,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "be able to use multiple transports and use the appropriate one (SSL)" in {
-      val r = system.actorOf(Props[Echo1], "roghtaar")
+      val r = system.actorOf(Props[Echo1](), "roghtaar")
       r.path.toString should ===(
         s"akka.ssl.tcp://remote-sys@localhost:${port(remoteSystem, "ssl.tcp")}/remote/akka.ssl.tcp/RemotingSpec@localhost:${port(system, "ssl.tcp")}/user/roghtaar")
       r ! 42
@@ -479,6 +479,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "drop sent messages over payload size" in {
+      val droppedProbe = TestProbe()
+      system.eventStream.subscribe(droppedProbe.ref, classOf[Dropped])
       val oversized = byteStringOfSize(maxPayloadBytes + 1)
       EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload sent.*", occurrences = 1)
         .intercept {
@@ -486,6 +488,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
             expectNoMessage(1.second) // No AssocitionErrorEvent should be published
           }
         }
+      droppedProbe.expectMsgType[Dropped].message should ===(oversized)
     }
 
     "drop received messages over payload size" in {
@@ -508,7 +511,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         .withFallback(remoteSystem.settings.config)
       val otherSystem = ActorSystem("other-system", config)
       try {
-        val otherGuy = otherSystem.actorOf(Props[Echo2], "other-guy")
+        val otherGuy = otherSystem.actorOf(Props[Echo2](), "other-guy")
         // check that we use the specified transport address instead of the default
         val otherGuyRemoteTcp = otherGuy.path.toSerializationFormatWithAddress(getOtherAddress(otherSystem, "tcp"))
         val remoteEchoHereTcp =
@@ -795,7 +798,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         try {
           muteSystem(otherSystem)
           probe.expectNoMessage(2.seconds)
-          otherSystem.actorOf(Props[Echo2], "echo")
+          otherSystem.actorOf(Props[Echo2](), "echo")
           within(5.seconds) {
             awaitAssert {
               otherSelection.tell("ping", probe.ref)
@@ -821,7 +824,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         muteSystem(thisSystem)
         val thisProbe = new TestProbe(thisSystem)
         val thisSender = thisProbe.ref
-        thisSystem.actorOf(Props[Echo2], "echo")
+        thisSystem.actorOf(Props[Echo2](), "echo")
         val otherAddress = temporaryServerAddress()
         val otherConfig = ConfigFactory.parseString(s"""
               akka.remote.classic.netty.tcp.port = ${otherAddress.getPort}

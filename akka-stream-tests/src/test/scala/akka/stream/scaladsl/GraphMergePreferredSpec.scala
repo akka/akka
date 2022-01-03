@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.TwoStreamsSetup
-import akka.stream._
-import com.github.ghik.silencer.silent
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-@silent // stream usage
+import scala.annotation.nowarn
+
+import akka.stream._
+import akka.stream.testkit.TwoStreamsSetup
+
+@nowarn // stream usage
 class GraphMergePreferredSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
 
@@ -36,7 +37,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       val aux = Source(Stream.fill(numElements)(2))
 
       val result = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b => sink =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => sink =>
           val merge = b.add(MergePreferred[Int](3))
           preferred ~> merge.preferred
 
@@ -53,7 +54,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
 
     "eventually pass through all elements without corrupting the ordering" in {
       val result = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b => sink =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[Seq[Int]]) { implicit b => sink =>
           val merge = b.add(MergePreferred[Int](3))
           Source(1 to 100) ~> merge.preferred
 

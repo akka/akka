@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
 
+import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
+
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
-
-import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 
 object CachePolicy {
 

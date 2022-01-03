@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.persistence.query
@@ -40,7 +40,7 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
         tryPush()
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         // close connection if responsible for doing so
       }
 
@@ -94,7 +94,8 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
                 Offset.sequence(currentOffset),
                 rs.getString("persistence_id"),
                 rs.getLong("seq_nr"),
-                deserialized)
+                deserialized,
+                System.currentTimeMillis())
             }
             b.result()
           } finally s.close()

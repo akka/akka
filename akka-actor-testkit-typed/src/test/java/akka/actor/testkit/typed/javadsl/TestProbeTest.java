@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl;
@@ -82,6 +82,15 @@ public class TestProbeTest extends JUnitSuite {
               return "some result";
             });
     assertEquals("some result", awaitAssertResult);
+  }
+
+  @Test(expected = Exception.class)
+  public void testAwaitAssertThrowingCheckedException() {
+    TestProbe<String> probe = TestProbe.create(testKit.system());
+    probe.awaitAssert(
+        () -> {
+          throw new Exception("checked exception");
+        });
   }
 
   @Test

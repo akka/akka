@@ -1,32 +1,10 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import java.util.function.BinaryOperator
-
-import akka.NotUsed
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
-import akka.event.Logging
-import akka.stream.ActorAttributes.StreamSubscriptionTimeout
-import akka.stream.Attributes.InputBuffer
-import akka.stream._
-import akka.stream.impl.QueueSink.Output
-import akka.stream.impl.QueueSink.Pull
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.StreamLayout.AtomicModule
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.SinkQueueWithCancel
-import akka.stream.scaladsl.Source
-import akka.stream.stage._
-import akka.util.ccompat._
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -35,6 +13,24 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NonFatal
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import akka.NotUsed
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.event.Logging
+import akka.stream._
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
+import akka.stream.Attributes.InputBuffer
+import akka.stream.Attributes.SourceLocation
+import akka.stream.impl.QueueSink.Output
+import akka.stream.impl.QueueSink.Pull
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.StreamLayout.AtomicModule
+import akka.stream.scaladsl.{ Keep, Sink, SinkQueueWithCancel, Source }
+import akka.stream.stage._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -55,10 +51,6 @@ import scala.util.control.NonFatal
 
   override def traversalBuilder: TraversalBuilder =
     LinearTraversalBuilder.fromModule(this, attributes).makeIsland(SinkModuleIslandTag)
-
-  // This is okay since we the only caller of this method is right below.
-  // TODO: Remove this, no longer needed
-  protected def newInstance(s: SinkShape[In] @uncheckedVariance): SinkModule[In, Mat]
 
   protected def amendShape(attr: Attributes): SinkShape[In] = {
     val thisN = traversalBuilder.attributes.nameOrDefault(null)
@@ -105,8 +97,6 @@ import scala.util.control.NonFatal
     (proc, proc)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new PublisherSink[In](attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
     new PublisherSink[In](attr, amendShape(attr))
 }
@@ -125,9 +115,6 @@ import scala.util.control.NonFatal
     (fanoutProcessor, fanoutProcessor)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new FanoutPublisherSink[In](attributes, shape)
-
   override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
     new FanoutPublisherSink[In](attr, amendShape(attr))
 }
@@ -144,8 +131,6 @@ import scala.util.control.NonFatal
 
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
-    new SubscriberSink[In](subscriber, attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
     new SubscriberSink[In](subscriber, attr, amendShape(attr))
 }
@@ -158,8 +143,6 @@ import scala.util.control.NonFatal
     extends SinkModule[Any, NotUsed](shape) {
   override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) =
     (new CancellingSubscriber[Any], NotUsed)
-  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] =
-    new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[Any, NotUsed] = new CancelSink(attr, amendShape(attr))
 }
 
@@ -316,8 +299,6 @@ import scala.util.control.NonFatal
 
   require(maxConcurrentPulls > 0, "Max concurrent pulls must be greater than 0")
 
-  type Requested[E] = Promise[Option[E]]
-
   val in = Inlet[T]("queueSink.in")
   override def initialAttributes = DefaultAttributes.queueSink
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -326,14 +307,13 @@ import scala.util.control.NonFatal
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
-      type Received[E] = Try[Option[E]]
 
       val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       // Allocates one additional element to hold stream closed/failure indicators
-      val buffer: Buffer[Received[T]] = Buffer(maxBuffer + 1, inheritedAttributes)
-      val currentRequests: Buffer[Requested[T]] = Buffer(maxConcurrentPulls, inheritedAttributes)
+      val buffer: Buffer[Try[Option[T]]] = Buffer(maxBuffer + 1, inheritedAttributes)
+      val currentRequests: Buffer[Promise[Option[T]]] = Buffer(maxConcurrentPulls, inheritedAttributes)
 
       override def preStart(): Unit = {
         setKeepGoing(true)
@@ -341,7 +321,7 @@ import scala.util.control.NonFatal
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise) =>
+        case QueueSink.Pull(pullPromise: Promise[Option[T]] @unchecked) =>
           if (currentRequests.isFull)
             pullPromise.failure(
               new IllegalStateException(s"Too many concurrent pulls. Specified maximum is $maxConcurrentPulls. " +
@@ -354,7 +334,7 @@ import scala.util.control.NonFatal
         case QueueSink.Cancel => completeStage()
       }
 
-      def sendDownstream(promise: Requested[T]): Unit = {
+      def sendDownstream(promise: Promise[Option[T]]): Unit = {
         val e = buffer.dequeue()
         promise.complete(e)
         e match {
@@ -391,14 +371,14 @@ import scala.util.control.NonFatal
 
       // SinkQueueWithCancel impl
       override def pull(): Future[Option[T]] = {
-        val p = Promise[Option[T]]
+        val p = Promise[Option[T]]()
         callback
           .invokeWithFeedback(Pull(p))
           .failed
           .foreach {
             case NonFatal(e) => p.tryFailure(e)
             case _           => ()
-          }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          }(akka.dispatch.ExecutionContexts.parasitic)
         p.future
       }
       override def cancel(): Unit = {
@@ -462,17 +442,19 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class MutableCollectorState[T, R](
     collector: java.util.stream.Collector[T, Any, R],
     accumulator: java.util.function.BiConsumer[Any, T],
-    val accumulated: Any)
+    _accumulated: Any)
     extends CollectorState[T, R] {
 
+  override def accumulated(): Any = _accumulated
+
   override def update(elem: T): CollectorState[T, R] = {
-    accumulator.accept(accumulated, elem)
+    accumulator.accept(_accumulated, elem)
     this
   }
 
   override def finish(): R = {
     // only called if completed without elements
-    collector.finisher().apply(accumulated)
+    collector.finisher().apply(_accumulated)
   }
 }
 
@@ -536,7 +518,7 @@ import scala.util.control.NonFatal
 @InternalApi final private[stream] class LazySink[T, M](sinkFactory: T => Future[Sink[T, M]])
     extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
   val in = Inlet[T]("lazySink.in")
-  override def initialAttributes = DefaultAttributes.lazySink
+  override def initialAttributes = DefaultAttributes.lazySink and SourceLocation.forLambda(sinkFactory)
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override def toString: String = "LazySink"
@@ -572,7 +554,7 @@ import scala.util.control.NonFatal
               failStage(e)
           }
         try {
-          sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
+          sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.parasitic)
         } catch {
           case NonFatal(e) =>
             promise.failure(e)
@@ -605,7 +587,8 @@ import scala.util.control.NonFatal
 
         val subOutlet = new SubSourceOutlet[T]("LazySink")
 
-        val matVal = Source.fromGraph(subOutlet.source).runWith(sink)(interpreter.subFusingMaterializer)
+        val matVal = interpreter.subFusingMaterializer
+          .materialize(Source.fromGraph(subOutlet.source).toMat(sink)(Keep.right), inheritedAttributes)
 
         def maybeCompleteStage(): Unit = {
           if (isClosed(in) && subOutlet.isClosed) {

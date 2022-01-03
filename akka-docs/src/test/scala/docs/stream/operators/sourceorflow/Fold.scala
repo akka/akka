@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.sourceorflow
@@ -17,7 +17,7 @@ object Fold extends App {
   }
   //#histogram
 
-  implicit val sys = ActorSystem()
+  implicit val sys: ActorSystem = ActorSystem()
 
   //#fold
   Source(1 to 150).fold(Histogram())((acc, n) => acc.add(n)).runForeach(println)

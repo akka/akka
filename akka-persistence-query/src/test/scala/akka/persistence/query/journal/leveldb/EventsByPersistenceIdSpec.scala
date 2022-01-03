@@ -1,19 +1,20 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
 
+import scala.concurrent.duration._
 import akka.actor.ActorRef
+import akka.persistence.query.EventEnvelope
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import scala.concurrent.duration._
 
-import akka.persistence.query.EventEnvelope
+import scala.annotation.nowarn
 
 object EventsByPersistenceIdSpec {
   val config = """
@@ -30,6 +31,7 @@ object EventsByPersistenceIdSpec {
 
 class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.config) with Cleanup with ImplicitSender {
 
+  @nowarn("msg=deprecated")
   val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   def setup(persistenceId: String): ActorRef = {

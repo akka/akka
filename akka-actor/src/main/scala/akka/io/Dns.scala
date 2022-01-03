@@ -1,28 +1,28 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
 import java.net.{ Inet4Address, Inet6Address, InetAddress, UnknownHostException }
 import java.util.concurrent.ConcurrentHashMap
-
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.routing.ConsistentHashingRouter.ConsistentHashable
-import com.typesafe.config.Config
 import java.util.function.{ Function => JFunction }
 
+import scala.collection.immutable
+
+import scala.annotation.nowarn
+import com.typesafe.config.Config
+
+import akka.actor._
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.io.dns.AAAARecord
 import akka.io.dns.ARecord
 import akka.io.dns.DnsProtocol
-import akka.util.unused
-import scala.collection.immutable
-
-import akka.event.Logging
+import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
+import akka.util.unused
 
 /**
  * Not for user extension.
@@ -116,7 +116,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
    * trigger a resolve and return None.
    */
   @deprecated("use resolve(DnsProtocol.Resolve)", "2.6.0")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Resolved] = {
     Dns(system).cache.resolve(name)(system, sender)
   }
@@ -137,7 +137,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     Dns(system).cache.resolve(name, system, sender)
   }
 
-  override def lookup() = Dns
+  override def lookup = Dns
 
   override def createExtension(system: ExtendedActorSystem): DnsExt = new DnsExt(system)
 
@@ -163,7 +163,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
    * be used in this case
    */
   @InternalApi
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private[akka] def loadAsyncDns(managerName: String): ActorRef = {
     // This can't pass in `this` as then AsyncDns would pick up the system settings
     asyncDns.computeIfAbsent(
@@ -220,7 +220,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
   val Settings: Settings = new Settings(system.settings.config.getConfig("akka.io.dns"), resolverName)
 
   // System DNS resolver
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   val provider: DnsProvider =
     system.dynamicAccess.createInstanceFor[DnsProvider](Settings.ProviderObjectName, Nil).get
 

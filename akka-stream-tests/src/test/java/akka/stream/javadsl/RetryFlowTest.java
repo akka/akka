@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl;
@@ -22,7 +22,6 @@ import scala.util.Try;
 import java.time.Duration;
 import java.util.Optional;
 
-import static akka.NotUsed.notUsed;
 import static org.junit.Assert.assertEquals;
 
 public class RetryFlowTest extends StreamTest {

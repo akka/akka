@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -10,12 +10,13 @@ import java.nio.channels.SelectionKey._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.util.ByteString
 import akka.io.Inet.DatagramChannelCreator
 import akka.io.SelectionHandler._
 import akka.io.Udp._
+import akka.util.ByteString
 
 /**
  * INTERNAL API
@@ -99,6 +100,8 @@ private[io] class UdpListener(val udp: UdpExt, channelRegistry: ChannelRegistry,
           handler ! Received(ByteString(buffer), sender)
           if (readsLeft > 0) innerReceive(readsLeft - 1, buffer)
         case null => // null means no data was available
+        case unexpected =>
+          throw new RuntimeException(s"Unexpected address in buffer: $unexpected") // will not happen, for exhaustiveness check
       }
     }
 

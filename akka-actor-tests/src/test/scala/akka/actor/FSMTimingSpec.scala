@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -44,7 +44,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
     }
 
     "cancel a StateTimeout when actor is stopped" taggedAs TimingTest in {
-      val stoppingActor = system.actorOf(Props[StoppingActor])
+      val stoppingActor = system.actorOf(Props[StoppingActor]())
       system.eventStream.subscribe(testActor, classOf[DeadLetter])
       stoppingActor ! TestStoppingActorStateTimeout
       within(400 millis) {
@@ -56,7 +56,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       // the timeout in state TestStateTimeout is 800 ms, then it will change to Initial
       within(400 millis) {
         fsm ! TestStateTimeoutOverride
-        expectNoMessage
+        expectNoMessage()
       }
       within(1 second) {
         fsm ! Cancel
@@ -72,7 +72,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
           expectMsg(Tick)
           expectMsg(Transition(fsm, TestSingleTimer, Initial))
         }
-        expectNoMessage
+        expectNoMessage()
       }
     }
 
@@ -86,7 +86,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
           expectMsg(Tock)
           expectMsg(Transition(fsm, TestSingleTimerResubmit, Initial))
         }
-        expectNoMessage
+        expectNoMessage()
       }
     }
 
@@ -232,10 +232,10 @@ object FSMTimingSpec {
         cancelTimer("hallo")
         sender() ! Tick
         startSingleTimer("hallo", Tock, 500.millis.dilated)
-        stay
+        stay()
       case Event(Tock, _) =>
         tester ! Tock
-        stay
+        stay()
       case Event(Cancel, _) =>
         cancelTimer("hallo")
         goto(Initial)
@@ -247,7 +247,7 @@ object FSMTimingSpec {
           cancelTimer("tester")
           goto(Initial)
         } else {
-          stay.using(remaining - 1)
+          stay().using(remaining - 1)
         }
     }
     when(TestCancelStateTimerInNamedTimerMessage) {
@@ -256,7 +256,7 @@ object FSMTimingSpec {
         suspend(self)
         startSingleTimer("named", Tock, 1.millis.dilated)
         TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1.second.dilated)
-        stay.forMax(1.millis.dilated).replying(Tick)
+        stay().forMax(1.millis.dilated).replying(Tick)
       case Event(Tock, _) =>
         goto(TestCancelStateTimerInNamedTimerMessage2)
     }
@@ -271,9 +271,9 @@ object FSMTimingSpec {
         whenUnhandled {
           case Event(Tick, _) =>
             tester ! Unhandled(Tick)
-            stay
+            stay()
         }
-        stay
+        stay()
       case Event(Cancel, _) =>
         whenUnhandled(NullFunction)
         goto(Initial)
@@ -286,7 +286,7 @@ object FSMTimingSpec {
     when(Initial, 200 millis) {
       case Event(TestStoppingActorStateTimeout, _) =>
         context.stop(self)
-        stay
+        stay()
     }
   }
 

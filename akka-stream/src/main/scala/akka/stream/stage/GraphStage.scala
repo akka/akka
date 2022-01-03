@@ -1,28 +1,29 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.stage
 
 import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.tailrec
+import scala.collection.{ immutable, mutable }
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
 
+import scala.annotation.nowarn
+
+import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
+import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
-import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
 import akka.util.unused
-import akka.{ Done, NotUsed }
-
-import scala.annotation.tailrec
-import scala.collection.{ immutable, mutable }
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
-import com.github.ghik.silencer.silent
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.
@@ -196,7 +197,6 @@ object GraphStageLogic {
       materializer: Materializer,
       getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
       initialReceive: StageActorRef.Receive,
-      poisonPillFallback: Boolean, // internal fallback to support deprecated SourceActorRef implementation replacement
       name: String) {
 
     private val callback = getAsyncCallback(internalReceive)
@@ -208,8 +208,6 @@ object GraphStageLogic {
     }
     private val functionRef: FunctionRef = {
       val f: (ActorRef, Any) => Unit = {
-        case (r, PoisonPill) if poisonPillFallback =>
-          callback.invoke((r, PoisonPill))
         case (_, m @ (PoisonPill | Kill)) =>
           materializer.logger.warning(
             "{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
@@ -271,6 +269,22 @@ object GraphStageLogic {
    */
   @InternalApi
   private[stream] val NoPromise: Promise[Done] = Promise.successful(Done)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object ConcurrentAsyncCallbackState {
+  sealed trait State[+E]
+  // waiting for materialization completion or during dispatching of initially queued events
+  final case class Pending[E](pendingEvents: List[Event[E]]) extends State[E]
+  // stream is initialized and so no threads can just send events without any synchronization overhead
+  case object Initialized extends State[Nothing]
+  // Event with feedback promise
+  final case class Event[+E](e: E, handlingPromise: Promise[Done])
+
+  val NoPendingEvents = Pending[Nothing](Nil)
 }
 
 /**
@@ -724,7 +738,29 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         }
       i += 1
     }
+    cleanUpSubstreams(optionalFailureCause)
     setKeepGoing(false)
+  }
+
+  private def cleanUpSubstreams(optionalFailureCause: OptionVal[Throwable]): Unit = {
+    _subInletsAndOutlets.foreach {
+      case inlet: SubSinkInlet[_] =>
+        val subSink = inlet.sink.asInstanceOf[SubSink[_]]
+        optionalFailureCause match {
+          case OptionVal.Some(cause) => subSink.cancelSubstream(cause)
+          case _                     => subSink.cancelSubstream()
+        }
+      case outlet: SubSourceOutlet[_] =>
+        val subSource = outlet.source.asInstanceOf[SubSource[_]]
+        optionalFailureCause match {
+          case OptionVal.Some(cause) => subSource.failSubstream(cause)
+          case _                     => subSource.completeSubstream()
+        }
+      case wat =>
+        throw new IllegalStateException(
+          s"Stage _subInletsAndOutlets contained unexpected element of type ${wat.getClass.toString}")
+    }
+    _subInletsAndOutlets = Set.empty
   }
 
   /**
@@ -1153,18 +1189,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * "Real world" calls of [[invokeWithFeedback]] always return failed promises for `Completed` state
    */
   private final class ConcurrentAsyncCallback[T](handler: T => Unit) extends AsyncCallback[T] {
-
-    sealed trait State
-    // waiting for materialization completion or during dispatching of initially queued events
-    // - can't be final because of SI-4440
-    private case class Pending(pendingEvents: List[Event]) extends State
-    // stream is initialized and so no threads can just send events without any synchronization overhead
-    private case object Initialized extends State
-    // Event with feedback promise - can't be final because of SI-4440
-    private case class Event(e: T, handlingPromise: Promise[Done])
-
-    private[this] val NoPendingEvents = Pending(Nil)
-    private[this] val currentState = new AtomicReference[State](NoPendingEvents)
+    import ConcurrentAsyncCallbackState._
+    private[this] val currentState = new AtomicReference[State[T]](NoPendingEvents)
 
     // is called from the owning [[GraphStage]]
     @tailrec
@@ -1217,9 +1243,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           // started - can just dispatch async message to interpreter
           onAsyncInput(event, promise)
 
-        case list @ Pending(l) =>
+        case list @ Pending(l: List[Event[T]]) =>
           // not started yet
-          if (!currentState.compareAndSet(list, Pending(Event(event, promise) :: l)))
+          if (!currentState.compareAndSet(list, Pending[T](Event[T](event, promise) :: l)))
             invokeWithPromise(event, promise)
       }
 
@@ -1252,6 +1278,22 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     case ref  => ref
   }
 
+  // keep track of created SubSinkInlets and SubSourceOutlets to make sure we do not leak them
+  // when this stage completes/fails, not threadsafe only accessed from stream machinery callbacks etc.
+  private var _subInletsAndOutlets: Set[AnyRef] = Set.empty
+
+  private def created(inlet: SubSinkInlet[_]): Unit =
+    _subInletsAndOutlets += inlet
+
+  private def completedOrFailed(inlet: SubSinkInlet[_]): Unit =
+    _subInletsAndOutlets -= inlet
+
+  private def created(outlet: SubSourceOutlet[_]): Unit =
+    _subInletsAndOutlets += outlet
+
+  private def completedOrFailed(outlet: SubSourceOutlet[_]): Unit =
+    _subInletsAndOutlets -= outlet
+
   /**
    * Initialize a [[StageActorRef]] which can be used to interact with from the outside world "as-if" an [[Actor]].
    * The messages are looped through the [[getAsyncCallback]] mechanism of [[GraphStage]] so they are safe to modify
@@ -1273,7 +1315,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @return minimal actor with watch method
    */
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
-    getEagerStageActor(interpreter.materializer, poisonPillCompatibility = false)(receive)
+    getEagerStageActor(interpreter.materializer)(receive)
 
   /**
    * INTERNAL API
@@ -1282,14 +1324,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
    */
   @InternalApi
-  protected[akka] def getEagerStageActor(
-      eagerMaterializer: Materializer,
-      poisonPillCompatibility: Boolean)( // fallback required for source actor backwards compatibility
+  protected[akka] def getEagerStageActor(eagerMaterializer: Materializer)(
       receive: ((ActorRef, Any)) => Unit): StageActor =
     _stageActor match {
       case null =>
-        _stageActor =
-          new StageActor(eagerMaterializer, getAsyncCallback _, receive, poisonPillCompatibility, stageActorName)
+        _stageActor = new StageActor(eagerMaterializer, getAsyncCallback _, receive, stageActorName)
         _stageActor
       case existing =>
         existing.become(receive)
@@ -1328,6 +1367,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       val exception = streamDetachedException
       inProgress.foreach(_.tryFailure(exception))
     }
+    cleanUpSubstreams(OptionVal.None)
   }
 
   private[this] var asyncCleanupCounter = 0L
@@ -1374,8 +1414,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * This allows the dynamic creation of an Inlet for a GraphStage which is
    * connected to a Sink that is available for materialization (e.g. using
-   * the `subFusingMaterializer`). Care needs to be taken to cancel this Inlet
-   * when the operator shuts down lest the corresponding Sink be left hanging.
+   * the `subFusingMaterializer`). Completion, cancellation and failure of the
+   * parent operator is automatically delegated to instances of `SubSinkInlet` to avoid resource leaks.
    *
    * To be thread safe this method must only be called from either the constructor of the graph operator during
    * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
@@ -1397,11 +1437,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         case OnComplete =>
           closed = true
           handler.onUpstreamFinish()
+          GraphStageLogic.this.completedOrFailed(this)
         case OnError(ex) =>
           closed = true
           handler.onUpstreamFailure(ex)
+          GraphStageLogic.this.completedOrFailed(this)
       }
     }.invoke _)
+
+    GraphStageLogic.this.created(this)
 
     def sink: Graph[SinkShape[T], NotUsed] = _sink
 
@@ -1428,10 +1472,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _sink.pullSubstream()
     }
 
-    def cancel(): Unit = cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
+    def cancel(): Unit = {
+      cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
+    }
     def cancel(cause: Throwable): Unit = {
       closed = true
       _sink.cancelSubstream(cause)
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     override def toString = s"SubSinkInlet($name)"
@@ -1442,9 +1489,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * This allows the dynamic creation of an Outlet for a GraphStage which is
    * connected to a Source that is available for materialization (e.g. using
-   * the `subFusingMaterializer`). Care needs to be taken to complete this
-   * Outlet when the operator shuts down lest the corresponding Sink be left
-   * hanging. It is good practice to use the `timeout` method to cancel this
+   * the `subFusingMaterializer`). Completion, cancellation and failure of the
+   * parent operator is automatically delegated to instances of `SubSourceOutlet`
+   * to avoid resource leaks.
+   *
+   * Even so it is good practice to use the `timeout` method to cancel this
    * Outlet in case the corresponding Source is not materialized within a
    * given time limit, see e.g. ActorMaterializerSettings.
    *
@@ -1468,10 +1517,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           available = false
           closed = true
           handler.onDownstreamFinish(cause)
+          GraphStageLogic.this.completedOrFailed(this)
         }
     }
 
     private val _source = new SubSource[T](name, callback)
+    GraphStageLogic.this.created(this)
 
     /**
      * Set the source into timed-out mode if it has not yet been materialized.
@@ -1519,6 +1570,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       available = false
       closed = true
       _source.completeSubstream()
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     /**
@@ -1528,10 +1580,22 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       available = false
       closed = true
       _source.failSubstream(ex)
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     override def toString = s"SubSourceOutlet($name)"
   }
+
+  override def toString: String =
+    attributes.get[Attributes.Name] match {
+      case Some(name) =>
+        attributes.get[SourceLocation] match {
+          case Some(location) => s"${getClass.getName}-${name.n}(${location.locationName})"
+          case None           => s"${getClass.getName}-${name.n}"
+        }
+
+      case None => getClass.getName
+    }
 
 }
 
@@ -1861,7 +1925,7 @@ trait OutHandler {
       require(cause ne null, "Cancellation cause must not be null")
       require(thisStage.lastCancellationCause eq null, "onDownstreamFinish(cause) must not be called recursively")
       thisStage.lastCancellationCause = cause
-      (onDownstreamFinish(): @silent("deprecated")) // if not overridden, call old deprecated variant
+      (onDownstreamFinish(): @nowarn("msg=deprecated")) // if not overridden, call old deprecated variant
     } finally thisStage.lastCancellationCause = null
   }
 }

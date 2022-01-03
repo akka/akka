@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl;
@@ -59,12 +59,14 @@ public class AttributesTest extends StreamTest {
         Optional.of(new Attributes.Name("b")), attributes.getAttribute(Attributes.Name.class));
   }
 
+  @Deprecated
   @Test
   public void mustGetPossiblyMissingFirstAttributeByClass() {
     assertEquals(
         Optional.of(new Attributes.Name("a")), attributes.getFirstAttribute(Attributes.Name.class));
   }
 
+  @Deprecated
   @Test
   public void mustGetMissingFirstAttributeByClass() {
     assertEquals(Optional.empty(), attributes.getFirstAttribute(Attributes.LogLevels.class));

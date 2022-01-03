@@ -33,6 +33,10 @@ In contrast, *non-blocking* means that no thread is able to indefinitely delay o
 Non-blocking operations are preferred to blocking ones, as the overall progress of the system is not trivially guaranteed
 when it contains blocking operations.
 
+It's not always possible to avoid using blocking APIs, please see
+@ref:[`Blocking Needs Careful Management`](../typed/dispatchers.md#blocking-management) to use those safely within the
+actor code.
+
 ## Deadlock vs. Starvation vs. Live-lock
 
 *Deadlock* arises when several participants are waiting on each other to reach a specific state to be able to progress.
@@ -57,7 +61,7 @@ the two resources, never acquiring it, but always yielding to the other.
 We call it a *Race condition* when an assumption about the ordering of a set of events might be violated by external
 non-deterministic effects. Race conditions often arise when multiple threads have a shared mutable state, and the
 operations of thread on the state might be interleaved causing unexpected behavior. While this is a common case, shared
-state is not necessary to have race conditions. One example could be a client sending unordered packets (e.g UDP
+state is not necessary to have race conditions. One example could be a client sending unordered packets (e.g. UDP
 datagrams) `P1`, `P2` to a server. As the packets might potentially travel via different network routes, it is possible that
 the server receives `P2` first and `P1` afterwards. If the messages contain no information about their sending order it is
 impossible to determine by the server that they were sent in a different order. Depending on the meaning of the packets

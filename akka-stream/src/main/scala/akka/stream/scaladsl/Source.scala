@@ -1,30 +1,30 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor.{ ActorRef, Cancellable }
-import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.fusing.GraphStages
-import akka.stream.impl.fusing.GraphStages._
-import akka.stream.impl.{ PublisherSource, _ }
-import akka.stream.{ Outlet, SourceShape, _ }
-import akka.util.ConstantFun
-import akka.{ Done, NotUsed }
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
-import akka.stream.stage.GraphStageWithMaterializedValue
-
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import akka.{ Done, NotUsed }
+import akka.actor.{ ActorRef, Cancellable }
+import akka.annotation.InternalApi
+import akka.stream.{ Outlet, SourceShape, _ }
+import akka.stream.impl.{ PublisherSource, _ }
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.impl.fusing.GraphStages._
+import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.util.ConstantFun
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -97,6 +97,15 @@ final class Source[+Out, +Mat](
     val (mat, pub) = toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
     (mat, Source.fromPublisher(pub))
   }
+
+  /**
+   * Connect this `Source` to the `Sink.ignore` and run it. Elements from the stream will be consumed and discarded.
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
+   */
+  def run()(implicit materializer: Materializer): Future[Done] =
+    toMat(Sink.ignore)(Keep.right).run()
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -237,6 +246,9 @@ final class Source[+Out, +Mat](
       combineRest(2, rest.iterator)
     })
 
+  /**
+   * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
+  **/
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
 }
@@ -274,6 +286,17 @@ object Source {
     })
 
   /**
+   * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+   * elements and send them downstream on demand.
+   *
+   * You can use [[Source.async]] to create asynchronous boundaries between synchronous Java ``Stream``
+   * and the rest of flow.
+   */
+  def fromJavaStream[T, S <: java.util.stream.BaseStream[T, S]](
+      stream: () => java.util.stream.BaseStream[T, S]): Source[T, NotUsed] =
+    StreamConverters.fromJavaStream(stream);
+
+  /**
    * Creates [[Source]] that will continually produce given elements in specified order.
    *
    * Starts a new 'cycled' `Source` from the given elements. The producer stream of elements
@@ -292,7 +315,7 @@ object Source {
    */
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
     case s: Source[T, M]                                       => s
-    case s: javadsl.Source[T, M]                               => s.asScala
+    case s: javadsl.Source[T, M] @unchecked                    => s.asScala
     case g: GraphStageWithMaterializedValue[SourceShape[T], M] =>
       // move these from the stage itself to make the returned source
       // behave as it is the stage with regards to attributes
@@ -490,6 +513,14 @@ object Source {
     fromGraph(new FutureSource[T](futureElement))
 
   /**
+   * Never emits any elements, never completes and never fails.
+   * This stream could be useful in tests.
+   */
+  def never[T]: Source[T, NotUsed] = _never
+  private[this] val _never: Source[Nothing, NotUsed] =
+    future(Future.never).withAttributes(DefaultAttributes.neverSource)
+
+  /**
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
    * If the `CompletionStage` is completed with a failure the stream is failed.
    *
@@ -588,8 +619,7 @@ object Source {
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
-   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
-   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter.
    *
    * The stream can be completed successfully by sending the actor reference a message that is matched by
    * `completionMatcher` in which case already buffered elements will be signaled before signaling
@@ -639,15 +669,13 @@ object Source {
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
-   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
-   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
    * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately.
    * Otherwise, if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
    * already buffered elements will be sent out before signaling completion.
-   * Sending [[akka.actor.PoisonPill]] will signal completion immediately but this behavior is deprecated and scheduled to be removed.
-   * Using [[akka.actor.ActorSystem.stop]] to stop the actor and complete the stream is *not supported*.
+   * Using [[akka.actor.PoisonPill]] or [[akka.actor.ActorSystem.stop]] to stop the actor and complete the stream is *not supported*.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received
@@ -755,7 +783,7 @@ object Source {
    */
   def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(
       strategy: Int => Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) => M): Source[U, M] = {
-    val secondPartiallyCombined = GraphDSL.create(second) { implicit b => secondShape =>
+    val secondPartiallyCombined = GraphDSL.createGraph(second) { implicit b => secondShape =>
       import GraphDSL.Implicits._
       val c = b.add(strategy(2))
       secondShape ~> c.in(1)
@@ -778,10 +806,38 @@ object Source {
       case immutable.Seq()       => empty[O]
       case immutable.Seq(source) => source.map(t => zipper(immutable.Seq(t))).mapMaterializedValue(_ => NotUsed)
       case s1 +: s2 +: ss        => combine(s1, s2, ss: _*)(ZipWithN(zipper))
+      case _                     => throw new IllegalArgumentException() // just to please compiler completeness check
     }
 
     source.addAttributes(DefaultAttributes.zipWithN)
   }
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.stream.BoundedSourceQueue]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received. The buffer size is passed in as a parameter.
+   * Elements in the buffer will be discarded if downstream is terminated.
+   *
+   * Pushed elements may be dropped if there is no space available in the buffer. Elements will also be dropped if the
+   * queue is failed through the materialized `BoundedQueueSource` or the `Source` is cancelled by the downstream.
+   * An element that was reported to be `enqueued` is not guaranteed to be processed by the rest of the stream. If the
+   * queue is failed by calling `BoundedQueueSource.fail` or the downstream cancels the stream, elements in the buffer
+   * are discarded.
+   *
+   * Acknowledgement of pushed elements is immediate.
+   * [[akka.stream.BoundedSourceQueue.offer]] returns [[akka.stream.QueueOfferResult]] which is implemented as:
+   *
+   * `QueueOfferResult.Enqueued`       element was added to buffer, but may still be discarded later when the queue is
+   *                                   failed or cancelled
+   * `QueueOfferResult.Dropped`        element was dropped
+   * `QueueOfferResult.QueueComplete`  the queue was completed with [[akka.stream.BoundedSourceQueue.complete]]
+   * `QueueOfferResult.Failure`        the queue was failed with [[akka.stream.BoundedSourceQueue.fail]] or if
+   *                                   the stream failed
+   *
+   * @param bufferSize size of the buffer in number of elements
+   */
+  def queue[T](bufferSize: Int): Source[T, BoundedSourceQueue[T]] =
+    Source.fromGraph(new BoundedSourceQueueStage[T](bufferSize))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueueWithComplete]].
@@ -801,6 +857,9 @@ object Source {
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():Future`
    * call when buffer is full.
    *
+   * Instead of using the strategy [[akka.stream.OverflowStrategy.dropNew]] it's recommended to use
+   * `Source.queue(bufferSize)` instead which returns a [[QueueOfferResult]] synchronously.
+   *
    * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueueWithComplete.watchCompletion]].
    * It returns future that completes with success when the operator is completed or fails when the stream is failed.
    *
@@ -808,11 +867,55 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
+   * The materialized SourceQueue may only be used from a single producer.
+   *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
-    Source.fromGraph(new QueueSource(bufferSize, overflowStrategy).withAttributes(DefaultAttributes.queueSource))
+    queue(bufferSize, overflowStrategy, maxConcurrentOffers = 1)
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueueWithComplete]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
+   * if downstream is terminated.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * Acknowledgement mechanism is available.
+   * [[akka.stream.scaladsl.SourceQueueWithComplete.offer]] returns `Future[QueueOfferResult]` which completes with
+   * `QueueOfferResult.Enqueued` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.Dropped` if element was dropped. Can also complete  with `QueueOfferResult.Failure` -
+   * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `maxConcurrentOffers` number of
+   * `offer():Future` call when buffer is full.
+   *
+   * Instead of using the strategy [[akka.stream.OverflowStrategy.dropNew]] it's recommended to use
+   * `Source.queue(bufferSize)` instead which returns a [[QueueOfferResult]] synchronously.
+   *
+   * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueueWithComplete.watchCompletion]].
+   * It returns future that completes with success when the operator is completed or fails when the stream is failed.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
+   * for downstream demand unless there is another message waiting for downstream demand, in that case
+   * offer result will be completed according to the overflow strategy.
+   *
+   * The materialized SourceQueue may be used by up to maxConcurrentOffers concurrent producers.
+   *
+   * @param bufferSize size of buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0, not
+   *                            applicable when `OverflowStrategy.dropNew` is used
+   */
+  def queue[T](
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy,
+      maxConcurrentOffers: Int): Source[T, SourceQueueWithComplete[T]] =
+    Source.fromGraph(
+      new QueueSource(bufferSize, overflowStrategy, maxConcurrentOffers).withAttributes(DefaultAttributes.queueSource))
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.

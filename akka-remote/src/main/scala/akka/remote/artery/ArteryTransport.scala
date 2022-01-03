@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -16,12 +16,11 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NoStackTrace
-import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
 
 import akka.Done
 import akka.NotUsed
-import akka.actor.Actor
-import akka.actor.Props
 import akka.actor._
 import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
@@ -37,8 +36,8 @@ import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
-import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.artery.compress._
+import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
@@ -48,8 +47,6 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.util.OptionVal
 import akka.util.WildcardIndex
-import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -109,26 +106,48 @@ private[remote] object AssociationState {
   private final case class UniqueRemoteAddressValue(
       uniqueRemoteAddress: Option[UniqueAddress],
       listeners: List[UniqueAddress => Unit])
+
+  sealed trait UniqueRemoteAddressState
+  case object UidKnown extends UniqueRemoteAddressState
+  case object UidUnknown extends UniqueRemoteAddressState
+  case object UidQuarantined extends UniqueRemoteAddressState
+
 }
 
 /**
  * INTERNAL API
  */
-private[remote] final class AssociationState(
+private[remote] final class AssociationState private (
     val incarnation: Int,
     val lastUsedTimestamp: AtomicLong, // System.nanoTime timestamp
     val controlIdleKillSwitch: OptionVal[SharedKillSwitch],
     val quarantined: ImmutableLongMap[AssociationState.QuarantinedTimestamp],
     _uniqueRemoteAddress: AtomicReference[AssociationState.UniqueRemoteAddressValue]) {
 
-  import AssociationState.QuarantinedTimestamp
-  import AssociationState.UniqueRemoteAddressValue
+  import AssociationState._
 
   /**
    * Full outbound address with UID for this association.
    * Completed by the handshake.
    */
   def uniqueRemoteAddress(): Option[UniqueAddress] = _uniqueRemoteAddress.get().uniqueRemoteAddress
+
+  def uniqueRemoteAddressState(): UniqueRemoteAddressState = {
+    uniqueRemoteAddress() match {
+      case Some(a) if isQuarantined(a.uid) => UidQuarantined
+      case Some(_)                         => UidKnown
+      case None                            => UidUnknown // handshake not completed yet
+    }
+  }
+
+  def isQuarantined(): Boolean = {
+    uniqueRemoteAddress() match {
+      case Some(a) => isQuarantined(a.uid)
+      case None    => false // handshake not completed yet
+    }
+  }
+
+  def isQuarantined(uid: Long): Boolean = quarantined.contains(uid)
 
   @tailrec def completeUniqueRemoteAddress(peer: UniqueAddress): Unit = {
     val current = _uniqueRemoteAddress.get()
@@ -178,15 +197,6 @@ private[remote] final class AssociationState(
           _uniqueRemoteAddress)
       case None => this
     }
-
-  def isQuarantined(): Boolean = {
-    uniqueRemoteAddress() match {
-      case Some(a) => isQuarantined(a.uid)
-      case None    => false // handshake not completed yet
-    }
-  }
-
-  def isQuarantined(uid: Long): Boolean = quarantined.contains(uid)
 
   def withControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): AssociationState =
     new AssociationState(
@@ -251,79 +261,6 @@ private[remote] trait OutboundContext {
 /**
  * INTERNAL API
  */
-private[remote] object FlushOnShutdown {
-  def props(
-      done: Promise[Done],
-      timeout: FiniteDuration,
-      inboundContext: InboundContext,
-      associations: Set[Association]): Props = {
-    require(associations.nonEmpty)
-    Props(new FlushOnShutdown(done, timeout, inboundContext, associations))
-  }
-
-  case object Timeout
-}
-
-/**
- * INTERNAL API
- */
-private[remote] class FlushOnShutdown(
-    done: Promise[Done],
-    timeout: FiniteDuration,
-    @unused inboundContext: InboundContext,
-    associations: Set[Association])
-    extends Actor {
-
-  var remaining = Map.empty[UniqueAddress, Int]
-
-  val timeoutTask = context.system.scheduler.scheduleOnce(timeout, self, FlushOnShutdown.Timeout)(context.dispatcher)
-
-  override def preStart(): Unit = {
-    try {
-      associations.foreach { a =>
-        val acksExpected = a.sendTerminationHint(self)
-        a.associationState.uniqueRemoteAddress() match {
-          case Some(address) => remaining += address -> acksExpected
-          case None          => // Ignore, handshake was not completed on this association
-        }
-      }
-      if (remaining.valuesIterator.sum == 0) {
-        done.trySuccess(Done)
-        context.stop(self)
-      }
-    } catch {
-      case NonFatal(e) =>
-        // sendTerminationHint may throw
-        done.tryFailure(e)
-        throw e
-    }
-  }
-
-  override def postStop(): Unit = {
-    timeoutTask.cancel()
-    done.trySuccess(Done)
-  }
-
-  def receive = {
-    case ActorSystemTerminatingAck(from) =>
-      // Just treat unexpected acks as systems from which zero acks are expected
-      val acksRemaining = remaining.getOrElse(from, 0)
-      if (acksRemaining <= 1) {
-        remaining -= from
-      } else {
-        remaining = remaining.updated(from, acksRemaining - 1)
-      }
-
-      if (remaining.isEmpty)
-        context.stop(self)
-    case FlushOnShutdown.Timeout =>
-      context.stop(self)
-  }
-}
-
-/**
- * INTERNAL API
- */
 private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends RemoteTransport(_system, _provider)
     with InboundContext {
@@ -340,7 +277,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
 
-  override val log: MarkerLoggingAdapter = Logging.withMarker(system, getClass)
+  override val log: MarkerLoggingAdapter = Logging.withMarker(system, classOf[ArteryTransport])
 
   val flightRecorder: RemotingFlightRecorder = RemotingFlightRecorder(system)
   log.debug("Using flight recorder {}", flightRecorder)
@@ -471,7 +408,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         bindAddress.uid)
     else {
       log.info(
-        s"Remoting started with transport [Artery ${settings.Transport}]; listening on address [{}] and bound to [{}] with UID [{}]",
+        "Remoting started with transport [Artery {}]; listening on address [{}] and bound to [{}] with UID [{}]",
+        settings.Transport,
         localAddress.address,
         bindAddress.address,
         localAddress.uid)
@@ -516,7 +454,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         val hashA = 23 + a
         val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
         math.abs(hash % inboundLanes)
-      case OptionVal.None =>
+      case _ =>
         // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
         env.lane
     }
@@ -615,11 +553,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
               }
 
             case Quarantined(from, to) if to == localAddress =>
+              log.warning("Other node [{}#{}] quarantined this node.", from.address, from.uid)
               // Don't quarantine the other system here, since that will result cluster member removal
               // and can result in forming two separate clusters (cluster split).
               // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
               // use it as a STONITH signal.
-              @silent("deprecated")
+              @nowarn("msg=deprecated")
               val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress, from)
               system.eventStream.publish(lifecycleEvent)
 
@@ -645,11 +584,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       case _: AeronTerminated  => // shutdown already in progress
       case cause if isShutdown =>
         // don't restart after shutdown, but log some details so we notice
-        log.error(cause, s"{} failed after shutdown. {}", streamName, cause.getMessage)
+        log.warning(s"{} failed after shutdown. {}: {}", streamName, cause.getClass.getName, cause.getMessage)
       case _: AbruptTerminationException => // ActorSystem shutdown
       case cause =>
         if (restartCounter.restart()) {
-          log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
+          log.warning("{} failed. Restarting it. {}: {}", streamName, cause.getClass.getName, cause.getMessage)
           flightRecorder.transportRestartInbound(localAddress, streamName)
           restart()
         } else {
@@ -675,9 +614,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         if (allAssociations.isEmpty) Future.successful(Done)
         else {
           val flushingPromise = Promise[Done]()
+          if (log.isDebugEnabled)
+            log.debug(s"Flushing associations [{}]", allAssociations.map(_.remoteAddress).mkString(", "))
           system.systemActorOf(
             FlushOnShutdown
-              .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, this, allAssociations)
+              .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, allAssociations)
               .withDispatcher(Dispatchers.InternalDispatcherId),
             "remoteFlushOnShutdown")
           flushingPromise.future
@@ -730,7 +671,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   private[remote] def isShutdown: Boolean = hasBeenShutdown.get()
 
-  @silent // ThrottleMode from classic is deprecated, we can replace when removing classic
+  @nowarn // ThrottleMode from classic is deprecated, we can replace when removing classic
   override def managementCommand(cmd: Any): Future[Boolean] = {
     cmd match {
       case SetThrottle(address, direction, Blackhole) =>
@@ -868,9 +809,9 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
           system.deadLetters,
           settings.Advanced.SystemMessageResendInterval,
           settings.Advanced.SysMsgBufferSize))
+      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
       // note that System messages must not be dropped before the SystemMessageDelivery stage
       .via(outboundTestFlow(outboundContext))
-      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
       .via(createEncoder(envelopeBufferPool, ControlStreamId))
       .toMat(outboundTransportSink(outboundContext, ControlStreamId, envelopeBufferPool))(Keep.both)
 
@@ -914,8 +855,30 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                   if (!isShutdown)
                     quarantine(from.address, Some(from.uid), "ActorSystem terminated", harmless = true)
                 }(materializer.executionContext)
-            case OptionVal.None =>
+            case _ =>
               log.error("Expected sender for ActorSystemTerminating message from [{}]", from)
+          }
+          false
+        case _ => true
+      }
+    }
+  }
+
+  // Checks for Flush messages and sends an FlushAck for those (not processing them further)
+  // Purpose of this stage is flushing, the sender can wait for the ACKs up to try flushing
+  // pending messages.
+  // The Flush messages are duplicated into all lanes by the DuplicateFlush stage and
+  // the `expectedAcks` corresponds to the number of lanes. The sender receives the `expectedAcks` and
+  // thereby knows how many to wait for.
+  def flushReplier(expectedAcks: Int): Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
+    Flow[InboundEnvelope].filter { envelope =>
+      envelope.message match {
+        case Flush =>
+          envelope.sender match {
+            case OptionVal.Some(snd) =>
+              snd.tell(FlushAck(expectedAcks), ActorRef.noSender)
+            case _ =>
+              log.error("Expected sender for Flush message from [{}]", envelope.association)
           }
           false
         case _ => true
@@ -927,6 +890,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
+      .via(flushReplier(expectedAcks = settings.Advanced.InboundLanes))
       .via(terminationHintReplier(inControlStream = false))
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
@@ -946,6 +910,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(envelopeBufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
+      .via(flushReplier(expectedAcks = 1))
       .via(terminationHintReplier(inControlStream = true))
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))

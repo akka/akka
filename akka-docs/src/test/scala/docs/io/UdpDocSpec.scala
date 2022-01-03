@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.io
@@ -127,7 +127,7 @@ abstract class UdpDocSpec extends AkkaSpec {
     listener ! Udp.SuspendReading
     Thread.sleep(1000) // no way to find out when the above is finished
     val send = system.actorOf(simpleSenderProps(local))
-    probe.expectNoMsg(500.millis)
+    probe.expectNoMessage(500.millis)
     listener ! Udp.ResumeReading
     probe.expectMsg("hello")
     send ! "world"

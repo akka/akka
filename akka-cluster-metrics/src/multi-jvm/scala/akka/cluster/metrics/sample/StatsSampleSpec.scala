@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics.sample
@@ -107,8 +107,8 @@ abstract class StatsSampleSpec
       Cluster(system).join(firstAddress)
       //#join
 
-      system.actorOf(Props[StatsWorker], "statsWorker")
-      system.actorOf(Props[StatsService], "statsService")
+      system.actorOf(Props[StatsWorker](), "statsWorker")
+      system.actorOf(Props[StatsService](), "statsService")
 
       receiveN(3).collect { case MemberUp(m) => m.address }.toSet should be(
         Set(firstAddress, secondAddress, thirdAddress))

@@ -1,26 +1,29 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
+import java.util.concurrent.TimeoutException
+
 import scala.collection.immutable
-import akka.dispatch.Dispatchers
-import com.typesafe.config.Config
-import akka.actor.SupervisorStrategy
-import akka.japi.Util.immutableSeq
-import akka.actor.ActorRef
+import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.SupervisorStrategy
+import akka.dispatch.Dispatchers
+import akka.dispatch.ExecutionContexts
+import akka.japi.Util.immutableSeq
 import akka.pattern.ask
 import akka.pattern.pipe
-import akka.dispatch.ExecutionContexts
-import scala.concurrent.duration.FiniteDuration
-import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 import akka.util.JavaDurationConverters._
-import akka.actor.ActorSystem
-import scala.concurrent.Future
-import java.util.concurrent.TimeoutException
+import akka.util.Timeout
 
 /**
  * Broadcasts the message to all routees, and replies with the first response.
@@ -43,13 +46,12 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
     within: FiniteDuration)
     extends Routee {
 
-  override def send(message: Any, sender: ActorRef): Unit =
+  override def send(message: Any, sender: ActorRef): Unit = {
+    implicit val ec = ExecutionContexts.parasitic
     if (routees.isEmpty) {
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
       val reply = Future.failed(new TimeoutException("Timeout due to no routees"))
       reply.pipeTo(sender)
     } else {
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
       implicit val timeout = Timeout(within)
       val promise = Promise[Any]()
       routees.foreach {
@@ -62,6 +64,7 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
 
       promise.future.pipeTo(sender)
     }
+  }
 }
 
 /**

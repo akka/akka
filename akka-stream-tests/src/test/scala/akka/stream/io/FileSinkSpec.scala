@@ -1,35 +1,36 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
 
-import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 import java.nio.file._
+import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
+
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.util.Success
+
+import scala.annotation.nowarn
+import com.google.common.jimfs.{ Configuration, Jimfs }
+import org.scalatest.concurrent.ScalaFutures
 
 import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.{ FileIO, Keep, Sink, Source }
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
-import com.google.common.jimfs.{ Configuration, Jimfs }
-import org.scalatest.concurrent.ScalaFutures
 
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.util.Success
-
-@silent
+@nowarn
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
   val fs = Jimfs.newFileSystem("FileSinkSpec", Configuration.unix())
 
   val TestLines = {
@@ -204,9 +205,9 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
             .lazyInitAsync(() => Future.successful(FileIO.toPath(f)))
             // map a Future[Option[Future[IOResult]]] into a Future[Option[IOResult]]
             .mapMaterializedValue(_.flatMap {
-              case Some(future) => future.map(Some(_))(ExecutionContexts.sameThreadExecutionContext)
+              case Some(future) => future.map(Some(_))(ExecutionContexts.parasitic)
               case None         => Future.successful(None)
-            }(ExecutionContexts.sameThreadExecutionContext)))
+            }(ExecutionContexts.parasitic)))
 
         Await.result(completion, 3.seconds)
         checkFileContents(f, TestLines.head)

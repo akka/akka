@@ -1,21 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.Signal
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.{ ActorRef, Cancellable }
-import akka.annotation.InternalApi
-import akka.persistence._
-import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
-import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
-import akka.util.OptionVal
-import org.slf4j.{ Logger, MDC }
-
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
+
+import akka.actor.Cancellable
+import akka.actor.typed.Signal
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.{ ActorRef => ClassicActorRef }
+import akka.annotation.InternalApi
+import akka.persistence._
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.SnapshotAdapter
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.RetentionCriteria
+import akka.util.OptionVal
+import org.slf4j.Logger
+import org.slf4j.MDC
 
 /**
  * INTERNAL API
@@ -47,7 +53,10 @@ private[akka] final class BehaviorSetup[C, E, S](
     val retention: RetentionCriteria,
     var holdingRecoveryPermit: Boolean,
     val settings: EventSourcedSettings,
-    val stashState: StashState) {
+    val stashState: StashState,
+    val replication: Option[ReplicationSetup],
+    val publishEvents: Boolean,
+    private val internalLoggerFactory: () => Logger) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
@@ -55,17 +64,30 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   val persistence: Persistence = Persistence(context.system.toClassic)
 
-  val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
-  val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
+  val journal: ClassicActorRef = persistence.journalFor(settings.journalPluginId)
+  val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  def selfClassic: ActorRef = context.self.toClassic
+  val isSnapshotOptional: Boolean =
+    Persistence(context.system.classicSystem).configFor(snapshotStore).getBoolean("snapshot-is-optional")
+
+  if (isSnapshotOptional && (retention match {
+        case SnapshotCountRetentionCriteriaImpl(_, _, true) => true
+        case _                                              => false
+      })) {
+    throw new IllegalArgumentException(
+      "Retention criteria with delete events can't be used together with snapshot-is-optional=false. " +
+      "That can result in wrong recovered state if snapshot load fails.")
+  }
+
+  val replicaId: Option[ReplicaId] = replication.map(_.replicaId)
+
+  def selfClassic: ClassicActorRef = context.self.toClassic
 
   private var mdcPhase = PersistenceMdc.Initializing
-  def log: Logger = {
-    // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
-    // but important to call `context.log` to mark MDC as used
+
+  def internalLogger: Logger = {
     PersistenceMdc.setMdc(persistenceId, mdcPhase)
-    context.log
+    internalLoggerFactory()
   }
 
   def setMdcPhase(phaseName: String): BehaviorSetup[C, E, S] = {
@@ -92,7 +114,7 @@ private[akka] final class BehaviorSetup[C, E, S](
   def cancelRecoveryTimer(): Unit = {
     recoveryTimer match {
       case OptionVal.Some(t) => t.cancel()
-      case OptionVal.None    =>
+      case _                 =>
     }
     recoveryTimer = OptionVal.None
   }
@@ -112,11 +134,11 @@ private[akka] final class BehaviorSetup[C, E, S](
     } catch {
       case NonFatal(ex) =>
         if (catchAndLog) {
-          log.error(s"Error while processing signal [$signal]: $ex", ex)
+          internalLogger.error(s"Error while processing signal [$signal]: $ex", ex)
           true
         } else {
-          if (log.isDebugEnabled)
-            log.debug(s"Error while processing signal [$signal]: $ex", ex)
+          if (internalLogger.isDebugEnabled)
+            internalLogger.debug(s"Error while processing signal [$signal]: $ex", ex)
           throw ex
         }
     }
@@ -131,6 +153,7 @@ private[akka] final class BehaviorSetup[C, E, S](
         if (s.snapshotWhen(sequenceNr)) SnapshotWithRetention
         else if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
         else NoSnapshot
+      case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
     }
   }
 

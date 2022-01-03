@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
-import akka.actor._
-
 import scala.collection.immutable
+
+import akka.actor._
 
 /**
  * INTERNAL API.
  *
- * Messages exchanged between persistent actors, views and a journal.
+ * Messages exchanged between persistent actors and a journal.
  */
 private[persistence] object JournalProtocol {
 
@@ -55,8 +55,9 @@ private[persistence] object JournalProtocol {
    * before all subsequent [[WriteMessageFailure]] replies.
    *
    * @param cause failure cause.
+   * @param writeCount the number of atomic writes that failed.
    */
-  final case class WriteMessagesFailed(cause: Throwable) extends Response
+  final case class WriteMessagesFailed(cause: Throwable, writeCount: Int) extends Response
 
   /**
    * Reply message to a successful [[WriteMessages]] request. For each contained [[PersistentRepr]] message

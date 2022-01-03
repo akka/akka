@@ -75,7 +75,7 @@ a distributed application.
     requests) in an event-driven manner. Actors should not block (i.e. passively
     wait while occupying a Thread) on some external entity—which might be a
     lock, a network socket, etc.—unless it is unavoidable; in the latter case
-    see below.
+    see @ref:[`Blocking Needs Careful Management`](../typed/dispatchers.md#blocking-management).
  2. Do not pass mutable objects between actors. In order to ensure that, prefer
     immutable messages. If the encapsulation of actors is broken by exposing
     their mutable state to the outside, you are back in normal Java concurrency
@@ -107,8 +107,8 @@ while Akka does the heavy lifting under the hood.
 ## Terminating ActorSystem
 
 When you know everything is done for your application, you can have the user guardian
- actor stop, or call the `terminate` method of `ActorSystem`. That will run @ref:[`CoordinatedShutdown`](../coordinated-shutdown.md)
+ actor stop, or call the @scala[@scaladoc[terminate](akka.actor.typed.ActorSystem#terminate():Unit)]@java[@javadoc[terminate()](akka.actor.typed.ActorSystem#terminate())] method of @apidoc[ActorSystem](typed.ActorSystem). That will run @ref:[`CoordinatedShutdown`](../coordinated-shutdown.md)
 stopping all running actors.
 
-If you want to execute some operations while terminating `ActorSystem`,
+If you want to execute some operations while terminating @apidoc[ActorSystem](typed.ActorSystem),
 look at @ref:[`CoordinatedShutdown`](../coordinated-shutdown.md).

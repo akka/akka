@@ -14,7 +14,7 @@ object Chameneos {
   final case class MeetingCount(count: Int) extends ChameneosEvent
   case object Exit extends ChameneosEvent
 
-  abstract class Colour
+  abstract sealed class Colour
   case object RED extends Colour
   case object YELLOW extends Colour
   case object BLUE extends Colour

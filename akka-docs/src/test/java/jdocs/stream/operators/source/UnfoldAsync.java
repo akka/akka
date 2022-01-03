@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.operators.source;
@@ -10,7 +10,6 @@ import akka.actor.typed.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import akka.util.Timeout;
 import akka.actor.typed.javadsl.AskPattern;
 
 import java.time.Duration;

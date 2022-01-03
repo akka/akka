@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
+
 import akka.actor.{ Actor, Props }
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TestLatch }
 import akka.pattern.ask
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TestLatch }
 
 object BroadcastSpec {
   class TestActor extends Actor {

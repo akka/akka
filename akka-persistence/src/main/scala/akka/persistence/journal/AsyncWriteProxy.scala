@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
+
+import scala.collection.immutable
+import scala.concurrent._
+import scala.concurrent.duration.Duration
+import scala.util.Try
 
 import akka.AkkaException
 import akka.actor._
 import akka.pattern.ask
 import akka.persistence._
 import akka.util._
-import scala.util.Try
-
-import scala.collection.immutable
-import scala.concurrent._
-import scala.concurrent.duration.Duration
 
 /**
  * INTERNAL API.
@@ -87,6 +87,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
       case Some(s) =>
         (s ? ReplayMessages(persistenceId, fromSequenceNr = 0L, toSequenceNr = 0L, max = 0L)).map {
           case ReplaySuccess(highest) => highest
+          case _                      => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
       case None => storeNotInitialized
     }
@@ -98,7 +99,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
  */
 private[persistence] object AsyncWriteProxy {
   final case class SetStore(ref: ActorRef)
-  final case object InitTimeout
+  case object InitTimeout
 }
 
 /**

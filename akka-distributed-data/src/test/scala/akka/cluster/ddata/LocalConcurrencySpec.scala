@@ -1,8 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.Actor
 import akka.actor.ActorSystem
@@ -10,10 +15,6 @@ import akka.actor.Props
 import akka.actor.Stash
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object LocalConcurrencySpec {
 
@@ -25,7 +26,7 @@ object LocalConcurrencySpec {
 
   class Updater extends Actor with Stash {
 
-    implicit val selfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+    implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
 
     val replicator = DistributedData(context.system).replicator
 
@@ -45,7 +46,7 @@ class LocalConcurrencySpec(_system: ActorSystem)
     with ImplicitSender {
   import LocalConcurrencySpec._
 
-  def this() {
+  def this() =
     this(
       ActorSystem(
         "LocalConcurrencySpec",
@@ -54,7 +55,6 @@ class LocalConcurrencySpec(_system: ActorSystem)
       akka.remote.classic.netty.tcp.port=0
       akka.remote.artery.canonical.port = 0
       """)))
-  }
 
   override def afterAll(): Unit = {
     shutdown(system)
@@ -65,8 +65,8 @@ class LocalConcurrencySpec(_system: ActorSystem)
   "Updates from same node" must {
 
     "be possible to do from two actors" in {
-      val updater1 = system.actorOf(Props[Updater], "updater1")
-      val updater2 = system.actorOf(Props[Updater], "updater2")
+      val updater1 = system.actorOf(Props[Updater](), "updater1")
+      val updater2 = system.actorOf(Props[Updater](), "updater2")
 
       val numMessages = 100
       for (n <- 1 to numMessages) {
@@ -77,7 +77,10 @@ class LocalConcurrencySpec(_system: ActorSystem)
       val expected = ((1 to numMessages).map("a" + _) ++ (1 to numMessages).map("b" + _)).toSet
       awaitAssert {
         replicator ! Replicator.Get(Updater.key, Replicator.ReadLocal)
-        val ORSet(elements) = expectMsgType[Replicator.GetSuccess[_]].get(Updater.key)
+        val elements = expectMsgType[Replicator.GetSuccess[_]].get(Updater.key) match {
+          case ORSet(e) => e
+          case _        => fail()
+        }
         elements should be(expected)
       }
 

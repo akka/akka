@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.io.japi;
@@ -58,7 +58,7 @@ public class SimpleEchoHandler extends AbstractActor {
         .build();
   }
 
-  private final Receive buffering() {
+  private Receive buffering() {
     return receiveBuilder()
         .match(
             Received.class,
@@ -91,7 +91,7 @@ public class SimpleEchoHandler extends AbstractActor {
 
   private long transferred;
   private long stored = 0;
-  private Queue<ByteString> storage = new LinkedList<ByteString>();
+  private Queue<ByteString> storage = new LinkedList<>();
 
   private boolean suspended = false;
   private boolean closing = false;

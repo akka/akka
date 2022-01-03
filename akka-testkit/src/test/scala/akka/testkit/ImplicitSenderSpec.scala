@@ -1,19 +1,20 @@
 /*
- * Copyright (C) 2013-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2013-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
-import akka.actor.ActorSystem
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import akka.actor.ActorSystem
+
 class ImplicitSenderSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with TestKitBase with ImplicitSender {
 
-  implicit lazy val system = ActorSystem("AkkaCustomSpec")
+  implicit lazy val system: ActorSystem = ActorSystem("AkkaCustomSpec")
 
-  override def afterAll = system.terminate
+  override def afterAll() = system.terminate()
 
   "An ImplicitSender" should {
     "have testActor as its self" in {

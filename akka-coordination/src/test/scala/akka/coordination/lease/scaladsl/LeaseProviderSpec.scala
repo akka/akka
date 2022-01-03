@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.coordination.lease.scaladsl
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ExtendedActorSystem
 import akka.coordination.lease.LeaseSettings
 import akka.testkit.{ AkkaSpec, EventFilter }
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object LeaseProviderSpec {
   class LeaseA(settings: LeaseSettings) extends Lease(settings) {

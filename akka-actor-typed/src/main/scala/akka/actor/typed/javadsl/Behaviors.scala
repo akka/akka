@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
 import java.util.Collections
 import java.util.function.{ Supplier, Function => JFunction }
+
+import scala.reflect.ClassTag
 
 import akka.actor.typed._
 import akka.actor.typed.internal.{
@@ -17,10 +19,8 @@ import akka.actor.typed.internal.{
 }
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
-import akka.util.unused
 import akka.util.ccompat.JavaConverters._
-
-import scala.reflect.ClassTag
+import akka.util.unused
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
@@ -89,6 +89,9 @@ object Behaviors {
    * The `PostStop` signal that results from stopping this actor will first be passed to the
    * current behavior and then the provided `postStop` callback will be invoked.
    * All other messages and signals will effectively be ignored.
+   *
+   * An example of when the callback can be useful compared to the `PostStop` signal
+   * if you want to send a reply to the message that initiated a graceful stop.
    */
   def stopped[T](postStop: Effect): Behavior[T] = BehaviorImpl.stopped(postStop.apply _)
 

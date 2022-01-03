@@ -1,13 +1,15 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
 
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorRef
 import akka.actor.ActorRefWithCell
-import com.typesafe.config.ConfigFactory
-import scala.util.control.NoStackTrace
 
 object Utils {
 

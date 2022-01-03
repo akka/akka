@@ -1,15 +1,18 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
-import akka.actor._
-import org.openjdk.jmh.annotations._
-import com.typesafe.config.ConfigFactory
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
+import akka.actor._
 import akka.testkit.TestProbe
 
 object NodeQueueBenchmark {
@@ -39,7 +42,7 @@ mailbox {
   mailbox-capacity = 1000000
 }
 """).withFallback(ConfigFactory.load())
-  implicit val sys = ActorSystem("ANQ", config)
+  implicit val sys: ActorSystem = ActorSystem("ANQ", config)
   val ref = sys.actorOf(Props(new Actor {
     def receive = {
       case Stop => sender() ! Stop

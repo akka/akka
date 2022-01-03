@@ -1,19 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import java.lang.IllegalStateException
+
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
 import language.postfixOps
 
-import akka.testkit._
-import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import java.lang.IllegalStateException
-import scala.concurrent.Promise
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
+import akka.testkit._
+import akka.util.Timeout
 
 object ActorRefSpec {
 
@@ -25,11 +27,11 @@ object ActorRefSpec {
     def receive = {
       case "complexRequest" => {
         replyTo = sender()
-        val worker = context.actorOf(Props[WorkerActor])
+        val worker = context.actorOf(Props[WorkerActor]())
         worker ! "work"
       }
       case "complexRequest2" =>
-        val worker = context.actorOf(Props[WorkerActor])
+        val worker = context.actorOf(Props[WorkerActor]())
         worker ! ReplyTo(sender())
       case "workDone"      => replyTo ! "complexReply"
       case "simpleRequest" => sender() ! "simpleReply"
@@ -258,7 +260,7 @@ class ActorRefSpec extends AkkaSpec("""
         (intercept[java.lang.IllegalStateException] {
           wrap(result =>
             actorOf(Props(new OuterActor(actorOf(Props(promiseIntercept({
-              throw new IllegalStateException("Ur state be b0rked"); new InnerActor
+              throw new IllegalStateException("Ur state be b0rked")
             })(result)))))))
         }).getMessage should ===("Ur state be b0rked")
 
@@ -278,7 +280,7 @@ class ActorRefSpec extends AkkaSpec("""
     }
 
     "be serializable using Java Serialization on local node" in {
-      val a = system.actorOf(Props[InnerActor])
+      val a = system.actorOf(Props[InnerActor]())
       val esys = system.asInstanceOf[ExtendedActorSystem]
 
       import java.io._
@@ -309,7 +311,7 @@ class ActorRefSpec extends AkkaSpec("""
     }
 
     "throw an exception on deserialize if no system in scope" in {
-      val a = system.actorOf(Props[InnerActor])
+      val a = system.actorOf(Props[InnerActor]())
 
       import java.io._
 
@@ -337,7 +339,7 @@ class ActorRefSpec extends AkkaSpec("""
       val out = new ObjectOutputStream(baos)
 
       val sysImpl = system.asInstanceOf[ActorSystemImpl]
-      val ref = system.actorOf(Props[ReplyActor], "non-existing")
+      val ref = system.actorOf(Props[ReplyActor](), "non-existing")
       val serialized = SerializedActorRef(ref)
 
       out.writeObject(serialized)
@@ -381,7 +383,7 @@ class ActorRefSpec extends AkkaSpec("""
 
     "support reply via sender" in {
       val latch = new TestLatch(4)
-      val serverRef = system.actorOf(Props[ReplyActor])
+      val serverRef = system.actorOf(Props[ReplyActor]())
       val clientRef = system.actorOf(Props(new SenderActor(serverRef, latch)))
 
       clientRef ! "complex"
@@ -391,7 +393,7 @@ class ActorRefSpec extends AkkaSpec("""
 
       Await.ready(latch, timeout.duration)
 
-      latch.reset
+      latch.reset()
 
       clientRef ! "complex2"
       clientRef ! "simple"

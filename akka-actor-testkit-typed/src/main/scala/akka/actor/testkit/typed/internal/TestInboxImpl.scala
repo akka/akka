@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import akka.actor.typed.ActorRef
-import akka.actor.ActorPath
-import akka.annotation.InternalApi
-
 import scala.annotation.tailrec
 import scala.collection.immutable
+
+import akka.actor.ActorPath
+import akka.actor.typed.ActorRef
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

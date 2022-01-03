@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Replicator.Changed
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class GCounterSpec extends AnyWordSpec with Matchers {
   val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)
@@ -144,6 +145,25 @@ class GCounterSpec extends AnyWordSpec with Matchers {
       merged2.value should be(17)
     }
 
+    "be able to have its history correctly merged with another GCounter 3" in {
+      val c1 = GCounter()
+
+      val c2 = c1.increment(node1, 3)
+      val c3 = c2.increment(node1, 4)
+
+      // new empty counter for node2
+      val c4 = GCounter()
+      val c5 = c4.increment(node2, 5)
+      val c6 = c5.increment(node2)
+
+      val c7 = c6.merge(c3)
+
+      c7.state(node1) should be(7)
+      c7.state(node2) should be(6)
+
+      c7.value should be(13)
+    }
+
     "have support for pruning" in {
       val c1 = GCounter()
       val c2 = c1.increment(node1)
@@ -170,13 +190,19 @@ class GCounterSpec extends AnyWordSpec with Matchers {
 
     "have unapply extractor" in {
       val c1 = GCounter.empty.increment(node1).increment(node2)
-      val GCounter(value1) = c1
+      val value1 = c1 match {
+        case GCounter(value1) => value1
+        case _                => fail()
+      }
       val value2: BigInt = value1
       value2 should be(2L)
 
       Changed(GCounterKey("key"))(c1) match {
         case c @ Changed(GCounterKey("key")) =>
-          val GCounter(value3) = c.dataValue
+          val value3 = c.dataValue match {
+            case GCounter(value3) => value3
+            case _                => fail()
+          }
           val value4: BigInt = value3
           value4 should be(2L)
         case _ =>

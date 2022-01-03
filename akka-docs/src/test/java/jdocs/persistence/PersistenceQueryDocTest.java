@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence;
@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import akka.NotUsed;
-import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.Offset;
 import com.typesafe.config.Config;

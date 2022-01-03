@@ -1,44 +1,43 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
 import java.lang.{ Iterable => JIterable }
-import java.util.Optional
-import java.util.function.{ Function => JFunction }
-
-import akka.{ Done, NotUsed }
-import scala.concurrent.duration._
 import java.net.InetSocketAddress
-
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.stream.Materializer
-import akka.stream.scaladsl
-import akka.util.ByteString
-import akka.japi.Util.immutableSeq
-import akka.io.Inet.SocketOption
-import scala.compat.java8.OptionConverters._
-import scala.compat.java8.FutureConverters._
+import java.util.Optional
 import java.util.concurrent.CompletionStage
+import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
 
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
+import scala.annotation.nowarn
+
+import akka.{ Done, NotUsed }
+import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
-import javax.net.ssl.SSLContext
+import akka.actor.ExtendedActorSystem
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
+import akka.io.Inet.SocketOption
+import akka.japi.Util.immutableSeq
+import akka.stream.Materializer
 import akka.stream.SystemMaterializer
 import akka.stream.TLSClosing
 import akka.stream.TLSProtocol.NegotiateNewSession
+import akka.stream.scaladsl
+import akka.util.ByteString
 import akka.util.JavaDurationConverters._
-import com.github.ghik.silencer.silent
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -87,7 +86,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * Handles the connection using the given flow, which is materialized exactly once and the respective
      * materialized value is returned.
      *
-     * Convenience shortcut for: `flow.join(handler).run()`.
+     * Convenience shortcut for: `flow.joinMat(handler, Keep.right).run(systemProvider)`.
      *
      * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
      */
@@ -98,7 +97,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * Handles the connection using the given flow, which is materialized exactly once and the respective
      * materialized value is returned.
      *
-     * Convenience shortcut for: `flow.join(handler).run()`.
+     * Convenience shortcut for: `flow.joinMat(handler, Keep.right).run(materializer)`.
      *
      * Prefer the method taking an `ActorSystem` unless you have special requirements
      */
@@ -132,14 +131,15 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   override def get(system: ClassicActorSystemProvider): Tcp = super.get(system)
 
-  def lookup() = Tcp
+  def lookup = Tcp
 
   def createExtension(system: ExtendedActorSystem): Tcp = new Tcp(system)
 }
 
 class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
-  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => ec }
+
+  import akka.dispatch.ExecutionContexts.parasitic
 
   private lazy val delegate: scaladsl.Tcp = scaladsl.Tcp(system)
 
@@ -175,7 +175,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       delegate
         .bind(interface, port, backlog, immutableSeq(options), halfClose, optionalDurationToScala(idleTimeout))
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
@@ -221,7 +221,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       delegate
         .bind(interface, port)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
@@ -259,7 +259,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           halfClose,
           optionalDurationToScala(connectTimeout),
           optionalDurationToScala(idleTimeout))
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
@@ -309,7 +309,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.fromGraph(
       delegate
         .outgoingConnection(new InetSocketAddress(host, port))
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] with TLS.
@@ -330,7 +330,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.fromGraph(
       delegate
         .outgoingTlsConnection(host, port, sslContext, negotiateNewSession)
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] with TLS.
@@ -363,7 +363,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           immutableSeq(options),
           connectTimeout,
           idleTimeout)
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] with TLS.
@@ -381,7 +381,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.fromGraph(
       delegate
         .outgoingConnectionWithTls(remoteAddress, createSSLEngine = () => createSSLEngine.get())
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] with TLS.
@@ -417,7 +417,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
               case Some(t) => Failure(t)
             },
           closing)
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava))
   }
 
   /**
@@ -440,14 +440,14 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       negotiateNewSession: NegotiateNewSession,
       backlog: Int,
       options: JIterable[SocketOption],
-      @silent // unused #26689
+      @nowarn // unused #26689
       halfClose: Boolean,
       idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(
       delegate
         .bindTls(interface, port, sslContext, negotiateNewSession, backlog, immutableSeq(options), idleTimeout)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
@@ -468,7 +468,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       delegate
         .bindTls(interface, port, sslContext, negotiateNewSession)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
@@ -484,7 +484,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       delegate
         .bindWithTls(interface, port, createSSLEngine = () => createSSLEngine.get())
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava))
   }
 
   /**
@@ -518,7 +518,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
             },
           closing)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava))
   }
 
   private def optionalDurationToScala(duration: Optional[java.time.Duration]) = {

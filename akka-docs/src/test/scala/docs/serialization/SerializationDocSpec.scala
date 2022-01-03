@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.serialization {
@@ -108,6 +108,21 @@ package docs.serialization {
    * Marker trait for serialization with Jackson JSON
    */
   trait JsonSerializable
+
+  object SerializerIdConfig {
+    val config =
+      """
+        #//#serialization-identifiers-config
+        akka {
+          actor {
+            serialization-identifiers {
+              "docs.serialization.MyOwnSerializer" = 1234567
+            }
+          }
+        }
+        #//#serialization-identifiers-config
+        """
+  }
 
   class SerializationDocSpec extends AkkaSpec {
     "demonstrate configuration of serialize messages" in {

@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal.adapter
 
 import java.time.Duration
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.Cancellable
 import akka.actor.typed.Scheduler
 import akka.annotation.InternalApi
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

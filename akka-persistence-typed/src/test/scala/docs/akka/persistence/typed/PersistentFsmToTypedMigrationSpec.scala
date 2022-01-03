@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.persistence.typed
@@ -36,6 +36,7 @@ import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object PersistentFsmToTypedMigrationSpec {
+  // cannot be moved to testkit journals as it requires sharing journal content across actor system instances
   val config = ConfigFactory.parseString(s"""
     akka.actor.allow-java-serialization = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
@@ -130,8 +131,6 @@ object ShoppingCartBehavior {
             Effect.none
           case Timeout =>
             Effect.persist(CustomerInactive)
-          case _ =>
-            Effect.none
         }
       case Inactive(_) =>
         command match {
@@ -163,13 +162,12 @@ object ShoppingCartBehavior {
           case ItemAdded(item) => Shopping(cart.addItem(item))
           case _               => la
         }
-      case s @ Shopping(cart) =>
+      case Shopping(cart) =>
         event match {
           case ItemAdded(item)  => Shopping(cart.addItem(item))
           case OrderExecuted    => Paid(cart)
           case OrderDiscarded   => state // will be stopped
           case CustomerInactive => Inactive(cart)
-          case _                => s
         }
       case i @ Inactive(cart) =>
         event match {

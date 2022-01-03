@@ -1,18 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
-import akka.actor.ActorCell
-import akka.dispatch.sysmsg._
-import scala.annotation.tailrec
-import scala.concurrent.duration.Duration
-import akka.util.Helpers
 import java.util.{ Comparator, Iterator }
 import java.util.concurrent.ConcurrentSkipListSet
-import akka.actor.ActorSystemImpl
+
+import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.ActorCell
+import akka.actor.ActorSystemImpl
+import akka.dispatch.sysmsg._
+import akka.util.Helpers
 
 /**
  * INTERNAL API: Use `BalancingPool` instead of this dispatcher directly.
@@ -103,7 +105,7 @@ private[akka] class BalancingDispatcher(
         if (messageQueue.hasMessages
             && i.hasNext
             && (executorService.executor match {
-              case lm: LoadMetrics => !lm.atFullThrottle
+              case lm: LoadMetrics => !lm.atFullThrottle()
               case _               => true
             })
             && !registerForExecution(i.next.mailbox, false, false))

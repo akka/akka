@@ -1,21 +1,23 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
-
-import akka.util.ccompat.JavaConverters._
-import akka.testkit.AkkaSpec
-import com.spotify.docker.client.DefaultDockerClient
-import com.spotify.docker.client.DockerClient.{ ListContainersParam, LogsParam }
-import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding }
-import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
 
-trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
+import com.typesafe.config.Config
+import com.spotify.docker.client.DefaultDockerClient
+import com.spotify.docker.client.DockerClient.{ ListContainersParam, LogsParam }
+import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding }
+import org.scalatest.concurrent.Eventually
+
+import akka.testkit.AkkaSpec
+import akka.util.ccompat.JavaConverters._
+
+abstract class DockerBindDnsService(config: Config) extends AkkaSpec(config) with Eventually {
   val client = DefaultDockerClient.fromEnv().build()
 
   val hostPort: Int
@@ -26,7 +28,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
 
   override def atStartup(): Unit = {
     log.info("Running on port port {}", hostPort)
-    self.atStartup()
+    super.atStartup()
 
     // https://github.com/sameersbn/docker-bind/pull/61
     val image = "raboof/bind:9.11.3-20180713-nochown"
@@ -70,7 +72,8 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
       })
 
     val creation = client.createContainer(containerConfig, containerName)
-    creation.warnings() should be(null).or(have(size(0)))
+    if (creation.warnings() != null)
+      creation.warnings() should have(size(0))
     id = Some(creation.id())
 
     client.startContainer(creation.id())
@@ -86,7 +89,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
   }
 
   override def afterTermination(): Unit = {
-    self.afterTermination()
+    super.afterTermination()
     id.foreach(client.killContainer)
     id.foreach(client.removeContainer)
   }

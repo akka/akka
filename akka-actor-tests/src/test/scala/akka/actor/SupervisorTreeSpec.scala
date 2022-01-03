@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import language.postfixOps
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender }
+
+import language.postfixOps
+
 import akka.pattern.ask
+import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender }
 
 class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeout {
 

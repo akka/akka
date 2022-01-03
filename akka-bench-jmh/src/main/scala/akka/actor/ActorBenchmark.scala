@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import BenchmarkActors._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
-import BenchmarkActors._
-import scala.concurrent.duration._
 
 object ActorBenchmark {
   // Constants because they are used in annotations

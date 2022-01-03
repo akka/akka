@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
-import java.nio.channels.{ SelectionKey, ServerSocketChannel, SocketChannel }
 import java.net.InetSocketAddress
+import java.nio.channels.{ SelectionKey, ServerSocketChannel, SocketChannel }
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+
 import akka.actor._
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 
 /**
  * INTERNAL API
@@ -77,7 +78,7 @@ private[io] class TcpListener(
         } else {
           e
         }
-        bindCommander ! bind.failureMessage.withCause(exception)
+        bindCommander ! CommandFailed(bind).withCause(exception)
         log.error(exception, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
         context.stop(self)
     }

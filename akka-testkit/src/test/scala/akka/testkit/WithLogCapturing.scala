@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
 import java.io.{ OutputStream, PrintStream }
 
+import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
+
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging._
-import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
 
 /**
  * Mixin this trait to a test to make log lines appear only when the test failed.
@@ -55,7 +56,7 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
         override def write(b: Int): Unit = oldOut.write(b)
       }) {
         override def println(x: Any): Unit =
-          oldOut.println(prefix + String.valueOf(x).replaceAllLiterally("\n", s"\n$prefix"))
+          oldOut.println(prefix + String.valueOf(x).replace("\n", s"\n$prefix"))
       }
 
     Console.withOut(prefixingOut) {

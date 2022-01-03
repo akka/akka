@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch;
@@ -68,7 +68,7 @@ public class JavaFutureTests extends JUnitSuite {
 
     cf.success("foo");
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals(Await.result(f, timeout), "foo");
+    assertEquals("foo", Await.result(f, timeout));
   }
 
   @Test
@@ -87,7 +87,7 @@ public class JavaFutureTests extends JUnitSuite {
     Throwable exception = new NullPointerException();
     cf.failure(exception);
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals(f.value().get().failed().get(), exception);
+    assertEquals(exception, f.value().get().failed().get());
   }
 
   @Test
@@ -103,7 +103,7 @@ public class JavaFutureTests extends JUnitSuite {
 
     cf.success("foo");
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals(Await.result(f, timeout), "foo");
+    assertEquals("foo", Await.result(f, timeout));
   }
 
   @Test
@@ -119,7 +119,7 @@ public class JavaFutureTests extends JUnitSuite {
 
     cf.success("foo");
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals(Await.result(f, timeout), "foo");
+    assertEquals("foo", Await.result(f, timeout));
   }
 
   @Test
@@ -138,8 +138,8 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals(Await.result(f, timeout), "1000");
-    assertEquals(Await.result(r, timeout).intValue(), 1000);
+    assertEquals("1000", Await.result(f, timeout));
+    assertEquals(1000, Await.result(r, timeout).intValue());
     assertTrue(latch.await(5, TimeUnit.SECONDS));
   }
 
@@ -157,15 +157,15 @@ public class JavaFutureTests extends JUnitSuite {
 
     cf.success("foo");
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals(Await.result(f, timeout), "foo");
-    assertEquals(Await.result(r, timeout), "foo");
+    assertEquals("foo", Await.result(f, timeout));
+    assertEquals("foo", Await.result(r, timeout));
   }
 
   // TODO: Improve this test, perhaps with an Actor
   @Test
   public void mustSequenceAFutureList() throws Exception{
-    LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
-    LinkedList<String> listExpected = new LinkedList<String>();
+    LinkedList<Future<String>> listFutures = new LinkedList<>();
+    LinkedList<String> listExpected = new LinkedList<>();
 
     for (int i = 0; i < 10; i++) {
       listExpected.add("test");
@@ -178,13 +178,13 @@ public class JavaFutureTests extends JUnitSuite {
 
     Future<Iterable<String>> futureList = Futures.sequence(listFutures, system.dispatcher());
 
-    assertEquals(Await.result(futureList, timeout), listExpected);
+    assertEquals(listExpected, Await.result(futureList, timeout));
   }
 
   // TODO: Improve this test, perhaps with an Actor
   @Test
   public void foldForJavaApiMustWork() throws Exception{
-    LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
+    LinkedList<Future<String>> listFutures = new LinkedList<>();
     StringBuilder expected = new StringBuilder();
 
     for (int i = 0; i < 10; i++) {
@@ -202,12 +202,12 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals(Await.result(result, timeout), expected.toString());
+    assertEquals(expected.toString(), Await.result(result, timeout));
   }
 
   @Test
   public void reduceForJavaApiMustWork() throws Exception{
-    LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
+    LinkedList<Future<String>> listFutures = new LinkedList<>();
     StringBuilder expected = new StringBuilder();
 
     for (int i = 0; i < 10; i++) {
@@ -225,13 +225,13 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals(Await.result(result, timeout), expected.toString());
+    assertEquals(expected.toString(), Await.result(result, timeout));
   }
 
   @Test
   public void traverseForJavaApiMustWork() throws Exception{
-    LinkedList<String> listStrings = new LinkedList<String>();
-    LinkedList<String> expectedStrings = new LinkedList<String>();
+    LinkedList<String> listStrings = new LinkedList<>();
+    LinkedList<String> expectedStrings = new LinkedList<>();
 
     for (int i = 0; i < 10; i++) {
       expectedStrings.add("TEST");
@@ -248,12 +248,12 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals(Await.result(result, timeout), expectedStrings);
+    assertEquals(expectedStrings, Await.result(result, timeout));
   }
 
   @Test
   public void findForJavaApiMustWork() throws Exception{
-    LinkedList<Future<Integer>> listFutures = new LinkedList<Future<Integer>>();
+    LinkedList<Future<Integer>> listFutures = new LinkedList<>();
     for (int i = 0; i < 10; i++) {
       final Integer fi = i;
       listFutures.add(Futures.future(new Callable<Integer>() {
@@ -278,7 +278,7 @@ public class JavaFutureTests extends JUnitSuite {
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.success("foo");
     Await.ready(p.future(), d);
-    assertEquals(Await.result(p.future(), d), "foo");
+    assertEquals("foo", Await.result(p.future(), d));
   }
 
   @Test
@@ -288,7 +288,7 @@ public class JavaFutureTests extends JUnitSuite {
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.success("foo");
     Await.ready(p.future(), d);
-    assertEquals(Await.result(p.future(), d), "foo");
+    assertEquals("foo", Await.result(p.future(), d));
   }
 
   @Test
@@ -305,7 +305,7 @@ public class JavaFutureTests extends JUnitSuite {
     }, system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.failure(fail);
-    assertEquals(Await.result(f, d), "foo");
+    assertEquals("foo", Await.result(f, d));
   }
 
   @Test
@@ -315,13 +315,13 @@ public class JavaFutureTests extends JUnitSuite {
     Future<Object> f = p.future().recoverWith(new Recover<Future<Object>>() {
       public Future<Object> recover(Throwable t) throws Throwable {
         if (t == fail)
-          return Futures.<Object>successful("foo");
+          return Futures.successful("foo");
         else
           throw t;
       }
     }, system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.failure(fail);
-    assertEquals(Await.result(f, d), "foo");
+    assertEquals("foo", Await.result(f, d));
   }
 }

@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
-import akka.util.ByteIterator.ByteArrayIterator
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.util.ByteIterator.ByteArrayIterator
 
 class ByteIteratorSpec extends AnyWordSpec with Matchers {
   "A ByteIterator" should {

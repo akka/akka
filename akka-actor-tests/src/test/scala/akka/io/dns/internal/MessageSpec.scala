@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
 
-import akka.io.dns.{ RecordClass, RecordType }
-import akka.util.ByteString
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.io.dns.{ RecordClass, RecordType }
+import akka.util.ByteString
 
 class MessageSpec extends AnyWordSpec with Matchers {
   "The Message" should {

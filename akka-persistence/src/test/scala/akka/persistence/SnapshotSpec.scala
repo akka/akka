@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -83,9 +83,9 @@ object SnapshotSpec {
   }
 }
 
-class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotSpec")) with ImplicitSender {
-  import SnapshotSpec._
+class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotSpec")) with ImplicitSender {
   import SnapshotProtocol._
+  import SnapshotSpec._
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

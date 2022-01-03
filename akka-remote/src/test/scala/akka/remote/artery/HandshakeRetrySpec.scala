@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import com.typesafe.config.ConfigFactory
 
 object HandshakeRetrySpec {
   val commonConfig = ConfigFactory.parseString(s"""

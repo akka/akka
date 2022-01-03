@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
 
+import scala.util.control.NonFatal
+
 import akka.actor.NoSerializationVerificationNeeded
+import akka.stream._
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage.{ GraphStageWithMaterializedValue, InHandler, OutHandler }
-import akka.stream._
 import akka.testkit.TestProbe
-
-import scala.util.control.NonFatal
 
 /**
  * Messages emitted after the corresponding `stageUnderTest` methods has been invoked.

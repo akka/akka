@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.pattern;
@@ -8,8 +8,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
 import akka.actor.Props;
 import akka.actor.AbstractActor;
-import akka.util.Timeout;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;

@@ -1,14 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
@@ -178,7 +177,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val src2 = Source.asSubscriber[Int]
 
       val (graphSubscriber1, graphSubscriber2) = RunnableGraph
-        .fromGraph(GraphDSL.create(src1, src2)((_, _)) { implicit b => (s1, s2) =>
+        .fromGraph(GraphDSL.createGraph(src1, src2)((_, _)) { implicit b => (s1, s2) =>
           val merge = b.add(Merge[Int](2))
           s1.out ~> merge.in(0)
           s2.out ~> merge.in(1)

@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
-import akka.remote.testkit.MultiNodeSpecCallbacks
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.remote.testkit.MultiNodeSpecCallbacks
 
 /**
  * Hooks up MultiNodeSpec with ScalaTest

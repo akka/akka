@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -8,6 +8,7 @@ import java.io.PrintStream
 import java.lang.management.{ ManagementFactory, ThreadInfo }
 import java.util.Date
 import java.util.concurrent.{ CountDownLatch, TimeoutException }
+
 import scala.concurrent.{ Await, Awaitable, CanAwait, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -39,7 +40,7 @@ object Coroner {
   }
 
   private class WatchHandleImpl(startAndStopDuration: FiniteDuration) extends WatchHandle {
-    val cancelPromise = Promise[Boolean]
+    val cancelPromise = Promise[Boolean]()
     val startedLatch = new CountDownLatch(1)
     val finishedLatch = new CountDownLatch(1)
 
@@ -142,6 +143,11 @@ object Coroner {
                 #VM uptime: ${rtMx.getUptime()}ms
                 #Heap usage: ${memMx.getHeapMemoryUsage()}
                 #Non-heap usage: ${memMx.getNonHeapMemoryUsage()}""".stripMargin('#'))
+
+    // If we look too soon, we've seen the JVM report a thread
+    // (in that case deadlock-thread-a from CoronerSpec)
+    // waiting on the lock while no thread seemed to be holding it
+    Thread.sleep(300)
 
     def dumpAllThreads: Seq[ThreadInfo] =
       threadMx.dumpAllThreads(threadMx.isObjectMonitorUsageSupported, threadMx.isSynchronizerUsageSupported).toSeq

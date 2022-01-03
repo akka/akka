@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.receptionist
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, ExtensionSetup }
 import akka.actor.typed.internal.receptionist._
 import akka.annotation.DoNotInherit
-
 import akka.util.ccompat.JavaConverters._
-import scala.reflect.ClassTag
 
 /**
  * Register and discover actors that implement a service with a protocol defined by a [[ServiceKey]].

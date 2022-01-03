@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
 import java.util.Optional
 
-import akka.annotation.{ DoNotInherit, InternalApi }
 import org.slf4j.Logger
 import org.slf4j.event.Level
+
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 /**
  * Logging options when using `Behaviors.logMessages`.

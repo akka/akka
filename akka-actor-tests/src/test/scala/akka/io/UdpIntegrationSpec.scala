@@ -1,18 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
-import java.net.InetSocketAddress
-
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import akka.util.ByteString
-import akka.actor.ActorRef
-import akka.io.Udp._
-import akka.io.Inet._
-import akka.testkit.SocketUtil.temporaryServerAddresses
 import java.net.DatagramSocket
+import java.net.InetSocketAddress
+import akka.actor.ActorRef
+import akka.io.Inet._
+import akka.io.Udp._
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.testkit.SocketUtil.temporaryServerAddresses
+import akka.util.ByteString
 
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
@@ -64,7 +63,9 @@ class UdpIntegrationSpec extends AkkaSpec("""
     }
 
     "be able to send several packet back and forth with binding" in {
-      val Seq(serverAddress, clientAddress) = temporaryServerAddresses(2, udp = true)
+      val addresses = temporaryServerAddresses(2, udp = true)
+      val serverAddress = addresses(0)
+      val clientAddress = addresses(1)
       val server = bindUdp(serverAddress, testActor)
       val client = bindUdp(clientAddress, testActor)
       val data = ByteString("Fly little packet!")

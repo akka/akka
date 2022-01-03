@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal.receptionist
+
+import scala.concurrent.duration._
+import scala.concurrent.duration.Deadline
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.Address
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.receptionist.AbstractServiceKey
 import akka.actor.typed.receptionist.ServiceKey
 import akka.cluster.UniqueAddress
-import akka.cluster.typed.internal.receptionist.ClusterReceptionist.SubscriptionsKV
+import akka.cluster.typed.internal.receptionist.ClusterReceptionistProtocol.SubscriptionsKV
 import akka.util.TypedMultiMap
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration.Deadline
-import scala.concurrent.duration._
 
 class ClusterReceptionistStateSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers {
 

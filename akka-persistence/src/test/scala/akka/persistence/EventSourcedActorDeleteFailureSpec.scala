@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 import akka.actor._
 import akka.event.Logging
 import akka.event.Logging.Warning
 import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 object EventSourcedActorDeleteFailureSpec {
 

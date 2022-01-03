@@ -1,26 +1,26 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.NotUsed
-import akka.actor._
-import akka.stream.impl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit._
-import akka.stream._
-import akka.testkit.TestDuration
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import akka.NotUsed
+import akka.stream._
+import akka.stream.impl._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestDuration
 
 object FlowSpec {
   class Fruit extends Serializable
@@ -34,13 +34,13 @@ object FlowSpec {
 
 }
 
-@silent // tests type assignments compile
+@nowarn // tests type assignments compile
 class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
   import FlowSpec._
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   val identity: Flow[Any, Any, NotUsed] => Flow[Any, Any, NotUsed] = in => in.map(e => e)
   val identity2: Flow[Any, Any, NotUsed] => Flow[Any, Any, NotUsed] = in => identity(in)
@@ -60,14 +60,14 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     for ((name, op) <- List("identity" -> identity, "identity2" -> identity2); n <- List(1, 2, 4)) {
       s"request initial elements from upstream ($name, $n)" in {
         new ChainSetup(op, settings.withInputBuffer(initialSize = n, maxSize = n), toPublisher) {
-          upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)
+          upstream.expectRequest(upstreamSubscription, this.settings.maxInputBufferSize)
         }
       }
     }
 
     "request more elements from upstream when downstream requests more elements" in {
       new ChainSetup(identity, settings, toPublisher) {
-        upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)
+        upstream.expectRequest(upstreamSubscription, this.settings.maxInputBufferSize)
         downstreamSubscription.request(1)
         upstream.expectNoMessage(100.millis)
         downstreamSubscription.request(2)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
@@ -8,6 +8,9 @@ import java.nio.charset.StandardCharsets
 
 import scala.collection.immutable
 import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -19,8 +22,6 @@ import akka.persistence.journal.JournalPerfSpec.Cmd
 import akka.persistence.journal.JournalPerfSpec.ResetCounter
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.TestProbe
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 object JournalPerfSpec {
   class BenchActor(override val persistenceId: String, replyTo: ActorRef, replyAfter: Int)

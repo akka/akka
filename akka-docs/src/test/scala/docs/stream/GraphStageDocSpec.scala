@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -328,8 +328,8 @@ class GraphStageDocSpec extends AkkaSpec {
     val switch = Promise[Unit]()
     val duplicator = Flow.fromGraph(new KillSwitch[Int](switch.future))
 
-    val in = TestPublisher.probe[Int]()
-    val out = TestSubscriber.probe[Int]()
+    val in = TestPublisher.Probe[Int]()
+    val out = TestSubscriber.Probe[Int]()
 
     Source
       .fromPublisher(in)
@@ -506,7 +506,7 @@ class GraphStageDocSpec extends AkkaSpec {
                 if (buffer.isEmpty) {
                   downstreamWaiting = true
                 } else {
-                  val elem = buffer.dequeue
+                  val elem = buffer.dequeue()
                   push(out, elem)
                 }
                 if (!bufferFull && !hasBeenPulled(in)) {
@@ -524,8 +524,8 @@ class GraphStageDocSpec extends AkkaSpec {
 
     Await.result(result1, 3.seconds) should ===(Vector(1, 2, 3))
 
-    val subscriber = TestSubscriber.manualProbe[Int]()
-    val publisher = TestPublisher.probe[Int]()
+    val subscriber = TestSubscriber.ManualProbe[Int]()
+    val publisher = TestPublisher.Probe[Int]()
     val flow2 =
       Source.fromPublisher(publisher).via(new TwoBuffer).to(Sink.fromSubscriber(subscriber))
 

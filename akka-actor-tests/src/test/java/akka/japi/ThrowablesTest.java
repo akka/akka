@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.japi;
 
 import org.junit.Assert;
 import org.junit.Test;
-import scala.util.control.ControlThrowable;
 
 public class ThrowablesTest {
   @Test

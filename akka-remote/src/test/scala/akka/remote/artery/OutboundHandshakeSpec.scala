@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
+
+import scala.concurrent.duration._
 
 import akka.actor.Address
 import akka.remote.UniqueAddress
@@ -16,8 +18,6 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.OptionVal
-
-import scala.concurrent.duration._
 
 class OutboundHandshakeSpec extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on

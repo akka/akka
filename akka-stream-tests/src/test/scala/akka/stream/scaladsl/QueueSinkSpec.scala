@@ -1,8 +1,14 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
+
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 import akka.pattern.pipe
 import akka.stream.AbruptTerminationException
@@ -12,13 +18,9 @@ import akka.stream.StreamDetachedException
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class QueueSinkSpec extends StreamSpec {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   val ex = new RuntimeException("ex") with NoStackTrace
 
@@ -169,7 +171,7 @@ class QueueSinkSpec extends StreamSpec {
       val bufferSize = 16
       val streamElementCount = bufferSize + 4
       val sink = Sink.queue[Int]().withAttributes(inputBuffer(bufferSize, bufferSize))
-      val bufferFullProbe = Promise[akka.Done.type]
+      val bufferFullProbe = Promise[akka.Done.type]()
       val queue = Source(1 to streamElementCount)
         .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ => bufferFullProbe.trySuccess(akka.Done))))
         .toMat(sink)(Keep.right)

@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
 
 import akka.event.Logging
+import akka.event.LoggingAdapter
 import akka.stream.Attributes
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.{ EventFilter, TestProbe }
@@ -29,10 +30,9 @@ class RecipeLoggingElements extends RecipeSpec {
       printProbe.expectMsgAllOf("1", "2", "3")
     }
 
+    val mySource = Source(List("1", "2", "3"))
+    def analyse(s: String) = s
     "use log()" in {
-      val mySource = Source(List("1", "2", "3"))
-      def analyse(s: String) = s
-
       //#log-custom
       // customise log levels
       mySource
@@ -40,9 +40,13 @@ class RecipeLoggingElements extends RecipeSpec {
         .withAttributes(Attributes
           .logLevels(onElement = Logging.WarningLevel, onFinish = Logging.InfoLevel, onFailure = Logging.DebugLevel))
         .map(analyse)
+      //#log-custom
+    }
 
+    "use log() with custom adapter" in {
+      //#log-custom
       // or provide custom logging adapter
-      implicit val adapter = Logging(system, "customLogger")
+      implicit val adapter: LoggingAdapter = Logging(system, "customLogger")
       mySource.log("custom")
       //#log-custom
 

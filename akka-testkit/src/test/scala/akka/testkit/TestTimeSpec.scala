@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
 import scala.concurrent.duration._
+
 import org.scalatest.exceptions.TestFailedException
 
 class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) {

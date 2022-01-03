@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.typed.scaladsl.Behaviors
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.typed.scaladsl.Behaviors
 
 class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -104,7 +105,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       probe.ref ! "two"
 
       intercept[AssertionError] {
-        probe.fishForMessage(shortDuration) {
+        probe.fishForMessagePF(shortDuration) {
           case "one" => FishingOutcomes.continue
         }
       }
@@ -116,7 +117,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       probe.ref ! "one"
 
       intercept[AssertionError] {
-        probe.fishForMessage(shortDuration) {
+        probe.fishForMessagePF(shortDuration) {
           case "one" => FishingOutcomes.continue
         }
       }
@@ -148,7 +149,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       val probe = createTestProbe[EventT]()
       eventsT(10).forall { e =>
         probe.ref ! e
-        probe.receiveMessage == e
+        probe.receiveMessage() == e
       } should ===(true)
 
       probe.expectNoMessage()

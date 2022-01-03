@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor;
@@ -13,6 +13,8 @@ import org.scalatestplus.junit.JUnitSuite;
 
 public class AbstractFSMActorTest extends JUnitSuite {
 
+  // javac produces an `unchecked` warning about `akka$actor$FSM$$transitionEvent`
+  // https://github.com/lampepfl/dotty/issues/6350
   public static class MyFSM extends AbstractFSM<String, String> {
 
     private final ActorRef probe;

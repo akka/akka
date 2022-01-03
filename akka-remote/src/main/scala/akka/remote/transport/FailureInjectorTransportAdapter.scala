@@ -1,23 +1,24 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ThreadLocalRandom
+
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NoStackTrace
+
 import FailureInjectorTransportAdapter._
+import scala.annotation.nowarn
+
 import akka.AkkaException
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener }
 import akka.remote.transport.Transport._
 import akka.util.ByteString
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ThreadLocalRandom
-
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.NoStackTrace
 
 @SerialVersionUID(1L)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
@@ -60,7 +61,7 @@ private[remote] object FailureInjectorTransportAdapter {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class FailureInjectorTransportAdapter(
     wrappedTransport: Transport,
     val extendedSystem: ExtendedActorSystem)
@@ -68,7 +69,7 @@ private[remote] class FailureInjectorTransportAdapter(
     with AssociationEventListener {
 
   private def rng = ThreadLocalRandom.current()
-  private val log = Logging(extendedSystem, getClass)
+  private val log = Logging(extendedSystem, classOf[FailureInjectorTransportAdapter])
   private val shouldDebugLog: Boolean = extendedSystem.settings.config.getBoolean("akka.remote.classic.gremlin.debug")
 
   @volatile private var upstreamListener: Option[AssociationEventListener] = None
@@ -161,7 +162,7 @@ private[remote] class FailureInjectorTransportAdapter(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] final case class FailureInjectorHandle(
     _wrappedHandle: AssociationHandle,
     private val gremlinAdapter: FailureInjectorTransportAdapter)
@@ -188,7 +189,7 @@ private[remote] final case class FailureInjectorHandle(
   @deprecated(
     message = "Use method that states reasons to make sure disassociation reasons are logged.",
     since = "2.5.3")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def disassociate(): Unit =
     wrappedHandle.disassociate()
 

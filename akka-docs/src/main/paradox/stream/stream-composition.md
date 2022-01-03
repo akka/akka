@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -52,8 +55,8 @@ parameters.
 Please note that when combining a `Flow` using that method, the termination signals are not carried 
 "through" as the `Sink` and `Source` are assumed to be fully independent. If however you want to construct
 a `Flow` like this but need the termination events to trigger "the other side" of the composite flow, you can use
-`CoupledTerminationFlow.fromSinkAndSource` which does just that. For example the cancelation of the composite flows 
-source-side will then lead to completion of its sink-side. Read `CoupledTerminationFlow`'s scaladoc for a 
+`Flow.fromSinkAndSourceCoupled` or `Flow.fromSinkAndSourceCoupledMat` which does just that. For example the cancellation 
+of the composite flows source-side will then lead to completion of its sink-side. Read @apidoc[Flow]'s API documentation for a 
 detailed explanation how this works.
 
 The example `BidiFlow` demonstrates that internally a module can be of arbitrary complexity, and the exposed
@@ -85,7 +88,7 @@ Java
 :   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #non-nested-flow }
 
 
-It is clear however that there is no nesting present in our first attempt, since the library cannot figure out
+It is clear however that there is no nesting present in our first attempt. Since the library cannot figure out
 where we intended to put composite module boundaries, it is our responsibility to do that. If we are using the
 DSL provided by the `Flow`, `Source`, `Sink` classes then nesting can be achieved by calling one of the
 methods `withAttributes()` or `named()` (where the latter is a shorthand for adding a name attribute).
@@ -163,7 +166,7 @@ Java
 :   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #partial-graph }
 
 The only new addition is the return value of the builder block, which is a `Shape`. All operators (including
-`Source`, `BidiFlow`, etc) have a shape, which encodes the *typed* ports of the module. In our example
+`Source`, `BidiFlow`, etc.) have a shape, which encodes the *typed* ports of the module. In our example
 there is exactly one input and output port left, so we can declare it to have a `FlowShape` by returning an
 instance of it. While it is possible to create new `Shape` types, it is usually recommended to use one of the
 matching built-in ones.
@@ -308,15 +311,20 @@ of combining materialized values without nesting and hierarchy involved.
 
 ## Attributes
 
-We have seen that we can use `named()` to introduce a nesting level in the fluid DSL (and also explicit nesting by using
-`create()` from `GraphDSL`). Apart from having the effect of adding a nesting level, `named()` is actually
-a shorthand for calling `withAttributes(Attributes.name("someName"))`. Attributes provide a way to fine-tune certain
-aspects of the materialized running entity. For example buffer sizes for asynchronous operators can be controlled via
-attributes (see @ref:[Buffers for asynchronous operators](stream-rate.md#async-stream-buffers)). When it comes to hierarchic composition, attributes are inherited
-by nested modules, unless they override them with a custom value.
+We have seen that we can use `named()` to introduce a nesting level in the fluid DSL and also explicit nesting by using
+`create()` from `GraphDSL`. Apart from having the effect of adding a nesting level, `named()` is actually
+a shorthand for calling `addAttributes(Attributes.name("someName"))`, adding the `name` attribute to the graph. 
+
+Attributes provide a way to fine-tune certain aspects of the materialized running entity. Attributes are inherited by 
+nested modules, unless they override them with a custom value. This means the attribute specified closest to the operator 
+in the graph will be the one that is in effect for that operator. 
+
+Another example of an attribute is the `inputBuffer` attribute which has the main purpose to provide control over buffer sizes
+for asynchronous boundaries (see @ref:[Buffers for asynchronous operators](stream-rate.md#async-stream-buffers)). 
 
 The code below, a modification of an earlier example sets the `inputBuffer` attribute on certain modules, but not
-on others:
+on others. _Note_ that this is only to show how attributes inheritance works, the actual `inputBuffer` attribute does not
+have any specific effect when running these streams:
 
 Scala
 :   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #attributes-inheritance }

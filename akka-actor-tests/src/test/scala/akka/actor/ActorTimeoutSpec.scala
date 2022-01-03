@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.pattern.{ ask, AskTimeoutException }
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.Await
 import akka.util.Timeout
-import akka.pattern.{ ask, AskTimeoutException }
 
 class ActorTimeoutSpec extends AkkaSpec {
 

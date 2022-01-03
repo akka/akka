@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -132,5 +132,5 @@ trait ExtensionIdProvider {
   /**
    * Returns the canonical ExtensionId for this Extension
    */
-  def lookup(): ExtensionId[_ <: Extension]
+  def lookup: ExtensionId[_ <: Extension]
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,21 +7,22 @@ package akka.stream.scaladsl
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision.resumingDecider
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl._
-import akka.testkit.TestLatch
-import akka.testkit.TestProbe
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.Supervision.resumingDecider
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 
 class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
@@ -50,6 +51,41 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       latch(1).countDown()
       c.expectNext(1)
       c.expectComplete()
+    }
+
+    "complete without requiring further demand (parallelism = 1)" in assertAllStagesStopped {
+      import system.dispatcher
+      Source
+        .single(1)
+        .mapAsyncUnordered(1)(v => Future { Thread.sleep(20); v })
+        .runWith(TestSink.probe[Int])
+        .requestNext(1)
+        .expectComplete()
+    }
+
+    "complete without requiring further demand with already completed future (parallelism = 1)" in assertAllStagesStopped {
+      Source
+        .single(1)
+        .mapAsyncUnordered(1)(v => Future.successful(v))
+        .runWith(TestSink.probe[Int])
+        .requestNext(1)
+        .expectComplete()
+    }
+
+    "complete without requiring further demand (parallelism = 2)" in assertAllStagesStopped {
+      import system.dispatcher
+      val probe =
+        Source(1 :: 2 :: Nil).mapAsyncUnordered(2)(v => Future { Thread.sleep(20); v }).runWith(TestSink.probe[Int])
+
+      probe.request(2).expectNextN(2)
+      probe.expectComplete()
+    }
+
+    "complete without requiring further demand with already completed future (parallelism = 2)" in assertAllStagesStopped {
+      val probe = Source(1 :: 2 :: Nil).mapAsyncUnordered(2)(v => Future.successful(v)).runWith(TestSink.probe[Int])
+
+      probe.request(2).expectNextN(2)
+      probe.expectComplete()
     }
 
     "not run more futures than requested elements" in {
@@ -102,7 +138,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be("err1")
+      c.expectError().getMessage should be("err1")
       latch.countDown()
     }
 
@@ -145,7 +181,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be("err2")
+      c.expectError().getMessage should be("err2")
       latch.countDown()
     }
 
@@ -216,7 +252,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       }
       val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("1", "3")
+      result.futureValue should contain.only("1", "3")
     }
 
     "continue emitting after a sequence of nulls" in {
@@ -227,7 +263,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
       val result = Source(0 to 102).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("0", "100", "101", "102")
+      result.futureValue should contain.only("0", "100", "101", "102")
     }
 
     "complete without emitting any element after a sequence of nulls only" in {
@@ -247,7 +283,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val flow = Flow[Int].mapAsyncUnordered[String](2) {
         case 2 =>
           Future {
-            Await.ready(latch, 10 seconds)
+            Await.ready(latch, 10.seconds)
             null
           }
         case x =>
@@ -257,7 +293,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
       val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("1", "3")
+      result.futureValue should contain.only("1", "3")
     }
 
     "handle cancel properly" in assertAllStagesStopped {
@@ -304,7 +340,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       def deferred(): Future[Int] = {
         if (counter.incrementAndGet() > parallelism) Future.failed(new Exception("parallelism exceeded"))
         else {
-          val p = Promise[Int]
+          val p = Promise[Int]()
           queue.offer(p -> System.nanoTime())
           p.future
         }

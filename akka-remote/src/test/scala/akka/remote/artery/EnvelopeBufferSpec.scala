@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import java.nio.{ ByteBuffer, ByteOrder }
-
 import akka.actor._
 import akka.remote.artery.compress.{ CompressionTable, CompressionTestUtils, InboundCompressions }
 import akka.serialization.Serialization
@@ -213,6 +212,26 @@ class EnvelopeBufferSpec extends AkkaSpec {
       ByteString.fromByteBuffer(envelope.byteBuffer) should ===(payload)
     }
 
+    "produce an identical copy" in {
+      val senderRef = minimalRef("uncompressable0")
+      val recipientRef = minimalRef("uncompressable11")
+
+      headerIn.setVersion(version)
+      headerIn.setUid(42)
+      headerIn.setSerializer(4)
+      headerIn.setSenderActorRef(senderRef)
+      headerIn.setRecipientActorRef(recipientRef)
+      headerIn.setManifest("uncompressable3333")
+
+      envelope.writeHeader(headerIn)
+
+      val copy = envelope.copy()
+      val position = copy.byteBuffer.position()
+      position should ===(envelope.byteBuffer.position())
+      copy.byteBuffer.order() should ===(envelope.byteBuffer.order())
+      copy.byteBuffer should ===(envelope.byteBuffer)
+      (copy.byteBuffer shouldNot be).theSameInstanceAs(envelope.byteBuffer)
+    }
   }
 
   def lengthOfSerializedActorRefPath(ref: ActorRef): Int =

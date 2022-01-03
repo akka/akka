@@ -1,23 +1,24 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.ClosedShape
-import akka.stream.testkit.TestPublisher.Probe
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import akka.stream.ClosedShape
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestPublisher.Probe
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
 
 object GraphZipLatestSpec {
   val someString = "someString"
@@ -285,7 +286,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
 
   private def testGraph[A, B]: (TestSubscriber.Probe[(A, B)], TestPublisher.Probe[A], TestPublisher.Probe[B]) =
     RunnableGraph
-      .fromGraph(GraphDSL.create(TestSink.probe[(A, B)], TestSource.probe[A], TestSource.probe[B])(Tuple3.apply) {
+      .fromGraph(GraphDSL.createGraph(TestSink.probe[(A, B)], TestSource.probe[A], TestSource.probe[B])(Tuple3.apply) {
         implicit b => (ts, as, bs) =>
           import GraphDSL.Implicits._
           val zipLatest = b.add(new ZipLatest[A, B]())

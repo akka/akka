@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -7,8 +7,9 @@ package akka.util
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
-import akka.util.ByteString.{ ByteString1C, ByteStrings }
 import org.openjdk.jmh.annotations._
+
+import akka.util.ByteString.{ ByteString1C, ByteStrings }
 
 @State(Scope.Benchmark)
 @Measurement(timeUnit = TimeUnit.MILLISECONDS)

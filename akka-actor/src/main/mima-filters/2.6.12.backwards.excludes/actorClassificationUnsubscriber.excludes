@@ -1,0 +1,5 @@
+# Internal ActorClassificationUnsubscriber
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.ActorClassificationUnsubscriber.start")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.ActorClassificationUnsubscriber.start$default$3")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.ActorClassificationUnsubscriber.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.event.ActorClassificationUnsubscriber")

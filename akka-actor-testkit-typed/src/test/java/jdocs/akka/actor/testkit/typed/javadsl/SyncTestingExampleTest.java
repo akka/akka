@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.actor.testkit.typed.javadsl;
@@ -14,6 +14,8 @@ import akka.actor.typed.javadsl.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+
+import com.typesafe.config.Config;
 import org.slf4j.event.Level;
 // #imports
 import org.junit.Test;
@@ -197,5 +199,13 @@ public class SyncTestingExampleTest extends JUnitSuite {
             new HashMap<>());
     assertEquals(expectedLogEvent, allLogEntries.get(0));
     // #test-check-logging
+  }
+
+  @Test
+  public void testWithAppTestCfg() {
+
+    // #test-app-test-config
+    Config cfg = BehaviorTestKit.applicationTestConfig();
+    BehaviorTestKit<Hello.Command> test = BehaviorTestKit.create(Hello.create(), "hello", cfg);
   }
 }

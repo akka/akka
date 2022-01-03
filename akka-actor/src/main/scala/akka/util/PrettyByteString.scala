@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -17,7 +17,7 @@ private[akka] object PrettyByteString {
   }
 
   def formatBytes(bs: ByteString, maxBytes: Int = 16 * 5): Iterator[String] = {
-    def asHex(b: Byte): String = b.formatted("%02X")
+    def asHex(b: Byte): String = "%02X".format(b)
     def asASCII(b: Byte): Char =
       if (b >= 0x20 && b < 0x7f) b.toChar
       else '.'

@@ -1,16 +1,13 @@
-# lazyFutureSource
+# Source.lazyFutureSource
 
 Defers creation and materialization of a `Source` until there is demand.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #lazyFutureSource }
+@apidoc[Source.lazyFutureSource](Source$) { scala="#lazyFutureSource[T,M](create:()=&gt;scala.concurrent.Future[akka.stream.scaladsl.Source[T,M]]):akka.stream.scaladsl.Source[T,scala.concurrent.Future[M]]" }
 
-@@@
 
 ## Description
 

@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import akka.NotUsed
 import akka.event.{ DummyClassForStringSources, Logging }
+import akka.stream._
 import akka.stream.ActorAttributes._
 import akka.stream.Attributes.LogLevels
 import akka.stream.Supervision._
 import akka.stream.testkit.{ ScriptedTest, StreamSpec }
-import akka.stream._
 import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.util.control.NoStackTrace
 
 class FlowLogSpec extends StreamSpec("""
      akka.loglevel = DEBUG # test verifies logging

@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.testkit._
 import akka.actor.Props
 import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.RARP
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.testkit._
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -41,9 +42,7 @@ class UnreachableNodeJoinsAgainMultiJvmNode2 extends UnreachableNodeJoinsAgainSp
 class UnreachableNodeJoinsAgainMultiJvmNode3 extends UnreachableNodeJoinsAgainSpec
 class UnreachableNodeJoinsAgainMultiJvmNode4 extends UnreachableNodeJoinsAgainSpec
 
-abstract class UnreachableNodeJoinsAgainSpec
-    extends MultiNodeSpec(UnreachableNodeJoinsAgainMultiNodeConfig)
-    with MultiNodeClusterSpec {
+abstract class UnreachableNodeJoinsAgainSpec extends MultiNodeClusterSpec(UnreachableNodeJoinsAgainMultiNodeConfig) {
 
   import UnreachableNodeJoinsAgainMultiNodeConfig._
 

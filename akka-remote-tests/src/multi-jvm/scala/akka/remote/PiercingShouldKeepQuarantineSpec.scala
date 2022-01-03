@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor._
-import akka.testkit._
 import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 class PiercingShouldKeepQuarantineConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -41,8 +43,8 @@ object PiercingShouldKeepQuarantineSpec {
 
 abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldKeepQuarantineConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import PiercingShouldKeepQuarantineSpec._
+  import multiNodeConfig._
 
   override def initialParticipants = roles.size
 
@@ -74,7 +76,7 @@ abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldK
       }
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
         enterBarrier("actors-started")
         enterBarrier("actor-identified")
         enterBarrier("quarantine-intact")

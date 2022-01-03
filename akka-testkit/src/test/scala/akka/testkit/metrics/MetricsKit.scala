@@ -1,26 +1,28 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit.metrics
 
-import com.codahale.metrics._
-
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration._
-import com.typesafe.config.Config
 import java.util
-import scala.util.matching.Regex
+import java.util.concurrent.TimeUnit
+
 import scala.collection.mutable
-import akka.testkit.metrics.reporter.AkkaConsoleReporter
-import org.scalatest.Notifying
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
+import scala.util.matching.Regex
+
+import com.codahale.metrics._
+import com.typesafe.config.Config
+import org.scalatest.Notifying
+
+import akka.testkit.metrics.reporter.AkkaConsoleReporter
 
 /**
  * Allows to easily measure performance / memory / file descriptor use in tests.
  *
  * WARNING: This trait should not be seen as utility for micro-benchmarking,
- * please refer to <a href="http://openjdk.java.net/projects/code-tools/jmh/">JMH</a> if that's what you're writing.
+ * please refer to <a href="https://openjdk.java.net/projects/code-tools/jmh/">JMH</a> if that's what you're writing.
  * This trait instead aims to give an high level overview as well as data for trend-analysis of long running tests.
  *
  * Reporting defaults to `ConsoleReporter`.
@@ -29,6 +31,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
   this: Notifying =>
 
   import MetricsKit._
+
   import akka.util.ccompat.JavaConverters._
 
   private var reporters: List[ScheduledReporter] = Nil

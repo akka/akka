@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.javadsl
 
-import akka.cluster.{ ddata => dd }
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
-import com.typesafe.config.Config
+import akka.cluster.{ ddata => dd }
 
 object ReplicatorSettings {
 

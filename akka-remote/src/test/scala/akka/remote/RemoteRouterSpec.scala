@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import scala.collection.immutable
-import akka.testkit._
-import akka.routing._
+
+import com.typesafe.config._
+
 import akka.actor._
 import akka.remote.routing._
-import com.typesafe.config._
+import akka.routing._
+import akka.testkit._
 import akka.testkit.TestActors.echoActorProps
 
 object RemoteRouterSpec {
@@ -259,7 +261,7 @@ class RemoteRouterSpec extends AkkaSpec(s"""
       // we don't really support deployment configuration of system actors, but
       // it's used for the pool of the SimpleDnsManager "/IO-DNS/inet-address"
       val probe = TestProbe()(masterSystem)
-      val parent = masterSystem.asInstanceOf[ExtendedActorSystem].systemActorOf(Props[Parent], "sys-parent")
+      val parent = masterSystem.asInstanceOf[ExtendedActorSystem].systemActorOf(Props[Parent](), "sys-parent")
       parent.tell((FromConfig.props(echoActorProps), "round"), probe.ref)
       val router = probe.expectMsgType[ActorRef]
       val replies = collectRouteePaths(probe, router, 10)

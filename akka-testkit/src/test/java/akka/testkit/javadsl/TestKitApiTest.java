@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit.javadsl;
@@ -11,7 +11,6 @@ import akka.actor.SupervisorStrategy;
 import akka.testkit.TestActor;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 
 public class TestKitApiTest {

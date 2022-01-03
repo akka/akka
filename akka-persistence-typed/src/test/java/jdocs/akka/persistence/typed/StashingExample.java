@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.persistence.typed;
@@ -134,7 +134,9 @@ public interface StashingExample {
     private Effect<Event, State> onEndTask(State state, EndTask command) {
       if (state.taskIdInProgress.isPresent()) {
         if (state.taskIdInProgress.get().equals(command.taskId))
-          return Effect().persist(new TaskCompleted(command.taskId));
+          return Effect()
+              .persist(new TaskCompleted(command.taskId))
+              .thenUnstashAll(); // continue with next task
         else return Effect().stash(); // other task in progress, wait with new task until later
       } else {
         return Effect().unhandled();

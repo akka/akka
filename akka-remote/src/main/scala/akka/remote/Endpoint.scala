@@ -1,19 +1,33 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
+import java.io.NotSerializableException
+import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
+import java.util.concurrent.locks.LockSupport
+
+import scala.annotation.tailrec
+import scala.concurrent.Future
+import scala.concurrent.duration.Deadline
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+
+import akka.{ AkkaException, OnlyCauseStackTrace }
+import akka.actor._
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy._
 import akka.actor.Terminated
-import akka.actor._
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.{ LogMarker, Logging, MarkerLoggingAdapter }
 import akka.pattern.pipe
 import akka.remote.EndpointManager.{ Link, ResendState, Send }
 import akka.remote.EndpointWriter.{ FlushAndStop, StoppedReading }
 import akka.remote.WireFormats.SerializedMessage
+import akka.remote.transport._
 import akka.remote.transport.AkkaPduCodec.Message
 import akka.remote.transport.AssociationHandle.{
   ActorHandleEventListener,
@@ -22,23 +36,9 @@ import akka.remote.transport.AssociationHandle.{
   InboundPayload
 }
 import akka.remote.transport.Transport.InvalidAssociationException
-import akka.remote.transport._
 import akka.serialization.Serialization
 import akka.util.ByteString
-import akka.{ AkkaException, OnlyCauseStackTrace }
-import java.io.NotSerializableException
-import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
-
-import scala.annotation.tailrec
-import scala.concurrent.duration.Deadline
-import scala.util.control.NonFatal
-import java.util.concurrent.locks.LockSupport
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-
 import akka.util.OptionVal
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -54,7 +54,7 @@ private[remote] trait InboundMessageDispatcher {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class DefaultMessageDispatcher(
     private val system: ExtendedActorSystem,
     private val provider: RemoteActorRefProvider,
@@ -245,7 +245,7 @@ private[remote] object ReliableDeliverySupervisor {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class ReliableDeliverySupervisor(
     handleOrActive: Option[AkkaProtocolHandle],
     val localAddress: Address,
@@ -496,7 +496,7 @@ private[remote] class ReliableDeliverySupervisor(
       // If we have not confirmed the remote UID we cannot transfer the system message at this point just buffer it.
       // GotUid will kick resendAll() causing the messages to be properly written.
       // Flow control by not sending more when we already have many outstanding.
-      if (uidConfirmed && resendBuffer.nonAcked.size <= settings.SysResendLimit)
+      if (uidConfirmed && resendBuffer.nonAcked.length <= settings.SysResendLimit)
         writer ! sequencedSend
     } else writer ! send
 
@@ -536,7 +536,7 @@ private[remote] class ReliableDeliverySupervisor(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] abstract class EndpointActor(
     val localAddress: Address,
     val remoteAddress: Address,
@@ -563,7 +563,7 @@ private[remote] abstract class EndpointActor(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object EndpointWriter {
 
   def props(
@@ -620,7 +620,7 @@ private[remote] object EndpointWriter {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class EndpointWriter(
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
@@ -781,6 +781,8 @@ private[remote] class EndpointWriter(
       case s @ StopReading(_, replyTo) =>
         reader.foreach(_.tell(s, replyTo))
         true
+      case unexpected =>
+        throw new IllegalArgumentException(s"Unexpected message type: ${unexpected.getClass}")
     }
 
     @tailrec def writeLoop(count: Int): Boolean =
@@ -899,9 +901,15 @@ private[remote] class EndpointWriter(
           remoteMetrics.logPayloadBytes(s.message, pduSize)
 
           if (pduSize > transport.maximumPayloadBytes) {
-            val reason = new OversizedPayloadException(
-              s"Discarding oversized payload sent to ${s.recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${s.message.getClass} was ${pdu.size} bytes.")
-            log.error(reason, "Transient association error (association remains live)")
+            val reasonText =
+              s"Discarding oversized payload sent to ${s.recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${s.message.getClass} was ${pdu.size} bytes."
+            log.error(
+              new OversizedPayloadException(reasonText),
+              "Transient association error (association remains live)")
+            extendedSystem.eventStream.publish(s.senderOption match {
+              case OptionVal.Some(msgSender) => Dropped(s.message, reasonText, msgSender, s.recipient)
+              case _                         => Dropped(s.message, reasonText, s.recipient)
+            })
             true
           } else {
             val ok = h.write(pdu)
@@ -1035,7 +1043,7 @@ private[remote] class EndpointWriter(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object EndpointReader {
 
   def props(
@@ -1067,7 +1075,7 @@ private[remote] object EndpointReader {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class EndpointReader(
     localAddress: Address,
     remoteAddress: Address,
@@ -1122,7 +1130,7 @@ private[remote] class EndpointReader(
   override def receive: Receive = {
     case Disassociated(info) => handleDisassociated(info)
 
-    case InboundPayload(p) if p.size <= transport.maximumPayloadBytes =>
+    case InboundPayload(p) if p.length <= transport.maximumPayloadBytes =>
       val (ackOption, msgOption) = tryDecodeMessageAndAck(p)
 
       for (ack <- ackOption; reliableDelivery <- reliableDeliverySupervisor) reliableDelivery ! ack
@@ -1172,7 +1180,7 @@ private[remote] class EndpointReader(
     case StopReading(writer, replyTo) =>
       replyTo ! StoppedReading(writer)
 
-    case InboundPayload(p) if p.size <= transport.maximumPayloadBytes =>
+    case InboundPayload(p) if p.length <= transport.maximumPayloadBytes =>
       val (ackOption, msgOption) = tryDecodeMessageAndAck(p)
       for (ack <- ackOption; reliableDelivery <- reliableDeliverySupervisor) reliableDelivery ! ack
 

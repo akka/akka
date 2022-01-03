@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -7,11 +7,12 @@ package akka.persistence
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
-import com.typesafe.config.ConfigFactory
-import akka.testkit.TestProbe
 import akka.testkit.TestActors
+import akka.testkit.TestProbe
 
 object RecoveryPermitterSpec {
 
@@ -48,8 +49,8 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(s"
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.actor.warn-about-java-serializer-usage = off
   """)) with ImplicitSender {
-  import RecoveryPermitterSpec._
   import RecoveryPermitter._
+  import RecoveryPermitterSpec._
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[TestExc]()))
 

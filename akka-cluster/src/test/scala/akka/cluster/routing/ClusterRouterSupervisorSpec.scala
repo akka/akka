@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.routing
 
-import akka.testkit._
 import akka.actor._
-import akka.routing.RoundRobinPool
 import akka.actor.OneForOneStrategy
+import akka.routing.RoundRobinPool
+import akka.testkit._
 
 object ClusterRouterSupervisorSpec {
 

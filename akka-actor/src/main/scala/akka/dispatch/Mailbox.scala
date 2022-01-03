@@ -1,25 +1,26 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
+import java.util.{ Comparator, Deque, PriorityQueue, Queue }
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
-import java.util.{ Comparator, Deque, PriorityQueue, Queue }
+
+import scala.annotation.tailrec
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
 
 import akka.actor.{ ActorCell, ActorRef, ActorSystem, DeadLetter, InternalActorRef }
 import akka.annotation.InternalStableApi
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
-import akka.util.Helpers.ConfigOps
 import akka.util.{ BoundedBlockingQueue, StablePriorityBlockingQueue, StablePriorityQueue, Unsafe }
-import com.typesafe.config.Config
-
-import scala.annotation.tailrec
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.util.control.NonFatal
+import akka.util.Helpers.ConfigOps
 
 /**
  * INTERNAL API
@@ -265,7 +266,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     if (shouldProcessMessage) {
       val next = dequeue()
       if (next ne null) {
-        if (Mailbox.debug) println(actor.self + " processing message " + next)
+        if (Mailbox.debug) println("" + actor.self + " processing message " + next)
         actor.invoke(next)
         if (Thread.interrupted())
           throw new InterruptedException("Interrupted while processing actor messages")
@@ -289,7 +290,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       val msg = messageList.head
       messageList = messageList.tail
       msg.unlink()
-      if (debug) println(actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
+      if (debug) println("" + actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
       // we know here that systemInvoke ensures that only "fatal" exceptions get rethrown
       actor.systemInvoke(msg)
       if (Thread.interrupted())
@@ -384,6 +385,9 @@ trait MessageQueue {
    * is expected to transfer all remaining messages into the dead letter queue
    * which is passed in. The owner of this MessageQueue is passed in if
    * available (e.g. for creating DeadLetters()), “/deadletters” otherwise.
+   *
+   * Note that we implement the method in a recursive manner mainly for
+   * atomicity (not touching the queue twice).
    */
   def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit
 }
@@ -468,7 +472,7 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox =>
   @tailrec
   final def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit = {
     assert(message.unlinked)
-    if (Mailbox.debug) println(receiver + " having enqueued " + message)
+    if (Mailbox.debug) println("" + receiver + " having enqueued " + message)
     val currentList = systemQueueGet
     if (currentList.head == NoMessage) {
       if (actor ne null) actor.dispatcher.mailboxes.deadLetterMailbox.systemEnqueue(receiver, message)
@@ -510,10 +514,10 @@ trait QueueBasedMessageQueue extends MessageQueue with MultipleConsumerSemantics
   def hasMessages = !queue.isEmpty
   def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
     if (hasMessages) {
-      var envelope = dequeue
+      var envelope = dequeue()
       while (envelope ne null) {
         deadLetters.enqueue(owner, envelope)
-        envelope = dequeue
+        envelope = dequeue()
       }
     }
   }
@@ -955,26 +959,29 @@ object BoundedControlAwareMailbox {
     override def numberOfMessages: Int = size.get()
     override def hasMessages: Boolean = numberOfMessages > 0
 
-    @tailrec
     final override def dequeue(): Envelope = {
-      val count = size.get()
+      @tailrec def tailrecDequeue(): Envelope = {
+        val count = size.get()
 
-      // if both queues are empty return null
-      if (count > 0) {
-        // if there are messages try to fetch the current head
-        // or retry if other consumer dequeued in the mean time
-        if (size.compareAndSet(count, count - 1)) {
-          val item = super.dequeue()
+        // if both queues are empty return null
+        if (count > 0) {
+          // if there are messages try to fetch the current head
+          // or retry if other consumer dequeued in the mean time
+          if (size.compareAndSet(count, count - 1)) {
+            val item = super.dequeue()
 
-          if (size.get < capacity) signalNotFull()
+            if (size.get < capacity) signalNotFull()
 
-          item
+            item
+          } else {
+            tailrecDequeue()
+          }
         } else {
-          dequeue()
+          null
         }
-      } else {
-        null
       }
+
+      tailrecDequeue()
     }
 
     private def signalNotFull(): Unit = {

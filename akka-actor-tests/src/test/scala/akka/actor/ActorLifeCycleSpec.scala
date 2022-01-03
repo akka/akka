@@ -1,23 +1,26 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import java.util.UUID.{ randomUUID => newUuid }
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic._
+
+import scala.concurrent.{ Await, Future }
+
 import org.scalatest.BeforeAndAfterEach
 
 import akka.actor.Actor._
-import akka.testkit._
-import java.util.concurrent.atomic._
-import scala.concurrent.Await
 import akka.pattern.ask
-import java.util.UUID.{ randomUUID => newUuid }
+import akka.testkit._
 
 object ActorLifeCycleSpec {
 
   class LifeCycleTestActor(testActor: ActorRef, id: String, generationProvider: AtomicInteger) extends Actor {
     def report(msg: Any) = testActor ! message(msg)
-    def message(msg: Any): Tuple3[Any, String, Int] = (msg, id, currentGen)
+    def message(msg: Any): (Any, String, Int) = (msg, id, currentGen)
     val currentGen = generationProvider.getAndIncrement()
     override def preStart(): Unit = { report("preStart") }
     override def postStop(): Unit = { report("postStop") }
@@ -117,7 +120,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
     "log failures in postStop" in {
       val a = system.actorOf(Props(new Actor {
         def receive = Actor.emptyBehavior
-        override def postStop: Unit = { throw new Exception("hurrah") }
+        override def postStop(): Unit = { throw new Exception("hurrah") }
       }))
       EventFilter[Exception]("hurrah", occurrences = 1).intercept {
         a ! PoisonPill
@@ -149,4 +152,42 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
     }
   }
 
+  "have a non null context after termination" in {
+    class StopBeforeFutureFinishes(val latch: CountDownLatch) extends Actor {
+      import context.dispatcher
+
+      import akka.pattern._
+
+      override def receive: Receive = {
+        case "ping" =>
+          val replyTo = sender()
+
+          context.stop(self)
+
+          Future {
+            latch.await()
+            Thread.sleep(50)
+            "po"
+          }
+          // Here, we implicitly close over the actor instance and access the context
+          // when the flatMap thunk is run. Previously, the context was nulled when the actor
+          // was terminated. This isn't done any more. Still, the pattern of `import context.dispatcher`
+          // is discouraged as closing over `context` is unsafe in general.
+            .flatMap(x => Future { x + "ng" } /* implicitly: (this.context.dispatcher) */ )
+            .recover { case _: NullPointerException => "npe" }
+            .pipeTo(replyTo)
+      }
+    }
+
+    val latch = new CountDownLatch(1)
+    val actor = system.actorOf(Props(new StopBeforeFutureFinishes(latch)))
+    watch(actor)
+
+    actor ! "ping"
+
+    expectTerminated(actor)
+    latch.countDown()
+
+    expectMsg("pong")
+  }
 }

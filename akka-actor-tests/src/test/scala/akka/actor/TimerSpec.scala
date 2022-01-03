@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
 import akka.testkit._
-import scala.concurrent.Await
 
 object TimerSpec {
   sealed trait Command
@@ -108,7 +109,7 @@ object TimerSpec {
         startTimerWithFixedDelay("T", Tick(bumpCount + 1), interval)
       else
         startSingleTimer("T", Tick(bumpCount + 1), interval)
-      stay.using(bumpCount + 1)
+      stay().using(bumpCount + 1)
     }
 
     def autoReceive(): State = {
@@ -116,7 +117,7 @@ object TimerSpec {
         startTimerWithFixedDelay("A", PoisonPill, interval)
       else
         startSingleTimer("A", PoisonPill, interval)
-      stay
+      stay()
     }
 
     {
@@ -131,7 +132,7 @@ object TimerSpec {
     when(TheState) {
       case Event(Tick(n), _) =>
         monitor ! Tock(n)
-        stay
+        stay()
       case Event(Bump, bumpCount) =>
         bump(bumpCount)
       case Event(SlowThenBump(latch), bumpCount) =>
@@ -141,7 +142,7 @@ object TimerSpec {
         stop()
       case Event(Cancel, _) =>
         cancelTimer("T")
-        stay
+        stay()
       case Event(Throw(e), _) =>
         throw e
       case Event(SlowThenThrow(latch, e), _) =>

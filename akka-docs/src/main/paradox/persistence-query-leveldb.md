@@ -1,13 +1,19 @@
 # Persistence Query for LevelDB
 
+The LevelDB journal and query plugin is deprecated and it is not advised to build new applications with it.
+As a replacement we recommend using [Akka Persistence JDBC](https://doc.akka.io/docs/akka-persistence-jdbc/current/index.html).
+
 ## Dependency
 
 To use Persistence Query, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-persistence-query_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-persistence-query_$scala.binary.version$
+  version=AkkaVersion
 }
 
 This will also add dependency on the @ref[akka-persistence](persistence.md) module.

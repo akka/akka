@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
+import org.reactivestreams.Subscription
+
 import akka.actor.DeadLetterSuppression
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
-import org.reactivestreams.Subscription
 
 /**
  * INTERNAL API

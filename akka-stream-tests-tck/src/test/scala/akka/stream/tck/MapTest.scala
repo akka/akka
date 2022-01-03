@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
-import akka.stream.scaladsl.Flow
 import org.reactivestreams.Processor
+
+import akka.stream.scaladsl.Flow
 
 class MapTest extends AkkaIdentityProcessorVerification[Int] {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -8,26 +8,27 @@ import java.io.Closeable
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.annotation.varargs
+import scala.collection.immutable
+import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.ConfigurationException
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
-import akka.japi.Util
-import akka.pattern._
-import akka.remote.{ UniqueAddress => _, _ }
-import com.typesafe.config.{ Config, ConfigFactory }
-import scala.annotation.varargs
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext }
-import scala.util.control.NonFatal
-
 import akka.event.LogMarker
 import akka.event.Logging.LogLevel
 import akka.event.MarkerLoggingAdapter
-import com.github.ghik.silencer.silent
+import akka.japi.Util
+import akka.pattern._
+import akka.remote.{ UniqueAddress => _, _ }
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -99,7 +100,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: roles that this member has
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getSelfRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 
@@ -178,7 +179,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
-        @silent("deprecated")
+        @nowarn("msg=deprecated")
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
             implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)
@@ -319,6 +320,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     clusterCore ! ClusterUserAction.JoinTo(fillLocal(address))
   }
 
+  /**
+   * Change the state of every member in preparation for a full cluster shutdown.
+   */
+  def prepareForFullClusterShutdown(): Unit = {
+    clusterCore ! ClusterUserAction.PrepareForShutdown
+  }
+
   private def fillLocal(address: Address): Address = {
     // local address might be used if grabbed from actorRef.path.address
     if (address.hasLocalScope && address.system == selfAddress.system) selfAddress
@@ -398,7 +406,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * The supplied thunk will be run, once, when current cluster member is `Removed`.
    * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
-   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
+   * If this is called "at the same time" as `shutdown()` there is a possibility that the the thunk
+   * is not invoked. It's often better to use [[akka.actor.CoordinatedShutdown]] for this purpose.
    */
   def registerOnMemberRemoved[T](code: => T): Unit =
     registerOnMemberRemoved(new Runnable { override def run(): Unit = code })
@@ -406,7 +415,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: The supplied thunk will be run, once, when current cluster member is `Removed`.
    * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
-   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
+   * If this is called "at the same time" as `shutdown()` there is a possibility that the the thunk
+   * is not invoked. It's often better to use [[akka.actor.CoordinatedShutdown]] for this purpose.
    */
   def registerOnMemberRemoved(callback: Runnable): Unit = {
     if (_isTerminated.get())

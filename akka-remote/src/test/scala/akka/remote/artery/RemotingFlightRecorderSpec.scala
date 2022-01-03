@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
+import org.scalatest.matchers.should.Matchers
+
 import akka.testkit.AkkaSpec
 import akka.util.JavaVersion
-import org.scalatest.matchers.should.Matchers
 
 class RemotingFlightRecorderSpec extends AkkaSpec with Matchers {
 

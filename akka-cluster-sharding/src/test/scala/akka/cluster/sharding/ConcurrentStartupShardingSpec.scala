@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
@@ -14,17 +13,20 @@ import akka.cluster.MemberStatus
 import akka.testkit.AkkaSpec
 import akka.testkit.DeadLettersFilter
 import akka.testkit.TestEvent.Mute
+import akka.testkit.WithLogCapturing
 
 object ConcurrentStartupShardingSpec {
 
   val config =
     """
     akka.actor.provider = "cluster"
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
-
+    akka.cluster.sharding.verbose-debug-logging = on
     akka.actor {
       default-dispatcher {
         executor = "fork-join-executor"
@@ -57,7 +59,7 @@ object ConcurrentStartupShardingSpec {
   }
 }
 
-class ConcurrentStartupShardingSpec extends AkkaSpec(ConcurrentStartupShardingSpec.config) {
+class ConcurrentStartupShardingSpec extends AkkaSpec(ConcurrentStartupShardingSpec.config) with WithLogCapturing {
   import ConcurrentStartupShardingSpec._
 
   // mute logging of deadLetters

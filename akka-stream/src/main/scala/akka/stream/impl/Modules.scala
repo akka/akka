@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
-import akka.NotUsed
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.stream._
-import akka.stream.impl.StreamLayout.AtomicModule
+import scala.annotation.unchecked.uncheckedVariance
+
 import org.reactivestreams._
 
-import scala.annotation.unchecked.uncheckedVariance
+import akka.NotUsed
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.Logging
+import akka.stream._
+import akka.stream.impl.StreamLayout.AtomicModule
 
 /**
  * INTERNAL API
@@ -24,13 +25,9 @@ import akka.event.Logging
 
   def create(context: MaterializationContext): (Publisher[Out] @uncheckedVariance, Mat)
 
-  // TODO: Remove this, no longer needed?
-  protected def newInstance(shape: SourceShape[Out] @uncheckedVariance): SourceModule[Out, Mat]
-
-  // TODO: Amendshape changed the name of ports. Is it needed anymore?
-
   def attributes: Attributes
 
+  // TODO: Amendshape changed the name of ports. Is it needed anymore?
   protected def amendShape(attr: Attributes): SourceShape[Out] = {
     val thisN = traversalBuilder.attributes.nameOrDefault(null)
     val thatN = attr.nameOrDefault(null)
@@ -57,8 +54,6 @@ import akka.event.Logging
     (processor, processor)
   }
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
-    new SubscriberSource[Out](attributes, shape)
   override def withAttributes(attr: Attributes): SourceModule[Out, Subscriber[Out]] =
     new SubscriberSource[Out](attr, amendShape(attr))
 }
@@ -80,8 +75,6 @@ import akka.event.Logging
 
   override def create(context: MaterializationContext) = (p, NotUsed)
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, NotUsed] =
-    new PublisherSource[Out](p, attributes, shape)
   override def withAttributes(attr: Attributes): SourceModule[Out, NotUsed] =
     new PublisherSource[Out](p, attr, amendShape(attr))
 }

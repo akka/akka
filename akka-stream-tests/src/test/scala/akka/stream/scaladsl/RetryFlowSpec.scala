@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-import akka.stream.OverflowStrategy
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import org.scalatest.matchers.{ MatchResult, Matcher }
-
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
+
+import org.scalatest.matchers.{ MatchResult, Matcher }
+
+import akka.NotUsed
+import akka.stream.OverflowStrategy
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 
 class RetryFlowSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
@@ -274,7 +275,6 @@ class RetryFlowSpec extends StreamSpec("""
         .probe[(State, NotUsed)]
         .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, NumRetries, flow) {
           case (_, (s, _)) => Some(s -> NotUsed)
-          case _           => None
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()

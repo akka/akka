@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.sourceorflow
@@ -25,6 +25,7 @@ object MapConcat {
     // 1
     // 2
     // 2
+    // 3
     // 3
     //#map-concat
 

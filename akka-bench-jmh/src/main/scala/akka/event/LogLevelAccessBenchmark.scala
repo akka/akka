@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
 
 import java.util.concurrent.TimeUnit
 
-import akka.event.Logging.LogLevel
 import org.openjdk.jmh.annotations._
+
+import akka.event.Logging.LogLevel
 
 @Fork(3)
 @State(Scope.Benchmark)

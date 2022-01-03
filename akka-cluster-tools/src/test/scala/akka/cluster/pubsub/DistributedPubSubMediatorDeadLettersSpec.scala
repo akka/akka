@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.pubsub
 
+import scala.concurrent.duration._
+
 import akka.actor.DeadLetter
 import akka.cluster.pubsub.DistributedPubSubMediator.{ Subscribe, _ }
 import akka.testkit._
-import scala.concurrent.duration._
 
 object DistributedPubSubMediatorDeadLettersSpec {
   def config(sendToDeadLettersWhenNoSubscribers: Boolean) =

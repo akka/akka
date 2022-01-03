@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.Deploy
+import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.event.Logging
-import akka.testkit.TestProbe
-import akka.actor.Deploy
 import akka.event.Logging.Info
-import akka.actor.ExtendedActorSystem
+import akka.testkit.AkkaSpec
+import akka.testkit.TestProbe
 
 object LogSourceSpec {
   class Reporter extends Actor with ActorLogging {
@@ -31,7 +31,7 @@ class LogSourceSpec extends AkkaSpec("""
 
   import LogSourceSpec._
 
-  val reporter = system.actorOf(Props[Reporter], "reporter")
+  val reporter = system.actorOf(Props[Reporter](), "reporter")
   val logProbe = TestProbe()
   system.eventStream.subscribe(system.actorOf(Props(new Actor {
     def receive = {

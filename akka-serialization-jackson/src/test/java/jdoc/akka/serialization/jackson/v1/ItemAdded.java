@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdoc.akka.serialization.jackson.v1;
@@ -7,6 +7,7 @@ package jdoc.akka.serialization.jackson.v1;
 import jdoc.akka.serialization.jackson.MySerializable;
 
 // #add-optional
+// #forward-one-rename
 public class ItemAdded implements MySerializable {
   public final String shoppingCartId;
   public final String productId;
@@ -18,4 +19,5 @@ public class ItemAdded implements MySerializable {
     this.quantity = quantity;
   }
 }
+// #forward-one-rename
 // #add-optional

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -8,6 +8,7 @@ import java.security.KeyStore
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
+import javax.net.ssl._
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -15,21 +16,22 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
+import scala.annotation.nowarn
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
 import akka.NotUsed
 import akka.pattern.{ after => later }
-import akka.stream.TLSProtocol._
 import akka.stream._
+import akka.stream.TLSProtocol._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestDuration
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
 import akka.util.JavaVersion
-import com.github.ghik.silencer.silent
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import javax.net.ssl._
 
 object DeprecatedTlsSpec {
 
@@ -58,7 +60,7 @@ object DeprecatedTlsSpec {
   def initSslContext(): SSLContext = initWithTrust("/truststore")
 
   /**
-   * This is an operator that fires a TimeoutException failure 2 seconds after it was started,
+   * This is an operator that fires a TimeoutException failure after it was started,
    * independent of the traffic going through. The purpose is to include the last seen
    * element in the exception message to help in figuring out what went wrong.
    */
@@ -95,10 +97,10 @@ object DeprecatedTlsSpec {
     """
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) with WithLogCapturing {
-  import GraphDSL.Implicits._
   import DeprecatedTlsSpec._
+  import GraphDSL.Implicits._
   import system.dispatcher
 
   val sslConfig: Option[AkkaSSLConfig] = None // no special settings to be applied here
@@ -151,7 +153,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
     }
 
     def server(flow: Flow[ByteString, ByteString, Any]) = {
-      val server = Tcp().bind("localhost", 0).to(Sink.foreach(c => c.flow.join(flow).run())).run()
+      val server = Tcp(system).bind("localhost", 0).to(Sink.foreach(c => c.flow.join(flow).run())).run()
       Await.result(server, 2.seconds)
     }
 
@@ -162,7 +164,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
           rightClosing: TLSClosing,
           rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(serverTls(rightClosing).reversed.join(rhs))
-        clientTls(leftClosing).join(Tcp().outgoingConnection(binding.localAddress))
+        clientTls(leftClosing).join(Tcp(system).outgoingConnection(binding.localAddress))
       }
       override def cleanup(): Unit = binding.unbind()
     }
@@ -174,7 +176,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
           rightClosing: TLSClosing,
           rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(clientTls(rightClosing).reversed.join(rhs))
-        serverTls(leftClosing).join(Tcp().outgoingConnection(binding.localAddress))
+        serverTls(leftClosing).join(Tcp(system).outgoingConnection(binding.localAddress))
       }
       override def cleanup(): Unit = binding.unbind()
     }
@@ -232,17 +234,17 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
     }
 
     object EmptyBytesFirst extends PayloadScenario {
-      def inputs = List(ByteString.empty, ByteString("hello")).map(SendBytes)
+      def inputs = List(ByteString.empty, ByteString("hello")).map(SendBytes.apply)
       def output = ByteString("hello")
     }
 
     object EmptyBytesInTheMiddle extends PayloadScenario {
-      def inputs = List(ByteString("hello"), ByteString.empty, ByteString(" world")).map(SendBytes)
+      def inputs = List(ByteString("hello"), ByteString.empty, ByteString(" world")).map(SendBytes.apply)
       def output = ByteString("hello world")
     }
 
     object EmptyBytesLast extends PayloadScenario {
-      def inputs = List(ByteString("hello"), ByteString.empty).map(SendBytes)
+      def inputs = List(ByteString("hello"), ByteString.empty).map(SendBytes.apply)
       def output = ByteString("hello")
     }
 
@@ -389,11 +391,12 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
             .collect { case SessionBytes(_, b) => b }
             .scan(ByteString.empty)(_ ++ _)
             .filter(_.nonEmpty)
-            .via(new Timeout(6.seconds))
+            .via(new Timeout(10.seconds.dilated))
             .dropWhile(_.size < scenario.output.size)
             .runWith(Sink.headOption)
 
-        Await.result(output, 8.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
+        Await.result(output, 12.seconds.dilated).getOrElse(ByteString.empty).utf8String should be(
+          scenario.output.utf8String)
 
         commPattern.cleanup()
       }
@@ -410,7 +413,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
 
       // The creation of actual TCP connections is necessary. It is the easiest way to decouple the client and server
       // under error conditions, and has the bonus of matching most actual SSL deployments.
-      val (server, serverErr) = Tcp()
+      val (server, serverErr) = Tcp(system)
         .bind("localhost", 0)
         .mapAsync(1)(c => c.flow.joinMat(serverTls(IgnoreBoth).reversed.joinMat(simple)(Keep.right))(Keep.right).run())
         .toMat(Sink.head)(Keep.both)
@@ -418,15 +421,12 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
 
       val clientErr = simple
         .join(badClientTls(IgnoreBoth))
-        .join(Tcp().outgoingConnection(Await.result(server, 1.second).localAddress))
+        .join(Tcp(system).outgoingConnection(Await.result(server, 1.second).localAddress))
         .run()
 
       Await.result(serverErr, 1.second).getMessage should include("certificate_unknown")
-      val clientErrText = Await.result(clientErr, 1.second).getMessage
-      if (JavaVersion.majorVersion >= 11)
-        clientErrText should include("unable to find valid certification path to requested target")
-      else
-        clientErrText should equal("General SSLEngine problem")
+      val clientErrText = rootCauseOf(Await.result(clientErr, 1.second)).getMessage
+      clientErrText should include("unable to find valid certification path to requested target")
     }
 
     "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {
@@ -434,7 +434,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       val (sub, out1, out2) =
         RunnableGraph
           .fromGraph(
-            GraphDSL.create(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])(
+            GraphDSL.createGraph(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])(
               (_, _, _)) { implicit b => (s, o1, o2) =>
               val tls = b.add(clientTls(EagerClose))
               s ~> tls.in1; tls.out1 ~> o1
@@ -454,13 +454,14 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       val ex = new Exception("hello")
       val (sub, out1, out2) =
         RunnableGraph
-          .fromGraph(GraphDSL.create(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])(
-            (_, _, _)) { implicit b => (s, o1, o2) =>
-            val tls = b.add(clientTls(EagerClose))
-            Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
-            o2 <~ tls.out2; tls.in2 <~ s
-            ClosedShape
-          })
+          .fromGraph(
+            GraphDSL.createGraph(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])(
+              (_, _, _)) { implicit b => (s, o1, o2) =>
+              val tls = b.add(clientTls(EagerClose))
+              Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
+              o2 <~ tls.out2; tls.in2 <~ s
+              ClosedShape
+            })
           .run()
       the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
       the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)
@@ -519,20 +520,19 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
         Await.result(run("unknown.example.org"), 3.seconds)
       }
 
-      val rootCause =
-        if (JavaVersion.majorVersion >= 11) {
-          cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-          cause.getCause
-        } else {
-          cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-          val cause2 = cause.getCause
-          cause2.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-          cause2.getCause
-        }
+      cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+      val rootCause = rootCauseOf(cause.getCause)
       rootCause.getClass should ===(classOf[CertificateException])
       rootCause.getMessage should ===("No name matching unknown.example.org found")
     }
+  }
 
+  def rootCauseOf(e: Throwable): Throwable = {
+    if (JavaVersion.majorVersion >= 11) e
+    // Wrapped in extra 'General SSLEngine problem' (sometimes multiple)
+    // on 1.8.0-265 and before, but not 1.8.0-272 and later...
+    else if (e.isInstanceOf[SSLHandshakeException]) rootCauseOf(e.getCause)
+    else e
   }
 
   "A SslTlsPlacebo" must {

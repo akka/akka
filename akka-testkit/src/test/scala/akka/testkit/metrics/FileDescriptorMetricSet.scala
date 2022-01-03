@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit.metrics
 
-import java.util
-import akka.util.ccompat.JavaConverters._
 import java.lang.management.{ ManagementFactory, OperatingSystemMXBean }
+import java.util
+
 import com.codahale.metrics.{ Gauge, Metric, MetricSet }
 import com.codahale.metrics.MetricRegistry._
 import com.codahale.metrics.jvm.FileDescriptorRatioGauge
+
+import akka.util.ccompat.JavaConverters._
 
 /**
  * MetricSet exposing number of open and maximum file descriptors used by the JVM process.

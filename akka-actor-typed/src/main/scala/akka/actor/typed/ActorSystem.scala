@@ -1,11 +1,17 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
+import scala.concurrent.{ ExecutionContextExecutor, Future }
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.slf4j.Logger
+
+import akka.{ Done, actor => classic }
 import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
@@ -14,11 +20,6 @@ import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBe
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
-import akka.{ Done, actor => classic }
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.slf4j.Logger
-
-import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -140,6 +141,11 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    * every message sent to it.
    */
   def deadLetters[U]: ActorRef[U]
+
+  /**
+   * An ActorRef that ignores any incoming messages.
+   */
+  def ignoreRef[U]: ActorRef[U]
 
   /**
    * Create a string representation of the actor hierarchy within this system

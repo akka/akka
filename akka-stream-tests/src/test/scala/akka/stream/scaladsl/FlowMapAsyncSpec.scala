@@ -1,31 +1,32 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadLocalRandom
-
-import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision.resumingDecider
-import akka.stream.testkit.Utils._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
-import akka.testkit.TestLatch
-import akka.testkit.TestProbe
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.tailrec
-import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import akka.stream.ActorAttributes
+import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.Supervision
+import akka.stream.Supervision.resumingDecider
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 
 class FlowMapAsyncSpec extends StreamSpec {
 
@@ -192,7 +193,6 @@ class FlowMapAsyncSpec extends StreamSpec {
               probe.expectNextOrError() match {
                 case Left(ex)       => ex.getMessage should ===("Boom at C") // fine, error can over-take elements
                 case Right(element) => fail(s"Got [$element] yet it caused an exception, should not have happened!")
-                case unexpected     => fail(s"unexpected $unexpected")
               }
             case unexpected => fail(s"unexpected $unexpected")
           }
@@ -295,6 +295,43 @@ class FlowMapAsyncSpec extends StreamSpec {
         3.seconds) should ===("happy!")
     }
 
+    "complete without requiring further demand (parallelism = 1)" in assertAllStagesStopped {
+      import system.dispatcher
+      Source
+        .single(1)
+        .mapAsync(1)(v => Future { Thread.sleep(20); v })
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectNext(1)
+        .expectComplete()
+    }
+
+    "complete without requiring further demand with already completed future (parallelism = 1)" in assertAllStagesStopped {
+      Source
+        .single(1)
+        .mapAsync(1)(v => Future.successful(v))
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectNext(1)
+        .expectComplete()
+    }
+
+    "complete without requiring further demand (parallelism = 2)" in assertAllStagesStopped {
+      import system.dispatcher
+      val probe =
+        Source(1 :: 2 :: Nil).mapAsync(2)(v => Future { Thread.sleep(20); v }).runWith(TestSink.probe[Int])
+
+      probe.request(2).expectNextN(2)
+      probe.expectComplete()
+    }
+
+    "complete without requiring further demand with already completed future (parallelism = 2)" in assertAllStagesStopped {
+      val probe = Source(1 :: 2 :: Nil).mapAsync(2)(v => Future.successful(v)).runWith(TestSink.probe[Int])
+
+      probe.request(2).expectNextN(2)
+      probe.expectComplete()
+    }
+
     "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
       Await.result(
@@ -363,7 +400,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       val flow = Flow[Int].mapAsync[String](2) {
         case 2 =>
           Future {
-            Await.ready(latch, 10 seconds)
+            Await.ready(latch, 10.seconds)
             null
           }
         case x =>
@@ -420,7 +457,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       def deferred(): Future[Int] = {
         if (counter.incrementAndGet() > parallelism) Future.failed(new Exception("parallelism exceeded"))
         else {
-          val p = Promise[Int]
+          val p = Promise[Int]()
           queue.offer(p -> System.nanoTime())
           p.future
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -7,17 +7,17 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Future
-import akka.actor.{ Address, RootActorPath }
+import scala.annotation.nowarn
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.RecipientRef
 import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.{ adapter => adapt }
-import akka.annotation.InternalApi
-import akka.pattern.PromiseActorRef
-import akka.util.Timeout
-import akka.actor.typed.RecipientRef
 import akka.actor.typed.internal.InternalRecipientRef
-import com.github.ghik.silencer.silent
+import akka.annotation.InternalStableApi
+import akka.pattern.PromiseActorRef
+import akka.pattern.StatusReply
+import akka.util.{ unused, Timeout }
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -103,18 +103,29 @@ object AskPattern {
      *
      * @tparam Res The response protocol, what the other actor sends back
      */
-    @silent("never used")
+    @nowarn("msg=never used")
     def ask[Res](replyTo: ActorRef[Res] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] = {
       // We do not currently use the implicit sched, but want to require it
       // because it might be needed when we move to a 'native' typed runtime, see #24219
       ref match {
-        case a: InternalRecipientRef[_] => askClassic(a, timeout, replyTo)
+        case a: InternalRecipientRef[Req] => askClassic[Req, Res](a, timeout, replyTo)
         case a =>
           throw new IllegalStateException(
             "Only expect references to be RecipientRef, ActorRefAdapter or ActorSystemAdapter until " +
             "native system is implemented: " + a.getClass)
       }
     }
+
+    /**
+     * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+     * If the response is a [[akka.pattern.StatusReply.Success]] the returned future is completed successfully with the wrapped response.
+     * If the status response is a [[akka.pattern.StatusReply.Error]] the returned future will be failed with the
+     * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
+     */
+    def askWithStatus[Res](
+        replyTo: ActorRef[StatusReply[Res]] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] =
+      StatusReply.flattenStatusFuture(ask(replyTo))
+
   }
 
   private val onTimeout: String => Throwable = msg => new TimeoutException(msg)
@@ -136,7 +147,7 @@ object AskPattern {
           null)
       else {
         // messageClassName "unknown' is set later, after applying the message factory
-        val a = PromiseActorRef(target.provider, timeout, target, "unknown", onTimeout = onTimeout)
+        val a = PromiseActorRef(target.provider, timeout, target, "unknown", target.refPrefix, onTimeout = onTimeout)
         val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
@@ -144,19 +155,19 @@ object AskPattern {
     val ref: ActorRef[U] = _ref
     val future: Future[U] = _future
     val promiseRef: PromiseActorRef = _promiseRef
+
+    @InternalStableApi
+    private[akka] def ask[T](target: InternalRecipientRef[T], message: T, @unused timeout: Timeout): Future[U] = {
+      target ! message
+      future
+    }
   }
 
   private def askClassic[T, U](target: InternalRecipientRef[T], timeout: Timeout, f: ActorRef[U] => T): Future[U] = {
     val p = new PromiseRef[U](target, timeout)
     val m = f(p.ref)
     if (p.promiseRef ne null) p.promiseRef.messageClassName = m.getClass.getName
-    target ! m
-    p.future
+    p.ask(target, m, timeout)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[typed] val AskPath = RootActorPath(Address("akka.actor.typed.internal", "ask"))
 }

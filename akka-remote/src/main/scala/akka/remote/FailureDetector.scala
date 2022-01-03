@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -40,7 +40,7 @@ object FailureDetector {
   // Abstract class to be able to extend it from Java
   abstract class Clock extends (() => Long)
 
-  implicit val defaultClock = new Clock {
+  implicit val defaultClock: Clock = new Clock {
     def apply() = NANOSECONDS.toMillis(System.nanoTime)
   }
 }

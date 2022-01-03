@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.AssociationHandle
 import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
-import com.github.ghik.silencer.silent
 
 object RemoteNodeRestartGateSpec extends MultiNodeConfig {
   val first = role("first")
@@ -44,7 +45,7 @@ object RemoteNodeRestartGateSpec extends MultiNodeConfig {
 class RemoteNodeRestartGateSpecMultiJvmNode1 extends RemoteNodeRestartGateSpec
 class RemoteNodeRestartGateSpecMultiJvmNode2 extends RemoteNodeRestartGateSpec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNodeRestartGateSpec) {
 
   import RemoteNodeRestartGateSpec._
@@ -60,7 +61,7 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
 
     "allow restarted node to pass through gate" taggedAs LongRunningTest in {
 
-      system.actorOf(Props[Subject], "subject")
+      system.actorOf(Props[Subject](), "subject")
       enterBarrier("subject-started")
 
       runOn(first) {
@@ -120,7 +121,7 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
         }
 
         // Now the other system will be able to pass, too
-        freshSystem.actorOf(Props[Subject], "subject")
+        freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)
       }

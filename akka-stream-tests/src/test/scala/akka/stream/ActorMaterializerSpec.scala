@@ -1,40 +1,41 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
-
-import akka.Done
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
-import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.testkit.TestKit
-import akka.testkit.{ ImplicitSender, TestProbe }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Try }
 
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+
+import akka.Done
+import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
+import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.testkit.{ StreamSpec, TestPublisher }
+import akka.testkit.{ ImplicitSender, TestProbe }
+import akka.testkit.TestKit
+
 object IndirectMaterializerCreation extends ExtensionId[IndirectMaterializerCreation] with ExtensionIdProvider {
   def createExtension(system: ExtendedActorSystem): IndirectMaterializerCreation =
     new IndirectMaterializerCreation(system)
 
-  def lookup(): ExtensionId[IndirectMaterializerCreation] = this
+  def lookup: ExtensionId[IndirectMaterializerCreation] = this
 }
 
-@silent
+@nowarn
 class IndirectMaterializerCreation(ex: ExtendedActorSystem) extends Extension {
   // extension instantiation blocked on materializer (which has Await.result inside)
-  implicit val mat = ActorMaterializer()(ex)
+  implicit val mat: ActorMaterializer = ActorMaterializer()(ex)
 
   def futureThing(n: Int): Future[Int] = {
     Source.single(n).runWith(Sink.head)
@@ -42,7 +43,7 @@ class IndirectMaterializerCreation(ex: ExtendedActorSystem) extends Extension {
 
 }
 
-@silent
+@nowarn
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
   "ActorMaterializer" must {
@@ -156,11 +157,11 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
 object ActorMaterializerSpec {
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   class ActorWithMaterializer(p: TestProbe) extends Actor {
     private val settings: ActorMaterializerSettings =
       ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")
-    implicit val mat = ActorMaterializer(settings)(context)
+    implicit val mat: ActorMaterializer = ActorMaterializer(settings)(context)
 
     Source
       .repeat("hello")

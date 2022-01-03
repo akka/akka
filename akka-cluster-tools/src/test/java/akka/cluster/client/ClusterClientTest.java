@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.client;
@@ -38,6 +38,7 @@ public class ClusterClientTest extends JUnitSuite {
   // #initialContacts
 
   @Test
+  @Deprecated
   public void demonstrateUsage() {
     // #server
     ActorRef serviceA = system.actorOf(Props.create(Service.class), "serviceA");

@@ -1,22 +1,24 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
 import java.io.{ InputStream, OutputStream }
+import java.util.concurrent.CompletionStage
 import java.util.stream.Collector
 
+import scala.concurrent.duration.FiniteDuration
+
+import scala.annotation.nowarn
+
+import akka.NotUsed
 import akka.japi.function
 import akka.stream.{ javadsl, scaladsl }
 import akka.stream.IOResult
 import akka.util.ByteString
-
-import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.CompletionStage
-
-import akka.NotUsed
-import com.github.ghik.silencer.silent
+import akka.stream.scaladsl.SinkToCompletionStage
+import akka.stream.scaladsl.SourceToCompletionStage
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
@@ -112,7 +114,7 @@ object StreamConverters {
    *
    * @param readTimeout the max time the read operation on the materialized InputStream should block
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def asInputStream(readTimeout: java.time.Duration): Sink[ByteString, InputStream] = {
     import akka.util.JavaDurationConverters._
     asInputStream(readTimeout.asScala)
@@ -121,7 +123,7 @@ object StreamConverters {
   /**
    * Creates a Source from an [[java.io.InputStream]] created by the given function.
    * Emitted elements are up to `chunkSize` sized [[akka.util.ByteString]] elements.
-   * The actual size of emitted elements depends how much data the underlying
+   * The actual size of the emitted elements depends on how much data the underlying
    * [[java.io.InputStream]] returns on each read invocation. Such chunks will
    * never be larger than chunkSize though.
    *
@@ -142,7 +144,7 @@ object StreamConverters {
   /**
    * Creates a Source from an [[java.io.InputStream]] created by the given function.
    * Emitted elements are up to 8192 bytes sized [[akka.util.ByteString]] elements.
-   * The actual size of emitted elements depends how much data the underlying
+   * The actual size of the emitted elements depends on how much data the underlying
    * [[java.io.InputStream]] returns on each read invocation. Such chunks will
    * never be larger than chunkSize though.
    *
@@ -190,7 +192,7 @@ object StreamConverters {
    *
    * @param writeTimeout the max time the write operation on the materialized OutputStream should block
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def asOutputStream(writeTimeout: java.time.Duration): javadsl.Source[ByteString, OutputStream] = {
     import akka.util.JavaDurationConverters._
     asOutputStream(writeTimeout.asScala)

@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import akka.stream.{ AbruptStageTerminationException, KillSwitches, Materializer }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.DefaultTimeout
-
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 

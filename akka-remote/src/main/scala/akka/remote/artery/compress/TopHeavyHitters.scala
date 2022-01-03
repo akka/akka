@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -25,9 +25,12 @@ import scala.reflect.ClassTag
  */
 private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit classTag: ClassTag[T]) { self =>
 
-  require((max & (max - 1)) == 0, "Maximum numbers of heavy hitters should be in form of 2^k for any natural k")
+  private val adjustedMax = if (max == 0) 1 else max // need at least one
+  require(
+    (adjustedMax & (adjustedMax - 1)) == 0,
+    "Maximum numbers of heavy hitters should be in form of 2^k for any natural k")
 
-  val capacity = max * 2
+  val capacity = adjustedMax * 2
   val mask = capacity - 1
 
   import TopHeavyHitters._
@@ -44,7 +47,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
   private[this] val weights: Array[Long] = new Array(capacity)
 
   // Heap structure containing indices to slots in the hashmap
-  private[this] val heap: Array[Int] = Array.fill(max)(-1)
+  private[this] val heap: Array[Int] = Array.fill(adjustedMax)(-1)
 
   /*
    * Invariants (apart from heap and hashmap invariants):
@@ -104,8 +107,10 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     new Iterator[T] {
       var i = 0
 
-      @tailrec override final def hasNext: Boolean =
+      @tailrec override final def hasNext: Boolean = {
+        // note that this is using max and not adjustedMax so will be empty if disabled (max=0)
         (i < self.max) && ((value != null) || { next(); hasNext })
+      }
 
       override final def next(): T = {
         val v = value
@@ -258,7 +263,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     val leftIndex = index * 2 + 1
     val rightIndex = index * 2 + 2
     val currentWeight: Long = weights(heap(index))
-    if (rightIndex < max) {
+    if (rightIndex < adjustedMax) {
       val leftValueIndex: Int = heap(leftIndex)
       val rightValueIndex: Int = heap(rightIndex)
       if (leftValueIndex < 0) {
@@ -282,7 +287,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
           }
         }
       }
-    } else if (leftIndex < max) {
+    } else if (leftIndex < adjustedMax) {
       val leftValueIndex: Int = heap(leftIndex)
       if (leftValueIndex < 0) {
         swapHeapNode(index, leftIndex)

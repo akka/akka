@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -10,16 +10,16 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor._
 import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteWatcher
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit.TestEvent._
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
+import akka.testkit.TestEvent._
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -52,8 +52,7 @@ class ClusterDeathWatchMultiJvmNode4 extends ClusterDeathWatchSpec
 class ClusterDeathWatchMultiJvmNode5 extends ClusterDeathWatchSpec
 
 abstract class ClusterDeathWatchSpec
-    extends MultiNodeSpec(ClusterDeathWatchMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterDeathWatchMultiJvmSpec)
     with ImplicitSender
     with ScalaFutures {
 
@@ -71,6 +70,9 @@ abstract class ClusterDeathWatchSpec
     system.actorSelection("/system/remote-watcher") ! Identify(None)
     expectMsgType[ActorIdentity].ref.get
   }
+
+  // only assigned on node 1
+  private var subject6: ActorRef = _
 
   "An actor watching a remote actor in the cluster" must {
 
@@ -91,10 +93,10 @@ abstract class ClusterDeathWatchSpec
           def receive = {
             case ActorIdentity(`path2`, Some(ref)) =>
               context.watch(ref)
-              watchEstablished.countDown
+              watchEstablished.countDown()
             case ActorIdentity(`path3`, Some(ref)) =>
               context.watch(ref)
-              watchEstablished.countDown
+              watchEstablished.countDown()
             case Terminated(actor) => testActor ! actor.path
           }
         }).withDeploy(Deploy.local), name = "observer1")
@@ -187,7 +189,7 @@ abstract class ClusterDeathWatchSpec
       runOn(first) {
         // fifth is member, so the node is handled by the ClusterRemoteWatcher.
         system.actorSelection(RootActorPath(fifth) / "user" / "subject6") ! Identify("subject6")
-        val subject6 = expectMsgType[ActorIdentity].ref.get
+        subject6 = expectMsgType[ActorIdentity].ref.get
         watch(subject6)
 
         system.actorSelection(RootActorPath(fifth) / "user" / "subject5") ! Identify("subject5")
@@ -232,6 +234,15 @@ abstract class ClusterDeathWatchSpec
       enterBarrier("after-3")
     }
 
+    "get a terminated when trying to watch actor after node was downed" in within(max = 20.seconds) {
+      runOn(first) {
+        // node 5 is long gone (downed)
+        watch(subject6)
+        expectTerminated(subject6, 10.seconds)
+      }
+      enterBarrier("after-4")
+    }
+
     "be able to shutdown system when using remote deployed actor on node that crash" in within(20 seconds) {
       // fourth actor system will be shutdown, not part of testConductor any more
       // so we can't use barriers to synchronize with it
@@ -242,7 +253,7 @@ abstract class ClusterDeathWatchSpec
       enterBarrier("end-actor-created")
 
       runOn(fourth) {
-        val hello = system.actorOf(Props[Hello], "hello")
+        val hello = system.actorOf(Props[Hello](), "hello")
         hello.isInstanceOf[RemoteActorRef] should ===(true)
         hello.path.address should ===(address(first))
         watch(hello)
@@ -294,7 +305,7 @@ abstract class ClusterDeathWatchSpec
           expectMsg(EndActor.End)
         }
 
-        enterBarrier("after-4")
+        enterBarrier("after-5")
       }
 
     }

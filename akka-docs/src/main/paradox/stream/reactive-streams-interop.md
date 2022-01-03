@@ -5,15 +5,18 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 <a id="reactive-streams-integration"></a>
 ## Overview
 
-Akka Streams implements the [Reactive Streams](http://reactive-streams.org/) standard for asynchronous stream processing with non-blocking
+Akka Streams implements the [Reactive Streams](https://www.reactive-streams.org/) standard for asynchronous stream processing with non-blocking
 back pressure. 
 
 Since Java 9 the APIs of Reactive Streams has been included in the Java Standard library, under the  `java.util.concurrent.Flow` 
@@ -63,7 +66,7 @@ Java
 The `Publisher` is used as an input `Source` to the flow and the
 `Subscriber` is used as an output `Sink`.
 
-A `Flow` can also be also converted to a `RunnableGraph[Processor[In, Out]]` which
+A `Flow` can also be converted to a `RunnableGraph[Processor[In, Out]]` which
 materializes to a `Processor` when `run()` is called. `run()` itself can be called multiple
 times, resulting in a new `Processor` instance each time.
 
@@ -133,5 +136,5 @@ An incomplete list of other implementations:
 
  * [Reactor (1.1+)](https://github.com/reactor/reactor)
  * [RxJava](https://github.com/ReactiveX/RxJavaReactiveStreams)
- * [Ratpack](http://www.ratpack.io/manual/current/streams.html)
- * [Slick](http://slick.lightbend.com)
+ * [Ratpack](https://www.ratpack.io/manual/current/streams.html)
+ * [Slick](https://scala-slick.org/)

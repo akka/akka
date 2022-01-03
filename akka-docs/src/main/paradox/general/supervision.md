@@ -33,7 +33,7 @@ provides the following three strategies:
 Since actors are part of a hierarchy it can often make sense to propagate
 the permanent failures upwards, if all children of an actor has stopped
 unexpectedly it may make sense for the actor itself to restart or stop to
-get back to a functional state. This can achieved through a combination of
+get back to a functional state. This can be achieved through a combination of
 supervision and watching the children to get notified when they terminate.
 An example of this can be found in @ref:[Bubble failures up through the hierarchy](../typed/fault-tolerance.md#bubble).
 
@@ -70,8 +70,8 @@ ruled out, which leads to the conclusion that the internal state needs to be
 cleared out. If the supervisor decides that its other children or itself is not
 affected by the corruption—e.g. because of conscious application of the error
 kernel pattern—it is therefore best to restart the actor. This is carried out
-by creating a new instance of the underlying `Behavior` class and replacing
-the failed instance with the fresh one inside the child’s `ActorRef`;
+by creating a new instance of the underlying @apidoc[Behavior] class and replacing
+the failed instance with the fresh one inside the child's @apidoc[typed.ActorRef];
 the ability to do this is one of the reasons for encapsulating actors within
 special references. The new actor then resumes processing its mailbox, meaning
 that the restart is not visible outside of the actor itself with the notable
@@ -94,12 +94,12 @@ from alive to dead. Monitoring is thus used to tie one actor to another so that
 it may react to the other actor’s termination, in contrast to supervision which
 reacts to failure.
 
-Lifecycle monitoring is implemented using a `Terminated` message to be
+Lifecycle monitoring is implemented using a @apidoc[typed.Terminated] message to be
 received by the monitoring actor, where the default behavior is to throw a
-special `DeathPactException` if not otherwise handled. In order to start
-listening for `Terminated` messages, invoke
-`ActorContext.watch(targetActorRef)`.  To stop listening, invoke
-`ActorContext.unwatch(targetActorRef)`.  One important property is that the
+special @apidoc[typed.DeathPactException] if not otherwise handled. In order to start
+listening for @apidoc[typed.Terminated] messages, invoke
+@apidoc[ActorContext.watch(targetActorRef)](typed.*.ActorContext) {scala="#watch[U](other:akka.actor.typed.ActorRef[U]):Unit" java="#watch(akka.actor.typed.ActorRef)"}.  To stop listening, invoke
+@apidoc[ActorContext.unwatch(targetActorRef)](typed.*.ActorContext) {scala="#unwatch[U](other:akka.actor.typed.ActorRef[U]):Unit" java="#unwatch(akka.actor.typed.ActorRef)"}.  One important property is that the
 message will be delivered irrespective of the order in which the monitoring
 request and target’s termination occur, i.e. you still get the message even if
 at the time of registration the target is already dead.

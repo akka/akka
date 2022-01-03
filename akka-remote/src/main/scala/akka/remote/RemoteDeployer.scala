@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.actor._
-import akka.routing._
-import akka.remote.routing._
-import akka.ConfigurationException
-import akka.japi.Util.immutableSeq
 import com.typesafe.config._
-import akka.routing.Pool
+
+import akka.ConfigurationException
+import akka.actor._
+import akka.japi.Util.immutableSeq
 import akka.remote.routing.RemoteRouterConfig
+import akka.routing._
+import akka.routing.Pool
 
 @SerialVersionUID(1L)
 final case class RemoteScope(node: Address) extends Scope {

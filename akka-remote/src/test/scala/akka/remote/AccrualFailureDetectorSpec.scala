@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
-
 import scala.collection.immutable.TreeMap
 import scala.concurrent.duration._
-import akka.remote.FailureDetector.Clock
-import com.github.ghik.silencer.silent
 
-@silent
+import scala.annotation.nowarn
+
+import akka.remote.FailureDetector.Clock
+import akka.testkit.AkkaSpec
+
+@nowarn
 class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
 
   "An AccrualFailureDetector" must {

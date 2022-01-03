@@ -1,26 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testconductor
 
-import language.postfixOps
-import akka.actor.{ Actor, ActorIdentity, Deploy, Identify, Props }
-
 import scala.concurrent.duration._
-import akka.testkit.LongRunningTest
+
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.actor.{ Actor, ActorIdentity, Deploy, Identify, Props }
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import com.typesafe.config.ConfigFactory
+import akka.testkit.LongRunningTest
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.remote.artery.enabled = false 
     """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
-  val master = role("master")
-  val slave = role("slave")
+  val leader = role("leader")
+  val follower = role("follower")
 
   testTransport(on = true)
 }
@@ -35,14 +36,14 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
   def initialParticipants = 2
 
   lazy val echo = {
-    system.actorSelection(node(master) / "user" / "echo") ! Identify(None)
+    system.actorSelection(node(leader) / "user" / "echo") ! Identify(None)
     expectMsgType[ActorIdentity].ref.get
   }
 
   "A TestConductor" must {
 
     "enter a barrier" taggedAs LongRunningTest in {
-      runOn(master) {
+      runOn(leader) {
         system.actorOf(Props(new Actor {
           def receive = {
             case x => testActor ! x; sender() ! x
@@ -55,20 +56,20 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
 
     "support throttling of network connections" taggedAs LongRunningTest in {
 
-      runOn(slave) {
+      runOn(follower) {
         // start remote network connection so that it can be throttled
         echo ! "start"
       }
 
       expectMsg("start")
 
-      runOn(master) {
-        testConductor.throttle(slave, master, Direction.Send, rateMBit = 0.01).await
+      runOn(leader) {
+        testConductor.throttle(follower, leader, Direction.Send, rateMBit = 0.01).await
       }
 
       enterBarrier("throttled_send")
 
-      runOn(slave) {
+      runOn(follower) {
         for (i <- 0 to 9) echo ! i
       }
 
@@ -79,19 +80,19 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
 
       enterBarrier("throttled_send2")
 
-      runOn(master) {
-        testConductor.throttle(slave, master, Direction.Send, -1).await
-        testConductor.throttle(slave, master, Direction.Receive, rateMBit = 0.01).await
+      runOn(leader) {
+        testConductor.throttle(follower, leader, Direction.Send, -1).await
+        testConductor.throttle(follower, leader, Direction.Receive, rateMBit = 0.01).await
       }
 
       enterBarrier("throttled_recv")
 
-      runOn(slave) {
+      runOn(follower) {
         for (i <- 10 to 19) echo ! i
       }
 
       val (min, max) =
-        if (isNode(master)) (0 seconds, 500 millis)
+        if (isNode(leader)) (0 seconds, 500 millis)
         else (0.3 seconds, 3 seconds)
 
       within(min, max) {
@@ -101,8 +102,8 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
 
       enterBarrier("throttled_recv2")
 
-      runOn(master) {
-        testConductor.throttle(slave, master, Direction.Receive, -1).await
+      runOn(leader) {
+        testConductor.throttle(follower, leader, Direction.Receive, -1).await
       }
 
       enterBarrier("after")

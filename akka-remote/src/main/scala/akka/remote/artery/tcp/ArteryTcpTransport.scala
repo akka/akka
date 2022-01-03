@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -35,6 +35,7 @@ import akka.stream.Attributes.LogLevels
 import akka.stream.IgnoreComplete
 import akka.stream.KillSwitches
 import akka.stream.Materializer
+import akka.stream.RestartSettings
 import akka.stream.SharedKillSwitch
 import akka.stream.SinkShape
 import akka.stream.scaladsl.Flow
@@ -72,8 +73,8 @@ private[remote] class ArteryTcpTransport(
     _provider: RemoteActorRefProvider,
     tlsEnabled: Boolean)
     extends ArteryTransport(_system, _provider) {
-  import ArteryTransport._
   import ArteryTcpTransport._
+  import ArteryTransport._
 
   override type LifeCycle = NotUsed
 
@@ -115,7 +116,6 @@ private[remote] class ArteryTcpTransport(
       outboundContext: OutboundContext,
       streamId: Int,
       bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
-    implicit val sys: ActorSystem = system
 
     val host = outboundContext.remoteAddress.host.get
     val port = outboundContext.remoteAddress.port.get
@@ -128,7 +128,7 @@ private[remote] class ArteryTcpTransport(
       }
       if (tlsEnabled) {
         val sslProvider = sslEngineProvider.get
-        Tcp().outgoingConnectionWithTls(
+        Tcp(system).outgoingConnectionWithTls(
           remoteAddress,
           createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
           localAddress,
@@ -138,7 +138,7 @@ private[remote] class ArteryTcpTransport(
           verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)),
           closing = IgnoreComplete)
       } else {
-        Tcp().outgoingConnection(
+        Tcp(system).outgoingConnection(
           remoteAddress,
           localAddress,
           halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
@@ -208,10 +208,8 @@ private[remote] class ArteryTcpTransport(
       // stream. For message stream it's best effort retry a few times.
       RestartFlow
         .withBackoff[ByteString, ByteString](
-          settings.Advanced.OutboundRestartBackoff,
-          settings.Advanced.OutboundRestartBackoff * 5,
-          0.1,
-          maxRestarts)(flowFactory)
+          RestartSettings(settings.Advanced.OutboundRestartBackoff, settings.Advanced.OutboundRestartBackoff * 5, 0.1)
+            .withMaxRestarts(maxRestarts, settings.Advanced.OutboundRestartBackoff))(flowFactory)
         // silence "Restarting graph due to failure" logging by RestartFlow
         .addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
 
@@ -245,7 +243,7 @@ private[remote] class ArteryTcpTransport(
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
         val sslProvider = sslEngineProvider.get
-        Tcp().bindWithTls(
+        Tcp(system).bindWithTls(
           interface = bindHost,
           port = bindPort,
           createSSLEngine = () => sslProvider.createServerSSLEngine(bindHost, bindPort),
@@ -255,7 +253,7 @@ private[remote] class ArteryTcpTransport(
           verifySession = session => optionToTry(sslProvider.verifyServerSession(bindHost, session)),
           closing = IgnoreComplete)
       } else {
-        Tcp().bind(interface = bindHost, port = bindPort, halfClose = false)
+        Tcp(system).bind(interface = bindHost, port = bindPort, halfClose = false)
       }
 
     val binding = serverBinding match {
@@ -273,7 +271,7 @@ private[remote] class ArteryTcpTransport(
                   s"Failed to bind TCP to [$bindHost:$bindPort] due to: " +
                   e.getMessage,
                   e))
-          }(ExecutionContexts.sameThreadExecutionContext)
+          }(ExecutionContexts.parasitic)
 
         // only on initial startup, when ActorSystem is starting
         val b = Await.result(binding, settings.Bind.BindTimeout)
@@ -419,6 +417,7 @@ private[remote] class ArteryTcpTransport(
             .via(laneKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
+            .via(Flow.fromGraph(new DuplicateFlush(inboundLanes, system, envelopeBufferPool)))
 
         val (inboundHub, compressionAccess, laneHub) =
           laneSource

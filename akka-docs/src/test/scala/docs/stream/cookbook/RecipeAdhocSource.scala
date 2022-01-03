@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
@@ -18,13 +18,13 @@ class RecipeAdhocSource extends RecipeSpec {
 
   //#adhoc-source
   def adhocSource[T](source: Source[T, _], timeout: FiniteDuration, maxRetries: Int): Source[T, _] =
-    Source.lazily(
+    Source.lazySource(
       () =>
         source
           .backpressureTimeout(timeout)
           .recoverWithRetries(maxRetries, {
             case t: TimeoutException =>
-              Source.lazily(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
+              Source.lazySource(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
           }))
   //#adhoc-source
 
@@ -32,13 +32,13 @@ class RecipeAdhocSource extends RecipeSpec {
     "not start the source if there is no demand" taggedAs TimingTest in {
       val isStarted = new AtomicBoolean()
       adhocSource(Source.empty.mapMaterializedValue(_ => isStarted.set(true)), 200.milliseconds, 3)
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
       Thread.sleep(300)
       isStarted.get() should be(false)
     }
 
     "start the source when there is a demand" taggedAs TimingTest in {
-      val sink = adhocSource(Source.repeat("a"), 200.milliseconds, 3).runWith(TestSink.probe[String])
+      val sink = adhocSource(Source.repeat("a"), 200.milliseconds, 3).runWith(TestSink[String]())
       sink.requestNext("a")
     }
 
@@ -46,7 +46,7 @@ class RecipeAdhocSource extends RecipeSpec {
       val shutdown = Promise[Done]()
       val sink = adhocSource(Source.repeat("a").watchTermination() { (_, term) =>
         shutdown.completeWith(term)
-      }, 200.milliseconds, 3).runWith(TestSink.probe[String])
+      }, 200.milliseconds, 3).runWith(TestSink[String]())
 
       sink.requestNext("a")
       Thread.sleep(200)
@@ -57,7 +57,7 @@ class RecipeAdhocSource extends RecipeSpec {
       val shutdown = Promise[Done]()
       val sink = adhocSource(Source.repeat("a").watchTermination() { (_, term) =>
         shutdown.completeWith(term)
-      }, 200.milliseconds, 3).runWith(TestSink.probe[String])
+      }, 200.milliseconds, 3).runWith(TestSink[String]())
 
       sink.requestNext("a")
       Thread.sleep(100)
@@ -81,7 +81,7 @@ class RecipeAdhocSource extends RecipeSpec {
 
       val sink = adhocSource(source.watchTermination() { (_, term) =>
         shutdown.completeWith(term)
-      }, 200.milliseconds, 3).runWith(TestSink.probe[String])
+      }, 200.milliseconds, 3).runWith(TestSink[String]())
 
       sink.requestNext("a")
       startedCount.get() should be(1)
@@ -97,7 +97,7 @@ class RecipeAdhocSource extends RecipeSpec {
 
       val sink = adhocSource(source.watchTermination() { (_, term) =>
         shutdown.completeWith(term)
-      }, 200.milliseconds, 3).runWith(TestSink.probe[String])
+      }, 200.milliseconds, 3).runWith(TestSink[String]())
 
       sink.requestNext("a")
       startedCount.get() should be(1)

@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
 import java.io.File
+
+import scala.language.postfixOps
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 import kamon.sigar.SigarProvisioner
 import org.hyperic.sigar.Sigar
 import org.hyperic.sigar.SigarProxy
-import scala.language.postfixOps
-import scala.util.Success
-import scala.util.Failure
-import scala.util.Try
 
 /**
  * Provide sigar instance as `SigarProxy`.

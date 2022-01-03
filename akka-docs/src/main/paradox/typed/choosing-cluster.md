@@ -4,23 +4,23 @@
 An architectural choice you have to make is if you are going to use a microservices architecture or
 a traditional distributed application. This choice will influence how you should use Akka Cluster.
 
+The [Stateful or Stateless applications: to Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation)
+video is a good starting point to understand the motivation to use Akka Cluster.
+
 ## Microservices
 
 Microservices has many attractive properties, such as the independent nature of microservices allows for
 multiple smaller and more focused teams that can deliver new functionality more frequently and can
 respond quicker to business opportunities. Reactive Microservices should be isolated, autonomous, and have
 a single responsibility as identified by Jonas Bonér in the book
-[Reactive Microsystems: The Evolution of Microservices at Scale](https://info.lightbend.com/ebook-reactive-microservices-the-evolution-of-microservices-at-scale-register.html).
+[Reactive Microsystems: The Evolution of Microservices at Scale](https://www.lightbend.com/ebooks/reactive-microsystems-evolution-of-microservices-scalability-oreilly).
 
 In a microservices architecture, you should consider communication within a service and between services.
 
 In general we recommend against using Akka Cluster and actor messaging between _different_ services because that
 would result in a too tight code coupling between the services and difficulties deploying these independent of
 each other, which is one of the main reasons for using a microservices architecture.
-See the discussion on
-@scala[[Internal and External Communication](https://www.lagomframework.com/documentation/current/scala/InternalAndExternalCommunication.html)]
-@java[[Internal and External Communication](https://www.lagomframework.com/documentation/current/java/InternalAndExternalCommunication.html)]
-in the docs of the [Lagom Framework](https://www.lagomframework.com) (where each microservice is an Akka Cluster)
+See the discussion on @extref[Internal and External Communication](platform-guide:concepts/internal-and-external-communication.html)
 for some background on this.
 
 Nodes of a single service (collectively called a cluster) require less decoupling. They share the same code and
@@ -29,9 +29,9 @@ during a rolling deployment, but deployment of the entire set has a single point
 intra-service communication can take advantage of Akka Cluster, failure management and actor messaging, which
 is convenient to use and has great performance.
 
-Between different services [Akka HTTP](https://doc.akka.io/docs/akka-http/current) or
+Between different services [Akka HTTP](https://doc.akka.io/docs/akka-http/current/) or
 [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/) can be used for synchronous (yet non-blocking)
-communication and [Akka Streams Kafka](https://doc.akka.io/docs/akka-stream-kafka/current/home.html) or other
+communication and [Akka Streams Kafka](https://doc.akka.io/docs/alpakka-kafka/current/) or other
 [Alpakka](https://doc.akka.io/docs/alpakka/current/) connectors for integration asynchronous communication.
 All those communication mechanisms work well with streaming of messages with end-to-end back-pressure, and the
 synchronous communication tools can also be used for single request response interactions. It is also important

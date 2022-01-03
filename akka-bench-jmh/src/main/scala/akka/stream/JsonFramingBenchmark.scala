@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import java.util.concurrent.TimeUnit
 
+import org.openjdk.jmh.annotations._
+
 import akka.stream.impl.JsonObjectParser
 import akka.util.ByteString
-import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)

@@ -1,22 +1,23 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.protobuf
 
+import collection.immutable.SortedSet
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
-import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.cluster.InternalClusterAction.CompatibleConfig
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.RoundRobinPool
-import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
+import akka.testkit.AkkaSpec
+import akka.util.Version
 
-import collection.immutable.SortedSet
-import akka.testkit.{ AkkaSpec, TestKit }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-
-@silent
+@nowarn
 class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
@@ -49,16 +50,31 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         env2.from should ===(env.from)
         env2.to should ===(env.to)
         env2.gossip should ===(env.gossip)
+        env.gossip.members.foreach { m1 =>
+          val m2 = env.gossip.members.find(_.uniqueAddress == m1.uniqueAddress).get
+          checkSameMember(m1, m2)
+        }
       case (_, ref) =>
         ref should ===(obj)
     }
   }
 
+  private def checkSameMember(m1: Member, m2: Member): Unit = {
+    m1.uniqueAddress should ===(m2.uniqueAddress)
+    m1.status should ===(m2.status)
+    m1.appVersion should ===(m2.appVersion)
+    m1.dataCenter should ===(m2.dataCenter)
+    m1.roles should ===(m2.roles)
+    m1.upNumber should ===(m2.upNumber)
+  }
+
   import MemberStatus._
 
-  val a1 = TestMember(Address("akka", "sys", "a", 2552), Joining, Set.empty[String])
-  val b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
+  val a1 =
+    TestMember(Address("akka", "sys", "a", 2552), Joining, Set.empty[String], appVersion = Version("1.0.0"))
+  val b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set("r1"), appVersion = Version("1.1.0"))
+  val c1 =
+    TestMember(Address("akka", "sys", "c", 2552), Leaving, Set.empty[String], "foo", appVersion = Version("1.1.0"))
   val d1 = TestMember(Address("akka", "sys", "d", 2552), Exiting, Set("r1"), "foo")
   val e1 = TestMember(Address("akka", "sys", "e", 2552), Down, Set("r3"))
   val f1 = TestMember(Address("akka", "sys", "f", 2552), Removed, Set("r3"), "foo")
@@ -70,7 +86,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       val uniqueAddress = UniqueAddress(address, 17L)
       val address2 = Address("akka", "system", "other.host.org", 4711)
       val uniqueAddress2 = UniqueAddress(address2, 18L)
-      checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")))
+      checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A"), Version.Zero))
+      checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("dc-A"), Version("1.2.3")))
       checkSerialization(ClusterUserAction.Leave(address))
       checkSerialization(ClusterUserAction.Down(address))
       checkSerialization(InternalClusterAction.InitJoin(ConfigFactory.empty))
@@ -97,46 +114,36 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g3))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g4))
 
-      checkSerialization(GossipStatus(a1.uniqueAddress, g1.version))
-      checkSerialization(GossipStatus(a1.uniqueAddress, g2.version))
-      checkSerialization(GossipStatus(a1.uniqueAddress, g3.version))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g1.version, g1.seenDigest))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g2.version, g2.seenDigest))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g3.version, g3.seenDigest))
 
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
     }
 
     // can be removed in 2.6.3 only checks deserialization with new not yet in effect manifests for 2.6.2
-    "be serializable with new manifests for 2.6.3" in {
+    "be de-serializable with class manifests from 2.6.4 and earlier nodes" in {
       val address = Address("akka", "system", "some.host.org", 4711)
       val uniqueAddress = UniqueAddress(address, 17L)
       val address2 = Address("akka", "system", "other.host.org", 4711)
       val uniqueAddress2 = UniqueAddress(address2, 18L)
       checkDeserializationWithManifest(
-        InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")),
-        ClusterMessageSerializer.JoinManifest)
+        InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A"), Version.Zero),
+        ClusterMessageSerializer.OldJoinManifest)
       checkDeserializationWithManifest(ClusterUserAction.Leave(address), ClusterMessageSerializer.LeaveManifest)
       checkDeserializationWithManifest(ClusterUserAction.Down(address), ClusterMessageSerializer.DownManifest)
       checkDeserializationWithManifest(
         InternalClusterAction.InitJoin(ConfigFactory.empty),
-        ClusterMessageSerializer.InitJoinManifest)
+        ClusterMessageSerializer.OldInitJoinManifest)
       checkDeserializationWithManifest(
         InternalClusterAction.InitJoinAck(address, CompatibleConfig(ConfigFactory.empty)),
-        ClusterMessageSerializer.InitJoinAckManifest)
+        ClusterMessageSerializer.OldInitJoinAckManifest)
       checkDeserializationWithManifest(
         InternalClusterAction.InitJoinNack(address),
-        ClusterMessageSerializer.InitJoinNackManifest)
-      /* this has changed in 2.5.23 but it seems we forgot to add the next step in 2.5.24
-       so we can't do two-way like this, the new manifest actually expects an address + timestamp + seqnr only when the new manifest is used
-       see test below.
-      checkDeserializationWithManifest(
-        ClusterHeartbeatSender.Heartbeat(address, -1, -1),
-        ClusterMessageSerializer.HeartbeatManifest)
-      checkDeserializationWithManifest(
-        ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress, -1, -1),
-        ClusterMessageSerializer.HeartbeatRspManifest)
-       */
+        ClusterMessageSerializer.OldInitJoinNackManifest)
       checkDeserializationWithManifest(
         InternalClusterAction.ExitingConfirmed(uniqueAddress),
-        ClusterMessageSerializer.ExitingConfirmedManifest)
+        ClusterMessageSerializer.OldExitingConfirmedManifest)
 
       val node1 = VectorClock.Node("node1")
       val node2 = VectorClock.Node("node2")
@@ -149,85 +156,15 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         .unreachable(b1.uniqueAddress, e1.uniqueAddress)
       checkDeserializationWithManifest(
         GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g1),
-        ClusterMessageSerializer.GossipEnvelopeManifest)
+        ClusterMessageSerializer.OldGossipEnvelopeManifest)
 
       checkDeserializationWithManifest(
-        GossipStatus(a1.uniqueAddress, g1.version),
-        ClusterMessageSerializer.GossipStatusManifest)
+        GossipStatus(a1.uniqueAddress, g1.version, g1.seenDigest),
+        ClusterMessageSerializer.OldGossipStatusManifest)
 
       checkDeserializationWithManifest(
         InternalClusterAction.Welcome(uniqueAddress, g2),
-        ClusterMessageSerializer.WelcomeManifest)
-    }
-
-    "be compatible with wire format of version 2.5.9 (using InitJoin singleton instead of class)" in {
-      // we must use the old singleton class name so that the other side will see an InitJoin
-      // but discard the config as it does not know about the config check
-      val oldClassName = "akka.cluster.InternalClusterAction$InitJoin$"
-      serializer.manifest(InternalClusterAction.InitJoin(ConfigFactory.empty())) should ===(oldClassName)
-
-      // in 2.5.9 and earlier, it was an object and serialized to empty byte array
-      // and we should accept that
-      val deserialized = serializer.fromBinary(Array.emptyByteArray, oldClassName)
-      deserialized shouldBe an[InternalClusterAction.InitJoin]
-    }
-
-    "deserialize from wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
-      // we must use the old singleton class name so that the other side will see an InitJoin
-      // but discard the config as it does not know about the config check
-      val initJoinAck = InternalClusterAction.InitJoinAck(
-        Address("akka", "cluster", "127.0.0.1", 2552),
-        InternalClusterAction.UncheckedConfig)
-      val serializedInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
-
-      val deserialized =
-        serializer.fromBinary(serializedInitJoinAckPre2510, ClusterMessageSerializer.OldInitJoinAckManifest)
-      deserialized shouldEqual initJoinAck
-    }
-
-    "serialize to wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
-      val initJoinAck = InternalClusterAction.InitJoinAck(
-        Address("akka", "cluster", "127.0.0.1", 2552),
-        InternalClusterAction.ConfigCheckUnsupportedByJoiningNode)
-      val bytes = serializer.toBinary(initJoinAck)
-
-      val expectedSerializedInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
-      bytes.toList should ===(expectedSerializedInitJoinAckPre2510.toList)
-    }
-
-    "be compatible with wire format of version 2.5.3 (using use-role instead of use-roles)" in {
-      val system = ActorSystem("ClusterMessageSerializer-old-wire-format")
-
-      try {
-        val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
-
-        // the oldSnapshot was created with the version of ClusterRouterPoolSettings in Akka 2.5.3. See issue #23257.
-        // It was created with:
-        /*
-          import org.apache.commons.codec.binary.Hex.encodeHex
-          val bytes = serializer.toBinary(
-            ClusterRouterPool(RoundRobinPool(nrOfInstances = 4), ClusterRouterPoolSettings(123, 345, true, Some("role ABC"))))
-          println(String.valueOf(encodeHex(bytes)))
-         */
-
-        val oldBytesHex = "0a0f08101205524f5252501a04080418001211087b10d90218012208726f6c6520414243"
-
-        import org.apache.commons.codec.binary.Hex.decodeHex
-        val oldBytes = decodeHex(oldBytesHex.toCharArray)
-        val result = serializer.fromBinary(oldBytes, classOf[ClusterRouterPool])
-
-        result match {
-          case pool: ClusterRouterPool =>
-            pool.settings.totalInstances should ===(123)
-            pool.settings.maxInstancesPerNode should ===(345)
-            pool.settings.allowLocalRoutees should ===(true)
-            pool.settings.useRole should ===(Some("role ABC"))
-            pool.settings.useRoles should ===(Set("role ABC"))
-        }
-      } finally {
-        TestKit.shutdownActorSystem(system)
-      }
-
+        ClusterMessageSerializer.OldWelcomeManifest)
     }
 
     "add a default data center role to gossip if none is present" in {
@@ -237,48 +174,25 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
     }
 
     "add a default data center role to internal join action if none is present" in {
-      val join = roundtrip(InternalClusterAction.Join(a1.uniqueAddress, Set()))
+      val join = roundtrip(InternalClusterAction.Join(a1.uniqueAddress, Set(), Version.Zero))
       join.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
     }
   }
 
+  // support for deserializing a new format with a string based manifest was added in 2.5.23 but the next step
+  // was never done, meaning that 2.6.4 still emits the old format
   "Rolling upgrades for heart beat message changes in 2.5.23" must {
-    // FIXME, add issue for serializing this as the new message type
 
-    "serialize heart beats as Address to support versions prior or 2.5.23" in {
-      serializer.manifest(ClusterHeartbeatSender.Heartbeat(a1.address, -1, -1)) should ===(
-        ClusterMessageSerializer.HeartBeatManifestPre2523)
+    "deserialize heart beats represented by just an address Address to support versions prior or 2.6.5" in {
+      val serialized = serializer.addressToProto(a1.address).build().toByteArray
+      val deserialized = serializer.fromBinary(serialized, ClusterMessageSerializer.HeartBeatManifestPre2523)
+      deserialized should ===(ClusterHeartbeatSender.Heartbeat(a1.address, -1, -1))
     }
 
-    "serialize heart beat responses as UniqueAddress to support versions prior to 2.5.23" in {
-      serializer.manifest(ClusterHeartbeatSender.HeartbeatRsp(a1.uniqueAddress, -1, -1)) should ===(
-        ClusterMessageSerializer.HeartBeatRspManifest2523)
-    }
-
-    "be able to deserialize HeartBeat protobuf message" in {
-      val hbProtobuf = cm.Heartbeat
-        .newBuilder()
-        .setFrom(serializer.addressToProto(a1.address))
-        .setSequenceNr(1)
-        .setCreationTime(2)
-        .build()
-        .toByteArray
-
-      serializer.fromBinary(hbProtobuf, ClusterMessageSerializer.HeartbeatManifest) should ===(
-        ClusterHeartbeatSender.Heartbeat(a1.address, 1, 2))
-    }
-
-    "be able to deserialize HeartBeatRsp probuf message" in {
-      val hbrProtobuf = cm.HeartBeatResponse
-        .newBuilder()
-        .setFrom(serializer.uniqueAddressToProto(a1.uniqueAddress))
-        .setSequenceNr(1)
-        .setCreationTime(2)
-        .build()
-        .toByteArray
-
-      serializer.fromBinary(hbrProtobuf, ClusterMessageSerializer.HeartbeatRspManifest) should ===(
-        ClusterHeartbeatSender.HeartbeatRsp(a1.uniqueAddress, 1, 2))
+    "deserialize heart beat responses as UniqueAddress to support versions prior to 2.5.23" in {
+      val serialized = serializer.uniqueAddressToProto(a1.uniqueAddress).build().toByteArray
+      val deserialized = serializer.fromBinary(serialized, ClusterMessageSerializer.HeartBeatRspManifest2523)
+      deserialized should ===(ClusterHeartbeatSender.HeartbeatRsp(a1.uniqueAddress, -1, -1))
     }
   }
 

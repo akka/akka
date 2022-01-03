@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import akka.actor._
 import akka.actor.SupervisorStrategy.{ Escalate, Stop }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import scala.concurrent.duration._
-
-import scala.util.control.NoStackTrace
 
 object AtLeastOnceDeliveryCrashSpec {
 

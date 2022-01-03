@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
+import scala.annotation.unchecked.uncheckedVariance
+
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
-
-import scala.annotation.unchecked.uncheckedVariance
+import akka.stream.scaladsl.GenericGraph
 
 /**
  * Not intended to be directly extended by user classes
@@ -67,6 +68,34 @@ trait Graph[+S <: Shape, +M] {
    * less specific than attributes set directly on the individual graphs of the composite.
    */
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
+}
+
+object Graph {
+
+  /**
+   * Java API
+   * Transform the materialized value of this Flow, leaving all other properties as they were.
+   *
+   * @param g the graph being transformed
+   * @param f function to map the graph's materialized value
+   * @return a graph with same semantics as the given graph, except from the materialized value which is mapped using f.
+   */
+  def mapMaterializedValue[S <: Shape, M1, M2](g: Graph[S, M1])(f: M1 => M2): Graph[S, M2] =
+    new GenericGraph(g.shape, g.traversalBuilder).mapMaterializedValue(f)
+
+  /**
+   * Scala API, see https://github.com/akka/akka/issues/28501 for discussion why this can't be an instance method on class Graph.
+   * @param self the graph whose materialized value will be mapped
+   */
+  final implicit class GraphMapMatVal[S <: Shape, M](self: Graph[S, M]) {
+
+    /**
+     * Transform the materialized value of this Graph, leaving all other properties as they were.
+     *
+     * @param f function to map the graph's materialized value
+     */
+    def mapMaterializedValue[M2](f: M => M2): Graph[S, M2] = Graph.mapMaterializedValue(self)(f)
+  }
 }
 
 /**

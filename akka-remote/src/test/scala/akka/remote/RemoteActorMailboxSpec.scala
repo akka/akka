@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.actor.ActorMailboxSpec
 import com.typesafe.config.ConfigFactory
+
+import akka.actor.ActorMailboxSpec
 
 class RemoteActorMailboxSpec
     extends ActorMailboxSpec(

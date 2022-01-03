@@ -1,25 +1,42 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.{ ActorRef, Behavior, Signal }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
+import com.typesafe.config.Config
+
 import java.util.concurrent.ThreadLocalRandom
 
 object BehaviorTestKit {
-  import akka.actor.testkit.typed.scaladsl.TestInbox.address
+
+  /**
+   * JAVA API
+   */
+  @ApiMayChange
+  def applicationTestConfig: Config = akka.actor.testkit.typed.scaladsl.BehaviorTestKit.ApplicationTestConfig
+
+  /**
+   * JAVA API
+   */
+  @ApiMayChange
+  def create[T](initialBehavior: Behavior[T], name: String, config: Config): BehaviorTestKit[T] = {
+    val system = new ActorSystemStub("StubbedActorContext", config)
+    val uid = ThreadLocalRandom.current().nextInt()
+    new BehaviorTestKitImpl(system, (system.path / name).withUid(uid), initialBehavior)
+  }
 
   /**
    * JAVA API
    */
   @ApiMayChange
   def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
-    val uid = ThreadLocalRandom.current().nextInt()
-    new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior)
+    create(initialBehavior, name, ActorSystemStub.config.defaultReference)
   }
 
   /**
@@ -75,7 +92,7 @@ abstract class BehaviorTestKit[T] {
   /**
    * The self reference of the actor living inside this testkit.
    */
-  def getRef(): ActorRef[T] = selfInbox.getRef()
+  def getRef(): ActorRef[T] = selfInbox().getRef()
 
   /**
    * Requests all the effects. The effects are consumed, subsequent calls will only
@@ -141,4 +158,9 @@ abstract class BehaviorTestKit[T] {
    * Clear the log entries
    */
   def clearLog(): Unit
+
+  /**
+   * The receptionist inbox contains messages sent to `system.receptionist`
+   */
+  def receptionistInbox(): TestInbox[Receptionist.Command]
 }

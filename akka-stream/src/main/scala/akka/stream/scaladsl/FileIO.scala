@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -8,12 +8,12 @@ import java.io.File
 import java.nio.file.{ OpenOption, Path }
 import java.nio.file.StandardOpenOption._
 
+import scala.concurrent.Future
+
+import akka.stream.IOResult
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
-import akka.stream.IOResult
 import akka.util.ByteString
-
-import scala.concurrent.Future
 
 /**
  * Factories to create sinks and sources from files

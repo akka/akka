@@ -1,13 +1,11 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization.jackson
 
 // FIXME maybe move many things to `akka.serialization.jackson.internal` package?
 
-import akka.actor.ActorRef
-import akka.annotation.InternalApi
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonTokenId
@@ -15,6 +13,9 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
+
+import akka.actor.ActorRef
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API: Adds support for serializing and deserializing [[ActorRef]].

@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.remote.FailureDetector.Clock
 import scala.concurrent.duration._
+
+import akka.remote.FailureDetector.Clock
 import akka.testkit.AkkaSpec
 
 class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {

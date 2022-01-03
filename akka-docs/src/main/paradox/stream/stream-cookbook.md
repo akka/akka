@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -235,9 +238,9 @@ Java
 ### Adhoc source
 
 **Situation:** The idea is that you have a source which you don't want to start until you have a demand.
-Also, you want to shutdown it down when there is no more demand, and start it up again there is new demand again.
+Also, you want to shut it down when there is no more demand, and start it up again there is new demand again.
 
-You can achieve this behavior by combining `lazily`, `backpressureTimeout` and `recoverWithRetries` as follows:
+You can achieve this behavior by combining `lazySource`, `backpressureTimeout` and `recoverWithRetries` as follows:
 
 Scala
 :   @@snip [RecipeAdhocSource.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeAdhocSource.scala) { #adhoc-source }

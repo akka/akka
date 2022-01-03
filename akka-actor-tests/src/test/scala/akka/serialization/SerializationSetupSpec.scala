@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.{ BitSet => ProgrammaticJavaDummy }
 import java.util.{ Date => SerializableDummy }
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.setup.ActorSystemSetup
-import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem }
-import akka.testkit.{ AkkaSpec, TestKit }
 import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem }
+import akka.actor.setup.ActorSystemSetup
+import akka.testkit.{ AkkaSpec, TestKit }
 
 class ConfigurationDummy
 class ProgrammaticDummy

@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
-import akka.actor.ActorSystem
 import org.reactivestreams.tck.SubscriberBlackboxVerification
 import org.reactivestreams.tck.SubscriberWhiteboxVerification
 import org.reactivestreams.tck.TestEnvironment
 import org.scalatestplus.testng.TestNGSuiteLike
+
+import akka.actor.ActorSystem
 
 abstract class AkkaSubscriberBlackboxVerification[T](env: TestEnvironment)
     extends SubscriberBlackboxVerification[T](env)

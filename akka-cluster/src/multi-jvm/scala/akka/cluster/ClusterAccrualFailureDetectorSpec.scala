@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 
 object ClusterAccrualFailureDetectorMultiJvmSpec extends MultiNodeConfig {
@@ -29,8 +30,7 @@ class ClusterAccrualFailureDetectorMultiJvmNode2 extends ClusterAccrualFailureDe
 class ClusterAccrualFailureDetectorMultiJvmNode3 extends ClusterAccrualFailureDetectorSpec
 
 abstract class ClusterAccrualFailureDetectorSpec
-    extends MultiNodeSpec(ClusterAccrualFailureDetectorMultiJvmSpec)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(ClusterAccrualFailureDetectorMultiJvmSpec) {
 
   import ClusterAccrualFailureDetectorMultiJvmSpec._
 

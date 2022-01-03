@@ -1,11 +1,14 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+
+import scala.annotation.nowarn
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -46,6 +49,7 @@ class DslConsistencySpec extends AnyWordSpec with Matchers {
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
     Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
     Set("productElementName", "productElementNames") ++
+    Set("_1") ++
     Set(
       "create",
       "apply",
@@ -90,6 +94,7 @@ class DslConsistencySpec extends AnyWordSpec with Matchers {
     sSubSourceClass -> Set(),
     sRunnableGraphClass -> Set("builder"))
 
+  @nowarn
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 
   def assertHasMethod(c: Class[_], name: String): Unit = {

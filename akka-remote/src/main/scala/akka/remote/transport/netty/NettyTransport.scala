@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
@@ -7,35 +7,21 @@ package akka.remote.transport.netty
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.SocketAddress
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.blocking
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-import akka.actor.ActorSystem
-import akka.actor.Address
-import akka.actor.ExtendedActorSystem
-import akka.dispatch.ThreadPoolConfig
-import akka.event.Logging
-import akka.remote.RARP
-import akka.remote.transport.AssociationHandle.HandleEventListener
-import akka.remote.transport.Transport._
-import akka.remote.transport.AssociationHandle
-import akka.remote.transport.Transport
-import akka.util.Helpers
-import akka.util.Helpers.Requiring
-import akka.util.OptionVal
-import akka.ConfigurationException
-import akka.OnlyCauseStackTrace
-import com.github.ghik.silencer.silent
+
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import org.jboss.netty.bootstrap.Bootstrap
 import org.jboss.netty.bootstrap.ClientBootstrap
@@ -56,6 +42,22 @@ import org.jboss.netty.handler.codec.frame.LengthFieldPrepender
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.util.HashedWheelTimer
 
+import akka.ConfigurationException
+import akka.OnlyCauseStackTrace
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
+import akka.dispatch.ThreadPoolConfig
+import akka.event.Logging
+import akka.remote.RARP
+import akka.remote.transport.AssociationHandle
+import akka.remote.transport.AssociationHandle.HandleEventListener
+import akka.remote.transport.Transport
+import akka.remote.transport.Transport._
+import akka.util.Helpers
+import akka.util.Helpers.Requiring
+import akka.util.OptionVal
+
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object NettyFutureBridge {
   def apply(nettyFuture: ChannelFuture): Future[Channel] = {
@@ -73,7 +75,7 @@ object NettyFutureBridge {
 
   def apply(nettyFuture: ChannelGroupFuture): Future[ChannelGroup] = {
     import akka.util.ccompat.JavaConverters._
-    val p = Promise[ChannelGroup]
+    val p = Promise[ChannelGroup]()
     nettyFuture.addListener(new ChannelGroupFutureListener {
       def operationComplete(future: ChannelGroupFuture): Unit =
         p.complete(
@@ -111,8 +113,9 @@ class NettyTransportExceptionNoStack(msg: String, cause: Throwable)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class NettyTransportSettings(config: Config) {
 
-  import akka.util.Helpers.ConfigOps
   import config._
+
+  import akka.util.Helpers.ConfigOps
 
   val EnableSsl: Boolean = getBoolean("enable-ssl")
 
@@ -167,7 +170,7 @@ class NettyTransportSettings(config: Config) {
   val PortSelector: Int = getInt("port")
 
   @deprecated("WARNING: This should only be used by professionals.", "2.4")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   val BindPortSelector: Int = getString("bind-port") match {
     case ""    => PortSelector
     case value => value.toInt
@@ -210,7 +213,7 @@ class NettyTransportSettings(config: Config) {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[netty] trait CommonHandlers extends NettyHelpers {
   protected val transport: NettyTransport
 
@@ -253,7 +256,7 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[netty] abstract class ServerHandler(
     protected final val transport: NettyTransport,
     private final val associationListenerFuture: Future[AssociationEventListener])
@@ -285,7 +288,7 @@ private[netty] abstract class ServerHandler(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[netty] abstract class ClientHandler(protected final val transport: NettyTransport, remoteAddress: Address)
     extends NettyClientHelpers
     with CommonHandlers {
@@ -357,7 +360,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   @volatile private var boundTo: Address = _
   @volatile private var serverChannel: Channel = _
 
-  private val log = Logging.withMarker(system, this.getClass)
+  private val log = Logging.withMarker(system, classOf[NettyTransport])
 
   /**
    * INTERNAL API
@@ -429,7 +432,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         val handler = NettySSLSupport(sslProvider, isClient)
         handler.setCloseOnSSLException(true)
         handler
-      case OptionVal.None =>
+      case _ =>
         throw new IllegalStateException("Expected enable-ssl=on")
     }
 
@@ -495,7 +498,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   }
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     val bindPort = settings.BindPortSelector
 
     for {
@@ -505,6 +508,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         val newServerChannel = inboundBootstrap match {
           case b: ServerBootstrap         => b.bind(address)
           case b: ConnectionlessBootstrap => b.bind(address)
+          case _                          => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
         }
 
         // Block reads until a handler actor is registered
@@ -513,7 +517,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
         serverChannel = newServerChannel
 
-        @silent("deprecated")
+        @nowarn("msg=deprecated")
         val port = if (settings.PortSelector == 0) None else Some(settings.PortSelector)
 
         addressFromSocketAddress(

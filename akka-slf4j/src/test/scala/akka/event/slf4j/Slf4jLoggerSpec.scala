@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.slf4j
 
-import language.postfixOps
-import akka.testkit.AkkaSpec
-import akka.actor.{ Actor, DiagnosticActorLogging, Props }
-
-import scala.concurrent.duration._
-import akka.event.{ LogMarker, Logging }
-import ch.qos.logback.core.OutputStreamAppender
 import java.io.ByteArrayOutputStream
 
+import scala.concurrent.duration._
+
+import ch.qos.logback.core.OutputStreamAppender
+import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
 import org.slf4j.{ Marker, MarkerFactory }
+
+import akka.actor.{ Actor, DiagnosticActorLogging, Props }
+import akka.event.{ LogMarker, Logging }
+import akka.testkit.AkkaSpec
 
 object Slf4jLoggerSpec {
 
@@ -62,7 +63,7 @@ object Slf4jLoggerSpec {
   val output = new ByteArrayOutputStream
   def outputString: String = output.toString("UTF-8")
 
-  class TestAppender extends OutputStreamAppender {
+  class TestAppender[E] extends OutputStreamAppender[E] {
 
     override def start(): Unit = {
       setOutputStream(output)
@@ -75,7 +76,7 @@ object Slf4jLoggerSpec {
 class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAfterEach {
   import Slf4jLoggerSpec._
 
-  val producer = system.actorOf(Props[LogProducer], name = "logProducer")
+  val producer = system.actorOf(Props[LogProducer](), name = "logProducer")
 
   override def beforeEach(): Unit = {
     output.reset()

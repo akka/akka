@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -32,8 +32,8 @@ object Aggregator {
 
       def collecting(replies: immutable.IndexedSeq[Reply]): Behavior[Command] = {
         Behaviors.receiveMessage {
-          case WrappedReply(reply: Reply) =>
-            val newReplies = replies :+ reply
+          case WrappedReply(reply) =>
+            val newReplies = replies :+ reply.asInstanceOf[Reply]
             if (newReplies.size == expectedReplies) {
               val result = aggregateReplies(newReplies)
               replyTo ! result

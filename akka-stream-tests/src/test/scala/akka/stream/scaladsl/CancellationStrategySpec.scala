@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
+
+import scala.concurrent.duration._
 
 import akka.NotUsed
 import akka.stream.Attributes
@@ -26,10 +28,8 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils.TE
-import akka.testkit.WithLogCapturing
 import akka.testkit._
-
-import scala.concurrent.duration._
+import akka.testkit.WithLogCapturing
 
 class CancellationStrategySpec extends StreamSpec("""akka.loglevel = DEBUG
        akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]""") with WithLogCapturing {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -9,65 +9,37 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.cluster.MultiNodeClusterSpec
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
-import akka.serialization.jackson.CborSerializable
 import akka.testkit.TestDuration
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
 object ClusterShardingGetStatsSpec {
-  case object Stop extends CborSerializable
-  case class Ping(id: Long) extends CborSerializable
-  case object Pong extends CborSerializable
+  import MultiNodeClusterShardingSpec.PingPongActor
 
-  class ShardedActor extends Actor with ActorLogging {
-    log.info(s"entity started {}", self.path)
-    def receive = {
-      case Stop    => context.stop(self)
-      case _: Ping => sender() ! Pong
-    }
-  }
-
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ Ping(id) => (id.toString, msg)
-  }
+  val shardTypeName = "Ping"
 
   val numberOfShards = 3
 
-  val extractShardId: ShardRegion.ExtractShardId = {
-    case Ping(id) => (id % numberOfShards).toString
+  val extractEntityId: ShardRegion.ExtractEntityId = {
+    case msg @ PingPongActor.Ping(id) => (id.toString, msg)
   }
-
-  val shardTypeName = "Ping"
+  val extractShardId: ShardRegion.ExtractShardId = {
+    case PingPongActor.Ping(id) => (id % numberOfShards).toString
+    case _                      => throw new IllegalArgumentException()
+  }
 }
 
-object ClusterShardingGetStatsSpecConfig extends MultiNodeConfig {
+object ClusterShardingGetStatsSpecConfig
+    extends MultiNodeClusterShardingConfig(additionalConfig = """
+        akka.log-dead-letters-during-shutdown = off
+        akka.cluster.sharding.updating-state-timeout = 2s
+        akka.cluster.sharding.waiting-for-state-timeout = 2s
+        """) {
+
   val controller = role("controller")
   val first = role("first")
   val second = role("second")
   val third = role("third")
-
-  commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
-    akka.actor.provider = "cluster"
-    akka.remote.classic.log-remote-lifecycle-events = off
-    akka.log-dead-letters-during-shutdown = off
-    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
-    akka.cluster.testkit.auto-down-unreachable-after = 0s
-    akka.cluster.sharding {
-      state-store-mode = "ddata"
-      updating-state-timeout = 2s
-      waiting-for-state-timeout = 2s
-    }
-    akka.cluster.sharding.distributed-data.durable.lmdb {
-      dir = target/ClusterShardingGetStatsSpec/sharding-ddata
-      map-size = 10 MiB
-    }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second, third)(ConfigFactory.parseString("""akka.cluster.roles=["shard"]"""))
 
@@ -78,37 +50,20 @@ class ClusterShardingGetStatsSpecMultiJvmNode2 extends ClusterShardingGetStatsSp
 class ClusterShardingGetStatsSpecMultiJvmNode3 extends ClusterShardingGetStatsSpec
 class ClusterShardingGetStatsSpecMultiJvmNode4 extends ClusterShardingGetStatsSpec
 
-abstract class ClusterShardingGetStatsSpec
-    extends MultiNodeSpec(ClusterShardingGetStatsSpecConfig)
-    with STMultiNodeSpec {
+abstract class ClusterShardingGetStatsSpec extends MultiNodeClusterShardingSpec(ClusterShardingGetStatsSpecConfig) {
 
   import ClusterShardingGetStatsSpec._
   import ClusterShardingGetStatsSpecConfig._
-
-  def initialParticipants = roles.size
+  import MultiNodeClusterShardingSpec.PingPongActor
 
   def startShard(): ActorRef = {
-    ClusterSharding(system).start(
+    startSharding(
+      system,
       typeName = shardTypeName,
-      entityProps = Props(new ShardedActor),
-      settings = ClusterShardingSettings(system).withRole("shard"),
+      entityProps = Props(new PingPongActor),
+      settings = settings.withRole("shard"),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
-  }
-
-  def startProxy(): ActorRef = {
-    ClusterSharding(system).startProxy(
-      typeName = shardTypeName,
-      role = Some("shard"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
-  }
-
-  def join(from: RoleName): Unit = {
-    runOn(from) {
-      Cluster(system).join(node(controller).address)
-    }
-    enterBarrier(from.name + "-joined")
   }
 
   lazy val region = ClusterSharding(system).shardRegion(shardTypeName)
@@ -116,10 +71,9 @@ abstract class ClusterShardingGetStatsSpec
   "Inspecting cluster sharding state" must {
 
     "join cluster" in {
-      join(controller)
-      join(first)
-      join(second)
-      join(third)
+      Seq(controller, first, second, third).foreach { node =>
+        join(from = node, to = controller)
+      }
 
       // make sure all nodes are up
       within(10.seconds) {
@@ -129,7 +83,12 @@ abstract class ClusterShardingGetStatsSpec
       }
 
       runOn(controller) {
-        startProxy()
+        startProxy(
+          system,
+          typeName = shardTypeName,
+          role = Some("shard"),
+          extractEntityId = extractEntityId,
+          extractShardId = extractShardId)
       }
       runOn(first, second, third) {
         startShard()
@@ -162,9 +121,9 @@ abstract class ClusterShardingGetStatsSpec
             val pingProbe = TestProbe()
             // trigger starting of 2 entities on first and second node
             // but leave third node without entities
-            List(1, 2, 4, 6).foreach(n => region.tell(Ping(n), pingProbe.ref))
+            List(1, 2, 4, 6).foreach(n => region.tell(PingPongActor.Ping(n), pingProbe.ref))
             pingProbe.receiveWhile(messages = 4) {
-              case Pong => ()
+              case PingPongActor.Pong => ()
             }
           }
         }
@@ -209,9 +168,9 @@ abstract class ClusterShardingGetStatsSpec
           awaitAssert {
             val pingProbe = TestProbe()
             // make sure we have the 4 entities still alive across the fewer nodes
-            List(1, 2, 4, 6).foreach(n => region.tell(Ping(n), pingProbe.ref))
+            List(1, 2, 4, 6).foreach(n => region.tell(PingPongActor.Ping(n), pingProbe.ref))
             pingProbe.receiveWhile(messages = 4) {
-              case Pong => ()
+              case PingPongActor.Pong => ()
             }
           }
         }

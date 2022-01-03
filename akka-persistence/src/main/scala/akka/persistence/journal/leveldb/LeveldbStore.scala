@@ -1,25 +1,26 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.leveldb
 
 import java.io.File
 
+import scala.collection.immutable
 import scala.collection.mutable
-import akka.actor._
-import akka.persistence._
-import akka.persistence.journal.WriteJournalBase
-import akka.serialization.SerializationExtension
+import scala.concurrent.Future
+import scala.util._
+import scala.util.control.NonFatal
+
+import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 import org.iq80.leveldb._
 
-import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
-import scala.util._
-import scala.concurrent.Future
-import scala.util.control.NonFatal
+import akka.actor._
+import akka.persistence._
 import akka.persistence.journal.Tagged
-import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
+import akka.persistence.journal.WriteJournalBase
+import akka.serialization.SerializationExtension
+import akka.util.ccompat.JavaConverters._
 
 private[persistence] object LeveldbStore {
   val emptyConfig = ConfigFactory.empty()
@@ -52,11 +53,11 @@ private[persistence] trait LeveldbStore
   override val compactionIntervals: Map[String, Long] =
     LeveldbStore.toCompactionIntervalMap(config.getObject("compaction-intervals"))
 
-  import com.github.ghik.silencer.silent
-  @silent("deprecated")
+  import scala.annotation.nowarn
+  @nowarn("msg=deprecated")
   private val persistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]]
     with mutable.MultiMap[String, ActorRef]
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private val tagSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]]
     with mutable.MultiMap[String, ActorRef]
   private var allPersistenceIdsSubscribers = Set.empty[ActorRef]

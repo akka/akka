@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
 
 import scala.collection.{ immutable => im }
-import akka.annotation.DoNotInherit
-import akka.persistence.typed.internal.SideEffect
-import akka.persistence.typed.internal._
+
 import akka.actor.typed.ActorRef
+import akka.annotation.DoNotInherit
+import akka.persistence.typed.internal._
+import akka.persistence.typed.internal.SideEffect
 
 /**
  * Factory methods for creating [[Effect]] directives - how an event sourced actor reacts on a command.

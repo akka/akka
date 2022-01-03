@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.persistence.typed;
@@ -16,6 +16,7 @@ import akka.persistence.typed.SnapshotFailed;
 import akka.persistence.typed.SnapshotSelectionCriteria;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
+import akka.persistence.typed.javadsl.Recovery;
 import akka.persistence.typed.javadsl.EventHandler;
 // #behavior
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
@@ -45,8 +46,8 @@ public class BasicPersistentBehaviorTest {
 
       public static class State {}
 
-      public static Behavior<Command> create() {
-        return new MyPersistentBehavior(PersistenceId.ofUniqueId("pid"));
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return new MyPersistentBehavior(persistenceId);
       }
 
       private MyPersistentBehavior(PersistenceId persistenceId) {
@@ -129,7 +130,7 @@ public class BasicPersistentBehaviorTest {
           List<String> newItems = new ArrayList<>(items);
           newItems.add(0, data);
           // keep 5 items
-          List<String> latest = newItems.subList(0, Math.min(4, newItems.size() - 1));
+          List<String> latest = newItems.subList(0, Math.min(5, newItems.size()));
           return new State(latest);
         }
       }
@@ -344,10 +345,20 @@ public class BasicPersistentBehaviorTest {
       }
       // #recovery
 
+      // #recovery-disabled
+      @Override
+      public Recovery recovery() {
+        return Recovery.disabled();
+      }
+      // #recovery-disabled
+
       // #tagging
       @Override
       public Set<String> tagsFor(Event event) {
-        throw new RuntimeException("TODO: inspect the event and return any tags it should have");
+        Set<String> tags = new HashSet<>();
+        tags.add("tag1");
+        tags.add("tag2");
+        return tags;
       }
       // #tagging
       // #supervision
@@ -555,8 +566,8 @@ public class BasicPersistentBehaviorTest {
 
     // #snapshotSelection
     @Override
-    public SnapshotSelectionCriteria snapshotSelectionCriteria() {
-      return SnapshotSelectionCriteria.none();
+    public Recovery recovery() {
+      return Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none());
     }
     // #snapshotSelection
   }

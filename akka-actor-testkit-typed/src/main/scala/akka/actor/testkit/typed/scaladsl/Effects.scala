@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.typed.{ ActorRef, Behavior, Props }
-
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.typed.{ ActorRef, Behavior, Props }
 
 /**
  * Factories for behavior effects for [[BehaviorTestKit]], each effect has a suitable equals and can be used to compare
@@ -76,7 +76,7 @@ object Effects {
   def watchedWith[U, T](other: ActorRef[U], message: T): WatchedWith[U, T] = WatchedWith(other, message)
 
   /**
-   * The behavior started watching `other`, through `context.unwatch(other)`
+   * The behavior stopped watching `other`, through `context.unwatch(other)`
    */
   def unwatched[T](other: ActorRef[T]): Unwatched[T] = Unwatched(other)
 

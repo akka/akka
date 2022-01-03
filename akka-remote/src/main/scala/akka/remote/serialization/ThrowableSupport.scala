@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -21,7 +21,7 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
 
   private lazy val serialization = SerializationExtension(system)
   private val payloadSupport = new WrappedPayloadSupport(system)
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[ThrowableSupport])
 
   def serializeThrowable(t: Throwable): Array[Byte] = {
     toProtobufThrowable(t).build().toByteArray

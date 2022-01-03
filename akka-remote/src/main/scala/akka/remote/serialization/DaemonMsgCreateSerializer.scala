@@ -1,38 +1,36 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
 
 import scala.collection.immutable
+import com.typesafe.config.{ Config, ConfigFactory }
 
-import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
-import akka.protobufv3.internal.ByteString
+import util.{ Failure, Success }
 import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
+import akka.protobufv3.internal.ByteString
+import akka.remote.ByteStringUtils
 import akka.remote.DaemonMsgCreate
 import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.util.ccompat._
-
-import scala.reflect.ClassTag
-import util.{ Failure, Success }
 import akka.util.ccompat.JavaConverters._
 
 /**
  * Serializes Akka's internal DaemonMsgCreate using protobuf
  * for the core structure of DaemonMsgCreate, Props and Deploy.
  * Serialization of contained RouterConfig, Config, and Scope
- * is done with configured serializer for those classes, by
- * default java.io.Serializable.
+ * is done with configured serializer for those classes.
  *
  * INTERNAL API
  */
 @ccompatUsedUntil213
 private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
-  import ProtobufSerializer.serializeActorRef
-  import ProtobufSerializer.deserializeActorRef
   import Deploy.NoDispatcherGiven
+  import ProtobufSerializer.deserializeActorRef
+  import ProtobufSerializer.serializeActorRef
 
   private lazy val serialization = SerializationExtension(system)
 
@@ -47,21 +45,21 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
           val (serId, _, manifest, bytes) = serialize(d.config)
           builder.setConfigSerializerId(serId)
           builder.setConfigManifest(manifest)
-          builder.setConfig(ByteString.copyFrom(bytes))
+          builder.setConfig(ByteStringUtils.toProtoByteStringUnsafe(bytes))
         }
 
         if (d.routerConfig != NoRouter) {
           val (serId, _, manifest, bytes) = serialize(d.routerConfig)
           builder.setRouterConfigSerializerId(serId)
           builder.setRouterConfigManifest(manifest)
-          builder.setRouterConfig(ByteString.copyFrom(bytes))
+          builder.setRouterConfig(ByteStringUtils.toProtoByteStringUnsafe(bytes))
         }
 
         if (d.scope != NoScopeGiven) {
           val (serId, _, manifest, bytes) = serialize(d.scope)
           builder.setScopeSerializerId(serId)
           builder.setScopeManifest(manifest)
-          builder.setScope(ByteString.copyFrom(bytes))
+          builder.setScope(ByteStringUtils.toProtoByteStringUnsafe(bytes))
         }
 
         if (d.dispatcher != NoDispatcherGiven) {
@@ -77,7 +75,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         val builder = PropsData.newBuilder.setClazz(props.clazz.getName).setDeploy(deployProto(props.deploy))
         props.args.foreach { arg =>
           val (serializerId, hasManifest, manifest, bytes) = serialize(arg)
-          builder.addArgs(ByteString.copyFrom(bytes))
+          builder.addArgs(ByteStringUtils.toProtoByteStringUnsafe(bytes))
           builder.addManifests(manifest)
           builder.addSerializerIds(serializerId)
           builder.addHasManifest(hasManifest)
@@ -235,14 +233,15 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
 
   private def oldDeserialize(data: ByteString, className: String): AnyRef =
     if (data.isEmpty && className == "null") null
-    else oldDeserialize(data, system.dynamicAccess.getClassFor[AnyRef](className).get)
+    else
+      oldDeserialize[AnyRef](data, system.dynamicAccess.getClassFor[AnyRef](className).get.asInstanceOf[Class[AnyRef]])
 
-  private def oldDeserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
+  private def oldDeserialize[T](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
     serialization.deserialize(bytes, clazz) match {
-      case Success(x: T) => x
-      case Success(other) =>
-        throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".format(clazz.getName, other))
+      case Success(x) =>
+        if (clazz.isInstance(x)) x
+        else throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".format(clazz.getName, x))
       case Failure(e) =>
         // Fallback to the java serializer, because some interfaces don't implement java.io.Serializable,
         // but the impl instance does. This could be optimized by adding java serializers in reference.conf:
@@ -250,8 +249,10 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         // akka.routing.RouterConfig
         // akka.actor.Scope
         serialization.deserialize(bytes, classOf[java.io.Serializable]) match {
-          case Success(x: T) => x
-          case _             => throw e // the first exception
+          case Success(x) =>
+            if (clazz.isInstance(x)) x.asInstanceOf[T]
+            else throw e
+          case _ => throw e // the first exception
         }
     }
   }

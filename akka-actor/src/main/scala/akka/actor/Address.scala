@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
+import java.net.MalformedURLException
 import java.net.URI
 import java.net.URISyntaxException
-import java.net.MalformedURLException
 import java.util.Optional
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.annotation.InternalApi
 import scala.compat.java8.OptionConverters._
+
+import akka.annotation.InternalApi
 
 /**
  * The address specifies the physical location under which an Actor can be
@@ -23,7 +24,7 @@ import scala.compat.java8.OptionConverters._
  * information with an address, then this must be done externally.
  */
 @SerialVersionUID(1L)
-final case class Address private (protocol: String, system: String, host: Option[String], port: Option[Int]) {
+final case class Address private[akka] (protocol: String, system: String, host: Option[String], port: Option[Int]) {
   // Please note that local/non-local distinction must be preserved:
   // host.isDefined == hasGlobalScope
   // host.isEmpty == hasLocalScope
@@ -31,6 +32,14 @@ final case class Address private (protocol: String, system: String, host: Option
 
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
+
+  def copy(
+      protocol: String = protocol,
+      system: String = system,
+      host: Option[String] = host,
+      port: Option[Int] = port) = {
+    Address(protocol, system, host, port)
+  }
 
   /**
    * Java API: The hostname if specified or empty optional if not

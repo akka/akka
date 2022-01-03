@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.typed
@@ -16,7 +16,7 @@ object SingletonCompileOnlySpec {
 
   //#counter
   object Counter {
-    trait Command
+    sealed trait Command
     case object Increment extends Command
     final case class GetValue(replyTo: ActorRef[Int]) extends Command
     case object GoodByeCounter extends Command

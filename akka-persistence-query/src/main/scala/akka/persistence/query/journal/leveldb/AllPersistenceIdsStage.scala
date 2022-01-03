@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
 
-import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
@@ -22,7 +21,7 @@ import akka.stream.stage.TimerGraphStageLogicWithLogging
  * INTERNAL API
  */
 @InternalApi
-final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJournalPluginId: String)
+final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJournalPluginId: String, mat: Materializer)
     extends GraphStage[SourceShape[String]] {
 
   val out: Outlet[String] = Outlet("AllPersistenceIds.out")
@@ -30,14 +29,11 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
   override def shape: SourceShape[String] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    throw new UnsupportedOperationException("Not used")
+    new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[String] {
+      override def doPush(out: Outlet[String], elem: String): Unit = super.push(out, elem)
 
-  override private[akka] def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes,
-      eagerMaterializer: Materializer): (GraphStageLogic, NotUsed) = {
-    val logic = new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[String] {
       setHandler(out, this)
-      val journal: ActorRef = Persistence(eagerMaterializer.system).journalFor(writeJournalPluginId)
+      val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
       var initialResponseReceived = false
 
       override protected def logSource: Class[_] = classOf[AllPersistenceIdsStage]
@@ -61,6 +57,8 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
               buffer(persistenceId)
               deliverBuf(out)
             }
+
+          case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
       }
 
@@ -71,7 +69,4 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
       }
 
     }
-
-    (logic, NotUsed)
-  }
 }

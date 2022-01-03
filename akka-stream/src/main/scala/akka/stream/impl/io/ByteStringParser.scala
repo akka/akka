@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io
+
+import scala.annotation.tailrec
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
-
-import scala.annotation.tailrec
-import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API
@@ -185,8 +185,8 @@ import scala.util.control.{ NoStackTrace, NonFatal }
 
     private[this] var off = 0
 
-    def hasRemaining: Boolean = off < input.size
-    def remainingSize: Int = input.size - off
+    def hasRemaining: Boolean = off < input.length
+    def remainingSize: Int = input.length - off
 
     def currentOffset: Int = off
 

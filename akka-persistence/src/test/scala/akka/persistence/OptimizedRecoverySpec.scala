@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -14,7 +14,7 @@ object OptimizedRecoverySpec {
     case object TakeSnapshot
     final case class Save(s: String)
     final case class Saved(s: String, seqNr: Long)
-    final case object PersistFromRecoveryCompleted
+    case object PersistFromRecoveryCompleted
 
     def props(name: String, recovery: Recovery, probe: ActorRef): Props = {
       Props(new TestPersistentActor(name, recovery, probe))

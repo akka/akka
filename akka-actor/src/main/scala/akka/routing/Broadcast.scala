@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
 import scala.collection.immutable
-import akka.dispatch.Dispatchers
+
+import scala.annotation.nowarn
 import com.typesafe.config.Config
-import akka.actor.SupervisorStrategy
-import akka.japi.Util.immutableSeq
+
 import akka.actor.ActorSystem
-import com.github.ghik.silencer.silent
+import akka.actor.SupervisorStrategy
+import akka.dispatch.Dispatchers
+import akka.japi.Util.immutableSeq
 
 object BroadcastRoutingLogic {
   def apply(): BroadcastRoutingLogic = new BroadcastRoutingLogic
@@ -19,7 +21,7 @@ object BroadcastRoutingLogic {
 /**
  * Broadcasts a message to all its routees.
  */
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final class BroadcastRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =

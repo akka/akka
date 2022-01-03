@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.stream.Attributes
 import akka.stream.impl.JsonObjectParser
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.ByteString
 
@@ -15,6 +16,10 @@ import scala.util.control.NonFatal
 
 /** Provides JSON framing operators that can separate valid JSON objects from incoming [[ByteString]] objects. */
 object JsonFraming {
+
+  /** Thrown if upstream completes with a partial object in the buffer. */
+  class PartialObjectException(msg: String = "JSON stream completed with partial content in the buffer!")
+      extends FramingException(msg)
 
   /**
    * Returns a Flow that implements a "brace counting" based framing operator for emitting valid JSON chunks.
@@ -36,6 +41,8 @@ object JsonFraming {
    * The framing works independently of formatting, i.e. it will still emit valid JSON elements even if two
    * elements are separated by multiple newlines or other whitespace characters. And of course is insensitive
    * (and does not impact the emitting frame) to the JSON object's internal formatting.
+   *
+   * If the stream completes while mid-object, the stage will fail with a [[PartialObjectException]].
    *
    * @param maximumObjectLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
    *                            this Flow will fail the stream.
@@ -62,18 +69,22 @@ object JsonFraming {
           override def onUpstreamFinish(): Unit = {
             buffer.poll() match {
               case Some(json) => emit(out, json)
-              case _          => completeStage()
+              case _          => complete()
             }
           }
 
-          def tryPopBuffer() = {
+          def tryPopBuffer(): Unit = {
             try buffer.poll() match {
               case Some(json) => push(out, json)
-              case _          => if (isClosed(in)) completeStage() else pull(in)
+              case _          => if (isClosed(in)) complete() else pull(in)
             } catch {
               case NonFatal(ex) => failStage(ex)
             }
           }
+
+          def complete(): Unit =
+            if (buffer.canComplete) completeStage()
+            else failStage(new PartialObjectException)
         }
     })
 

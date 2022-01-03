@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
-import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
 
 object UniformFanOutShape {
   def apply[I, O](inlet: Inlet[I], outlets: Outlet[O]*): UniformFanOutShape[I, O] =

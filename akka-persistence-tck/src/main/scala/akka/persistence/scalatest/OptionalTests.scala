@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.scalatest
 
-import akka.persistence.CapabilityFlag
 import org.scalatest.Informing
+
+import akka.persistence.CapabilityFlag
 
 trait OptionalTests {
   this: Informing =>

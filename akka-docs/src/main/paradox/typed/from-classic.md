@@ -26,9 +26,12 @@ module, with a few exceptions.
 For example `akka-cluster-typed`:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 Artifact names:
@@ -56,12 +59,12 @@ APIs, which is familiar from Akka Streams.
 
 Examples of a few package names:
 
-| Classic               | Typed for Scala                 | Typed for Java                 |
-|-----------------------|---------------------------------|--------------------------------|
-| akka.actor            | akka.actor.typed.scaladsl       | akka.actor.typed.javadsl       |
-| akka.cluster          | akka.cluster.typed              | akka.cluster.typed             |
-| akka.cluster.sharding | akka.cluster.sharding.scaladsl  | akka.cluster.sharding.javadsl  |
-| akka.persistence      | akka.persistence.typed.scaladsl | akka.persistence.typed.javadsl |
+| Classic               | Typed for Scala                       | Typed for Java                       |
+|-----------------------|---------------------------------------|--------------------------------------|
+| akka.actor            | akka.actor.typed.scaladsl             | akka.actor.typed.javadsl             |
+| akka.cluster          | akka.cluster.typed                    | akka.cluster.typed                   |
+| akka.cluster.sharding | akka.cluster.sharding.typed.scaladsl  | akka.cluster.sharding.typed.javadsl  |
+| akka.persistence      | akka.persistence.typed.scaladsl       | akka.persistence.typed.javadsl       |
 
 ## Actor definition
 
@@ -114,6 +117,9 @@ for creating top level actors. Instead, there is a single top level actor define
 when starting the `ActorSystem`. Other actors are started as children of that user guardian actor or
 children of other actors in the actor hierarchy. This is explained more in @ref:[ActorSystem](#actorsystem).
 
+Note that when mixing classic and typed and have a classic system, spawning top level actors from the side is possible, see
+@ref:[Coexistence](coexisting.md#top-level-typed-actor-classic-system).
+
 The `actorOf` method takes an `akka.actor.Props` parameter, which is like a factory for creating the actor instance, and it's
 also used when creating a new instance when the actor is restarted. The `Props` may also define additional
 properties such as which dispatcher to use for the actor.
@@ -153,7 +159,10 @@ typically performed from the "outside".
 
 The `actorOf` method of the classic `ActorSystem` is typically used to create a few (or many) top level actors. The
 `ActorSystem` in Typed doesn't have that capability. Instead, such actors are started as children of
-the user guardian actor or children of other actors in the actor hierarchy.
+the user guardian actor or children of other actors in the actor hierarchy. The rationale for this is partly about consistency. 
+In a typed system you can’t create children to an arbitrary actor from anywhere in your app without messaging it, 
+so this will also hold true for the user guardian actor. That noted, in cases where you do need to spawn outside of this guardian 
+then you can use the @ref:[`SpawnProtocol`](./actor-lifecycle.md#spawnprotocol) to spawn as needed.
 
 ## become
 
@@ -251,8 +260,8 @@ Links to reference documentation:
 
 ## Stopping
 
-Classic actors can be stopped with the `stop` method of `ActorContext` or `ActorSystem`. In Typed an actor is
-stopping itself by returning `Behaviors.stopped`. There is also a `stop` method in the `ActorContext` but it
+Classic actors can be stopped with the `stop` method of `ActorContext` or `ActorSystem`. In Typed an actor stops 
+itself by returning `Behaviors.stopped`. There is also a `stop` method in the `ActorContext` but it
 can only be used for stopping direct child actors and not any arbitrary actor.
 
 `PoisonPill` is not supported in Typed. Instead, if you need to request an actor to stop you should
@@ -386,7 +395,7 @@ Links to reference documentation:
 
 The correspondence of the classic `PersistentActor` is @scala[`akka.persistence.typed.scaladsl.EventSourcedBehavior`]@java[`akka.persistence.typed.javadsl.EventSourcedBehavior`].
 
-The Typed API is much more guided to facilitate event sourcing best practises. It also has tighter integration with
+The Typed API is much more guided to facilitate Event Sourcing best practices. It also has tighter integration with
 Cluster Sharding.
 
 Links to reference documentation:

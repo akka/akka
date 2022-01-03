@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -11,21 +11,24 @@ import scala.concurrent.Promise
 import scala.util.Try
 
 import akka.Done
+import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.remote.UniqueAddress
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.stage._
-import akka.remote.UniqueAddress
 import akka.util.OptionVal
-import akka.event.Logging
 
 /** INTERNAL API: marker trait for protobuf-serializable artery messages */
+@InternalApi
 private[remote] trait ArteryMessage extends Serializable
 
 /**
  * INTERNAL API: Marker trait for reply messages
  */
+@InternalApi
 private[remote] trait Reply extends ControlMessage
 
 /**
@@ -33,26 +36,43 @@ private[remote] trait Reply extends ControlMessage
  * Marker trait for control messages that can be sent via the system message sub-channel
  * but don't need full reliable delivery. E.g. `HandshakeReq` and `Reply`.
  */
+@InternalApi
 private[remote] trait ControlMessage extends ArteryMessage
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[remote] final case class Quarantined(from: UniqueAddress, to: UniqueAddress) extends ControlMessage
 
 /**
  * INTERNAL API
  */
-private[remote] case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage
+@InternalApi
+private[remote] final case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage
 
 /**
  * INTERNAL API
  */
-private[remote] case class ActorSystemTerminatingAck(from: UniqueAddress) extends ArteryMessage
+@InternalApi
+private[remote] final case class ActorSystemTerminatingAck(from: UniqueAddress) extends ArteryMessage
 
 /**
  * INTERNAL API
  */
+@InternalApi
+private[remote] case object Flush extends ControlMessage
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[remote] final case class FlushAck(expectedAcks: Int) extends ArteryMessage
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[remote] object InboundControlJunction {
 
   /**
@@ -87,6 +107,7 @@ private[remote] object InboundControlJunction {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[remote] class InboundControlJunction
     extends GraphStageWithMaterializedValue[
       FlowShape[InboundEnvelope, InboundEnvelope],
@@ -150,6 +171,7 @@ private[remote] class InboundControlJunction
 /**
  * INTERNAL API
  */
+@InternalApi
 private[remote] object OutboundControlJunction {
   private[remote] trait OutboundControlIngress {
     def sendControlMessage(message: ControlMessage): Unit
@@ -159,6 +181,7 @@ private[remote] object OutboundControlJunction {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[remote] class OutboundControlJunction(
     outboundContext: OutboundContext,
     outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])

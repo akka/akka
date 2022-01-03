@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue
+
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.PartitionHub
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue
 
 /**
  * INTERNAL API

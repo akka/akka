@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 import java.lang.management.ManagementFactory
+
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import javax.management.InstanceNotFoundException
 import javax.management.ObjectName
+import language.postfixOps
+
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object MBeanMultiJvmSpec extends MultiNodeConfig {
@@ -23,6 +25,7 @@ object MBeanMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
     akka.cluster.jmx.enabled = on
     akka.cluster.roles = [testNode]
+    akka.cluster.app-version = "1.2.3"
     """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
@@ -32,7 +35,7 @@ class MBeanMultiJvmNode2 extends MBeanSpec
 class MBeanMultiJvmNode3 extends MBeanSpec
 class MBeanMultiJvmNode4 extends MBeanSpec
 
-abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class MBeanSpec extends MultiNodeClusterSpec(MBeanMultiJvmSpec) {
 
   import MBeanMultiJvmSpec._
 
@@ -119,7 +122,8 @@ abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNode
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(1)}",
@@ -127,7 +131,8 @@ abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNode
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(2)}",
@@ -135,7 +140,8 @@ abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNode
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(3)}",
@@ -143,7 +149,8 @@ abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNode
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    }
              |  ],
              |  "self-address": "${address(first)}",

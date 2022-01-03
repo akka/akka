@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -41,9 +41,9 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     override def tweets: Publisher[Tweet] =
       TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.asPublisher(fanout = false))
 
-    override def storage = TestSubscriber.manualProbe[Author]
+    override def storage: TestSubscriber.ManualProbe[Author] = TestSubscriber.manualProbe[Author]()
 
-    override def alert = TestSubscriber.manualProbe[Author]
+    override def alert: TestSubscriber.ManualProbe[Author] = TestSubscriber.manualProbe[Author]()
   }
 
   def assertResult(storage: TestSubscriber.ManualProbe[Author]): Unit = {

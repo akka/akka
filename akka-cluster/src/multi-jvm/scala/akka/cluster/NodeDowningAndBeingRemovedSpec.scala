@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 object NodeDowningAndBeingRemovedMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -26,9 +27,7 @@ class NodeDowningAndBeingRemovedMultiJvmNode1 extends NodeDowningAndBeingRemoved
 class NodeDowningAndBeingRemovedMultiJvmNode2 extends NodeDowningAndBeingRemovedSpec
 class NodeDowningAndBeingRemovedMultiJvmNode3 extends NodeDowningAndBeingRemovedSpec
 
-abstract class NodeDowningAndBeingRemovedSpec
-    extends MultiNodeSpec(NodeDowningAndBeingRemovedMultiJvmSpec)
-    with MultiNodeClusterSpec {
+abstract class NodeDowningAndBeingRemovedSpec extends MultiNodeClusterSpec(NodeDowningAndBeingRemovedMultiJvmSpec) {
 
   import NodeDowningAndBeingRemovedMultiJvmSpec._
 

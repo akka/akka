@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -7,6 +7,9 @@ package akka.remote.artery
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time.Span
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -17,8 +20,6 @@ import akka.remote.UniqueAddress
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import org.scalatest.concurrent.Eventually
-import org.scalatest.time.Span
 
 class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
   akka.loglevel=INFO
@@ -30,8 +31,10 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
   }
   """) with ImplicitSender with Eventually {
 
-  override implicit val patience: PatienceConfig =
-    PatienceConfig(testKitSettings.DefaultTimeout.duration * 2, Span(200, org.scalatest.time.Millis))
+  override implicit val patience: PatienceConfig = {
+    import akka.testkit.TestDuration
+    PatienceConfig(testKitSettings.DefaultTimeout.duration.dilated * 2, Span(200, org.scalatest.time.Millis))
+  }
 
   private def isArteryTcp: Boolean =
     RARP(system).provider.transport.asInstanceOf[ArteryTransport].settings.Transport == ArterySettings.Tcp

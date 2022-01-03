@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -7,18 +7,19 @@ package akka.routing
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Promise }
+import scala.concurrent.duration._
+import scala.util.Random
+
+import com.typesafe.config.Config
+
 import akka.actor._
 import akka.dispatch.Dispatchers
-import com.typesafe.config.Config
 import akka.japi.Util.immutableSeq
-import scala.concurrent.{ ExecutionContext, Promise }
 import akka.pattern.{ ask, pipe, AskTimeoutException }
-import scala.concurrent.duration._
+import akka.util.Helpers.ConfigOps
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import akka.util.Helpers.ConfigOps
-
-import scala.util.Random
 
 /**
  * As each message is sent to the router, the routees are randomly ordered. The message is sent to the
@@ -33,7 +34,7 @@ import scala.util.Random
  * more slowly than expected. In this case, sending the same work request (also known as a "backup request")
  * to another actor results in decreased response time - because it's less probable that multiple actors
  * are under heavy load simultaneously. This technique is explained in depth in Jeff Dean's presentation on
- * <a href="http://static.googleusercontent.com/media/research.google.com/en//people/jeff/Berkeley-Latency-Mar2012.pdf">
+ * <a href="https://static.googleusercontent.com/media/research.google.com/en//people/jeff/Berkeley-Latency-Mar2012.pdf">
  * Achieving Rapid Response Times in Large Online Services</a>.
  *
  * @param scheduler schedules sending messages to routees

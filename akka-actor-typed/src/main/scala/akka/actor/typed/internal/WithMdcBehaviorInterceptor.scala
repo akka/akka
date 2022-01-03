@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
-import akka.annotation.InternalApi
+import scala.reflect.ClassTag
+
 import org.slf4j.MDC
 
-import scala.reflect.ClassTag
+import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
@@ -48,11 +49,12 @@ import scala.reflect.ClassTag
     // so we need to look through the stack and eliminate any MCD already existing
     def loop(next: Behavior[T]): Behavior[T] = {
       next match {
-        case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
+        case i: InterceptorImpl[_, T @unchecked]
+            if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
           // eliminate that interceptor
           loop(i.nestedBehavior)
 
-        case i: InterceptorImpl[T, T] =>
+        case i: InterceptorImpl[T @unchecked, T @unchecked] =>
           val nested = i.nestedBehavior
           val inner = loop(nested)
           if (inner eq nested) i
@@ -61,8 +63,12 @@ import scala.reflect.ClassTag
         case b => b
       }
     }
-
-    loop(target.start(ctx))
+    try {
+      setMdcValues(Map.empty)
+      loop(target.start(ctx))
+    } finally {
+      MDC.clear()
+    }
   }
 
   // in the normal case, a new withMDC replaces the previous one

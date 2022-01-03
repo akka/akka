@@ -4,13 +4,11 @@ If the primary source completes without emitting any elements, the elements from
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #orElse }
+@apidoc[Source.orElse](Source) { scala="#orElse[U&gt;:Out,Mat2](secondary:akka.stream.Graph[akka.stream.SourceShape[U],Mat2]):FlowOps.this.Repr[U]" java="#orElse(akka.stream.Graph)" }
+@apidoc[Flow.orElse](Flow) { scala="#orElse[U&gt;:Out,Mat2](secondary:akka.stream.Graph[akka.stream.SourceShape[U],Mat2]):FlowOps.this.Repr[U]" java="#orElse(akka.stream.Graph)" }
 
-@@@
 
 ## Description
 

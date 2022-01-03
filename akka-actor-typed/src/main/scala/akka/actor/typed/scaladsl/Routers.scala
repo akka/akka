@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -89,7 +89,7 @@ trait GroupRouter[T] extends Behavior[T] {
    *
    * @param virtualNodesFactor This factor has to be greater or equal to 1. Assuming that the reader
    *                           knows what consistent hashing is
-   *                           (if not, please refer: http://www.tom-e-white.com/2007/11/consistent-hashing.html or wiki).
+   *                           (if not, please refer: https://www.tom-e-white.com/2007/11/consistent-hashing.html or wiki).
    *                           This number is responsible for creating additional,
    *                           virtual addresses for a provided set of routees,
    *                           so that in the total number of points on hashing ring
@@ -145,7 +145,7 @@ trait PoolRouter[T] extends Behavior[T] {
    *
    * @param virtualNodesFactor This factor has to be greater or equal to 1. Assuming that the reader
    *                           knows what consistent hashing is
-   *                           (if not, please refer: http://www.tom-e-white.com/2007/11/consistent-hashing.html or wiki).
+   *                           (if not, please refer: https://www.tom-e-white.com/2007/11/consistent-hashing.html or wiki).
    *                           This number is responsible for creating additional,
    *                           virtual addresses for a provided set of routees,
    *                           so that in the total number of points on hashing ring
@@ -171,4 +171,9 @@ trait PoolRouter[T] extends Behavior[T] {
    * Set the props used to spawn the pool's routees
    */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
+
+  /**
+   * Any message that the predicate returns true for will be broadcast to all routees.
+   */
+  def withBroadcastPredicate(pred: T => Boolean): PoolRouter[T]
 }

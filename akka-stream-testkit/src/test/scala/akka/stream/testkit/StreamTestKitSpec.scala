@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
 
+import scala.concurrent.duration._
+
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.AkkaSpec
-import akka.testkit.EventFilter
+
+import akka.testkit._
+
 import akka.testkit.TestEvent.Mute
 import akka.testkit.TestEvent.UnMute
-
-import scala.concurrent.duration._
 
 class StreamTestKitSpec extends AkkaSpec {
 
@@ -121,13 +122,17 @@ class StreamTestKitSpec extends AkkaSpec {
     "#expectNextWithTimeoutPF should fail after timeout when element delayed" in {
       intercept[AssertionError] {
         val timeout = 100.millis
-        val overTimeout = timeout + 50.millis
+        // Initial delay is longer than the timeout so an exception will be thrown.
+        // It also needs to be dilated since the testkit will dilate the timeout
+        // accordingly to `-Dakka.test.timefactor` value.
+        val initialDelay = (timeout * 2).dilated
         Source
-          .tick(overTimeout, 1.millis, 1)
+          .tick(initialDelay, 1.millis, 1)
           .runWith(TestSink.probe)
           .request(1)
           .expectNextWithTimeoutPF(timeout, {
             case 1 =>
+              system.log.info("Message received :(")
           })
 
       }.getMessage should include("timeout")
@@ -160,9 +165,12 @@ class StreamTestKitSpec extends AkkaSpec {
     "#expectNextChainingPF should fail after timeout when element delayed" in {
       intercept[AssertionError] {
         val timeout = 100.millis
-        val overTimeout = timeout + 50.millis
+        // Initial delay is longer than the timeout so an exception will be thrown.
+        // It also needs to be dilated since the testkit will dilate the timeout
+        // accordingly to `-Dakka.test.timefactor` value.
+        val initialDelay = (timeout * 2).dilated
         Source
-          .tick(overTimeout, 1.millis, 1)
+          .tick(initialDelay, 1.millis, 1)
           .runWith(TestSink.probe)
           .request(1)
           .expectNextChainingPF(timeout, {

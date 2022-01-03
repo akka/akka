@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.testkit._
-import akka.actor._
-import com.typesafe.config.ConfigFactory
-import akka.actor.RootActorPath
-
 import scala.concurrent.duration._
-import akka.testkit.SocketUtil
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+
+import akka.actor._
+import akka.actor.RootActorPath
 import akka.remote.RARP
-import com.github.ghik.silencer.silent
+import akka.testkit._
+import akka.testkit.SocketUtil
 
 object RemoteDeathWatchSpec {
   val otherPort = ArteryMultiNodeSpec.freePort(ConfigFactory.load())
@@ -85,7 +86,7 @@ class RemoteDeathWatchSpec
     val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
 
     system.actorOf(Props(new Actor {
-      @silent
+      @nowarn
       val watchee = RARP(context.system).provider.resolveActorRef(path)
       context.watch(watchee)
 

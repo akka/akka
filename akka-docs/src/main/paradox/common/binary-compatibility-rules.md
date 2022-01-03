@@ -69,7 +69,7 @@ Once a method has been deprecated then the guideline* is that it will be kept, a
 
 Since the release of Akka `2.4.0` a new versioning scheme is in effect.
 
-Historically, Akka has been following the Java or Scala style of versioning where as the first number would mean "**epoch**",
+Historically, Akka has been following the Java or Scala style of versioning in which the first number would mean "**epoch**",
 the second one would mean **major**, and third be the **minor**, thus: `epoch.major.minor` (versioning scheme followed until and during `2.3.x`).
 
 **Currently**, since Akka `2.4.0`, the new versioning applies which is closer to semantic versioning many have come to expect, 
@@ -82,8 +82,8 @@ so there is no reason to remain on Akka 2.3.x, since upgrading is completely com
 ## Mixed versioning is not allowed
 
 Modules that are released together under the Akka project are intended to be upgraded together.
-For example, it is not legal to mix Akka Actor `2.4.2` with Akka Cluster `2.4.5` even though
-"Akka `2.4.2`" and "Akka `2.4.5`" *are* binary compatible. 
+For example, it is not legal to mix Akka Actor `2.6.2` with Akka Cluster `2.6.5` even though
+"Akka `2.6.2`" and "Akka `2.6.5`" *are* binary compatible. 
 
 This is because modules may assume internals changes across module boundaries, for example some feature
 in Clustering may have required an internals change in Actor, however it is not public API, 
@@ -93,17 +93,16 @@ If you accidentally mix Akka versions, for example through transitive
 dependencies, you might get a warning at run time such as:
 
 ```
-Detected possible incompatible versions on the classpath. Please note that a given Akka version MUST be the same
-across all modules of Akka that you are using, e.g. if you use [2.5.20] all other modules that are released together
-MUST be of the same version. Make sure you're using a compatible set of libraries. Possibly conflicting versions
-[2.5.19, 2.5.20] in libraries [akka-persistence:2.5.19, akka-cluster-sharding:2.5.19, akka-protobuf:2.5.19,
-akka-persistence-query:2.5.19, akka-actor:2.5.20, akka-slf4j:2.5.19, akka-remote:2.5.19, akka-cluster:2.5.19,
-akka-distributed-data:2.5.19, akka-stream:2.5.19, akka-cluster-tools:2.5.19]
+You are using version 2.6.6 of Akka, but it appears you (perhaps indirectly) also depend on older versions 
+of related artifacts. You can solve this by adding an explicit dependency on version 2.6.6 of the 
+[akka-persistence-query] artifacts to your project. Here's a complete collection of detected 
+artifacts: (2.5.3, [akka-persistence-query]), (2.6.6, [akka-actor, akka-cluster]).
+See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed
 ```
 
 The fix is typically to pick the highest Akka version, and add explicit
 dependencies to your project as needed. For example, in the example above
-you might want to add dependencies for 2.5.20.
+you might want to add `akka-persistence-query` dependency for 2.6.6.
 
 @@@ note
 
@@ -111,6 +110,12 @@ We recommend keeping an `akkaVersion` variable in your build file, and re-use it
 included modules, so when you upgrade you can simply change it in this one place.
 
 @@@
+
+The warning includes a full list of Akka runtime dependencies in the classpath, and the version detected. 
+You can use that information to include an explicit list of Akka artifacts you depend on into your build. If you use
+Maven or Gradle, you can include the @ref:[Akka Maven BOM](../typed/guide/modules.md#actor-library) (bill 
+of materials) to help you keep all the versions of your Akka dependencies in sync. 
+
 
 ## The meaning of "may change"
 
@@ -130,13 +135,13 @@ to change at any time (even if best-effort is taken to keep them compatible).
 
 When browsing the source code and/or looking for methods available to be called, especially from Java which does not
 have as rich of an access protection system as Scala has, you may sometimes find methods or classes annotated with
-the `/** INTERNAL API */` comment or the `@akka.annotation.InternalApi` annotation. 
+the `/** INTERNAL API */` comment or the @javadoc[@InternalApi](akka.annotation.InternalApi) annotation. 
 
 No compatibility guarantees are given about these classes. They may change or even disappear in minor versions,
 and user code is not supposed to call them.
 
 Side-note on JVM representation details of the Scala `private[akka]` pattern that Akka is using extensively in 
-it's internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
+its internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
 down to `public` (!) in raw Java bytecode. The access restriction, that Scala understands is carried along
 as metadata stored in the classfile. Thus, such methods are safely guarded from being accessed from Scala,
 however Java users will not be warned about this fact by the `javac` compiler. Please be aware of this and do not call
@@ -146,11 +151,11 @@ into Internal APIs, as they are subject to change without any warning.
 
 In addition to the special internal API marker two annotations exist in Akka and specifically address the following use cases:
 
- * `@ApiMayChange` – which marks APIs which are known to be not fully stable yet. Read more in @ref:[Modules marked "May Change"](may-change.md)
- * `@DoNotInherit` – which marks APIs that are designed under a closed-world assumption, and thus must not be
+ * @javadoc[@ApiMayChange](akka.annotation.ApiMayChange) – which marks APIs which are known to be not fully stable yet. Read more in @ref:[Modules marked "May Change"](may-change.md)
+ * @javadoc[@DoNotInherit](akka.annotation.DoNotInherit) – which marks APIs that are designed under a closed-world assumption, and thus must not be
 extended outside Akka itself (or such code will risk facing binary incompatibilities). E.g. an interface may be
 marked using this annotation, and while the type is public, it is not meant for extension by user-code. This allows
-adding new methods to these interfaces without risking to break client code. Examples of such API are the `FlowOps`
+adding new methods to these interfaces without risking to break client code. Examples of such API are the @scaladoc[FlowOps](akka.stream.scaladsl.FlowOps)
 trait or the Akka HTTP domain model.
 
 Please note that a best-effort approach is always taken when having to change APIs and breakage is avoided as much as 

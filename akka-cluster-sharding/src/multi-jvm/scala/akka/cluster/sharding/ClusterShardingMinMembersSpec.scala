@@ -1,76 +1,36 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
-import java.io.File
-
-import akka.actor._
-import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
-import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.apache.commons.io.FileUtils
-
 import scala.concurrent.duration._
-import akka.cluster.sharding.ShardRegion.GetClusterShardingStats
-import akka.cluster.sharding.ShardRegion.ClusterShardingStats
+
+import akka.cluster.MemberStatus
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
+import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
+import akka.testkit._
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
-object ClusterShardingMinMembersSpec {
-  case object StopEntity
+abstract class ClusterShardingMinMembersSpecConfig(mode: String)
+    extends MultiNodeClusterShardingConfig(
+      mode,
+      additionalConfig = s"""
+        akka.cluster.sharding.rebalance-interval = 120s #disable rebalance
+        akka.cluster.min-nr-of-members = 3
+        """) {
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int => (id.toString, id)
-  }
-
-  val extractShardId: ShardRegion.ExtractShardId = msg =>
-    msg match {
-      case id: Int => id.toString
-    }
-
-}
-
-abstract class ClusterShardingMinMembersSpecConfig(val mode: String) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(
-    ConfigFactory
-      .parseString(s"""
-    akka.loglevel = INFO
-    akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
-    akka.persistence.journal.leveldb-shared {
-      timeout = 5s
-      store {
-        native = off
-        dir = "target/ClusterShardingMinMembersSpec/journal"
-      }
-    }
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/ClusterShardingMinMembersSpec/snapshots"
-    akka.cluster.sharding.state-store-mode = "$mode"
-    akka.cluster.sharding.rebalance-interval = 120s #disable rebalance
-    akka.cluster.sharding.distributed-data.durable.lmdb {
-      dir = target/ClusterShardingMinMembersSpec/sharding-ddata
-      map-size = 10 MiB
-    }
-    akka.cluster.min-nr-of-members = 3
-    """)
-      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
-      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-object PersistentClusterShardingMinMembersSpecConfig extends ClusterShardingMinMembersSpecConfig("persistence")
-object DDataClusterShardingMinMembersSpecConfig extends ClusterShardingMinMembersSpecConfig("ddata")
+object PersistentClusterShardingMinMembersSpecConfig
+    extends ClusterShardingMinMembersSpecConfig(ClusterShardingSettings.StateStoreModePersistence)
+object DDataClusterShardingMinMembersSpecConfig
+    extends ClusterShardingMinMembersSpecConfig(ClusterShardingSettings.StateStoreModeDData)
 
 class PersistentClusterShardingMinMembersSpec
     extends ClusterShardingMinMembersSpec(PersistentClusterShardingMinMembersSpecConfig)
@@ -84,84 +44,34 @@ class DDataClusterShardingMinMembersMultiJvmNode1 extends DDataClusterShardingMi
 class DDataClusterShardingMinMembersMultiJvmNode2 extends DDataClusterShardingMinMembersSpec
 class DDataClusterShardingMinMembersMultiJvmNode3 extends DDataClusterShardingMinMembersSpec
 
-abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSpecConfig)
-    extends MultiNodeSpec(config)
-    with STMultiNodeSpec
+abstract class ClusterShardingMinMembersSpec(multiNodeConfig: ClusterShardingMinMembersSpecConfig)
+    extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender {
-  import ClusterShardingMinMembersSpec._
-  import config._
-
-  override def initialParticipants = roles.size
-
-  val storageLocations = List(
-    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
-
-  override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-    enterBarrier("startup")
-  }
-
-  override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-  }
-
-  def join(from: RoleName, to: RoleName): Unit = {
-    runOn(from) {
-      Cluster(system).join(node(to).address)
-    }
-    enterBarrier(from.name + "-joined")
-  }
-
-  val cluster = Cluster(system)
+  import MultiNodeClusterShardingSpec.ShardedEntity
+  import multiNodeConfig._
 
   def startSharding(): Unit = {
-    val allocationStrategy =
-      new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
-    ClusterSharding(system).start(
+    startSharding(
+      system,
       typeName = "Entity",
       entityProps = TestActors.echoActorProps,
-      settings = ClusterShardingSettings(system),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId,
-      allocationStrategy,
-      handOffStopMessage = StopEntity)
+      extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
+      extractShardId = MultiNodeClusterShardingSpec.intExtractShardId,
+      allocationStrategy = ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 2, relativeLimit = 1.0),
+      handOffStopMessage = ShardedEntity.Stop)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
-
-  s"Cluster with min-nr-of-members using sharding ($mode)" must {
-
-    if (!isDdataMode) {
-      "setup shared journal" in {
-        // start the Persistence extension
-        Persistence(system)
-        runOn(first) {
-          system.actorOf(Props[SharedLeveldbStore], "store")
-        }
-        enterBarrier("peristence-started")
-
-        runOn(first, second, third) {
-          system.actorSelection(node(first) / "user" / "store") ! Identify(None)
-          val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
-          SharedLeveldbJournal.setStore(sharedStore, system)
-        }
-
-        enterBarrier("after-1")
-      }
-    }
+  s"Cluster with min-nr-of-members using sharding (${multiNodeConfig.mode})" must {
 
     "use all nodes" in within(30.seconds) {
-      join(first, first)
-      runOn(first) {
-        startSharding()
-      }
-      join(second, first)
-      runOn(second) {
-        startSharding()
-      }
-      join(third, first)
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second, third))
+
+      // the only test not asserting join status before starting to shard
+      join(first, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
+      join(second, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
+      join(third, first, assertNodeUp = false)
       // wait with starting sharding on third
       within(remaining) {
         awaitAssert {

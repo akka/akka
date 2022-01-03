@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -32,10 +32,10 @@ import akka.util.OptionVal
   private sealed trait TimerMode {
     def repeat: Boolean
   }
-  private case object FixedRateMode extends TimerMode {
+  private case class FixedRateMode(initialDelay: FiniteDuration) extends TimerMode {
     override def repeat: Boolean = true
   }
-  private case object FixedDelayMode extends TimerMode {
+  private case class FixedDelayMode(initialDelay: FiniteDuration) extends TimerMode {
     override def repeat: Boolean = true
   }
   private case object SingleMode extends TimerMode {
@@ -58,10 +58,16 @@ import akka.util.OptionVal
   }
 
   override def startTimerAtFixedRate(key: Any, msg: Any, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, FixedRateMode)
+    startTimer(key, msg, interval, FixedRateMode(interval))
+
+  override def startTimerAtFixedRate(key: Any, msg: Any, initialDelay: FiniteDuration, interval: FiniteDuration): Unit =
+    startTimer(key, msg, interval, FixedRateMode(initialDelay))
 
   override def startTimerWithFixedDelay(key: Any, msg: Any, delay: FiniteDuration): Unit =
-    startTimer(key, msg, delay, FixedDelayMode)
+    startTimer(key, msg, delay, FixedDelayMode(delay))
+
+  override def startTimerWithFixedDelay(key: Any, msg: Any, initialDelay: FiniteDuration, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, FixedDelayMode(initialDelay))
 
   override def startPeriodicTimer(key: Any, msg: Any, interval: FiniteDuration): Unit =
     startTimerAtFixedRate(key, msg, interval)
@@ -85,10 +91,10 @@ import akka.util.OptionVal
     val task = mode match {
       case SingleMode =>
         ctx.system.scheduler.scheduleOnce(timeout, ctx.self, timerMsg)(ctx.dispatcher)
-      case FixedDelayMode =>
-        ctx.system.scheduler.scheduleWithFixedDelay(timeout, timeout, ctx.self, timerMsg)(ctx.dispatcher)
-      case FixedRateMode =>
-        ctx.system.scheduler.scheduleAtFixedRate(timeout, timeout, ctx.self, timerMsg)(ctx.dispatcher)
+      case m: FixedDelayMode =>
+        ctx.system.scheduler.scheduleWithFixedDelay(m.initialDelay, timeout, ctx.self, timerMsg)(ctx.dispatcher)
+      case m: FixedRateMode =>
+        ctx.system.scheduler.scheduleAtFixedRate(m.initialDelay, timeout, ctx.self, timerMsg)(ctx.dispatcher)
     }
 
     val nextTimer = Timer(key, msg, mode.repeat, nextGen, task)
@@ -106,13 +112,11 @@ import akka.util.OptionVal
   }
 
   private def cancelTimer(timer: Timer): Unit = {
-    log.debug("Cancel timer [{}] with generation [{}]", timer.key, timer.generation)
     timer.task.cancel()
     timers -= timer.key
   }
 
   override def cancelAll(): Unit = {
-    log.debug("Cancel all timers")
     timers.valuesIterator.foreach { timer =>
       timer.task.cancel()
     }

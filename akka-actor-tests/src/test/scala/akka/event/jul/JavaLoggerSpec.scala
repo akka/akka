@@ -1,14 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.jul
 
+import java.util.logging
+
+import scala.util.control.NoStackTrace
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorLogging, Props }
 import akka.testkit.AkkaSpec
-import java.util.logging
-import scala.util.control.NoStackTrace
 
 @deprecated("Use SLF4J instead.", "2.6.0")
 object JavaLoggerSpec {
@@ -46,7 +49,7 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
     def close(): Unit = {}
   })
 
-  val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer], name = "log")
+  val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer](), name = "log")
 
   "JavaLogger" must {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery
@@ -7,10 +7,10 @@ package akka.discovery
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function => JFunction }
 
+import scala.util.{ Failure, Success, Try }
+
 import akka.actor._
 import akka.annotation.InternalApi
-
-import scala.util.{ Failure, Success, Try }
 
 final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 
@@ -113,7 +113,7 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
   @InternalApi
   private[akka] def checkClassPathForOldDiscovery(system: ExtendedActorSystem): Unit = {
     try {
-      system.dynamicAccess.getClassFor("akka.discovery.SimpleServiceDiscovery").get
+      system.dynamicAccess.getClassFor[Any]("akka.discovery.SimpleServiceDiscovery").get
       throw new RuntimeException(
         "Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
     } catch {

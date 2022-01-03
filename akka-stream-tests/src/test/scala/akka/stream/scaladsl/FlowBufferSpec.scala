@@ -1,19 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl._
-import akka.stream.BufferOverflowException
-import akka.stream.OverflowStrategy
-
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import akka.stream.BufferOverflowException
+import akka.stream.OverflowStrategy
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
+import scala.annotation.nowarn
+
+@nowarn("msg=deprecated")
 class FlowBufferSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
     akka.stream.materializer.max-input-buffer-size = 1

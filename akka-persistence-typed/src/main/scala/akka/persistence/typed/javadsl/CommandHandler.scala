@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl
@@ -7,11 +7,11 @@ package akka.persistence.typed.javadsl
 import java.util.Objects
 import java.util.function.{ BiFunction, Predicate, Supplier, Function => JFunction }
 
+import scala.compat.java8.FunctionConverters._
+
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal._
 import akka.util.OptionVal
-
-import scala.compat.java8.FunctionConverters._
 
 /**
  * FunctionalInterface for reacting on commands
@@ -392,9 +392,9 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
         }
 
         effect match {
-          case OptionVal.None =>
-            throw new MatchError(s"No match found for command of type [${command.getClass.getName}]")
           case OptionVal.Some(e) => e.asInstanceOf[EffectImpl[Event, State]]
+          case _ =>
+            throw new MatchError(s"No match found for command of type [${command.getClass.getName}]")
         }
       }
     }

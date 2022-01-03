@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl;
@@ -17,7 +17,6 @@ import org.scalatestplus.junit.JUnitSuite;
 import akka.actor.typed.Behavior;
 
 import static akka.actor.typed.javadsl.Behaviors.same;
-import static org.junit.Assert.assertEquals;
 
 /** Test creating [[MutableActor]]s using [[ReceiveBuilder]] */
 public class ReceiveBuilderTest extends JUnitSuite {

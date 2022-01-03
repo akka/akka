@@ -1,19 +1,21 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
 import java.nio.file.Files
+
+import org.reactivestreams.Publisher
+import org.testng.annotations.{ AfterClass, BeforeClass }
+
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.scaladsl.{ FileIO, Sink }
 import akka.stream.testkit.Utils._
 import akka.testkit.{ EventFilter, TestEvent }
-import akka.util.ByteString
-import org.reactivestreams.Publisher
-import org.testng.annotations.{ AfterClass, BeforeClass }
 import akka.testkit.AkkaSpec
+import akka.util.ByteString
 
 class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
 

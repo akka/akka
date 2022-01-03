@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import com.typesafe.config.ConfigFactory
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.cluster.MultiNodeClusterSpec
+
 import akka.cluster.MemberStatus
+import akka.cluster.MultiNodeClusterSpec
+import akka.remote.testkit.MultiNodeConfig
 
 trait ClusterMetricsCommonConfig extends MultiNodeConfig {
   import ConfigFactory._
@@ -79,8 +80,7 @@ class ClusterMetricsEnabledMultiJvmNode4 extends ClusterMetricsEnabledSpec
 class ClusterMetricsEnabledMultiJvmNode5 extends ClusterMetricsEnabledSpec
 
 abstract class ClusterMetricsEnabledSpec
-    extends MultiNodeSpec(ClusterMetricsEnabledConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterMetricsEnabledConfig)
     with RedirectLogging {
   import ClusterMetricsEnabledConfig._
 
@@ -111,7 +111,7 @@ abstract class ClusterMetricsEnabledSpec
       //awaitAssert(clusterView.clusterMetrics.size should ===(roles.size))
       awaitAssert(metricsView.clusterMetrics.size should ===(roles.size))
       val collector = MetricsCollector(cluster.system)
-      collector.sample.metrics.size should be > (3)
+      collector.sample().metrics.size should be > (3)
       enterBarrier("after")
     }
     "reflect the correct number of node metrics in cluster view" in within(30 seconds) {
@@ -132,13 +132,12 @@ abstract class ClusterMetricsEnabledSpec
 
 class ClusterMetricsDisabledMultiJvmNode1 extends ClusterMetricsDisabledSpec
 class ClusterMetricsDisabledMultiJvmNode2 extends ClusterMetricsDisabledSpec
-class ClusterMetricsDisabledMultiJvmNodv3 extends ClusterMetricsDisabledSpec
+class ClusterMetricsDisabledMultiJvmNode3 extends ClusterMetricsDisabledSpec
 class ClusterMetricsDisabledMultiJvmNode4 extends ClusterMetricsDisabledSpec
 class ClusterMetricsDisabledMultiJvmNode5 extends ClusterMetricsDisabledSpec
 
 abstract class ClusterMetricsDisabledSpec
-    extends MultiNodeSpec(ClusterMetricsDisabledConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterMetricsDisabledConfig)
     with RedirectLogging {
 
   val metricsView = new ClusterMetricsView(cluster.system)
@@ -150,7 +149,7 @@ abstract class ClusterMetricsDisabledSpec
       //clusterView.clusterMetrics.size should ===(0)
       metricsView.clusterMetrics.size should ===(0)
       ClusterMetricsExtension(system).subscribe(testActor)
-      expectNoMessage
+      expectNoMessage()
       // TODO ensure same contract
       //clusterView.clusterMetrics.size should ===(0)
       metricsView.clusterMetrics.size should ===(0)

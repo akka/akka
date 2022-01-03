@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query
@@ -7,6 +7,7 @@ package akka.persistence.query
 import java.util.UUID
 
 import scala.util.Random
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -29,8 +30,9 @@ class OffsetSpec extends AnyWordSpecLike with Matchers {
   "Sequence offset" must {
 
     "be ordered correctly" in {
-      val sequenceBasedList = List(1L, 2L, 3L).map(Sequence)
+      val sequenceBasedList = List(1L, 2L, 3L).map(Sequence(_))
       Random.shuffle(sequenceBasedList).sorted shouldEqual sequenceBasedList
     }
   }
+
 }

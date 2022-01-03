@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch }
 
-import akka.annotation.InternalApi
-import akka.actor.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
-import akka.util.ccompat.JavaConverters._
 
+import akka.actor.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
 import akka.actor.typed.ExtensionSetup
+import akka.annotation.InternalApi
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
@@ -20,7 +20,7 @@ import akka.actor.typed.ExtensionSetup
  * Actor system extensions registry
  */
 @InternalApi
-private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
+private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] with InternalRecipientRef[_] =>
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
@@ -55,9 +55,8 @@ private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
 
     def idFromJavaSingletonAccessor(extensionIdFQCN: String): Try[ExtensionId[Extension]] =
       dynamicAccess.getClassFor[ExtensionId[Extension]](extensionIdFQCN).flatMap[ExtensionId[Extension]] {
-        clazz: Class[_] =>
+        (clazz: Class[_]) =>
           Try {
-
             val singletonAccessor = clazz.getDeclaredMethod("getInstance")
             singletonAccessor.invoke(null).asInstanceOf[ExtensionId[Extension]]
           }
@@ -92,8 +91,9 @@ private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
             }
             .getOrElse(ext.createExtension(self))
           instance match {
-            case null                   => throw new IllegalStateException(s"Extension instance created as 'null' for extension [$ext]")
-            case instance: T @unchecked =>
+            case null => throw new IllegalStateException(s"Extension instance created as 'null' for extension [$ext]")
+            case nonNull =>
+              val instance = nonNull.asInstanceOf[T]
               // Replace our in process signal with the initialized extension
               extensions.replace(ext, inProcessOfRegistration, instance)
               instance

@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
 
-import akka.actor._
-import akka.event.Logging.simpleName
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor._
 import akka.dispatch.Dispatchers
+import akka.event.Logging.simpleName
 
 /**
  * INTERNAL API
@@ -25,12 +25,6 @@ import akka.dispatch.Dispatchers
 protected[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: Boolean = false) extends Actor {
 
   import EventStreamUnsubscriber._
-
-  override def preStart(): Unit = {
-    if (debug)
-      eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $eventStream"))
-    eventStream.initUnsubscriber(self)
-  }
 
   def receive = {
     case Register(actor) =>
@@ -81,9 +75,13 @@ private[akka] object EventStreamUnsubscriber {
 
   def start(system: ActorSystem, stream: EventStream) = {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
-    system
+    val unsubscriber = system
       .asInstanceOf[ExtendedActorSystem]
       .systemActorOf(props(stream, debug), "eventStreamUnsubscriber-" + unsubscribersCount.incrementAndGet())
+    if (debug)
+      stream.publish(Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $stream"))
+    stream.initUnsubscriber(unsubscriber)
+    unsubscriber
   }
 
 }

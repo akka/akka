@@ -1,0 +1,14 @@
+# marked with @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.TimerScheduler.startTimerWithFixedDelay")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.TimerScheduler.startTimerAtFixedRate")
+# marked with @InternalApi
+ProblemFilters.exclude[MissingTypesProblem]("akka.actor.TimerSchedulerImpl$FixedRateMode$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.actor.TimerSchedulerImpl$FixedDelayMode$")
+ProblemFilters.exclude[FinalMethodProblem]("akka.actor.TimerSchedulerImpl#FixedRateMode.toString")
+ProblemFilters.exclude[FinalMethodProblem]("akka.actor.TimerSchedulerImpl#FixedDelayMode.toString")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.TimerSchedulerImpl#FixedRateMode.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.TimerSchedulerImpl#FixedDelayMode.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.TimerSchedulerImpl#FixedRateMode.productElementName")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.TimerSchedulerImpl#FixedRateMode.productElementNames")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.TimerSchedulerImpl#FixedDelayMode.productElementName")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.TimerSchedulerImpl#FixedDelayMode.productElementNames")

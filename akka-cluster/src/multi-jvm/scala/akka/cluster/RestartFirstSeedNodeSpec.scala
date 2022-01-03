@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
 import scala.collection.immutable
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.actor.Actor
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.actor.RootActorPath
+import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-
-import scala.concurrent.duration._
-import akka.actor.Address
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.actor.Actor
-import akka.actor.RootActorPath
-import akka.cluster.MemberStatus._
-import akka.actor.Deploy
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -42,8 +43,7 @@ class RestartFirstSeedNodeMultiJvmNode2 extends RestartFirstSeedNodeSpec
 class RestartFirstSeedNodeMultiJvmNode3 extends RestartFirstSeedNodeSpec
 
 abstract class RestartFirstSeedNodeSpec
-    extends MultiNodeSpec(RestartFirstSeedNodeMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(RestartFirstSeedNodeMultiJvmSpec)
     with ImplicitSender {
 
   import RestartFirstSeedNodeMultiJvmSpec._
@@ -51,7 +51,9 @@ abstract class RestartFirstSeedNodeSpec
   @volatile var seedNode1Address: Address = _
 
   // use a separate ActorSystem, to be able to simulate restart
-  lazy val seed1System = ActorSystem(system.name, system.settings.config)
+  lazy val seed1System = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
+
+  override def verifySystemShutdown: Boolean = true
 
   def missingSeed = address(seed3).copy(port = Some(61313))
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seedNode1Address, seed2, seed3, missingSeed)
@@ -66,6 +68,7 @@ abstract class RestartFirstSeedNodeSpec
   override def afterAll(): Unit = {
     runOn(seed1) {
       shutdown(if (seed1System.whenTerminated.isCompleted) restartedSeed1System else seed1System)
+
     }
     super.afterAll()
   }

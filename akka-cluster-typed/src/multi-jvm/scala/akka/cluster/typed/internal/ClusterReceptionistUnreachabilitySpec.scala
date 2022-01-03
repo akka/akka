@@ -1,19 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.Props
-import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.typed.MultiDcClusterSingletonSpecConfig.first
 import akka.cluster.typed.MultiDcClusterSingletonSpecConfig.second
@@ -22,12 +20,6 @@ import akka.cluster.typed.MultiNodeTypedClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 object ClusterReceptionistUnreachabilitySpecConfig extends MultiNodeConfig {
   val first = role("first")
@@ -54,14 +46,6 @@ abstract class ClusterReceptionistUnreachabilitySpec
     with MultiNodeTypedClusterSpec {
 
   import ClusterReceptionistUnreachabilitySpec._
-
-  val spawnActor = system.actorOf(PropsAdapter(SpawnProtocol())).toTyped[SpawnProtocol.Command]
-  def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = {
-    implicit val timeout: Timeout = 3.seconds
-    val f: Future[ActorRef[T]] = spawnActor.ask(SpawnProtocol.Spawn(behavior, name, Props.empty, _))
-
-    Await.result(f, 3.seconds)
-  }
 
   val probe = TestProbe[AnyRef]()
   val receptionistProbe = TestProbe[AnyRef]()

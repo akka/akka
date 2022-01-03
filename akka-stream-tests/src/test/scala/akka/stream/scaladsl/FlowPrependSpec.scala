@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import akka.testkit.AkkaSpec
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent // for keeping imports
+@nowarn // for keeping imports
 class FlowPrependSpec extends AkkaSpec {
 
 //#prepend
@@ -24,6 +24,16 @@ class FlowPrependSpec extends AkkaSpec {
       gentlemen.prepend(ladies).runWith(Sink.foreach(println))
       // this will print "Emma", "Emily", "Liam", "William"
       //#prepend
+    }
+
+    "work in lazy entrance example" in {
+      //#prependLazy
+      val ladies = Source(List("Emma", "Emily"))
+      val gentlemen = Source(List("Liam", "William"))
+
+      gentlemen.prependLazy(ladies).runWith(Sink.foreach(println))
+      // this will print "Emma", "Emily", "Liam", "William"
+      //#prependLazy
     }
   }
 }

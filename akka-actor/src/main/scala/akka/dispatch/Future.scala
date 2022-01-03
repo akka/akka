@@ -1,24 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
-import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
-import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
-
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
 import java.lang.{ Iterable => JIterable }
 import java.util.{ LinkedList => JLinkedList }
 import java.util.concurrent.{ Callable, Executor, ExecutorService }
-
-import scala.util.{ Failure, Success, Try }
-import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
+import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
+import scala.util.{ Failure, Success, Try }
+
+import scala.annotation.nowarn
+
+import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.compat
+import akka.dispatch.internal.SameThreadExecutionContext
+import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * ExecutionContexts is the Java API for ExecutionContexts
@@ -75,18 +78,31 @@ object ExecutionContexts {
   def global(): ExecutionContextExecutor = ExecutionContext.global
 
   /**
+   * INTERNAL API
+   *
    * WARNING: Not A General Purpose ExecutionContext!
    *
    * This is an execution context which runs everything on the calling thread.
    * It is very useful for actions which are known to be non-blocking and
    * non-throwing in order to save a round-trip to the thread pool.
+   *
+   * Once Scala 2.12 is no longer supported this can be dropped in favour of directly using `ExecutionContext.parasitic`
    */
+  @InternalStableApi
+  private[akka] val parasitic: ExecutionContext = SameThreadExecutionContext()
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  @deprecated("Use ExecutionContexts.parasitic instead", "2.6.4")
   private[akka] object sameThreadExecutionContext extends ExecutionContext with BatchingExecutor {
-    override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
+    override protected def unbatchedExecute(runnable: Runnable): Unit = parasitic.execute(runnable)
     override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
     override def reportFailure(t: Throwable): Unit =
-      throw new IllegalStateException("exception in sameThreadExecutionContext", t)
+      parasitic.reportFailure(t)
   }
+
 }
 
 /**
@@ -241,7 +257,7 @@ object japi {
  *
  * Java API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class OnSuccess[-T] extends japi.CallbackBridge[T] {
   protected final override def internal(result: T) = onSuccess(result)
 
@@ -259,7 +275,7 @@ abstract class OnSuccess[-T] extends japi.CallbackBridge[T] {
  *
  * Java API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class OnFailure extends japi.CallbackBridge[Throwable] {
   protected final override def internal(failure: Throwable) = onFailure(failure)
 
@@ -277,7 +293,7 @@ abstract class OnFailure extends japi.CallbackBridge[Throwable] {
  *
  * Java API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class OnComplete[-T] extends japi.CallbackBridge[Try[T]] {
   protected final override def internal(value: Try[T]): Unit = value match {
     case Failure(t) => onComplete(t, null.asInstanceOf[T])
@@ -300,7 +316,7 @@ abstract class OnComplete[-T] extends japi.CallbackBridge[Try[T]] {
  *
  * Java API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class Recover[+T] extends japi.RecoverBridge[T] {
   protected final override def internal(result: Throwable): T = recover(result)
 
@@ -354,7 +370,7 @@ object Filter {
  * SAM (Single Abstract Method) class
  * Java API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class Foreach[-T] extends japi.UnitFunctionBridge[T] {
   override final def internal(t: T): Unit = each(t)
 

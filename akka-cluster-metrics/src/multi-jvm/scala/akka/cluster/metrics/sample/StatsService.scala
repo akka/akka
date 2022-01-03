@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics.sample
 
+import scala.concurrent.duration._
+
 import akka.actor.{ Actor, ActorRef, Props, ReceiveTimeout }
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 import akka.routing.FromConfig
-
-import scala.concurrent.duration._
 
 //#service
 class StatsService extends Actor {
   // This router is used both with lookup and deploy of routees. If you
   // have a router with only lookup of routees you can use Props.empty
   // instead of Props[StatsWorker.class].
-  val workerRouter = context.actorOf(FromConfig.props(Props[StatsWorker]), name = "workerRouter")
+  val workerRouter = context.actorOf(FromConfig.props(Props[StatsWorker]()), name = "workerRouter")
 
   def receive = {
     case StatsJob(text) if text != "" =>
@@ -76,7 +76,7 @@ abstract class StatsService3 extends Actor {
     ClusterRouterPool(
       ConsistentHashingPool(0),
       ClusterRouterPoolSettings(totalInstances = 100, maxInstancesPerNode = 3, allowLocalRoutees = false))
-      .props(Props[StatsWorker]),
+      .props(Props[StatsWorker]()),
     name = "workerRouter3")
   //#router-deploy-in-code
 }

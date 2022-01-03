@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.persistence.typed;
@@ -11,8 +11,9 @@ import akka.persistence.typed.javadsl.*;
 
 import java.time.Duration;
 
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.*;
+import static jdocs.akka.persistence.typed.WebStoreCustomerFSM.*;
 
+@Deprecated
 public class PersistentFsmToTypedMigrationCompileOnlyTest {
 
   // #commands
@@ -97,7 +98,7 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
 
     @Override
     public EventSeq<DomainEvent> fromJournal(Object event, String manifest) {
-      if (event instanceof StateChangeEvent) {
+      if (event instanceof akka.persistence.fsm.PersistentFSM.StateChangeEvent) {
         // In this example the state transitions can be inferred from the events
         // Alternatively the StateChangeEvent can be converted to a private event if either the
         // StateChangeEvent.stateIdentifier

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -8,20 +8,19 @@ package adapter
 
 import java.lang.reflect.InvocationTargetException
 
-import akka.actor.{ ActorInitializationException, ActorRefWithCell }
+import scala.annotation.switch
+import scala.annotation.tailrec
+import scala.util.control.Exception.Catcher
+import scala.util.control.NonFatal
+
 import akka.{ actor => classic }
+import akka.actor.ActorInitializationException
+import akka.actor.ActorRefWithCell
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
+import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
 import akka.annotation.InternalApi
-import scala.annotation.tailrec
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import scala.util.control.Exception.Catcher
-import scala.annotation.switch
-
-import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.util.OptionVal
 
 /**
@@ -76,6 +75,7 @@ import akka.util.OptionVal
   def receive: Receive = ActorAdapter.DummyReceive
 
   override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
+    ctx.setCurrentActorThread()
     try {
       // as we know we never become in "normal" typed actors, it is just the current behavior that
       // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
@@ -102,10 +102,14 @@ import akka.util.OptionVal
           adaptAndHandle(msg)
         case signal: Signal =>
           handleSignal(signal)
-        case msg: T @unchecked =>
-          handleMessage(msg)
+        case msg =>
+          val t = msg.asInstanceOf[T]
+          handleMessage(t)
       }
-    } finally ctx.clearMdc()
+    } finally {
+      ctx.clearCurrentActorThread()
+      ctx.clearMdc()
+    }
   }
 
   private def handleMessage(msg: T): Unit = {
@@ -114,10 +118,11 @@ import akka.util.OptionVal
       if (c.hasTimer) {
         msg match {
           case timerMsg: TimerMsg =>
-            c.timer.interceptTimerMsg(ctx.log, timerMsg) match {
-              case OptionVal.None => // means TimerMsg not applicable, discard
+            //we can only get this kind of message if the timer is of this concrete class
+            c.timer.asInstanceOf[TimerSchedulerImpl[T]].interceptTimerMsg(ctx.log, timerMsg) match {
               case OptionVal.Some(m) =>
                 next(Behavior.interpretMessage(behavior, c, m), m)
+              case _ => // means TimerMsg not applicable, discard
             }
           case _ =>
             next(Behavior.interpretMessage(behavior, c, msg), msg)
@@ -181,12 +186,23 @@ import akka.util.OptionVal
   }
 
   private def withSafelyAdapted[U, V](adapt: () => U)(body: U => V): Unit = {
-    Try(adapt()) match {
-      case Success(a) =>
-        body(a)
-      case Failure(ex) =>
-        ctx.log.error(s"Exception thrown out of adapter. Stopping myself. ${ex.getMessage}", ex)
-        context.stop(self)
+    var failed = false
+    val adapted: U = try {
+      adapt()
+    } catch {
+      case NonFatal(ex) =>
+        // pass it on through the signal handler chain giving supervision a chance to deal with it
+        handleSignal(MessageAdaptionFailure(ex))
+        // Signal handler should actually throw so this is mostly to keep compiler happy (although a user could override
+        // the MessageAdaptionFailure handling to do something weird)
+        failed = true
+        null.asInstanceOf[U]
+    }
+    if (!failed) {
+      if (adapted != null) body(adapted)
+      else
+        ctx.log.warn(
+          "Adapter function returned null which is not valid as an actor message, ignoring. This can happen for example when using pipeToSelf and returning null from the adapt function. Null value is ignored and not passed on to actor.")
     }
   }
 
@@ -203,32 +219,38 @@ import akka.util.OptionVal
   }
 
   override val supervisorStrategy = classic.OneForOneStrategy(loggingEnabled = false) {
-    case TypedActorFailedException(cause) =>
-      // These have already been optionally logged by typed supervision
-      recordChildFailure(cause)
-      classic.SupervisorStrategy.Stop
     case ex =>
-      val isTypedActor = sender() match {
-        case afwc: ActorRefWithCell =>
-          afwc.underlying.props.producer.actorClass == classOf[ActorAdapter[_]]
+      ctx.setCurrentActorThread()
+      try ex match {
+        case TypedActorFailedException(cause) =>
+          // These have already been optionally logged by typed supervision
+          recordChildFailure(cause)
+          classic.SupervisorStrategy.Stop
         case _ =>
-          false
-      }
-      recordChildFailure(ex)
-      val logMessage = ex match {
-        case e: ActorInitializationException if e.getCause ne null =>
-          e.getCause match {
-            case ex: InvocationTargetException if ex.getCause ne null => ex.getCause.getMessage
-            case ex                                                   => ex.getMessage
+          val isTypedActor = sender() match {
+            case afwc: ActorRefWithCell =>
+              afwc.underlying.props.producer.actorClass == classOf[ActorAdapter[_]]
+            case _ =>
+              false
           }
-        case e => e.getMessage
+          recordChildFailure(ex)
+          val logMessage = ex match {
+            case e: ActorInitializationException if e.getCause ne null =>
+              e.getCause match {
+                case ex: InvocationTargetException if ex.getCause ne null => ex.getCause.getMessage
+                case ex                                                   => ex.getMessage
+              }
+            case e => e.getMessage
+          }
+          // log at Error as that is what the supervision strategy would have done.
+          ctx.log.error(logMessage, ex)
+          if (isTypedActor)
+            classic.SupervisorStrategy.Stop
+          else
+            ActorAdapter.classicSupervisorDecider(ex)
+      } finally {
+        ctx.clearCurrentActorThread()
       }
-      // log at Error as that is what the supervision strategy would have done.
-      ctx.log.error(logMessage, ex)
-      if (isTypedActor)
-        classic.SupervisorStrategy.Stop
-      else
-        ActorAdapter.classicSupervisorDecider(ex)
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
@@ -236,6 +258,30 @@ import akka.util.OptionVal
     if (context.asInstanceOf[classic.ActorCell].isWatching(ref)) {
       failures = failures.updated(ref, ex)
     }
+  }
+
+  override protected[akka] def aroundPreStart(): Unit = {
+    ctx.setCurrentActorThread()
+    try super.aroundPreStart()
+    finally ctx.clearCurrentActorThread()
+  }
+
+  override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
+    ctx.setCurrentActorThread()
+    try super.aroundPreRestart(reason, message)
+    finally ctx.clearCurrentActorThread()
+  }
+
+  override protected[akka] def aroundPostRestart(reason: Throwable): Unit = {
+    ctx.setCurrentActorThread()
+    try super.aroundPostRestart(reason)
+    finally ctx.clearCurrentActorThread()
+  }
+
+  override protected[akka] def aroundPostStop(): Unit = {
+    ctx.setCurrentActorThread()
+    try super.aroundPostStop()
+    finally ctx.clearCurrentActorThread()
   }
 
   override def preStart(): Unit = {

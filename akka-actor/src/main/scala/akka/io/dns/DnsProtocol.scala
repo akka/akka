@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
@@ -10,17 +10,17 @@ import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util
 
+import scala.collection.{ immutable => im }
+
 import akka.actor.NoSerializationVerificationNeeded
 import akka.io.IpVersionSelector
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
-
-import scala.collection.{ immutable => im }
 import akka.util.ccompat.JavaConverters._
 
 /**
  * Supersedes [[akka.io.Dns]] protocol.
  *
- * Note that one MUST configure `akka.io.dns.resolver = async` to make use of this protocol and resolver.
+ * Note that one MUST configure `akka.io.dns.resolver = async-dns` to make use of this protocol and resolver.
  *
  * Allows for more detailed lookups, by specifying which records should be checked,
  * and responses can more information than plain IP addresses (e.g. ports for SRV records).
@@ -30,7 +30,7 @@ object DnsProtocol {
 
   sealed trait RequestType
   final case class Ip(ipv4: Boolean = true, ipv6: Boolean = true) extends RequestType
-  final case object Srv extends RequestType
+  case object Srv extends RequestType
 
   /**
    * Java API
@@ -47,6 +47,10 @@ object DnsProtocol {
    */
   def srvRequestType(): RequestType = Srv
 
+  /**
+   * Sending this to the [[AsyncDnsManager]] will either lead to a [[Resolved]] or a [[akka.actor.Status.Failure]] response.
+   * If request type are both, both resolutions must succeed or the response is a failure.
+   */
   final case class Resolve(name: String, requestType: RequestType) extends ConsistentHashable {
     override def consistentHashKey: Any = name
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.javadsl
@@ -10,13 +10,14 @@ import java.util.function.{ Function => JFunction }
 import scala.util.Failure
 import scala.util.Success
 
-import akka.util.JavaDurationConverters._
+import scala.annotation.nowarn
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.ActorContext
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
+import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
 
 /**
  * When interacting with the `Replicator` from an actor this class provides convenient
@@ -114,7 +115,7 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
    * `ActorRef[GetResponse]` that the the replicator will send the response message back through.
    * Use that `ActorRef[GetResponse]` as the `replyTo` parameter in the `Get` message.
    */
-  @silent
+  @nowarn
   def askGet(
       createRequest: JFunction[ActorRef[Replicator.GetResponse[B]], Replicator.Get[B]],
       responseAdapter: JFunction[Replicator.GetResponse[B], A]): Unit = {

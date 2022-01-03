@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import org.reactivestreams.Subscriber
+import org.scalatest.matchers.should.Matchers
+
 import akka.actor.ActorSystem
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
-import org.reactivestreams.Subscriber
-import org.scalatest.matchers.should.Matchers
 
 class FlowAppendSpec extends StreamSpec with River {
 

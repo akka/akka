@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -25,7 +25,7 @@ object Jdk9 extends AutoPlugin {
         Seq(
           (Compile / sourceDirectory).value / SCALA_SOURCE_DIRECTORY,
           (Compile / sourceDirectory).value / JAVA_SOURCE_DIRECTORY)),
-    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(Seq("-release", "11")),
+    scalacOptions := AkkaBuild.DefaultScalacOptions.value ++ notOnJdk8(Seq("-release", "11")),
     javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(Seq("--release", "11")))
 
   val testJdk9Settings = Seq(
@@ -34,11 +34,11 @@ object Jdk9 extends AutoPlugin {
         Seq(
           (Test / sourceDirectory).value / SCALA_TEST_SOURCE_DIRECTORY,
           (Test / sourceDirectory).value / JAVA_TEST_SOURCE_DIRECTORY)),
-    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(Seq("-release", "11")),
+    scalacOptions := AkkaBuild.DefaultScalacOptions.value ++ notOnJdk8(Seq("-release", "11")),
     javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(Seq("--release", "11")),
     compile := compile.dependsOn(CompileJdk9 / compile).value,
     classpathConfiguration := TestJdk9,
-    externalDependencyClasspath := (externalDependencyClasspath in Test).value)
+    externalDependencyClasspath := (Test / externalDependencyClasspath).value)
 
   val compileSettings = Seq(
     // It might have been more 'neat' to add the jdk9 products to the jar via packageBin/mappings, but that doesn't work with the OSGi plugin,

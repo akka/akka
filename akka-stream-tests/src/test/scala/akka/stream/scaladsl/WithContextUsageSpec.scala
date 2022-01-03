@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
+
+import scala.collection.immutable
 
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.scaladsl.TestSink
-
-import scala.collection.immutable
 
 class WithContextUsageSpec extends StreamSpec {
 

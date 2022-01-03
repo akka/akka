@@ -1,25 +1,26 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor._
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberJoined
-import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberRemoved
+import akka.cluster.ClusterEvent.MemberTombstonesChanged
+import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.event.ActorWithLogClass
 import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
+import akka.remote.RARP
 import akka.remote.RemoteSettings
 import akka.remote.RemoteWatcher
-import akka.remote.RARP
 
 /**
  * INTERNAL API
@@ -60,7 +61,8 @@ private[cluster] class ClusterRemoteWatcher(
     heartbeatInterval: FiniteDuration,
     unreachableReaperInterval: FiniteDuration,
     heartbeatExpectedResponseAfter: FiniteDuration)
-    extends RemoteWatcher(failureDetector, heartbeatInterval, unreachableReaperInterval, heartbeatExpectedResponseAfter) {
+    extends RemoteWatcher(failureDetector, heartbeatInterval, unreachableReaperInterval, heartbeatExpectedResponseAfter)
+    with Timers {
 
   import ClusterRemoteWatcher.DelayedQuarantine
 
@@ -70,13 +72,17 @@ private[cluster] class ClusterRemoteWatcher(
 
   override val log = Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterCore))
 
+  // allowed to watch even though address not in cluster membership, i.e. remote watch
+  private val watchPathAllowList = Set("/system/sharding/")
+
   private var pendingDelayedQuarantine: Set[UniqueAddress] = Set.empty
 
   var clusterNodes: Set[Address] = Set.empty
+  var memberTombstones: Set[UniqueAddress] = Set.empty
 
   override def preStart(): Unit = {
     super.preStart()
-    cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[MemberEvent], classOf[MemberTombstonesChanged])
   }
 
   override def postStop(): Unit = {
@@ -91,10 +97,12 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes = state.members.collect { case m if m.address != selfAddress => m.address }
       clusterNodes.foreach(takeOverResponsibility)
       unreachable = unreachable.diff(clusterNodes)
+      memberTombstones = state.memberTombstones
     case MemberJoined(m)                      => memberJoined(m)
     case MemberUp(m)                          => memberUp(m)
     case MemberWeaklyUp(m)                    => memberUp(m)
     case MemberRemoved(m, previousStatus)     => memberRemoved(m, previousStatus)
+    case MemberTombstonesChanged(tombstones)  => memberTombstones = tombstones
     case _: MemberEvent                       => // not interesting
     case DelayedQuarantine(m, previousStatus) => delayedQuarantine(m, previousStatus)
   }
@@ -160,11 +168,34 @@ private[cluster] class ClusterRemoteWatcher(
     }
   }
 
+  override def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
+    val watcheeNode = watchee.path.address
+    if (!clusterNodes.contains(watcheeNode) && memberTombstones.exists(_.address == watcheeNode)) {
+      // node is not currently, but was previously part of cluster, trigger death watch notification immediately
+      log.debug("Death watch for [{}] triggered immediately because member was removed from cluster", watchee)
+      watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed = false, addressTerminated = true))
+    } else {
+      super.addWatch(watchee, watcher)
+    }
+  }
+
   override def watchNode(watchee: InternalActorRef): Unit =
     if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
 
   override protected def shouldWatch(watchee: InternalActorRef): Boolean =
-    clusterNodes(watchee.path.address) || super.shouldWatch(watchee)
+    clusterNodes(watchee.path.address) || super.shouldWatch(watchee) || isWatchOutsideClusterAllowed(watchee)
+
+  /**
+   * Allowed to watch some paths even though address not in cluster membership, i.e. remote watch.
+   * Needed for ShardCoordinator that has to watch old incarnations of region ActorRef from the
+   * recovered state.
+   */
+  private def isWatchOutsideClusterAllowed(watchee: InternalActorRef): Boolean = {
+    context.system.name == watchee.path.address.system && {
+      val pathPrefix = watchee.path.elements.take(2).mkString("/", "/", "/")
+      watchPathAllowList.contains(pathPrefix)
+    }
+  }
 
   /**
    * When a cluster node is added this class takes over the

@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
 import akka.Done
+import akka.stream.ClosedShape
+import akka.stream.KillSwitches
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.ClosedShape
-import akka.stream.KillSwitches
-
-import scala.concurrent.duration._
 
 class FlowKillSwitchSpec extends StreamSpec {
 
@@ -277,7 +277,7 @@ class FlowKillSwitchSpec extends StreamSpec {
       val switch2 = KillSwitches.shared("switch")
 
       val downstream = RunnableGraph
-        .fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b => snk =>
+        .fromGraph(GraphDSL.createGraph(TestSink.probe[Int]) { implicit b => snk =>
           import GraphDSL.Implicits._
           val merge = b.add(Merge[Int](2))
 

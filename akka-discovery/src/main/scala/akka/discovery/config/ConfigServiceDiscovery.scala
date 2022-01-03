@@ -1,19 +1,20 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery.config
+
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.{ Config, ConfigUtil }
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.discovery.{ Lookup, ServiceDiscovery }
 import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
 import akka.event.Logging
-import com.typesafe.config.Config
-
 import akka.util.ccompat.JavaConverters._
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -26,7 +27,7 @@ private object ConfigServicesParser {
       .entrySet()
       .asScala
       .map { en =>
-        (en.getKey, config.getConfig(en.getKey))
+        (en.getKey, config.getConfig(ConfigUtil.quoteString(en.getKey)))
       }
       .toMap
 
@@ -49,7 +50,7 @@ private object ConfigServicesParser {
 @InternalApi
 private[akka] class ConfigServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[ConfigServiceDiscovery])
 
   private val resolvedServices = ConfigServicesParser.parse(
     system.settings.config.getConfig(system.settings.config.getString("akka.discovery.config.services-path")))

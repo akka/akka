@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
 
 import java.net.InetAddress
 
-import akka.actor.ExtendedActorSystem
-import akka.testkit.AkkaSpec
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.actor.ExtendedActorSystem
+import akka.testkit.AkkaSpec
 
 class DnsSettingsSpec extends AkkaSpec {
 

@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
 import java.io.File
 
+import org.apache.commons.io.FileUtils
+
 import akka.actor._
 import akka.persistence.serialization.Snapshot
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.testkit._
-import org.apache.commons.io.FileUtils
 
 object SnapshotRecoveryWithEmptyJournalSpec {
   val survivingSnapshotPath = "target/survivingSnapshotPath"
@@ -62,7 +63,7 @@ object SnapshotRecoveryWithEmptyJournalSpec {
 class SnapshotRecoveryWithEmptyJournalSpec
     extends PersistenceSpec(
       PersistenceSpec.config(
-        "leveldb",
+        "inmem",
         "SnapshotRecoveryWithEmptyJournalSpec",
         extraConfig = Some(s"""
   akka.persistence.snapshot-store.local.dir = "${SnapshotRecoveryWithEmptyJournalSpec.survivingSnapshotPath}"

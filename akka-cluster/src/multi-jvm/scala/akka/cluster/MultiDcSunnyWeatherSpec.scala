@@ -1,18 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.annotation.InternalApi
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
 import scala.collection.immutable
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.ActorRef
+import akka.annotation.InternalApi
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 object MultiDcSunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -60,9 +62,7 @@ class MultiDcSunnyWeatherMultiJvmNode3 extends MultiDcSunnyWeatherSpec
 class MultiDcSunnyWeatherMultiJvmNode4 extends MultiDcSunnyWeatherSpec
 class MultiDcSunnyWeatherMultiJvmNode5 extends MultiDcSunnyWeatherSpec
 
-abstract class MultiDcSunnyWeatherSpec
-    extends MultiNodeSpec(MultiDcSunnyWeatherMultiJvmSpec)
-    with MultiNodeClusterSpec {
+abstract class MultiDcSunnyWeatherSpec extends MultiNodeClusterSpec(MultiDcSunnyWeatherMultiJvmSpec) {
 
   "A normal cluster" must {
     "be healthy" taggedAs LongRunningTest in {
@@ -93,7 +93,7 @@ abstract class MultiDcSunnyWeatherSpec
       expectedAlphaHeartbeaterRoles.size should ===(2)
       expectedBetaHeartbeaterRoles.size should ===(2)
 
-      implicit val sender = observer.ref
+      implicit val sender: ActorRef = observer.ref
       runOn(expectedAlphaHeartbeaterRoles.toList: _*) {
         selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
         observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
@@ -119,7 +119,7 @@ abstract class MultiDcSunnyWeatherSpec
 
       enterBarrier("checking-activeReceivers")
 
-      implicit val sender = observer.ref
+      implicit val sender: ActorRef = observer.ref
       selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
       observer.expectMsgType[CrossDcHeartbeatSender.MonitoringStateReport](5.seconds) match {
         case CrossDcHeartbeatSender.MonitoringDormant()     => // ok ...

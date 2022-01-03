@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event;
@@ -120,11 +120,11 @@ public class LoggingAdapterTest extends JUnitSuite {
    */
   @Test
   public void mustBeAbleToCreateLogEventsWithOldConstructor() throws Exception {
-    assertNotNull(new Error(new Exception(), "logSource", this.getClass(), "The message"));
-    assertNotNull(new Error("logSource", this.getClass(), "The message"));
-    assertNotNull(new Warning("logSource", this.getClass(), "The message"));
-    assertNotNull(new Info("logSource", this.getClass(), "The message"));
-    assertNotNull(new Debug("logSource", this.getClass(), "The message"));
+    assertNotNull(new Error(new Exception(), "logSource", LoggingAdapterTest.class, "The message"));
+    assertNotNull(new Error("logSource", LoggingAdapterTest.class, "The message"));
+    assertNotNull(new Warning("logSource", LoggingAdapterTest.class, "The message"));
+    assertNotNull(new Info("logSource", LoggingAdapterTest.class, "The message"));
+    assertNotNull(new Debug("logSource", LoggingAdapterTest.class, "The message"));
   }
 
   private static class LogJavaTestKit extends TestKit {

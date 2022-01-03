@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import OverflowStrategies._
+
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.Logging
 import akka.event.Logging.LogLevel
@@ -113,7 +114,11 @@ object OverflowStrategy {
 
   /**
    * If the buffer is full when a new element arrives, drops the new element.
+   *
+   * @deprecated Use {@link akka.stream.javadsl.Source#queue(int,akka.stream.OverflowStrategy)} instead
    */
+  @deprecated("Use Source.queue instead", "2.6.11")
+  @Deprecated
   def dropNew: OverflowStrategy = DropNew(Logging.DebugLevel)
 
   /**

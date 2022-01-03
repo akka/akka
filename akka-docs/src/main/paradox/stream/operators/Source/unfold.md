@@ -6,11 +6,8 @@ Stream the result of a function as long as it returns a @scala[`Some`] @java[non
 
 ## Signature
 
-Scala
-:   @@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfold }
+@apidoc[Source.unfold](Source$) { scala="#unfold[S,E](s:S)(f:S=&gt;Option[(S,E)]):akka.stream.scaladsl.Source[E,akka.NotUsed]" java="#unfold(java.lang.Object,akka.japi.function.Function)" }
 
-Java
-:   @@snip [SourceUnfoldTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceUnfoldTest.java) { #signature }
 
 ## Description
 
@@ -35,7 +32,7 @@ Java
  :   @@snip [Unfold.java](/akka-docs/src/test/java/jdocs/stream/operators/source/Unfold.java) { #countdown }
 
 
-It is also possible to express unfolds that don't have an end, which will never return @scala[`None`] @java[`Optional.empty`] and must be combined with for example `.take(n)` to not produce infinite streams. Here we have implemented the Fibonacci numbers (0, 1, 1, 2, 3, 5, 8, 13, etc) with `unfold`:
+It is also possible to express unfolds that don't have an end, which will never return @scala[`None`] @java[`Optional.empty`] and must be combined with for example `.take(n)` to not produce infinite streams. Here we have implemented the Fibonacci numbers (0, 1, 1, 2, 3, 5, 8, 13, etc.) with `unfold`:
 
 Scala
  :   @@snip [Unfold.scala](/akka-docs/src/test/scala/docs/stream/operators/source/Unfold.scala) { #fibonacci }

@@ -1,38 +1,33 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.collection.immutable
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.annotation.nowarn
 import akka.actor._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
 import akka.event.LoggingAdapter
-import akka.pattern.ask
-import akka.pattern.pipe
-import akka.pattern.retry
+import akka.pattern.StatusReply
 import akka.stream._
 import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.impl.fusing.GraphInterpreterShell
 import akka.stream.snapshot.StreamSnapshot
 import akka.util.OptionVal
-import akka.util.Timeout
-import com.github.ghik.silencer.silent
-
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.Future
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
  *
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @DoNotInherit private[akka] abstract class ExtendedActorMaterializer extends ActorMaterializer {
 
   override def withNamePrefix(name: String): ExtendedActorMaterializer
@@ -165,7 +160,7 @@ private[akka] class SubFusingActorMaterializerImpl(
   override private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef =
     delegate.actorOf(context, props)
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def settings: ActorMaterializerSettings = delegate.settings
 }
 
@@ -175,7 +170,7 @@ private[akka] class SubFusingActorMaterializerImpl(
 @InternalApi private[akka] object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
   override def get(system: ActorSystem): FlowNames = super.get(system)
   override def get(system: ClassicActorSystemProvider): FlowNames = super.get(system)
-  override def lookup() = FlowNames
+  override def lookup = FlowNames
   override def createExtension(system: ExtendedActorSystem): FlowNames = new FlowNames
 }
 
@@ -202,10 +197,11 @@ private[akka] class SubFusingActorMaterializerImpl(
       extends DeadLetterSuppression
       with NoSerializationVerificationNeeded
 
-  case object GetChildrenSnapshots
+  final case class GetChildrenSnapshots(timeout: FiniteDuration)
   final case class ChildrenSnapshots(seq: immutable.Seq[StreamSnapshot])
       extends DeadLetterSuppression
       with NoSerializationVerificationNeeded
+  private final case class CollectorCompleted(ref: ActorRef)
 
   /** Testing purpose */
   case object GetChildren
@@ -225,38 +221,81 @@ private[akka] class SubFusingActorMaterializerImpl(
  */
 @InternalApi private[akka] class StreamSupervisor(haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
-  implicit val ec = context.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
-  def receive = {
+  private var snapshotCollectors: Set[ActorRef] = Set.empty
+
+  def receive: Receive = {
     case Materialize(props, name) =>
       val impl = context.actorOf(props, name)
       sender() ! impl
     case GetChildren =>
       sender() ! Children(context.children.toSet)
-    case GetChildrenSnapshots =>
-      takeSnapshotsOfChildren().map(ChildrenSnapshots.apply _).pipeTo(sender())
-
+    case GetChildrenSnapshots(timeout) =>
+      val collector =
+        context.actorOf(
+          SnapshotCollector
+            .props(context.children.toSet -- snapshotCollectors, timeout, sender())
+            .withDispatcher(context.props.dispatcher))
+      context.watchWith(collector, CollectorCompleted(collector))
+      snapshotCollectors += collector
     case StopChildren =>
       context.children.foreach(context.stop)
       sender() ! StoppedChildren
-  }
-
-  def takeSnapshotsOfChildren(): Future[immutable.Seq[StreamSnapshot]] = {
-    implicit val scheduler = context.system.scheduler
-    // Arbitrary timeout but should always be quick, the failure scenario is that
-    // the child/stream stopped, and we do retry below
-    implicit val timeout: Timeout = 1.second
-    def takeSnapshot() = {
-      val futureSnapshots =
-        context.children.toList.map(child => (child ? ActorGraphInterpreter.Snapshot).mapTo[StreamSnapshot])
-      Future.sequence(futureSnapshots)
-    }
-
-    // If the timeout hits it is likely because one of the streams stopped between looking at the list
-    // of children and asking it for a snapshot. We retry the entire snapshot in that case
-    retry(() => takeSnapshot(), 3, Duration.Zero)
+    case CollectorCompleted(collector) =>
+      snapshotCollectors -= collector
   }
 
   override def postStop(): Unit = haveShutDown.set(true)
+}
+
+@InternalApi
+private[akka] object SnapshotCollector {
+  case object SnapshotTimeout
+  def props(streamActors: Set[ActorRef], timeout: FiniteDuration, replyTo: ActorRef): Props =
+    Props(new SnapshotCollector(streamActors, timeout, replyTo))
+}
+
+@InternalApi
+private[akka] final class SnapshotCollector(streamActors: Set[ActorRef], timeout: FiniteDuration, replyTo: ActorRef)
+    extends Actor
+    with Timers {
+
+  import SnapshotCollector._
+
+  var leftToRespond = streamActors
+  var collected: List[StreamSnapshot] = Nil
+  if (streamActors.isEmpty) {
+    replyTo ! StatusReply.Success(StreamSupervisor.ChildrenSnapshots(Nil))
+    context.stop(self)
+  } else {
+    streamActors.foreach { ref =>
+      context.watch(ref)
+      ref ! ActorGraphInterpreter.Snapshot
+    }
+  }
+
+  timers.startSingleTimer(SnapshotTimeout, SnapshotTimeout, timeout)
+
+  override def receive: Receive = {
+    case snap: StreamSnapshot =>
+      collected = snap :: collected
+      leftToRespond -= sender()
+      completeIfDone()
+    case Terminated(streamActor) =>
+      leftToRespond -= streamActor
+      completeIfDone()
+    case SnapshotTimeout =>
+      replyTo ! StatusReply.Error(
+        s"Didn't get replies from all stream actors within the timeout of ${timeout.toMillis} ms")
+      context.stop(self)
+  }
+
+  def completeIfDone(): Unit = {
+    if (leftToRespond.isEmpty) {
+      replyTo ! StatusReply.Success(StreamSupervisor.ChildrenSnapshots(collected))
+      context.stop(self)
+    }
+  }
 }

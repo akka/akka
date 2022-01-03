@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence;
@@ -9,6 +9,8 @@ import docs.persistence.proto.FlightAppModels;
 
 import java.io.NotSerializableException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
 import spray.json.JsObject;
 
 import akka.persistence.journal.EventAdapter;
@@ -186,7 +188,7 @@ public class PersistenceSchemaEvolutionDocTest {
      * to/from bytes marshalling.
      */
     static class SimplestPossiblePersonSerializer extends SerializerWithStringManifest {
-      private final Charset utf8 = Charset.forName("UTF-8");
+      private final Charset utf8 = StandardCharsets.UTF_8;
 
       private final String personManifest = Person.class.getName();
 
@@ -335,7 +337,7 @@ public class PersistenceSchemaEvolutionDocTest {
   public
   // #string-serializer-skip-deleved-event-by-manifest
   static class RemovedEventsAwareSerializer extends SerializerWithStringManifest {
-    private final Charset utf8 = Charset.forName("UTF-8");
+    private final Charset utf8 = StandardCharsets.UTF_8;
     private final String customerBlinkedManifest = "blinked";
 
     // unique identifier of the serializer
@@ -389,7 +391,7 @@ public class PersistenceSchemaEvolutionDocTest {
   public
   // #string-serializer-handle-rename
   static class RenamedEventAwareSerializer extends SerializerWithStringManifest {
-    private final Charset utf8 = Charset.forName("UTF-8");
+    private final Charset utf8 = StandardCharsets.UTF_8;
 
     // unique identifier of the serializer
     @Override

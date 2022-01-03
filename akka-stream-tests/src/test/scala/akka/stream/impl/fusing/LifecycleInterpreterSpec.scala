@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
+
+import scala.concurrent.duration._
 
 import akka.stream.Attributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
-
-import scala.concurrent.duration._
 
 class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
@@ -98,10 +98,10 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     "continue with stream shutdown when postStop fails" in new OneBoundedSetup[String](PostStopFailer(() =>
       throw TE("Boom!"))) {
-      lastEvents() should ===(Set())
+      lastEvents() should ===(Set.empty[TestEvent])
 
       upstream.onComplete()
-      lastEvents should ===(Set(OnComplete))
+      lastEvents() should ===(Set(OnComplete))
     }
 
     "postStop when pushAndFinish called if upstream completes with pushAndFinish" in new OneBoundedSetup[String](

@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.scaladsl
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
 import akka.persistence.query.EventEnvelope
+import akka.stream.scaladsl.Source
 
 /**
  * A plugin may optionally support this query by implementing this trait.

@@ -1,27 +1,27 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
 
-import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
-import akka.stream._
-import akka.stream.impl._
-import akka.testkit.{ TestActor, TestProbe }
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import java.io.PrintWriter
+import java.io.StringWriter
+import java.util.concurrent.CountDownLatch
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import java.io.StringWriter
-import java.io.PrintWriter
-import java.util.concurrent.CountDownLatch
+import scala.reflect.ClassTag
 
+import akka.actor.ClassicActorSystemProvider
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
+import akka.stream._
+import akka.stream.impl._
+import akka.testkit.{ TestActor, TestProbe }
 import akka.testkit.TestActor.AutoPilot
 import akka.util.JavaDurationConverters
 import akka.util.ccompat._
-
-import scala.reflect.ClassTag
 
 /**
  * Provides factory methods for various Publishers.
@@ -35,7 +35,7 @@ object TestPublisher {
   final case class CancelSubscription(subscription: Subscription, cause: Throwable) extends PublisherEvent
   final case class RequestMore(subscription: Subscription, elements: Long) extends PublisherEvent
 
-  final object SubscriptionDone extends NoSerializationVerificationNeeded
+  object SubscriptionDone extends NoSerializationVerificationNeeded
 
   /**
    * Publisher that signals complete to subscribers, after handing a void subscription.
@@ -74,6 +74,15 @@ object TestPublisher {
    */
   def probe[T](initialPendingRequests: Long = 0)(implicit system: ActorSystem): Probe[T] =
     new Probe(initialPendingRequests)
+
+  object ManualProbe {
+
+    /**
+     * Probe that implements [[org.reactivestreams.Publisher]] interface.
+     */
+    def apply[T](autoOnSubscribe: Boolean = true)(implicit system: ClassicActorSystemProvider): ManualProbe[T] =
+      new ManualProbe(autoOnSubscribe)(system.classicSystem)
+  }
 
   /**
    * Implementation of [[org.reactivestreams.Publisher]] that allows various assertions.
@@ -209,6 +218,11 @@ object TestPublisher {
     def within[T](max: FiniteDuration)(f: => T): T = executeAfterSubscription { probe.within(max)(f) }
   }
 
+  object Probe {
+    def apply[T](initialPendingRequests: Long = 0)(implicit system: ClassicActorSystemProvider): Probe[T] =
+      new Probe(initialPendingRequests)(system.classicSystem)
+  }
+
   /**
    * Single subscription and demand tracking for [[TestPublisher.ManualProbe]].
    */
@@ -305,6 +319,11 @@ object TestSubscriber {
   def manualProbe[T]()(implicit system: ActorSystem): ManualProbe[T] = new ManualProbe()
 
   def probe[T]()(implicit system: ActorSystem): Probe[T] = new Probe()
+
+  object ManualProbe {
+    def apply[T]()(implicit system: ClassicActorSystemProvider): ManualProbe[T] =
+      new ManualProbe()(system.classicSystem)
+  }
 
   /**
    * Implementation of [[org.reactivestreams.Subscriber]] that allows various assertions.
@@ -568,6 +587,7 @@ object TestSubscriber {
       } match {
         case OnNext(n: I @unchecked) => Right(n)
         case OnError(err)            => Left(err)
+        case _                       => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -582,6 +602,7 @@ object TestSubscriber {
       } match {
         case OnNext(n: I @unchecked) => Right(n)
         case OnError(err)            => Left(err)
+        case _                       => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -595,6 +616,7 @@ object TestSubscriber {
       } match {
         case OnComplete              => Left(OnComplete)
         case OnNext(n: I @unchecked) => Right(n)
+        case _                       => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -747,6 +769,7 @@ object TestSubscriber {
           case OnNext(i: I @unchecked) =>
             b += i
             drain()
+          case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
 
       // if no subscription was obtained yet, we expect it
@@ -783,6 +806,10 @@ object TestSubscriber {
     def onNext(element: I): Unit = probe.ref ! OnNext(element)
     def onComplete(): Unit = probe.ref ! OnComplete
     def onError(cause: Throwable): Unit = probe.ref ! OnError(cause)
+  }
+
+  object Probe {
+    def apply[T]()(implicit system: ClassicActorSystemProvider): Probe[T] = new Probe()(system.classicSystem)
   }
 
   /**
@@ -849,7 +876,7 @@ object TestSubscriber {
 /**
  * INTERNAL API
  */
-private[testkit] object StreamTestKit {
+private[stream] object StreamTestKit {
   import TestPublisher._
 
   final case class CompletedSubscription[T](subscriber: Subscriber[T]) extends Subscription {
@@ -891,8 +918,6 @@ private[testkit] object StreamTestKit {
       val probe = TestPublisher.probe[T]()
       (probe, probe)
     }
-    override protected def newInstance(shape: SourceShape[T]): SourceModule[T, TestPublisher.Probe[T]] =
-      new ProbeSource[T](attributes, shape)
     override def withAttributes(attr: Attributes): SourceModule[T, TestPublisher.Probe[T]] =
       new ProbeSource[T](attr, amendShape(attr))
   }
@@ -903,8 +928,6 @@ private[testkit] object StreamTestKit {
       val probe = TestSubscriber.probe[T]()
       (probe, probe)
     }
-    override protected def newInstance(shape: SinkShape[T]): SinkModule[T, TestSubscriber.Probe[T]] =
-      new ProbeSink[T](attributes, shape)
     override def withAttributes(attr: Attributes): SinkModule[T, TestSubscriber.Probe[T]] =
       new ProbeSink[T](attr, amendShape(attr))
   }

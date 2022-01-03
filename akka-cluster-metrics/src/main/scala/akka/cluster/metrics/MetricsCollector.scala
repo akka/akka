@@ -1,22 +1,24 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.event.Logging
-import akka.ConfigurationException
-import akka.actor.Address
-import java.lang.management.MemoryMXBean
-import java.lang.management.ManagementFactory
-import java.lang.management.OperatingSystemMXBean
-import java.lang.management.MemoryUsage
-import java.lang.System.{ currentTimeMillis => newTimestamp }
-import akka.cluster.Cluster
 import java.io.Closeable
+import java.lang.System.{ currentTimeMillis => newTimestamp }
+import java.lang.management.ManagementFactory
+import java.lang.management.MemoryMXBean
+import java.lang.management.MemoryUsage
+import java.lang.management.OperatingSystemMXBean
+
 import org.hyperic.sigar.SigarProxy
+
+import akka.ConfigurationException
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
+import akka.cluster.Cluster
+import akka.event.Logging
 
 /**
  * Metrics sampler.
@@ -47,7 +49,7 @@ private[metrics] object MetricsCollector {
 
   /** Try to create collector instance in the order of priority. */
   def apply(system: ActorSystem): MetricsCollector = {
-    val log = Logging(system, getClass)
+    val log = Logging(system, classOf[MetricsCollector])
     val settings = ClusterMetricsSettings(system.settings.config)
     import settings._
 
@@ -76,7 +78,7 @@ private[metrics] object MetricsCollector {
         create(collectorCustom).orElse(create(collectorSigar)).orElse(create(collectorJMX))
 
     collector.recover {
-      case e => throw new ConfigurationException(s"Could not create metrics collector: ${e}")
+      case e => throw new ConfigurationException(s"Could not create metrics collector: ${e.getMessage}", e)
     }.get
   }
 }
@@ -108,7 +110,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
    * Samples and collects new data points.
    * Creates a new instance each time.
    */
-  def sample(): NodeMetrics = NodeMetrics(address, newTimestamp, metrics)
+  def sample(): NodeMetrics = NodeMetrics(address, newTimestamp, metrics())
 
   /**
    * Generate metrics set.
@@ -209,7 +211,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
   override def metrics(): Set[Metric] = {
     // Must obtain cpuPerc in one shot. See https://github.com/akka/akka/issues/16121
     val cpuPerc = sigar.getCpuPerc
-    super.metrics.union(Set(cpuCombined(cpuPerc), cpuStolen(cpuPerc)).flatten)
+    super.metrics().union(Set(cpuCombined(cpuPerc), cpuStolen(cpuPerc)).flatten)
   }
 
   /**
@@ -235,7 +237,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
 
   /**
    * (SIGAR) Returns the stolen CPU time. Relevant to virtual hosting environments.
-   * For details please see: <a href="http://en.wikipedia.org/wiki/CPU_time#Subdivision">Wikipedia - CPU time subdivision</a> and
+   * For details please see: <a href="https://en.wikipedia.org/wiki/CPU_time#Subdivision">Wikipedia - CPU time subdivision</a> and
    * <a href="https://www.datadoghq.com/2013/08/understanding-aws-stolen-cpu-and-how-it-affects-your-apps/">Understanding AWS stolen CPU and how it affects your apps</a>
    *
    * Creates a new instance each time.

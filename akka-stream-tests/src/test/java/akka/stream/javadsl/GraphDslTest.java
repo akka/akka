@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl;
@@ -9,19 +9,19 @@ import akka.japi.Pair;
 import akka.stream.*;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
-import scala.collection.Seq;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class GraphDslTest extends StreamTest {
@@ -77,29 +77,33 @@ public class GraphDslTest extends StreamTest {
   @Test
   @SuppressWarnings("unused")
   public void demonstrateConnectErrors() {
-    try {
-      // #simple-graph
-      final RunnableGraph<NotUsed> g =
-          RunnableGraph.<NotUsed>fromGraph(
-              GraphDSL.create(
-                  (b) -> {
-                    final SourceShape<Integer> source1 =
-                        b.add(Source.from(Arrays.asList(1, 2, 3, 4, 5)));
-                    final SourceShape<Integer> source2 =
-                        b.add(Source.from(Arrays.asList(1, 2, 3, 4, 5)));
-                    final FanInShape2<Integer, Integer, Pair<Integer, Integer>> zip =
-                        b.add(Zip.create());
-                    b.from(source1).toInlet(zip.in0());
-                    b.from(source2).toInlet(zip.in1());
-                    return ClosedShape.getInstance();
-                  }));
-      // unconnected zip.out (!) => "The inlets [] and outlets [] must correspond to the inlets []
-      // and outlets [ZipWith2.out]"
-      // #simple-graph
-      org.junit.Assert.fail("expected IllegalArgumentException");
-    } catch (IllegalStateException e) {
-      assertTrue(e != null && e.getMessage() != null && e.getMessage().contains("ZipWith2.out"));
-    }
+    IllegalStateException exception =
+        Assert.assertThrows(
+            "expected IllegalStateException",
+            IllegalStateException.class,
+            () -> {
+              // #simple-graph
+              final RunnableGraph<NotUsed> g =
+                  RunnableGraph.fromGraph(
+                      GraphDSL.create(
+                          (b) -> {
+                            final SourceShape<Integer> source1 =
+                                b.add(Source.from(Arrays.asList(1, 2, 3, 4, 5)));
+                            final SourceShape<Integer> source2 =
+                                b.add(Source.from(Arrays.asList(1, 2, 3, 4, 5)));
+                            final FanInShape2<Integer, Integer, Pair<Integer, Integer>> zip =
+                                b.add(Zip.create());
+                            b.from(source1).toInlet(zip.in0());
+                            b.from(source2).toInlet(zip.in1());
+                            return ClosedShape.getInstance();
+                          }));
+              // unconnected zip.out (!) => "The inlets [] and outlets [] must correspond to the
+              // inlets []
+              // and outlets [ZipWith2.out]"
+              // #simple-graph
+            });
+    assertNotNull(exception.getMessage());
+    assertTrue(exception.getMessage().contains("ZipWith2.out"));
   }
 
   @Test
@@ -111,7 +115,7 @@ public class GraphDslTest extends StreamTest {
         Flow.of(Integer.class).map(elem -> elem * 2);
 
     final RunnableGraph<Pair<CompletionStage<Integer>, CompletionStage<Integer>>> g =
-        RunnableGraph.<Pair<CompletionStage<Integer>, CompletionStage<Integer>>>fromGraph(
+        RunnableGraph.fromGraph(
             GraphDSL.create(
                 topHeadSink, // import this sink into the graph
                 bottomHeadSink, // and this as well
@@ -136,7 +140,7 @@ public class GraphDslTest extends StreamTest {
   public void demonstrateMatValue() throws Exception {
     // #graph-dsl-matvalue
     final Sink<Integer, CompletionStage<Integer>> foldSink =
-        Sink.<Integer, Integer>fold(
+        Sink.fold(
             0,
             (a, b) -> {
               return a + b;
@@ -215,5 +219,19 @@ public class GraphDslTest extends StreamTest {
     assertEquals("ax", result.get(0).toCompletableFuture().get(1, TimeUnit.SECONDS));
     assertEquals("bx", result.get(1).toCompletableFuture().get(1, TimeUnit.SECONDS));
     assertEquals("cx", result.get(2).toCompletableFuture().get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void canUseMapMaterializedValueOnGraphs() {
+    Graph<SourceShape<Object>, NotUsed> srcGraph = Source.empty();
+    // FIXME https://github.com/akka/akka/issues/30487
+    // it looks like the Graph.mapMaterializedValue static forwarder is no longer
+    // generated on Scala 3
+    //    Graph<SourceShape<Object>, Pair<NotUsed, NotUsed>> mappedMatValueSrcGraph =
+    //        Graph.mapMaterializedValue(srcGraph, notUsed -> new Pair<>(notUsed, notUsed));
+    //    Sink<Object, CompletionStage<Done>> snk = Sink.ignore();
+    //    Pair<NotUsed, NotUsed> pair =
+    // Source.fromGraph(mappedMatValueSrcGraph).to(snk).run(system);
+    //    assertEquals(pair, new Pair<>(NotUsed.getInstance(), NotUsed.getInstance()));
   }
 }

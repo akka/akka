@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -7,16 +7,19 @@ package akka.actor
 import java.io.Closeable
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
 import com.typesafe.config.Config
+
+import akka.dispatch.AbstractNodeQueue
 import akka.event.LoggingAdapter
 import akka.util.Helpers
 import akka.util.Unsafe.{ instance => unsafe }
-import akka.dispatch.AbstractNodeQueue
 
 /**
  * This scheduler implementation is based on a revolving wheel of buckets,
@@ -38,8 +41,8 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
     extends Scheduler
     with Closeable {
 
-  import Helpers.Requiring
   import Helpers.ConfigOps
+  import Helpers.Requiring
 
   val WheelSize =
     config
@@ -82,7 +85,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
    * Overridable for tests
    */
   protected def waitNanos(nanos: Long): Unit = {
-    // see http://www.javamex.com/tutorials/threads/sleep_issues.shtml
+    // see https://www.javamex.com/tutorials/threads/sleep_issues.shtml
     val sleepMs = if (Helpers.isWindows) (nanos + 4999999) / 10000000 * 10 else (nanos + 999999) / 1000000
     try Thread.sleep(sleepMs)
     catch {
@@ -125,13 +128,17 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
         }
       }
 
-      @tailrec final def cancel(): Boolean = {
-        get match {
-          case null => false
-          case c =>
-            if (c.cancel()) compareAndSet(c, null)
-            else compareAndSet(c, null) || cancel()
+      final def cancel(): Boolean = {
+        @tailrec def tailrecCancel(): Boolean = {
+          get match {
+            case null => false
+            case c =>
+              if (c.cancel()) compareAndSet(c, null)
+              else compareAndSet(c, null) || tailrecCancel()
+          }
         }
+
+        tailrecCancel()
       }
 
       override def isCancelled: Boolean = get == null
@@ -183,7 +190,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
   private val queue = new TaskQueue
 
   private def schedule(ec: ExecutionContext, r: Runnable, delay: FiniteDuration): TimerTask =
-    if (delay <= Duration.Zero) {
+    if (delay.length <= 0L) { // use simple comparision instead of Ordering for performance
       if (stopped.get != null) throw SchedulerException("cannot enqueue after timer shutdown")
       ec.execute(r)
       NotCancellable
@@ -225,6 +232,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
     var tick = startTick
     var totalTick: Long = tick // tick count that doesn't wrap around, used for calculating sleep time
     val wheel = Array.fill(WheelSize)(new TaskQueue)
+    var spareTaskQueue = new TaskQueue
 
     private def clearAll(): immutable.Seq[TimerTask] = {
       @tailrec def collect(q: TaskQueue, acc: Vector[TimerTask]): Vector[TimerTask] = {
@@ -293,7 +301,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
       } else {
         val bucket = tick & wheelMask
         val tasks = wheel(bucket)
-        val putBack = new TaskQueue
+        val putBack = spareTaskQueue
 
         @tailrec def executeBucket(): Unit = tasks.pollNode() match {
           case null => ()
@@ -309,6 +317,8 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
         }
         executeBucket()
         wheel(bucket) = putBack
+        // we know tasks is empty now, so we can re-use it next tick
+        spareTaskQueue = tasks
 
         tick += 1
         totalTick += 1

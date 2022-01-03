@@ -1,12 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
-import akka.cluster.UniqueAddress
-import scala.compat.java8.OptionConverters._
 import java.util.Optional
+
+import scala.compat.java8.OptionConverters._
+
+import akka.cluster.UniqueAddress
 
 /**
  * Interface for implementing a state based convergent
@@ -52,7 +54,7 @@ trait ReplicatedData {
  * receiving side, resulting in set {'a', 'b', 'c', 'd'}.
  *
  * Learn more about this in the paper
- * <a href="http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>.
+ * <a href="https://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>.
  */
 trait DeltaReplicatedData extends ReplicatedData {
 

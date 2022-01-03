@@ -1,6 +1,6 @@
 ## Asynchronous testing
 
-For the Akka Classic documentation of this feature see @ref:[Classic Testing](../testing.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Testing](../testing.md).
 
 Asynchronous testing uses a real @apidoc[akka.actor.typed.ActorSystem] that allows you to test your Actors in a more realistic environment.
 
@@ -48,6 +48,9 @@ The following demonstrates:
 * Creating an actor from the `TestKit`'s system using `spawn`
 * Creating a `TestProbe`
 * Verifying that the actor under test responds via the `TestProbe`
+
+Note that it is possible to use a `TestProbe` directly as a @apidoc[akka.actor.typed.RecipientRef] (a common supertype of `ActorRef` and @ref:[Cluster Sharding](cluster-sharding.md)
+`EntityRef`), in cases where a message protocol uses `RecipientRef` instead of specifying `ActorRef` or `EntityRef`.
 
 Scala
 :  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-spawn }

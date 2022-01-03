@@ -1,23 +1,25 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.UnhandledMessage
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.LoggerFactory
+
+import akka.actor.DeadLetter
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.FishingOutcomes
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.Props
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.eventstream.EventStream
-import com.typesafe.config.ConfigFactory
-import org.slf4j.event.Level
-import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.typed.internal.AdaptMessage
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
@@ -37,6 +39,26 @@ class MessageAdapterSpec
     extends ScalaTestWithActorTestKit(MessageAdapterSpec.config)
     with AnyWordSpecLike
     with LogCapturing {
+
+  private val log = LoggerFactory.getLogger(getClass)
+
+  private def assertDeadLetter(deadLetterProbe: TestProbe[DeadLetter], expectedMessage: Any): Unit = {
+    deadLetterProbe.fishForMessage(deadLetterProbe.remainingOrDefault, s"looking for DeadLetter $expectedMessage") {
+      deadLetter =>
+        deadLetter.message match {
+          case AdaptMessage(msg, _) if msg.getClass == expectedMessage.getClass =>
+            msg shouldBe expectedMessage
+            FishingOutcomes.complete
+          case msg if msg.getClass == expectedMessage.getClass =>
+            msg shouldBe expectedMessage
+            FishingOutcomes.complete
+          case other =>
+            // something else, not from this test
+            log.debug(s"Ignoring other DeadLetter: $other")
+            FishingOutcomes.continueAndIgnore
+        }
+    }
+  }
 
   "Message adapters" must {
 
@@ -94,7 +116,7 @@ class MessageAdapterSpec
 
       case class Wrapped(qualifier: String, response: Response)
 
-      val pingPong = spawn(Behaviors.receiveMessage[Ping] {
+      val pingPong = spawn(Behaviors.receiveMessagePartial[Ping] {
         case Ping1(sender) =>
           sender ! Pong1("hello-1")
           Behaviors.same
@@ -132,10 +154,10 @@ class MessageAdapterSpec
     }
 
     "not break if wrong/unknown response type" in {
-      trait Ping
+      sealed trait Ping
       case class Ping1(sender: ActorRef[Pong1]) extends Ping
       case class Ping2(sender: ActorRef[Pong2]) extends Ping
-      trait Response
+      sealed trait Response
       case class Pong1(greeting: String) extends Response
       case class Pong2(greeting: String) extends Response
 
@@ -151,8 +173,7 @@ class MessageAdapterSpec
           Behaviors.same
       })
 
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      val unhandledProbe = createUnhandledMessageProbe()
       val probe = TestProbe[Wrapped]()
 
       val snitch = Behaviors.setup[Wrapped] { context =>
@@ -212,22 +233,23 @@ class MessageAdapterSpec
           }
       }
 
-      spawn(snitch)
+      val ref = spawn(snitch)
 
       probe.expectMessage(Wrapped(1, Pong("hello")))
       probe.expectMessage(Wrapped(2, Pong("hello")))
       // exception was thrown for  3
 
       probe.expectMessage("stopped")
+      probe.expectTerminated(ref)
     }
 
     "not catch exception thrown after adapter, when processing the message" in {
-      case class Ping(sender: ActorRef[Pong])
+      case class Ping(n: Int, sender: ActorRef[Pong])
       case class Pong(greeting: String)
       case class Wrapped(response: Pong)
 
       val pingPong = spawn(Behaviors.receiveMessage[Ping] { ping =>
-        ping.sender ! Pong("hello")
+        ping.sender ! Pong(s"hello-${ping.n}")
         Behaviors.same
       })
 
@@ -237,8 +259,8 @@ class MessageAdapterSpec
         val replyTo = context.messageAdapter[Pong] { pong =>
           Wrapped(pong)
         }
-        (1 to 5).foreach { _ =>
-          pingPong ! Ping(replyTo)
+        (1 to 5).foreach { n =>
+          pingPong ! Ping(n, replyTo)
         }
 
         def behv(count: Int): Behavior[Wrapped] =
@@ -246,7 +268,7 @@ class MessageAdapterSpec
             .receiveMessage[Wrapped] { _ =>
               probe.ref ! count
               if (count == 3) {
-                throw new TestException("boom")
+                throw TestException("boom")
               }
               behv(count + 1)
             }
@@ -259,8 +281,10 @@ class MessageAdapterSpec
         behv(count = 1)
       }
 
+      val deadLetterProbe = testKit.createDeadLetterProbe()
+
       // Not expecting "Exception thrown out of adapter. Stopping myself"
-      LoggingTestKit.error[TestException].withMessageContains("boom").expect {
+      val ref = LoggingTestKit.error[TestException].withMessageContains("boom").expect {
         spawn(snitch)
       }
 
@@ -269,19 +293,25 @@ class MessageAdapterSpec
       probe.expectMessage(3)
       // exception was thrown for 3
       probe.expectMessage("stopped")
+      probe.expectTerminated(ref)
+
+      assertDeadLetter(deadLetterProbe, Pong("hello-4"))
+      assertDeadLetter(deadLetterProbe, Pong("hello-5"))
     }
 
   }
 
-  "log wrapped message of DeadLetter" in {
+  "redirect to DeadLetter after termination" in {
     case class Ping(sender: ActorRef[Pong])
     case class Pong(greeting: String)
     case class PingReply(response: Pong)
 
     val pingProbe = createTestProbe[Ping]()
 
+    val deadLetterProbe = testKit.createDeadLetterProbe()
+
     val snitch = Behaviors.setup[PingReply] { context =>
-      val replyTo = context.messageAdapter[Pong](PingReply)
+      val replyTo = context.messageAdapter[Pong](PingReply.apply)
       pingProbe.ref ! Ping(replyTo)
       Behaviors.stopped
     }
@@ -289,13 +319,8 @@ class MessageAdapterSpec
 
     createTestProbe().expectTerminated(ref)
 
-    LoggingTestKit.empty
-      .withLogLevel(Level.INFO)
-      .withMessageRegex("Pong.*wrapped in.*AdaptMessage.*dead letters encountered")
-      .expect {
-        pingProbe.receiveMessage().sender ! Pong("hi")
-      }
-
+    pingProbe.receiveMessage().sender ! Pong("hi")
+    assertDeadLetter(deadLetterProbe, Pong("hi"))
   }
 
 }

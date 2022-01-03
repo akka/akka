@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.io.japi;
@@ -27,6 +27,9 @@ import akka.util.ByteString;
 // #imports
 
 import akka.testkit.AkkaSpec;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class IODocTest extends AbstractJavaTest {
 
@@ -186,12 +189,12 @@ public class IODocTest extends AbstractJavaTest {
 
         final Connected c1 = expectMsgClass(Connected.class);
         final Connected c2 = expectMsgClass(Connected.class);
-        assert c1.localAddress().equals(c2.remoteAddress());
-        assert c2.localAddress().equals(c1.remoteAddress());
+        assertTrue(c1.localAddress().equals(c2.remoteAddress()));
+        assertTrue(c2.localAddress().equals(c1.remoteAddress()));
 
         client.tell(ByteString.fromString("hello"), getRef());
         final ByteString reply = expectMsgClass(ByteString.class);
-        assert reply.utf8String().equals("hello");
+        assertEquals("hello", reply.utf8String());
 
         watch(client);
         client.tell("close", getRef());

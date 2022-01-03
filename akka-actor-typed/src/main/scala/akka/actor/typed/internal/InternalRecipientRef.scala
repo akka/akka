@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
@@ -22,5 +22,7 @@ import akka.annotation.InternalApi
    * @return `true` if the actor is locally known to be terminated, `false` if alive or uncertain.
    */
   def isTerminated: Boolean
+
+  def refPrefix: String = toString
 
 }

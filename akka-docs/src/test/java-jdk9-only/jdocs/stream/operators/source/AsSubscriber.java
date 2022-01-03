@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.operators.source;
@@ -17,6 +17,8 @@ import akka.stream.javadsl.JavaFlowSupport;
 import org.apache.commons.lang.NotImplementedException;
 
 public interface AsSubscriber {
+    // We are 'faking' the JavaFlowSupport API here so we can include the signature as a snippet in the API,
+    // because we're not publishing those (jdk9+) classes in our API docs yet.
     static class JavaFlowSupport {
         public static final class Source {
             public

@@ -3,7 +3,7 @@ project.description: Append only event logs, snapshots and recovery with Akka ev
 ---
 # Snapshotting
 
-For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Akka Persistence](../persistence.md).
 
 ## Snapshots
 
@@ -71,6 +71,20 @@ started, `RecoveryFailed` signal is emitted (logging the error by default), and 
 Note that failure to load snapshot is also treated like this, but you can disable loading of snapshots
 if you for example know that serialization format has changed in an incompatible way.
 
+### Optional snapshots
+
+By default, the persistent actor will unconditionally be stopped if the snapshot can't be loaded in the recovery.
+It is possible to make snapshot loading optional. This can be useful when it is alright to ignore snapshot in case
+of for example deserialization errors. When snapshot loading fails it will instead recover by replaying all events.
+
+Enable this feature by setting `snapshot-is-optional = true` in the snapshot store configuration.
+
+@@@ warning
+
+Don't set `snapshot-is-optional = true` if events have been deleted because that would result in wrong recovered state if snapshot load fails.
+
+@@@
+
 ## Snapshot deletion
 
 To free up space, an event sourced actor can automatically delete older snapshots based on the given `RetentionCriteria`.
@@ -103,9 +117,9 @@ Java
 
 ## Event deletion
 
-Deleting events in event sourcing based applications is typically either not used at all, or used in conjunction with snapshotting.
+Deleting events in Event Sourcing based applications is typically either not used at all, or used in conjunction with snapshotting.
 By deleting events you will lose the history of how the system changed before it reached current state, which is
-one of the main reasons for using event sourcing in the first place.
+one of the main reasons for using Event Sourcing in the first place.
 
 If snapshot-based retention is enabled, after a snapshot has been successfully stored, a delete of the events
 (journaled by a single event sourced actor) up until the sequence number of the data held by that snapshot can be issued.

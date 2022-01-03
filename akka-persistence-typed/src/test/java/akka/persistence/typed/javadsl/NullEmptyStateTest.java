@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl;
@@ -90,6 +90,8 @@ public class NullEmptyStateTest extends JUnitSuite {
     ActorRef<String> ref1 = testKit.spawn(b);
     probe.expectMessage("onRecoveryCompleted:null");
     ref1.tell("stop");
+    // wait till ref1 stops
+    probe.expectTerminated(ref1);
 
     ActorRef<String> ref2 = testKit.spawn(b);
     probe.expectMessage("onRecoveryCompleted:null");
@@ -99,6 +101,8 @@ public class NullEmptyStateTest extends JUnitSuite {
     probe.expectMessage("eventHandler:one:two");
 
     ref2.tell("stop");
+    // wait till ref2 stops
+    probe.expectTerminated(ref2);
     ActorRef<String> ref3 = testKit.spawn(b);
     // eventHandler from reply
     probe.expectMessage("eventHandler:null:one");

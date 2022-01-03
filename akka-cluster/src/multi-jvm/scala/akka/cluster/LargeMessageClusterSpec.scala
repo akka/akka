@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.concurrent.duration._
-
+import com.typesafe.config.ConfigFactory
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
@@ -15,11 +15,11 @@ import akka.remote.RARP
 import akka.remote.artery.ArterySettings
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
 import akka.util.unused
-import com.typesafe.config.ConfigFactory
+
+import java.io.NotSerializableException
 
 object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -71,6 +71,7 @@ object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
         // simulate slow serialization to not completely overload the machine/network, see issue #24576
         Thread.sleep(100)
         payload
+      case _ => throw new NotSerializableException()
     }
     override def fromBinary(bytes: Array[Byte], manifest: String) = {
       Slow(bytes)
@@ -84,8 +85,7 @@ class LargeMessageClusterMultiJvmNode2 extends LargeMessageClusterSpec
 class LargeMessageClusterMultiJvmNode3 extends LargeMessageClusterSpec
 
 abstract class LargeMessageClusterSpec
-    extends MultiNodeSpec(LargeMessageClusterMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(LargeMessageClusterMultiJvmSpec)
     with ImplicitSender {
   import LargeMessageClusterMultiJvmSpec._
 

@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.streamref
+
+import scala.concurrent.duration.FiniteDuration
 
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.StreamRefSettings
 
-import scala.concurrent.duration.FiniteDuration
-
 /** INTERNAL API */
 @InternalApi
-private[akka] final case class StreamRefSettingsImpl private (
+private[akka] final case class StreamRefSettingsImpl(
     override val bufferCapacity: Int,
     override val demandRedeliveryInterval: FiniteDuration,
     override val subscriptionTimeout: FiniteDuration,

@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
 import java.io.InputStream
 
+import org.reactivestreams.Publisher
+
 import akka.stream.ActorAttributes
 import akka.stream.scaladsl.{ Sink, StreamConverters }
 import akka.util.ByteString
-import org.reactivestreams.Publisher
 
 class InputStreamSourceTest extends AkkaPublisherVerification[ByteString] {
 

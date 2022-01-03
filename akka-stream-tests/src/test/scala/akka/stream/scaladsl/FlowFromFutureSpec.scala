@@ -1,19 +1,20 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-@silent("deprecated") // testing deprecated API
+import scala.annotation.nowarn
+
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+
+@nowarn("msg=deprecated") // testing deprecated API
 class FlowFromFutureSpec extends StreamSpec {
 
   "A Flow based on a Future" must {

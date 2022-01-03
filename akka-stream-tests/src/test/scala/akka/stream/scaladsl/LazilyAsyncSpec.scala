@@ -1,22 +1,23 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.Done
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestSubscriber
-import akka.testkit.DefaultTimeout
-import com.github.ghik.silencer.silent
-import org.scalatest.concurrent.ScalaFutures
-
 import scala.concurrent.Future
 
-@silent("deprecated") // tests deprecated methods
+import scala.annotation.nowarn
+import org.scalatest.concurrent.ScalaFutures
+
+import akka.Done
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.DefaultTimeout
+
+@nowarn("msg=deprecated") // tests deprecated methods
 class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import system.dispatcher

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.stream.typed;
@@ -7,7 +7,7 @@ package docs.akka.stream.typed;
 // #actor-sink-ref-with-backpressure
 import akka.NotUsed;
 import akka.actor.typed.ActorRef;
-import akka.stream.ActorMaterializer;
+import akka.actor.typed.ActorSystem;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.typed.javadsl.ActorSink;
@@ -17,7 +17,9 @@ public class ActorSinkWithAckExample {
 
   // #actor-sink-ref-with-backpressure
 
-  class Ack {}
+  enum Ack {
+    INSTANCE;
+  }
 
   interface Protocol {}
 
@@ -50,18 +52,26 @@ public class ActorSinkWithAckExample {
   }
   // #actor-sink-ref-with-backpressure
 
-  final ActorMaterializer mat = null;
+  final ActorSystem<Void> system = null;
 
   {
     // #actor-sink-ref-with-backpressure
 
-    final ActorRef<Protocol> actor = null;
+    final ActorRef<Protocol> actorRef = // spawned actor
+        null; // #hidden
+
+    final Complete completeMessage = new Complete();
 
     final Sink<String, NotUsed> sink =
         ActorSink.actorRefWithBackpressure(
-            actor, Message::new, Init::new, new Ack(), new Complete(), Fail::new);
+            actorRef,
+            (responseActorRef, element) -> new Message(responseActorRef, element),
+            (responseActorRef) -> new Init(responseActorRef),
+            Ack.INSTANCE,
+            completeMessage,
+            (exception) -> new Fail(exception));
 
-    Source.single("msg1").runWith(sink, mat);
+    Source.single("msg1").runWith(sink, system);
     // #actor-sink-ref-with-backpressure
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -125,12 +125,12 @@ private[remote] class OutboundHandshake(
         handshakeState match {
           case Completed =>
             pendingMessage match {
-              case OptionVal.None =>
-                if (!hasBeenPulled(in))
-                  pull(in)
               case OptionVal.Some(p) =>
                 push(out, p)
                 pendingMessage = OptionVal.None
+              case _ =>
+                if (!hasBeenPulled(in))
+                  pull(in)
             }
 
           case Start =>
@@ -207,6 +207,8 @@ private[remote] class OutboundHandshake(
             failStage(
               new HandshakeTimeoutException(
                 s"Handshake with [${outboundContext.remoteAddress}] did not complete within ${timeout.toMillis} ms"))
+          case unknown =>
+            throw new IllegalArgumentException(s"Unknown timer key: $unknown")
         }
 
       setHandlers(in, out, this)
@@ -295,7 +297,7 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             // periodically.
             thenInside()
           case None =>
-            first.onComplete(_ => runInStage.invoke(thenInside))(ExecutionContexts.sameThreadExecutionContext)
+            first.onComplete(_ => runInStage.invoke(thenInside))(ExecutionContexts.parasitic)
         }
 
       }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -7,12 +7,11 @@ package akka.routing
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-import akka.AkkaException
-
 import scala.collection.immutable
 
 import com.typesafe.config.Config
 
+import akka.AkkaException
 import akka.actor.Actor
 import akka.actor.ActorCell
 import akka.actor.ActorInitializationException

@@ -1,13 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.client
 
-import language.postfixOps
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.{
   Actor,
   ActorPath,
@@ -21,18 +24,15 @@ import akka.actor.{
 import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientSpec.TestClientListener.LatestContactPoints
 import akka.cluster.client.ClusterClientSpec.TestReceptionistListener.LatestClusterClients
+import akka.cluster.pubsub._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.testkit._
-import akka.cluster.pubsub._
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.testkit._
 import akka.util.Timeout
 import akka.util.unused
-import scala.concurrent.Await
-
-import com.github.ghik.silencer.silent
 
 object ClusterClientSpec extends MultiNodeConfig {
   val client = role("client")
@@ -163,7 +163,7 @@ class ClusterClientMultiJvmNode3 extends ClusterClientSpec
 class ClusterClientMultiJvmNode4 extends ClusterClientSpec
 class ClusterClientMultiJvmNode5 extends ClusterClientSpec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNodeSpec with ImplicitSender {
   import ClusterClientSpec._
 
@@ -182,7 +182,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
       DistributedPubSub(system).mediator ! DistributedPubSubMediator.Count
-      expectMsgType[Int] should ===(expected)
+      val actual = expectMsgType[Int]
+      actual should ===(expected)
     }
   }
 
@@ -247,7 +248,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val c = system.actorOf(
           ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
           "ask-client")
-        implicit val timeout = Timeout(remaining)
+        implicit val timeout: Timeout = Timeout(remaining)
         val reply = c ? ClusterClient.Send("/user/testService", "hello-request", localAffinity = true)
         Await.result(reply.mapTo[Reply], remaining).msg should be("hello-request-ack")
         system.stop(c)
@@ -266,12 +267,12 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       //#server
       runOn(host1) {
-        val serviceA = system.actorOf(Props[Service], "serviceA")
+        val serviceA = system.actorOf(Props[Service](), "serviceA")
         ClusterClientReceptionist(system).registerService(serviceA)
       }
 
       runOn(host2, host3) {
-        val serviceB = system.actorOf(Props[Service], "serviceB")
+        val serviceB = system.actorOf(Props[Service](), "serviceB")
         ClusterClientReceptionist(system).registerService(serviceB)
       }
       //#server
@@ -303,7 +304,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "report events" in within(15 seconds) {
       runOn(client) {
-        implicit val timeout = Timeout(1.second.dilated)
+        implicit val timeout: Timeout = Timeout(1.second.dilated)
         val client = Await.result(system.actorSelection("/user/client").resolveOne(), timeout.duration)
         val listener = system.actorOf(Props(classOf[TestClientListener], client), "reporter-client-listener")
 
@@ -319,7 +320,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       runOn(first, second, third) {
         // Only run this test on a node that knows about our client. It could be that no node knows
         // but there isn't a means of expressing that at least one of the nodes needs to pass the test.
-        implicit val timeout = Timeout(2.seconds.dilated)
+        implicit val timeout: Timeout = Timeout(2.seconds.dilated)
         val r = ClusterClientReceptionist(system).underlying
         r ! GetClusterClients
         val cps = expectMsgType[ClusterClients]

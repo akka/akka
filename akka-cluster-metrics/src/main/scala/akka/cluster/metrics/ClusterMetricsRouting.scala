@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
 import java.util.Arrays
+import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.nowarn
 import com.typesafe.config.Config
+
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -20,11 +22,10 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.cluster.Cluster
+import akka.cluster.routing.ClusterRouterSettingsBase
 import akka.dispatch.Dispatchers
 import akka.japi.Util.immutableSeq
 import akka.routing._
-import akka.cluster.routing.ClusterRouterSettingsBase
-import com.github.ghik.silencer.silent
 
 /**
  * Load balancing of messages to cluster nodes based on cluster metric data.
@@ -419,7 +420,7 @@ object MetricsSelector {
 /**
  * A MetricsSelector is responsible for producing weights from the node metrics.
  */
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID")
 @SerialVersionUID(1L)
 trait MetricsSelector extends Serializable {
 
@@ -433,7 +434,7 @@ trait MetricsSelector extends Serializable {
  * A MetricsSelector producing weights from remaining capacity.
  * The weights are typically proportional to the remaining capacity.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @SerialVersionUID(1L)
 abstract class CapacityMetricsSelector extends MetricsSelector {
 
@@ -488,6 +489,7 @@ private[metrics] class WeightedRoutees(
       val a = routee match {
         case ActorRefRoutee(ref)       => ref.path.address
         case ActorSelectionRoutee(sel) => sel.anchor.path.address
+        case _                         => throw new RuntimeException()
       }
       a match {
         case Address(_, _, None, None) => selfAddress

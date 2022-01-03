@@ -1,15 +1,14 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
-import java.util.function.{ Function => JFunction }
-
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl
+import akka.actor.typed.{ scaladsl, Behavior }
 import akka.annotation.DoNotInherit
 import akka.japi.function.Procedure
+
+import java.util.function.{ Predicate, Function => JFunction }
 
 /**
  * A non thread safe mutable message buffer that can be used to buffer messages inside actors
@@ -41,6 +40,13 @@ import akka.japi.function.Procedure
    * @return the number of elements in the message buffer
    */
   def size: Int
+
+  /**
+   * What is the capacity of this buffer.
+   *
+   * @return the capacity of this buffer
+   */
+  def capacity: Int
 
   /**
    * @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer
@@ -75,10 +81,31 @@ import akka.japi.function.Procedure
   def forEach(f: Procedure[T]): Unit
 
   /**
-   * Process all stashed messages with the `behavior` and the returned
-   * [[Behavior]] from each processed message. The `StashBuffer` will be
-   * empty after processing all messages, unless an exception is thrown
-   * or messages are stashed while unstashing.
+   * Tests whether this [[StashBuffer]] contains a given message.
+   *
+   * @param message the message to test
+   * @return true if the buffer contains the message, false otherwise.
+   */
+  def contains[U >: T](message: U): Boolean
+
+  /**
+   * Tests whether a predicate holds for at least one element of this [[StashBuffer]].
+   *
+   * @param predicate the predicate used to test
+   * @return true if the predicate holds for at least one message, false otherwise.
+   */
+  def anyMatch(predicate: Predicate[T]): Boolean
+
+  /**
+   * Removes all messages from the buffer.
+   */
+  def clear(): Unit
+
+  /**
+   * Transition to the given `behavior` and process all stashed messages.
+   * Messages will be processed in the same order they arrived.
+   * The `StashBuffer` will be empty after processing all messages,
+   * unless an exception is thrown or messages are stashed while unstashing.
    *
    * If an exception is thrown by processing a message a proceeding messages
    * and the message causing the exception have been removed from the
@@ -93,8 +120,8 @@ import akka.japi.function.Procedure
   def unstashAll(behavior: Behavior[T]): Behavior[T]
 
   /**
-   * Process `numberOfMessages` of the stashed messages with the `behavior`
-   * and the returned [[Behavior]] from each processed message.
+   * Transition to the given `behavior` and process `numberOfMessages` of the stashed messages.
+   * The messages will be processed in the same order they arrived.
    *
    * The purpose of this method, compared to `unstashAll`, is to unstash a limited
    * number of messages and then send a message to `self` before continuing unstashing

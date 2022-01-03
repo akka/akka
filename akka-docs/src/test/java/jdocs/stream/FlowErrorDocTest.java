@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream;
@@ -21,7 +21,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
-import akka.stream.Materializer;
 import akka.stream.Supervision;
 import akka.stream.ActorAttributes;
 import akka.japi.function.Function;
@@ -179,7 +178,9 @@ public class FlowErrorDocTest extends AbstractJavaTest {
             })
         .recoverWithRetries(
             1, // max attempts
-            new PFBuilder().match(RuntimeException.class, ex -> planB).build())
+            new PFBuilder<Throwable, Source<String, NotUsed>>()
+                .match(RuntimeException.class, ex -> planB)
+                .build())
         .runForeach(System.out::println, system);
     // #recoverWithRetries
 

@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import org.reactivestreams.Publisher
+
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import org.reactivestreams.Publisher
 
 class FlowZipAllSpec extends BaseTwoStreamsSetup {
   override type Outputs = (Int, Int)

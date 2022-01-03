@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorSystem
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent, TestProbe }
-
-import scala.concurrent.duration._
 
 class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-closed-for = 5s") with ImplicitSender {
 

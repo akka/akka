@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -7,6 +7,7 @@ package akka.event
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.AddressTerminated

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 syntax = "proto2";
@@ -14,6 +14,8 @@ message Get {
   required sint32 consistency = 2;
   required uint32 timeout = 3;
   optional OtherMessage request = 4;
+  optional int32 consistencyMinCap = 5;
+  optional int32 consistencyAdditional = 6;
 }
 
 message GetSuccess {

@@ -1,29 +1,28 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import scala.language.implicitConversions
 import java.util.concurrent.CompletionStage
+import java.util.regex.Pattern
 
-import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.compat.java8.FutureConverters
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 import scala.util.Success
-import java.util.regex.Pattern
 
+import scala.annotation.nowarn
+
+import akka.dispatch.ExecutionContexts
 import akka.pattern.ask
 import akka.routing.MurmurHash
 import akka.util.{ Helpers, JavaDurationConverters, Timeout }
-import akka.dispatch.ExecutionContexts
-
-import scala.compat.java8.FutureConverters
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
@@ -68,7 +67,7 @@ abstract class ActorSelection extends Serializable {
    * [[ActorRef]].
    */
   def resolveOne()(implicit timeout: Timeout): Future[ActorRef] = {
-    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    implicit val ec = ExecutionContexts.parasitic
     val p = Promise[ActorRef]()
     this.ask(Identify(None)).onComplete {
       case Success(ActorIdentity(_, Some(ref))) => p.success(ref)
@@ -210,7 +209,7 @@ object ActorSelection {
   def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
     val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.iterator
       .collect {
-        case x if !x.isEmpty =>
+        case x if x.nonEmpty =>
           if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
           else if (x == "..") SelectParent
           else SelectChildName(x)
@@ -329,7 +328,7 @@ private[akka] final case class ActorSelectionMessage(
 /**
  * INTERNAL API
  */
-@silent("@SerialVersionUID has no effect on traits")
+@nowarn("msg=@SerialVersionUID has no effect on traits")
 @SerialVersionUID(1L)
 private[akka] sealed trait SelectionPathElement
 

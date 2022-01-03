@@ -4,13 +4,11 @@ Demultiplex the incoming stream into separate output streams.
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #groupBy }
+@apidoc[Source.groupBy](Source) { scala="#groupBy[K](maxSubstreams:Int,f:Out=&gt;K):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#groupBy(int,akka.japi.function.Function,boolean)" }
+@apidoc[Flow.groupBy](Flow) { scala="#groupBy[K](maxSubstreams:Int,f:Out=&gt;K):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#groupBy(int,akka.japi.function.Function,boolean)" }
 
-@@@
 
 ## Description
 
@@ -29,6 +27,14 @@ keys of streams that have already been closed. If you expect an infinite number 
 memory issues. Elements belonging to those keys are drained directly and not send to the substream.
 
 @@@
+
+## Example
+
+Scala
+:   @@snip [GroupBy.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/GroupBy.scala) { #groupBy }
+
+Java
+:   @@snip [GroupBy.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #groupBy }
 
 ## Reactive Streams semantics
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
@@ -17,8 +17,8 @@ private[akka] object ReceiveTimeout {
 
 private[akka] trait ReceiveTimeout { this: ActorCell =>
 
-  import ReceiveTimeout._
   import ActorCell._
+  import ReceiveTimeout._
 
   private var receiveTimeoutData: (Duration, Cancellable) = emptyReceiveTimeoutData
 

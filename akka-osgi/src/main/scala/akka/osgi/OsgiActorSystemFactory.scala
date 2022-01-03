@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.osgi
 
-import akka.actor.ActorSystem
-import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.osgi.framework.BundleContext
+
+import akka.actor.ActorSystem
+import akka.util.unused
 
 /**
  * Factory class to create ActorSystem implementations in an OSGi environment.  This mainly involves dealing with

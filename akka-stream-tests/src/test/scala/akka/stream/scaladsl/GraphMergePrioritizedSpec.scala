@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
 import akka.NotUsed
-import akka.stream.testkit.TestSubscriber.ManualProbe
 import akka.stream.{ ClosedShape, Inlet, Outlet }
 import akka.stream.testkit.{ TestSubscriber, TwoStreamsSetup }
-import scala.concurrent.duration._
+import akka.stream.testkit.TestSubscriber.ManualProbe
 
 class GraphMergePrioritizedSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
@@ -144,7 +145,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       source3: Source[T, NotUsed],
       priorities: Seq[Int],
       probe: ManualProbe[T]) = {
-    RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b => (s1, s2, s3) =>
+    RunnableGraph.fromGraph(GraphDSL.createGraph(source1, source2, source3)((_, _, _)) { implicit b => (s1, s2, s3) =>
       val merge = b.add(MergePrioritized[T](priorities))
       // introduce a delay on the consuming side making it more likely that
       // the actual prioritization happens and elements does not just pass through

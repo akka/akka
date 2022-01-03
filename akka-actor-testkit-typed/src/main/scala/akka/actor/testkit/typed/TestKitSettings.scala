@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed
 
-import com.typesafe.config.Config
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-import akka.util.JavaDurationConverters._
-import akka.util.Timeout
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
+import akka.util.JavaDurationConverters._
+import akka.util.Timeout
 
 object TestKitSettings {
 
@@ -43,7 +44,7 @@ object TestKitSettings {
 
   private object Ext extends ExtensionId[Ext] {
     override def createExtension(system: ActorSystem[_]): Ext = new Ext(system)
-    def get(system: ActorSystem[_]): Ext = apply(system)
+    def get(system: ActorSystem[_]): Ext = Ext.apply(system)
   }
 
   private class Ext(system: ActorSystem[_]) extends Extension {

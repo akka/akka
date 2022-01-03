@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.{ Address, RootActorPath }
-import akka.actor.typed.ActorRef
-import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.actor.testkit.typed.internal.TestInboxImpl
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
+
+import akka.actor.{ Address, RootActorPath }
+import akka.actor.testkit.typed.internal.TestInboxImpl
+import akka.actor.typed.ActorRef
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 @ApiMayChange
 object TestInbox {

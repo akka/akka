@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal.adapter
@@ -8,6 +8,10 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContextExecutor
+
+import org.slf4j.{ Logger, LoggerFactory }
+
+import akka.{ actor => classic }
 import akka.Done
 import akka.actor
 import akka.actor.{ ActorRefProvider, Address, ExtendedActorSystem, InvalidMessageException }
@@ -29,8 +33,6 @@ import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
 import akka.actor.typed.internal.SystemMessage
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.{ actor => classic }
-import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting a classic ActorSystem to a Behavior (via the context).
@@ -51,7 +53,7 @@ import org.slf4j.{ Logger, LoggerFactory }
 
   import ActorRefAdapter.sendSystemMessage
 
-  override private[akka] def classicSystem: classic.ActorSystem = system
+  override def classicSystem: classic.ActorSystem = system
 
   // Members declared in akka.actor.typed.ActorRef
   override def tell(msg: T): Unit = {
@@ -76,12 +78,17 @@ import org.slf4j.{ Logger, LoggerFactory }
 
   // Members declared in akka.actor.typed.ActorSystem
   override def deadLetters[U]: ActorRef[U] = ActorRefAdapter(system.deadLetters)
+
+  private val cachedIgnoreRef: ActorRef[Nothing] = ActorRefAdapter(provider.ignoreRef)
+  override def ignoreRef[U]: ActorRef[U] = cachedIgnoreRef.unsafeUpcast[U]
+
   override def dispatchers: Dispatchers = new Dispatchers {
     override def lookup(selector: DispatcherSelector): ExecutionContextExecutor =
       selector match {
         case DispatcherDefault(_)         => system.dispatcher
         case DispatcherFromConfig(str, _) => system.dispatchers.lookup(str)
         case DispatcherSameAsParent(_)    => system.dispatcher
+        case unknown                      => throw new RuntimeException(s"Unsupported dispatcher selector: $unknown")
       }
     override def shutdown(): Unit = () // there was no shutdown in classic Akka
   }
@@ -97,11 +104,11 @@ import org.slf4j.{ Logger, LoggerFactory }
   override def uptime: Long = classicSystem.uptime
   override def printTree: String = system.printTree
 
-  import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+  import akka.dispatch.ExecutionContexts.parasitic
 
   override def terminate(): Unit = system.terminate()
   override lazy val whenTerminated: scala.concurrent.Future[akka.Done] =
-    system.whenTerminated.map(_ => Done)(sameThreadExecutionContext)
+    system.whenTerminated.map(_ => Done)(parasitic)
   override lazy val getWhenTerminated: CompletionStage[akka.Done] =
     FutureConverters.toJava(whenTerminated)
 
@@ -115,7 +122,10 @@ import org.slf4j.{ Logger, LoggerFactory }
     ActorRefAdapter(ref)
   }
 
+  override def refPrefix: String = "user"
+
   override def address: Address = system.provider.getDefaultAddress
+
 }
 
 private[akka] object ActorSystemAdapter {
@@ -128,7 +138,7 @@ private[akka] object ActorSystemAdapter {
 
   object AdapterExtension extends classic.ExtensionId[AdapterExtension] with classic.ExtensionIdProvider {
     override def get(system: classic.ActorSystem): AdapterExtension = super.get(system)
-    override def lookup() = AdapterExtension
+    override def lookup = AdapterExtension
     override def createExtension(system: classic.ExtendedActorSystem): AdapterExtension =
       new AdapterExtension(system)
   }
@@ -145,17 +155,10 @@ private[akka] object ActorSystemAdapter {
   }
 
   object LoadTypedExtensions extends classic.ExtensionId[LoadTypedExtensions] with classic.ExtensionIdProvider {
-    override def lookup(): actor.ExtensionId[_ <: actor.Extension] = this
+    override def lookup: actor.ExtensionId[_ <: actor.Extension] = this
     override def createExtension(system: ExtendedActorSystem): LoadTypedExtensions =
       new LoadTypedExtensions(system)
   }
 
-  def toClassic[U](sys: ActorSystem[_]): classic.ActorSystem =
-    sys match {
-      case adapter: ActorSystemAdapter[_] => adapter.classicSystem
-      case _ =>
-        throw new UnsupportedOperationException(
-          "Only adapted classic ActorSystem permissible " +
-          s"($sys of class ${sys.getClass.getName})")
-    }
+  def toClassic[U](sys: ActorSystem[_]): classic.ActorSystem = sys.classicSystem
 }

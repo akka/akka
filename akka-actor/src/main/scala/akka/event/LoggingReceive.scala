@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
 
+import scala.runtime.BoxedUnit
+
 import language.existentials
+
+import akka.actor.AbstractActor
 import akka.actor.Actor.Receive
-import akka.actor.ActorContext
 import akka.actor.ActorCell
+import akka.actor.ActorContext
 import akka.actor.DiagnosticActorLogging
 import akka.event.Logging.{ LogEvent, LogLevel }
-import akka.actor.AbstractActor
-import scala.runtime.BoxedUnit
 
 object LoggingReceive {
 

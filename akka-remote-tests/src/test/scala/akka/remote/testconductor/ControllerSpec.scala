@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testconductor
 
-import akka.testkit.AkkaSpec
-import akka.actor.{ AddressFromURIString, PoisonPill, Props }
-import akka.testkit.ImplicitSender
-import akka.remote.testconductor.Controller.NodeInfo
-import java.net.InetSocketAddress
 import java.net.InetAddress
+import java.net.InetSocketAddress
+
+import akka.actor.{ AddressFromURIString, PoisonPill, Props }
+import akka.remote.testconductor.Controller.NodeInfo
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
 
 object ControllerSpec {
   val config = """

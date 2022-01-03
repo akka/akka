@@ -1,23 +1,24 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.scaladsl
 
 import scala.concurrent.duration.FiniteDuration
 
-import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
+import org.slf4j.LoggerFactory
+
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
+import akka.cluster.{ ddata => dd }
 import akka.cluster.Cluster
 import akka.cluster.ddata.ReplicatedData
-import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.util.JavaDurationConverters._
-import org.slf4j.LoggerFactory
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)

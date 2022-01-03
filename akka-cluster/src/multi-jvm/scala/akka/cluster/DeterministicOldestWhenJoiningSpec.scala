@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import scala.concurrent.duration._
 import scala.collection.immutable
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.Address
-import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.cluster.ClusterEvent.MemberUp
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object DeterministicOldestWhenJoiningMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
@@ -35,8 +35,7 @@ class DeterministicOldestWhenJoiningMultiJvmNode2 extends DeterministicOldestWhe
 class DeterministicOldestWhenJoiningMultiJvmNode3 extends DeterministicOldestWhenJoiningSpec
 
 abstract class DeterministicOldestWhenJoiningSpec
-    extends MultiNodeSpec(DeterministicOldestWhenJoiningMultiJvmSpec)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(DeterministicOldestWhenJoiningMultiJvmSpec) {
 
   import DeterministicOldestWhenJoiningMultiJvmSpec._
 

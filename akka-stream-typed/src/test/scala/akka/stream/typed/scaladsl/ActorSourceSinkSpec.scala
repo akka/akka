@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.scaladsl
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.{ CompletionStrategy, OverflowStrategy }
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.actor.testkit.typed.scaladsl._
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActorSourceSinkSpec {
 
@@ -32,7 +33,7 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
 
       val in =
         Source
-          .queue[String](10, OverflowStrategy.dropBuffer)
+          .queue[String](10)
           .map(_ + "!")
           .to(ActorSink.actorRef(p.ref, "DONE", ex => "FAILED: " + ex.getMessage))
           .run()
@@ -64,8 +65,45 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
 
       val in =
         Source
-          .queue[String](10, OverflowStrategy.dropBuffer)
+          .queue[String](10)
           .to(ActorSink.actorRefWithBackpressure(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ => Failed))
+          .run()
+
+      p.expectMessageType[Init]
+
+      in.offer("Dabu!")
+      p.expectMessageType[Msg].msg shouldBe "Dabu!"
+
+      in.offer("Lok'tar!")
+      p.expectMessageType[Msg].msg shouldBe "Lok'tar!"
+
+      in.offer("Swobu!")
+      p.expectMessageType[Msg].msg shouldBe "Swobu!"
+    }
+
+    "obey protocol without specific ack message" in {
+      val p = TestProbe[AckProto]()
+
+      val autoPilot = Behaviors.receiveMessage[AckProto] {
+        case m @ Init(sender) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m @ Msg(sender, _) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m =>
+          p.ref ! m
+          Behaviors.same
+      }
+
+      val pilotRef: ActorRef[AckProto] = spawn(autoPilot)
+
+      val in =
+        Source
+          .queue[String](10)
+          .to(ActorSink.actorRefWithBackpressure(pilotRef, Msg.apply, Init.apply, Complete, _ => Failed))
           .run()
 
       p.expectMessageType[Init]

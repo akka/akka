@@ -1,19 +1,21 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dispatch
 
-import language.postfixOps
-
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.testkit.AkkaSpec
-import akka.actor.{ Actor, Props }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.DefaultTimeout
+
+import language.postfixOps
+
+import akka.actor.{ Actor, Props }
 import akka.pattern.ask
+import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 
 object DispatcherActorSpec {
   val config = """
@@ -59,14 +61,14 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
   "A Dispatcher and an Actor" must {
 
     "support tell" in {
-      val actor = system.actorOf(Props[OneWayTestActor].withDispatcher("test-dispatcher"))
+      val actor = system.actorOf(Props[OneWayTestActor]().withDispatcher("test-dispatcher"))
       actor ! "OneWay"
       assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
       system.stop(actor)
     }
 
     "support ask/reply" in {
-      val actor = system.actorOf(Props[TestActor].withDispatcher("test-dispatcher"))
+      val actor = system.actorOf(Props[TestActor]().withDispatcher("test-dispatcher"))
       assert("World" === Await.result(actor ? "Hello", timeout.duration))
       system.stop(actor)
     }

@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic
 
-import akka.remote.RemoteSettings
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-@silent("deprecated")
+import akka.remote.RemoteSettings
+
+@nowarn("msg=deprecated")
 class RemoteSettingsSpec extends AnyWordSpec with Matchers {
 
   "Remote settings" must {

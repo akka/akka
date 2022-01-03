@@ -1,30 +1,31 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.protobuf
 
 import java.util.Base64
 
-import akka.actor.ActorIdentity
-import akka.actor.ActorRef
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.ActorIdentity
+import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
-import akka.cluster.ddata._
-import akka.cluster.ddata.Replicator.Internal._
-import akka.testkit.TestKit
-import akka.cluster.UniqueAddress
-import akka.remote.RARP
-import com.typesafe.config.ConfigFactory
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.Cluster
+import akka.cluster.UniqueAddress
+import akka.cluster.ddata._
+import akka.cluster.ddata.Replicator.Internal._
+import akka.remote.RARP
 import akka.testkit.TestActors
+import akka.testkit.TestKit
 
 class ReplicatedDataSerializerSpec
     extends TestKit(
@@ -52,7 +53,7 @@ class ReplicatedDataSerializerSpec
   val ref2 = system.actorOf(Props.empty, "ref2")
   val ref3 = system.actorOf(Props.empty, "ref3")
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     shutdown()
   }
 

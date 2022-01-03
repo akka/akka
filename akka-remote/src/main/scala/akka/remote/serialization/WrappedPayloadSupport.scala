@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.event.Logging
+import akka.protobufv3.internal.ByteString
+import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats
 import akka.serialization.{ SerializationExtension, Serializers }
-import akka.protobufv3.internal.ByteString
 import akka.serialization.DisabledJavaSerializer
 
 /**
@@ -17,7 +18,7 @@ import akka.serialization.DisabledJavaSerializer
 private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
 
   private lazy val serialization = SerializationExtension(system)
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[WrappedPayloadSupport])
 
   /**
    * Serialize the `input` along with its `manifest` and `serializerId`.
@@ -41,14 +42,14 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
           notSerializableException.originalMessage)
         val serializer2 = serialization.findSerializerFor(notSerializableException)
         builder
-          .setEnclosedMessage(ByteString.copyFrom(serializer2.toBinary(notSerializableException)))
+          .setEnclosedMessage(ByteStringUtils.toProtoByteStringUnsafe(serializer2.toBinary(notSerializableException)))
           .setSerializerId(serializer2.identifier)
         val manifest = Serializers.manifestFor(serializer2, notSerializableException)
         if (manifest.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
 
       case _ =>
         builder
-          .setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(payload)))
+          .setEnclosedMessage(ByteStringUtils.toProtoByteStringUnsafe(serializer.toBinary(payload)))
           .setSerializerId(serializer.identifier)
         val manifest = Serializers.manifestFor(serializer, payload)
         if (manifest.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(manifest))

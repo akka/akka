@@ -1,0 +1,2 @@
+# removed private auxiliary constructor
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.ByteString#ByteString1.this")

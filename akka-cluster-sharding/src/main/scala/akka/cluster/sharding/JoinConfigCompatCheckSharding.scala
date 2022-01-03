@@ -1,13 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
+import scala.collection.{ immutable => im }
+
+import com.typesafe.config.Config
+
 import akka.annotation.InternalApi
 import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker }
-import com.typesafe.config.Config
-import scala.collection.{ immutable => im }
 
 /**
  * INTERNAL API

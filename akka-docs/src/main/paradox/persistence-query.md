@@ -8,9 +8,12 @@ project.description: Query side to Akka Persistence allowing for building CQRS a
 To use Persistence Query, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-persistence-query_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-persistence-query_$scala.binary.version$
+  version=AkkaVersion
 }
 
 This will also add dependency on the @ref[Akka Persistence](persistence.md) module.
@@ -27,10 +30,11 @@ side of an application, however it can help to migrate data from the write side 
 simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
 recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
 
+For a similar implementation of query interface to @ref:[Durable State Behaviors](typed/durable-state/persistence.md)
+please refer to @ref:[Persistence Query using Durable State](durable-state/persistence-query.md).
 
-The [CQRS with Akka 2.6 video](https://akka.io/blog/news/2020/02/05/akka-cqrs-video) is a good starting point for
-learning how to use `eventsByTag` to implement CQRS with Akka. Also, watch the introduction to 
-[Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video).
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) explains how to
+implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
 
 ## Design overview
 
@@ -165,6 +169,13 @@ that is able to order events by insertion time it could treat the Long as a time
 
 If your usage does not require a live stream, you can use the `currentEventsByTag` query.
 
+#### EventsBySlice and CurrentEventsBySlice
+
+Query events for given entity type and slices. A slice is deterministically defined based on the persistence id.
+The purpose is to evenly distribute all persistence ids over the slices.
+
+See @apidoc[akka.persistence.query.typed.*.EventsBySliceQuery] and @apidoc[akka.persistence.query.typed.*.CurrentEventsBySliceQuery]. 
+
 ### Materialized values of queries
 
 Journals are able to provide additional information related to a query by exposing @ref:[Materialized values](stream/stream-quickstart.md#materialized-values-quick),
@@ -197,7 +208,7 @@ Java
 
 ## Performance and denormalization
 
-When building systems using @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts) and CQRS ([Command & Query Responsibility Segregation](https://msdn.microsoft.com/en-us/library/jj554200.aspx)) techniques
+When building systems using @ref:[Event Sourcing](typed/persistence.md#event-sourcing-concepts) and CQRS ([Command & Query Responsibility Segregation](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj554200%28v=pandp.10%29)) techniques
 it is tremendously important to realise that the write-side has completely different needs from the read-side,
 and separating those concerns into datastores that are optimised for either side makes it possible to offer the best
 experience for the write and read sides independently.
@@ -221,7 +232,7 @@ it may be more efficient or interesting to query it (instead of the source event
 
 ### Materialize view to Reactive Streams compatible datastore
 
-If the read datastore exposes a [Reactive Streams](http://reactive-streams.org) interface then implementing a simple projection
+If the read datastore exposes a [Reactive Streams](https://www.reactive-streams.org) interface then implementing a simple projection
 is as simple as, using the read-journal and feeding it into the databases driver interface, for example like so:
 
 Scala
@@ -253,34 +264,17 @@ Java
 
 ### Resumable projections
 
-Sometimes you may need to implement "resumable" projections, that will not start from the beginning of time each time
-when run. In this case you will need to store the sequence number (or `offset`) of the processed event and use it
-the next time this projection is started. This pattern is not built-in, however is rather simple to implement yourself.
+Sometimes you may need to use "resumable" projections, which will not start from the beginning of time each time
+when run. In such case, the sequence number (or `offset`) of the processed event will be stored and
+used the next time this projection is started. This pattern is implemented in the
+[Akka Projections](https://doc.akka.io/docs/akka-projection/current/) module.
 
-The example below additionally highlights how you would use Actors to implement the write side, in case
-you need to do some complex logic that would be best handled inside an Actor before persisting the event
-into the other datastore:
-
-Scala
-:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor-run }
-
-Java
-:  @@snip [ResumableProjectionExample.java](/akka-docs/src/test/java/jdocs/persistence/ResumableProjectionExample.java) { #projection-into-different-store-actor-run }
-
-
-Scala
-:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor }
-
-Java
-:  @@snip [ResumableProjectionExample.java](/akka-docs/src/test/java/jdocs/persistence/ResumableProjectionExample.java) { #projection-into-different-store-actor }
 
 <a id="read-journal-plugin-api"></a>
 ## Query plugins
 
 Query plugins are various (mostly community driven) `ReadJournal` implementations for all kinds
 of available datastores. The complete list of available plugins is maintained on the Akka Persistence Query [Community Plugins](https://akka.io/community/#plugins-to-akka-persistence-query) page.
-
-The plugin for LevelDB is described in @ref:[Persistence Query for LevelDB](persistence-query-leveldb.md).
 
 This section aims to provide tips and guide plugin developers through implementing a custom query plugin.
 Most users will not need to implement journals themselves, except if targeting a not yet supported datastore.
@@ -342,23 +336,8 @@ resilience is important so that if a node crashes the persistent queries are qui
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) together with event tagging is an excellent fit to 
 shard events over a cluster.
 
-The [Lagom framework](https://www.lagomframework.com), which is built on top of Akka encodes many of the best practices
-around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
-@scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
-@java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
-@scala[[Persistent Entity](https://www.lagomframework.com/documentation/current/scala/PersistentEntity.html)] in the Lagom documentation.
-
-
-### Plugin TCK
-
-TODO, not available yet.
-
 ## Example project
 
-@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
-@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
-is an example project that can be downloaded, and with instructions of how to run.
-
-This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
-The events are tagged to be consumed by even processors to build other representations
-from the events, or publish the events to other services.
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) explains how to
+use Event Sourcing and Projections together. The events are tagged to be consumed by even processors to build
+other representations from the events, or publish the events to other services.

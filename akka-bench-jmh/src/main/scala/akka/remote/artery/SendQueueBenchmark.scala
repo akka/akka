@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -8,17 +8,18 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
+import org.openjdk.jmh.annotations._
+
 import akka.actor.ActorSystem
 import akka.stream.KillSwitches
 import akka.stream.OverflowStrategy
 import akka.stream.SystemMaterializer
 import akka.stream.scaladsl._
-import com.typesafe.config.ConfigFactory
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -31,7 +32,7 @@ class SendQueueBenchmark {
   val config = ConfigFactory.parseString("""
     """)
 
-  implicit val system = ActorSystem("SendQueueBenchmark", config)
+  implicit val system: ActorSystem = ActorSystem("SendQueueBenchmark", config)
 
   @Setup
   def setup(): Unit = {
@@ -52,7 +53,7 @@ class SendQueueBenchmark {
     val N = 100000
     val burstSize = 1000
 
-    val source = Source.queue[Int](1024, OverflowStrategy.dropBuffer)
+    val source = Source.queue[Int](1024)
 
     val (queue, killSwitch) = source
       .viaMat(KillSwitches.single)(Keep.both)

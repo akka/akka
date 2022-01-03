@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import language.postfixOps
-import akka.testkit.{ filterEvents, EventFilter }
-
-import scala.concurrent.Await
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.testkit.AkkaSpec
-import akka.testkit.DefaultTimeout
-import akka.pattern.ask
-import com.github.ghik.silencer.silent
-
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+import language.postfixOps
+
+import akka.pattern.ask
+import akka.testkit.{ filterEvents, EventFilter }
+import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 
 object SupervisorMiscSpec {
   val config = """
@@ -29,7 +29,7 @@ object SupervisorMiscSpec {
     """
 }
 
-@silent
+@nowarn
 class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with DefaultTimeout {
 
   "A Supervisor" must {

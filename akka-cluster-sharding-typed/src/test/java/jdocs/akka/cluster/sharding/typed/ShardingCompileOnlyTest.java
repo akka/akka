@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.cluster.sharding.typed;
@@ -23,6 +23,17 @@ import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.persistence.typed.PersistenceId;
 
 // #import
+
+// #get-shard-region-state
+import akka.cluster.sharding.typed.GetShardRegionState;
+import akka.cluster.sharding.ShardRegion.CurrentShardRegionState;
+
+// #get-shard-region-state
+// #get-cluster-sharding-stats
+import akka.cluster.sharding.typed.GetClusterShardingStats;
+import akka.cluster.sharding.ShardRegion.ClusterShardingStats;
+
+// #get-cluster-sharding-stats
 
 import jdocs.akka.persistence.typed.BlogPostEntity;
 
@@ -247,5 +258,32 @@ interface ShardingCompileOnlyTest {
     EntityRef<Counter.Command> entityRef =
         ClusterSharding.get(system).entityRefFor(typeKey, entityId, "dc2");
     // #proxy-dc-entityref
+  }
+
+  public static void shardRegionQqueryExample() {
+    ActorSystem system = ActorSystem.create(Behaviors.empty(), "ShardingExample");
+    ActorRef<CurrentShardRegionState> replyMessageAdapter = null;
+    EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
+
+    // #get-shard-region-state
+    ActorRef<CurrentShardRegionState> replyTo = replyMessageAdapter;
+
+    ClusterSharding.get(system).shardState().tell(new GetShardRegionState(typeKey, replyTo));
+    // #get-shard-region-state
+  }
+
+  public static void shardingStatsQqueryExample() {
+    ActorSystem system = ActorSystem.create(Behaviors.empty(), "ShardingExample");
+    ActorRef<ClusterShardingStats> replyMessageAdapter = null;
+    EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
+
+    // #get-cluster-sharding-stats
+    ActorRef<ClusterShardingStats> replyTo = replyMessageAdapter;
+    Duration timeout = Duration.ofSeconds(5);
+
+    ClusterSharding.get(system)
+        .shardState()
+        .tell(new GetClusterShardingStats(typeKey, timeout, replyTo));
+    // #get-cluster-sharding-stats
   }
 }

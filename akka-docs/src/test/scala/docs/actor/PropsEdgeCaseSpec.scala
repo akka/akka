@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor
@@ -38,7 +38,7 @@ class PropsEdgeCaseSpec extends AnyWordSpec with CompileOnlySpec {
         case x: Int => sender() ! (x * b)
       }
     }
-    val defaultValueProp2 = Props[DefaultValueActor2] // Unsupported
+    val defaultValueProp2 = Props[DefaultValueActor2]() // Unsupported
     val defaultValueProp3 = Props(classOf[DefaultValueActor2]) // Unsupported
     //#props-edge-cases-default-values
   }

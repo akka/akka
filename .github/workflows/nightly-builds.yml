@@ -1,0 +1,200 @@
+name: Nightly Builds
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+
+  akka-cluster-metrics-sigar:
+    name: Akka Cluster Metrics Test with Sigar
+    runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: sbt akka-cluster-metrics/test
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+            -Djava.security.egd=file:/dev/./urandom \
+            -Dakka.test.sigar=true \
+            -Dakka.cluster.assert=on \
+            -Dakka.test.timefactor=2 \
+            -Dakka.actor.testkit.typed.timefactor=2 \
+            -Dakka.test.tags.exclude=gh-exclude \
+            -Dakka.log.timestamps=true \
+            -Dmultinode.XX:MetaspaceSize=128M \
+            -Dmultinode.Xms256M \
+            -Dmultinode.Xmx256M \
+            -Dmultinode.Xlog:gc \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
+            clean akka-cluster-metrics/test
+
+      - name: Test Reports
+        # Makes it easier to spot failures instead of looking at the logs.
+        if: ${{ failure() }}
+        uses: marcospereira/action-surefire-report@v1
+        with:
+          report_paths: '**/target/test-reports/TEST-*.xml'
+          fail_if_no_tests: false
+          skip_publishing: true
+
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
+          to: akka.official@gmail.com
+          from: Akka CI (GHActions)
+          body: |
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+
+  akka-classic-remoting-tests:
+    name: Akka Classic Remoting Tests
+    runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
+    strategy:
+      fail-fast: false
+      matrix:
+        command:
+          - akka-cluster/test akka-distributed-data/test akka-cluster-tools/test akka-cluster-metrics/test
+          - akka-cluster-sharding/test
+          - akka-cluster-typed/test akka-cluster-sharding-typed/test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: sbt ${{ matrix.command }}
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Djava.security.egd=file:/dev/./urandom \
+          -Dakka.remote.artery.enabled=off \
+          -Dakka.test.timefactor=2 \
+          -Dakka.actor.testkit.typed.timefactor=2 \
+          -Dakka.test.tags.exclude=gh-exclude \
+          -Dakka.cluster.assert=on \
+          -Dakka.test.names.exclude=akka.cluster.Stress \
+          -Dmultinode.XX:MetaspaceSize=128M \
+          -Dmultinode.Xms256M \
+          -Dmultinode.Xmx256M \
+          -Dmultinode.Xlog:gc \
+          -Dmultinode.XX:+AlwaysActAsServerClassMachine \
+          clean ${{ matrix.command }}
+
+  jdk-nightly-build:
+    name: JDK ${{ matrix.jdkVersion }} / Scala ${{ matrix.scalaVersion }}
+    runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
+    strategy:
+      fail-fast: false
+      matrix:
+        # No need to specify the full Scala version. Only the Scala
+        # binary version is required and Akka build will set the right
+        # full version from it.
+        scalaVersion: ["2.12", "2.13"]
+        jdkVersion: ["adopt@1.8.0", "adopt@1.11"]
+        include:
+          - jdkVersion: adopt@1.8.0
+            extraOpts: "-Dmultinode.XX:+PrintGCDetails -Dmultinode.XX:+PrintGCTimeStamps"
+          - jdkVersion: adopt@1.11
+            extraOpts: "-Dmultinode.Xlog:gc"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ matrix.jdkVersion }}
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: ${{ matrix.jdkVersion }}
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Compile and Test
+        # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+            -Dakka.cluster.assert=on \
+            -Dakka.log.timestamps=true \
+            -Dakka.test.timefactor=2 \
+            -Dakka.actor.testkit.typed.timefactor=2 \
+            -Dakka.test.tags.exclude=gh-exclude \
+            -Dakka.test.multi-in-test=false \
+            -Dmultinode.XX:MetaspaceSize=128M \
+            -Dmultinode.Xms256M \
+            -Dmultinode.Xmx256M \
+            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
+            ${{ matrix.extraOpts }} \
+            clean "+~ ${{ matrix.scalaVersion }} test" checkTestsHaveRun
+
+      - name: Test Reports
+        # Makes it easier to spot failures instead of looking at the logs.
+        if: ${{ failure() }}
+        uses: marcospereira/action-surefire-report@v1
+        with:
+          report_paths: '**/target/test-reports/TEST-*.xml'
+          fail_if_no_tests: false
+          skip_publishing: true
+
+      - name: Docs
+        # Docs generation requires JDK 11. Checks with `startsWith` helps
+        # the check to be more resilient if the JDK version changes to a
+        # more specific one such as adopt@1.11.0-9.
+        if: ${{ startsWith(matrix.jdkVersion, 'adopt@1.11') }}
+        run: |-
+          sudo apt-get install graphviz
+          sbt -jvm-opts .jvmopts-ci \
+            -Dakka.genjavadoc.enabled=true \
+            "+~ ${{ matrix.scalaVersion }} doc"
+
+      - name: Publish
+        run: |-
+          sudo apt-get install graphviz
+          sbt -jvm-opts .jvmopts-ci \
+            -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
+            "+~ ${{ matrix.scalaVersion }} publishLocal publishM2"
+
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
+          to: akka.official@gmail.com
+          from: Akka CI (GHActions)
+          body: |
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}

@@ -1,28 +1,29 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
 
-import akka.testkit._
-
-import scala.util.control.NoStackTrace
-import scala.concurrent.duration._
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.actor._
 import java.nio.charset.StandardCharsets
-import java.util.{ Calendar, Date, GregorianCalendar, TimeZone }
-
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers
-import akka.serialization.SerializationExtension
-import akka.event.Logging._
-import akka.util.Helpers
-import akka.event.Logging.InitializeLogger
-import akka.event.Logging.Warning
 import java.text.SimpleDateFormat
 import java.time.{ LocalDateTime, ZoneOffset }
+import java.util.{ Calendar, Date, GregorianCalendar, TimeZone }
 import java.util.concurrent.TimeUnit
+
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor._
+import akka.event.Logging._
+import akka.event.Logging.InitializeLogger
+import akka.event.Logging.Warning
+import akka.serialization.SerializationExtension
+import akka.testkit._
+import akka.util.Helpers
 
 object LoggerSpec {
 
@@ -154,7 +155,7 @@ class LoggerSpec extends AnyWordSpec with Matchers {
         system.log.error("Danger! Danger!")
         // since logging is asynchronous ensure that it propagates
         if (shouldLog) {
-          probe.fishForMessage(0.5.seconds.dilated) {
+          probe.fishForMessage() {
             case "Danger! Danger!" => true
             case _                 => false
           }
@@ -235,7 +236,7 @@ class LoggerSpec extends AnyWordSpec with Matchers {
         system.eventStream.publish(SetTarget(probe.ref, qualifier = 1))
         probe.expectMsg("OK")
 
-        val ref = system.actorOf(Props[ActorWithMDC])
+        val ref = system.actorOf(Props[ActorWithMDC]())
 
         ref ! "Processing new Request"
         probe.expectMsgPF(max = 3.seconds) {

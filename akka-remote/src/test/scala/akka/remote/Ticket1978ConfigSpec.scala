@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.testkit._
 import akka.remote.transport.netty.SSLSettings
+import akka.testkit._
 
 class Ticket1978ConfigSpec extends AkkaSpec("""
     akka.remote.classic.netty.ssl.security {
@@ -23,7 +23,8 @@ class Ticket1978ConfigSpec extends AkkaSpec("""
       settings.SSLTrustStore should ===("truststore")
       settings.SSLTrustStorePassword should ===("changeme")
       settings.SSLProtocol should ===("TLSv1.2")
-      settings.SSLEnabledAlgorithms should ===(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
+      settings.SSLEnabledAlgorithms should ===(
+        Set("TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"))
       settings.SSLRandomNumberGenerator should ===("SecureRandom")
     }
   }

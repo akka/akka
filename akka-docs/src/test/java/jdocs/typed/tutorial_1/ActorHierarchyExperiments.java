@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_1;
 
+/*
+//#print-refs
+package com.example;
+
+//#print-refs
+*/
+
 import akka.actor.typed.PreRestart;
 import akka.actor.typed.SupervisorStrategy;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-
-import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.PostStop;
 
 // #print-refs
@@ -150,12 +152,12 @@ class SupervisedActor extends AbstractBehavior<String> {
   }
 
   private Behavior<String> preRestart() {
-    System.out.println("second will be restarted");
+    System.out.println("supervised will be restarted");
     return this;
   }
 
   private Behavior<String> postStop() {
-    System.out.println("second stopped");
+    System.out.println("supervised stopped");
     return this;
   }
 }
@@ -195,25 +197,28 @@ public class ActorHierarchyExperiments {
 }
 // #print-refs
 
-class ActorHierarchyExperimentsTest extends JUnitSuite {
+class StartingActorHierarchyActors {
 
-  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
-
-  @Test
-  public void testStartAndStopActors() {
-    // #start-stop-main
-    ActorRef<String> first = testKit.spawn(StartStopActor1.create(), "first");
-    first.tell("stop");
-    // #start-stop-main
+  public void showStartAndStopActors() {
+    Behaviors.setup(
+        context -> {
+          // #start-stop-main
+          ActorRef<String> first = context.spawn(StartStopActor1.create(), "first");
+          first.tell("stop");
+          // #start-stop-main
+          return Behaviors.empty();
+        });
   }
 
-  @Test
-  public void testSuperviseActors() throws Exception {
-    // #supervise-main
-    ActorRef<String> supervisingActor =
-        testKit.spawn(SupervisingActor.create(), "supervising-actor");
-    supervisingActor.tell("failChild");
-    // #supervise-main
-    Thread.sleep(200); // allow for the println/logging to complete
+  public void showSuperviseActors() {
+    Behaviors.setup(
+        context -> {
+          // #supervise-main
+          ActorRef<String> supervisingActor =
+              context.spawn(SupervisingActor.create(), "supervising-actor");
+          supervisingActor.tell("failChild");
+          // #supervise-main
+          return Behaviors.empty();
+        });
   }
 }

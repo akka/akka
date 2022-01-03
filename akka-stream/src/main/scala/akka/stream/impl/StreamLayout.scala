@@ -1,22 +1,23 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.annotation.InternalApi
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.util.OptionVal
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
+
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -178,6 +179,8 @@ import scala.util.control.NonFatal
                 case Inert => // nothing to be done
                 case _     => pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
+            case other =>
+              throw new IllegalStateException(s"Unexpected state in VirtualProcessor: $other")
           }
         case state @ _ =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(_).onSubscribe.rec($s) spec violation")
@@ -476,6 +479,8 @@ import scala.util.control.NonFatal
 
         case _: Subscriber[_] =>
           rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
+
+        case unexpected => throw new IllegalStateException(s"Unexpected state in VirtualPublisher: $unexpected")
       }
     }
     rec() // return value is boolean only to make the expressions above compile

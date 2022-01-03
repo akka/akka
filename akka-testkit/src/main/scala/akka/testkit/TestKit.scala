@@ -1,27 +1,29 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
-import scala.language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+
 import akka.actor._
-import akka.util.{ BoxedType, Timeout }
-import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
+import akka.actor.IllegalActorStateException
 import akka.actor.Terminated
 import akka.annotation.InternalApi
-import com.github.ghik.silencer.silent
+import akka.util.{ BoxedType, Timeout }
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]
@@ -158,8 +160,8 @@ trait TestKitBase {
 
   import TestActor.{ Message, NullMessage, RealMessage, Spawn }
 
-  implicit val system: ActorSystem
-  val testKitSettings = TestKitExtension(system)
+  implicit def system: ActorSystem
+  def testKitSettings = TestKitExtension(system)
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -175,7 +177,7 @@ trait TestKitBase {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = {
+  lazy val testActor: ActorRef = {
     val impl = system.asInstanceOf[ExtendedActorSystem]
     val ref = impl.systemActorOf(
       TestActor.props(queue).withDispatcher(CallingThreadDispatcher.Id),
@@ -259,12 +261,14 @@ trait TestKitBase {
     case x if x eq Duration.Undefined => duration
     case x if !x.isFinite             => throw new IllegalArgumentException("`end` cannot be infinite")
     case f: FiniteDuration            => f - now
+    case _                            => throw new IllegalArgumentException("`end` cannot be infinite")
   }
 
   private def remainingOrDilated(max: Duration): FiniteDuration = max match {
     case x if x eq Duration.Undefined => remainingOrDefault
     case x if !x.isFinite             => throw new IllegalArgumentException("max duration cannot be infinite")
     case f: FiniteDuration            => f.dilated
+    case _                            => throw new IllegalArgumentException("max duration cannot be infinite")
   }
 
   /**
@@ -343,6 +347,44 @@ trait TestKitBase {
     }
 
     poll(_max min interval)
+  }
+
+  /**
+   * Evaluate the given assert every `interval` until exception is thrown or `max` timeout is expired.
+   *
+   * Returns the result of last evaluation of the assertion.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def assertForDuration[A](a: => A, max: FiniteDuration, interval: Duration = 100.millis): A = {
+    val _max = remainingOrDilated(max)
+    val stop = now + _max
+
+    @tailrec
+    def poll(t: Duration): A = {
+      // cannot use null-ness of result as signal it failed
+      // because Java API and not wanting to return a value will be "return null"
+      val instantNow = now
+      val result =
+        try {
+          a
+        } catch {
+          case e: Throwable => throw e
+        }
+
+      if (instantNow < stop) {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      } else {
+        result
+      }
+    }
+
+    poll(max min interval)
   }
 
   /**
@@ -770,6 +812,7 @@ trait TestKitBase {
             queue.offerFirst(lastMessage)
             lastMessage = msg
             acc.reverse
+          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // exhaustiveness check
         }
       }
     }
@@ -823,6 +866,7 @@ trait TestKitBase {
       case RealMessage(msg, _) =>
         lastMessage = message
         msg
+      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // exhaustiveness check
     }
   }
 
@@ -834,7 +878,7 @@ trait TestKitBase {
    */
   def shutdown(
       actorSystem: ActorSystem = system,
-      duration: Duration = 10.seconds.dilated.min(10.seconds),
+      duration: Duration = Duration.Undefined,
       verifySystemShutdown: Boolean = false): Unit = {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
@@ -925,8 +969,10 @@ trait TestKitBase {
  *
  * @since 1.1
  */
-@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
-class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
+@nowarn // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
+class TestKit(_system: ActorSystem) extends TestKitBase {
+  implicit val system: ActorSystem = _system
+}
 
 object TestKit {
 
@@ -969,19 +1015,25 @@ object TestKit {
    * Shut down an actor system and wait for termination.
    * On failure debug output will be logged about the remaining actors in the system.
    *
+   * The `duration` is dilated by the timefactor.
+   *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
   def shutdownActorSystem(
       actorSystem: ActorSystem,
-      duration: Duration = 10.seconds,
+      duration: Duration = Duration.Undefined,
       verifySystemShutdown: Boolean = false): Unit = {
+    val d = duration match {
+      case f: FiniteDuration => f.dilated(actorSystem)
+      case _                 => 10.seconds.dilated(actorSystem).min(10.seconds)
+    }
     actorSystem.terminate()
-    try Await.ready(actorSystem.whenTerminated, duration)
+    try Await.ready(actorSystem.whenTerminated, d)
     catch {
       case _: TimeoutException =>
         val msg = "Failed to stop [%s] within [%s] \n%s".format(
           actorSystem.name,
-          duration,
+          d,
           actorSystem.asInstanceOf[ActorSystemImpl].printTree)
         if (verifySystemShutdown) throw new RuntimeException(msg)
         else println(msg)
@@ -1033,7 +1085,7 @@ object TestProbe {
 }
 
 trait ImplicitSender { this: TestKitBase =>
-  implicit def self = testActor
+  implicit def self: ActorRef = testActor
 }
 
 trait DefaultTimeout { this: TestKitBase =>

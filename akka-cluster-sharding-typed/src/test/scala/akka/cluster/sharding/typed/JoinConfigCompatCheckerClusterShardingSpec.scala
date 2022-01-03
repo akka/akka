@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -7,14 +7,15 @@ package akka.cluster.sharding.typed
 import scala.collection.{ immutable => im }
 import scala.concurrent.duration._
 
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.CoordinatedShutdown
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorSystem
 import akka.cluster.{ Cluster => ClassicCluster }
 import akka.testkit.LongRunningTest
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object JoinConfigCompatCheckerClusterShardingSpec {
 
@@ -45,8 +46,8 @@ class JoinConfigCompatCheckerClusterShardingSpec
     with Matchers
     with LogCapturing {
 
-  import JoinConfigCompatCheckerClusterShardingSpec._
   import CoordinatedShutdown.IncompatibleConfigurationDetectedReason
+  import JoinConfigCompatCheckerClusterShardingSpec._
 
   private val clusterWaitDuration = 5.seconds
 

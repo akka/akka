@@ -1,13 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton;
 
 import akka.actor.ActorSystem;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;

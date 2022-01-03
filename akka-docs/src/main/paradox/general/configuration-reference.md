@@ -62,6 +62,11 @@ nondeterministic when loading the configuration.`
 
 @@snip [reference.conf](/akka-persistence-query/src/main/resources/reference.conf)
 
+<a id="config-akka-persistence-testkit"></a>
+### akka-persistence-testkit
+
+@@snip [reference.conf](/akka-persistence-testkit/src/main/resources/reference.conf)
+
 <a id="config-akka-remote-artery"></a>
 ### akka-remote artery
 

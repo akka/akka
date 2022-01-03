@@ -1,19 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic
+
+import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ RootActorPath, _ }
 import akka.event.Logging.Warning
 import akka.remote.{ QuarantinedEvent, RARP, RemoteActorRef }
 import akka.testkit.{ SocketUtil, _ }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
-
-@silent // classic deprecated
+@nowarn // classic deprecated
 class RemoteDeathWatchSpec
     extends AkkaSpec(ConfigFactory.parseString("""
 akka {
@@ -93,7 +94,7 @@ akka.actor.warn-about-java-serializer-usage = off
     val path = RootActorPath(Address(protocol, system.name, "unknownhost", 2552)) / "user" / "subject"
 
     system.actorOf(Props(new Actor {
-      @silent
+      @nowarn
       val watchee = RARP(context.system).provider.resolveActorRef(path)
       context.watch(watchee)
 

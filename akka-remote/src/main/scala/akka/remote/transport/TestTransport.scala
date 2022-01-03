@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
 
 import java.util.concurrent.{ ConcurrentHashMap, CopyOnWriteArrayList }
 
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
 import akka.actor._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.Transport._
 import akka.util.ByteString
-import com.typesafe.config.Config
-import TestTransport._
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Transport implementation to be used for testing.
@@ -28,10 +28,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class TestTransport(
     val localAddress: Address,
-    final val registry: AssociationRegistry,
+    final val registry: TestTransport.AssociationRegistry,
     val maximumPayloadBytes: Int = 32000,
     val schemeIdentifier: String = "test")
     extends Transport {
+
+  import TestTransport._
 
   def this(system: ExtendedActorSystem, conf: Config) = {
     this(
@@ -444,6 +446,7 @@ object TestTransport {
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object AssociationRegistry {
+  import TestTransport._
   private final val registries = scala.collection.mutable.Map[String, AssociationRegistry]()
 
   def get(key: String): AssociationRegistry = this.synchronized {

@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
-import scala.concurrent.duration._
+import language.postfixOps
+
 import akka.actor.Address
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 final case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -37,8 +37,7 @@ class ConvergenceWithAccrualFailureDetectorMultiJvmNode3 extends ConvergenceSpec
 class ConvergenceWithAccrualFailureDetectorMultiJvmNode4 extends ConvergenceSpec(failureDetectorPuppet = false)
 
 abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(multiNodeConfig) {
 
   def this(failureDetectorPuppet: Boolean) = this(ConvergenceMultiNodeConfig(failureDetectorPuppet))
 

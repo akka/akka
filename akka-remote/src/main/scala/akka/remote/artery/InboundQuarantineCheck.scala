@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
+import akka.actor.ActorSelectionMessage
+import akka.event.Logging
+import akka.remote.HeartbeatMessage
+import akka.remote.UniqueAddress
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.stage._
-import akka.remote.UniqueAddress
 import akka.util.OptionVal
-import akka.event.Logging
-import akka.remote.HeartbeatMessage
-import akka.actor.ActorSelectionMessage
 
 /**
  * INTERNAL API
@@ -33,9 +33,6 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext)
       override def onPush(): Unit = {
         val env = grab(in)
         env.association match {
-          case OptionVal.None =>
-            // unknown, handshake not completed
-            push(out, env)
           case OptionVal.Some(association) =>
             if (association.associationState.isQuarantined(env.originUid)) {
               if (log.isDebugEnabled)
@@ -52,6 +49,9 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext)
               pull(in)
             } else
               push(out, env)
+          case _ =>
+            // unknown, handshake not completed
+            push(out, env)
         }
       }
 

@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.stream.ClosedShape
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class PublisherSinkSpec extends StreamSpec {
 
@@ -18,7 +18,7 @@ class PublisherSinkSpec extends StreamSpec {
     "be unique when created twice" in assertAllStagesStopped {
 
       val (pub1, pub2) = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) {
+        .fromGraph(GraphDSL.createGraph(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) {
           implicit b => (p1, p2) =>
             import GraphDSL.Implicits._
 

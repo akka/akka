@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -232,8 +232,7 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
         ClusterLogMarker.heartbeatStarvation,
         "Scheduled sending of heartbeat was delayed. " +
         "Previous heartbeat was sent [{}] ms ago, expected interval is [{}] ms. This may cause failure detection " +
-        "to mark members as unreachable. The reason can be thread starvation, e.g. by running blocking tasks on the " +
-        "default dispatcher, CPU overload, or GC.",
+        "to mark members as unreachable. The reason can be thread starvation, CPU overload, or GC.",
         TimeUnit.NANOSECONDS.toMillis(now - tickTimestamp),
         HeartbeatInterval.toMillis)
     tickTimestamp = now

@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, Props }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.typesafe.config.ConfigFactory
 
 object ForkJoinPoolStarvationSpec {
   val config = ConfigFactory.parseString("""
@@ -36,7 +37,7 @@ object ForkJoinPoolStarvationSpec {
 
     override def receive = {
       case "ping" =>
-        sender ! "All fine"
+        sender() ! "All fine"
     }
   }
 

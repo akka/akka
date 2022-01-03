@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
 
-import akka.NotUsed
-
 import scala.concurrent.duration._
+
+import akka.Done
+import akka.NotUsed
 import akka.testkit.AkkaSpec
 import akka.stream.scaladsl._
 import akka.stream._
@@ -21,6 +22,7 @@ import scala.concurrent.ExecutionContext
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.scaladsl.Flow
+import org.scalacheck.Gen.const
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -85,7 +87,7 @@ object IntegrationDocSpec {
   }
 
   final case class Save(tweet: Tweet)
-  final case object SaveDone
+  case object SaveDone
 
   class DatabaseService(probe: ActorRef) extends Actor {
     override def receive = {
@@ -134,11 +136,11 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  val ref: ActorRef = system.actorOf(Props[Translator])
+  val ref: ActorRef = system.actorOf(Props[Translator]())
 
   "ask" in {
     //#ask
-    implicit val askTimeout = Timeout(5.seconds)
+    implicit val askTimeout: Timeout = 5.seconds
     val words: Source[String, NotUsed] =
       Source(List("hello", "hi"))
 
@@ -201,7 +203,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val onErrorMessage = (ex: Throwable) => AckingReceiver.StreamFailure(ex)
 
     val probe = TestProbe()
-    val receiver = system.actorOf(Props(new AckingReceiver(probe.ref, ackWith = AckMessage)))
+    val receiver = system.actorOf(Props(new AckingReceiver(probe.ref)))
     val sink = Sink.actorRefWithBackpressure(
       receiver,
       onInitMessage = InitMessage,
@@ -227,7 +229,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     final case class StreamFailure(ex: Throwable)
   }
 
-  class AckingReceiver(probe: ActorRef, ackWith: Any) extends Actor with ActorLogging {
+  class AckingReceiver(probe: ActorRef) extends Actor with ActorLogging {
     import AckingReceiver._
 
     def receive: Receive = {
@@ -382,7 +384,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val akkaTweets: Source[Tweet, NotUsed] = tweets.filter(_.hashtags.contains(akkaTag))
 
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = 3.seconds
     val saveTweets: RunnableGraph[NotUsed] =
       akkaTweets.mapAsync(4)(tweet => database ? Save(tweet)).to(Sink.ignore)
     //#save-tweets
@@ -468,7 +470,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val elementsToProcess = 5
 
     val queue = Source
-      .queue[Int](bufferSize, OverflowStrategy.backpressure)
+      .queue[Int](bufferSize)
       .throttle(elementsToProcess, 3.second)
       .map(x => x * x)
       .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
@@ -478,7 +480,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     implicit val ec = system.dispatcher
     source
-      .mapAsync(1)(x => {
+      .map(x => {
         queue.offer(x).map {
           case QueueOfferResult.Enqueued    => println(s"enqueued $x")
           case QueueOfferResult.Dropped     => println(s"dropped $x")
@@ -490,20 +492,59 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#source-queue
   }
 
+  "illustrate use of synchronous source queue" in {
+    //#source-queue-synchronous
+    val bufferSize = 1000
+
+    //#source-queue-synchronous
+    // format: OFF
+    //#source-queue-synchronous
+    val queue = Source
+      .queue[Int](bufferSize)
+      .map(x => x * x)
+      .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
+      .run()
+    //#source-queue-synchronous
+    // format: OFF
+    //#source-queue-synchronous
+
+    val fastElements = 1 to 10
+
+    implicit val ec = system.dispatcher
+    fastElements.foreach { x =>
+      queue.offer(x) match {
+        case QueueOfferResult.Enqueued    => println(s"enqueued $x")
+        case QueueOfferResult.Dropped     => println(s"dropped $x")
+        case QueueOfferResult.Failure(ex) => println(s"Offer failed ${ex.getMessage}")
+        case QueueOfferResult.QueueClosed => println("Source Queue closed")
+      }
+    }
+    //#source-queue-synchronous
+  }
+
   "illustrate use of source actor ref" in {
     //#source-actorRef
     val bufferSize = 10
 
+    val cm: PartialFunction[Any, CompletionStrategy] = {
+      case Done =>
+        CompletionStrategy.immediately
+    }
+
     val ref = Source
-      .actorRef[Int](bufferSize, OverflowStrategy.fail) // note: backpressure is not supported
+      .actorRef[Int](
+        completionMatcher = cm,
+        failureMatcher = PartialFunction.empty[Any, Throwable],
+        bufferSize = bufferSize,
+        overflowStrategy = OverflowStrategy.fail) // note: backpressure is not supported
       .map(x => x * x)
-      .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
+      .toMat(Sink.foreach((x: Int) => println(s"completed $x")))(Keep.left)
       .run()
 
     ref ! 1
     ref ! 2
     ref ! 3
-    ref ! akka.actor.Status.Success("done")
+    ref ! Done
     //#source-actorRef
   }
 }

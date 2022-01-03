@@ -1,18 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
 
+import scala.annotation.nowarn
 import akka.AkkaException
 import akka.actor.{ ActorRef, Address, AddressFromURIString, InternalActorRef }
-import akka.remote.WireFormats._
-import akka.remote._
-import akka.util.ByteString
 import akka.protobufv3.internal.InvalidProtocolBufferException
-import akka.protobufv3.internal.{ ByteString => PByteString }
+import akka.remote._
+import akka.remote.WireFormats._
+import akka.util.ByteString
 import akka.util.OptionVal
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -26,7 +25,7 @@ private[remote] class PduCodecException(msg: String, cause: Throwable) extends A
  * Companion object of the [[akka.remote.transport.AkkaPduCodec]] trait. Contains the representation case classes
  * of decoded Akka Protocol Data Units (PDUs).
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object AkkaPduCodec {
 
   /**
@@ -57,7 +56,7 @@ private[remote] object AkkaPduCodec {
  *
  * A Codec that is able to convert Akka PDUs (Protocol Data Units) from and to [[akka.util.ByteString]]s.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] trait AkkaPduCodec {
   import AkkaPduCodec._
 
@@ -117,7 +116,7 @@ private[remote] trait AkkaPduCodec {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   import AkkaPduCodec._
 
@@ -145,7 +144,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     envelopeBuilder.setRecipient(serializeActorRef(recipient.path.address, recipient))
     senderOption match {
       case OptionVal.Some(sender) => envelopeBuilder.setSender(serializeActorRef(localAddress, sender))
-      case OptionVal.None         =>
+      case _                      =>
     }
 
     seqOption.foreach { seq =>
@@ -157,19 +156,15 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     envelopeBuilder.setMessage(serializedMessage)
     ackAndEnvelopeBuilder.setEnvelope(envelopeBuilder)
 
-    ByteString.ByteString1C(ackAndEnvelopeBuilder.build.toByteArray) //Reuse Byte Array (naughty!)
+    ByteString.fromArrayUnsafe(ackAndEnvelopeBuilder.build.toByteArray)
   }
 
   override def constructPureAck(ack: Ack): ByteString =
-    ByteString.ByteString1C(AckAndEnvelopeContainer.newBuilder.setAck(ackBuilder(ack)).build().toByteArray) //Reuse Byte Array (naughty!)
+    ByteString.fromArrayUnsafe(AckAndEnvelopeContainer.newBuilder.setAck(ackBuilder(ack)).build().toByteArray)
 
   override def constructPayload(payload: ByteString): ByteString =
-    ByteString.ByteString1C(
-      AkkaProtocolMessage
-        .newBuilder()
-        .setPayload(PByteString.copyFrom(payload.asByteBuffer))
-        .build
-        .toByteArray) //Reuse Byte Array (naughty!)
+    ByteString.fromArrayUnsafe(
+      AkkaProtocolMessage.newBuilder().setPayload(ByteStringUtils.toProtoByteStringUnsafe(payload)).build.toByteArray)
 
   override def constructAssociate(info: HandshakeInfo): ByteString = {
     val handshakeInfo = AkkaHandshakeInfo.newBuilder.setOrigin(serializeAddress(info.origin)).setUid(info.uid.toLong)
@@ -193,8 +188,8 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
 
   override def decodePdu(raw: ByteString): AkkaPdu = {
     try {
-      val pdu = AkkaProtocolMessage.parseFrom(raw.toArray)
-      if (pdu.hasPayload) Payload(ByteString(pdu.getPayload.asReadOnlyByteBuffer()))
+      val pdu = AkkaProtocolMessage.parseFrom(raw.toArrayUnsafe())
+      if (pdu.hasPayload) Payload(ByteString.fromByteBuffer(pdu.getPayload.asReadOnlyByteBuffer()))
       else if (pdu.hasInstruction) decodeControlPdu(pdu.getInstruction)
       else
         throw new PduCodecException("Error decoding Akka PDU: Neither message nor control message were contained", null)
@@ -207,7 +202,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
       raw: ByteString,
       provider: RemoteActorRefProvider,
       localAddress: Address): (Option[Ack], Option[Message]) = {
-    val ackAndEnvelope = AckAndEnvelopeContainer.parseFrom(raw.toArray)
+    val ackAndEnvelope = AckAndEnvelopeContainer.parseFrom(raw.toArrayUnsafe())
 
     val ackOption = if (ackAndEnvelope.hasAck) {
       import akka.util.ccompat.JavaConverters._

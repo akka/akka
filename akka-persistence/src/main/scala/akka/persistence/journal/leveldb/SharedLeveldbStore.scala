@@ -1,24 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.leveldb
 
-import akka.persistence.journal.AsyncWriteTarget
-import akka.pattern.pipe
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
-import scala.util.control.NonFatal
-import akka.persistence.AtomicWrite
-import com.typesafe.config.Config
 import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
+
+import akka.pattern.pipe
+import akka.persistence.AtomicWrite
+import akka.persistence.journal.AsyncWriteTarget
 
 /**
  * A LevelDB store that can be shared by multiple actor systems. The shared store must be
  * set for each actor system that uses the store via `SharedLeveldbJournal.setStore`. The
  * shared LevelDB store is for testing only.
  */
+@deprecated("Use another journal implementation or the in-mem journal in combination with the journal-proxy", "2.6.15")
 class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
   import AsyncWriteTarget._
   import context.dispatcher

@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorPath, ActorRef, Props }
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.ImplicitSender
 import akka.testkit.JavaSerializable
-import com.typesafe.config.ConfigFactory
 
 object DirectMemorySpec extends MultiNodeConfig {
   val first = role("first")

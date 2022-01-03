@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.javadsl
@@ -8,8 +8,8 @@ import java.util.function.Predicate
 
 import akka.actor.typed._
 import akka.japi.JavaPartialFunction
-import akka.stream.javadsl._
 import akka.stream.{ CompletionStrategy, OverflowStrategy }
+import akka.stream.javadsl._
 
 /**
  * Collection of Sources aimed at integrating with typed Actors.
@@ -28,8 +28,7 @@ object ActorSource {
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
-   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
-   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]]
    * (whose content will be ignored) in which case already buffered elements will be signaled before signaling
@@ -74,7 +73,10 @@ object ActorSource {
    * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
    * The stream will complete with failure if a message is sent before the acknowledgement has been replied back.
    *
-   * The stream can be completed with failure by sending a message that is matched by `failureMatcher`. The extracted
+   * The stream can be completed by sending a message that is matched by `completionMatcher` which decides
+   * if the stream is to drained before completion or should complete immediately.
+   *
+   * A message that is matched by `failureMatcher` fails the stream. The extracted
    * [[Throwable]] will be used to fail the stream. In case the Actor is still draining its internal buffer (after having received
    * a message matched by `completionMatcher`) before signaling completion and it receives a message matched by `failureMatcher`,
    * the failure will be signaled downstream immediately (instead of the completion signal).

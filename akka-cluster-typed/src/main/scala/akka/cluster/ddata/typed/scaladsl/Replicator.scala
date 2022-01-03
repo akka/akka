@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.scaladsl
 
 import scala.concurrent.duration.FiniteDuration
 
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
 
 /**

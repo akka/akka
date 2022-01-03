@@ -2,15 +2,13 @@
 
 While similar to `recover` this operators can be used to transform an error signal to a different one *without* logging it as an error in the process.
 
-@ref[Simple operators](../index.md#simple-operators)
-
-@@@div { .group-scala }
+@ref[Error handling](../index.md#error-handling)
 
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mapError }
+@apidoc[Source.mapError](Source) { scala="#mapError(pf:PartialFunction[Throwable,Throwable]):FlowOps.this.Repr[Out]" java="#mapError(java.lang.Class,akka.japi.function.Function)" }
+@apidoc[Flow.mapError](Flow) { scala="#mapError(pf:PartialFunction[Throwable,Throwable]):FlowOps.this.Repr[Out]" java="#mapError(java.lang.Class,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 
@@ -22,6 +20,17 @@ Since the underlying failure signal onError arrives out-of-band, it might jump o
 This operators can recover the failure signal, but not the skipped elements, which will be dropped.
 
 Similarly to `recover` throwing an exception inside `mapError` _will_ be logged on ERROR level automatically.
+
+## Example
+
+The following example demonstrates a stream which throws `ArithmeticException` when the element `0` goes through 
+the `map` operator. The`mapError` is used to transform this exception to `UnsupportedOperationException`.
+
+Scala
+:  @@snip [MapError.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapError.scala) { #map-error }
+
+Java
+:  @@snip [MapError.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/MapError.java) { #map-error }
 
 ## Reactive Streams semantics
 

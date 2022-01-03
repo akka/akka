@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package scala.docs.cluster
@@ -52,6 +52,6 @@ object TransformationBackend {
       .withFallback(ConfigFactory.load())
 
     val system = ActorSystem("ClusterSystem", config)
-    system.actorOf(Props[TransformationBackend], name = "backend")
+    system.actorOf(Props[TransformationBackend](), name = "backend")
   }
 }

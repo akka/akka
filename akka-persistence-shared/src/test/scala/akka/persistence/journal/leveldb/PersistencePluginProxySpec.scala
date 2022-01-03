@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.leveldb
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor._
 import akka.persistence._
 import akka.persistence.journal.PersistencePluginProxy
 import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.ConfigFactory
 
 object PersistencePluginProxySpec {
   lazy val config =

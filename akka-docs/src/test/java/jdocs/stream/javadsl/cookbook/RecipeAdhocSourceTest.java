@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.javadsl.cookbook;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.japi.pf.PFBuilder;
@@ -45,16 +46,18 @@ public class RecipeAdhocSourceTest extends RecipeTest {
 
   // #adhoc-source
   public <T> Source<T, ?> adhocSource(Source<T, ?> source, Duration timeout, int maxRetries) {
-    return Source.lazily(
+    return Source.lazySource(
         () ->
             source
                 .backpressureTimeout(timeout)
                 .recoverWithRetries(
                     maxRetries,
-                    new PFBuilder()
+                    new PFBuilder<Throwable, Source<T, NotUsed>>()
                         .match(
                             TimeoutException.class,
-                            ex -> Source.lazily(() -> source.backpressureTimeout(timeout)))
+                            ex ->
+                                Source.lazySource(() -> source.backpressureTimeout(timeout))
+                                    .mapMaterializedValue(v -> NotUsed.getInstance()))
                         .build()));
   }
   // #adhoc-source

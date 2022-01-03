@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.japi.pf;
@@ -8,9 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 import org.junit.Before;
+import org.scalatestplus.junit.JUnitSuite;
 
 import akka.actor.AbstractActor.Receive;
-import org.scalatestplus.junit.JUnitSuite;
 
 import static org.junit.Assert.*;
 

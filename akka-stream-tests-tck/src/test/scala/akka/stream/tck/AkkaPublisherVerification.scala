@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
-import akka.stream.testkit.TestPublisher
+import scala.collection.immutable
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.Publisher
@@ -12,7 +13,7 @@ import org.reactivestreams.tck.PublisherVerification
 import org.reactivestreams.tck.TestEnvironment
 import org.scalatestplus.testng.TestNGSuiteLike
 
-import scala.collection.immutable
+import akka.stream.testkit.TestPublisher
 
 abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherShutdownTimeout: Long)
     extends PublisherVerification[T](env, publisherShutdownTimeout)

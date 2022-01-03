@@ -1,19 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
-import language.postfixOps
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.Props
+
+import language.postfixOps
+
 import akka.actor.Actor
-import akka.testkit._
-import akka.pattern.ask
-import akka.actor.Terminated
 import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.Terminated
+import akka.pattern.ask
+import akka.testkit._
 
 class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.remoting
@@ -36,7 +36,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
 
   "demonstrate programmatic deployment" in {
     //#deploy
-    val ref = system.actorOf(Props[SampleActor].withDeploy(Deploy(scope = RemoteScope(address))))
+    val ref = system.actorOf(Props[SampleActor]().withDeploy(Deploy(scope = RemoteScope(address))))
     //#deploy
     ref.path.address should be(address)
     ref ! "test"
@@ -61,7 +61,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
   "demonstrate sampleActor" in {
     //#sample-actor
 
-    val actor = system.actorOf(Props[SampleActor], "sampleActor")
+    val actor = system.actorOf(Props[SampleActor](), "sampleActor")
     actor ! "Pretty slick"
     //#sample-actor
   }

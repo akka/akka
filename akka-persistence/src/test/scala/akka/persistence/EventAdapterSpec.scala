@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
-import akka.actor._
-import akka.event.Logging
-import akka.persistence.EventAdapterSpec.{ Tagged, UserDataChanged }
-import akka.persistence.journal.{ EventAdapter, EventSeq, SingleEventSeq }
-import akka.testkit.ImplicitSender
+import scala.collection.immutable
+
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.collection.immutable
+import akka.actor._
+import akka.event.Logging
+import akka.persistence.journal.{ EventAdapter, EventSeq, SingleEventSeq }
+import akka.testkit.ImplicitSender
 
 object EventAdapterSpec {
 
@@ -42,6 +42,7 @@ object EventAdapterSpec {
     override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
       event match {
         case m: JournalModel => m.payload
+        case _               => throw new RuntimeException()
       }
     }
 
@@ -52,12 +53,13 @@ object EventAdapterSpec {
     override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
       event match {
         case m: JournalModel => m // don't unpack, just pass through the JournalModel
+        case _               => throw new RuntimeException()
       }
     }
   }
 
   class LoggingAdapter(system: ExtendedActorSystem) extends EventAdapter {
-    final val log = Logging(system, getClass)
+    final val log = Logging(system, classOf[EventAdapterSpec])
     override def toJournal(event: Any): Any = {
       log.info("On its way to the journal: []: " + event)
       event
@@ -95,13 +97,13 @@ object EventAdapterSpec {
 
 }
 
-abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adapterConfig: Config)
+class EventAdapterSpec(journalName: String, journalConfig: Config, adapterConfig: Config)
     extends PersistenceSpec(journalConfig.withFallback(adapterConfig))
     with ImplicitSender {
 
   import EventAdapterSpec._
 
-  def this(journalName: String) {
+  def this() =
     this(
       "inmem",
       PersistenceSpec.config("inmem", "InmemPersistentTaggingSpec"),
@@ -150,7 +152,6 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
          |  }
          |}
       """.stripMargin))
-  }
 
   def persister(name: String, journalId: String = journalName) =
     system.actorOf(Props(classOf[PersistAllIncomingActor], name, "akka.persistence.journal." + journalId))
@@ -181,13 +182,6 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
       toJournal(event, "with-actor-system") should equal(event)
       fromJournal(event, "with-actor-system") should equal(SingleEventSeq(event))
     }
-  }
-
-}
-
-trait ReplayPassThrough { this: EventAdapterSpec =>
-  "EventAdapter" must {
-
     "store events after applying adapter" in {
       val replayPassThroughJournalId = "replay-pass-through-adapter-journal"
 
@@ -208,12 +202,6 @@ trait ReplayPassThrough { this: EventAdapterSpec =>
       expectMsg(Tagged(m1, Set("adult")))
       expectMsg(m2)
     }
-  }
-
-}
-
-trait NoAdapters { this: EventAdapterSpec =>
-  "EventAdapter" must {
     "work when plugin defines no adapter" in {
       val p2 = persister("p2", journalId = "no-adapter")
       val m1 = UserDataChanged("name", 64)
@@ -232,15 +220,5 @@ trait NoAdapters { this: EventAdapterSpec =>
       expectMsg(m1)
       expectMsg(m2)
     }
-
   }
 }
-
-// this style of testing allows us to try different leveldb journal plugin configurations
-// because it always would use the same leveldb directory anyway (based on class name),
-// yet we need different instances of the plugin. For inmem it does not matter, it can survive many instances.
-class InmemEventAdapterSpec extends EventAdapterSpec("inmem") with ReplayPassThrough with NoAdapters
-
-class LeveldbBaseEventAdapterSpec extends EventAdapterSpec("leveldb")
-class LeveldbReplayPassThroughEventAdapterSpec extends EventAdapterSpec("leveldb") with ReplayPassThrough
-class LeveldbNoAdaptersEventAdapterSpec extends EventAdapterSpec("leveldb") with NoAdapters

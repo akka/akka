@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor;
@@ -16,7 +16,7 @@ public class StashJavaAPITestActors {
       Object msg, int count, ActorRef sender, ActorRef self, UnrestrictedStash stash) {
     if (msg instanceof String) {
       if (count < 0) {
-        sender.tell(new Integer(((String) msg).length()), self);
+        sender.tell(((String) msg).length(), self);
       } else if (count == 2) {
         stash.unstashAll();
         return -1;
@@ -25,8 +25,8 @@ public class StashJavaAPITestActors {
         return count + 1;
       }
     } else if (msg instanceof Integer) {
-      int value = ((Integer) msg).intValue();
-      assertEquals(value, 5);
+      int value = (Integer) msg;
+      assertEquals(5, value);
     }
     return count;
   }

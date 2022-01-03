@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-
 import scala.annotation.unchecked.uncheckedVariance
+
+import akka.NotUsed
 import akka.japi.Pair
 import akka.stream._
 

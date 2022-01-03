@@ -1,16 +1,13 @@
-# fromFuture
+# Source.fromFuture
 
 Deprecated by @ref[`Source.future`](future.md).
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromFuture }
+@apidoc[Source.fromFuture](Source$) { scala="#fromFuture[T](future:scala.concurrent.Future[T]):akka.stream.scaladsl.Source[T,akka.NotUsed]" }
 
-@@@
 
 ## Description
 

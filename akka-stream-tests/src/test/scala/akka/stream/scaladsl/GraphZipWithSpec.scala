@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
 import scala.concurrent.duration._
+
 import akka.stream._
+import akka.stream.testkit._
 import akka.testkit.EventFilter
 
 class GraphZipWithSpec extends TwoStreamsSetup {
@@ -79,6 +80,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
       }
       probe.expectError() match {
         case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
+        case unexpected                       => throw new RuntimeException(s"Unexpected: $unexpected")
       }
       probe.expectNoMessage(200.millis)
     }

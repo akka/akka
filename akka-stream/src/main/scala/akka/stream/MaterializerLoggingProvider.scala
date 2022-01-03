@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
+import akka.annotation.DoNotInherit
 import akka.event.LoggingAdapter
 
 /**
- * SPI intended only to be extended by custom [[Materializer]] implementations,
- * that also want to provide operators they materialize with specialized [[akka.event.LoggingAdapter]] instances.
+ * Not for user extension
  */
+@DoNotInherit
 trait MaterializerLoggingProvider { this: Materializer =>
 
-  def makeLogger(logSource: Class[_]): LoggingAdapter
+  def makeLogger(logSource: Class[Any]): LoggingAdapter
 
 }

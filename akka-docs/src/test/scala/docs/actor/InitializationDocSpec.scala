@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor
@@ -58,11 +58,11 @@ class InitializationDocSpec extends AkkaSpec with ImplicitSender {
   "Message based initialization example" must {
 
     "work correctly" in {
-      val example = system.actorOf(Props[MessageInitExample], "messageInitExample")
+      val example = system.actorOf(Props[MessageInitExample](), "messageInitExample")
       val probe = "U OK?"
 
       example ! probe
-      expectNoMsg()
+      expectNoMessage()
 
       example ! "init"
       example ! probe

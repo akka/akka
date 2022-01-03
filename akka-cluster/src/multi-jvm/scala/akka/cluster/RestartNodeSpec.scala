@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.collection.immutable
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.Done
 import akka.actor.Actor
@@ -22,7 +24,6 @@ import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -65,17 +66,16 @@ class RestartNodeMultiJvmNode1 extends RestartNodeSpec
 class RestartNodeMultiJvmNode2 extends RestartNodeSpec
 class RestartNodeMultiJvmNode3 extends RestartNodeSpec
 
-abstract class RestartNodeSpec
-    extends MultiNodeSpec(RestartNodeMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with ImplicitSender {
+abstract class RestartNodeSpec extends MultiNodeClusterSpec(RestartNodeMultiJvmSpec) with ImplicitSender {
 
   import RestartNodeMultiJvmSpec._
 
   @volatile var secondUniqueAddress: UniqueAddress = _
 
   // use a separate ActorSystem, to be able to simulate restart
-  lazy val secondSystem = ActorSystem(system.name, system.settings.config)
+  lazy val secondSystem = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
+
+  override def verifySystemShutdown: Boolean = true
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(first, secondUniqueAddress.address, third)
 

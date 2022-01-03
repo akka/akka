@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -16,11 +16,16 @@ import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+import io.aeron.Aeron
+import io.aeron.CncFileDescriptor
+import org.HdrHistogram.Histogram
+import org.agrona.IoUtil
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
+
 import akka.Done
 import akka.actor._
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
@@ -28,13 +33,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.testkit._
 import akka.util.ByteString
-import com.typesafe.config.ConfigFactory
-import io.aeron.Aeron
-import io.aeron.CncFileDescriptor
-import io.aeron.driver.MediaDriver
-import org.HdrHistogram.Histogram
-import org.agrona.IoUtil
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 object AeronStreamLatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -47,7 +45,7 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
        akka.test.AeronStreamLatencySpec.totalMessagesFactor = 1.0
        akka.test.AeronStreamLatencySpec.repeatCount = 1
        akka {
-         loglevel = ERROR
+         loglevel = INFO
          testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
          actor {
            provider = remote
@@ -71,7 +69,7 @@ class AeronStreamLatencySpecMultiJvmNode1 extends AeronStreamLatencySpec
 class AeronStreamLatencySpecMultiJvmNode2 extends AeronStreamLatencySpec
 
 abstract class AeronStreamLatencySpec
-    extends MultiNodeSpec(AeronStreamLatencySpec)
+    extends AeronStreamMultiNodeSpec(AeronStreamLatencySpec)
     with STMultiNodeSpec
     with ImplicitSender {
 
@@ -82,7 +80,7 @@ abstract class AeronStreamLatencySpec
 
   var plots = LatencyPlots()
 
-  val driver = MediaDriver.launchEmbedded()
+  val driver = startDriver()
 
   val pool = new EnvelopeBufferPool(1024 * 1024, 128)
 
@@ -104,13 +102,6 @@ abstract class AeronStreamLatencySpec
   }
 
   override def initialParticipants = roles.size
-
-  def channel(roleName: RoleName) = {
-    val n = node(roleName)
-    system.actorSelection(n / "user" / "updPort") ! UdpPortActor.GetUdpPort
-    val port = expectMsgType[Int]
-    s"aeron:udp?endpoint=${n.address.host.get}:$port"
-  }
 
   val streamId = 1
   val giveUpMessageAfter = 30.seconds
@@ -305,7 +296,7 @@ abstract class AeronStreamLatencySpec
   "Latency of Aeron Streams" must {
 
     "start upd port" in {
-      system.actorOf(Props[UdpPortActor], "updPort")
+      system.actorOf(Props[UdpPortActor](), "updPort")
       enterBarrier("udp-port-started")
     }
 

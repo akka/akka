@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import akka.actor.Address
-import akka.actor.Props
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.Address
+import akka.actor.Props
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
 
 object StartupWithOneThreadSpec {
   val config = """

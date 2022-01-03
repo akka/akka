@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.routing
@@ -55,7 +55,7 @@ class ConsistentHashingRouterDocSpec extends AkkaSpec with ImplicitSender {
     }
 
     val cache: ActorRef =
-      context.actorOf(ConsistentHashingPool(10, hashMapping = hashMapping).props(Props[Cache]), name = "cache")
+      context.actorOf(ConsistentHashingPool(10, hashMapping = hashMapping).props(Props[Cache]()), name = "cache")
 
     cache ! ConsistentHashableEnvelope(message = Entry("hello", "HELLO"), hashKey = "hello")
     cache ! ConsistentHashableEnvelope(message = Entry("hi", "HI"), hashKey = "hi")

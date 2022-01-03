@@ -1,19 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
+import InternalClusterAction._
+import MemberStatus._
+import com.typesafe.config.ConfigFactory
 import language.implicitConversions
 
-import com.typesafe.config.ConfigFactory
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
 import akka.actor.Address
 import akka.remote.testconductor.RoleName
-import MemberStatus._
-import InternalClusterAction._
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 object TransitionMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -34,10 +33,7 @@ class TransitionMultiJvmNode1 extends TransitionSpec
 class TransitionMultiJvmNode2 extends TransitionSpec
 class TransitionMultiJvmNode3 extends TransitionSpec
 
-abstract class TransitionSpec
-    extends MultiNodeSpec(TransitionMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with ImplicitSender {
+abstract class TransitionSpec extends MultiNodeClusterSpec(TransitionMultiJvmSpec) with ImplicitSender {
 
   import TransitionMultiJvmSpec._
 
@@ -248,12 +244,21 @@ abstract class TransitionSpec
 
       enterBarrier("after-second-down")
 
+      runOn(second) {
+        // first should have sent immediate gossip to second when it downed second
+        // and second should then shutdown
+        awaitAssert(cluster.isTerminated should ===(true))
+      }
+
+      enterBarrier("second-received-down")
+
       first.gossipTo(third)
 
       runOn(first, third) {
         awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(second)))
         awaitMemberStatus(second, Down)
-        awaitAssert(seenLatestGossip should ===(Set(first, third)))
+        // second will also gossip when it shuts down, so it has seen it
+        awaitAssert(seenLatestGossip should ===(Set(first, second, third)))
       }
 
       enterBarrier("after-6")

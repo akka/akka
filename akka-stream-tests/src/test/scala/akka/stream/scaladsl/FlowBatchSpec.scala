@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.stream.OverflowStrategy
-import akka.stream.testkit._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream.OverflowStrategy
+import akka.stream.testkit._
 
 class FlowBatchSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

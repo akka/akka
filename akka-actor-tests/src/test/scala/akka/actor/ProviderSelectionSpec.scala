@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorSystem.Settings
 import akka.actor.ActorSystem.findClassLoader
 import akka.actor.setup.ActorSystemSetup
 import akka.testkit.AbstractSpec
-import com.typesafe.config.ConfigFactory
 
 class ProviderSelectionSpec extends AbstractSpec {
   import ProviderSelection.{ ClusterActorRefProvider, RemoteActorRefProvider }

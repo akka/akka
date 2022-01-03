@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
-import akka.annotation.InternalApi
 
 /** INTERNAL API */
 @InternalApi private[stream] final class JavaStreamSource[T, S <: java.util.stream.BaseStream[T, S]](

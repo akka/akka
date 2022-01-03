@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.setup;
@@ -28,6 +28,6 @@ public class ActorSystemSetupTest extends JUnitSuite {
         ActorSystemSetup.create().withSetup(javaSetting).get(JavaSetup.class);
 
     assertTrue(result.isPresent());
-    assertEquals(result.get(), javaSetting);
+    assertEquals(javaSetting, result.get());
   }
 }

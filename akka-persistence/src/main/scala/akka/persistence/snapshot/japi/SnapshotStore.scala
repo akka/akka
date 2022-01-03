@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.snapshot.japi
 
+import scala.concurrent.Future
+
+import akka.japi.Util._
 import akka.persistence._
 import akka.persistence.snapshot.{ SnapshotStore => SSnapshotStore }
-import akka.japi.Util._
-
-import scala.concurrent.Future
 
 /**
  * Java API: abstract snapshot store.

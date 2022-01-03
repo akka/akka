@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -11,10 +11,11 @@ import akka.testkit.AkkaSpec
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
 class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   "build with open ports" in {
     //#simple-partial-graph-dsl
@@ -30,7 +31,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
     val resultSink = Sink.head[Int]
 
-    val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b => sink =>
+    val g = RunnableGraph.fromGraph(GraphDSL.createGraph(resultSink) { implicit b => sink =>
       import GraphDSL.Implicits._
 
       // importing the partial graph will return its shape (inlets & outlets)
@@ -114,7 +115,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
   "combine sinks with simplified API" in {
     val actorRef: ActorRef = testActor
     //#sink-combine
-    val sendRmotely = Sink.actorRef(actorRef, "Done")
+    val sendRmotely = Sink.actorRef(actorRef, "Done", _ => "Failed")
     val localProcessing = Sink.foreach[Int](_ => /* do something useful */ ())
 
     val sink = Sink.combine(sendRmotely, localProcessing)(Broadcast[Int](_))

@@ -1,10 +1,8 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream;
-
-import static org.junit.Assert.assertEquals;
 
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;

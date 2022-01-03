@@ -3,6 +3,26 @@ project.description: How to deploy Akka Cluster to Kubernetes and Docker.
 ---
 # Deploying
 
+## Deploying to Kubernetes
+
+[Akka Cloud Platform](https://developer.lightbend.com/docs/akka-platform-guide/deployment/index.html) is the easiest way to deploy an Akka Cluster application to Amazon Elastic Kubernetes Service (EKS) or Google Kubernetes Engine (GKE).
+
+Alternatively, you can deploy to Kubernetes according to the guide and example project for [Deploying Akka Cluster to Kubernetes](https://doc.akka.io/docs/akka-management/current/kubernetes-deployment/index.html), but that requires more expertise of Kubernetes.
+
+### Cluster bootstrap
+
+To take advantage of running inside Kubernetes while forming a cluster, 
+[Akka Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/) helps forming or joining a cluster using Akka Discovery to discover peer nodes. 
+with the Kubernetes API or Kubernetes via DNS.  
+
+You can look at the
+@extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
+to see what this looks like in practice.
+ 
+### Resource limits
+
+To avoid CFS scheduler limits, it is best not to use `resources.limits.cpu` limits, but use `resources.requests.cpu` configuration instead.
+
 ## Deploying to Docker containers
 
 You can use both Akka remoting and Akka Cluster inside Docker containers. Note
@@ -32,18 +52,3 @@ starved of CPU time, but your system appears idle.
 
 For this reason, it is best to avoid `--cpus` and `--cpu-quota` entirely, and instead specify relative container weights using `--cpu-shares` instead.
 
-## Deploying to Kubernetes
-
-### Cluster bootstrap
-
-To take advantage of running inside Kubernetes while forming a cluster, 
-[Akka Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/) helps forming or joining a cluster using Akka Discovery to discover peer nodes. 
-with the Kubernetes API or Kubernetes via DNS.  
-
-You can look at the
-@extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
-to see what this looks like in practice.
- 
-### Resource limits
-
-To avoid CFS scheduler limits, it is best not to use `resources.limits.cpu` limits, but use `resources.requests.cpu` configuration instead.

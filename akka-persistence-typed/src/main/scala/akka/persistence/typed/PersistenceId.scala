@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed
@@ -125,6 +125,28 @@ object PersistenceId {
   def ofUniqueId(id: String): PersistenceId =
     new PersistenceId(id)
 
+  /**
+   * Extract the `entityTypeHint` from a persistence id String with the default separator `|`.
+   * If the separator `|` is not found it return the empty String (`""`).
+   */
+  def extractEntityType(id: String): String = {
+    val i = id.indexOf(PersistenceId.DefaultSeparator)
+    if (i == -1) ""
+    else id.substring(0, i)
+  }
+
+  /**
+   * Extract the `entityId` from a persistence id String with the default separator `|`.
+   * If the separator `|` is not found it return the `id`.
+   */
+  def extractEntityId(id: String): String = {
+    val i = id.indexOf(PersistenceId.DefaultSeparator)
+    if (i == -1) id
+    else id.substring(i + 1)
+  }
+
+  def unapply(persistenceId: PersistenceId): Option[(String, String)] =
+    Some((persistenceId.entityTypeHint, persistenceId.entityId))
 }
 
 /**
@@ -137,6 +159,9 @@ final class PersistenceId private (val id: String) {
 
   if (id.trim.isEmpty)
     throw new IllegalArgumentException("persistenceId must not be empty")
+
+  def entityTypeHint: String = PersistenceId.extractEntityType(id)
+  def entityId: String = PersistenceId.extractEntityId(id)
 
   override def toString: String = s"PersistenceId($id)"
 

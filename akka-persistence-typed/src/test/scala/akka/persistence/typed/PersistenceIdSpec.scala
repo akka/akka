@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 class PersistenceIdSpec extends AnyWordSpec with Matchers with LogCapturing {
 
@@ -44,6 +45,27 @@ class PersistenceIdSpec extends AnyWordSpec with Matchers with LogCapturing {
     "not allow custom separator in entityId" in {
       intercept[IllegalArgumentException] {
         PersistenceId("SomeType", "A#B", "#")
+      }
+    }
+
+    "be able to extract entityTypeHint" in {
+      PersistenceId.extractEntityType("SomeType|abc") should ===("SomeType")
+      PersistenceId.extractEntityType("abc") should ===("")
+      PersistenceId("SomeType", "abc").entityTypeHint should ===("SomeType")
+    }
+
+    "be able to extract entityId" in {
+      PersistenceId.extractEntityId("SomeType|abc") should ===("abc")
+      PersistenceId.extractEntityId("abc") should ===("abc")
+      PersistenceId("SomeType", "abc").entityId should ===("abc")
+    }
+
+    "extract entityTypeHint and entityId via unapply" in {
+      PersistenceId("SomeType", "abc") match {
+        case PersistenceId(entityTypeHint, entityId) =>
+          entityTypeHint should ===("SomeType")
+          entityId should ===("abc")
+        case _ => fail()
       }
     }
   }

@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.ClosedShape
-import akka.stream.OverflowStrategy
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream.ActorAttributes
+import akka.stream.ClosedShape
+import akka.stream.OverflowStrategy
+import akka.stream.Supervision
+import akka.stream.testkit._
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphPartitionSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -25,7 +25,7 @@ class GraphPartitionSpec extends StreamSpec("""
     "partition to three subscribers" in assertAllStagesStopped {
 
       val (s1, s2, s3) = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
+        .fromGraph(GraphDSL.createGraph(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
           implicit b => (sink1, sink2, sink3) =>
             val partition = b.add(Partition[Int](3, {
               case g if (g > 3)  => 0
@@ -217,7 +217,7 @@ class GraphPartitionSpec extends StreamSpec("""
       val s = Sink.seq[Int]
       val input = Set(5, 2, 9, 1, 1, 1, 10)
 
-      val g = RunnableGraph.fromGraph(GraphDSL.create(s) { implicit b => sink =>
+      val g = RunnableGraph.fromGraph(GraphDSL.createGraph(s) { implicit b => sink =>
         val partition = b.add(Partition[Int](2, { case l if l < 4 => 0; case _ => 1 }))
         val merge = b.add(Merge[Int](2))
         Source(input) ~> partition.in
@@ -280,7 +280,7 @@ class GraphPartitionSpec extends StreamSpec("""
     "partition to three subscribers, with Resume supervision" in assertAllStagesStopped {
 
       val (s1, s2, s3) = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
+        .fromGraph(GraphDSL.createGraph(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
           implicit b => (sink1, sink2, sink3) =>
             val partition = b.add(Partition[Int](3, {
               case g if g > 3  => 0
@@ -303,7 +303,7 @@ class GraphPartitionSpec extends StreamSpec("""
 
     "partition to three subscribers, with Restart supervision" in assertAllStagesStopped {
       val (s1, s2, s3) = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
+        .fromGraph(GraphDSL.createGraph(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
           implicit b => (sink1, sink2, sink3) =>
             val partition = b.add(Partition[Int](3, {
               case g if g > 3  => 0
@@ -327,7 +327,7 @@ class GraphPartitionSpec extends StreamSpec("""
     "support supervision for PartitionOutOfBoundsException" in assertAllStagesStopped {
 
       val (s1, s2, s3) = RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
+        .fromGraph(GraphDSL.createGraph(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
           implicit b => (sink1, sink2, sink3) =>
             val partition = b.add(Partition[Int](3, {
               case g if g > 3  => 0

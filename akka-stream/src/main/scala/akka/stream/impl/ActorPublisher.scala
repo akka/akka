@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -10,10 +10,11 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
 
-import akka.actor.{ Actor, ActorRef, Terminated }
-import akka.annotation.InternalApi
 import org.reactivestreams.{ Publisher, Subscriber }
 import org.reactivestreams.Subscription
+
+import akka.actor.{ Actor, ActorRef, Terminated }
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

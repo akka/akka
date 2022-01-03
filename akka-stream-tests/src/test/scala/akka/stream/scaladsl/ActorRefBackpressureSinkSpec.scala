@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
+
+import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.Attributes.inputBuffer
 import akka.stream.Materializer
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
-
-import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 object ActorRefBackpressureSinkSpec {
   val initMessage = "start"
@@ -120,6 +120,32 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(2)
       fw ! TriggerAckMessage
       expectMsg(3)
+      fw ! TriggerAckMessage
+
+      expectMsg(completeMessage)
+    }
+
+    "send message only when backpressure received with any ack message" in assertAllStagesStopped {
+      val fw = createActor(classOf[Fw2])
+      val publisher = TestSource
+        .probe[Int]
+        .to(Sink.actorRefWithBackpressure(fw, initMessage, completeMessage, _ => failMessage))
+        .run()
+      expectMsg(initMessage)
+
+      publisher.sendNext(1)
+      expectNoMessage(200.millis)
+      fw ! TriggerAckMessage
+      expectMsg(1)
+
+      publisher.sendNext(2)
+      publisher.sendNext(3)
+      publisher.sendComplete()
+      fw ! TriggerAckMessage
+      expectMsg(2)
+      fw ! TriggerAckMessage
+      expectMsg(3)
+      fw ! TriggerAckMessage
 
       expectMsg(completeMessage)
     }
@@ -131,7 +157,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val sink = Sink
         .actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage)
         .withAttributes(inputBuffer(bufferSize, bufferSize))
-      val bufferFullProbe = Promise[akka.Done.type]
+      val bufferFullProbe = Promise[akka.Done.type]()
       Source(1 to streamElementCount)
         .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ => bufferFullProbe.trySuccess(akka.Done))))
         .to(sink)
@@ -205,6 +231,29 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       probe.expectMsg(failMessage)
     }
 
+    "signal completion after last message has been acked" in {
+      val probe = TestProbe()
+
+      val sink = Sink
+        .actorRefWithBackpressure[String](
+          probe.ref,
+          initMessage,
+          ackMessage,
+          completeMessage,
+          (_: Throwable) => failMessage)
+        .withAttributes(inputBuffer(1, 1))
+
+      Source.single("hello world").runWith(sink)
+
+      probe.expectMsg(initMessage)
+      probe.reply(ackMessage)
+
+      probe.expectMsg("hello world")
+      probe.expectNoMessage(100.millis)
+
+      probe.reply(ackMessage)
+      probe.expectMsg(completeMessage)
+    }
   }
 
 }

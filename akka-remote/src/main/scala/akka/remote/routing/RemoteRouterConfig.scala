@@ -1,10 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.routing
 
 import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorCell
 import akka.actor.ActorContext
@@ -22,8 +25,6 @@ import akka.routing.Routee
 import akka.routing.Router
 import akka.routing.RouterActor
 import akka.routing.RouterConfig
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -40,7 +41,7 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
   def this(local: Pool, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
-  @silent @transient private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
+  @nowarn @transient private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
   // need this counter as instance variable since Resizer may call createRoutees several times
   @transient private val childNameCounter = new AtomicInteger
 
@@ -53,7 +54,7 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
     val deploy = Deploy(
       config = ConfigFactory.empty(),
       routerConfig = routeeProps.routerConfig,
-      scope = RemoteScope(nodeAddressIter.next))
+      scope = RemoteScope(nodeAddressIter.next()))
 
     // attachChild means that the provider will treat this call as if possibly done out of the wrong
     // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -8,11 +8,10 @@ import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.{ ActorPath, ActorSelection, NotInfluenceReceiveTimeout }
-import akka.persistence.serialization.Message
 import akka.actor.Cancellable
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
-import akka.persistence.AtLeastOnceDelivery.Internal.Delivery
+import akka.persistence.serialization.Message
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -362,7 +361,8 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
    */
   def setDeliverySnapshot(snapshot: AtLeastOnceDeliverySnapshot): Unit = {
     deliverySequenceNr = snapshot.currentDeliveryId
-    val now = System.nanoTime()
+    // deliver on next tick
+    val now = System.nanoTime() - redeliverInterval.toNanos
     unconfirmed = scala.collection.immutable.SortedMap.from(snapshot.unconfirmedDeliveries.iterator.map(d =>
       d.deliveryId -> Delivery(d.destination, d.message, now, 0)))
   }

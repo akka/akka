@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
+import java.util.concurrent.atomic.AtomicBoolean
+
+import scala.concurrent.Future
+
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
-
-import java.util.concurrent.atomic.AtomicBoolean
-import scala.concurrent.{ Future }
 
 trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec =>
   import scala.concurrent.duration.Duration
@@ -25,7 +26,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec =>
         enableTcpReset()
         println("===>>> Reply with [TCP RST] for [" + duration + "]")
         Thread.sleep(duration.toMillis)
-        restoreIP
+        restoreIP()
       } catch {
         case e: Throwable =>
           dead.set(true)
@@ -40,7 +41,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec =>
         enableNetworkThrottling()
         println("===>>> Throttling network with [" + BytesPerSecond + ", " + DelayMillis + "] for [" + duration + "]")
         Thread.sleep(duration.toMillis)
-        restoreIP
+        restoreIP()
       } catch {
         case e: Throwable =>
           dead.set(true)
@@ -55,7 +56,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec =>
         enableNetworkDrop()
         println("===>>> Blocking network [TCP DENY] for [" + duration + "]")
         Thread.sleep(duration.toMillis)
-        restoreIP
+        restoreIP()
       } catch {
         case e: Throwable =>
           dead.set(true)

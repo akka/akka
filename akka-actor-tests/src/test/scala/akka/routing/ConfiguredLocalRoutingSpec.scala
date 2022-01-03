@@ -1,26 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
-import language.postfixOps
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.collection.immutable
+
+import scala.annotation.nowarn
+import com.typesafe.config.Config
+import language.postfixOps
+
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, Deploy, Props }
-import akka.actor.UnstartedCell
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
-import akka.pattern.gracefulStop
-import com.typesafe.config.Config
-import akka.actor.ActorSystem
-import akka.testkit.TestProbe
-import akka.testkit.TestProbe
-import akka.actor.ExtendedActorSystem
-import akka.testkit.TestActors.echoActorProps
 import akka.actor.ActorPath
-import com.github.ghik.silencer.silent
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.UnstartedCell
+import akka.pattern.gracefulStop
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
+import akka.testkit.TestActors.echoActorProps
+import akka.testkit.TestProbe
 
 object ConfiguredLocalRoutingSpec {
   val config = """
@@ -112,7 +113,9 @@ class ConfiguredLocalRoutingSpec
       r.underlying match {
         case c: RoutedActorCell => c.routerConfig
         case _: UnstartedCell   => awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
+        case _                  => throw new IllegalArgumentException(s"Unexpected underlying cell ${r.underlying}")
       }
+    case _ => throw new IllegalArgumentException(s"Unexpected actorref $ref")
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {
@@ -127,26 +130,26 @@ class ConfiguredLocalRoutingSpec
   "RouterConfig" must {
 
     "be picked up from Props" in {
-      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]), "someOther")
+      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]()), "someOther")
       routerConfig(actor) should ===(RoundRobinPool(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config" in {
-      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]), "config")
+      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]()), "config")
       routerConfig(actor) should ===(RandomPool(nrOfInstances = 4, usePoolDispatcher = true))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "use routees.paths from config" in {
-      val actor = system.actorOf(RandomPool(12).props(routeeProps = Props[EchoProps]), "paths")
+      val actor = system.actorOf(RandomPool(12).props(routeeProps = Props[EchoProps]()), "paths")
       routerConfig(actor) should ===(RandomGroup(List("/user/service1", "/user/service2")))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in explicit deployment" in {
       val actor = system.actorOf(
-        FromConfig.props(routeeProps = Props[EchoProps]).withDeploy(Deploy(routerConfig = RoundRobinPool(12))),
+        FromConfig.props(routeeProps = Props[EchoProps]()).withDeploy(Deploy(routerConfig = RoundRobinPool(12))),
         "someOther")
       routerConfig(actor) should ===(RoundRobinPool(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
@@ -154,7 +157,7 @@ class ConfiguredLocalRoutingSpec
 
     "be overridable in config even with explicit deployment" in {
       val actor = system.actorOf(
-        FromConfig.props(routeeProps = Props[EchoProps]).withDeploy(Deploy(routerConfig = RoundRobinPool(12))),
+        FromConfig.props(routeeProps = Props[EchoProps]()).withDeploy(Deploy(routerConfig = RoundRobinPool(12))),
         "config")
       routerConfig(actor) should ===(RandomPool(nrOfInstances = 4, usePoolDispatcher = true))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
@@ -169,7 +172,7 @@ class ConfiguredLocalRoutingSpec
     "not get confused when trying to wildcard-configure children" in {
       system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
       val recv = (for (_ <- 1 to 3) yield expectMsgType[ActorRef].path.elements.mkString("/", "/", "")).toSet
-      @silent
+      @nowarn
       val expc = Set('a', 'b', 'c').map(i => "/user/weird/$" + i)
       recv should ===(expc)
       expectNoMessage(1 second)
@@ -185,7 +188,7 @@ class ConfiguredLocalRoutingSpec
       // we don't really support deployment configuration of system actors, but
       // it's used for the pool of the SimpleDnsManager "/IO-DNS/inet-address"
       val probe = TestProbe()
-      val parent = system.asInstanceOf[ExtendedActorSystem].systemActorOf(Props[Parent], "sys-parent")
+      val parent = system.asInstanceOf[ExtendedActorSystem].systemActorOf(Props[Parent](), "sys-parent")
       parent.tell((FromConfig.props(echoActorProps), "round"), probe.ref)
       val router = probe.expectMsgType[ActorRef]
       val replies = collectRouteePaths(probe, router, 10)

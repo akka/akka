@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -8,14 +8,17 @@ import java.util.function.LongFunction
 
 import scala.annotation.tailrec
 
+import org.agrona.collections.Long2ObjectHashMap
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.InternalActorRef
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.remote.artery._
-import akka.util.{ unused, OptionVal }
-import org.agrona.collections.Long2ObjectHashMap
+import akka.util.OptionVal
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -179,6 +182,11 @@ private[remote] final class InboundActorRefCompression(
     heavyHitters: TopHeavyHitters[ActorRef])
     extends InboundCompression[ActorRef](log, settings, originUid, inboundContext, heavyHitters) {
 
+  override def increment(remoteAddress: Address, value: ActorRef, n: Long): Unit = {
+    // don't count PromiseActorRefs as they are used only once and becomes a sort of memory leak
+    if (!InternalActorRef.isTemporaryRef(value)) super.increment(remoteAddress, value, n)
+  }
+
   override def decompress(tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
     super.decompressInternal(tableVersion, idx, 0)
 
@@ -191,6 +199,20 @@ private[remote] final class InboundActorRefCompression(
       originUid)
     outboundContext.sendControl(
       CompressionProtocol.ActorRefCompressionAdvertisement(inboundContext.localAddress, table))
+  }
+
+  override protected def buildTableForAdvertisement(elements: Iterator[ActorRef]): Map[ActorRef, Int] = {
+    val mb = Map.newBuilder[ActorRef, Int]
+    var idx = 0
+    elements.foreach {
+      case ref: InternalActorRef =>
+        if (!InternalActorRef.isTemporaryRef(ref)) {
+          mb += ref -> idx
+          idx += 1
+        }
+      case _ => // ignore others
+    }
+    mb.result()
   }
 }
 
@@ -399,7 +421,7 @@ private[remote] abstract class InboundCompression[T >: Null](
           tableVersion,
           originUid,
           inProgress.version)
-      case None =>
+      case _ =>
       // already confirmed
     }
 
@@ -453,7 +475,7 @@ private[remote] abstract class InboundCompression[T >: Null](
                 originUid)
             }
 
-          case OptionVal.None =>
+          case _ =>
             // otherwise it's too early, association not ready yet.
             // so we don't build the table since we would not be able to send it anyway.
             log.debug("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
@@ -473,7 +495,7 @@ private[remote] abstract class InboundCompression[T >: Null](
                 resendCount,
                 maxResendCount)
               advertiseCompressionTable(association, inProgress) // resend
-            case OptionVal.None =>
+            case _ =>
           }
         } else {
           // give up, it might be dead
@@ -493,13 +515,15 @@ private[remote] abstract class InboundCompression[T >: Null](
   protected def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[T]): Unit
 
   private def prepareCompressionAdvertisement(nextTableVersion: Byte): CompressionTable[T] = {
-    // TODO optimised somewhat, check if still to heavy; could be encoded into simple array
-    val mappings: Map[T, Int] = {
-      val mb = Map.newBuilder[T, Int]
-      mb ++= heavyHitters.iterator.zipWithIndex
-      mb.result()
-    }
+    val mappings: Map[T, Int] = buildTableForAdvertisement(heavyHitters.iterator)
     CompressionTable(originUid, nextTableVersion, mappings)
+  }
+
+  protected def buildTableForAdvertisement(elements: Iterator[T]): Map[T, Int] = {
+    // TODO optimised somewhat, check if still to heavy; could be encoded into simple array
+    val mb = Map.newBuilder[T, Int]
+    mb ++= elements.zipWithIndex
+    mb.result()
   }
 
   override def toString =

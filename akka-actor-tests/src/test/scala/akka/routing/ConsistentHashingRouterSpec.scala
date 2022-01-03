@@ -1,19 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
-import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
-import akka.testkit.AkkaSpec
 import akka.testkit._
+import akka.testkit.AkkaSpec
 
 object ConsistentHashingRouterSpec {
 
@@ -56,9 +58,9 @@ class ConsistentHashingRouterSpec
     with DefaultTimeout
     with ImplicitSender {
   import ConsistentHashingRouterSpec._
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-  val router1 = system.actorOf(FromConfig.props(Props[Echo]), "router1")
+  val router1 = system.actorOf(FromConfig.props(Props[Echo]()), "router1")
 
   "consistent hashing router" must {
     "create routees from configuration" in {
@@ -89,7 +91,7 @@ class ConsistentHashingRouterSpec
       }
       val router2 =
         system.actorOf(
-          ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).props(Props[Echo]),
+          ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).props(Props[Echo]()),
           "router2")
 
       router2 ! Msg2("a", "A")

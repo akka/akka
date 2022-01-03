@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
 import scala.annotation.tailrec
 
-import akka.japi.function.{ Function => JFunction }
-import akka.japi.function.Creator
-import akka.japi.function.{ Predicate => JPredicate }
-import akka.annotation.InternalApi
+import BehaviorBuilder._
+
 import akka.actor.typed.Behavior
 import akka.actor.typed.ExtensibleBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
-import BehaviorBuilder._
+import akka.annotation.InternalApi
+import akka.japi.function.{ Function => JFunction }
+import akka.japi.function.{ Predicate => JPredicate }
+import akka.japi.function.Creator
 import akka.util.OptionVal
 
 /**
@@ -81,7 +82,7 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
   def onMessageEquals(msg: T, handler: Creator[Behavior[T]]): BehaviorBuilder[T] =
     withMessage[T](
       OptionVal.Some(msg.getClass.asInstanceOf[Class[T]]),
-      OptionVal.Some(_.equals(msg)),
+      OptionVal.Some(_ == msg),
       (_: T) => handler.create())
 
   /**
@@ -166,6 +167,7 @@ object BehaviorBuilder {
   /**
    * @return new empty immutable behavior builder.
    */
+  // Empty param list to work around https://github.com/lampepfl/dotty/issues/10347
   def create[T]: BehaviorBuilder[T] = _empty.asInstanceOf[BehaviorBuilder[T]]
 }
 

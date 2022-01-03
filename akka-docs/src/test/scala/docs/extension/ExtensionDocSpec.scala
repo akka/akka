@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.extension
@@ -85,7 +85,7 @@ class ExtensionDocSpec extends AkkaSpec(ExtensionDocSpec.config) {
 
   "demonstrate how to create an extension in Scala" in {
     //#extension-usage
-    CountExtension(system).increment
+    CountExtension(system).increment()
     //#extension-usage
   }
 

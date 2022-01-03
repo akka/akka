@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.pattern;
 
 import akka.actor.*;
-import akka.pattern.Backoff;
 import akka.pattern.BackoffOpts;
 import akka.pattern.BackoffSupervisor;
 import akka.testkit.TestActors.EchoActor;

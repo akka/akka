@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.japi
 
-import akka.util.Subclassification
 import akka.actor.{ ActorRef, ActorSystem }
+import akka.util.Subclassification
 
 /**
  * Java API: See documentation for [[akka.event.EventBus]]
@@ -50,7 +50,7 @@ abstract class LookupEventBus[E, S, C] extends EventBus[E, S, C] {
     type Subscriber = S
     type Classifier = C
 
-    override protected def mapSize: Int = LookupEventBus.this.mapSize
+    override protected def mapSize(): Int = LookupEventBus.this.mapSize()
 
     override protected def compareSubscribers(a: S, b: S): Int =
       LookupEventBus.this.compareSubscribers(a, b)
@@ -197,7 +197,7 @@ abstract class ManagedActorEventBus[E](system: ActorSystem) extends EventBus[E, 
 
     override val system = ManagedActorEventBus.this.system
 
-    override protected def mapSize: Int = ManagedActorEventBus.this.mapSize
+    override protected def mapSize: Int = ManagedActorEventBus.this.mapSize()
 
     override protected def classify(event: E): ActorRef =
       ManagedActorEventBus.this.classify(event)

@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
 import java.util.Collection
-import scala.concurrent.{ BlockContext, CanAwait }
-import scala.concurrent.duration.Duration
 import java.util.concurrent.{
   ArrayBlockingQueue,
   BlockingQueue,
@@ -23,6 +21,9 @@ import java.util.concurrent.{
   TimeUnit
 }
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
+
+import scala.concurrent.{ BlockContext, CanAwait }
+import scala.concurrent.duration.Duration
 
 object ThreadPoolConfig {
   type QueueFactory = () => BlockingQueue[Runnable]

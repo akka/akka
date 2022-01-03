@@ -1,20 +1,19 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
 import java.time.Duration
-
-import akka.annotation.DoNotInherit
-import akka.actor.ClassicActorContextProvider
-import akka.actor.typed._
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import org.slf4j.Logger
-
 import scala.concurrent.ExecutionContextExecutor
+import org.slf4j.Logger
+import akka.actor.ClassicActorContextProvider
+import akka.actor.typed._
+import akka.annotation.DoNotInherit
+import akka.pattern.StatusReply
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -297,6 +296,19 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
       target: RecipientRef[Req],
       responseTimeout: Duration,
       createRequest: akka.japi.function.Function[ActorRef[Res], Req],
+      applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit
+
+  /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply#success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply#error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
+   */
+  def askWithStatus[Req, Res](
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: akka.japi.function.Function[ActorRef[StatusReply[Res]], Req],
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit
 
   /**

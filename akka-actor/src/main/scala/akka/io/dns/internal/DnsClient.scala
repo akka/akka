@@ -1,22 +1,23 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
 
 import java.net.{ InetAddress, InetSocketAddress }
 
-import akka.actor.Status.Failure
-import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
-import akka.annotation.InternalApi
-import akka.io.dns.{ RecordClass, RecordType, ResourceRecord }
-import akka.io.{ IO, Tcp, Udp }
-import akka.pattern.{ BackoffOpts, BackoffSupervisor }
-import com.github.ghik.silencer.silent
-
 import scala.collection.{ immutable => im }
-import scala.util.Try
 import scala.concurrent.duration._
+import scala.util.Try
+
+import scala.annotation.nowarn
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
+import akka.actor.Status.Failure
+import akka.annotation.InternalApi
+import akka.io.{ IO, Tcp, Udp }
+import akka.io.dns.{ RecordClass, RecordType, ResourceRecord }
+import akka.pattern.{ BackoffOpts, BackoffSupervisor }
 
 /**
  * INTERNAL API
@@ -39,7 +40,6 @@ import scala.concurrent.duration._
 @InternalApi private[akka] class DnsClient(ns: InetSocketAddress) extends Actor with ActorLogging with Stash {
 
   import DnsClient._
-
   import context.system
 
   val udp = IO(Udp)
@@ -73,7 +73,7 @@ import scala.concurrent.duration._
   /**
    * Silent to allow map update syntax
    */
-  @silent()
+  @nowarn()
   def ready(socket: ActorRef): Receive = {
     case DropRequest(id) =>
       log.debug("Dropping request [{}]", id)

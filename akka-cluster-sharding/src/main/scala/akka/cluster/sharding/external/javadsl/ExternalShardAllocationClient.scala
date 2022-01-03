@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.external.javadsl
@@ -28,9 +28,20 @@ trait ExternalShardAllocationClient {
    *
    * @param shard    The shard identifier
    * @param location Location (akka node) to allocate the shard to
-   * @return Confirmation that the update has been propagated to a majority of cluster nodes
+   * @return Conformation that the update has been written to the local node
    */
   def setShardLocation(shard: ShardId, location: Address): CompletionStage[Done]
+
+  /**
+   * Update all of the provided ShardLocations.
+   * The [[Address]] should match one of the nodes in the cluster. If the node has not joined
+   * the cluster yet it will be moved to that node after the first cluster
+   * sharding rebalance it does.
+   *
+   * @param locations to update
+   * @return Confirmation that the update has been written to the local node
+   */
+  def setShardLocations(locations: java.util.Map[ShardId, Address]): CompletionStage[Done]
 
   /**
    * Get all the current shard locations that have been set via setShardLocation

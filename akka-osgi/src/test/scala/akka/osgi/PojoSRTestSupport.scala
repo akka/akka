@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.osgi
 
-import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, ClasspathScanner, PojoServiceRegistryFactory }
-
-import akka.util.ccompat.JavaConverters._
-import org.apache.commons.io.IOUtils.copy
-
-import org.osgi.framework._
-import java.net.URL
-import java.util.jar.JarInputStream
 import java.io._
-import org.scalatest.{ BeforeAndAfterAll, Suite }
+import java.net.URL
 import java.util.{ Date, HashMap, ServiceLoader, UUID }
-import scala.reflect.ClassTag
+import java.util.jar.JarInputStream
+
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.annotation.tailrec
+import scala.reflect.ClassTag
+
+import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, ClasspathScanner, PojoServiceRegistryFactory }
+import org.apache.commons.io.IOUtils.copy
+import org.osgi.framework._
+import org.scalatest.{ BeforeAndAfterAll, Suite }
+
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Trait that provides support for building akka-osgi tests using PojoSR

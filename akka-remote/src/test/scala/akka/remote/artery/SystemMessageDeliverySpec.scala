@@ -1,10 +1,16 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import java.util.concurrent.ThreadLocalRandom
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import akka.NotUsed
 import akka.actor.ActorIdentity
@@ -26,11 +32,6 @@ import akka.testkit.TestActors
 import akka.testkit.TestEvent
 import akka.testkit.TestProbe
 import akka.util.OptionVal
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object SystemMessageDeliverySpec {
 
@@ -81,6 +82,7 @@ abstract class AbstractSystemMessageDeliverySpec(c: Config) extends ArteryMultiN
         outboundEnvelope.message match {
           case sysEnv: SystemMessageEnvelope =>
             InboundEnvelope(recipient, sysEnv, OptionVal.None, addressA.uid, inboundContext.association(addressA.uid))
+          case _ => throw new RuntimeException()
         })
       .async
       .via(new SystemMessageAcker(inboundContext))

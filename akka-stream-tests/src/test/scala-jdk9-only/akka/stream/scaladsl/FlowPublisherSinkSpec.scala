@@ -1,17 +1,16 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.StreamSpec
-import akka.stream.ClosedShape
-
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import scala.concurrent.Await
+import akka.stream.ClosedShape
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowPublisherSinkSpec extends StreamSpec {
 

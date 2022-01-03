@@ -1,10 +1,17 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import java.util.concurrent.TimeUnit
+
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import scala.annotation.nowarn
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorContext
 import akka.actor.ActorRef
@@ -18,12 +25,6 @@ import akka.japi.function
 import akka.stream.impl._
 import akka.stream.stage.GraphStageLogic
 import akka.util.Helpers.toRootLowerCase
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 object ActorMaterializer {
 
@@ -79,6 +80,9 @@ object ActorMaterializer {
       case context: ActorContext =>
         // actor context level materializer, will live as a child of this actor
         PhasedFusingActorMaterializer(context, namePrefix, materializerSettings, materializerSettings.toAttributes)
+
+      case other =>
+        throw new IllegalArgumentException(s"Unexpected type of context: ${other}")
     }
   }
 
@@ -419,7 +423,7 @@ object ActorMaterializerSettings {
  *
  * The constructor is not public API, use create or apply on the [[ActorMaterializerSettings]] companion instead.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final class ActorMaterializerSettings @InternalApi private (
     /*
      * Important note: `initialInputBufferSize`, `maxInputBufferSize`, `dispatcher` and
@@ -744,6 +748,7 @@ final class ActorMaterializerSettings @InternalApi private (
       // for stream refs and io live with the respective stages
       Attributes.InputBuffer(initialInputBufferSize, maxInputBufferSize) ::
       Attributes.CancellationStrategy.Default :: // FIXME: make configurable, see https://github.com/akka/akka/issues/28000
+      Attributes.NestedMaterializationCancellationPolicy.Default ::
       ActorAttributes.Dispatcher(dispatcher) ::
       ActorAttributes.SupervisionStrategy(supervisionDecider) ::
       ActorAttributes.DebugLogging(debugLogging) ::
@@ -773,7 +778,9 @@ object IOSettings {
     "Use setting 'akka.stream.materializer.io.tcp.write-buffer-size' or attribute TcpAttributes.writeBufferSize instead",
     "2.6.0")
   def apply(config: Config): IOSettings =
-    new IOSettings(tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt)
+    new IOSettings(
+      tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt,
+      coalesceWrites = config.getInt("tcp.coalesce-writes"))
 
   @deprecated(
     "Use setting 'akka.stream.materializer.io.tcp.write-buffer-size' or attribute TcpAttributes.writeBufferSize instead",
@@ -801,22 +808,33 @@ object IOSettings {
     apply(tcpWriteBufferSize)
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final class IOSettings private (
     @deprecated("Use attribute 'TcpAttributes.TcpWriteBufferSize' to read the concrete setting value", "2.6.0")
-    val tcpWriteBufferSize: Int) {
+    val tcpWriteBufferSize: Int,
+    val coalesceWrites: Int) {
+
+  // constructor for binary compatibility with version 2.6.15 and earlier
+  @deprecated("Use attribute 'TcpAttributes.TcpWriteBufferSize' to read the concrete setting value", "2.6.0")
+  def this(tcpWriteBufferSize: Int) = this(tcpWriteBufferSize, coalesceWrites = 10)
 
   def withTcpWriteBufferSize(value: Int): IOSettings = copy(tcpWriteBufferSize = value)
 
-  private def copy(tcpWriteBufferSize: Int): IOSettings = new IOSettings(tcpWriteBufferSize = tcpWriteBufferSize)
+  def withCoalesceWrites(value: Int): IOSettings = copy(coalesceWrites = value)
+
+  private def copy(tcpWriteBufferSize: Int = tcpWriteBufferSize, coalesceWrites: Int = coalesceWrites): IOSettings =
+    new IOSettings(tcpWriteBufferSize, coalesceWrites)
 
   override def equals(other: Any): Boolean = other match {
-    case s: IOSettings => s.tcpWriteBufferSize == tcpWriteBufferSize
+    case s: IOSettings => s.tcpWriteBufferSize == tcpWriteBufferSize && s.coalesceWrites == coalesceWrites
     case _             => false
   }
 
+  override def hashCode(): Int =
+    31 * tcpWriteBufferSize + coalesceWrites
+
   override def toString =
-    s"""IoSettings(${tcpWriteBufferSize})"""
+    s"""IoSettings($tcpWriteBufferSize,$coalesceWrites)"""
 }
 
 object StreamSubscriptionTimeoutSettings {
@@ -861,7 +879,7 @@ object StreamSubscriptionTimeoutSettings {
  * Leaked publishers and subscribers are cleaned up when they are not used within a given
  * deadline, configured by [[StreamSubscriptionTimeoutSettings]].
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final class StreamSubscriptionTimeoutSettings(
     @deprecated(
       "Use attribute 'ActorAttributes.StreamSubscriptionTimeoutMode' to read the concrete setting value",

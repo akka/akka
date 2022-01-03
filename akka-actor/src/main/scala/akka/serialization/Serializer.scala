@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -48,7 +48,9 @@ trait Serializer {
   def identifier: Int
 
   /**
-   * Serializes the given object into an Array of Byte
+   * Serializes the given object into an Array of Byte.
+   *
+   * Note that the array must not be mutated by the serializer after it has been returned.
    */
   def toBinary(o: AnyRef): Array[Byte]
 
@@ -130,7 +132,9 @@ abstract class SerializerWithStringManifest extends Serializer {
   def manifest(o: AnyRef): String
 
   /**
-   * Serializes the given object into an Array of Byte
+   * Serializes the given object into an Array of Byte.
+   *
+   * Note that the array must not be mutated by the serializer after it has been returned.
    */
   def toBinary(o: AnyRef): Array[Byte]
 
@@ -359,7 +363,7 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
 
   private[this] val empty = Array.empty[Byte]
 
-  private[this] val log = Logging.withMarker(system, getClass)
+  private[this] val log = Logging.withMarker(system, classOf[DisabledJavaSerializer])
 
   def includeManifest: Boolean = false
 

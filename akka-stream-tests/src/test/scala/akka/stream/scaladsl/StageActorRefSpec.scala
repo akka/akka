@@ -1,8 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
+
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 import akka.actor.ActorRef
 import akka.actor.Kill
@@ -19,13 +23,9 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestEvent
 import akka.testkit.TestProbe
 
-import scala.concurrent.duration._
-import scala.concurrent.Future
-import scala.concurrent.Promise
-
 class StageActorRefSpec extends StreamSpec with ImplicitSender {
   import StageActorRefSpec._
-  import ControlProtocol._
+  import StageActorRefSpec.ControlProtocol._
 
   def sumStage(probe: ActorRef) = SumTestStage(probe)
 
@@ -194,7 +194,7 @@ object StageActorRefSpec {
       val p: Promise[Int] = Promise()
 
       val logic = new GraphStageLogic(shape) {
-        implicit def self = stageActor.ref // must be a `def`; we want self to be the sender for our replies
+        implicit def self: ActorRef = stageActor.ref // must be a `def`; we want self to be the sender for our replies
         var sum: Int = 0
 
         override def preStart(): Unit = {

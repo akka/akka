@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -109,9 +109,7 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
           if (isAvailable(out))
             pull(in) // onPull from downstream already called
         }
-        outboundContext.controlSubject
-          .attach(this)
-          .foreach(callback.invoke)(ExecutionContexts.sameThreadExecutionContext)
+        outboundContext.controlSubject.attach(this).foreach(callback.invoke)(ExecutionContexts.parasitic)
       }
 
       override def postStop(): Unit = {
@@ -140,6 +138,9 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
             }
             if (!unacknowledged.isEmpty)
               scheduleOnce(ResendTick, resendInterval)
+
+          case other =>
+            throw new IllegalArgumentException(s"Unknown timer key: $other")
         }
 
       // ControlMessageObserver, external call
@@ -349,7 +350,7 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
         // for logging
         def fromRemoteAddressStr: String = env.association match {
           case OptionVal.Some(a) => a.remoteAddress.toString
-          case OptionVal.None    => "N/A"
+          case _                 => "N/A"
         }
 
         env.message match {

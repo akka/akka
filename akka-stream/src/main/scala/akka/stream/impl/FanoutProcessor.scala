@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
+
+import org.reactivestreams.Subscriber
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -12,7 +14,7 @@ import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
-import org.reactivestreams.Subscriber
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -120,14 +122,11 @@ import org.reactivestreams.Subscriber
  */
 @InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes) extends ActorProcessorImpl(attributes) {
 
-  val timeoutMode = {
-    val StreamSubscriptionTimeout(timeout, mode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
-    if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
-      import context.dispatcher
-      context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout)
-    }
-    mode
-  }
+  val StreamSubscriptionTimeout(timeout, timeoutMode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
+  val timeoutTimer = if (timeoutMode != StreamSubscriptionTimeoutTerminationMode.noop) {
+    import context.dispatcher
+    OptionVal.Some(context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout))
+  } else OptionVal.None
 
   override val primaryOutputs: FanoutOutputs = {
     val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
@@ -143,6 +142,14 @@ import org.reactivestreams.Subscriber
   override def pumpFinished(): Unit = {
     primaryInputs.cancel()
     primaryOutputs.complete()
+  }
+
+  override def postStop(): Unit = {
+    super.postStop()
+    timeoutTimer match {
+      case OptionVal.Some(timer) => timer.cancel()
+      case _                     =>
+    }
   }
 
   def afterFlush(): Unit = context.stop(self)

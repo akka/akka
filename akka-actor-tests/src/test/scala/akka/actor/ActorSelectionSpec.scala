@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.testkit._
-import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.pattern.ask
+import akka.testkit._
 
 object ActorSelectionSpec {
 
@@ -19,7 +20,7 @@ object ActorSelectionSpec {
   final case class GetSender(to: ActorRef) extends Query
   final case class Forward(path: String, msg: Any) extends Query
 
-  val p = Props[Node]
+  val p = Props[Node]()
 
   class Node extends Actor {
     def receive = {
@@ -50,6 +51,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
   def empty(path: String) =
     new EmptyLocalActorRef(sysImpl.provider, path match {
       case RelativeActorPath(elems) => sysImpl.lookupRoot.path / elems
+      case _                        => throw new RuntimeException()
     }, system.eventStream)
 
   val idProbe = TestProbe()
@@ -78,6 +80,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     Await.result(node ? query, timeout.duration) match {
       case ref: ActorRef             => Some(ref)
       case selection: ActorSelection => identify(selection)
+      case _                         => throw new RuntimeException()
     }
   }
 
@@ -355,7 +358,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
     "identify actors with wildcard selection correctly" in {
       val creator = TestProbe()
-      implicit def self = creator.ref
+      implicit def self: ActorRef = creator.ref
       val top = system.actorOf(p, "a")
       val b1 = Await.result((top ? Create("b1")).mapTo[ActorRef], timeout.duration)
       val b2 = Await.result((top ? Create("b2")).mapTo[ActorRef], timeout.duration)
@@ -364,8 +367,13 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
       val probe = TestProbe()
       system.actorSelection("/user/a/*").tell(Identify(1), probe.ref)
-      probe.receiveN(2).map { case ActorIdentity(1, r) => r }.toSet should ===(
-        Set[Option[ActorRef]](Some(b1), Some(b2)))
+      probe
+        .receiveN(2)
+        .map {
+          case ActorIdentity(1, r) => r
+          case _                   => throw new IllegalArgumentException()
+        }
+        .toSet should ===(Set[Option[ActorRef]](Some(b1), Some(b2)))
       probe.expectNoMessage()
 
       system.actorSelection("/user/a/b1/*").tell(Identify(2), probe.ref)

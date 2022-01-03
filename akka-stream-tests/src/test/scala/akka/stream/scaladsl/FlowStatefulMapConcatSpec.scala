@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
+import scala.util.control.NoStackTrace
+
 import akka.stream.ActorAttributes
 import akka.stream.Supervision
-
-import scala.util.control.NoStackTrace
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
 
 class FlowStatefulMapConcatSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

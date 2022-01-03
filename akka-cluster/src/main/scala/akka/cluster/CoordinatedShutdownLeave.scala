@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -15,7 +15,7 @@ import akka.cluster.MemberStatus._
  * INTERNAL API
  */
 private[akka] object CoordinatedShutdownLeave {
-  def props(): Props = Props[CoordinatedShutdownLeave]
+  def props(): Props = Props[CoordinatedShutdownLeave]()
 
   case object LeaveReq
 }

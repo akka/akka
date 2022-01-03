@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
+
+import scala.collection.immutable
+import scala.concurrent.duration._
 
 import akka.actor.Actor
 import akka.actor.ActorCell
@@ -17,9 +20,6 @@ import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
-
-import scala.collection.immutable
-import scala.concurrent.duration._
 import akka.util.ccompat._
 
 /**

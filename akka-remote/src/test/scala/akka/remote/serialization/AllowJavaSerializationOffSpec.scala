@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -7,14 +7,15 @@ package akka.remote.serialization
 import java.util.{ BitSet => ProgrammaticJavaDummy }
 import java.util.{ Date => SerializableDummy }
 
-import akka.actor.setup.ActorSystemSetup
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSystem
 import akka.actor.BootstrapSetup
 import akka.actor.ExtendedActorSystem
+import akka.actor.setup.ActorSystemSetup
 import akka.serialization._
 import akka.testkit.AkkaSpec
 import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
 
 class ConfigurationDummy
 class ProgrammaticDummy

@@ -1,0 +1,14 @@
+# This is used to configure the sbt instance in CI
+
+-XX:+UseG1GC
+-Xms3G
+-Xmx3G
+-Xss2M
+-XX:+AlwaysActAsServerClassMachine
+-XX:ReservedCodeCacheSize=256m
+-XX:MaxGCPauseMillis=750
+-XX:-UseBiasedLocking
+-XX:+UseCompressedOops
+-XX:MetaspaceSize=512M
+-XX:-ClassUnloadingWithConcurrentMark
+-Djava.security.egd=file:/dev/./urandom

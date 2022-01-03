@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.BenchmarkActors._
-import akka.actor.ForkJoinActorBenchmark.cores
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
+import akka.actor.BenchmarkActors._
+import akka.actor.ForkJoinActorBenchmark.cores
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))

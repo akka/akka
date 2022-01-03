@@ -1,26 +1,26 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.dispatch.sysmsg._
-import akka.dispatch.{ Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.routing._
-import akka.event._
-import akka.util.Helpers
-import akka.util.Collections.EmptyImmutableSeq
-import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
 
-import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
+import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
+import scala.util.control.NonFatal
 
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.dispatch.{ Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg._
+import akka.event._
+import akka.routing._
 import akka.serialization.Serialization
+import akka.util.Collections.EmptyImmutableSeq
+import akka.util.Helpers
 import akka.util.OptionVal
 
 /**
@@ -58,6 +58,9 @@ import akka.util.OptionVal
    */
   def deadLetters: ActorRef
 
+  /** INTERNAL API */
+  @InternalApi private[akka] def ignoreRef: ActorRef
+
   /**
    * The root path for all actors within this actor system, not including any remote address information.
    */
@@ -85,6 +88,11 @@ import akka.util.OptionVal
    * Generates and returns a unique actor path below “/temp”.
    */
   def tempPath(): ActorPath
+
+  /**
+   * Generates and returns a unique actor path starting with `prefix` below “/temp”.
+   */
+  def tempPath(prefix: String): ActorPath
 
   /**
    * Returns the actor reference representing the “/temp” path.
@@ -313,7 +321,7 @@ private[akka] object LocalActorRefProvider {
   private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef)
       extends Actor
       with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-    import SystemGuardian._
+    import akka.actor.SystemGuardian._
 
     var terminationHooks = Set.empty[ActorRef]
 
@@ -384,12 +392,21 @@ private[akka] class LocalActorRefProvider private[akka] (
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
   private[akka] val log: MarkerLoggingAdapter =
-    Logging.withMarker(eventStream, getClass.getName + "(" + rootPath.address + ")")
+    Logging.withMarker(eventStream, classOf[LocalActorRefProvider])
+
+  /*
+   * This dedicated logger is used whenever a deserialization failure occurs
+   * and can therefore be disabled/enabled independently
+   */
+  private[akka] val logDeser: MarkerLoggingAdapter =
+    Logging.withMarker(eventStream, getClass.getName + ".Deserialization")
 
   override val deadLetters: InternalActorRef =
     _deadLetters
       .getOrElse((p: ActorPath) => new DeadLetterActorRef(this, p, eventStream))
       .apply(rootPath / "deadLetters")
+
+  override val ignoreRef: ActorRef = new IgnoreActorRef(this)
 
   private[this] final val terminationPromise: Promise[Terminated] = Promise[Terminated]()
 
@@ -402,7 +419,17 @@ private[akka] class LocalActorRefProvider private[akka] (
 
   private val tempNode = rootPath / "temp"
 
-  override def tempPath(): ActorPath = tempNode / Helpers.base64(tempNumber.getAndIncrement())
+  override def tempPath(): ActorPath = tempPath("")
+
+  override def tempPath(prefix: String): ActorPath = {
+    val builder = new java.lang.StringBuilder()
+    if (prefix.nonEmpty) {
+      builder.append(prefix)
+    }
+    builder.append("$")
+    Helpers.base64(tempNumber.getAndIncrement(), builder)
+    tempNode / builder.toString
+  }
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will
@@ -535,7 +562,10 @@ private[akka] class LocalActorRefProvider private[akka] (
       system,
       system.guardianProps.getOrElse(Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy)),
       dispatcher,
-      defaultMailbox,
+      system.guardianProps match {
+        case Some(props) => system.mailboxes.lookup(props.mailbox)
+        case None        => defaultMailbox
+      },
       rootGuardian,
       rootPath / "user")
     cell.initChild(ref)
@@ -558,7 +588,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     ref
   }
 
-  lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
+  lazy val tempContainer: VirtualPathContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
   def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = {
     assert(path.parent eq tempNode, "cannot registerTempActor() with anything not obtained from tempPath()")
@@ -582,14 +612,14 @@ private[akka] class LocalActorRefProvider private[akka] (
   def resolveActorRef(path: String): ActorRef = path match {
     case ActorPathExtractor(address, elems) if address == rootPath.address => resolveActorRef(rootGuardian, elems)
     case _ =>
-      log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
+      logDeser.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
   }
 
   def resolveActorRef(path: ActorPath): ActorRef = {
     if (path.root == rootPath) resolveActorRef(rootGuardian, path.elements)
     else {
-      log.debug(
+      logDeser.debug(
         "Resolve (deserialization) of foreign path [{}] doesn't match root path [{}], using deadLetters.",
         path,
         rootPath)
@@ -602,13 +632,13 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   private[akka] def resolveActorRef(ref: InternalActorRef, pathElements: Iterable[String]): InternalActorRef =
     if (pathElements.isEmpty) {
-      log.debug("Resolve (deserialization) of empty path doesn't match an active actor, using deadLetters.")
+      logDeser.debug("Resolve (deserialization) of empty path doesn't match an active actor, using deadLetters.")
       deadLetters
     } else
       ref.getChild(pathElements.iterator) match {
         case Nobody =>
           if (log.isDebugEnabled)
-            log.debug(
+            logDeser.debug(
               "Resolve (deserialization) of path [{}] doesn't match an active actor. " +
               "It has probably been stopped, using deadLetters.",
               pathElements.mkString("/"))
@@ -726,7 +756,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     Serialization.Information(getDefaultAddress, system)
     serializationInformationCache match {
       case OptionVal.Some(info) => info
-      case OptionVal.None =>
+      case _ =>
         if (system eq null)
           throw new IllegalStateException("Too early access of serializationInformation")
         else {
@@ -743,7 +773,7 @@ private[akka] class LocalActorRefProvider private[akka] (
   override private[akka] def addressString: String = {
     _addressString match {
       case OptionVal.Some(addr) => addr
-      case OptionVal.None =>
+      case _ =>
         val addr = getDefaultAddress.toString
         _addressString = OptionVal.Some(addr)
         addr

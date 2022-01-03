@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -225,7 +228,7 @@ Scala
 Java
 :   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #partition-hub-stateful }
 
-Note that it is a factory of a function to to be able to hold stateful variables that are 
+Note that it is a factory of a function to be able to hold stateful variables that are 
 unique for each materialization. @java[In this example the `partitioner` function is implemented as a class to
 be able to hold the mutable variable. A new instance of `RoundRobin` is created for each materialization of the hub.]
 

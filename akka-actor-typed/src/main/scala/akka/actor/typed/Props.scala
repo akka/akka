@@ -1,18 +1,17 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
+import scala.annotation.tailrec
+import scala.annotation.varargs
+import scala.reflect.ClassTag
+
+import akka.actor.typed.internal.PropsImpl._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-
-import scala.annotation.tailrec
-import scala.reflect.ClassTag
-import akka.actor.typed.internal.PropsImpl._
 import akka.util.ccompat.JavaConverters._
-
-import scala.annotation.varargs
 
 object Props {
 

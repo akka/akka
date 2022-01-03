@@ -1,30 +1,28 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testkit
 
-import language.implicitConversions
 import java.net.{ InetAddress, InetSocketAddress }
-
+import scala.collection.immutable
+import scala.concurrent.{ Await, Awaitable }
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
 import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 
-import scala.concurrent.{ Await, Awaitable }
-import scala.util.control.NonFatal
-import scala.collection.immutable
+import language.implicitConversions
+import org.jboss.netty.channel.ChannelException
 import akka.actor._
-import akka.util.Timeout
-import akka.remote.testconductor.{ TestConductor, TestConductorExt }
-import akka.testkit._
-import akka.testkit.TestKit
-import akka.testkit.TestEvent._
-
-import scala.concurrent.duration._
-import akka.remote.testconductor.RoleName
 import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.RemoteTransportException
-import org.jboss.netty.channel.ChannelException
+import akka.remote.testconductor.{ TestConductor, TestConductorExt }
+import akka.remote.testconductor.RoleName
+import akka.testkit._
+import akka.testkit.TestEvent._
+import akka.testkit.TestKit
+import akka.util.Timeout
 import akka.util.ccompat._
 
 /**
@@ -162,15 +160,41 @@ object MultiNodeSpec {
   require(selfName != "", "multinode.host must not be empty")
 
   /**
-   * Port number of this node. Defaults to 0 which means a random port.
+   * TCP Port number to be used when running tests on TCP. 0 means a random port.
    *
    * {{{
    * -Dmultinode.port=0
    * }}}
    */
-  val selfPort: Int = Integer.getInteger("multinode.port", 0)
+  val tcpPort: Int = Integer.getInteger("multinode.port", 0)
 
-  require(selfPort >= 0 && selfPort < 65535, "multinode.port is out of bounds: " + selfPort)
+  require(tcpPort >= 0 && tcpPort < 65535, "multinode.port is out of bounds: " + tcpPort)
+
+  /**
+   * UDP Port number to be used when running tests on UDP. 0 means a random port.
+   *
+   * {{{
+   * -Dmultinode.udp.port=0
+   * }}}
+   */
+  val udpPort: Option[Int] =
+    Option(System.getProperty("multinode.udp.port")).map { _ =>
+      Integer.getInteger("multinode.udp.port", 0)
+    }
+
+  require(udpPort.getOrElse(1) >= 0 && udpPort.getOrElse(1) < 65535, "multinode.udp.port is out of bounds: " + udpPort)
+
+  /**
+   * Port number of this node.
+   *
+   * This is defined in function of property `multinode.protocol`.
+   * If set to 'udp', udpPort will be used. If unset or any other value, it will default to tcpPort.
+   */
+  val selfPort: Int =
+    System.getProperty("multinode.protocol") match {
+      case "udp" => udpPort.getOrElse(0)
+      case _     => tcpPort
+    }
 
   /**
    * Name (or IP address; must be resolvable using InetAddress.getByName)
@@ -215,7 +239,7 @@ object MultiNodeSpec {
       "akka.actor.provider" -> "remote",
       "akka.remote.artery.canonical.hostname" -> selfName,
       "akka.remote.classic.netty.tcp.hostname" -> selfName,
-      "akka.remote.classic.netty.tcp.port" -> selfPort,
+      "akka.remote.classic.netty.tcp.port" -> tcpPort,
       "akka.remote.artery.canonical.port" -> selfPort))
 
   private[testkit] val baseConfig: Config =
@@ -245,14 +269,24 @@ object MultiNodeSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
-  private def getCallerName(clazz: Class[_]): String = {
-    val pattern = s"(akka\\.remote\\.testkit\\.MultiNodeSpec.*|akka\\.remote\\.RemotingMultiNodeSpec)"
-    val s = Thread.currentThread.getStackTrace.map(_.getClassName).drop(1).dropWhile(_.matches(pattern))
-    val reduced = s.lastIndexWhere(_ == clazz.getName) match {
-      case -1 => s
-      case z  => s.drop(z + 1)
-    }
-    reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
+  // Multi node tests on kubernetes require fixed ports to be mapped and exposed
+  // This method change the port bindings to avoid conflicts
+  // Please note that with the current setup only port 5000 and 5001 (or 6000 and 6001 when using UDP)
+  // are exposed in kubernetes
+  def configureNextPortIfFixed(config: Config): Config = {
+    val arteryPortConfig = getNextPortString("akka.remote.artery.canonical.port", config)
+    val nettyPortConfig = getNextPortString("akka.remote.classic.netty.tcp.port", config)
+    ConfigFactory.parseString(s"""{
+      $arteryPortConfig
+      $nettyPortConfig
+      }""").withFallback(config)
+  }
+
+  private def getNextPortString(key: String, config: Config): String = {
+    val port = config.getInt(key)
+    if (port != 0)
+      s"""$key = ${port + 1}"""
+    else ""
   }
 }
 
@@ -284,7 +318,7 @@ abstract class MultiNodeSpec(
 
   def this(config: MultiNodeConfig) =
     this(config, {
-      val name = MultiNodeSpec.getCallerName(classOf[MultiNodeSpec])
+      val name = TestKitUtils.testNameFromCallStack(classOf[MultiNodeSpec], "".r)
       config =>
         try {
           ActorSystem(name, config)
@@ -296,7 +330,7 @@ abstract class MultiNodeSpec(
         }
     })
 
-  val log: LoggingAdapter = Logging(system, this.getClass)
+  val log: LoggingAdapter = Logging(system, this)(_.getClass.getName)
 
   /**
    * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
@@ -307,11 +341,11 @@ abstract class MultiNodeSpec(
     def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
   }
 
-  final override def multiNodeSpecBeforeAll: Unit = {
+  final override def multiNodeSpecBeforeAll(): Unit = {
     atStartup()
   }
 
-  final override def multiNodeSpecAfterAll: Unit = {
+  final override def multiNodeSpecAfterAll(): Unit = {
     // wait for all nodes to remove themselves before we shut the conductor down
     if (selfIndex == 0) {
       testConductor.removeNode(myself)

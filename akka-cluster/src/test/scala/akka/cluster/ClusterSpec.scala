@@ -1,18 +1,24 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import java.lang.management.ManagementFactory
 
+import javax.management.ObjectName
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.CoordinatedShutdown
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
-import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.InternalClusterAction._
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
@@ -21,11 +27,7 @@ import akka.stream.scaladsl.StreamRefs
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-import javax.management.ObjectName
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.util.Version
 
 object ClusterSpec {
   val config = """
@@ -35,6 +37,7 @@ object ClusterSpec {
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
       failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet
+      app-version = "1.2.3"
     }
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
@@ -100,6 +103,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       clusterView.self.address should ===(selfAddress)
       clusterView.members.map(_.address) should ===(Set(selfAddress))
       awaitAssert(clusterView.status should ===(MemberStatus.Up))
+      clusterView.self.appVersion should ===(Version("1.2.3"))
+      clusterView.members.find(_.address == selfAddress).get.appVersion should ===(Version("1.2.3"))
     }
 
     "reply with InitJoinAck for InitJoin after joining" in {
@@ -132,17 +137,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     // this should be the last test step, since the cluster is shutdown
     "publish MemberRemoved when shutdown" in {
-      val callbackProbe = TestProbe()
-      cluster.registerOnMemberRemoved(callbackProbe.ref ! "OnMemberRemoved")
-
       cluster.subscribe(testActor, classOf[ClusterEvent.MemberRemoved])
       // first, is in response to the subscription
       expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
       cluster.shutdown()
       expectMsgType[ClusterEvent.MemberRemoved].member.address should ===(selfAddress)
-
-      callbackProbe.expectMsg("OnMemberRemoved")
     }
 
     "allow join and leave with local address" in {

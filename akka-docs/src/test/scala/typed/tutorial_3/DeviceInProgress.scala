@@ -1,8 +1,15 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package typed.tutorial_3
+
+/*
+//#read-protocol-1
+package com.example
+
+//#read-protocol-1
+ */
 
 import akka.actor.typed.PostStop
 import akka.actor.typed.Signal

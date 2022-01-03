@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.Behavior
-import akka.actor.testkit.typed.internal.StubbedActorContext
-import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.testkit.typed.internal.StubbedActorContext
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.typed.Behavior
 
 class StashBufferSpec extends AnyWordSpec with Matchers with LogCapturing {
 
@@ -78,6 +79,18 @@ class StashBufferSpec extends AnyWordSpec with Matchers with LogCapturing {
       val sb2 = new StringBuilder()
       buffer.foreach(sb2.append(_))
       sb2.toString() should ===("m2m3")
+    }
+
+    "answer 'exists' and 'contains' correctly" in {
+      val buffer = StashBuffer[String](context, 10)
+      buffer.stash("m1")
+      buffer.stash("m2")
+
+      buffer.contains("m1") shouldBe true
+      buffer.exists(_ == "m2") shouldBe true
+
+      buffer.contains("m3") shouldBe false
+      buffer.exists(_ == "m4") shouldBe false
     }
 
     "unstash to returned behaviors" in {
@@ -195,11 +208,57 @@ class StashBufferSpec extends AnyWordSpec with Matchers with LogCapturing {
       buffer.size should ===(0)
     }
 
+    "clear" in {
+      val buffer = StashBuffer[String](context, 10)
+      buffer.stash("m1")
+      buffer.stash("m2")
+      buffer.clear()
+      buffer.size should ===(0)
+      buffer.stash("m3")
+      buffer.size should ===(1)
+    }
+
+    "be able to clear while unstashing" in {
+      val buffer = StashBuffer[String](context, 10)
+      buffer.stash("m1")
+      buffer.stash("m2")
+      buffer.stash("clear")
+      buffer.stash("m3")
+
+      val valueInbox = TestInbox[String]()
+      def behavior(state: String): Behavior[String] =
+        Behaviors.receive[String] { (_, message) =>
+          if (message == "get") {
+            valueInbox.ref ! state
+            Behaviors.same
+          } else if (message == "clear") {
+            buffer.clear()
+            Behaviors.same
+          } else {
+            behavior(state + message)
+          }
+        }
+
+      val b2 = buffer.unstashAll(behavior(""))
+      buffer.size should ===(0)
+
+      buffer.stash("get")
+      buffer.unstashAll(b2)
+      // clear called before processing m3 so not included
+      valueInbox.expectMessage("m1m2")
+    }
+
     "fail quick on invalid start behavior" in {
       val stash = StashBuffer[String](context, 10)
       stash.stash("one")
       intercept[IllegalArgumentException](stash.unstashAll(Behaviors.unhandled))
     }
 
+    "answer thruthfully about its capacity" in {
+      val capacity = 42
+      val stash = StashBuffer[String](context, capacity)
+
+      stash.capacity should ===(capacity)
+    }
   }
 }

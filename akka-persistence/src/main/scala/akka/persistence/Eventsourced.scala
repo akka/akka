@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -7,17 +7,18 @@ package akka.persistence
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.Helpers.ConfigOps
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
 
 /** INTERNAL API */
 @InternalApi
@@ -57,13 +58,7 @@ private[persistence] trait Eventsourced
   import JournalProtocol._
   import SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 
-  {
-    val interfaces = getClass.getInterfaces
-    val i = interfaces.indexOf(classOf[PersistentActor])
-    val j = interfaces.indexOf(classOf[akka.actor.Timers])
-    if (i != -1 && j != -1 && i < j)
-      throw new IllegalStateException("use Timers with PersistentActor, instead of PersistentActor with Timers")
-  }
+  TraitOrder.checkBefore(getClass, classOf[akka.actor.Timers], classOf[PersistentActor])
 
   private val extension = Persistence(context.system)
 
@@ -88,7 +83,7 @@ private[persistence] trait Eventsourced
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
   // no longer used, but kept for binary compatibility
-  @silent("never used")
+  @nowarn("msg=never used")
   private val maxMessageBatchSize = {
     val journalPluginConfig = this match {
       case c: RuntimePluginConfig => c.journalPluginConfig
@@ -654,36 +649,57 @@ private[persistence] trait Eventsourced
 
     override def recoveryRunning: Boolean = true
 
-    override def stateReceive(receive: Receive, message: Any) =
-      try message match {
-        case LoadSnapshotResult(sso, toSnr) =>
-          timeoutCancellable.cancel()
-          sso.foreach {
-            case SelectedSnapshot(metadata, snapshot) =>
-              val offer = SnapshotOffer(metadata, snapshot)
-              if (recoveryBehavior.isDefinedAt(offer)) {
-                try {
-                  setLastSequenceNr(metadata.sequenceNr)
-                  // Since we are recovering we can ignore the receive behavior from the stack
-                  Eventsourced.super.aroundReceive(recoveryBehavior, offer)
-                } catch {
-                  case NonFatal(t) =>
-                    try onRecoveryFailure(t, None)
-                    finally context.stop(self)
-                    returnRecoveryPermit()
-                }
-              } else {
-                unhandled(offer)
+    override def stateReceive(receive: Receive, message: Any): Unit = {
+      def loadSnapshotResult(snapshot: Option[SelectedSnapshot], toSnr: Long): Unit = {
+        timeoutCancellable.cancel()
+        snapshot.foreach {
+          case SelectedSnapshot(metadata, snapshot) =>
+            val offer = SnapshotOffer(metadata, snapshot)
+            if (recoveryBehavior.isDefinedAt(offer)) {
+              try {
+                setLastSequenceNr(metadata.sequenceNr)
+                // Since we are recovering we can ignore the receive behavior from the stack
+                Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+              } catch {
+                case NonFatal(t) =>
+                  try onRecoveryFailure(t, None)
+                  finally context.stop(self)
+                  returnRecoveryPermit()
               }
-          }
-          changeState(recovering(recoveryBehavior, timeout))
-          journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
+            } else {
+              unhandled(offer)
+            }
+        }
+        changeState(recovering(recoveryBehavior, timeout))
+        journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
+      }
+
+      def isSnapshotOptional: Boolean = {
+        try {
+          Persistence(context.system).configFor(snapshotStore).getBoolean("snapshot-is-optional")
+        } catch {
+          case NonFatal(exc) =>
+            log.error(exc, "Invalid snapshot-is-optional configuration.")
+            false // fail recovery
+        }
+      }
+
+      try message match {
+        case LoadSnapshotResult(snapshot, toSnr) =>
+          loadSnapshotResult(snapshot, toSnr)
 
         case LoadSnapshotFailed(cause) =>
-          timeoutCancellable.cancel()
-          try onRecoveryFailure(cause, event = None)
-          finally context.stop(self)
-          returnRecoveryPermit()
+          if (isSnapshotOptional) {
+            log.info(
+              "Snapshot load error for persistenceId [{}]. Replaying all events since snapshot-is-optional=true",
+              persistenceId)
+            loadSnapshotResult(snapshot = None, recovery.toSequenceNr)
+          } else {
+            timeoutCancellable.cancel()
+            try onRecoveryFailure(cause, event = None)
+            finally context.stop(self)
+            returnRecoveryPermit()
+          }
 
         case RecoveryTick(true) =>
           try onRecoveryFailure(
@@ -699,6 +715,7 @@ private[persistence] trait Eventsourced
           returnRecoveryPermit()
           throw e
       }
+    }
 
     private def returnRecoveryPermit(): Unit =
       extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
@@ -873,9 +890,10 @@ private[persistence] trait Eventsourced
         writeInProgress = false
         flushJournalBatch()
 
-      case WriteMessagesFailed(_) =>
-        writeInProgress = false
-        () // it will be stopped by the first WriteMessageFailure message
+      case WriteMessagesFailed(_, writeCount) =>
+        // if writeCount > 0 then WriteMessageFailure will follow that will stop the actor
+        if (writeCount == 0) writeInProgress = false
+        ()
 
       case _: RecoveryTick =>
       // we may have one of these in the mailbox before the scheduled timeout

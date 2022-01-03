@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 import java.util.Arrays
-import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

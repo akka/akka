@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
-
-import scala.util.control.NoStackTrace
 
 class FlowWithContextSpec extends StreamSpec {
 
@@ -40,7 +40,7 @@ class FlowWithContextSpec extends StreamSpec {
         .asSourceWithContext(_.offset)
         .viaMat(mapMaterializedValueFlow)(Keep.both)
         .toMat(TestSink.probe[(Message, Long)])(Keep.both)
-        .run
+        .run()
       matValue shouldBe (42 -> materializedValue)
       probe.request(1).expectNext(((Message("a", 1L), 1L))).expectComplete()
     }

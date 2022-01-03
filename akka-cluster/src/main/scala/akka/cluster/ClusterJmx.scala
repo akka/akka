@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import java.lang.management.ManagementFactory
-import javax.management.StandardMBean
-import akka.event.LoggingAdapter
-import akka.actor.AddressFromURIString
-import javax.management.ObjectName
 import javax.management.InstanceAlreadyExistsException
 import javax.management.InstanceNotFoundException
+import javax.management.ObjectName
+import javax.management.StandardMBean
+
+import akka.actor.AddressFromURIString
+import akka.event.LoggingAdapter
 
 /**
  * Interface for the cluster JMX MBean.
@@ -43,6 +44,7 @@ trait ClusterNodeMBean {
    *     {
    *       "address": "akka://system@host1:2552",
    *       "status": "Up",
+   *       "app-version": "1.0.0",
    *       "roles": [
    *         "frontend"
    *       ]
@@ -50,6 +52,7 @@ trait ClusterNodeMBean {
    *     {
    *       "address": "akka://system@host2:2552",
    *       "status": "Up",
+   *       "app-version": "1.0.0",
    *       "roles": [
    *         "frontend"
    *       ]
@@ -57,6 +60,7 @@ trait ClusterNodeMBean {
    *     {
    *       "address": "akka://system@host3:2552",
    *       "status": "Down",
+   *       "app-version": "1.0.0",
    *       "roles": [
    *         "backend"
    *       ]
@@ -64,6 +68,7 @@ trait ClusterNodeMBean {
    *     {
    *       "address": "akka://system@host4:2552",
    *       "status": "Joining",
+   *       "app-version": "1.1.0",
    *       "roles": [
    *         "backend"
    *       ]
@@ -158,7 +163,8 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
               |      "address": "${m.address}",
               |      "roles": [${if (m.roles.isEmpty) ""
                else m.roles.toList.sorted.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
-              |      "status": "${m.status}"
+              |      "status": "${m.status}",
+              |      "app-version": "${m.appVersion}"
               |    }""".stripMargin
           }
           .mkString(",\n    ")

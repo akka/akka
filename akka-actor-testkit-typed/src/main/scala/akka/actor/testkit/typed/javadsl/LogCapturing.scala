@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
 
 import scala.util.control.NonFatal
 
-import akka.actor.testkit.typed.internal.CapturingAppender
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.slf4j.LoggerFactory
+
+import akka.actor.testkit.typed.internal.CapturingAppender
 
 /**
  * JUnit `TestRule` to make log lines appear only when the test failed.

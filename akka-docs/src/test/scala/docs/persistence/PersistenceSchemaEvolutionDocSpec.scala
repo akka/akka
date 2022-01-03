@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.persistence
 
 import java.io.NotSerializableException
-
-import scala.language.reflectiveCalls
 import java.nio.charset.Charset
 
 import akka.actor.ActorSystem
@@ -16,8 +14,8 @@ import akka.testkit.TestKit
 import com.typesafe.config._
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json.JsObject
-
 import scala.concurrent.duration._
+
 import docs.persistence.proto.FlightAppModels
 
 class PersistenceSchemaEvolutionDocSpec extends AnyWordSpec {
@@ -284,7 +282,7 @@ class RemovedEventsAwareSerializer extends SerializerWithStringManifest {
       case m if SkipEventManifestsEvents.contains(m) =>
         EventDeserializationSkipped
 
-      case other => new String(bytes, utf8)
+      case _ => new String(bytes, utf8)
     }
 }
 //#string-serializer-skip-deleved-event-by-manifest

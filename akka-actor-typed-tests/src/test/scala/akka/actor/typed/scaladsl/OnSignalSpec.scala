@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 package scaladsl
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -38,7 +39,7 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
         }, s"$i")
       }
       Behaviors
-        .receiveMessage[String] {
+        .receiveMessagePartial[String] {
           case "stop" =>
             Behaviors.stopped
         }

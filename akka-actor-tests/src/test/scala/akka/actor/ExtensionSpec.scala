@@ -1,22 +1,19 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.testkit.EventFilter
-import akka.testkit.TestKit._
-import com.typesafe.config.ConfigFactory
-
 import scala.util.control.NoStackTrace
-import com.github.ghik.silencer.silent
+
+import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.junit.JUnitSuiteLike
-@silent
-class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
+
+import akka.testkit.EventFilter
+import akka.testkit.TestKit._
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
   def lookup = this
@@ -33,25 +30,27 @@ object FailingTestExtension extends ExtensionId[FailingTestExtension] with Exten
   class TestException extends IllegalArgumentException("ERR") with NoStackTrace
 }
 
-object InstanceCountingExtension extends ExtensionId[DummyExtensionImpl] with ExtensionIdProvider {
+object InstanceCountingExtension extends ExtensionId[InstanceCountingExtension] with ExtensionIdProvider {
   val createCount = new AtomicInteger(0)
-  override def createExtension(system: ExtendedActorSystem): DummyExtensionImpl = {
-    createCount.addAndGet(1)
-    new DummyExtensionImpl
+  override def createExtension(system: ExtendedActorSystem): InstanceCountingExtension = {
+    new InstanceCountingExtension
   }
-  override def lookup(): ExtensionId[_ <: Extension] = this
+  override def lookup: ExtensionId[_ <: Extension] = this
 }
 
-class DummyExtensionImpl extends Extension
+class InstanceCountingExtension extends Extension {
+  InstanceCountingExtension.createCount.incrementAndGet()
+}
 
 // Dont't place inside ActorSystemSpec object, since it will not be garbage collected and reference to system remains
 class FailingTestExtension(val system: ExtendedActorSystem) extends Extension {
-  // first time the actor is created
-  val ref = system.actorOf(Props.empty, "uniqueName")
-  // but the extension initialization fails
-  // second time it will throw exception when trying to create actor with same name,
-  // but we want to see the first exception every time
-  throw new FailingTestExtension.TestException
+  // create a named actor as a side effect of initializing this extension, relevant
+  // for the 'handle extensions that fail to initialize' test.
+  system.actorOf(Props.empty, "uniqueName")
+
+  // Always fail, but 'hide' this from IntelliJ to avoid compilation issues:
+  if (42.toString == "42")
+    throw new FailingTestExtension.TestException
 }
 
 class ExtensionSpec extends AnyWordSpec with Matchers {
@@ -73,10 +72,13 @@ class ExtensionSpec extends AnyWordSpec with Matchers {
     "handle extensions that fail to initialize" in {
       val system = ActorSystem("extensions")
 
+      // First attempt, an actor is created and after that
+      // an exception is thrown:
       intercept[FailingTestExtension.TestException] {
         FailingTestExtension(system)
       }
-      // same exception should be reported next time
+
+      // Second attempt, we expect to see the same (cached) exception:
       intercept[FailingTestExtension.TestException] {
         FailingTestExtension(system)
       }
@@ -106,12 +108,33 @@ class ExtensionSpec extends AnyWordSpec with Matchers {
       shutdownActorSystem(system)
     }
 
-    "allow for auto-loading of library-extensions" in {
+    "allow for auto-loading of library-extensions from reference.conf" in {
+      import akka.util.ccompat.JavaConverters._
+      // could be initialized by other tests, but assuming tests are not running in parallel
+      val countBefore = InstanceCountingExtension.createCount.get()
       val system = ActorSystem("extensions")
-      val listedExtensions = system.settings.config.getStringList("akka.library-extensions")
-      listedExtensions.size should be > 0
-      // could be initialized by other tests, so at least once
-      InstanceCountingExtension.createCount.get() should be > 0
+      val listedExtensions = system.settings.config.getStringList("akka.library-extensions").asScala
+      listedExtensions.count(_.contains("InstanceCountingExtension")) should ===(1)
+
+      InstanceCountingExtension.createCount.get() - countBefore should ===(1)
+
+      shutdownActorSystem(system)
+    }
+
+    "not create duplicate instances when auto-loading of library-extensions" in {
+      import akka.util.ccompat.JavaConverters._
+      // could be initialized by other tests, but assuming tests are not running in parallel
+      val countBefore = InstanceCountingExtension.createCount.get()
+      val system = ActorSystem(
+        "extensions",
+        ConfigFactory.parseString(
+          """
+      akka.library-extensions = ["akka.actor.InstanceCountingExtension", "akka.actor.InstanceCountingExtension", "akka.actor.InstanceCountingExtension$"]
+      """))
+      val listedExtensions = system.settings.config.getStringList("akka.library-extensions").asScala
+      listedExtensions.count(_.contains("InstanceCountingExtension")) should ===(3) // testing duplicate names
+
+      InstanceCountingExtension.createCount.get() - countBefore should ===(1)
 
       shutdownActorSystem(system)
     }

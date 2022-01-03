@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io
@@ -7,16 +7,16 @@ package akka.stream.impl.io
 import java.io.{ IOException, OutputStream }
 import java.util.concurrent.{ Semaphore, TimeUnit }
 
+import scala.concurrent.Await
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
+
+import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
-import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.util.ByteString
-
-import scala.concurrent.Await
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
 
 private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
@@ -92,7 +92,9 @@ private[akka] class OutputStreamAdapter(
 
   @scala.throws(classOf[IOException])
   override def write(b: Array[Byte], off: Int, len: Int): Unit = {
-    sendData(ByteString.fromArray(b, off, len))
+    if (b.nonEmpty) {
+      sendData(ByteString.fromArray(b, off, len))
+    }
   }
 
   @scala.throws(classOf[IOException])

@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query
 
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.persistence.query.scaladsl.ReadJournal
-import akka.persistence.{ PersistencePlugin, PluginProvider }
-import akka.util.unused
+import scala.reflect.ClassTag
+
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.reflect.ClassTag
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.persistence.{ PersistencePlugin, PluginProvider }
+import akka.persistence.query.scaladsl.ReadJournal
+import akka.util.unused
 
 /**
  * Persistence extension for queries.
@@ -23,7 +24,7 @@ object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdPr
 
   def createExtension(system: ExtendedActorSystem): PersistenceQuery = new PersistenceQuery(system)
 
-  def lookup(): PersistenceQuery.type = PersistenceQuery
+  def lookup: PersistenceQuery.type = PersistenceQuery
 
   @InternalApi
   private[akka] val pluginProvider: PluginProvider[ReadJournalProvider, ReadJournal, javadsl.ReadJournal] =

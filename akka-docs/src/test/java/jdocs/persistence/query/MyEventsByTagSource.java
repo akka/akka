@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence.query;
 
 import akka.actor.ActorSystem;
-import akka.japi.Pair;
-import akka.persistence.PersistentRepr;
 import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.Offset;
 import akka.serialization.Serialization;
@@ -21,8 +19,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 // #events-by-tag-publisher
 public class MyEventsByTagSource extends GraphStage<SourceShape<EventEnvelope>> {
@@ -71,7 +67,7 @@ public class MyEventsByTagSource extends GraphStage<SourceShape<EventEnvelope>> 
 
       @Override
       public void preStart() {
-        schedulePeriodically(Continue.INSTANCE, refreshInterval);
+        scheduleWithFixedDelay(Continue.INSTANCE, refreshInterval, refreshInterval);
       }
 
       @Override
@@ -109,7 +105,8 @@ public class MyEventsByTagSource extends GraphStage<SourceShape<EventEnvelope>> 
                         Offset.sequence(currentOffset),
                         rs.getString("persistence_id"),
                         rs.getLong("seq_nr"),
-                        deserialized));
+                        deserialized,
+                        System.currentTimeMillis()));
               }
               buf = res;
             }

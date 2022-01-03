@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -9,7 +9,7 @@ import akka.actor._
 /**
  * Entry point to Akka’s IO layer.
  *
- * @see <a href="http://doc.akka.io/">the Akka online documentation</a>
+ * @see <a href="https://akka.io/docs/">the Akka online documentation</a>
  */
 object IO {
 

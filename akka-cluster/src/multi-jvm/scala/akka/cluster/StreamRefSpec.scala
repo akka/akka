@@ -1,13 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+
+import com.typesafe.config.ConfigFactory
+
 import akka.Done
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Identify, Props }
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.stream.Materializer
@@ -21,12 +27,6 @@ import akka.stream.scaladsl.StreamRefs
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
 import akka.util.JavaDurationConverters._
 
 object StreamRefSpec extends MultiNodeConfig {
@@ -56,7 +56,7 @@ object StreamRefSpec extends MultiNodeConfig {
 
   class DataSource(streamLifecycleProbe: ActorRef) extends Actor with ActorLogging {
     import context.dispatcher
-    implicit val mat = Materializer(context)
+    implicit val mat: Materializer = Materializer(context)
 
     def receive = {
       case RequestLogs(streamId) =>
@@ -102,7 +102,7 @@ object StreamRefSpec extends MultiNodeConfig {
   class DataReceiver(streamLifecycleProbe: ActorRef) extends Actor with ActorLogging {
 
     import context.dispatcher
-    implicit val mat = Materializer(context)
+    implicit val mat: Materializer = Materializer(context)
 
     def receive = {
       case PrepareUpload(nodeId) =>
@@ -140,7 +140,7 @@ class StreamRefMultiJvmNode1 extends StreamRefSpec
 class StreamRefMultiJvmNode2 extends StreamRefSpec
 class StreamRefMultiJvmNode3 extends StreamRefSpec
 
-abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNodeClusterSpec with ImplicitSender {
+abstract class StreamRefSpec extends MultiNodeClusterSpec(StreamRefSpec) with ImplicitSender {
   import StreamRefSpec._
 
   "A cluster with Stream Refs" must {
@@ -166,7 +166,7 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNode
         val ref = expectMsgType[ActorIdentity].ref.get
         ref ! RequestLogs(1337)
         val dataSourceRef = expectMsgType[LogsOffer].sourceRef
-        destinationForSource = dataSourceRef.runWith(TestSink.probe)
+        destinationForSource = dataSourceRef.runWith(TestSink())
         destinationForSource.request(3).expectNext("elem-1").expectNext("elem-2").expectNext("elem-3")
       }
       runOn(second) {

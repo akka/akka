@@ -1,34 +1,38 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.protobuf
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
+import java.io.NotSerializableException
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.duration._
 
-import akka.util.ccompat.JavaConverters._
-import scala.collection.immutable
-
 import akka.actor.ActorRef
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardCoordinator
+import akka.cluster.sharding.ShardRegion._
 import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
+import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.{
+  MigrationMarker,
+  State => RememberShardsState
+}
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore.{ State => EntityState }
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore.{ EntitiesStarted, EntitiesStopped }
+import akka.protobufv3.internal.MessageLite
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-import akka.protobufv3.internal.MessageLite
 import akka.util.ccompat._
-import java.io.NotSerializableException
-
-import akka.actor.Address
-import akka.cluster.sharding.ShardRegion._
-import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.
@@ -37,9 +41,9 @@ import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
 private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
-  import ShardCoordinator.Internal._
+  import Shard.{ CurrentShardState, GetCurrentShardState }
   import Shard.{ GetShardStats, ShardStats }
-  import Shard.{ State => EntityState, EntityStarted, EntityStopped }
+  import ShardCoordinator.Internal._
 
   private final val BufferSize = 1024 * 4
 
@@ -63,10 +67,14 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private val HandOffManifest = "BJ"
   private val ShardStoppedManifest = "BK"
   private val GracefulShutdownReqManifest = "BL"
+  private val RegionStoppedManifest = "BM"
+  private val ShardHomesManifest = "BN"
 
   private val EntityStateManifest = "CA"
   private val EntityStartedManifest = "CB"
   private val EntityStoppedManifest = "CD"
+  private val EntitiesStartedManifest = "CE"
+  private val EntitiesStoppedManifest = "CF"
 
   private val StartEntityManifest = "EA"
   private val StartEntityAckManifest = "EB"
@@ -80,10 +88,21 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private val GetCurrentRegionsManifest = "DG"
   private val CurrentRegionsManifest = "DH"
 
+  private val GetCurrentShardStateManifest = "FA"
+  private val CurrentShardStateManifest = "FB"
+  private val GetShardRegionStateManifest = "FC"
+  private val ShardStateManifest = "FD"
+  private val CurrentShardRegionStateManifest = "FE"
+
+  private val EventSourcedRememberShardsMigrationMarkerManifest = "SM"
+  private val EventSourcedRememberShardsState = "SS"
+
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](
     EntityStateManifest -> entityStateFromBinary,
     EntityStartedManifest -> entityStartedFromBinary,
+    EntitiesStartedManifest -> entitiesStartedFromBinary,
     EntityStoppedManifest -> entityStoppedFromBinary,
+    EntitiesStoppedManifest -> entitiesStoppedFromBinary,
     CoordinatorStateManifest -> coordinatorStateFromBinary,
     ShardRegionRegisteredManifest -> { bytes =>
       ShardRegionRegistered(actorRefMessageFromBinary(bytes))
@@ -114,6 +133,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
       GetShardHome(shardIdMessageFromBinary(bytes))
     },
     ShardHomeManifest -> shardHomeFromBinary,
+    ShardHomesManifest -> shardHomesFromBinary,
     HostShardManifest -> { bytes =>
       HostShard(shardIdMessageFromBinary(bytes))
     },
@@ -134,6 +154,9 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     },
     GracefulShutdownReqManifest -> { bytes =>
       GracefulShutdownReq(actorRefMessageFromBinary(bytes))
+    },
+    RegionStoppedManifest -> { bytes =>
+      RegionStopped(actorRefMessageFromBinary(bytes))
     },
     GetShardStatsManifest -> { _ =>
       GetShardStats
@@ -159,13 +182,34 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     CurrentRegionsManifest -> { bytes =>
       currentRegionsFromBinary(bytes)
     },
-    StartEntityManifest -> { startEntityFromBinary(_) },
-    StartEntityAckManifest -> { startEntityAckFromBinary(_) })
+    StartEntityManifest -> { startEntityFromBinary },
+    StartEntityAckManifest -> { startEntityAckFromBinary },
+    GetCurrentShardStateManifest -> { _ =>
+      GetCurrentShardState
+    },
+    CurrentShardStateManifest -> { bytes =>
+      currentShardStateFromBinary(bytes)
+    },
+    GetShardRegionStateManifest -> { _ =>
+      GetShardRegionState
+    },
+    ShardStateManifest -> { bytes =>
+      shardStateFromBinary(bytes)
+    },
+    CurrentShardRegionStateManifest -> { bytes =>
+      currentShardRegionStateFromBinary(bytes)
+    },
+    EventSourcedRememberShardsMigrationMarkerManifest -> { _ =>
+      MigrationMarker
+    },
+    EventSourcedRememberShardsState -> { bytes =>
+      rememberShardsStateFromBinary(bytes)
+    })
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: EntityState   => EntityStateManifest
-    case _: EntityStarted => EntityStartedManifest
-    case _: EntityStopped => EntityStoppedManifest
+    case _: EntityState     => EntityStateManifest
+    case _: EntitiesStarted => EntitiesStartedManifest
+    case _: EntitiesStopped => EntitiesStoppedManifest
 
     case _: State                      => CoordinatorStateManifest
     case _: ShardRegionRegistered      => ShardRegionRegisteredManifest
@@ -180,6 +224,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case _: RegisterAck         => RegisterAckManifest
     case _: GetShardHome        => GetShardHomeManifest
     case _: ShardHome           => ShardHomeManifest
+    case _: ShardHomes          => ShardHomesManifest
     case _: HostShard           => HostShardManifest
     case _: ShardStarted        => ShardStartedManifest
     case _: BeginHandOff        => BeginHandOffManifest
@@ -187,6 +232,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case _: HandOff             => HandOffManifest
     case _: ShardStopped        => ShardStoppedManifest
     case _: GracefulShutdownReq => GracefulShutdownReqManifest
+    case _: RegionStopped       => RegionStoppedManifest
 
     case _: StartEntity    => StartEntityManifest
     case _: StartEntityAck => StartEntityAckManifest
@@ -199,6 +245,16 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case _: ClusterShardingStats    => ClusterShardingStatsManifest
     case GetCurrentRegions          => GetCurrentRegionsManifest
     case _: CurrentRegions          => CurrentRegionsManifest
+
+    case GetCurrentShardState       => GetCurrentShardStateManifest
+    case _: CurrentShardState       => CurrentShardStateManifest
+    case GetShardRegionState        => GetShardRegionStateManifest
+    case _: ShardState              => ShardStateManifest
+    case _: CurrentShardRegionState => CurrentShardRegionStateManifest
+
+    case MigrationMarker        => EventSourcedRememberShardsMigrationMarkerManifest
+    case _: RememberShardsState => EventSourcedRememberShardsState
+
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -217,6 +273,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case RegisterAck(ref)         => actorRefMessageToProto(ref).toByteArray
     case GetShardHome(shardId)    => shardIdMessageToProto(shardId).toByteArray
     case m: ShardHome             => shardHomeToProto(m).toByteArray
+    case sh: ShardHomes           => shardHomesToProto(sh).toByteArray
     case HostShard(shardId)       => shardIdMessageToProto(shardId).toByteArray
     case ShardStarted(shardId)    => shardIdMessageToProto(shardId).toByteArray
     case BeginHandOff(shardId)    => shardIdMessageToProto(shardId).toByteArray
@@ -225,10 +282,11 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case ShardStopped(shardId)    => shardIdMessageToProto(shardId).toByteArray
     case GracefulShutdownReq(ref) =>
       actorRefMessageToProto(ref).toByteArray
+    case RegionStopped(ref) => actorRefMessageToProto(ref).toByteArray
 
-    case m: EntityState   => entityStateToProto(m).toByteArray
-    case m: EntityStarted => entityStartedToProto(m).toByteArray
-    case m: EntityStopped => entityStoppedToProto(m).toByteArray
+    case m: EntityState     => entityStateToProto(m).toByteArray
+    case m: EntitiesStarted => entitiesStartedToProto(m).toByteArray
+    case m: EntitiesStopped => entitiesStoppedToProto(m).toByteArray
 
     case s: StartEntity    => startEntityToByteArray(s)
     case s: StartEntityAck => startEntityAckToByteArray(s)
@@ -242,6 +300,15 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case GetCurrentRegions          => Array.emptyByteArray
     case m: CurrentRegions          => currentRegionsToProto(m).toByteArray
 
+    case GetCurrentShardState       => Array.emptyByteArray
+    case m: CurrentShardState       => currentShardStateToProto(m).toByteArray
+    case GetShardRegionState        => Array.emptyByteArray
+    case m: ShardState              => shardStateToProto(m).toByteArray
+    case m: CurrentShardRegionState => currentShardRegionStateToProto(m).toByteArray
+
+    case MigrationMarker        => Array.emptyByteArray
+    case m: RememberShardsState => rememberShardsStateToProto(m).toByteArray
+
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -253,6 +320,18 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
         throw new NotSerializableException(
           s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
+
+  private def rememberShardsStateToProto(state: RememberShardsState): sm.RememberedShardState = {
+    val builder = sm.RememberedShardState.newBuilder()
+    builder.addAllShardId(state.shards.toList.asJava)
+    builder.setMarker(state.writtenMigrationMarker)
+    builder.build()
+  }
+
+  private def rememberShardsStateFromBinary(bytes: Array[Byte]): RememberShardsState = {
+    val proto = sm.RememberedShardState.parseFrom(bytes)
+    RememberShardsState(proto.getShardIdList.asScala.toSet, proto.getMarker)
+  }
 
   private def coordinatorStateToProto(state: State): sm.CoordinatorState = {
     val builder = sm.CoordinatorState.newBuilder()
@@ -330,6 +409,27 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     ShardHome(m.getShard, resolveActorRef(m.getRegion))
   }
 
+  private def shardHomesToProto(sh: ShardHomes): sm.ShardHomes = {
+    sm.ShardHomes
+      .newBuilder()
+      .addAllHomes(sh.homes.map {
+        case (regionRef, shards) =>
+          sm.ShardHomesEntry
+            .newBuilder()
+            .setRegion(Serialization.serializedActorPath(regionRef))
+            .addAllShard(shards.asJava)
+            .build()
+      }.asJava)
+      .build()
+  }
+
+  private def shardHomesFromBinary(bytes: Array[Byte]): ShardHomes = {
+    val sh = sm.ShardHomes.parseFrom(bytes)
+    ShardHomes(sh.getHomesList.asScala.map { she =>
+      resolveActorRef(she.getRegion) -> she.getShardList.asScala.toVector
+    }.toMap)
+  }
+
   private def entityStateToProto(m: EntityState): sm.EntityState = {
     val b = sm.EntityState.newBuilder()
     m.entities.foreach(b.addEntities)
@@ -339,17 +439,23 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private def entityStateFromBinary(bytes: Array[Byte]): EntityState =
     EntityState(sm.EntityState.parseFrom(bytes).getEntitiesList.asScala.toSet)
 
-  private def entityStartedToProto(evt: EntityStarted): sm.EntityStarted =
-    sm.EntityStarted.newBuilder().setEntityId(evt.entityId).build()
+  private def entityStartedFromBinary(bytes: Array[Byte]): EntitiesStarted =
+    EntitiesStarted(Set(sm.EntityStarted.parseFrom(bytes).getEntityId))
 
-  private def entityStartedFromBinary(bytes: Array[Byte]): EntityStarted =
-    EntityStarted(sm.EntityStarted.parseFrom(bytes).getEntityId)
+  private def entitiesStartedToProto(evt: EntitiesStarted): sm.EntitiesStarted =
+    sm.EntitiesStarted.newBuilder().addAllEntityId(evt.entities.asJava).build()
 
-  private def entityStoppedToProto(evt: EntityStopped): sm.EntityStopped =
-    sm.EntityStopped.newBuilder().setEntityId(evt.entityId).build()
+  private def entitiesStartedFromBinary(bytes: Array[Byte]): EntitiesStarted =
+    EntitiesStarted(sm.EntitiesStarted.parseFrom(bytes).getEntityIdList.asScala.toSet)
 
-  private def entityStoppedFromBinary(bytes: Array[Byte]): EntityStopped =
-    EntityStopped(sm.EntityStopped.parseFrom(bytes).getEntityId)
+  private def entitiesStoppedToProto(evt: EntitiesStopped): sm.EntitiesStopped =
+    sm.EntitiesStopped.newBuilder().addAllEntityId(evt.entities.asJava).build()
+
+  private def entityStoppedFromBinary(bytes: Array[Byte]): EntitiesStopped =
+    EntitiesStopped(Set(sm.EntityStopped.parseFrom(bytes).getEntityId))
+
+  private def entitiesStoppedFromBinary(bytes: Array[Byte]): EntitiesStopped =
+    EntitiesStopped(sm.EntitiesStopped.parseFrom(bytes).getEntityIdList.asScala.toSet)
 
   private def shardStatsToProto(evt: ShardStats): sm.ShardStats =
     sm.ShardStats.newBuilder().setShard(evt.shardId).setEntityCount(evt.entityCount).build()
@@ -449,6 +555,41 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private def startEntityAckFromBinary(bytes: Array[Byte]): StartEntityAck = {
     val sea = sm.StartEntityAck.parseFrom(bytes)
     StartEntityAck(sea.getEntityId, sea.getShardId)
+  }
+
+  private def shardStateToProto(evt: ShardState): sm.ShardState = {
+    sm.ShardState.newBuilder().setShardId(evt.shardId).addAllEntityIds(evt.entityIds.asJava).build()
+  }
+
+  private def currentShardStateToProto(evt: CurrentShardState): sm.CurrentShardState = {
+    sm.CurrentShardState.newBuilder().setShardId(evt.shardId).addAllEntityIds(evt.entityIds.asJava).build()
+  }
+
+  private def currentShardStateFromBinary(bytes: Array[Byte]): CurrentShardState = {
+    val parsed = sm.CurrentShardState.parseFrom(bytes)
+    CurrentShardState(parsed.getShardId, parsed.getEntityIdsList.asScala.toSet)
+  }
+
+  private def shardStateFromProto(parsed: ClusterShardingMessages.ShardState): ShardState = {
+    ShardState(parsed.getShardId, parsed.getEntityIdsList.asScala.toSet)
+  }
+
+  private def shardStateFromBinary(bytes: Array[Byte]): ShardState = {
+    val parsed = sm.ShardState.parseFrom(bytes)
+    ShardState(parsed.getShardId, parsed.getEntityIdsList.asScala.toSet)
+  }
+
+  private def currentShardRegionStateToProto(evt: CurrentShardRegionState): sm.CurrentShardRegionState = {
+    val shards = evt.shards.map(shardStateToProto).asJava
+    val failed = evt.failed.asJava
+    sm.CurrentShardRegionState.newBuilder().addAllShards(shards).addAllFailed(failed).build()
+  }
+
+  private def currentShardRegionStateFromBinary(bytes: Array[Byte]): CurrentShardRegionState = {
+    val parsed = sm.CurrentShardRegionState.parseFrom(bytes)
+    val state: Set[ShardState] = parsed.getShardsList.asScala.map(shardStateFromProto).toSet
+    val failed: Set[String] = parsed.getFailedList.asScala.toSet
+    CurrentShardRegionState(state, failed)
   }
 
   def serializeAddress(address: Address): sm.Address =

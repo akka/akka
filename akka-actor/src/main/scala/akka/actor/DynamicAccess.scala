@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.annotation.DoNotInherit
-
 import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.Try
+
+import akka.annotation.DoNotInherit
 
 /**
  * The DynamicAccess implementation is the class which is used for

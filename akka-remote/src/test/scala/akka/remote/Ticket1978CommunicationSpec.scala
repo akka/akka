@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -8,22 +8,23 @@ import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
 import java.util.zip.GZIPOutputStream
 
-import akka.actor._
-import akka.event.NoMarkerLogging
-import akka.pattern.ask
-import akka.remote.Configuration.{ getCipherConfig, CipherConfig }
-import akka.remote.transport.netty.SSLSettings
-import akka.testkit._
-import akka.util.Timeout
-import com.typesafe.config._
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.reflect.classTag
 
-import akka.remote.transport.netty.ConfigSSLEngineProvider
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
+import com.typesafe.config._
 
-@silent("deprecated")
+import akka.actor._
+import akka.event.NoMarkerLogging
+import akka.pattern.ask
+import akka.remote.Configuration.{ getCipherConfig, CipherConfig }
+import akka.remote.transport.netty.ConfigSSLEngineProvider
+import akka.remote.transport.netty.SSLSettings
+import akka.testkit._
+import akka.util.Timeout
+
+@nowarn("msg=deprecated")
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
   // The certificate will expire in 2109
@@ -71,9 +72,9 @@ object Configuration {
       provider: Option[ConfigSSLEngineProvider])
 
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
-    val (localPort, remotePort) = SocketUtil.temporaryServerAddresses(2, "127.0.0.1").map(_.getPort) match {
-      case Seq(local, remote) => (local, remote)
-    }
+    val ports = SocketUtil.temporaryServerAddresses(2, "127.0.0.1").map(_.getPort)
+    assert(ports.size == 2)
+    val (localPort, remotePort) = (ports(0), ports(1))
     try {
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
 
@@ -96,10 +97,10 @@ object Configuration {
       val engine = sslEngineProvider.createClientSSLEngine()
       val gotAllSupported = enabled.toSet.diff(engine.getSupportedCipherSuites.toSet)
       val gotAllEnabled = enabled.toSet.diff(engine.getEnabledCipherSuites.toSet)
-      gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
-      gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
-      engine.getSupportedProtocols.contains(settings.SSLProtocol) ||
-      (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol))
+      if (gotAllSupported.nonEmpty) throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported)
+      if (gotAllEnabled.nonEmpty) throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled)
+      if (!engine.getSupportedProtocols.contains(settings.SSLProtocol))
+        throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol)
 
       CipherConfig(true, config, cipher, localPort, remotePort, Some(sslEngineProvider))
     } catch {
@@ -110,10 +111,12 @@ object Configuration {
 }
 
 class Ticket1978SHA1PRNGSpec
-    extends Ticket1978CommunicationSpec(getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+    extends Ticket1978CommunicationSpec(
+      getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"))
 
 class Ticket1978DefaultRNGSecureSpec
-    extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+    extends Ticket1978CommunicationSpec(
+      getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"))
 
 class Ticket1978CrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
     extends Ticket1978CommunicationSpec(getCipherConfig("", "SSL_RSA_WITH_NULL_MD5"))
@@ -121,7 +124,7 @@ class Ticket1978CrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
 class Ticket1978NonExistingRNGSecureSpec
     extends Ticket1978CommunicationSpec(CipherConfig(false, AkkaSpec.testConf, "NonExistingRNG", 12345, 12346, None))
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
     extends AkkaSpec(cipherConfig.config)
     with ImplicitSender {

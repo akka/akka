@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.typed;
@@ -147,15 +147,6 @@ public interface IntroTest {
   // #hello-world-main
 
   interface CustomDispatchersExample {
-
-    public static class SayHello {
-      public final String name;
-
-      public SayHello(String name) {
-        this.name = name;
-      }
-    }
-
     // #hello-world-main-with-dispatchers
     public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.SayHello> {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,6 +7,13 @@ package akka.stream.scaladsl
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.util.control.NoStackTrace
 
 import akka.Done
 import akka.stream.ActorAttributes.supervisionStrategy
@@ -16,13 +23,6 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.language.postfixOps
-import scala.util.control.NoStackTrace
 
 class SinkForeachAsyncSpec extends StreamSpec {
 
@@ -40,7 +40,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
       val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
 
       val sink: Sink[Int, Future[Done]] = {
-        Sink.foreachAsync(4) { n: Int =>
+        Sink.foreachAsync(4) { (n: Int) =>
           Future {
             Await.result(latch(n), remainingOrDefault)
             probe.ref ! n
@@ -103,7 +103,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
       }
 
       val p =
-        Source(List(one _, two _, three _, four _)).runWith(sink)
+        Source(List(() => one, () => two, () => three, () => four)).runWith(sink)
 
       latch(1).countDown()
       probe.expectMsg(1)
@@ -236,12 +236,12 @@ class SinkForeachAsyncSpec extends StreamSpec {
             Future {
               if (n == 3) {
                 // Error will happen only after elements 1, 2 has been processed
-                errorLatch.await(5, TimeUnit.SECONDS)
+                await(errorLatch)
                 throw new RuntimeException("err2") with NoStackTrace
               } else {
                 probe.ref ! n
                 errorLatch.countDown()
-                element4Latch.await(5, TimeUnit.SECONDS) // Block element 4, 5, 6, ... from entering
+                await(element4Latch) // Block element 4, 5, 6, ... from entering
               }
             }
           })
@@ -254,4 +254,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
 
     a[RuntimeException] must be thrownBy Await.result(p, 3.seconds)
   }
+
+  def await(latch: CountDownLatch): Unit =
+    latch.await(5, TimeUnit.SECONDS)
 }

@@ -1,0 +1,2 @@
+ProblemFilters.exclude[Problem]("akka.cluster.sbr.LeaseMajoritySettings$")
+ProblemFilters.exclude[Problem]("akka.cluster.sbr.LeaseMajoritySettings.*")

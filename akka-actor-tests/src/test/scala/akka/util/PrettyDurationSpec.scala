@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -9,9 +9,9 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class PrettyDurationSpec extends AnyWordSpec with Matchers {
 
-  import akka.util.PrettyDuration._
-
   import scala.concurrent.duration._
+
+  import akka.util.PrettyDuration._
 
   val cases: Seq[(Duration, String)] =
     9.nanos -> "9.000 ns" ::

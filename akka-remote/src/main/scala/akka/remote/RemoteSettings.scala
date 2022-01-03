@@ -1,26 +1,28 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import com.typesafe.config.Config
-import scala.concurrent.duration._
 import scala.collection.immutable
+import scala.concurrent.duration._
 
-import akka.util.Timeout
-import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
-import akka.japi.Util._
+import scala.annotation.nowarn
+import com.typesafe.config.Config
+
+import akka.ConfigurationException
 import akka.actor.Props
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.Logging.LogLevel
-import akka.ConfigurationException
-import akka.annotation.InternalApi
+import akka.japi.Util._
 import akka.remote.artery.ArterySettings
-import com.github.ghik.silencer.silent
+import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
+import akka.util.Timeout
 
 final class RemoteSettings(val config: Config) {
   import config._
+
   import akka.util.ccompat.JavaConverters._
 
   val Artery = ArterySettings(getConfig("akka.remote.artery"))
@@ -45,7 +47,7 @@ final class RemoteSettings(val config: Config) {
   /**
    * INTERNAL API
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   @InternalApi private[akka] def untrustedMode: Boolean =
     if (Artery.Enabled) Artery.UntrustedMode else UntrustedMode
   @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
@@ -67,7 +69,7 @@ final class RemoteSettings(val config: Config) {
   @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val Dispatcher: String = getString("akka.remote.classic.use-dispatcher")
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def configureDispatcher(props: Props): Props =
     if (Artery.Enabled) {
       if (Artery.Advanced.Dispatcher.isEmpty) props else props.withDispatcher(Artery.Advanced.Dispatcher)

@@ -1,17 +1,20 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
-import akka.Done
-import akka.stream.impl.SinkholeSubscriber
+import java.lang.{ Integer => JInt }
+
+import scala.concurrent.Promise
+
+import org.reactivestreams.{ Subscriber, Subscription }
 import org.reactivestreams.tck.{ SubscriberWhiteboxVerification, TestEnvironment }
 import org.reactivestreams.tck.SubscriberWhiteboxVerification.{ SubscriberPuppet, WhiteboxSubscriberProbe }
-import org.scalatestplus.testng.{ TestNGSuiteLike }
-import java.lang.{ Integer => JInt }
-import scala.concurrent.Promise
-import org.reactivestreams.{ Subscriber, Subscription }
+import org.scalatestplus.testng.TestNGSuiteLike
+
+import akka.Done
+import akka.stream.impl.SinkholeSubscriber
 
 class SinkholeSubscriberTest extends SubscriberWhiteboxVerification[JInt](new TestEnvironment()) with TestNGSuiteLike {
   override def createSubscriber(probe: WhiteboxSubscriberProbe[JInt]): Subscriber[JInt] = {

@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
 import scala.collection.immutable
+
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.InternalActorRef
-import akka.japi.Util.immutableSeq
 import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.WrappedMessage
+import akka.japi.Util.immutableSeq
 
 /**
  * The interface of the routing logic that is used in a [[Router]] to select
@@ -183,6 +185,6 @@ final case class Broadcast(message: Any) extends RouterEnvelope
  * Only the contained message will be forwarded to the
  * destination, i.e. the envelope will be stripped off.
  */
-trait RouterEnvelope {
+trait RouterEnvelope extends WrappedMessage {
   def message: Any
 }

@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.testkit.{ AkkaSpec, ImplicitSender, PerformanceTest }
-import scala.concurrent.duration._
-import akka.testkit.metrics._
-import org.scalatest.BeforeAndAfterAll
-import akka.testkit.metrics.HeapMemoryUsage
-import com.codahale.metrics.{ Histogram }
+import com.codahale.metrics.Histogram
 import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+
+import akka.testkit.{ AkkaSpec, ImplicitSender, PerformanceTest }
+import akka.testkit.metrics._
+import akka.testkit.metrics.HeapMemoryUsage
 
 object ActorCreationPerfSpec {
 
@@ -218,9 +219,9 @@ class ActorCreationPerfSpec
 
   "Actor creation with actorOf" must {
 
-    registerTests("Props[EmptyActor] with new Props", () => Props[EmptyActor])
+    registerTests("Props[EmptyActor] with new Props", () => Props[EmptyActor]())
 
-    val props1 = Props[EmptyActor]
+    val props1 = Props[EmptyActor]()
     registerTests("Props[EmptyActor] with same Props", () => props1)
 
     registerTests("Props(new EmptyActor) new", () => { Props(new EmptyActor) })

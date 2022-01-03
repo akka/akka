@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal.adpater
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import akka.actor
 import akka.actor.typed.Props
 import akka.actor.typed.internal.adapter.PropsAdapter
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class PropsAdapterSpec extends AnyWordSpec with Matchers {
 

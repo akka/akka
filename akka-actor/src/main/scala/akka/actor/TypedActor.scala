@@ -1,29 +1,31 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
+import java.io.ObjectStreamException
+import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
+
 import scala.collection.immutable
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import scala.concurrent.{ Await, Future }
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
 
+import scala.annotation.nowarn
+
+import akka.dispatch._
 import akka.japi.{ Creator, Option => JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.pattern.AskTimeoutException
-import akka.util.Timeout
-import akka.util.Reflect.instantiator
 import akka.serialization.{ JavaSerializer, SerializationExtension, Serializers }
-import akka.dispatch._
-import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
-import java.util.concurrent.TimeoutException
-import java.io.ObjectStreamException
-import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
-
-import com.github.ghik.silencer.silent
+import akka.util.Reflect.instantiator
+import akka.util.Timeout
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -47,7 +49,7 @@ trait TypedActorFactory {
    */
   def stop(proxy: AnyRef): Boolean = getActorRefFor(proxy) match {
     case null => false
-    case ref  => ref.asInstanceOf[InternalActorRef].stop; true
+    case ref  => ref.asInstanceOf[InternalActorRef].stop(); true
   }
 
   /**
@@ -76,7 +78,7 @@ trait TypedActorFactory {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
     val i = props.interfaces //Cache this to avoid closing over the Props
-    val ap = Props(new TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps.deploy)
+    val ap = Props(new TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps().deploy)
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap))
   }
 
@@ -87,7 +89,7 @@ trait TypedActorFactory {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
     val i = props.interfaces //Cache this to avoid closing over the Props
-    val ap = Props(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps.deploy)
+    val ap = Props(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps().deploy)
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap, name))
   }
 
@@ -108,7 +110,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   override def get(system: ActorSystem): TypedActorExtension = super.get(system)
   override def get(system: ClassicActorSystemProvider): TypedActorExtension = super.get(system)
 
-  def lookup() = this
+  def lookup = this
   def createExtension(system: ExtendedActorSystem): TypedActorExtension = new TypedActorExtension(system)
 
   /**
@@ -126,7 +128,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Java API
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def get(context: ActorContext): TypedActorFactory = apply(context)
 
   /**
@@ -252,7 +254,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * Returns the default dispatcher (for a TypedActor) when inside a method call in a TypedActor.
    */
-  implicit def dispatcher = context.dispatcher
+  implicit def dispatcher: ExecutionContextExecutor = context.dispatcher
 
   /**
    * INTERNAL API
@@ -264,14 +266,17 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       createInstance: => T,
       interfaces: immutable.Seq[Class[_]])
       extends Actor {
+    self =>
     // if we were remote deployed we need to create a local proxy
-    if (!context.parent.asInstanceOf[InternalActorRef].isLocal)
-      TypedActor.get(context.system).createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, context.self)
+    if (!self.context.parent.asInstanceOf[InternalActorRef].isLocal)
+      akka.actor.TypedActor
+        .get(self.context.system)
+        .createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, self.context.self)
 
     private val me = withContext[T](createInstance)
 
     override def supervisorStrategy: SupervisorStrategy = me match {
-      case l: Supervisor => l.supervisorStrategy
+      case l: Supervisor => l.supervisorStrategy()
       case _             => super.supervisorStrategy
     }
 
@@ -282,7 +287,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       }
     }
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     override def postStop(): Unit =
       try {
         withContext {
@@ -292,10 +297,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           }
         }
       } finally {
-        TypedActor(context.system).invocationHandlerFor(proxyVar.get) match {
+        akka.actor.TypedActor(self.context.system).invocationHandlerFor(proxyVar.get) match {
           case null =>
           case some =>
-            some.actorVar.set(context.system.deadLetters) //Point it to the DLQ
+            some.actorVar.set(self.context.system.deadLetters) //Point it to the DLQ
             proxyVar.set(null.asInstanceOf[R])
         }
       }
@@ -304,8 +309,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       me match {
         case l: PreRestart => l.preRestart(reason, message)
         case _ =>
-          context.children
-            .foreach(context.stop) //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
+          self.context.children
+            .foreach(self.context.stop) //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
       }
     }
 
@@ -317,12 +322,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     }
 
     protected def withContext[U](unitOfWork: => U): U = {
-      TypedActor.selfReference.set(proxyVar.get)
-      TypedActor.currentContext.set(context)
+      akka.actor.TypedActor.selfReference.set(proxyVar.get)
+      akka.actor.TypedActor.currentContext.set(self.context)
       try unitOfWork
       finally {
-        TypedActor.selfReference.set(null)
-        TypedActor.currentContext.set(null)
+        akka.actor.TypedActor.selfReference.set(null)
+        akka.actor.TypedActor.currentContext.set(null)
       }
     }
 
@@ -335,11 +340,15 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
               val s = sender()
               m(me) match {
                 case f: Future[_] if m.returnsFuture =>
-                  implicit val dispatcher = context.dispatcher
+                  implicit val dispatcher = this.context.dispatcher
                   f.onComplete {
-                    case Success(null)   => s ! NullResponse
-                    case Success(result) => s ! result
-                    case Failure(f)      => s ! Status.Failure(f)
+                    case Success(result) =>
+                      if (result == null) {
+                        s ! NullResponse
+                      } else {
+                        s ! result
+                      }
+                    case Failure(f) => s ! Status.Failure(f)
                   }
                 case null   => s ! NullResponse
                 case result => s ! result
@@ -497,9 +506,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         case some => toTypedActorInvocationHandler(some)
       }
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def toTypedActorInvocationHandler(system: ActorSystem): TypedActorInvocationHandler =
-      new TypedActorInvocationHandler(TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
+      new TypedActorInvocationHandler(akka.actor.TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
   }
 }
 
@@ -673,20 +682,21 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
  * ContextualTypedActorFactory allows TypedActors to create children, effectively forming the same Actor Supervision Hierarchies
  * as normal Actors can.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFactory: ActorContext)
     extends TypedActorFactory {
   override def getActorRefFor(proxy: AnyRef): ActorRef = typedActor.getActorRefFor(proxy)
   override def isTypedActor(proxyOrNot: AnyRef): Boolean = typedActor.isTypedActor(proxyOrNot)
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFactory with Extension {
   import TypedActor._ //Import the goodies from the companion object
   protected def actorFactory: ActorRefFactory = system
   protected def typedActor = this
 
   import system.settings
+
   import akka.util.Helpers.ConfigOps
 
   /**

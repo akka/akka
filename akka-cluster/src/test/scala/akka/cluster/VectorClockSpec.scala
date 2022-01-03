@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.testkit.AkkaSpec
 import scala.collection.immutable.TreeMap
+
+import akka.testkit.AkkaSpec
 
 class VectorClockSpec extends AkkaSpec {
   import VectorClock._

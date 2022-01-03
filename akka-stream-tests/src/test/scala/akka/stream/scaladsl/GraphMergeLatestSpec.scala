@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSource
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSource
 
 class GraphMergeLatestSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
@@ -35,7 +35,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
       val (in1, in2, in3) = RunnableGraph
-        .fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b => (s1, s2, s3) =>
+        .fromGraph(GraphDSL.createGraph(up1, up2, up3)((_, _, _)) { implicit b => (s1, s2, s3) =>
           val m = b.add(MergeLatest[Int](3))
 
           s1 ~> m
@@ -69,7 +69,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
       val (in1, in2, in3) = RunnableGraph
-        .fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b => (s1, s2, s3) =>
+        .fromGraph(GraphDSL.createGraph(up1, up2, up3)((_, _, _)) { implicit b => (s1, s2, s3) =>
           val m = b.add(MergeLatest[Int](3))
 
           s1 ~> m
@@ -134,7 +134,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
       val (in1, _) = RunnableGraph
-        .fromGraph(GraphDSL.create(up1, up2)((_, _)) { implicit b => (s1, s2) =>
+        .fromGraph(GraphDSL.createGraph(up1, up2)((_, _)) { implicit b => (s1, s2) =>
           val m = b.add(MergeLatest[Int](2, true))
 
           s1 ~> m

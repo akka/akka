@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import org.scalacheck.{ Arbitrary, Gen }
-import org.scalatestplus.scalacheck.Checkers
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.scalacheck.Checkers
 
 class RemoteInstrumentsSpec extends AnyWordSpec with Matchers with Checkers {
 

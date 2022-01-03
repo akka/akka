@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.osgi
@@ -21,7 +21,7 @@ class Activator extends ActorSystemActivator {
     // optionally register the ActorSystem in the OSGi Service Registry
     registerService(context, system)
 
-    val someActor = system.actorOf(Props[SomeActor], name = "someName")
+    val someActor = system.actorOf(Props[SomeActor](), name = "someName")
     someActor ! SomeMessage
   }
 

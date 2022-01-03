@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
-import language.{ postfixOps }
-import org.scalatest.{ BeforeAndAfterEach }
-import akka.actor._
-import akka.event.Logging.Warning
 import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
-import akka.pattern.ask
+
+import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
+import akka.actor._
 import akka.dispatch.Dispatcher
+import akka.event.Logging.Warning
+import akka.pattern.ask
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.
@@ -42,11 +44,11 @@ object TestActorRefSpec {
     def receiveT = {
       case "complexRequest" => {
         replyTo = sender()
-        val worker = TestActorRef(Props[WorkerActor])
+        val worker = TestActorRef(Props[WorkerActor]())
         worker ! "work"
       }
       case "complexRequest2" =>
-        val worker = TestActorRef(Props[WorkerActor])
+        val worker = TestActorRef(Props[WorkerActor]())
         worker ! sender()
       case "workDone"      => replyTo ! "complexReply"
       case "simpleRequest" => sender() ! "simpleReply"
@@ -143,7 +145,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     }
 
     "support reply via sender()" in {
-      val serverRef = TestActorRef(Props[ReplyActor])
+      val serverRef = TestActorRef(Props[ReplyActor]())
       val clientRef = TestActorRef(Props(classOf[SenderActor], serverRef))
 
       counter = 4
@@ -169,7 +171,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
     "stop when sent a poison pill" in {
       EventFilter[ActorKilledException]().intercept {
-        val a = TestActorRef(Props[WorkerActor])
+        val a = TestActorRef(Props[WorkerActor]())
         system.actorOf(Props(new Actor {
           context.watch(a)
           def receive = {
@@ -251,7 +253,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     }
 
     "allow override of dispatcher" in {
-      val a = TestActorRef(Props[WorkerActor].withDispatcher("disp1"))
+      val a = TestActorRef(Props[WorkerActor]().withDispatcher("disp1"))
       a.underlying.dispatcher.getClass should ===(classOf[Dispatcher])
     }
 
@@ -323,24 +325,24 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     }
 
     "allow creation of a TestActorRef with a default supervisor with Props" in {
-      val ref = TestActorRef[WorkerActor](Props[WorkerActor])
+      val ref = TestActorRef[WorkerActor](Props[WorkerActor]())
       ref.underlyingActor.supervisor should be(system.asInstanceOf[ActorSystemImpl].guardian)
     }
 
     "allow creation of a TestActorRef with a default supervisor and specified name with Props" in {
-      val ref = TestActorRef[WorkerActor](Props[WorkerActor], "specificPropsActor")
+      val ref = TestActorRef[WorkerActor](Props[WorkerActor](), "specificPropsActor")
       ref.underlyingActor.name should be("specificPropsActor")
     }
 
     "allow creation of a TestActorRef with a specified supervisor with Props" in {
       val parent = TestActorRef[ReplyActor]
-      val ref = TestActorRef[WorkerActor](Props[WorkerActor], parent)
+      val ref = TestActorRef[WorkerActor](Props[WorkerActor](), parent)
       ref.underlyingActor.supervisor should be(parent)
     }
 
     "allow creation of a TestActorRef with a specified supervisor and specified name with Props" in {
       val parent = TestActorRef[ReplyActor]
-      val ref = TestActorRef[WorkerActor](Props[WorkerActor], parent, "specificSupervisedPropsActor")
+      val ref = TestActorRef[WorkerActor](Props[WorkerActor](), parent, "specificSupervisedPropsActor")
       ref.underlyingActor.name should be("specificSupervisedPropsActor")
       ref.underlyingActor.supervisor should be(parent)
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -7,6 +7,9 @@ package akka.remote
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.tailrec
+
+import scala.annotation.nowarn
+
 import akka.actor.ActorSelectionMessage
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
@@ -16,14 +19,13 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.event.Logging
 import akka.routing.RouterEnvelope
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
  * Extension that keeps track of remote metrics, such
  * as max size of different message types.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] object RemoteMetricsExtension extends ExtensionId[RemoteMetrics] with ExtensionIdProvider {
   override def get(system: ActorSystem): RemoteMetrics = super.get(system)
   override def get(system: ClassicActorSystemProvider): RemoteMetrics = super.get(system)
@@ -60,12 +62,12 @@ private[akka] class RemoteMetricsOff extends RemoteMetrics {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteMetrics {
 
   private val logFrameSizeExceeding: Int =
     RARP(system).provider.remoteSettings.LogFrameSizeExceeding.getOrElse(Int.MaxValue)
-  private val log = Logging(system, this.getClass)
+  private val log = Logging(system, classOf[RemoteMetrics])
   private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
 
   override def logPayloadBytes(msg: Any, payloadBytes: Int): Unit =

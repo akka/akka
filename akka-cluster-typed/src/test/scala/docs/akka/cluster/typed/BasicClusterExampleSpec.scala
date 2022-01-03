@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.typed
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.testkit.SocketUtil
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -25,6 +26,7 @@ import scala.concurrent.duration._
 
 object BasicClusterExampleSpec {
   val configSystem1 = ConfigFactory.parseString(s"""
+akka.loglevel = DEBUG
 #config-seeds
 akka {
   actor {
@@ -41,6 +43,8 @@ akka {
     seed-nodes = [
       "akka://ClusterSystem@127.0.0.1:2551",
       "akka://ClusterSystem@127.0.0.1:2552"]
+    
+    downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
   }
 }
 #config-seeds
@@ -86,7 +90,7 @@ akka {
     //#hasRole
   }
 
-  @silent("never used")
+  @nowarn("msg=never used")
   def illustrateDcAccess(): Unit = {
     val system: ActorSystem[_] = ???
 
@@ -106,7 +110,7 @@ akka {
 class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {
   import BasicClusterExampleSpec._
 
-  implicit override val patienceConfig =
+  implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = scaled(Span(10, Seconds)), interval = scaled(Span(100, Millis)))
 
   "Cluster API" must {
@@ -116,19 +120,21 @@ class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventual
       val sys2Port = SocketUtil.temporaryLocalPort()
       def config(port: Int) = ConfigFactory.parseString(s"""
           akka.remote.classic.netty.tcp.port = $port
+          akka.remote.artery.canonical.port = $port
+          akka.cluster.jmx.multi-mbeans-in-same-jvm = on
           akka.cluster.seed-nodes = [ "akka://ClusterSystem@127.0.0.1:$sys1Port", "akka://ClusterSystem@127.0.0.1:$sys2Port" ]
         """)
 
-      val system1 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", config(sys1Port).withFallback(configSystem1))
-      val system2 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", config(sys2Port).withFallback(configSystem2))
+      val system1 =
+        ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", config(sys1Port).withFallback(configSystem1))
+      val system2 =
+        ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", config(sys2Port).withFallback(configSystem2))
       try {
         Cluster(system1)
         Cluster(system2)
       } finally {
-        system1.terminate()
-        system1.whenTerminated.futureValue
-        system2.terminate()
-        system2.whenTerminated.futureValue
+        ActorTestKit.shutdown(system1)
+        ActorTestKit.shutdown(system2)
       }
 
     }
@@ -137,6 +143,8 @@ class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventual
 
 object BasicClusterManualSpec {
   val clusterConfig = ConfigFactory.parseString(s"""
+akka.loglevel = DEBUG
+akka.cluster.jmx.multi-mbeans-in-same-jvm = on
 #config
 akka {
   actor.provider = "cluster"
@@ -161,14 +169,14 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
 
   import BasicClusterManualSpec._
 
-  implicit override val patienceConfig =
+  implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = scaled(Span(10, Seconds)), interval = scaled(Span(100, Millis)))
 
   "Cluster API" must {
     "init cluster" in {
 
-      val system = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
-      val system2 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
+      val system = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
+      val system2 = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
 
       try {
         //#cluster-create
@@ -195,17 +203,16 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
           cluster2.isTerminated shouldEqual true
         }
       } finally {
-        system.terminate()
-        system.whenTerminated.futureValue
-        system2.terminate()
-        system2.whenTerminated.futureValue
+        ActorTestKit.shutdown(system)
+        ActorTestKit.shutdown(system2)
       }
     }
 
     "subscribe to cluster events" in {
-      implicit val system1 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
-      val system2 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
-      val system3 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", noPort.withFallback(clusterConfig))
+      implicit val system1 =
+        ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
+      val system2 = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
+      val system3 = ActorSystem[Nothing](Behaviors.empty[Nothing], "ClusterSystem", noPort.withFallback(clusterConfig))
 
       try {
         val cluster1 = Cluster(system1)
@@ -282,12 +289,9 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
         system3.whenTerminated.futureValue
 
       } finally {
-        system1.terminate()
-        system1.whenTerminated.futureValue
-        system2.terminate()
-        system2.whenTerminated.futureValue
-        system3.terminate()
-        system3.whenTerminated.futureValue
+        ActorTestKit.shutdown(system1)
+        ActorTestKit.shutdown(system2)
+        ActorTestKit.shutdown(system3)
       }
     }
   }

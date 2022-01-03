@@ -4,13 +4,11 @@ Emit its current value, which starts at `zero`, and then apply the current and n
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #scan }
+@apidoc[Source.scan](Source) { scala="#scan[T](zero:T)(f:(T,Out)=&gt;T):FlowOps.this.Repr[T]" java="#scan(java.lang.Object,akka.japi.function.Function2)" }
+@apidoc[Flow.scan](Flow) { scala="#scan[T](zero:T)(f:(T,Out)=&gt;T):FlowOps.this.Repr[T]" java="#scan(java.lang.Object,akka.japi.function.Function2)" }
 
-@@@
 
 ## Description
 

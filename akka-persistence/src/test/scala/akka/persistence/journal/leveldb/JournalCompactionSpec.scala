@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.leveldb
 
 import java.io.File
 
-import akka.actor.{ ActorLogging, ActorRef, ActorSystem, Props }
-import akka.persistence.journal.leveldb.JournalCompactionSpec.EventLogger._
-import akka.persistence.journal.leveldb.JournalCompactionSpec.SpecComponentBuilder
-import akka.persistence.{ DeleteMessagesSuccess, PersistenceSpec, PersistentActor }
-import akka.testkit.TestProbe
+import scala.util.Random
+
 import com.typesafe.config.Config
 import org.apache.commons.io.FileUtils
 
-import scala.util.Random
+import akka.actor.{ ActorLogging, ActorRef, ActorSystem, Props }
+import akka.persistence.{ DeleteMessagesSuccess, PersistenceSpec, PersistentActor }
+import akka.persistence.journal.leveldb.JournalCompactionSpec.EventLogger._
+import akka.persistence.journal.leveldb.JournalCompactionSpec.SpecComponentBuilder
+import akka.testkit.TestProbe
 
 class JournalNoCompactionSpec
     extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalNoCompactionSpec")) {

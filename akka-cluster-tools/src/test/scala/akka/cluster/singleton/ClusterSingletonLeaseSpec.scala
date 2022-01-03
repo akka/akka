@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
@@ -10,6 +10,8 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Success
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -18,14 +20,11 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.cluster.TestLease
-import akka.cluster.TestLease.AcquireReq
-import akka.cluster.TestLease.ReleaseReq
-import akka.cluster.TestLeaseExt
+import akka.coordination.lease.TestLease
+import akka.coordination.lease.TestLeaseExt
 import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 
 class ImportantSingleton(lifeCycleProbe: ActorRef) extends Actor with ActorLogging {
 
@@ -54,6 +53,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
        lease-retry-interval = 2000ms
      }
   """).withFallback(TestLease.config)) {
+  import TestLease.{ AcquireReq, ReleaseReq }
 
   val cluster = Cluster(system)
   val testLeaseExt = TestLeaseExt(system)
@@ -121,7 +121,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
       } // allow singleton manager to create the lease
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
-      val nextResponse = Promise[Boolean]
+      val nextResponse = Promise[Boolean]()
       testLease.setNextAcquireResult(nextResponse.future)
       testLease.initialPromise.complete(Success(false))
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
@@ -155,7 +155,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
       } // allow singleton manager to create the lease
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
-      val nextResponse = Promise[Boolean]
+      val nextResponse = Promise[Boolean]()
       testLease.setNextAcquireResult(nextResponse.future)
       testLease.initialPromise.failure(TestException("no lease for you"))
       testLease.probe.expectMsg(AcquireReq(leaseOwner))

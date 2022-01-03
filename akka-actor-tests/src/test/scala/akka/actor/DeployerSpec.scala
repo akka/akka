@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import language.postfixOps
+import scala.concurrent.duration._
 
-import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
+import language.postfixOps
+
 import akka.routing._
-import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
 object DeployerSpec {
   val deployerConf = ConfigFactory.parseString(

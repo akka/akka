@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.ddata.typed.scaladsl
@@ -34,7 +34,7 @@ object ReplicatorDocSpec {
   // #sample
   object Counter {
     sealed trait Command
-    final case object Increment extends Command
+    case object Increment extends Command
     final case class GetValue(replyTo: ActorRef[Int]) extends Command
     final case class GetCachedValue(replyTo: ActorRef[Int]) extends Command
     case object Unsubscribe extends Command
@@ -98,6 +98,10 @@ object ReplicatorDocSpec {
 
                   case InternalSubscribeResponse(Replicator.Deleted(_)) =>
                     Behaviors.unhandled // no deletes
+
+                  case InternalSubscribeResponse(_) => // changed but wrong key
+                    Behaviors.unhandled
+
                 }
             }
           }
@@ -117,7 +121,7 @@ class ReplicatorDocSpec
 
   import ReplicatorDocSpec._
 
-  implicit val selfNodeAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfNodeAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
 
   "Replicator" must {
 

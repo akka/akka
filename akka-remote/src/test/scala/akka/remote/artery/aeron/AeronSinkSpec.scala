@@ -1,11 +1,19 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 package aeron
 
 import java.io.File
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import io.aeron.Aeron
+import io.aeron.driver.MediaDriver
+import org.agrona.IoUtil
 
 import akka.actor.ExtendedActorSystem
 import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
@@ -14,13 +22,6 @@ import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil
-import io.aeron.Aeron
-import io.aeron.driver.MediaDriver
-import org.agrona.IoUtil
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class AeronSinkSpec extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on

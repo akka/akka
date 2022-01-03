@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import akka.actor.Cancellable
-import akka.annotation.DoNotInherit
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.Cancellable
+import akka.annotation.DoNotInherit
 
 /**
  * The ActorSystem facility for scheduling tasks.

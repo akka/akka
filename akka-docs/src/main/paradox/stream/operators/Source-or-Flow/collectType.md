@@ -4,13 +4,11 @@ Transform this stream by testing the type of each of the elements on which the e
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #collectType }
+@apidoc[Source.collectType](Source) { scala="#collectType[T](implicittag:scala.reflect.ClassTag[T]):FlowOps.this.Repr[T]" java="#collectType(java.lang.Class)" }
+@apidoc[Flow.collectType](Flow) { scala="#collectType[T](implicittag:scala.reflect.ClassTag[T]):FlowOps.this.Repr[T]" java="#collectType(java.lang.Class)" }
 
-@@@
 
 ## Description
 

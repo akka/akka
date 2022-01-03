@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit.metrics
 
-import com.codahale.metrics._
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.TimeUnit._
+import java.util.concurrent.atomic.AtomicLong
+
+import com.codahale.metrics._
 
 /**
  * Specialized "one-shot" Timer.

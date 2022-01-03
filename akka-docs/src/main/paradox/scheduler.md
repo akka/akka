@@ -11,25 +11,28 @@ For the new API see @ref:[typed scheduling](typed/interaction-patterns.md#typed-
 To use Scheduler, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
 
 Sometimes the need for making things happen in the future arises, and where do
-you go look then?  Look no further than `ActorSystem`! There you find the
-`scheduler` method that returns an instance of
-`akka.actor.Scheduler`, this instance is unique per ActorSystem and is
+you go look then?  Look no further than @apidoc[actor.ActorSystem]! There you find the
+@scala[@scaladoc[scheduler](akka.actor.ActorSystem#scheduler:akka.actor.Scheduler)]@java[@javadoc[getScheduler()](akka.actor.ActorSystem#getScheduler())] method that returns an instance of
+@apidoc[akka.actor.Scheduler], this instance is unique per ActorSystem and is
 used internally for scheduling things to happen at specific points in time.
 
 You can schedule sending of messages to actors and execution of tasks
-(functions or Runnable).  You will get a `Cancellable` back that you can call
-`cancel` on to cancel the execution of the scheduled operation.
+(functions or Runnable).  You will get a @apidoc[Cancellable] back that you can call
+@scala[@scaladoc[cancel](akka.actor.Cancellable#cancel():Boolean)]@java[@javadoc[cancel()](akka.actor.Cancellable#cancel())] on to cancel the execution of the scheduled operation.
 
 When scheduling periodic or single messages in an actor to itself it is recommended to
-use the @ref:[Actor Timers](actors.md#actors-timers) instead of using the `Scheduler`
+use the @ref:[Actor Timers](actors.md#actors-timers) instead of using the @apidoc[akka.actor.Scheduler]
 directly.
 
 The scheduler in Akka is designed for high-throughput of thousands up to millions 
@@ -48,7 +51,7 @@ is not the use-case the Akka scheduler is implemented for.
 
 @@@ warning
 
-The default implementation of `Scheduler` used by Akka is based on job
+The default implementation of @apidoc[akka.actor.Scheduler] used by Akka is based on job
 buckets which are emptied according to a fixed schedule.  It does not
 execute tasks at the exact time, but on every tick, it will run everything
 that is (over)due.  The accuracy of the default Scheduler can be modified
@@ -72,7 +75,7 @@ Scala
 Java
 :  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
 
-Schedule a @scala[function]@java[`Runnable`], that sends the current time to the testActor, to be executed after 50ms:
+Schedule a @scala[function]@java[@javadoc[Runnable](java.lang.Runnable)], that sends the current time to the testActor, to be executed after 50ms:
 
 Scala
 :  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
@@ -92,16 +95,16 @@ Java
 
 If you schedule functions or Runnable instances you should be extra careful
 to not close over unstable references. In practice this means not using `this`
-inside the closure in the scope of an Actor instance, not accessing `sender()` directly
+inside the closure in the scope of an Actor instance, not accessing @scala[@scaladoc[sender](akka.actor.Actor#sender():akka.actor.ActorRef)]@java[@javadoc[sender()](akka.actor.Actor#sender())] directly
 and not calling the methods of the Actor instance directly. If you need to
-schedule an invocation schedule a message to `self` instead (containing the
+schedule an invocation schedule a message to @scala[@scaladoc[self](akka.actor.Actor#self:akka.actor.ActorRef)]@java[@javadoc[self()](akka.actor.Actor#self())] instead (containing the
 necessary parameters) and then call the method when the message is received.
 
 @@@
 
 @@@ warning
 
-All scheduled task will be executed when the `ActorSystem` is terminated, i.e.
+All scheduled task will be executed when the @apidoc[actor.ActorSystem] is terminated, i.e.
 the task may execute before its timeout.
 
 @@@
@@ -152,7 +155,7 @@ which may in worst case cause undesired load on the system. `scheduleWithFixedDe
 ## The Scheduler interface
 
 The actual scheduler implementation is loaded reflectively upon
-`ActorSystem` start-up, which means that it is possible to provide a
+@apidoc[actor.ActorSystem] start-up, which means that it is possible to provide a
 different one using the `akka.scheduler.implementation` configuration
 property. The referenced class must implement the @scala[@apidoc[akka.actor.Scheduler]]@java[@apidoc[akka.actor.AbstractScheduler]]
 interface.
@@ -160,13 +163,13 @@ interface.
 ## The Cancellable interface
 
 Scheduling a task will result in a @apidoc[akka.actor.Cancellable] (or throw an
-`IllegalStateException` if attempted after the scheduler’s shutdown).
+@javadoc[IllegalStateException](java.lang.IllegalStateException) if attempted after the scheduler’s shutdown).
 This allows you to cancel something that has been scheduled for execution.
 
 @@@ warning
 
 This does not abort the execution of the task, if it had already been
-started.  Check the return value of `cancel` to detect whether the
+started.  Check the return value of @scala[@scaladoc[cancel](akka.actor.Cancellable#cancel():Boolean)]@java[@javadoc[cancel()](akka.actor.Cancellable#cancel())] to detect whether the
 scheduled task was canceled or will (eventually) have run.
 
 @@@

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -7,16 +7,17 @@ package akka.stream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+import org.openjdk.jmh.annotations.OperationsPerInvocation
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations.OperationsPerInvocation
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object FusedGraphsBenchmark {
   val ElementCount = 100 * 1000
@@ -96,7 +97,7 @@ class IdentityStage extends GraphStage[FlowShape[MutableElement, MutableElement]
 class FusedGraphsBenchmark {
   import FusedGraphsBenchmark._
 
-  implicit val system = ActorSystem(
+  implicit val system: ActorSystem = ActorSystem(
     "test",
     ConfigFactory.parseString(s"""
       akka.stream.materializer.sync-processing-limit = ${Int.MaxValue}

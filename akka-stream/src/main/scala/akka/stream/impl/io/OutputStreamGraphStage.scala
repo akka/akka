@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io
 
 import java.io.OutputStream
 
-import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
-import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
-import akka.util.ByteString
-
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+
+import akka.annotation.InternalApi
+import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
+import akka.util.ByteString
 
 /**
  * INTERNAL API
@@ -29,7 +29,7 @@ private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, au
   override protected def initialAttributes: Attributes = DefaultAttributes.outputStreamSink
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[IOResult]) = {
-    val mat = Promise[IOResult]
+    val mat = Promise[IOResult]()
     val logic = new GraphStageLogicWithLogging(shape) with InHandler {
       var outputStream: OutputStream = _
       var bytesWritten: Long = 0L
@@ -50,7 +50,7 @@ private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, au
       override def onPush(): Unit = {
         val next = grab(in)
         try {
-          outputStream.write(next.toArray)
+          outputStream.write(next.toArrayUnsafe())
           if (autoFlush) outputStream.flush()
 
           bytesWritten += next.size

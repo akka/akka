@@ -1,23 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.actor.Props.EmptyActor
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
+import scala.annotation.nowarn
 import language.postfixOps
+
+import akka.actor.Props.EmptyActor
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Failed }
 import akka.pattern.ask
 import akka.testkit._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 class LocalDeathWatchSpec extends AkkaSpec with ImplicitSender with DefaultTimeout with DeathWatchSpec
 
 object DeathWatchSpec {
+  object Watcher {
+    def props(target: ActorRef, testActor: ActorRef) =
+      Props(classOf[Watcher], target, testActor)
+  }
   class Watcher(target: ActorRef, testActor: ActorRef) extends Actor {
     context.watch(target)
     def receive = {
@@ -25,9 +29,6 @@ object DeathWatchSpec {
       case x             => testActor.forward(x)
     }
   }
-
-  def props(target: ActorRef, testActor: ActorRef) =
-    Props(classOf[Watcher], target, testActor)
 
   class EmptyWatcher(target: ActorRef) extends Actor {
     context.watch(target)
@@ -44,7 +45,7 @@ object DeathWatchSpec {
         context.become {
           case Terminated(`currentKid`) =>
             testActor ! "GREEN"
-            context unbecome
+            context.unbecome()
         }
     }
   }
@@ -70,20 +71,55 @@ object DeathWatchSpec {
   final case class FF(fail: Failed)
 
   final case class Latches(t1: TestLatch, t2: TestLatch) extends NoSerializationVerificationNeeded
+
+  object WatchWithVerifier {
+    case class WatchThis(ref: ActorRef)
+    case object Watching
+    case class CustomWatchMsg(ref: ActorRef)
+    case class StartStashing(numberOfMessagesToStash: Int)
+    case object StashingStarted
+
+    def props(probe: ActorRef) = Props(new WatchWithVerifier(probe))
+  }
+  class WatchWithVerifier(probe: ActorRef) extends Actor with Stash {
+    import WatchWithVerifier._
+    private var stashing = false
+    private var stashNMessages = 0
+
+    override def receive: Receive = {
+      case StartStashing(messagesToStash) =>
+        stashing = true
+        stashNMessages = messagesToStash
+        sender() ! StashingStarted
+      case WatchThis(ref) =>
+        context.watchWith(ref, CustomWatchMsg(ref))
+        sender() ! Watching
+      case _ if stashing =>
+        stash()
+        stashNMessages -= 1
+        if (stashNMessages == 0) {
+          stashing = false
+          unstashAll()
+        }
+      case msg: CustomWatchMsg =>
+        probe ! msg
+    }
+  }
 }
 
-@silent
+@nowarn
 trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
 
   import DeathWatchSpec._
 
   lazy val supervisor = system.actorOf(Props(classOf[Supervisor], SupervisorStrategy.defaultStrategy), "watchers")
 
-  def startWatching(target: ActorRef) = Await.result((supervisor ? props(target, testActor)).mapTo[ActorRef], 3 seconds)
+  def startWatching(target: ActorRef) =
+    Await.result((supervisor ? Watcher.props(target, testActor)).mapTo[ActorRef], 3 seconds)
 
   "The Death Watch" must {
     def expectTerminationOf(actorRef: ActorRef) =
-      expectMsgPF(5 seconds, actorRef + ": Stopped or Already terminated when linking") {
+      expectMsgPF(5 seconds, "" + actorRef + ": Stopped or Already terminated when linking") {
         case WrappedTerminated(Terminated(`actorRef`)) => true
       }
 
@@ -217,7 +253,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
         .sendSystemMessage(DeathWatchNotification(subject, existenceConfirmed = true, addressTerminated = false))
 
       // the testActor is not watching subject and will not receive a Terminated msg
-      expectNoMessage
+      expectNoMessage()
     }
 
     "discard Terminated when unwatched between sysmsg and processing" in {
@@ -243,6 +279,31 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
       expectMsg(ActorIdentity((), Some(w)))
       w ! Identify(())
       expectMsg(ActorIdentity((), Some(w)))
+    }
+
+    "watch with custom message" in {
+      val verifierProbe = TestProbe()
+      val verifier = system.actorOf(WatchWithVerifier.props(verifierProbe.ref))
+      val subject = system.actorOf(Props[EmptyActor]())
+      verifier ! WatchWithVerifier.WatchThis(subject)
+      expectMsg(WatchWithVerifier.Watching)
+
+      subject ! PoisonPill
+      verifierProbe.expectMsg(WatchWithVerifier.CustomWatchMsg(subject))
+    }
+
+    // Coverage for #29101
+    "stash watchWith termination message correctly" in {
+      val verifierProbe = TestProbe()
+      val verifier = system.actorOf(WatchWithVerifier.props(verifierProbe.ref))
+      val subject = system.actorOf(Props[EmptyActor]())
+      verifier ! WatchWithVerifier.WatchThis(subject)
+      expectMsg(WatchWithVerifier.Watching)
+      verifier ! WatchWithVerifier.StartStashing(numberOfMessagesToStash = 1)
+      expectMsg(WatchWithVerifier.StashingStarted)
+
+      subject ! PoisonPill
+      verifierProbe.expectMsg(WatchWithVerifier.CustomWatchMsg(subject))
     }
   }
 

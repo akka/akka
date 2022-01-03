@@ -1,28 +1,30 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io
 
 import java.nio.ByteBuffer
+
+import javax.net.ssl._
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
-import javax.net.ssl._
+
+import scala.annotation.tailrec
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
 
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.stream._
+import akka.stream.TLSProtocol._
+import akka.stream.impl._
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
-import akka.stream.impl._
+import akka.stream.impl.fusing.ActorGraphInterpreter
+import akka.stream.snapshot.StreamSnapshotImpl
 import akka.util.ByteString
-
-import scala.annotation.tailrec
-import akka.stream.TLSProtocol._
-
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API.
@@ -101,6 +103,7 @@ import scala.util.{ Failure, Success, Try }
           case n: NegotiateNewSession =>
             setNewSessionParameters(n)
             ByteString.empty
+          case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
         }
         if (tracing) log.debug(s"chopping from new chunk of ${buffer.size} into $name (${b.position()})")
       } else {
@@ -267,7 +270,7 @@ import scala.util.{ Failure, Success, Try }
   }
 
   def completeOrFlush(): Unit =
-    if (engine.isOutboundDone) nextPhase(completedPhase)
+    if (engine.isOutboundDone || (engine.isInboundDone && userInChoppingBlock.isEmpty)) nextPhase(completedPhase)
     else nextPhase(flushingOutbound)
 
   private def doInbound(isOutboundClosed: Boolean, inboundState: TransferState): Boolean =
@@ -292,7 +295,7 @@ import scala.util.{ Failure, Success, Try }
     } else if (inboundState.isReady) {
       transportInChoppingBlock.chopInto(transportInBuffer)
       try {
-        doUnwrap()
+        doUnwrap(ignoreOutput = false)
         true
       } catch {
         case ex: SSLException =>
@@ -366,10 +369,20 @@ import scala.util.{ Failure, Success, Try }
       log.debug(
         s"wrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${userInBuffer.remaining} out=${transportOutBuffer
           .position()}")
+
     if (lastHandshakeStatus == FINISHED) handshakeFinished()
     runDelegatedTasks()
     result.getStatus match {
       case OK =>
+        // https://github.com/akka/akka/issues/29922
+        // It seems to be possible to get the SSLEngine into a state where
+        // result.getStatus == OK && getHandshakeStatus == NEED_WRAP but
+        // it doesn't make any progress any more.
+        //
+        // We guard against this JDK bug by checking for reasonable invariants after the call to engine.wrap
+        if (!(transportOutBuffer.position() > 0 || lastHandshakeStatus != NEED_WRAP))
+          throw new IllegalStateException("SSLEngine trying to loop NEED_WRAP without producing output")
+
         flushToTransport()
         userInChoppingBlock.putBack(userInBuffer)
       case CLOSED =>
@@ -381,7 +394,7 @@ import scala.util.{ Failure, Success, Try }
   }
 
   @tailrec
-  private def doUnwrap(ignoreOutput: Boolean = false): Unit = {
+  private def doUnwrap(ignoreOutput: Boolean): Unit = {
     val result = engine.unwrap(transportInBuffer, userOutBuffer)
     if (ignoreOutput) userOutBuffer.clear()
     lastHandshakeStatus = result.getHandshakeStatus
@@ -393,25 +406,26 @@ import scala.util.{ Failure, Success, Try }
     result.getStatus match {
       case OK =>
         result.getHandshakeStatus match {
-          case NEED_WRAP => flushToUser()
+          case NEED_WRAP =>
+            flushToUser()
+            transportInChoppingBlock.putBack(transportInBuffer)
           case FINISHED =>
             flushToUser()
             handshakeFinished()
             transportInChoppingBlock.putBack(transportInBuffer)
           case _ =>
-            if (transportInBuffer.hasRemaining) doUnwrap()
+            if (transportInBuffer.hasRemaining) doUnwrap(ignoreOutput = false)
             else flushToUser()
         }
       case CLOSED =>
         flushToUser()
-        if (engine.isOutboundDone) nextPhase(completedPhase)
-        else nextPhase(flushingOutbound)
+        completeOrFlush()
       case BUFFER_UNDERFLOW =>
         flushToUser()
       case BUFFER_OVERFLOW =>
         flushToUser()
         transportInChoppingBlock.putBack(transportInBuffer)
-      case s => fail(new IllegalStateException(s"unexpected status $s in doUnwrap()"))
+      case null => fail(new IllegalStateException(s"unexpected status 'null' in doUnwrap()"))
     }
   }
 
@@ -442,7 +456,10 @@ import scala.util.{ Failure, Success, Try }
     }
   }
 
-  override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive)
+  override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive).orElse {
+    case ActorGraphInterpreter.Snapshot =>
+      sender() ! StreamSnapshotImpl(self.path, Seq.empty, Seq.empty)
+  }
 
   initialPhase(2, bidirectional)
 
@@ -480,14 +497,15 @@ import scala.util.{ Failure, Success, Try }
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = {
     sessionParameters.enabledCipherSuites.foreach(cs => engine.setEnabledCipherSuites(cs.toArray))
     sessionParameters.enabledProtocols.foreach(p => engine.setEnabledProtocols(p.toArray))
+
+    sessionParameters.sslParameters.foreach(engine.setSSLParameters)
+
     sessionParameters.clientAuth match {
       case Some(TLSClientAuth.None) => engine.setNeedClientAuth(false)
       case Some(TLSClientAuth.Want) => engine.setWantClientAuth(true)
       case Some(TLSClientAuth.Need) => engine.setNeedClientAuth(true)
       case _                        => // do nothing
     }
-
-    sessionParameters.sslParameters.foreach(engine.setSSLParameters)
   }
 
   def cloneParameters(old: SSLParameters): SSLParameters = {

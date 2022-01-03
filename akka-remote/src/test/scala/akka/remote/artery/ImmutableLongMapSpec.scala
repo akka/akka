@@ -1,13 +1,15 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.util.OptionVal
 import scala.util.Random
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.util.OptionVal
 
 class ImmutableLongMapSpec extends AnyWordSpec with Matchers {
 
@@ -109,7 +111,7 @@ class ImmutableLongMapSpec extends AnyWordSpec with Matchers {
 
       m1.remove(5L) should be(m1)
 
-      m1.remove(10L).remove(20L).remove(30L) should be(ImmutableLongMap.empty)
+      m1.remove(10L).remove(20L).remove(30L) should be(ImmutableLongMap.empty[String])
     }
 
     "get None when entry doesn't exist" in {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -7,49 +7,21 @@ package akka.cluster.sharding
 import scala.concurrent.duration._
 
 import akka.actor._
-import akka.cluster.Cluster
-import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 /**
  * one-to-one mapping between shards and entities is not efficient but some use that anyway
  */
-object ClusterShardingSingleShardPerEntitySpec {
-  class Entity extends Actor {
-    def receive = {
-      case id: Int => sender() ! id
-    }
-  }
+object ClusterShardingSingleShardPerEntitySpecConfig
+    extends MultiNodeClusterShardingConfig(additionalConfig = "akka.cluster.sharding.updating-state-timeout = 1s") {
 
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int => (id.toString, id)
-  }
-
-  val extractShardId: ShardRegion.ExtractShardId = {
-    case id: Int => id.toString
-  }
-
-}
-
-object ClusterShardingSingleShardPerEntitySpecConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
   val fifth = role("fifth")
-
-  commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
-    akka.actor.provider = "cluster"
-    akka.cluster.sharding.state-store-mode = ddata
-    akka.cluster.sharding.updating-state-timeout = 1s
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 }
@@ -61,29 +33,21 @@ class ClusterShardingSingleShardPerEntitySpecMultiJvmNode4 extends ClusterShardi
 class ClusterShardingSingleShardPerEntitySpecMultiJvmNode5 extends ClusterShardingSingleShardPerEntitySpec
 
 abstract class ClusterShardingSingleShardPerEntitySpec
-    extends MultiNodeSpec(ClusterShardingSingleShardPerEntitySpecConfig)
-    with STMultiNodeSpec
+    extends MultiNodeClusterShardingSpec(ClusterShardingSingleShardPerEntitySpecConfig)
     with ImplicitSender {
-  import ClusterShardingSingleShardPerEntitySpec._
   import ClusterShardingSingleShardPerEntitySpecConfig._
-
-  override def initialParticipants = roles.size
+  import MultiNodeClusterShardingSpec.ShardedEntity
 
   def join(from: RoleName, to: RoleName): Unit = {
-    runOn(from) {
-      Cluster(system).join(node(to).address)
-      startSharding()
-    }
-    enterBarrier(from.name + "-joined")
-  }
-
-  def startSharding(): Unit = {
-    ClusterSharding(system).start(
-      typeName = "Entity",
-      entityProps = Props[Entity],
-      settings = ClusterShardingSettings(system),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
+    join(
+      from,
+      to,
+      startSharding(
+        system,
+        typeName = "Entity",
+        entityProps = Props[ShardedEntity](),
+        extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
+        extractShardId = MultiNodeClusterShardingSpec.intExtractShardId))
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")

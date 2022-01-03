@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -7,14 +7,21 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.LoggerFactory
+import org.slf4j.MDC
+import org.slf4j.helpers.BasicMarkerFactory
+
 import akka.actor.ActorPath
+import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorTags
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.ActorMdc
@@ -23,11 +30,6 @@ import akka.event.DefaultLoggingFilter
 import akka.event.Logging.DefaultLogger
 import akka.event.slf4j.Slf4jLogger
 import akka.event.slf4j.Slf4jLoggingFilter
-import com.typesafe.config.ConfigFactory
-import org.slf4j.LoggerFactory
-import org.slf4j.MDC
-import org.slf4j.helpers.BasicMarkerFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class SomeClass
 
@@ -57,7 +59,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
   val marker = new BasicMarkerFactory().getMarker("marker")
   val cause = TestException("böö")
 
-  implicit val classic = system.toClassic
+  implicit val classic: ActorSystem = system.toClassic
 
   class AnotherLoggerClass
 
@@ -278,9 +280,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
   }
 
   "SLF4J Settings" must {
-    import akka.actor.typed.scaladsl.adapter._
-    import akka.actor.ExtendedActorSystem
     import akka.actor.{ ActorSystem => ClassicActorSystem }
+    import akka.actor.ExtendedActorSystem
+    import akka.actor.typed.scaladsl.adapter._
 
     "by default be amended to use Slf4jLogger" in {
       system.settings.config.getStringList("akka.loggers").size() should ===(1)
@@ -327,7 +329,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "provide the MDC values in the log" in {
       val behaviors = Behaviors.withMdc[Protocol](
         Map("static" -> "1"),
-        // FIXME why u no infer the type here Scala??
+        // why u no infer the type here Scala??
         (message: Protocol) =>
           if (message.transactionId == 1)
             Map("txId" -> message.transactionId.toString, "first" -> "true")
@@ -346,7 +348,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         .info("Starting")
         // not counting for example "akkaSource", but it shouldn't have any other entries
         .withCustom(logEvent =>
-          logEvent.mdc.keysIterator.forall(entry => entry.startsWith("akka") || entry == "sourceActorSystem"))
+          logEvent.mdc.keysIterator.forall(entry =>
+            entry.startsWith("akka") || entry == "sourceActorSystem" || entry == "static") &&
+          logEvent.mdc("static") == "1")
         .expect {
           spawn(behaviors)
         }

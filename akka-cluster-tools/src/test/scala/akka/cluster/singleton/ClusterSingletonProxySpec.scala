@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
-import akka.testkit.{ TestKit, TestProbe }
-import akka.actor._
-import com.typesafe.config.ConfigFactory
-import akka.cluster.Cluster
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor._
+import akka.cluster.Cluster
+import akka.testkit.{ TestKit, TestProbe }
 
 class ClusterSingletonProxySpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
@@ -47,7 +49,7 @@ object ClusterSingletonProxySpec {
     cluster.registerOnMemberUp {
       system.actorOf(
         ClusterSingletonManager.props(
-          singletonProps = Props[Singleton],
+          singletonProps = Props[Singleton](),
           terminationMessage = PoisonPill,
           settings = ClusterSingletonManagerSettings(system).withRemovalMargin(5.seconds)),
         name = "singletonManager")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -7,6 +7,9 @@ package akka.cluster.typed
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -19,8 +22,6 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object RemoteContextAskSpec {
   def config = ConfigFactory.parseString(s"""
@@ -84,7 +85,7 @@ class RemoteContextAskSpec
       spawn(Behaviors.setup[AnyRef] { ctx =>
         implicit val timeout: Timeout = 3.seconds
 
-        ctx.ask(remoteRef, Ping) {
+        ctx.ask(remoteRef, Ping.apply) {
           case Success(pong) => pong
           case Failure(ex)   => ex
         }

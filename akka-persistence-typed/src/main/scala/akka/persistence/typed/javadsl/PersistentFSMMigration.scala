@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl
 
 import java.time.Duration
 import java.util.Optional
-import akka.japi.function.Function3
-import akka.util.JavaDurationConverters._
+
 import scala.compat.java8.OptionConverters._
 
+import akka.japi.function.Function3
 import akka.persistence.typed.SnapshotAdapter
+import akka.util.JavaDurationConverters._
 
 /**
  * Helper functions for migration from PersistentFSM to Persistence Typed

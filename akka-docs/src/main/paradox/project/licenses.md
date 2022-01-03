@@ -11,7 +11,7 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not
 use this file except in compliance with the License. You may obtain a copy of
 the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -22,8 +22,8 @@ the License.
 
 ## Akka Committer License Agreement
 
-All committers have signed this [CLA](http://www.lightbend.com/contribute/current-cla).
-It can be [signed online](http://www.lightbend.com/contribute/cla).
+All committers have signed this [CLA](https://www.lightbend.com/contribute/current-cla).
+It can be [signed online](https://www.lightbend.com/contribute/cla).
 
 ## Licenses for Dependency Libraries
 

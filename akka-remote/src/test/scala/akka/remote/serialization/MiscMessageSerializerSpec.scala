@@ -1,24 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
 
-import akka.actor._
-import akka.remote.{ RemoteScope, RemoteWatcher }
-import akka.serialization.SerializationExtension
-import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
-import scala.util.control.NoStackTrace
-import scala.concurrent.duration._
-import java.util.Optional
 import java.io.NotSerializableException
+import java.util.Optional
 import java.util.concurrent.TimeoutException
 
-import akka.pattern.AskTimeoutException
+import scala.annotation.nowarn
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config.ConfigFactory
 import akka.{ Done, NotUsed }
+import akka.actor._
+import akka.pattern.AskTimeoutException
+import akka.pattern.StatusReply
+import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
+import akka.serialization.SerializationExtension
+import akka.testkit.AkkaSpec
 import akka.testkit.JavaSerializable
 
 object MiscMessageSerializerSpec {
@@ -128,7 +131,11 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "TailChoppingPool" -> TailChoppingPool(25, within = 3.seconds, interval = 1.second),
       "RemoteRouterConfig" -> RemoteRouterConfig(
         local = RandomPool(25),
-        nodes = List(Address("akka", "system", "localhost", 2525)))).foreach {
+        nodes = List(Address("akka", "system", "localhost", 2525))),
+      "StatusReply.success" -> StatusReply.success("woho!"),
+      "StatusReply.Ack" -> StatusReply.Ack,
+      "StatusReply.error(errorMessage)" -> StatusReply.error("boho!"),
+      "StatusReply.error(exception)" -> StatusReply.error(new TestException("boho!"))).foreach {
       case (scenario, item) =>
         s"resolve serializer for $scenario" in {
           val serializer = SerializationExtension(system)
@@ -154,11 +161,13 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       }
     }
 
+    @nowarn("msg=Unused import")
     def verifySerialization(msg: AnyRef): Unit = {
       val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
       val result = serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg))
       msg match {
         case t: Throwable =>
+          import org.scalactic.TripleEquals.unconstrainedEquality
           // typically no equals in exceptions
           result.getClass should ===(t.getClass)
           result.asInstanceOf[Throwable].getMessage should ===(t.getMessage)

@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
-
-import scala.util.control.NoStackTrace
 
 object ActorRefSinkSpec {
   case class Fw(ref: ActorRef) extends Actor {

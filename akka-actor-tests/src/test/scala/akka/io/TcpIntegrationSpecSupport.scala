@@ -1,20 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.testkit.{ AkkaSpec, TestProbe }
-import akka.actor.ActorRef
-import akka.io.Inet.SocketOption
-import akka.testkit.SocketUtil.temporaryServerAddress
+
 import Tcp._
+
+import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
+import akka.io.Inet.SocketOption
+import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.SocketUtil.temporaryServerAddress
 
-trait TcpIntegrationSpecSupport { _: AkkaSpec =>
+trait TcpIntegrationSpecSupport { this: AkkaSpec =>
 
   class TestSetup(shouldBindServer: Boolean = true, runClientInExtraSystem: Boolean = true) {
     val clientSystem =
@@ -23,7 +25,7 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec =>
         // terminate clientSystem after server system
         system.whenTerminated.onComplete { _ =>
           res.terminate()
-        }(ExecutionContexts.sameThreadExecutionContext)
+        }(ExecutionContexts.parasitic)
         res
       } else system
     val bindHandler = TestProbe()

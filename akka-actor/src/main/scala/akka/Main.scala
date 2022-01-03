@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
+import scala.util.control.NonFatal
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
-import akka.actor.Actor
-import akka.actor.Terminated
-import akka.actor.ActorLogging
 import akka.actor.Props
-import akka.actor.ActorRef
-import scala.util.control.NonFatal
+import akka.actor.Terminated
 
 /**
  * Main class to start an [[akka.actor.ActorSystem]] with one

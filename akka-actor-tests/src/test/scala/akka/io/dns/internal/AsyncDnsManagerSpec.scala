@@ -1,23 +1,24 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
 
 import java.net.InetAddress
 
-import akka.io.Dns
-import akka.io.dns.AAAARecord
-import akka.io.dns.DnsProtocol.{ Resolve, Resolved }
-import akka.io.dns.CachePolicy.Ttl
-import akka.testkit.WithLogCapturing
-import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.github.ghik.silencer.silent
-
 import scala.collection.immutable.Seq
 
+import scala.annotation.nowarn
+
+import akka.io.Dns
+import akka.io.dns.AAAARecord
+import akka.io.dns.CachePolicy.Ttl
+import akka.io.dns.DnsProtocol.{ Resolve, Resolved }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
+import akka.testkit.WithLogCapturing
+
 // tests deprecated DNS API
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class AsyncDnsManagerSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
@@ -36,7 +37,10 @@ class AsyncDnsManagerSpec extends AkkaSpec("""
 
     "support ipv6" in {
       dns ! Resolve("::1") // ::1 will short circuit the resolution
-      val Resolved("::1", Seq(AAAARecord("::1", Ttl.effectivelyForever, _)), Nil) = expectMsgType[Resolved]
+      expectMsgType[Resolved] match {
+        case Resolved("::1", Seq(AAAARecord("::1", Ttl.effectivelyForever, _)), Nil) =>
+        case other                                                                   => fail(other.toString)
+      }
     }
 
     "support ipv6 also using the old protocol" in {
@@ -48,7 +52,7 @@ class AsyncDnsManagerSpec extends AkkaSpec("""
 
     "provide access to cache" in {
       dns ! AsyncDnsManager.GetCache
-      (expectMsgType[akka.io.SimpleDnsCache] should be).theSameInstanceAs(Dns(system).cache)
+      ((expectMsgType[akka.io.SimpleDnsCache]: akka.io.SimpleDnsCache) should be).theSameInstanceAs(Dns(system).cache)
     }
   }
 

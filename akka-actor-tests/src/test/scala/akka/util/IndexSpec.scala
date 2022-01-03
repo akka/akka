@@ -1,19 +1,23 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
 import java.util.Comparator
-import scala.concurrent.Future
-import akka.testkit.AkkaSpec
+
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
 import scala.util.Random
-import akka.testkit.DefaultTimeout
+
 import org.scalatest.matchers.should.Matchers
 
+import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
+
 class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
   private def emptyIndex =
     new Index[String, Int](100, new Comparator[Int] {
       override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
@@ -131,7 +135,7 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
         case 3 => readTask()
       }
 
-      val tasks = List.fill(nrOfTasks)(executeRandomTask)
+      val tasks = List.fill(nrOfTasks)(executeRandomTask())
 
       tasks.foreach(Await.result(_, timeout.duration))
     }

@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
-import akka.actor.SupervisorStrategy.Resume
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+
+import com.typesafe.config.Config
+
 import akka.actor.{ Actor, ActorRef, OneForOneStrategy, Props }
+import akka.actor.SupervisorStrategy.Resume
 import akka.persistence.journal.SteppingInmemJournal
 import akka.testkit.ImplicitSender
 import akka.util.unused
-import com.typesafe.config.Config
-
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
 
 object PersistentActorStashingSpec {
   final case class Cmd(data: Any)
@@ -308,7 +309,5 @@ class SteppingInMemPersistentActorStashingSpec
 
 }
 
-class LeveldbPersistentActorStashingSpec
-    extends PersistentActorStashingSpec(PersistenceSpec.config("leveldb", "LeveldbPersistentActorStashingSpec"))
 class InmemPersistentActorStashingSpec
     extends PersistentActorStashingSpec(PersistenceSpec.config("inmem", "InmemPersistentActorStashingSpec"))

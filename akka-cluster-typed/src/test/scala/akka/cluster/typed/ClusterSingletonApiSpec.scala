@@ -1,11 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -15,8 +18,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterSingletonApiSpec {
 
@@ -28,21 +29,19 @@ object ClusterSingletonApiSpec {
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
     """)
 
-  trait PingProtocol
+  sealed trait PingProtocol
   case object Pong extends CborSerializable
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol with CborSerializable
 
   case object Perish extends PingProtocol with CborSerializable
 
-  val pingPong = Behaviors.receive[PingProtocol] { (_, msg) =>
-    msg match {
-      case Ping(respondTo) =>
-        respondTo ! Pong
-        Behaviors.same
+  val pingPong = Behaviors.receiveMessage[PingProtocol] {
+    case Ping(respondTo) =>
+      respondTo ! Pong
+      Behaviors.same
 
-      case Perish =>
-        Behaviors.stopped
-    }
+    case Perish =>
+      Behaviors.stopped
 
   }
 
@@ -54,7 +53,7 @@ class ClusterSingletonApiSpec
     with LogCapturing {
   import ClusterSingletonApiSpec._
 
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
   val classicSystem1 = system.toClassic
 

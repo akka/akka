@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
 import org.reactivestreams.Publisher
+
 import akka.stream.scaladsl.{ Keep, Sink, Source }
 
 class MaybeSourceTest extends AkkaPublisherVerification[Int] {

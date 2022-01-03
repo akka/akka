@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -31,8 +31,8 @@ object TailChopping {
 
         def waiting(requestCount: Int): Behavior[Command] = {
           Behaviors.receiveMessage {
-            case WrappedReply(reply: Reply) =>
-              replyTo ! reply
+            case WrappedReply(reply) =>
+              replyTo ! reply.asInstanceOf[Reply]
               Behaviors.stopped
 
             case RequestTimeout =>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
@@ -8,31 +8,32 @@ import java.util
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.Promise
+import scala.util.control.NonFatal
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+
 import akka.Done
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.stream._
+import akka.stream.impl._
 import akka.stream.impl.ReactiveStreamsCompliance._
+import akka.stream.impl.SubFusingActorMaterializerImpl
 import akka.stream.impl.fusing.GraphInterpreter.Connection
 import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
 import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
-import akka.stream.impl.SubFusingActorMaterializerImpl
-import akka.stream.impl._
 import akka.stream.snapshot._
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.OptionVal
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-import org.reactivestreams.Subscription
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.Promise
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -44,7 +45,12 @@ import scala.util.control.NonFatal
 
   trait BoundaryEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded {
     def shell: GraphInterpreterShell
+
+    @InternalStableApi
     def execute(eventLimit: Int): Int
+
+    @InternalStableApi
+    def cancel(): Unit
   }
 
   trait SimpleBoundaryEvent extends BoundaryEvent {
@@ -80,6 +86,8 @@ import scala.util.control.NonFatal
       }
 
       override def logic: GraphStageLogic = BatchingActorInputBoundary.this
+
+      override def cancel(): Unit = ()
     }
     // can't be final because of SI-4440
     case class OnComplete(shell: GraphInterpreterShell) extends SimpleBoundaryEvent {
@@ -89,6 +97,8 @@ import scala.util.control.NonFatal
       }
 
       override def logic: GraphStageLogic = BatchingActorInputBoundary.this
+
+      override def cancel(): Unit = ()
     }
     // can't be final because of SI-4440
     case class OnNext(shell: GraphInterpreterShell, e: Any) extends SimpleBoundaryEvent {
@@ -98,6 +108,8 @@ import scala.util.control.NonFatal
       }
 
       override def logic: GraphStageLogic = BatchingActorInputBoundary.this
+
+      override def cancel(): Unit = ()
     }
     // can't be final because of SI-4440
     case class OnSubscribe(shell: GraphInterpreterShell, subscription: Subscription) extends SimpleBoundaryEvent {
@@ -108,6 +120,8 @@ import scala.util.control.NonFatal
       }
 
       override def logic: GraphStageLogic = BatchingActorInputBoundary.this
+
+      override def cancel(): Unit = ()
     }
 
     if (size <= 0) throw new IllegalArgumentException("buffer size cannot be zero")
@@ -219,12 +233,12 @@ import scala.util.control.NonFatal
 
     def onSubscribe(subscription: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
-      if (upstreamCompleted) {
-        // onComplete or onError has been called before OnSubscribe
-        tryCancel(subscription, SubscriptionWithCancelException.NoMoreElementsNeeded)
-      } else if (downstreamCanceled.isDefined) {
+      if (downstreamCanceled.isDefined) {
         upstreamCompleted = true
         tryCancel(subscription, downstreamCanceled.get)
+      } else if (upstreamCompleted) {
+        // onComplete or onError has been called before OnSubscribe
+        tryCancel(subscription, SubscriptionWithCancelException.NoMoreElementsNeeded)
       } else if (upstream != null) { // reactive streams spec 2.5
         tryCancel(subscription, new IllegalStateException("Publisher can only be subscribed once."))
       } else {
@@ -268,6 +282,8 @@ import scala.util.control.NonFatal
     override def shell: GraphInterpreterShell = boundary.shell
 
     override def logic: GraphStageLogic = boundary
+
+    override def cancel(): Unit = ()
   }
 
   final case class RequestMore(boundary: ActorOutputBoundary, demand: Long) extends SimpleBoundaryEvent {
@@ -278,6 +294,7 @@ import scala.util.control.NonFatal
     }
     override def shell: GraphInterpreterShell = boundary.shell
     override def logic: GraphStageLogic = boundary
+    override def cancel(): Unit = ()
   }
   final case class Cancel(boundary: ActorOutputBoundary, cause: Throwable) extends SimpleBoundaryEvent {
     override def execute(): Unit = {
@@ -289,6 +306,7 @@ import scala.util.control.NonFatal
 
     override def shell: GraphInterpreterShell = boundary.shell
     override def logic: GraphStageLogic = boundary
+    override def cancel(): Unit = ()
   }
 
   private[stream] class OutputBoundaryPublisher(boundary: ActorOutputBoundary, internalPortName: String)
@@ -343,7 +361,7 @@ import scala.util.control.NonFatal
         case OptionVal.Some(e) =>
           tryOnSubscribe(subscriber, CancelledSubscription)
           tryOnError(subscriber, e)
-        case OptionVal.None =>
+        case _ =>
           tryOnSubscribe(subscriber, CancelledSubscription)
           tryOnComplete(subscriber)
       } catch {
@@ -492,6 +510,8 @@ import scala.util.control.NonFatal
       promise: Promise[Done],
       handler: (Any) => Unit)
       extends BoundaryEvent {
+
+    @InternalStableApi
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
         interpreter.runAsyncInput(logic, evt, promise, handler)
@@ -503,6 +523,8 @@ import scala.util.control.NonFatal
         eventLimit
       }
     }
+
+    override def cancel(): Unit = ()
   }
 
   // can't be final because of SI-4440
@@ -512,6 +534,8 @@ import scala.util.control.NonFatal
         if (GraphInterpreter.Debug) println(s"${interpreter.Name}  resume")
         if (interpreter.isSuspended) runBatch(eventLimit) else eventLimit
       } else eventLimit
+
+    override def cancel(): Unit = ()
   }
 
   // can't be final because of SI-4440
@@ -527,6 +551,8 @@ import scala.util.control.NonFatal
       }
       0
     }
+
+    override def cancel(): Unit = ()
   }
 
   private var enqueueToShortCircuit: (Any) => Unit = _
@@ -678,7 +704,7 @@ import scala.util.control.NonFatal
     if (!isInitialized)
       UninitializedInterpreterImpl(logics.zipWithIndex.map {
         case (logic, idx) =>
-          LogicSnapshotImpl(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
+          LogicSnapshotImpl(idx, logic.toString, logic.attributes)
       }.toVector)
     else interpreter.toSnapshot
   }
@@ -752,13 +778,19 @@ import scala.util.control.NonFatal
     else if (shortCircuitBuffer != null) shortCircuitBatch()
   }
 
-  private def shortCircuitBatch(): Unit = {
-    while (!shortCircuitBuffer.isEmpty && currentLimit > 0 && activeInterpreters.nonEmpty) shortCircuitBuffer
-      .poll() match {
-      case b: BoundaryEvent => processEvent(b)
-      case Resume           => finishShellRegistration()
+  @tailrec private def shortCircuitBatch(): Unit = {
+    if (shortCircuitBuffer.isEmpty) ()
+    else if (currentLimit == 0) {
+      self ! Resume
+    } else {
+      shortCircuitBuffer.poll() match {
+        case b: BoundaryEvent => processEvent(b)
+        case Resume           => finishShellRegistration()
+        case unexpected =>
+          throw new IllegalStateException(s"Unexpected element in short circuit buffer: '${unexpected.getClass}'")
+      }
+      shortCircuitBatch()
     }
-    if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! Resume
   }
 
   private def processEvent(b: BoundaryEvent): Unit = {
@@ -774,6 +806,9 @@ import scala.util.control.NonFatal
         activeInterpreters -= shell
         if (activeInterpreters.isEmpty && newShells.isEmpty) context.stop(self)
       }
+    } else {
+      // signal to telemetry that this event won't be processed
+      b.cancel()
     }
   }
 
@@ -795,9 +830,22 @@ import scala.util.control.NonFatal
   }
 
   override def postStop(): Unit = {
-    val ex = AbruptTerminationException(self)
-    activeInterpreters.foreach(_.tryAbort(ex))
-    activeInterpreters = Set.empty[GraphInterpreterShell]
-    newShells.foreach(s => if (tryInit(s)) s.tryAbort(ex))
+    if (shortCircuitBuffer ne null) {
+      while (!shortCircuitBuffer.isEmpty) {
+        shortCircuitBuffer.poll() match {
+          case b: BoundaryEvent =>
+            // signal to telemetry that this event won't be processed
+            b.cancel()
+          case _ => // ignore
+        }
+      }
+    }
+    // avoid creating exception in happy case since it uses self.toString which is somewhat slow
+    if (activeInterpreters.nonEmpty || newShells.nonEmpty) {
+      val ex = AbruptTerminationException(self)
+      activeInterpreters.foreach(_.tryAbort(ex))
+      activeInterpreters = Set.empty[GraphInterpreterShell]
+      newShells.foreach(s => if (tryInit(s)) s.tryAbort(ex))
+    }
   }
 }

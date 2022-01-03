@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -17,21 +20,20 @@ import akka.remote.RemoteWatcher.Heartbeat
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 
 class ClusterRemoteFeaturesConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  private val baseConfig = ConfigFactory.parseString(s"""
+  private val baseConfig = {
+    ConfigFactory.parseString(s"""
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
-      akka.remote.artery.canonical.port = 0
-      akka.remote.artery.advanced.flight-recorder.enabled = off
+      akka.remote.artery.canonical.port = ${MultiNodeSpec.selfPort}
       akka.log-dead-letters-during-shutdown = off
       """).withFallback(MultiNodeClusterSpec.clusterConfig)
+  }
 
   commonConfig(debugConfig(on = false).withFallback(baseConfig))
 
@@ -61,8 +63,7 @@ class ClassicClusterRemoteFeaturesMultiJvmNode3
     extends ClusterRemoteFeaturesSpec(new ClusterRemoteFeaturesConfig(false))
 
 abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(multiNodeConfig)
     with ImplicitSender
     with ScalaFutures {
 
@@ -99,7 +100,7 @@ abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesC
       enterBarrier("cluster-up")
 
       runOn(first) {
-        val actor = system.actorOf(Props[AddressPing], "kattdjur")
+        val actor = system.actorOf(Props[AddressPing](), "kattdjur")
         actor.isInstanceOf[RemoteActorRef] shouldBe true
         actor.path.address shouldEqual node(second).address
         actor.path.address.hasGlobalScope shouldBe true
@@ -111,7 +112,7 @@ abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesC
       enterBarrier("CARP-in-cluster-remote-validated")
 
       def assertIsLocalRef(): Unit = {
-        val actor = system.actorOf(Props[AddressPing], "kattdjur")
+        val actor = system.actorOf(Props[AddressPing](), "kattdjur")
         actor.isInstanceOf[RepointableActorRef] shouldBe true
         val localAddress = AddressFromURIString(s"akka://${system.name}")
         actor.path.address shouldEqual localAddress

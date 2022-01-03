@@ -1,27 +1,28 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.pubsub
 
-import language.postfixOps
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.Identify
 import akka.actor.Props
+import akka.actor.RootActorPath
 import akka.cluster.Cluster
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.actor.ActorSystem
-
-import scala.concurrent.Await
-import akka.actor.Identify
-import akka.actor.RootActorPath
-import akka.actor.ActorIdentity
 
 object DistributedPubSubRestartSpec extends MultiNodeConfig {
   val first = role("first")
@@ -55,8 +56,8 @@ class DistributedPubSubRestartSpec
     extends MultiNodeSpec(DistributedPubSubRestartSpec)
     with STMultiNodeSpec
     with ImplicitSender {
-  import DistributedPubSubRestartSpec._
   import DistributedPubSubMediator._
+  import DistributedPubSubRestartSpec._
 
   override def initialParticipants = roles.size
 
@@ -75,7 +76,8 @@ class DistributedPubSubRestartSpec
     val probe = TestProbe()
     awaitAssert {
       mediator.tell(Count, probe.ref)
-      probe.expectMsgType[Int] should ===(expected)
+      val actual = probe.expectMsgType[Int]
+      actual should ===(expected)
     }
   }
 
@@ -101,10 +103,11 @@ class DistributedPubSubRestartSpec
       expectMsg("msg1")
       enterBarrier("got-msg1")
 
-      runOn(second) {
-        mediator ! Internal.DeltaCount
-        val oldDeltaCount = expectMsgType[Long]
+      mediator ! Internal.DeltaCount
+      val oldDeltaCount = expectMsgType[Long]
+      enterBarrier("old-delta-count")
 
+      runOn(second) {
         enterBarrier("end")
 
         mediator ! Internal.DeltaCount
@@ -113,9 +116,6 @@ class DistributedPubSubRestartSpec
       }
 
       runOn(first) {
-        mediator ! Internal.DeltaCount
-        val oldDeltaCount = expectMsgType[Long]
-
         val thirdAddress = node(third).address
         testConductor.shutdown(third).await
 
@@ -161,7 +161,7 @@ class DistributedPubSubRestartSpec
           newMediator.tell(Internal.DeltaCount, probe.ref)
           probe.expectMsg(0L)
 
-          newSystem.actorOf(Props[Shutdown], "shutdown")
+          newSystem.actorOf(Props[Shutdown](), "shutdown")
           Await.ready(newSystem.whenTerminated, 20.seconds)
         } finally newSystem.terminate()
       }

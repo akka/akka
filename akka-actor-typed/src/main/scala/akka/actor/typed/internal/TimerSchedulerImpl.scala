@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -7,16 +7,14 @@ package internal
 
 import java.time.Duration
 
-import scala.concurrent.duration.FiniteDuration
-import akka.actor.Cancellable
-import akka.actor.NotInfluenceReceiveTimeout
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.LoggerOps
+import akka.actor.{ Cancellable, NotInfluenceReceiveTimeout }
+import akka.actor.typed.scaladsl.{ ActorContext, LoggerOps }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import org.slf4j.Logger
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -27,11 +25,11 @@ import org.slf4j.Logger
     override def toString = s"TimerMsg(key=$key, generation=$generation, owner=$owner)"
   }
 
-  def withTimers[T](factory: TimerSchedulerImpl[T] => Behavior[T]): Behavior[T] = {
+  def withTimers[T](factory: TimerSchedulerCrossDslSupport[T] => Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
+  def wrapWithTimers[T](factory: TimerSchedulerCrossDslSupport[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
     ctx match {
       case ctxImpl: ActorContextImpl[T] =>
         val timerScheduler = ctxImpl.timer
@@ -42,10 +40,10 @@ import org.slf4j.Logger
   private sealed trait TimerMode {
     def repeat: Boolean
   }
-  private case object FixedRateMode extends TimerMode {
+  private case class FixedRateMode(initialDelay: FiniteDuration) extends TimerMode {
     override def repeat: Boolean = true
   }
-  private case object FixedDelayMode extends TimerMode {
+  private case class FixedDelayMode(initialDelay: FiniteDuration) extends TimerMode {
     override def repeat: Boolean = true
   }
   private case object SingleMode extends TimerMode {
@@ -53,40 +51,60 @@ import org.slf4j.Logger
   }
 }
 
+@InternalApi private[akka] trait TimerSchedulerCrossDslSupport[T]
+    extends scaladsl.TimerScheduler[T]
+    with javadsl.TimerScheduler[T] {
+  import akka.util.JavaDurationConverters._
+
+  override final def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
+    startTimerWithFixedDelay(key, msg, delay.asScala)
+
+  override final def startTimerWithFixedDelay(key: Any, msg: T, initialDelay: Duration, delay: Duration): Unit =
+    startTimerWithFixedDelay(key, msg, initialDelay.asScala, delay.asScala)
+
+  override final def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
+    startTimerAtFixedRate(key, msg, interval.asScala)
+
+  override final def startTimerAtFixedRate(key: Any, msg: T, initialDelay: Duration, interval: Duration): Unit =
+    startTimerAtFixedRate(key, msg, initialDelay.asScala, interval.asScala)
+
+  override final def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit = {
+    //this follows the deprecation note in the super class
+    startTimerWithFixedDelay(key, msg, interval.asScala)
+  }
+
+  override final def startSingleTimer(key: Any, msg: T, delay: Duration): Unit =
+    startSingleTimer(key, msg, delay.asScala)
+}
+
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
     extends scaladsl.TimerScheduler[T]
-    with javadsl.TimerScheduler[T] {
+    with TimerSchedulerCrossDslSupport[T] {
   import TimerSchedulerImpl._
 
   private var timers: Map[Any, Timer[T]] = Map.empty
   private val timerGen = Iterator.from(1)
 
   override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, FixedRateMode)
+    startTimer(key, msg, interval, FixedRateMode(interval))
 
-  override def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
-    startTimerAtFixedRate(key, msg, interval.asScala)
+  override def startTimerAtFixedRate(key: Any, msg: T, initialDelay: FiniteDuration, interval: FiniteDuration): Unit =
+    startTimer(key, msg, interval, FixedRateMode(initialDelay))
 
   override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
-    startTimer(key, msg, delay, FixedDelayMode)
+    startTimer(key, msg, delay, FixedDelayMode(delay))
 
-  override def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
-    startTimerWithFixedDelay(key, msg, delay.asScala)
+  override def startTimerWithFixedDelay(key: Any, msg: T, initialDelay: FiniteDuration, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, FixedDelayMode(initialDelay))
 
   override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, FixedRateMode)
-
-  override def startPeriodicTimer(key: Any, msg: T, interval: java.time.Duration): Unit =
-    startPeriodicTimer(key, msg, interval.asScala)
+    startTimer(key, msg, interval, FixedRateMode(interval))
 
   override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
     startTimer(key, msg, delay, SingleMode)
-
-  def startSingleTimer(key: Any, msg: T, delay: java.time.Duration): Unit =
-    startSingleTimer(key, msg, delay.asScala)
 
   private def startTimer(key: Any, msg: T, delay: FiniteDuration, mode: TimerMode): Unit = {
     timers.get(key) match {
@@ -103,14 +121,13 @@ import org.slf4j.Logger
 
     val task = mode match {
       case SingleMode =>
-        ctx.system.scheduler
-          .scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.sameThreadExecutionContext)
-      case FixedDelayMode =>
-        ctx.system.scheduler.scheduleWithFixedDelay(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
-          ExecutionContexts.sameThreadExecutionContext)
-      case FixedRateMode =>
-        ctx.system.scheduler.scheduleAtFixedRate(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
-          ExecutionContexts.sameThreadExecutionContext)
+        ctx.system.scheduler.scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.parasitic)
+      case m: FixedDelayMode =>
+        ctx.system.scheduler.scheduleWithFixedDelay(m.initialDelay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+          ExecutionContexts.parasitic)
+      case m: FixedRateMode =>
+        ctx.system.scheduler.scheduleAtFixedRate(m.initialDelay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+          ExecutionContexts.parasitic)
     }
 
     val nextTimer = Timer(key, msg, mode.repeat, nextGen, task)
@@ -128,13 +145,11 @@ import org.slf4j.Logger
   }
 
   private def cancelTimer(timer: Timer[T]): Unit = {
-    ctx.log.debug("Cancel timer [{}] with generation [{}]", timer.key, timer.generation)
     timer.task.cancel()
     timers -= timer.key
   }
 
   override def cancelAll(): Unit = {
-    ctx.log.debug("Cancel all timers")
     timers.valuesIterator.foreach { timer =>
       timer.task.cancel()
     }
@@ -169,5 +184,4 @@ import org.slf4j.Logger
         }
     }
   }
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -14,8 +14,12 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import scala.annotation.nowarn
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 import akka.Done
 import akka.NotUsed
@@ -24,7 +28,10 @@ import akka.actor.ActorSelectionMessage
 import akka.actor.Address
 import akka.actor.Cancellable
 import akka.actor.Dropped
+import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.dispatch.sysmsg.SystemMessage
+import akka.dispatch.sysmsg.Unwatch
 import akka.event.Logging
 import akka.remote.DaemonMsgCreate
 import akka.remote.PriorityMessage
@@ -53,8 +60,6 @@ import akka.util.PrettyDuration._
 import akka.util.Unsafe
 import akka.util.WildcardIndex
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 /**
  * INTERNAL API
@@ -141,11 +146,12 @@ private[remote] class Association(
 
   require(remoteAddress.port.nonEmpty)
 
-  private val log = Logging.withMarker(transport.system, getClass)
+  private val log = Logging.withMarker(transport.system, classOf[Association])
   private def flightRecorder = transport.flightRecorder
 
   override def settings = transport.settings
   private def advancedSettings = transport.settings.Advanced
+  private val deathWatchNotificationFlushEnabled = advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero && transport.provider.settings.HasCluster
 
   private val restartCounter =
     new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
@@ -220,7 +226,7 @@ private[remote] class Association(
   def outboundControlIngress: OutboundControlIngress = {
     _outboundControlIngress match {
       case OptionVal.Some(o) => o
-      case OptionVal.None =>
+      case _ =>
         controlQueue match {
           case w: LazyQueueWrapper => w.runMaterialize()
           case _                   =>
@@ -230,7 +236,7 @@ private[remote] class Association(
         materializing.await(10, TimeUnit.SECONDS)
         _outboundControlIngress match {
           case OptionVal.Some(o) => o
-          case OptionVal.None =>
+          case _ =>
             if (transport.isShutdown || isRemovedAfterQuarantined()) throw ShuttingDown
             else throw new IllegalStateException(s"outboundControlIngress for [$remoteAddress] not initialized yet")
         }
@@ -243,8 +249,8 @@ private[remote] class Association(
    * Holds reference to shared state of Association - *access only via helper methods*
    */
   @volatile
-  @silent("never used")
-  private[this] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
+  @nowarn("msg=never used")
+  private[artery] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
 
   /**
    * Helper method for access to underlying state via Unsafe
@@ -332,14 +338,14 @@ private[remote] class Association(
       outboundEnvelopePool.acquire().init(recipient, message.asInstanceOf[AnyRef], sender)
 
     // volatile read to see latest queue array
-    @silent("never used")
+    @nowarn("msg=never used")
     val unused = queuesVisibility
 
     def dropped(queueIndex: Int, qSize: Int, env: OutboundEnvelope): Unit = {
       val removed = isRemovedAfterQuarantined()
       if (removed) recipient match {
         case OptionVal.Some(ref) => ref.cachedAssociation = null // don't use this Association instance any more
-        case OptionVal.None      =>
+        case _                   =>
       }
       val reason =
         if (removed) "Due to removed unused quarantined association"
@@ -349,6 +355,34 @@ private[remote] class Association(
 
       flightRecorder.transportSendQueueOverflow(queueIndex)
       deadletters ! env
+    }
+
+    def shouldSendUnwatch(): Boolean =
+      !transport.provider.settings.HasCluster || !transport.system.isTerminating()
+
+    def shouldSendDeathWatchNotification(d: DeathWatchNotification): Boolean =
+      d.addressTerminated || !transport.provider.settings.HasCluster || !transport.system.isTerminating()
+
+    def sendSystemMessage(outboundEnvelope: OutboundEnvelope): Unit = {
+      outboundEnvelope.message match {
+        case u: Unwatch if shouldSendUnwatch() =>
+          log.debug(
+            "Not sending Unwatch of {} to {} because it will be notified when this member " +
+            "has been removed from Cluster.",
+            u.watcher,
+            u.watchee)
+        case d: DeathWatchNotification if !shouldSendDeathWatchNotification(d) =>
+          log.debug(
+            "Not sending DeathWatchNotification of {} to {} because it will be notified when this member " +
+            "has been removed from Cluster.",
+            d.actor,
+            outboundEnvelope.recipient.getOrElse("unknown"))
+        case _ =>
+          if (!controlQueue.offer(outboundEnvelope)) {
+            quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+          }
+      }
     }
 
     val state = associationState
@@ -367,11 +401,20 @@ private[remote] class Association(
       try {
         val outboundEnvelope = createOutboundEnvelope()
         message match {
+          case d: DeathWatchNotification if deathWatchNotificationFlushEnabled && shouldSendDeathWatchNotification(d) =>
+            val flushingPromise = Promise[Done]()
+            log.debug("Delaying death watch notification until flush has been sent. {}", d)
+            transport.system.systemActorOf(
+              FlushBeforeDeathWatchNotification
+                .props(flushingPromise, settings.Advanced.DeathWatchNotificationFlushTimeout, this)
+                .withDispatcher(Dispatchers.InternalDispatcherId),
+              FlushBeforeDeathWatchNotification.nextName())
+            flushingPromise.future.onComplete { _ =>
+              log.debug("Sending death watch notification as flush is complete. {}", d)
+              sendSystemMessage(outboundEnvelope)
+            }(materializer.executionContext)
           case _: SystemMessage =>
-            if (!controlQueue.offer(outboundEnvelope)) {
-              quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
-              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
-            }
+            sendSystemMessage(outboundEnvelope)
           case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | _: ClearSystemMessageDelivery =>
             // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
             if (!controlQueue.offer(outboundEnvelope)) {
@@ -429,7 +472,7 @@ private[remote] class Association(
           case idx => idx
         }
 
-      case OptionVal.None =>
+      case _ =>
         OrdinaryQueueIndex
     }
   }
@@ -447,10 +490,18 @@ private[remote] class Association(
   }
 
   def sendTerminationHint(replyTo: ActorRef): Int = {
+    log.debug("Sending ActorSystemTerminating to all queues")
+    sendToAllQueues(ActorSystemTerminating(localAddress), replyTo, excludeControlQueue = false)
+  }
+
+  def sendFlush(replyTo: ActorRef, excludeControlQueue: Boolean): Int =
+    sendToAllQueues(Flush, replyTo, excludeControlQueue)
+
+  def sendToAllQueues(msg: ControlMessage, replyTo: ActorRef, excludeControlQueue: Boolean): Int = {
     if (!associationState.isQuarantined()) {
-      val msg = ActorSystemTerminating(localAddress)
       var sent = 0
-      queues.iterator.filter(q => q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue =>
+      val queuesIter = if (excludeControlQueue) queues.iterator.drop(1) else queues.iterator
+      queuesIter.filter(q => q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue =>
         try {
           val envelope = outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.Some(replyTo))
 
@@ -516,7 +567,7 @@ private[remote] class Association(
           case Some(peer) =>
             log.info(
               RemoteLogMarker.quarantine(remoteAddress, Some(u)),
-              "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
+              "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. Reason: {}",
               remoteAddress,
               u,
               peer.uid,
@@ -525,15 +576,16 @@ private[remote] class Association(
           case None =>
             log.info(
               RemoteLogMarker.quarantine(remoteAddress, Some(u)),
-              "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
+              "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. Reason: {}",
               remoteAddress,
               reason)
         }
       case None =>
         log.warning(
           RemoteLogMarker.quarantine(remoteAddress, None),
-          "Quarantine of [{}] ignored because unknown UID",
-          remoteAddress)
+          "Quarantine of [{}] ignored because unknown UID. Reason: {}",
+          remoteAddress,
+          reason)
     }
 
   }
@@ -590,7 +642,7 @@ private[remote] class Association(
             setStopReason(queueIndex, OutboundStreamStopQuarantinedSignal)
             clearStreamKillSwitch(queueIndex, k)
             k.abort(OutboundStreamStopQuarantinedSignal)
-          case OptionVal.None => // already aborted
+          case _ => // already aborted
         }
     }
   }
@@ -614,6 +666,15 @@ private[remote] class Association(
             // If idle longer than quarantine-idle-outbound-after and the low frequency HandshakeReq
             // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
             quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
+            associationState.uniqueRemoteAddressState() match {
+              case AssociationState.UidQuarantined => // quarantined as expected
+              case AssociationState.UidKnown       => // must be new uid, keep as is
+              case AssociationState.UidUnknown =>
+                val newLastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
+                // quarantine ignored due to unknown UID, have to stop this task anyway
+                if (newLastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos)
+                  abortQuarantined() // quarantine ignored due to unknown UID, have to stop this task anyway
+            }
           } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
             streamMatValues.get.foreach {
               case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
@@ -627,7 +688,7 @@ private[remote] class Association(
                         setStopReason(queueIndex, OutboundStreamStopIdleSignal)
                         clearStreamKillSwitch(queueIndex, k)
                         k.abort(OutboundStreamStopIdleSignal)
-                      case OptionVal.None => // already aborted
+                      case _ => // already aborted
                     }
 
                   } else {
@@ -639,7 +700,7 @@ private[remote] class Association(
                         flightRecorder.transportStopIdleOutbound(remoteAddress, queueIndex)
                         setControlIdleKillSwitch(OptionVal.None)
                         killSwitch.abort(OutboundStreamStopIdleSignal)
-                      case OptionVal.None => // already stopped
+                      case _ => // already stopped
                     }
                   }
                 }
@@ -730,7 +791,7 @@ private[remote] class Association(
   }
 
   private def getOrCreateQueueWrapper(queueIndex: Int, capacity: Int): QueueWrapper = {
-    @silent("never used")
+    @nowarn("msg=never used")
     val unused = queuesVisibility // volatile read to see latest queues array
     queues(queueIndex) match {
       case existing: QueueWrapper => existing
@@ -911,7 +972,12 @@ private[remote] class Association(
         // don't restart after shutdown, but log some details so we notice
         // for the TCP transport the ShutdownSignal is "converted" to StreamTcpException
         if (!cause.isInstanceOf[StreamTcpException])
-          log.error(cause, s"{} to [{}] failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
+          log.warning(
+            s"{} to [{}] failed after shutdown. {}: {}",
+            streamName,
+            remoteAddress,
+            cause.getClass.getName,
+            cause.getMessage)
         cancelAllTimers()
         // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
         materializing.countDown()
@@ -1114,10 +1180,14 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
     val remove = currentMap.foldLeft(Map.empty[Address, Association]) {
       case (acc, (address, association)) =>
         val state = association.associationState
-        if (state.isQuarantined() && ((now - state.lastUsedTimestamp.get) >= afterNanos))
-          acc.updated(address, association)
-        else
+        if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
+          state.uniqueRemoteAddressState() match {
+            case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(address, association)
+            case AssociationState.UidKnown                                     => acc
+          }
+        } else {
           acc
+        }
     }
     if (remove.nonEmpty) {
       val newMap = currentMap -- remove.keysIterator
@@ -1132,12 +1202,18 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
     val now = System.nanoTime()
     val afterNanos = after.toNanos
     val currentMap = associationsByUid.get
-    var remove = Map.empty[Long, Association]
-    currentMap.keysIterator.foreach { uid =>
-      val association = currentMap.get(uid).get
-      val state = association.associationState
-      if (state.isQuarantined() && ((now - state.lastUsedTimestamp.get) >= afterNanos))
-        remove = remove.updated(uid, association)
+    val remove = currentMap.keysIterator.foldLeft(Map.empty[Long, Association]) {
+      case (acc, uid) =>
+        val association = currentMap.get(uid).get
+        val state = association.associationState
+        if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
+          state.uniqueRemoteAddressState() match {
+            case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(uid, association)
+            case AssociationState.UidKnown                                     => acc
+          }
+        } else {
+          acc
+        }
     }
     if (remove.nonEmpty) {
       val newMap = remove.keysIterator.foldLeft(currentMap)((acc, uid) => acc.remove(uid))

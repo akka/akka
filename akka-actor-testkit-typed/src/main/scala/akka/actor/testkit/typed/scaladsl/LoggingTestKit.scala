@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
 
 import scala.reflect.ClassTag
 
+import org.slf4j.event.Level
+
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.internal.LoggingTestKitImpl
 import akka.actor.typed.ActorSystem
 import akka.annotation.DoNotInherit
-import org.slf4j.event.Level
 
 /**
  * Facilities for verifying logs.
@@ -76,6 +77,11 @@ import org.slf4j.event.Level
   def withMdc(newMdc: Map[String, String]): LoggingTestKit
 
   /**
+   * After matching the expected number of hits, check for excess messages
+   */
+  def withCheckExcess(checkExcess: Boolean): LoggingTestKit
+
+  /**
    * Matching events for which the supplied function returns`true`.
    */
   def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingTestKit
@@ -101,7 +107,7 @@ import org.slf4j.event.Level
    *
    * Care is taken to remove the testkit when the block is finished or aborted.
    */
-  @deprecated("Use except instead.", "2.6.0")
+  @deprecated("Use expect instead.", "2.6.0")
   def intercept[T](code: => T)(implicit system: ActorSystem[_]): T
 
 }

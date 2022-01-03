@@ -1,20 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
 
+import scala.collection.immutable.Seq
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration._
+import scala.util.Try
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
-import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.{ AtomicWrite, PersistentRepr }
-import akka.util.Timeout
+import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit._
-import com.typesafe.config.{ Config, ConfigFactory }
-import scala.collection.immutable.Seq
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.util.Try
+import akka.util.Timeout
 
 object SteppingInmemJournal {
 
@@ -73,8 +75,8 @@ final class SteppingInmemJournal extends InmemJournal {
   override def receivePluginInternal = super.receivePluginInternal.orElse {
     case Token if queuedOps.isEmpty => queuedTokenRecipients = queuedTokenRecipients :+ sender()
     case Token =>
-      val op +: rest = queuedOps
-      queuedOps = rest
+      val op = queuedOps.head
+      queuedOps = queuedOps.tail
       val tokenConsumer = sender()
       op().onComplete(_ => tokenConsumer ! TokenConsumed)
   }
@@ -95,8 +97,8 @@ final class SteppingInmemJournal extends InmemJournal {
       val future = promise.future
       doOrEnqueue { () =>
         promise.completeWith(super.asyncWriteMessages(Seq(message)).map {
-          case Nil       => AsyncWriteJournal.successUnit
-          case head :: _ => head
+          case Nil      => AsyncWriteJournal.successUnit
+          case nonEmpty => nonEmpty.head
         })
         future.map(_ => ())
       }
@@ -142,7 +144,8 @@ final class SteppingInmemJournal extends InmemJournal {
   private def doOrEnqueue(op: () => Future[Unit]): Unit = {
     if (queuedTokenRecipients.nonEmpty) {
       val completed = op()
-      val tokenRecipient +: rest = queuedTokenRecipients
+      val tokenRecipient = queuedTokenRecipients.head
+      val rest = queuedTokenRecipients.tail
       queuedTokenRecipients = rest
       completed.onComplete(_ => tokenRecipient ! TokenConsumed)
     } else {

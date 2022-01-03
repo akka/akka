@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown
@@ -21,10 +22,12 @@ import akka.util.ccompat._
 object CoordinatedShutdownShardingSpec {
   val config =
     """
+    akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
+    akka.cluster.sharding.verbose-debug-logging = on
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
@@ -33,6 +36,7 @@ object CoordinatedShutdownShardingSpec {
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case msg: Int => (msg % 10).toString
+    case _        => throw new IllegalArgumentException()
   }
 }
 

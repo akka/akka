@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -35,7 +35,7 @@ private[remote] object DecompressionTable {
 
   val DisabledVersion: Byte = -1
 
-  private[this] val _empty = DecompressionTable(0, 0, Array.empty)
+  private[this] val _empty = DecompressionTable(0, 0, Array.empty[Any])
   def empty[T] = _empty.asInstanceOf[DecompressionTable[T]]
   def disabled[T] = empty[T].copy(version = DisabledVersion)
 }

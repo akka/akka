@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit.metrics.reporter
@@ -7,7 +7,9 @@ package akka.testkit.metrics.reporter
 import java.io.PrintStream
 import java.util
 import java.util.concurrent.TimeUnit
+
 import com.codahale.metrics._
+
 import akka.testkit.metrics._
 
 /**
@@ -96,8 +98,8 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
     output.print("     1-minute rate = %2.2f calls/%s%n".format(convertRate(timer.getOneMinuteRate), getRateUnit))
     output.print("     5-minute rate = %2.2f calls/%s%n".format(convertRate(timer.getFiveMinuteRate), getRateUnit))
     output.print("    15-minute rate = %2.2f calls/%s%n".format(convertRate(timer.getFifteenMinuteRate), getRateUnit))
-    output.print("               min = %2.2f %s%n".format(convertDuration(snapshot.getMin), getDurationUnit))
-    output.print("               max = %2.2f %s%n".format(convertDuration(snapshot.getMax), getDurationUnit))
+    output.print("               min = %2.2f %s%n".format(convertDuration(snapshot.getMin.toDouble), getDurationUnit))
+    output.print("               max = %2.2f %s%n".format(convertDuration(snapshot.getMax.toDouble), getDurationUnit))
     output.print("              mean = %2.2f %s%n".format(convertDuration(snapshot.getMean), getDurationUnit))
     output.print("            stddev = %2.2f %s%n".format(convertDuration(snapshot.getStdDev), getDurationUnit))
     output.print("            median = %2.2f %s%n".format(convertDuration(snapshot.getMedian), getDurationUnit))
@@ -115,8 +117,9 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
 
   private def printKnownOpsInTimespanCounter(counter: KnownOpsInTimespanTimer): Unit = {
     import concurrent.duration._
+
     import akka.util.PrettyDuration._
-    output.print("               ops = %d%n".format(counter.getCount))
+    output.print("               ops = %d%n".format(counter.getCount()))
     output.print("              time = %s%n".format(counter.elapsedTime.nanos.pretty))
     output.print("             ops/s = %2.2f%n".format(counter.opsPerSecond))
     output.print("               avg = %s%n".format(counter.avgDuration.nanos.pretty))
@@ -140,7 +143,7 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
   }
 
   private def printAveragingGauge(gauge: AveragingGauge): Unit = {
-    output.print("                avg = %2.2f%n".format(gauge.getValue))
+    output.print("                avg = %2.2f%n".format(gauge.getValue()))
   }
 
   private def printWithBanner(s: String, c: Char): Unit = {

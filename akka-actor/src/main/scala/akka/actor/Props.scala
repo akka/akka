@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
-import akka.dispatch._
-import akka.routing._
-
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.reflect.ClassTag
+
+import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
+import akka.dispatch._
+import akka.routing._
 
 /**
  * Factory for Props instances.
@@ -39,7 +39,7 @@ object Props extends AbstractProps {
   /**
    * A Props instance whose creator will create an actor that doesn't respond to any message
    */
-  final val empty = Props[EmptyActor]
+  final val empty = Props[EmptyActor]()
 
   /**
    * The default Props instance, uses the settings from the Props object starting with default*.

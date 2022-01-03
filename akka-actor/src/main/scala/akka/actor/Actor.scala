@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.AkkaException
-import akka.event.LoggingAdapter
 import java.util.Optional
 
 import scala.annotation.tailrec
 import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
+
+import akka.AkkaException
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 import akka.util.unused
 
 /**
@@ -292,6 +293,8 @@ final case class UnhandledMessage(
     with AllDeadLetters
 
 /**
+ * Superseeded by [[akka.pattern.StatusReply]], prefer that when possible.
+ *
  * Classes for passing status back to the sender.
  * Used for internal ACKing protocol. But exposed as utility class for user-specific ACKing protocols as well.
  */
@@ -415,7 +418,7 @@ object Actor {
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
- * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>
+ * <a href="https://en.wikipedia.org/wiki/Actor_model">https://en.wikipedia.org/wiki/Actor_model</a>
  *
  * An actor has a well-defined (non-cyclic) life-cycle.
  *  - ''RUNNING'' (created and started actor) - can receive messages
@@ -500,7 +503,7 @@ trait Actor {
    * self ! message
    * </pre>
    */
-  implicit final val self = context.self //MUST BE A VAL, TRUST ME
+  implicit final val self: ActorRef = context.self //MUST BE A VAL, TRUST ME
 
   /**
    * The reference sender Actor of the last received message.

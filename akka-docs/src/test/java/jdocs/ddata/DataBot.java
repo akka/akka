@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.ddata;
@@ -21,6 +21,7 @@ import akka.cluster.ddata.Replicator.Changed;
 import akka.cluster.ddata.Replicator.Subscribe;
 import akka.cluster.ddata.Replicator.Update;
 import akka.cluster.ddata.Replicator.UpdateResponse;
+import akka.cluster.ddata.SelfUniqueAddress;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -31,7 +32,8 @@ public class DataBot extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   private final ActorRef replicator = DistributedData.get(getContext().getSystem()).replicator();
-  private final Cluster node = Cluster.get(getContext().getSystem());
+  private final SelfUniqueAddress node =
+      DistributedData.get(getContext().getSystem()).selfUniqueAddress();
 
   private final Cancellable tickTask =
       getContext()

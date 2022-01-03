@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization.jackson
 
+import java.lang
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
@@ -13,11 +15,37 @@ import java.util.Locale
 import java.util.Optional
 import java.util.UUID
 import java.util.logging.FileHandler
-
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.StreamReadFeature
+import com.fasterxml.jackson.core.StreamWriteFeature
+import com.fasterxml.jackson.core.`type`.TypeReference
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.Module
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -28,31 +56,9 @@ import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
+import akka.serialization.SerializerWithStringManifest
 import akka.testkit.TestActors
 import akka.testkit.TestKit
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.core.JsonFactory
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.Module
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
-import com.fasterxml.jackson.databind.node.IntNode
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.StreamReadFeature
-import com.fasterxml.jackson.core.StreamWriteFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.github.ghik.silencer.silent
 
 object ScalaTestMessages {
   trait TestMessage
@@ -63,6 +69,7 @@ object ScalaTestMessages {
   final class SimpleCommandNotCaseClass(val name: String) extends TestMessage {
     override def equals(obj: Any): Boolean = obj match {
       case other: SimpleCommandNotCaseClass => other.name == name
+      case _                                => false
     }
     override def hashCode(): Int = name.hashCode
   }
@@ -81,6 +88,7 @@ object ScalaTestMessages {
 
   final case class Event1(field1: String) extends TestMessage
   final case class Event2(field1V2: String, field2: Int) extends TestMessage
+  final case class Event3(field1V2: String, field3: Int) extends TestMessage
 
   final case class Zoo(first: Animal) extends TestMessage
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -96,21 +104,57 @@ object ScalaTestMessages {
 
   final case class OldCommandNotInBindings(name: String)
 
-}
-
-class ScalaTestEventMigration extends JacksonMigration {
-  override def currentVersion = 3
-
-  override def transformClassName(fromVersion: Int, className: String): String =
-    classOf[ScalaTestMessages.Event2].getName
-
-  override def transform(fromVersion: Int, json: JsonNode): JsonNode = {
-    val root = json.asInstanceOf[ObjectNode]
-    root.set("field1V2", root.get("field1"))
-    root.remove("field1")
-    root.set("field2", IntNode.valueOf(17))
-    root
+  // #jackson-scala-enumeration
+  object Planet extends Enumeration {
+    type Planet = Value
+    val Mercury, Venus, Earth, Mars, Krypton = Value
   }
+
+  // Uses default Jackson serialization format for Scala Enumerations
+  final case class Alien(name: String, planet: Planet.Planet) extends TestMessage
+
+  // Serializes planet values as a JsonString
+  class PlanetType extends TypeReference[Planet.type] {}
+  final case class Superhero(name: String, @JsonScalaEnumeration(classOf[PlanetType]) planet: Planet.Planet)
+      extends TestMessage
+  // #jackson-scala-enumeration
+
+  //delegate to AkkaSerialization
+  object HasAkkaSerializer {
+    def apply(description: String): HasAkkaSerializer = new HasAkkaSerializer(description)
+  }
+  // make sure jackson would fail
+  class HasAkkaSerializer private (@JsonIgnore val description: String) {
+
+    override def toString: String = s"InnerSerialization($description)"
+
+    def canEqual(other: Any): Boolean = other.isInstanceOf[HasAkkaSerializer]
+
+    override def equals(other: Any): Boolean = other match {
+      case that: HasAkkaSerializer =>
+        (that.canEqual(this)) &&
+        description == that.description
+      case _ => false
+    }
+
+    override def hashCode(): Int = {
+      val state = Seq(description)
+      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+    }
+  }
+
+  class InnerSerializationSerializer extends SerializerWithStringManifest {
+    override def identifier: Int = 123451
+    override def manifest(o: AnyRef): String = "M"
+    override def toBinary(o: AnyRef): Array[Byte] = o.asInstanceOf[HasAkkaSerializer].description.getBytes()
+    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = HasAkkaSerializer(new String(bytes))
+  }
+
+  final case class WithAkkaSerializer(
+      @JsonDeserialize(`using` = classOf[AkkaSerializationDeserializer])
+      @JsonSerialize(`using` = classOf[AkkaSerializationSerializer])
+      akkaSerializer: HasAkkaSerializer)
+      extends TestMessage
 }
 
 class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor") {
@@ -121,7 +165,7 @@ class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor") {
   }
 }
 
-@silent // this test uses Jackson deprecated APIs
+@nowarn // this test uses Jackson deprecated APIs
 class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
   def serializeToJsonString(obj: AnyRef, sys: ActorSystem = system): String = {
@@ -368,12 +412,66 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
     "be possible to create custom ObjectMapper" in {
       pending
     }
+
+    "be possible to tune the visibility at ObjectMapper level (FIELD, PUBLIC_ONLY)" in {
+      withSystem("""
+        akka.actor {
+          serialization-bindings {
+            "akka.serialization.jackson.JavaTestMessages$ClassWithVisibility" = jackson-json
+          }
+        }
+        akka.serialization.jackson.visibility {
+          FIELD = PUBLIC_ONLY
+        }
+        """) { sys =>
+        val msg = new ClassWithVisibility();
+        val json = serializeToJsonString(msg, sys)
+        val expected = """{"publicField":"1234"}"""
+        json should ===(expected)
+      }
+    }
+
+    // This test ensures the default behavior in Akka 2.6 series
+    // (that is "FIELD = ANY") stays consistent
+    "be possible to tune the visibility at ObjectMapper level (Akka default)" in {
+      withSystem("""
+        akka.actor {
+          serialization-bindings {
+            "akka.serialization.jackson.JavaTestMessages$ClassWithVisibility" = jackson-json
+          }
+        }
+        akka.serialization.jackson.visibility {
+          ## No overrides
+        }
+        """) { sys =>
+        val msg = new ClassWithVisibility();
+        val json = serializeToJsonString(msg, sys)
+        val expected =
+          """{"publicField":"1234","defaultField":"abcd","protectedField":"vwxyz","privateField":"ABCD"}""".stripMargin
+        json should ===(expected)
+      }
+    }
+
   }
 
   "JacksonJsonSerializer with Scala message classes" must {
     import ScalaTestMessages._
 
     "be possible to create custom ObjectMapper" in {
+      val customJavaTimeModule = new SimpleModule() {
+        import com.fasterxml.jackson.databind.ser.std._
+        addSerializer(classOf[Instant], new StdSerializer[Instant](classOf[Instant]) {
+          override def serialize(value: Instant, gen: JsonGenerator, provider: SerializerProvider): Unit = {
+            gen.writeStartObject()
+            gen.writeFieldName("nanos")
+            gen.writeNumber(value.getNano)
+            gen.writeFieldName("custom")
+            gen.writeString("field")
+            gen.writeEndObject()
+          }
+        })
+      }
+
       val customJacksonObjectMapperFactory = new JacksonObjectMapperFactory {
         override def newObjectMapper(bindingName: String, jsonFactory: JsonFactory): ObjectMapper = {
           if (bindingName == "jackson-json") {
@@ -399,7 +497,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
             bindingName: String,
             configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
           if (bindingName == "jackson-json")
-            configuredModules.filterNot(_.isInstanceOf[JavaTimeModule])
+            configuredModules.filterNot(_.isInstanceOf[JavaTimeModule]) :+ customJavaTimeModule
           else
             super.overrideConfiguredModules(bindingName, configuredModules)
 
@@ -445,20 +543,29 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
         val msg = InstantCommand(Instant.ofEpochMilli(1559907792075L))
         val json = serializeToJsonString(msg, sys)
-        // using the custom ObjectMapper with pretty printing enabled, and no JavaTimeModule
+        // using the custom ObjectMapper with pretty printing enabled, and a custom JavaTimeModule
         json should include("""  "instant" : {""")
-        json should include("""    "nanos" : 75000000,""")
-        json should include("""    "seconds" : 1559907792""")
+        json should include("""    "nanos" : 75000000""")
+        json should include("""    "custom" : "field"""")
       }
     }
 
-    "allow deserialization of classes in configured whitelist-class-prefix" in {
+    "allow deserialization of classes in configured allowed-class-prefix" in {
       val json = """{"name":"abc"}"""
 
       val old = SimpleCommand("abc")
       val serializer = serializerFor(old)
 
       val expected = OldCommandNotInBindings("abc")
+
+      deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
+    }
+
+    "deserialize Enumerations as String when configured" in {
+      val json = """{"name":"Superman", "planet":"Krypton"}"""
+
+      val expected = Superhero("Superman", Planet.Krypton)
+      val serializer = serializerFor(expected)
 
       deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
     }
@@ -479,6 +586,41 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       val msg = SimpleCommand("0" * 1000)
       val bytes = serializeToBinary(msg)
       JacksonSerializer.isGZipped(bytes) should ===(false)
+    }
+
+    "compress large payload with lz4" in withSystem("""
+        akka.serialization.jackson.jackson-json.compression {
+          algorithm = lz4
+          compress-larger-than = 32 KiB
+        }
+      """) { sys =>
+      val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", sys.settings.config)
+      val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+      def check(msg: AnyRef, compressed: Boolean): Unit = {
+        val bytes = serializeToBinary(msg, sys)
+        JacksonSerializer.isLZ4(bytes) should ===(compressed)
+        bytes.length should be < compressLargerThan.toInt
+        checkSerialization(msg, sys)
+      }
+      check(SimpleCommand("0" * (compressLargerThan + 1).toInt), true)
+    }
+
+    "not compress small payload with lz4" in withSystem("""
+        akka.serialization.jackson.jackson-json.compression {
+          algorithm = lz4
+          compress-larger-than = 32 KiB
+        }
+      """) { sys =>
+      val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", sys.settings.config)
+      val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+      def check(msg: AnyRef, compressed: Boolean): Unit = {
+        val bytes = serializeToBinary(msg, sys)
+        JacksonSerializer.isLZ4(bytes) should ===(compressed)
+        bytes.length should be < compressLargerThan.toInt
+        checkSerialization(msg, sys)
+      }
+      check(SimpleCommand("Bob"), false)
+      check(new SimpleCommandNotCaseClass("Bob"), false)
     }
   }
 
@@ -544,28 +686,46 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       """)(sys => checkSerialization(Elephant("Dumbo", 1), sys))
       }
     }
+
+    // issue #28918
+    "cbor compatibility for reading json" in {
+      val msg = SimpleCommand("abc")
+      val jsonSerializer = serializerFor(msg)
+      jsonSerializer.identifier should ===(31)
+      val manifest = jsonSerializer.manifest(msg)
+      val bytes = jsonSerializer.toBinary(msg)
+      val deserialized = serialization().deserialize(bytes, 32, manifest).get
+      deserialized should be(msg)
+    }
   }
 }
 
-abstract class JacksonSerializerSpec(serializerName: String)
-    extends TestKit(
-      ActorSystem(
-        "JacksonJsonSerializerSpec",
-        ConfigFactory.parseString(s"""
-    akka.serialization.jackson.migrations {
-      "akka.serialization.jackson.JavaTestMessages$$Event1" = "akka.serialization.jackson.JavaTestEventMigration"
-      "akka.serialization.jackson.JavaTestMessages$$Event2" = "akka.serialization.jackson.JavaTestEventMigration"
-      "akka.serialization.jackson.ScalaTestMessages$$Event1" = "akka.serialization.jackson.ScalaTestEventMigration"
-      "akka.serialization.jackson.ScalaTestMessages$$Event2" = "akka.serialization.jackson.ScalaTestEventMigration"
-    }
+object JacksonSerializerSpec {
+  def baseConfig(serializerName: String): String = s"""
     akka.actor {
       serialization-bindings {
         "akka.serialization.jackson.ScalaTestMessages$$TestMessage" = $serializerName
         "akka.serialization.jackson.JavaTestMessages$$TestMessage" = $serializerName
       }
     }
-    akka.serialization.jackson.whitelist-class-prefix = ["akka.serialization.jackson.ScalaTestMessages$$OldCommand"]
-    """)))
+    akka.serialization.jackson.allowed-class-prefix = ["akka.serialization.jackson.ScalaTestMessages$$OldCommand"]
+    
+    akka.actor {
+      serializers {
+          inner-serializer = "akka.serialization.jackson.ScalaTestMessages$$InnerSerializationSerializer"
+      }
+      serialization-bindings {
+        "akka.serialization.jackson.ScalaTestMessages$$HasAkkaSerializer" = "inner-serializer"
+      }
+    }
+    """
+}
+
+abstract class JacksonSerializerSpec(serializerName: String)
+    extends TestKit(
+      ActorSystem(
+        "JacksonJsonSerializerSpec",
+        ConfigFactory.parseString(JacksonSerializerSpec.baseConfig(serializerName))))
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
@@ -600,7 +760,21 @@ abstract class JacksonSerializerSpec(serializerName: String)
     val serializer = serializerFor(obj, sys)
     val manifest = serializer.manifest(obj)
     val serializerId = serializer.identifier
-    val blob = serializeToBinary(obj)
+    val blob = serializeToBinary(obj, sys)
+
+    // Issue #28918, check that CBOR format is used (not JSON).
+    if (blob.length > 0) {
+      serializer match {
+        case _: JacksonJsonSerializer =>
+          if (!JacksonSerializer.isGZipped(blob) && !JacksonSerializer.isLZ4(blob))
+            new String(blob.take(1), StandardCharsets.UTF_8) should ===("{")
+        case _: JacksonCborSerializer =>
+          new String(blob.take(1), StandardCharsets.UTF_8) should !==("{")
+        case _ =>
+          throw new IllegalArgumentException(s"Unexpected serializer $serializer")
+      }
+    }
+
     val deserialized = deserializeFromBinary(blob, serializerId, manifest, sys)
     deserialized should ===(obj)
   }
@@ -684,22 +858,138 @@ abstract class JacksonSerializerSpec(serializerName: String)
       }
     }
 
-    "deserialize with migrations" in {
+    // TODO: Consider moving the migrations Specs to a separate Spec
+    "deserialize with migrations" in withSystem(s"""
+        akka.serialization.jackson.migrations {
+          ## Usually the key is a FQCN but we're hacking the name to use multiple migrations for the
+          ## same type in a single test.
+          "deserialize-Java.Event1-into-Java.Event3" = "akka.serialization.jackson.JavaTestEventMigrationV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sys =>
       val event1 = new Event1("a")
-      val serializer = serializerFor(event1)
+      val serializer = serializerFor(event1, sys)
       val blob = serializer.toBinary(event1)
-      val event2 = serializer.fromBinary(blob, classOf[Event1].getName).asInstanceOf[Event2]
-      event1.getField1 should ===(event2.getField1V2)
-      event2.getField2 should ===(17)
+
+      // Event1 has no migration configured so it uses the default manifest name (with no version)
+      serializer.manifest(event1) should ===(classOf[Event1].getName)
+
+      // Hack the manifest to enforce the use a particular migration when deserializing the blob of Event1
+      val event3 = serializer.fromBinary(blob, "deserialize-Java.Event1-into-Java.Event3").asInstanceOf[Event3]
+      event1.getField1 should ===(event3.getField1V2)
+      event3.getField3 should ===(17)
     }
 
     "deserialize with migrations from V2" in {
+      // produce a blob/manifest from an ActorSystem without migrations
       val event1 = new Event1("a")
       val serializer = serializerFor(event1)
       val blob = serializer.toBinary(event1)
-      val event2 = serializer.fromBinary(blob, classOf[Event1].getName + "#2").asInstanceOf[Event2]
-      event1.getField1 should ===(event2.getField1V2)
-      event2.getField2 should ===(17)
+      val manifest = serializer.manifest(event1)
+
+      withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.JavaTestMessages$$Event1" = "akka.serialization.jackson.JavaTestEventMigrationV2"
+          "akka.serialization.jackson.JavaTestMessages$$Event2" = "akka.serialization.jackson.JavaTestEventMigrationV2"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2 =>
+        // read the blob/manifest from an ActorSystem with migrations
+        val serializerV2: JacksonSerializer = serializerFor(event1, sysV2)
+        val event2 = serializerV2.fromBinary(blob, manifest).asInstanceOf[Event2]
+        event1.getField1 should ===(event2.getField1V2)
+        event2.getField2 should ===(17)
+
+        // Event2 has a migration configured so it uses a manifest with a version
+        val serializerFor2 = serializerFor(event2, sysV2)
+        serializerFor2.manifest(event2) should ===(classOf[Event2].getName + "#2")
+      }
+
+    }
+
+    "use the migration's currentVersion on new serializations" in {
+      withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.JavaTestMessages$$Event2" = "akka.serialization.jackson.JavaTestEventMigrationV2"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2 =>
+        val event2 = new Event2("a", 17)
+        // Event2 has a migration configured so it uses a manifest with a version
+        val serializer2 = serializerFor(event2, sysV2)
+        serializer2.manifest(event2) should ===(classOf[Event2].getName + "#2")
+      }
+    }
+
+    "use the migration's currentVersion on new serializations when supporting forward versions" in {
+      withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.JavaTestMessages$$Event2" = "akka.serialization.jackson.JavaTestEventMigrationV2WithV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2 =>
+        val event2 = new Event2("a", 17)
+        // Event2 has a migration configured so it uses a manifest with a version
+        val serializer2 = serializerFor(event2, sysV2)
+        serializer2.manifest(event2) should ===(classOf[Event2].getName + "#2")
+      }
+    }
+
+    "deserialize a V3 blob into a V2 class (forward-one support) and back" in {
+
+      val blobV3 =
+        withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.JavaTestMessages$$Event3" = "akka.serialization.jackson.JavaTestEventMigrationV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV3 =>
+          val event3 = new Event3("Steve", 49)
+          val serializer = serializerFor(event3, sysV3)
+          val blob = serializer.toBinary(event3)
+          blob
+        }
+
+      val blobV2 =
+        withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.JavaTestMessages$$Event2" = "akka.serialization.jackson.JavaTestEventMigrationV2WithV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2WithV3 =>
+          val serializerForEvent2 =
+            serialization(sysV2WithV3).serializerFor(classOf[Event2]).asInstanceOf[JacksonSerializer]
+          val event2 = serializerForEvent2.fromBinary(blobV3, classOf[Event2].getName + "#3").asInstanceOf[Event2]
+          event2.getField1V2 should ===("Steve")
+          event2.getField2 should ===(49)
+          serializerForEvent2.toBinary(event2)
+        }
+
+      withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.JavaTestMessages$$Event3" = "akka.serialization.jackson.JavaTestEventMigrationV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV3 =>
+        val serializerForEvent3 = serialization(sysV3).serializerFor(classOf[Event3]).asInstanceOf[JacksonSerializer]
+        val event3 = serializerForEvent3.fromBinary(blobV2, classOf[Event3].getName + "#2").asInstanceOf[Event3]
+        event3.getField1V2 should ===("Steve")
+        event3.getField3 should ===(49)
+      }
+    }
+
+    "deserialize unsupported versions throws an exception" in {
+      intercept[lang.IllegalStateException] {
+        withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.JavaTestMessages$$Event1" = "akka.serialization.jackson.JavaTestEventMigrationV2"
+          "akka.serialization.jackson.JavaTestMessages$$Event2" = "akka.serialization.jackson.JavaTestEventMigrationV2"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2 =>
+          // produce a blob/manifest from an ActorSystem without migrations
+          val event1 = new Event1("a")
+          val serializer = serializerFor(event1)
+          val blob = serializer.toBinary(event1)
+          val manifest = serializer.manifest(event1)
+          // Event1 has no migration configured so it uses the default manifest name (with no version)
+          val serializerV2: JacksonSerializer = serializerFor(event1, sysV2)
+          serializerV2.fromBinary(blob, manifest + "#9").asInstanceOf[Event2]
+        }
+
+      }
     }
   }
 
@@ -720,6 +1010,14 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize message with boolean property" in {
       checkSerialization(BooleanCommand(true))
       checkSerialization(BooleanCommand(false))
+    }
+
+    "serialize message with Enumeration property (using Jackson legacy format)" in {
+      checkSerialization(Alien("E.T.", Planet.Mars))
+    }
+
+    "serialize message with Enumeration property as a String" in {
+      checkSerialization(Superhero("Kal El", Planet.Krypton))
     }
 
     "serialize message with Optional property" in {
@@ -786,35 +1084,138 @@ abstract class JacksonSerializerSpec(serializerName: String)
       }
     }
 
-    "deserialize with migrations" in {
+    // TODO: Consider moving the migrations Specs to a separate Spec
+    "deserialize with migrations" in withSystem(s"""
+        akka.serialization.jackson.migrations {
+          ## Usually the key is a FQCN but we're hacking the name to use multiple migrations for the
+          ## same type in a single test.
+          "deserialize-Event1-into-Event3" = "akka.serialization.jackson.ScalaTestEventMigrationV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sys =>
       val event1 = Event1("a")
-      val serializer = serializerFor(event1)
+      val serializer = serializerFor(event1, sys)
       val blob = serializer.toBinary(event1)
-      val event2 = serializer.fromBinary(blob, classOf[Event1].getName).asInstanceOf[Event2]
-      event1.field1 should ===(event2.field1V2)
-      event2.field2 should ===(17)
+
+      // Event1 has no migration configured so it uses the default manifest name (with no version)
+      serializer.manifest(event1) should ===(classOf[Event1].getName)
+
+      // Hack the manifest to enforce the use a particular migration when deserializing the blob of Event1
+      val event3 = serializer.fromBinary(blob, "deserialize-Event1-into-Event3").asInstanceOf[Event3]
+      event1.field1 should ===(event3.field1V2)
+      event3.field3 should ===(17)
     }
 
     "deserialize with migrations from V2" in {
+      // produce a blob/manifest from an ActorSystem without migrations
       val event1 = Event1("a")
       val serializer = serializerFor(event1)
       val blob = serializer.toBinary(event1)
-      val event2 = serializer.fromBinary(blob, classOf[Event1].getName + "#2").asInstanceOf[Event2]
-      event1.field1 should ===(event2.field1V2)
-      event2.field2 should ===(17)
+      val manifest = serializer.manifest(event1)
+
+      withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.ScalaTestMessages$$Event1" = "akka.serialization.jackson.ScalaTestEventMigrationV2"
+          "akka.serialization.jackson.ScalaTestMessages$$Event2" = "akka.serialization.jackson.ScalaTestEventMigrationV2"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2 =>
+        // read the blob/manifest from an ActorSystem with migrations
+        val serializerV2: JacksonSerializer = serializerFor(event1, sysV2)
+        val event2 = serializerV2.fromBinary(blob, manifest).asInstanceOf[Event2]
+        event1.field1 should ===(event2.field1V2)
+        event2.field2 should ===(17)
+
+        // Event2 has a migration configured so it uses a manifest with a version
+        val serializerFor2 = serializerFor(event2, sysV2)
+        serializerFor2.manifest(event2) should ===(classOf[Event2].getName + "#2")
+      }
+
     }
 
-    "not allow serialization of blacklisted class" in {
+    "use the migration's currentVersion on new serializations" in {
+      withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.ScalaTestMessages$$Event2" = "akka.serialization.jackson.ScalaTestEventMigrationV2"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2 =>
+        val event2 = new Event2("a", 17)
+        // Event2 has a migration configured so it uses a manifest with a version
+        val serializer2 = serializerFor(event2, sysV2)
+        serializer2.manifest(event2) should ===(classOf[Event2].getName + "#2")
+      }
+    }
+
+    "deserialize a V3 blob into a V2 class (forward-one support) and back" in {
+
+      val blobV3 =
+        withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.ScalaTestMessages$$Event3" = "akka.serialization.jackson.ScalaTestEventMigrationV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV3 =>
+          val event3 = new Event3("Steve", 49)
+          val serializer = serializerFor(event3, sysV3)
+          val blob = serializer.toBinary(event3)
+          blob
+        }
+
+      val blobV2 =
+        withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.ScalaTestMessages$$Event2" = "akka.serialization.jackson.ScalaTestEventMigrationV2WithV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2WithV3 =>
+          val serializerForEvent2 =
+            serialization(sysV2WithV3).serializerFor(classOf[Event2]).asInstanceOf[JacksonSerializer]
+          val event2 = serializerForEvent2.fromBinary(blobV3, classOf[Event2].getName + "#3").asInstanceOf[Event2]
+          event2.field1V2 should ===("Steve")
+          event2.field2 should ===(49)
+          serializerForEvent2.toBinary(event2)
+        }
+
+      withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.ScalaTestMessages$$Event3" = "akka.serialization.jackson.ScalaTestEventMigrationV3"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV3 =>
+        val serializerForEvent3 = serialization(sysV3).serializerFor(classOf[Event3]).asInstanceOf[JacksonSerializer]
+        val event3 = serializerForEvent3.fromBinary(blobV2, classOf[Event3].getName + "#2").asInstanceOf[Event3]
+        event3.field1V2 should ===("Steve")
+        event3.field3 should ===(49)
+      }
+    }
+
+    "deserialize unsupported versions throws an exception" in {
+      intercept[lang.IllegalStateException] {
+        withSystem(s"""
+        akka.serialization.jackson.migrations {
+          "akka.serialization.jackson.ScalaTestMessages$$Event1" = "akka.serialization.jackson.ScalaTestEventMigrationV2"
+          "akka.serialization.jackson.ScalaTestMessages$$Event2" = "akka.serialization.jackson.ScalaTestEventMigrationV2"
+        }
+        """ + JacksonSerializerSpec.baseConfig(serializerName)) { sysV2 =>
+          // produce a blob/manifest from an ActorSystem without migrations
+          val event1 = new Event1("a")
+          val serializer = serializerFor(event1)
+          val blob = serializer.toBinary(event1)
+          val manifest = serializer.manifest(event1)
+          // Event1 has no migration configured so it uses the default manifest name (with no version)
+          val serializerV2: JacksonSerializer = serializerFor(event1, sysV2)
+          serializerV2.fromBinary(blob, manifest + "#9").asInstanceOf[Event2]
+        }
+
+      }
+    }
+
+    "not allow serialization of deny listed class" in {
       val serializer = serializerFor(SimpleCommand("ok"))
       val fileHandler = new FileHandler(s"target/tmp-${this.getClass.getName}")
       try {
         intercept[IllegalArgumentException] {
           serializer.manifest(fileHandler)
-        }.getMessage.toLowerCase should include("blacklist")
+        }.getMessage.toLowerCase should include("deny list")
       } finally fileHandler.close()
     }
 
-    "not allow deserialization of blacklisted class" in {
+    "not allow deserialization of deny list class" in {
       withTransportInformation() { () =>
         val msg = SimpleCommand("ok")
         val serializer = serializerFor(msg)
@@ -822,18 +1223,18 @@ abstract class JacksonSerializerSpec(serializerName: String)
         intercept[IllegalArgumentException] {
           // maliciously changing manifest
           serializer.fromBinary(blob, classOf[FileHandler].getName)
-        }.getMessage.toLowerCase should include("blacklist")
+        }.getMessage.toLowerCase should include("deny list")
       }
     }
 
-    "not allow serialization of class that is not in serialization-bindings (whitelist)" in {
+    "not allow serialization of class that is not in serialization-bindings (allowed-class-prefix)" in {
       val serializer = serializerFor(SimpleCommand("ok"))
       intercept[IllegalArgumentException] {
         serializer.manifest(Status.Success("bad"))
-      }.getMessage.toLowerCase should include("whitelist")
+      }.getMessage.toLowerCase should include("allowed-class-prefix")
     }
 
-    "not allow deserialization of class that is not in serialization-bindings (whitelist)" in {
+    "not allow deserialization of class that is not in serialization-bindings (allowed-class-prefix)" in {
       withTransportInformation() { () =>
         val msg = SimpleCommand("ok")
         val serializer = serializerFor(msg)
@@ -841,7 +1242,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
         intercept[IllegalArgumentException] {
           // maliciously changing manifest
           serializer.fromBinary(blob, classOf[Status.Success].getName)
-        }.getMessage.toLowerCase should include("whitelist")
+        }.getMessage.toLowerCase should include("allowed-class-prefix")
       }
     }
 
@@ -864,6 +1265,10 @@ abstract class JacksonSerializerSpec(serializerName: String)
           }
         }
       }
+    }
+
+    "delegate to akka serialization" in {
+      checkSerialization(WithAkkaSerializer(HasAkkaSerializer("cat")))
     }
 
   }

@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.internal.adapter.EventStreamAdapter
 import akka.actor.typed._
 import akka.actor.typed.eventstream.EventStream
+import akka.actor.typed.internal.adapter.EventStreamAdapter
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 

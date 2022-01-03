@@ -1,0 +1,5 @@
+# settings to fallback to actor's context.log for internal EventSourcedBehavior logging
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.EventSourcedSettings.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.EventSourcedSettings.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.EventSourcedSettings.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.EventSourcedSettings.this")

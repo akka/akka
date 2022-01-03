@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -86,8 +86,21 @@ object IntroSpec {
           Behaviors.same
         }
       }
+
+    //#hello-world-main
+    def main(args: Array[String]): Unit = {
+      val system: ActorSystem[HelloWorldMain.SayHello] =
+        ActorSystem(HelloWorldMain(), "hello")
+
+      system ! HelloWorldMain.SayHello("World")
+      system ! HelloWorldMain.SayHello("Akka")
+    }
+    //#hello-world-main
   }
   //#hello-world-main
+
+  // This is run by ScalaFiddle
+  HelloWorldMain.main(Array.empty)
   //#fiddle_code
   //format: ON
 
@@ -115,10 +128,10 @@ object IntroSpec {
     }
   }
 
+  //#chatroom-protocol
   //#chatroom-behavior
   object ChatRoom {
     //#chatroom-behavior
-    //#chatroom-protocol
     sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
@@ -132,7 +145,7 @@ object IntroSpec {
     final case class SessionDenied(reason: String) extends SessionEvent
     final case class MessagePosted(screenName: String, message: String) extends SessionEvent
 
-    trait SessionCommand
+    sealed trait SessionCommand
     final case class PostMessage(message: String) extends SessionCommand
     private final case class NotifyClient(message: MessagePosted) extends SessionCommand
     //#chatroom-protocol
@@ -172,8 +185,10 @@ object IntroSpec {
           client ! message
           Behaviors.same
       }
+    //#chatroom-protocol
   }
   //#chatroom-behavior
+  //#chatroom-protocol
 
   //#chatroom-gabbler
   object Gabbler {
@@ -229,7 +244,6 @@ class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
 
   "Intro sample" must {
     "say hello" in {
-      //#fiddle_code
       //#hello-world
 
       val system: ActorSystem[HelloWorldMain.SayHello] =
@@ -239,7 +253,6 @@ class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
       system ! HelloWorldMain.SayHello("Akka")
 
       //#hello-world
-      //#fiddle_code
 
       Thread.sleep(500) // it will not fail if too short
       ActorTestKit.shutdown(system)

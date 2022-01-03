@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.stream.ActorAttributes
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class FlowExpandSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

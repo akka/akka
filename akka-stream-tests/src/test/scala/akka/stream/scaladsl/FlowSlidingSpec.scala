@@ -1,23 +1,24 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.testkit._
+import scala.annotation.nowarn
 import org.scalacheck.Gen
-import akka.pattern.pipe
-import com.github.ghik.silencer.silent
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-@silent
+import akka.pattern.pipe
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+
+@nowarn
 class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {
   import system.dispatcher
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "Sliding" must {
     import org.scalacheck.Shrink.shrinkAny

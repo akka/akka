@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorRef, ActorSelection, Props, RootActorPath }
-import akka.remote.{ RARP, RemoteActorRef }
-import akka.testkit.TestProbe
-import akka.util.ByteString
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.{ Actor, ActorRef, ActorSelection, Props, RootActorPath }
+import akka.remote.{ RARP, RemoteActorRef }
 import akka.testkit.JavaSerializable
+import akka.testkit.TestProbe
+import akka.util.ByteString
 
 object LargeMessagesStreamSpec {
   case class Ping(payload: ByteString = ByteString.empty) extends JavaSerializable
@@ -24,9 +24,10 @@ object LargeMessagesStreamSpec {
   }
 }
 
-class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
+class LargeMessagesStreamSpec
+    extends ArteryMultiNodeSpec("""
     akka {
-      remote.artery.large-message-destinations = [ "/user/large" ]
+      remote.artery.large-message-destinations = [ "/user/large" , "/user/largeWildcard*" ]
     }
   """.stripMargin) {
 
@@ -80,6 +81,29 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
 
     }
 
+    "accept wildcard suffixes in actor path" in {
+      val systemA = localSystem
+      val systemB = newRemoteSystem()
+
+      val senderProbeA = TestProbe()(systemA)
+      val senderProbeB = TestProbe()(systemB)
+
+      // start actor and make sure it is up and running
+      val large = systemB.actorOf(Props(new EchoSize), "largeWildcard123")
+      large.tell(Ping(), senderProbeB.ref)
+      senderProbeB.expectMsg(Pong(0))
+
+      // communicate with it from the other system
+      val addressB = RARP(systemB).provider.getDefaultAddress
+      val rootB = RootActorPath(addressB)
+      val largeRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "largeWildcard123"))
+      largeRemote.tell(Ping(), senderProbeA.ref)
+      senderProbeA.expectMsg(Pong(0))
+
+      // flag should be cached now
+      largeRemote.asInstanceOf[RemoteActorRef].cachedSendQueueIndex should ===(Association.LargeQueueIndex)
+    }
+
     "allow for normal communication while simultaneously sending large messages" in {
       val systemA = localSystem
       val systemB = newRemoteSystem()
@@ -125,5 +149,9 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
     }
   }
 
-  def awaitResolve(selection: ActorSelection): ActorRef = Await.result(selection.resolveOne(3.seconds), 3.seconds)
+  def awaitResolve(selection: ActorSelection): ActorRef = {
+    awaitAssert {
+      Await.result(selection.resolveOne(1.second), 1.seconds)
+    }
+  }
 }

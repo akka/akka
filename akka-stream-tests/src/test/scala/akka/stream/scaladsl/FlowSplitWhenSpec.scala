@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.Done
-import akka.NotUsed
-import akka.stream.Supervision.resumingDecider
-import akka.stream._
-import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.impl.fusing.Split
-import akka.stream.testkit.Utils._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.TestSink
-import org.reactivestreams.Publisher
-
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+
+import akka.Done
+import akka.NotUsed
+import akka.stream._
+import akka.stream.Supervision.resumingDecider
+import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.impl.fusing.Split
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
 
 class FlowSplitWhenSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

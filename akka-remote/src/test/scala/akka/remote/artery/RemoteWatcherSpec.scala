@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -7,10 +7,11 @@ package akka.remote.artery
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.remote._
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object RemoteWatcherSpec {
 
@@ -46,7 +47,7 @@ object RemoteWatcherSpec {
 
   class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration)
       extends RemoteWatcher(
-        createFailureDetector,
+        createFailureDetector(),
         heartbeatInterval = TurnOff,
         unreachableReaperInterval = TurnOff,
         heartbeatExpectedResponseAfter = heartbeatExpectedResponseAfter) {
@@ -99,13 +100,13 @@ class RemoteWatcherSpec
   "A RemoteWatcher" must {
 
     "have correct interaction when watching" in {
-      val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor1")
+      val monitorA = system.actorOf(Props[TestRemoteWatcher](), "monitor1")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor1")
 
-      val a1 = system.actorOf(Props[MyActor], "a1").asInstanceOf[InternalActorRef]
-      val a2 = system.actorOf(Props[MyActor], "a2").asInstanceOf[InternalActorRef]
-      val b1 = createRemoteActor(Props[MyActor], "b1")
-      val b2 = createRemoteActor(Props[MyActor], "b2")
+      val a1 = system.actorOf(Props[MyActor](), "a1").asInstanceOf[InternalActorRef]
+      val a2 = system.actorOf(Props[MyActor](), "a2").asInstanceOf[InternalActorRef]
+      val b1 = createRemoteActor(Props[MyActor](), "b1")
+      val b2 = createRemoteActor(Props[MyActor](), "b2")
 
       monitorA ! WatchRemote(b1, a1)
       monitorA ! WatchRemote(b2, a1)
@@ -163,11 +164,11 @@ class RemoteWatcherSpec
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
       system.eventStream.subscribe(q.ref, classOf[TestRemoteWatcher.Quarantined])
 
-      val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor4")
+      val monitorA = system.actorOf(Props[TestRemoteWatcher](), "monitor4")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor4")
 
-      val a = system.actorOf(Props[MyActor], "a4").asInstanceOf[InternalActorRef]
-      val b = createRemoteActor(Props[MyActor], "b4")
+      val a = system.actorOf(Props[MyActor](), "a4").asInstanceOf[InternalActorRef]
+      val b = createRemoteActor(Props[MyActor](), "b4")
 
       monitorA ! WatchRemote(b, a)
 
@@ -204,8 +205,8 @@ class RemoteWatcherSpec
       val monitorA = system.actorOf(Props(classOf[TestRemoteWatcher], heartbeatExpectedResponseAfter), "monitor5")
       createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor5")
 
-      val a = system.actorOf(Props[MyActor], "a5").asInstanceOf[InternalActorRef]
-      val b = createRemoteActor(Props[MyActor], "b5")
+      val a = system.actorOf(Props[MyActor](), "a5").asInstanceOf[InternalActorRef]
+      val b = createRemoteActor(Props[MyActor](), "b5")
 
       monitorA ! WatchRemote(b, a)
 
@@ -235,11 +236,11 @@ class RemoteWatcherSpec
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
       system.eventStream.subscribe(q.ref, classOf[TestRemoteWatcher.Quarantined])
 
-      val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor6")
+      val monitorA = system.actorOf(Props[TestRemoteWatcher](), "monitor6")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor6")
 
-      val a = system.actorOf(Props[MyActor], "a6").asInstanceOf[InternalActorRef]
-      val b = createRemoteActor(Props[MyActor], "b6")
+      val a = system.actorOf(Props[MyActor](), "a6").asInstanceOf[InternalActorRef]
+      val b = createRemoteActor(Props[MyActor](), "b6")
 
       monitorA ! WatchRemote(b, a)
 
@@ -271,7 +272,7 @@ class RemoteWatcherSpec
       expectNoMessage(2 seconds)
 
       // assume that connection comes up again, or remote system is restarted
-      val c = createRemoteActor(Props[MyActor], "c6")
+      val c = createRemoteActor(Props[MyActor](), "c6")
 
       monitorA ! WatchRemote(c, a)
 

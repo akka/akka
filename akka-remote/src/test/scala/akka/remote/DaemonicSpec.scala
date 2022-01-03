@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.testkit._
-
 import scala.concurrent.duration._
-import akka.actor.{ ActorSystem, Address }
-import akka.util.ccompat._
+
 import com.typesafe.config.ConfigFactory
 
+import akka.actor.{ ActorSystem, Address }
+import akka.testkit._
+import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
 @ccompatUsedUntil213

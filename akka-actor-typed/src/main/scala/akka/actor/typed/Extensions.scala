@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import akka.annotation.DoNotInherit
 import akka.actor.setup.Setup
+import akka.annotation.DoNotInherit
 
 /**
  * Marker trait/interface for extensions. An extension can be registered in the ActorSystem and is guaranteed to only

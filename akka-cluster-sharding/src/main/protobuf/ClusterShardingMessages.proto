@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 syntax = "proto2";
@@ -38,16 +38,36 @@ message ShardHome {
   required string region = 2;
 }
 
+// only used nested in ShardHomes
+message ShardHomesEntry {
+  required string region = 1;
+  repeated string shard = 2;
+}
+
+message ShardHomes {
+  repeated ShardHomesEntry homes = 1;
+}
+
 message EntityState {
   repeated string entities = 1;
 }
 
+// not written anymore but kept for backwards compatibility
 message EntityStarted {
   required string entityId = 1;
 }
 
+message EntitiesStarted {
+    repeated string entityId = 1;
+}
+
+// not written anymore but kept for backwards compatibility
 message EntityStopped {
   required string entityId = 1;
+}
+
+message EntitiesStopped {
+  repeated string entityId = 1;
 }
 
 message ShardStats {
@@ -101,4 +121,24 @@ message StartEntity {
 message StartEntityAck {
     required string entityId = 1;
     required string shardId = 2;
+}
+
+message CurrentShardState {
+    required string shardId = 1;
+    repeated string entityIds = 2;
+}
+
+message ShardState {
+    required string shardId = 1;
+    repeated string entityIds = 2;
+}
+
+message CurrentShardRegionState {
+  repeated ShardState shards = 1;
+  repeated string failed = 2;
+}
+
+message RememberedShardState {
+    repeated string shardId = 1;
+    optional bool marker = 2;
 }

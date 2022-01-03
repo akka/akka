@@ -1,13 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.leveldb
 
 import scala.concurrent.Future
+
+import org.iq80.leveldb.DBIterator
+
 import akka.persistence._
 import akka.persistence.journal.AsyncRecovery
-import org.iq80.leveldb.DBIterator
 import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
 
 /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.streamref
@@ -72,6 +72,6 @@ private[akka] object StreamRefsProtocol {
    * Ack that failure or completion has been seen and the remote side can stop
    */
   @InternalApi
-  private[akka] final case object Ack extends StreamRefsProtocol with DeadLetterSuppression
+  private[akka] case object Ack extends StreamRefsProtocol with DeadLetterSuppression
 
 }

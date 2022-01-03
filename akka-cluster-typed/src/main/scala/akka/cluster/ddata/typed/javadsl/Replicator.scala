@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.javadsl
@@ -7,16 +7,16 @@ package akka.cluster.ddata.typed.javadsl
 import java.time.Duration
 import java.util.function.{ Function => JFunction }
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
 import akka.actor.DeadLetterSuppression
 import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
-import akka.cluster.{ ddata => dd }
 import akka.util.JavaDurationConverters._
 
 /**

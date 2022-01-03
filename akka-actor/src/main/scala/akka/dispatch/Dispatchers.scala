@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
 import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory }
 
-import com.typesafe.config.{ Config, ConfigFactory, ConfigValueType }
-import akka.actor.{ ActorSystem, DynamicAccess, Scheduler }
-import akka.event.Logging.Warning
-import akka.event.{ EventStream, LoggingAdapter }
-import akka.ConfigurationException
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.util.Helpers.ConfigOps
-import com.github.ghik.silencer.silent
-
 import scala.concurrent.ExecutionContext
+
+import scala.annotation.nowarn
+import com.typesafe.config.{ Config, ConfigFactory, ConfigValueType }
+
+import akka.ConfigurationException
+import akka.actor.{ ActorSystem, DynamicAccess, Scheduler }
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.event.{ EventStream, LoggingAdapter }
+import akka.event.Logging.Warning
+import akka.util.Helpers.ConfigOps
 
 /**
  * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher
@@ -66,6 +67,23 @@ object Dispatchers {
   private[akka] final val InternalDispatcherId = "akka.actor.internal-dispatcher"
 
   private val MaxDispatcherAliasDepth = 20
+
+  /**
+   * INTERNAL API
+   *
+   * Get (possibly aliased) dispatcher config. Returns empty config if not found.
+   */
+  private[akka] def getConfig(config: Config, id: String, depth: Int = 0): Config = {
+    if (depth > MaxDispatcherAliasDepth)
+      ConfigFactory.empty(s"Didn't find dispatcher config after $MaxDispatcherAliasDepth aliases")
+    else if (config.hasPath(id)) {
+      config.getValue(id).valueType match {
+        case ConfigValueType.STRING => getConfig(config, config.getString(id), depth + 1)
+        case ConfigValueType.OBJECT => config.getConfig(id)
+        case unexpected             => ConfigFactory.empty(s"Expected either config or alias at [$id] but found [$unexpected]")
+      }
+    } else ConfigFactory.empty(s"Dispatcher [$id] not configured")
+  }
 }
 
 /**
@@ -299,7 +317,7 @@ private[akka] object BalancingDispatcherConfigurator {
  * Returns the same dispatcher instance for each invocation
  * of the `dispatcher()` method.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class BalancingDispatcherConfigurator(_config: Config, _prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
 

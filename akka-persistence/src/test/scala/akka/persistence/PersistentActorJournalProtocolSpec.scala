@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
-import akka.actor._
-import akka.testkit._
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
+import akka.actor._
 import akka.persistence.JournalProtocol._
+import akka.testkit._
 
 object PersistentActorJournalProtocolSpec {
 
@@ -76,7 +78,7 @@ akka.persistence.snapshot-store.plugin = "akka.persistence.no-snapshot-store"
 }
 
 object JournalPuppet extends ExtensionId[JournalProbe] with ExtensionIdProvider {
-  override def lookup() = JournalPuppet
+  override def lookup = JournalPuppet
 
   override def createExtension(system: ExtendedActorSystem): JournalProbe =
     new JournalProbe()(system)
@@ -115,6 +117,7 @@ class PersistentActorJournalProtocolSpec extends AkkaSpec(config) with ImplicitS
           writes.zip(msg.msg).foreach {
             case (PersistentRepr(evt, _), m) =>
               evt should ===(m)
+            case _ =>
           }
         case x => fail(s"unexpected $x")
       }

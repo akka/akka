@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.io
@@ -20,7 +20,7 @@ object PullReadingExample {
 
     import context.system
 
-    override def preStart: Unit =
+    override def preStart(): Unit =
       //#pull-mode-bind
       IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 0), pullMode = true)
     //#pull-mode-bind
@@ -51,7 +51,7 @@ object PullReadingExample {
   class PullEcho(connection: ActorRef) extends Actor {
 
     //#pull-reading-echo
-    override def preStart: Unit = connection ! ResumeReading
+    override def preStart(): Unit = connection ! ResumeReading
 
     def receive = {
       case Received(data) => connection ! Write(data, Ack)

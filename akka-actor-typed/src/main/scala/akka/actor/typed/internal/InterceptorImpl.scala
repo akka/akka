@@ -1,18 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
 import scala.reflect.ClassTag
-import akka.actor.typed
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.LogOptions
-import akka.actor.typed._
-import akka.annotation.InternalApi
-import akka.util.LineNumbers
+
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+
+import akka.actor.typed
+import akka.actor.typed._
+import akka.actor.typed.LogOptions
+import akka.actor.typed.scaladsl.Behaviors
+import akka.annotation.InternalApi
+import akka.util.LineNumbers
 
 /**
  * Provides the impl of any behavior that could nest another behavior
@@ -98,7 +100,7 @@ private[akka] final class InterceptorImpl[O, I](
     } else {
       // returned behavior could be nested in setups, so we need to start before we deduplicate
       val duplicateInterceptExists = Behavior.existsInStack(started) {
-        case i: InterceptorImpl[O, I]
+        case i: InterceptorImpl[_, _]
             if interceptor.isSame(i.interceptor.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
           true
         case _ => false
@@ -179,7 +181,6 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
         case Level.INFO  => logger.info(template, selfPath, messageOrSignal)
         case Level.DEBUG => logger.debug(template, selfPath, messageOrSignal)
         case Level.TRACE => logger.trace(template, selfPath, messageOrSignal)
-        case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
       }
     }
   }

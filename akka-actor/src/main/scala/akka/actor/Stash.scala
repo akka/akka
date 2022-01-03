@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import scala.collection.immutable
+import scala.util.control.NoStackTrace
+
 import akka.AkkaException
 import akka.annotation.InternalStableApi
 import akka.dispatch.{
@@ -13,8 +15,6 @@ import akka.dispatch.{
   RequiresMessageQueue,
   UnboundedDequeBasedMessageQueueSemantics
 }
-
-import scala.util.control.NoStackTrace
 
 /**
  *  The `Stash` trait enables an actor to temporarily stash away messages that can not or

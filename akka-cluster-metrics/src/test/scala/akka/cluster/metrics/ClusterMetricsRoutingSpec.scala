@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import akka.actor.Address
-import akka.cluster.metrics.StandardMetrics._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.cluster.metrics.StandardMetrics._
 
 class MetricsSelectorSpec extends AnyWordSpec with Matchers {
 

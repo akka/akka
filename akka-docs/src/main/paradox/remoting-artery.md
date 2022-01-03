@@ -16,18 +16,23 @@ such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
 
 @@@
 
+If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)
+
 ## Dependency
 
 To use Artery Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-remote_$scala.binary.version$
+  version=AkkaVersion
 }
 
-Artery UDP depends on Aeron. This needs to be explicitly added as a dependency if using `aeron-udp` so that users
-not using Artery remoting do not have Aeron on the classpath:
+One option is to use Artery with Aeron, see @ref:[Selecting a transport](#selecting-a-transport).
+The Aeron dependency needs to be explicitly added if using the `aeron-udp` transport:
 
 @@dependency[sbt,Maven,Gradle] {
   group=io.aeron
@@ -37,8 +42,6 @@ not using Artery remoting do not have Aeron on the classpath:
   artifact2=aeron-client
   version2="$aeron_version$"
 }
-
-If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)
 
 ## Configuration
 
@@ -133,12 +136,13 @@ It has very good performance (high throughput and low latency) but latency at hi
 might not be as good as the Aeron transport. It has less operational complexity than the
 Aeron transport and less risk of trouble in container environments.
 
-@@@ note
-
 Aeron requires 64bit JVM to work reliably and is only officially supported on Linux, Mac and Windows.
 It may work on other Unixes e.g. Solaris but insufficient testing has taken place for it to be
-officially supported. If you're on a Big Endian processor, such as Sparc, it is recommended to use
- TCP.
+officially supported. If you're on a Big Endian processor, such as Sparc, it is recommended to use TCP.
+
+@@@ note
+
+@ref:[Rolling update](additional/rolling-updates.md) is not supported when changing from one transport to another.
 
 @@@
 
@@ -263,10 +267,12 @@ compromising any node with certificates issued by the same internal PKI tree.
 
 By default, @ref[Java serialization](serialization.md#java-serialization) is disabled in Akka.
 That is also security best-practice because of its multiple
-[known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+[known attack surfaces](https://community.microfocus.com/cyberres/fortify/f/fortify-discussions/317555/the-perils-of-java-deserialization).
 
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
+
+In addition to what is described here, read the blog post about [Securing Akka cluster communication in Kubernetes](https://akka.io/blog/article/2021/10/27/akka-cluster-mtls).
 
 SSL can be used as the remote transport by using the `tls-tcp` transport:
 
@@ -300,7 +306,7 @@ akka.remote.artery {
 Always use [substitution from environment variables](https://github.com/lightbend/config#optional-system-or-env-variable-overrides)
 for passwords. Don't define real passwords in config files.
 
-According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
+According to [RFC 7525](https://www.rfc-editor.org/rfc/rfc7525.html) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
 
  * TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
  * TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
@@ -310,13 +316,13 @@ According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended alg
 You should always check the latest information about security and algorithm recommendations though before you configure your system.
 
 Creating and working with keystores and certificates is well documented in the
-[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+[Generating X.509 Certificates](https://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
 Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
 need to be configured on each remoting node participating in the cluster.
 
-The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
+The official [Java Secure Socket Extension documentation](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html)
 as well as the [Oracle documentation on creating KeyStore and TrustStores](https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html)
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
@@ -332,6 +338,8 @@ valid certificate by compromising any node with certificates issued by the same 
 It's recommended that you enable hostname verification with
 `akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on`.
 When enabled it will verify that the destination hostname matches the hostname in the peer's certificate.
+
+In deployments where hostnames are dynamic and not known up front it can make sense to leave the hostname verification off.
 
 You have a few choices how to set up certificates and hostname verification:
 
@@ -370,6 +378,7 @@ When using SHA1PRNG on Linux it's recommended specify `-Djava.security.egd=file:
 to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
 
 @@@
+
 
 
 ### Untrusted Mode
@@ -441,13 +450,13 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 
 ## Quarantine
 
-Akka remoting is using Aeron as underlying message transport. Aeron is using UDP and adds
+Akka remoting is using TCP or Aeron as underlying message transport. Aeron is using UDP and adds
 among other things reliable delivery and session semantics, very similar to TCP. This means that
 the order of the messages are preserved, which is needed for the @ref:[Actor message ordering guarantees](general/message-delivery-reliability.md#message-ordering).
 Under normal circumstances all messages will be delivered but there are cases when messages
 may not be delivered to the destination:
 
- * during a network partition and the Aeron session is broken, this automatically recovered once the partition is over
+ * during a network partition when the TCP connection or the Aeron session is broken, this automatically recovered once the partition is over
  * when sending too many messages without flow control and thereby filling up the outbound send queue (`outbound-message-queue-size` config)
  * if serialization or deserialization of a message fails (only that message will be dropped)
  * if an unexpected exception occurs in the remoting infrastructure
@@ -624,7 +633,7 @@ Artery is a reimplementation of the old remoting module aimed at improving perfo
 source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
 of Artery compared to the previous implementation:
 
- * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) and Akka Streams TCP/TLS instead of Netty TCP
+ * Based on Akka Streams TCP/TLS or [Aeron](https://github.com/real-logic/Aeron) (UDP) instead of Netty TCP
  * Focused on high-throughput, low-latency communication
  * Isolation of internal control messages from user messages improving stability and reducing false failure detection
 in case of heavy traffic by using a dedicated subchannel.
@@ -632,7 +641,7 @@ in case of heavy traffic by using a dedicated subchannel.
  * Support for a separate subchannel for large messages to avoid interference with smaller messages
  * Compression of actor paths on the wire to reduce overhead for smaller messages
  * Support for faster serialization/deserialization using ByteBuffers directly
- * Built-in Flight-Recorder to help debugging implementation issues without polluting users logs with implementation
+ * Built-in Java Flight Recorder (JFR) to help debugging implementation issues without polluting users logs with implementation
 specific events
  * Providing protocol stability across major Akka versions to support rolling updates of large-scale systems
 
@@ -659,7 +668,7 @@ See `inbound-lanes` and `outbound-lanes` in the @ref:[reference configuration](g
 
 All the communication between user defined remote actors are isolated from the channel of Akka internal messages so
 a large user message cannot block an urgent system message. While this provides good isolation for Akka services, all
-user communications by default happen through a shared network connection (an Aeron stream). When some actors
+user communications by default happen through a shared network connection. When some actors
 send large messages this can cause other messages to suffer higher latency as they need to wait until the full
 message has been transported on the shared channel (and hence, shared bottleneck). In these cases it is usually
 helpful to separate actors that have different QoS requirements: large messages vs. low latency.
@@ -675,6 +684,7 @@ akka.remote.artery.large-message-destinations = [
    "/user/largeMessagesGroup/*",
    "/user/anotherGroup/*/largeMesssages",
    "/user/thirdGroup/**",
+   "/temp/session-ask-actor*"
 ]
 ```
 
@@ -687,8 +697,30 @@ This means that all messages sent to the following actors will pass through the 
  * `/user/anotherGroup/actor2/largeMessages`
  * `/user/thirdGroup/actor3/`
  * `/user/thirdGroup/actor4/actor5`
+ * `/temp/session-ask-actor$abc`
 
 Messages destined for actors not matching any of these patterns are sent using the default channel as before.
+
+To notice large messages you can enable logging of message types with payload size in bytes larger than the
+configured `log-frame-size-exceeding`.
+
+```
+akka.remote.artery {
+  log-frame-size-exceeding = 10000b
+}
+```
+
+Example log messages:
+
+```
+[INFO] Payload size for [java.lang.String] is [39068] bytes. Sent to Actor[akka://Sys@localhost:53039/user/destination#-1908386800]
+[INFO] New maximum payload size for [java.lang.String] is [44068] bytes. Sent to Actor[akka://Sys@localhost:53039/user/destination#-1908386800].
+```
+
+The large messages channel can still not be used for extremely large messages, a few MB per message at most.
+An alternative is to use the @ref:[Reliable delivery](typed/reliable-delivery.md) that has support for 
+automatically @ref[splitting up large messages](typed/reliable-delivery.md#chunk-large-messages) and assemble
+them again on the receiving side.
 
 ### External, shared Aeron media driver
 
@@ -714,7 +746,7 @@ The needed classpath:
 Agrona-0.5.4.jar:aeron-driver-1.0.1.jar:aeron-client-1.0.1.jar
 ```
 
-You find those jar files on [Maven Central](http://search.maven.org/), or you can create a
+You find those jar files on [Maven Central](https://search.maven.org/), or you can create a
 package with your preferred build tool.
 
 You can pass [Aeron properties](https://github.com/real-logic/Aeron/wiki/Configuration-Options) as

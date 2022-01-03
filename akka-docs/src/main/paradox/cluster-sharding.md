@@ -8,9 +8,12 @@ For the full documentation of this feature and for new projects see @ref:[Cluste
 To use Cluster Sharding, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-sharding_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-sharding_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-sharding" }
@@ -29,7 +32,7 @@ Scala
 Java
 :  @@snip [ClusterShardingTest.java](/akka-docs/src/test/java/jdocs/sharding/ClusterShardingTest.java) { #counter-actor }
 
-The above actor uses event sourcing and the support provided in @scala[`PersistentActor`] @java[`AbstractPersistentActor`] to store its state.
+The above actor uses Event Sourcing and the support provided in @scala[`PersistentActor`] @java[`AbstractPersistentActor`] to store its state.
 It does not have to be a persistent actor, but in case of failure or migration of entities between nodes it must be able to recover
 its state if it is valuable.
 
@@ -220,13 +223,14 @@ Two requests to inspect the cluster state are available:
 
 @scala[`ShardRegion.GetShardRegionState`] @java[`ShardRegion.getShardRegionStateInstance`] which will return
 a @scala[`ShardRegion.CurrentShardRegionState`] @java[`ShardRegion.ShardRegionState`] that contains
-the identifiers of the shards running in a Region and what entities are alive for each of them.
+the identifiers of the shards running in a Region and what entities are alive for each of them. 
 
 `ShardRegion.GetClusterShardingStats` which will query all the regions in the cluster and return
 a `ShardRegion.ClusterShardingStats` containing the identifiers of the shards running in each region and a count
-of entities that are alive in each shard. If any shard queries failed, for example due to timeout
-if a shard was too busy to reply within the configured `akka.cluster.sharding.shard-region-query-timeout`, 
-`ShardRegion.ClusterShardingStats` will also include the set of shard identifiers by region that failed.
+of entities that are alive in each shard. 
+
+If any shard queries failed, for example due to timeout if a shard was too busy to reply within the configured `akka.cluster.sharding.shard-region-query-timeout`, 
+`ShardRegion.CurrentShardRegionState` and `ShardRegion.ClusterShardingStats` will also include the set of shard identifiers by region that failed.
 
 The type names of all started shards can be acquired via @scala[`ClusterSharding.shardTypeNames`]  @java[`ClusterSharding.getShardTypeNames`].
 

@@ -1,8 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_2;
+
+/*
+//#iot-supervisor
+package com.example;
+
+//#iot-supervisor
+*/
 
 // #iot-supervisor
 import akka.actor.typed.Behavior;

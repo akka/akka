@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import scala.concurrent.duration._
+
 import language.postfixOps
 
+import akka.dispatch.ThreadPoolConfig
 import akka.testkit.AkkaSpec
-import akka.dispatch.{ ThreadPoolConfig }
-import scala.concurrent.duration._
 
 object ConsistencySpec {
   val minThreads = 1
@@ -60,7 +61,7 @@ class ConsistencySpec extends AkkaSpec(ConsistencySpec.config) {
   "The Akka actor model implementation" must {
     "provide memory consistency" in {
       val noOfActors = threads + 1
-      val props = Props[ConsistencyCheckingActor].withDispatcher("consistency-dispatcher")
+      val props = Props[ConsistencyCheckingActor]().withDispatcher("consistency-dispatcher")
       val actors = Vector.fill(noOfActors)(system.actorOf(props))
 
       for (i <- 0L until 10000L) {

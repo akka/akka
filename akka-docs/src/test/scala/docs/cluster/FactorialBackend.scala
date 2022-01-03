@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package scala.docs.cluster
@@ -48,8 +48,8 @@ object FactorialBackend {
       .withFallback(ConfigFactory.load("factorial"))
 
     val system = ActorSystem("ClusterSystem", config)
-    system.actorOf(Props[FactorialBackend], name = "factorialBackend")
+    system.actorOf(Props[FactorialBackend](), name = "factorialBackend")
 
-    system.actorOf(Props[MetricsListener], name = "metricsListener")
+    system.actorOf(Props[MetricsListener](), name = "metricsListener")
   }
 }

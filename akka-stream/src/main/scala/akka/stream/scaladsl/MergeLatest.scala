@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.stream.{ Attributes, Inlet, Outlet, UniformFanInShape }
-
 import scala.collection.immutable
+
+import akka.stream.{ Attributes, Inlet, Outlet, UniformFanInShape }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 /**
  * MergeLatest joins elements from N input streams into stream of lists of size N.

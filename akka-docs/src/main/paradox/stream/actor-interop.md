@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Overview
@@ -51,7 +54,7 @@ is already a message in the mailbox when the actor has completed previous
 message.
 
 The actor must reply to the @scala[`sender()`]@java[`getSender()`] for each message from the stream. That
-reply will complete the  @scala[`Future`]@java[`CompletionStage`] of the `ask` and it will be the element that is emitted downstreams.
+reply will complete the  @scala[`Future`]@java[`CompletionStage`] of the `ask` and it will be the element that is emitted downstream.
 
 In case the target actor is stopped, the operator will fail with an `AskStageTargetActorTerminatedException`
 
@@ -108,7 +111,7 @@ Java
 
 Note that replying to the sender of the elements (the "stream") is required as lack of those ack signals would be interpreted
 as back-pressure (as intended), and no new elements will be sent into the actor until it acknowledges some elements.
-Handling the other signals while is not required, however is a good practice, to see the state of the streams lifecycle
+Handling the other signals while is not required, however is a good practice, to see the state of the stream's lifecycle
 in the connected actor as well. Technically it is also possible to use multiple sinks targeting the same actor,
 however it is not common practice to do so, and one should rather investigate using a `Merge` operator for this purpose.
 
@@ -169,18 +172,18 @@ for this Source type, i.e. elements will be dropped if the buffer is filled by s
 at a rate that is faster than the stream can consume. You should consider using `Source.queue`
 if you want a backpressured actor interface.
 
-The stream can be completed successfully by sending `akka.actor.Status.Success` to the actor reference.
-If the content is `akka.stream.CompletionStrategy.immediately` the completion will be signaled immediately.
-If the content is `akka.stream.CompletionStrategy.draining` already buffered elements will be signaled before signaling completion.
-Any other content will be ignored and fall back to the draining behaviour. 
+The stream can be completed successfully by sending any message to the actor that is handled
+by the completion matching function that was provided when the actor reference was created.
+If the returned completion strategy is `akka.stream.CompletionStrategy.immediately` the completion will be signaled immediately.
+If the completion strategy is `akka.stream.CompletionStrategy.draining`, already buffered elements will be processed before signaling completion.
+Any elements that are in the actor's mailbox and subsequent elements sent to the actor will not be processed.
 
-The stream can be completed with failure by sending `akka.actor.Status.Failure` to the
-actor reference.
+The stream can be completed with failure by sending any message to the
+actor that is handled by the failure matching function that was specified
+when the actor reference was created.
 
-Note: Sending a `PoisonPill` is deprecated and will be ignored in the future.
-
-The actor will be stopped when the stream is completed, failed or cancelled from downstream,
-i.e. you can watch it to get notified when that happens.
+The actor will be stopped when the stream is completed, failed or cancelled from downstream.
+You can watch it to get notified when that happens.
 
 
 Scala

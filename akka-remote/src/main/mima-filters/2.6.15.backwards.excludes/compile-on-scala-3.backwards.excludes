@@ -1,0 +1,3 @@
+# deprecated methods since 2.4 removed (clashing with generated on Scala 3)
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.QuarantinedEvent.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.QuarantinedEvent.copy$default$2")

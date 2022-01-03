@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
 import scala.concurrent.duration._
 import scala.runtime.BoxedUnit
-import scala.runtime.BoxedUnit
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor._
 import akka.japi.Procedure
 import akka.testkit.{ EventFilter, ImplicitSender }
-import com.typesafe.config.ConfigFactory
 import akka.testkit.TestEvent.Mute
 
 object TimerPersistentActorSpec {
@@ -101,9 +101,11 @@ class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString
     }
 
     "reject wrong order of traits, PersistentActor with Timer" in {
-      val pa = system.actorOf(Props[WrongOrder])
-      watch(pa)
-      expectTerminated(pa)
+      if (TraitOrder.canBeChecked) {
+        val pa = system.actorOf(Props[WrongOrder]())
+        watch(pa)
+        expectTerminated(pa)
+      }
     }
 
     "handle AutoReceivedMessage's automatically" in {

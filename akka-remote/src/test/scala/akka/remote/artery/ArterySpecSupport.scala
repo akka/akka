@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -32,6 +32,9 @@ object ArterySpecSupport {
   // set the test key-store and trust-store properties
   // TLS only used if transport=tls-tcp, which can be set from specific tests or
   // System properties (e.g. jenkins job)
+  // TODO: randomly return a Config using ConfigSSLEngineProvider or
+  //  RotatingKeysSSLEngineProvider and, eventually, run tests twice
+  //  (once for each provider).
   lazy val tlsConfig: Config = {
     val trustStore = getClass.getClassLoader.getResource("truststore").getPath
     val keyStore = getClass.getClassLoader.getResource("keystore").getPath

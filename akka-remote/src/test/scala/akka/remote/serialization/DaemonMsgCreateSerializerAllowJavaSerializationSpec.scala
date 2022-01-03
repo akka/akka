@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -21,7 +23,6 @@ import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import akka.testkit.JavaSerializable
 import akka.util.unused
-import com.typesafe.config.ConfigFactory
 
 object DaemonMsgCreateSerializerAllowJavaSerializationSpec {
 
@@ -74,7 +75,7 @@ class DaemonMsgCreateSerializerAllowJavaSerializationSpec
 
   import DaemonMsgCreateSerializerAllowJavaSerializationSpec._
   val ser = SerializationExtension(system)
-  val supervisor = system.actorOf(Props[MyActor], "supervisor")
+  val supervisor = system.actorOf(Props[MyActor](), "supervisor")
 
   "Serialization" must {
 
@@ -116,7 +117,7 @@ class DaemonMsgCreateSerializerAllowJavaSerializationSpec
           scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
           dispatcher = Deploy.NoDispatcherGiven)
         DaemonMsgCreate(
-          props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
+          props = Props[MyActor]().withDispatcher("my-disp").withDeploy(deploy1),
           deploy = deploy2,
           path = "foo",
           supervisor = supervisor)
@@ -132,12 +133,12 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
 
   import DaemonMsgCreateSerializerAllowJavaSerializationSpec.MyActor
 
-  val supervisor = system.actorOf(Props[MyActor], "supervisor")
+  val supervisor = system.actorOf(Props[MyActor](), "supervisor")
   val ser = SerializationExtension(system)
 
   "serialize and de-serialize DaemonMsgCreate with FromClassCreator" in {
     verifySerialization {
-      DaemonMsgCreate(props = Props[MyActor], deploy = Deploy(), path = "foo", supervisor = supervisor)
+      DaemonMsgCreate(props = Props[MyActor](), deploy = Deploy(), path = "foo", supervisor = supervisor)
     }
   }
 
@@ -166,7 +167,7 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
         scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
         dispatcher = Deploy.NoDispatcherGiven)
       DaemonMsgCreate(
-        props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
+        props = Props[MyActor]().withDispatcher("my-disp").withDeploy(deploy1),
         deploy = deploy2,
         path = "foo",
         supervisor = supervisor)

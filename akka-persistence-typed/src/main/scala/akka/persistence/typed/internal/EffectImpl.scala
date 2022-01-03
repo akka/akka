@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
 
 import scala.collection.immutable
 
+import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.typed.javadsl
 import akka.persistence.typed.scaladsl
-import akka.actor.typed.ActorRef
 
 /** INTERNAL API */
 @InternalApi
@@ -69,12 +69,17 @@ private[akka] case object PersistNothing extends EffectImpl[Nothing, Nothing]
 @InternalApi
 private[akka] final case class Persist[Event, State](event: Event) extends EffectImpl[Event, State] {
   override def events = event :: Nil
+
+  override def toString: String = s"Persist(${event.getClass.getName})"
 }
 
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class PersistAll[Event, State](override val events: immutable.Seq[Event])
-    extends EffectImpl[Event, State]
+    extends EffectImpl[Event, State] {
+
+  override def toString: String = s"PersistAll(${events.map(_.getClass.getName).mkString(",")})"
+}
 
 /** INTERNAL API */
 @InternalApi

@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Replicator.Changed
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class PNCounterMapSpec extends AnyWordSpec with Matchers {
 
@@ -72,13 +73,19 @@ class PNCounterMapSpec extends AnyWordSpec with Matchers {
 
     "have unapply extractor" in {
       val m1 = PNCounterMap.empty.increment(node1, "a", 1).increment(node2, "b", 2)
-      val PNCounterMap(entries1) = m1
+      val entries1 = m1 match {
+        case PNCounterMap(entries1) => entries1
+        case _                      => throw new RuntimeException()
+      }
       val entries2: Map[String, BigInt] = entries1
       entries2 should be(Map("a" -> 1L, "b" -> 2L))
 
       Changed(PNCounterMapKey[String]("key"))(m1) match {
         case c @ Changed(PNCounterMapKey("key")) =>
-          val PNCounterMap(entries3) = c.dataValue
+          val entries3 = c.dataValue match {
+            case PNCounterMap(entries3) => entries3
+            case _                      => throw new RuntimeException()
+          }
           val entries4: Map[String, BigInt] = entries3
           entries4 should be(Map("a" -> 1L, "b" -> 2L))
         case _ =>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -7,6 +7,10 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
 import akka.actor.ActorIdentity
@@ -19,9 +23,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.util.unused
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 object TransportFailConfig extends MultiNodeConfig {
   val first = role("first")
@@ -97,7 +98,7 @@ object TransportFailSpec {
  * This was fixed by not stopping the ReliableDeliverySupervisor so that the
  * receive buffer was preserved.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConfig) {
   import TransportFailConfig._
   import TransportFailSpec._
@@ -123,7 +124,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
       }
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
         enterBarrier("actors-started")
       }
 
@@ -155,7 +156,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
       }
 
       runOn(second) {
-        val subject2 = system.actorOf(Props[Subject], "subject2")
+        val subject2 = system.actorOf(Props[Subject](), "subject2")
         enterBarrier("actors-started2")
         enterBarrier("watch-established2")
         subject2 ! PoisonPill

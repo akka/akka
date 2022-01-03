@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 // Protocol Buffers - Google's data interchange format
@@ -37,7 +37,7 @@ package akka.protobuf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Encodes and writes protocol message fields.
@@ -73,8 +73,7 @@ public final class CodedOutputStream {
    *         CodedOutputStream.
    */
   static int computePreferredBufferSize(int dataLength) {
-    if (dataLength > DEFAULT_BUFFER_SIZE) return DEFAULT_BUFFER_SIZE;
-    return dataLength;
+    return Math.min(dataLength, DEFAULT_BUFFER_SIZE);
   }
 
   private CodedOutputStream(final byte[] buffer, final int offset,
@@ -356,7 +355,7 @@ public final class CodedOutputStream {
     // Unfortunately there does not appear to be any way to tell Java to encode
     // UTF-8 directly into our buffer, so we have to let it create its own byte
     // array and then copy.
-    final byte[] bytes = value.getBytes("UTF-8");
+    final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
     writeRawVarint32(bytes.length);
     writeRawBytes(bytes);
   }
@@ -715,13 +714,9 @@ public final class CodedOutputStream {
    * {@code string} field.
    */
   public static int computeStringSizeNoTag(final String value) {
-    try {
-      final byte[] bytes = value.getBytes("UTF-8");
-      return computeRawVarint32Size(bytes.length) +
-             bytes.length;
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException("UTF-8 not supported.", e);
-    }
+    final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+    return computeRawVarint32Size(bytes.length) +
+           bytes.length;
   }
 
   /**

@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.streamref
+
+import scala.annotation.nowarn
 
 import akka.NotUsed
 import akka.actor.{ ActorRef, Terminated }
@@ -13,7 +15,6 @@ import akka.stream.impl.FixedSizeBuffer
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
-import com.github.ghik.silencer.silent
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
@@ -123,24 +124,24 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       // settings ---
       import StreamRefAttributes._
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val settings = eagerMaterializer.settings.streamRefSettings
 
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
         SubscriptionTimeout(settings.subscriptionTimeout))
 
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val bufferCapacity = inheritedAttributes
         .get[StreamRefAttributes.BufferCapacity](StreamRefAttributes.BufferCapacity(settings.bufferCapacity))
         .capacity
 
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val demandRedeliveryInterval = inheritedAttributes
         .get[StreamRefAttributes.DemandRedeliveryInterval](DemandRedeliveryInterval(settings.demandRedeliveryInterval))
         .timeout
 
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val finalTerminationSignalDeadline =
         inheritedAttributes
           .get[StreamRefAttributes.FinalTerminationSignalDeadline](
@@ -150,7 +151,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       override protected val stageActorName: String = streamRefsMaster.nextSourceRefStageName()
       private[this] val self: GraphStageLogic.StageActor =
-        getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false)(receiveRemoteMessage)
+        getEagerStageActor(eagerMaterializer)(receiveRemoteMessage)
       override val ref: ActorRef = self.ref
       private[this] implicit def selfSender: ActorRef = ref
 
@@ -160,7 +161,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
           // this means we're the "remote" for an already active Source on the other side (the "origin")
           self.watch(ref)
           AwaitingSubscription(ref)
-        case OptionVal.None =>
+        case _ =>
           // we are the "origin", and awaiting the other side to start when we'll receive their partherRef
           AwaitingPartner
       }
@@ -393,6 +394,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
               throw new IllegalStateException(
                 s"[$stageActorName] CancellationDeadlineTimerKey can't happen in state $other")
           }
+
+        case other => throw new IllegalArgumentException(s"Unknown timer key: ${other}")
       }
 
       override def onDownstreamFinish(cause: Throwable): Unit = {

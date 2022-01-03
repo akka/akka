@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
+
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 import akka.Done
 import akka.pattern.pipe
@@ -11,9 +14,6 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class FlowWatchTerminationSpec extends StreamSpec {
 

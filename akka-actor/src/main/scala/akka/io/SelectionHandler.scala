@@ -1,30 +1,30 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
-import java.util.{ Iterator => JIterator }
-import java.util.concurrent.atomic.AtomicBoolean
 import java.nio.channels.{ CancelledKeyException, SelectableChannel, SelectionKey }
+import java.nio.channels.ClosedChannelException
 import java.nio.channels.SelectionKey._
 import java.nio.channels.spi.SelectorProvider
+import java.util.{ Iterator => JIterator }
+import java.util.concurrent.atomic.AtomicBoolean
+
+import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
+import scala.util.Try
+import scala.util.control.NonFatal
 
 import com.typesafe.config.Config
 
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
-import scala.concurrent.ExecutionContext
-import akka.event.LoggingAdapter
+import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.routing.RandomPool
 import akka.util.Helpers.Requiring
 import akka.util.SerializedSuspendableExecutionContext
-import akka.actor._
-import akka.routing.RandomPool
-import akka.event.Logging
-import java.nio.channels.ClosedChannelException
-
-import scala.util.Try
 
 abstract class SelectionHandlerSettings(config: Config) {
   import config._

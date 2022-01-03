@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
-import akka.annotation.InternalApi
 import org.slf4j.MDC
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -7,14 +7,14 @@ package akka.remote.serialization
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.{ ActorRef, ExtendedActorSystem }
-import akka.remote.WireFormats.ActorRefData
-import akka.serialization.{ BaseSerializer, Serialization }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
+import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.event.LogMarker
 import akka.event.Logging
+import akka.remote.WireFormats.ActorRefData
+import akka.serialization.{ BaseSerializer, Serialization }
 import akka.serialization.SerializationExtension
 
 object ProtobufSerializer {
@@ -47,15 +47,15 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
   private val parsingMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
   private val toByteArrayMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
 
-  private val whitelistClassNames: Set[String] = {
+  private val allowedClassNames: Set[String] = {
     import akka.util.ccompat.JavaConverters._
-    system.settings.config.getStringList("akka.serialization.protobuf.whitelist-class").asScala.toSet
+    system.settings.config.getStringList("akka.serialization.protobuf.allowed-classes").asScala.toSet
   }
 
   // This must lazy otherwise it will deadlock the ActorSystem creation
   private lazy val serialization = SerializationExtension(system)
 
-  private val log = Logging.withMarker(system, getClass)
+  private val log = Logging.withMarker(system, classOf[ProtobufSerializer])
 
   override def includeManifest: Boolean = true
 
@@ -110,18 +110,18 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
   }
 
   private def checkAllowedClass(clazz: Class[_]): Unit = {
-    if (!isInWhitelist(clazz)) {
+    if (!isInAllowList(clazz)) {
       val warnMsg = s"Can't deserialize object of type [${clazz.getName}] in [${getClass.getName}]. " +
-        "Only classes that are whitelisted are allowed for security reasons. " +
-        "Configure whitelist with akka.actor.serialization-bindings or " +
-        "akka.serialization.protobuf.whitelist-class"
+        "Only classes that are on the allow list are allowed for security reasons. " +
+        "Configure allowed classes with akka.actor.serialization-bindings or " +
+        "akka.serialization.protobuf.allowed-classes"
       log.warning(LogMarker.Security, warnMsg)
       throw new IllegalArgumentException(warnMsg)
     }
   }
 
   /**
-   * Using the `serialization-bindings` as source for the whitelist.
+   * Using the `serialization-bindings` as source for the allowed classes.
    * Note that the intended usage of serialization-bindings is for lookup of
    * serializer when serializing (`toBinary`). For deserialization (`fromBinary`) the serializer-id is
    * used for selecting serializer.
@@ -130,13 +130,13 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
    *
    * If an old class is removed from `serialization-bindings` when it's not used for serialization
    * but still used for deserialization (e.g. rolling update with serialization changes) it can
-   * be allowed by specifying in `akka.protobuf.whitelist-class`.
+   * be allowed by specifying in `akka.protobuf.allowed-classes`.
    *
    * That is also possible when changing a binding from a ProtobufSerializer to another serializer (e.g. Jackson)
    * and still bind with the same class (interface).
    */
-  private def isInWhitelist(clazz: Class[_]): Boolean = {
-    isBoundToProtobufSerializer(clazz) || isInWhitelistClassName(clazz)
+  private def isInAllowList(clazz: Class[_]): Boolean = {
+    isBoundToProtobufSerializer(clazz) || isInAllowListClassName(clazz)
   }
 
   private def isBoundToProtobufSerializer(clazz: Class[_]): Boolean = {
@@ -148,9 +148,9 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     }
   }
 
-  private def isInWhitelistClassName(clazz: Class[_]): Boolean = {
-    whitelistClassNames(clazz.getName) ||
-    whitelistClassNames(clazz.getSuperclass.getName) ||
-    clazz.getInterfaces.exists(c => whitelistClassNames(c.getName))
+  private def isInAllowListClassName(clazz: Class[_]): Boolean = {
+    allowedClassNames(clazz.getName) ||
+    allowedClassNames(clazz.getSuperclass.getName) ||
+    clazz.getInterfaces.exists(c => allowedClassNames(c.getName))
   }
 }

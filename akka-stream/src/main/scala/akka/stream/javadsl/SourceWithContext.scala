@@ -1,22 +1,23 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
 import java.util.concurrent.CompletionStage
 
+import scala.annotation.unchecked.uncheckedVariance
+import scala.compat.java8.FutureConverters._
+
 import akka.actor.ClassicActorSystemProvider
-import akka.event.LoggingAdapter
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Pair
 import akka.japi.Util
 import akka.japi.function
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.ccompat.JavaConverters._
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.java8.FutureConverters._
+import akka.util.JavaDurationConverters._
 
 object SourceWithContext {
 
@@ -42,6 +43,10 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
    * taking and producing tuples of (data, context).
+   *
+   *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
+   *  by the downstream elements, such as reordering. For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
    *
    * This can be used as an escape hatch for operations that are not (yet) provided with automatic
    * context propagation here.
@@ -219,6 +224,92 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    */
   def log(name: String): SourceWithContext[Out, Ctx, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Source.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function2[Out, Ctx, LogMarker],
+      extract: function.Function[Out, Any],
+      log: MarkerLoggingAdapter): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.logWithMarker(name, (e, c) => marker.apply(e, c), e => extract.apply(e))(log))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].,
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function2[Out, Ctx, LogMarker],
+      extract: function.Function[Out, Any]): SourceWithContext[Out, Ctx, Mat] =
+    this.logWithMarker(name, marker, extract, null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function2[Out, Ctx, LogMarker],
+      log: MarkerLoggingAdapter): SourceWithContext[Out, Ctx, Mat] =
+    this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], log)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(name: String, marker: function.Function2[Out, Ctx, LogMarker]): SourceWithContext[Out, Ctx, Mat] =
+    this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(elements: Int, per: java.time.Duration): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(elements, per.asScala))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(
+      elements: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      mode: ThrottleMode): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(elements, per.asScala, maximumBurst, mode))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      costCalculation: function.Function[Out, Integer]): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(cost, per.asScala, costCalculation.apply))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      costCalculation: function.Function[Out, Integer],
+      mode: ThrottleMode): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(cost, per.asScala, maximumBurst, costCalculation.apply, mode))
 
   /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],

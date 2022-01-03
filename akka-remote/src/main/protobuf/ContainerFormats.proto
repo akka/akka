@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 syntax = "proto2";
@@ -81,4 +81,10 @@ message StackTraceElement {
   required string methodName = 2;
   required string fileName = 3;
   required int32 lineNumber = 4;
+}
+
+
+// ReplyWith pattern message(s)
+message StatusReplyErrorMessage {
+  required string errorMessage = 1;
 }

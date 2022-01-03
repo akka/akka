@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import org.reactivestreams.Publisher
+
+import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 
 class FlatMapPrefixTest extends AkkaPublisherVerification[Int] {
   override def createPublisher(elements: Long): Publisher[Int] = {

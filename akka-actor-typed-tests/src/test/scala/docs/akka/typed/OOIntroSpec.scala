@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -22,10 +22,10 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 object OOIntroSpec {
 
+  //#chatroom-protocol
   //#chatroom-behavior
   object ChatRoom {
     //#chatroom-behavior
-    //#chatroom-protocol
     sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
@@ -39,7 +39,7 @@ object OOIntroSpec {
     final case class SessionDenied(reason: String) extends SessionEvent
     final case class MessagePosted(screenName: String, message: String) extends SessionEvent
 
-    trait SessionCommand
+    sealed trait SessionCommand
     final case class PostMessage(message: String) extends SessionCommand
     private final case class NotifyClient(message: MessagePosted) extends SessionCommand
     //#chatroom-protocol
@@ -69,7 +69,7 @@ object OOIntroSpec {
       }
     }
 
-    object SessionBehavior {
+    private object SessionBehavior {
       def apply(
           room: ActorRef[PublishSessionMessage],
           screenName: String,
@@ -84,7 +84,7 @@ object OOIntroSpec {
         client: ActorRef[SessionEvent])
         extends AbstractBehavior[SessionCommand](context) {
 
-      override def onMessage(msg: SessionCommand): Behavior[SessionCommand] = {
+      override def onMessage(msg: SessionCommand): Behavior[SessionCommand] =
         msg match {
           case PostMessage(message) =>
             // from client, publish to others via the room
@@ -95,9 +95,10 @@ object OOIntroSpec {
             client ! message
             Behaviors.same
         }
-      }
     }
+    //#chatroom-protocol
   }
+  //#chatroom-protocol
   //#chatroom-behavior
 
   //#chatroom-gabbler

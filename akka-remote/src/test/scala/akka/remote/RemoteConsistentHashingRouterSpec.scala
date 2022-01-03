@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
 import akka.actor.Address
 import akka.routing.ActorSelectionRoutee
-import akka.routing.ConsistentRoutee
 import akka.routing.ConsistentHash
+import akka.routing.ConsistentRoutee
+import akka.testkit.AkkaSpec
 
 class RemoteConsistentHashingRouterSpec
     extends AkkaSpec("""

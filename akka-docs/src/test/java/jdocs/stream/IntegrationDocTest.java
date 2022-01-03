@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.*;
 import akka.stream.*;
@@ -748,8 +749,8 @@ public class IntegrationDocTest extends AbstractJavaTest {
         int bufferSize = 10;
         int elementsToProcess = 5;
 
-        SourceQueueWithComplete<Integer> sourceQueue =
-            Source.<Integer>queue(bufferSize, OverflowStrategy.backpressure())
+        BoundedSourceQueue<Integer> sourceQueue =
+            Source.<Integer>queue(bufferSize)
                 .throttle(elementsToProcess, Duration.ofSeconds(3))
                 .map(x -> x * x)
                 .to(Sink.foreach(x -> System.out.println("got: " + x)))
@@ -765,6 +766,44 @@ public class IntegrationDocTest extends AbstractJavaTest {
   }
 
   @Test
+  public void illustrateSynchronousSourceQueue() throws Exception {
+    new TestKit(system) {
+      {
+        // #source-queue-synchronous
+        int bufferSize = 10;
+        int elementsToProcess = 5;
+
+        BoundedSourceQueue<Integer> sourceQueue =
+            Source.<Integer>queue(bufferSize)
+                .throttle(elementsToProcess, Duration.ofSeconds(3))
+                .map(x -> x * x)
+                .to(Sink.foreach(x -> System.out.println("got: " + x)))
+                .run(system);
+
+        List<Integer> fastElements = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+        fastElements.stream()
+            .forEach(
+                x -> {
+                  QueueOfferResult result = sourceQueue.offer(x);
+                  if (result == QueueOfferResult.enqueued()) {
+                    System.out.println("enqueued " + x);
+                  } else if (result == QueueOfferResult.dropped()) {
+                    System.out.println("dropped " + x);
+                  } else if (result instanceof QueueOfferResult.Failure) {
+                    QueueOfferResult.Failure failure = (QueueOfferResult.Failure) result;
+                    System.out.println("Offer failed " + failure.cause().getMessage());
+                  } else if (result instanceof QueueOfferResult.QueueClosed$) {
+                    System.out.println("Bounded Source Queue closed");
+                  }
+                });
+
+        // #source-queue-synchronous
+      }
+    };
+  }
+
+  @Test
   public void illustrateSourceActorRef() throws Exception {
     new TestKit(system) {
       {
@@ -773,7 +812,15 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
         Source<Integer, ActorRef> source =
             Source.actorRef(
-                bufferSize, OverflowStrategy.dropHead()); // note: backpressure is not supported
+                elem -> {
+                  // complete stream immediately if we send it Done
+                  if (elem == Done.done()) return Optional.of(CompletionStrategy.immediately());
+                  else return Optional.empty();
+                },
+                // never fail the stream because of a message
+                elem -> Optional.empty(),
+                bufferSize,
+                OverflowStrategy.dropHead()); // note: backpressure is not supported
         ActorRef actorRef =
             source
                 .map(x -> x * x)

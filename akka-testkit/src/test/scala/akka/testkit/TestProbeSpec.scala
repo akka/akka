@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
-import language.postfixOps
-import akka.actor._
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.pattern.ask
-
 import scala.util.Try
-import java.util.concurrent.atomic.AtomicInteger
 
+import language.postfixOps
 import org.scalatest.concurrent.Eventually
+
+import akka.actor._
+import akka.pattern.ask
 
 class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
 
@@ -141,7 +141,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
 
     "be able to expect primitive types" in {
       for (_ <- 1 to 7) testActor ! 42
-      expectMsgType[Int] should ===(42)
+      (expectMsgType[Int]: Int) should ===(42)
       expectMsgAnyClassOf(classOf[Int]) should ===(42)
       expectMsgAllClassOf(classOf[Int]) should ===(Seq(42))
       expectMsgAllConformingOf(classOf[Int]) should ===(Seq(42))
@@ -173,7 +173,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       probe.ref ! "done"
 
       val msg: String = probe.fishForSpecificMessage() {
-        case msg @ "fishForMe" => msg
+        case msg: String if msg == "fishForMe" => msg
       }
 
       msg should be("fishForMe")

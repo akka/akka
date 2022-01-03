@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -8,12 +8,12 @@ package javadsl
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 
+import scala.compat.java8.FutureConverters._
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.japi.function.{ Function => JFunction }
+import akka.pattern.StatusReply
 import akka.util.JavaDurationConverters._
-
-import scala.compat.java8.FutureConverters._
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -41,4 +41,18 @@ object AskPattern {
       timeout: Duration,
       scheduler: Scheduler): CompletionStage[Res] =
     (actor.ask(messageFactory.apply)(timeout.asScala, scheduler)).toJava
+
+  /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply#success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply#error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
+   */
+  def askWithStatus[Req, Res](
+      actor: RecipientRef[Req],
+      messageFactory: JFunction[ActorRef[StatusReply[Res]], Req],
+      timeout: Duration,
+      scheduler: Scheduler): CompletionStage[Res] =
+    (actor.askWithStatus(messageFactory.apply)(timeout.asScala, scheduler).toJava)
+
 }

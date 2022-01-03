@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
+import org.reactivestreams.{ Subscriber, Subscription }
+
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.stream.AbruptTerminationException
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
-import akka.stream.AbruptTerminationException
 import akka.util.unused
-import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API
@@ -249,7 +250,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
           }
           registerCompleted(id)
           inputs(id).subreceive(ActorSubscriberMessage.OnComplete)
-          if (!receivedInput && isAllCompleted) onCompleteWhenNoInput()
+          if (!receivedInput && isAllCompleted()) onCompleteWhenNoInput()
         case OnError(id, e) =>
           onError(id, e)
       })

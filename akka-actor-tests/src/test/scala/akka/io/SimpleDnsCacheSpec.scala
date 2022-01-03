@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -7,15 +7,16 @@ package akka.io
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicLong
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.io.dns.ARecord
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol
 import akka.io.dns.DnsProtocol.Ip
-
-import scala.concurrent.duration._
-import scala.collection.immutable
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class SimpleDnsCacheSpec extends AnyWordSpec with Matchers {
   "Cache" should {

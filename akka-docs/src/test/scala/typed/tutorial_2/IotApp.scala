@@ -1,8 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package typed.tutorial_2
+
+/*
+//#iot-app
+package com.example
+
+//#iot-app
+ */
 
 //#iot-app
 import akka.actor.typed.ActorSystem

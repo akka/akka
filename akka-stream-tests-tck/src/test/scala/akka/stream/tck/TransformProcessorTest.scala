@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
+
+import org.reactivestreams.Processor
 
 import akka.stream.Attributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -10,7 +12,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import org.reactivestreams.Processor
 
 class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 

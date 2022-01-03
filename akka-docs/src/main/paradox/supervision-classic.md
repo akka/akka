@@ -34,10 +34,10 @@ causes (i.e. exceptions) into one of the four choices given above; notably,
 this function does not take the failed actor’s identity as an input. It is
 quite easy to come up with examples of structures where this might not seem
 flexible enough, e.g. wishing for different strategies to be applied to
-different subordinates. At this point it is vital to understand that
+different subordinates. At this point, it is vital to understand that
 supervision is about forming a recursive fault handling structure. If you try
 to do too much at one level, it will become hard to reason about, hence the
-recommended way in this case is to add a level of supervision.
+recommended way, in this case, is to add a level of supervision.
 
 Akka implements a specific form called “parental supervision”. Actors can only
 be created by other actors—where the top-level actor is provided by the
@@ -45,13 +45,13 @@ library—and each created actor is supervised by its parent. This restriction
 makes the formation of actor supervision hierarchies implicit and encourages
 sound design decisions. It should be noted that this also guarantees that
 actors cannot be orphaned or attached to supervisors from the outside, which
-might otherwise catch them unawares. In addition, this yields a natural and
+might otherwise catch them unawares. Besides, this yields a natural and
 clean shutdown procedure for (sub-trees of) actor applications.
 
 @@@ warning
 
-Supervision related parent-child communication happens by special system
-messages that have their own mailboxes separate from user messages. This
+Supervision-related communication happens by special system
+messages that have their mailboxes separate from user messages. This
 implies that supervision related events are not deterministically
 ordered relative to ordinary messages. In general, the user cannot influence
 the order of normal messages and failure notifications. For details and
@@ -85,11 +85,10 @@ will shut down the whole actor system.
 
 ### `/system`: The System Guardian
 
-This special guardian has been introduced in order to achieve an orderly
+This special guardian has been introduced to achieve an orderly
 shut-down sequence where logging remains active while all normal actors
 terminate, even though logging itself is implemented using actors. This is
-realized by having the system guardian watch the user guardian and initiate its own
-shut-down upon reception of the `Terminated` message. The top-level
+realized by having the system guardian watch the user guardian and initiate its shut-down upon reception of the `Terminated` message. The top-level
 system actors are supervised using a strategy which will restart indefinitely
 upon all types of `Exception` except for
 `ActorInitializationException` and `ActorKilledException`, which
@@ -128,7 +127,7 @@ children has such tight dependencies among them, that a failure of one child
 affects the function of the others, i.e. they are inextricably linked. Since a
 restart does not clear out the mailbox, it often is best to terminate the children
 upon failure and re-create them explicitly from the supervisor (by watching the
-children’s lifecycle); otherwise you have to make sure that it is no problem
+children’s lifecycle); otherwise, you have to make sure that it is no problem
 for any of the actors to receive a message which was queued before the restart
 but processed afterwards.
 
@@ -137,7 +136,7 @@ automatically terminate the other children in an all-for-one strategy; this can
 be done by watching their lifecycle: if the `Terminated` message
 is not handled by the supervisor, it will throw a `DeathPactException`
 which (depending on its supervisor) will restart it, and the default
-`preRestart` action will terminate all children. Of course this can be
+`preRestart` action will terminate all children. Of course, this can be
 handled explicitly as well.
 
 Please note that creating one-off actors from an all-for-one supervisor entails
@@ -145,7 +144,3 @@ that failures escalated by the temporary actor will affect all the permanent
 ones. If this is not desired, install an intermediate supervisor; this can very
 be done by declaring a router of size 1 for the worker, see
 @ref:[Routing](routing.md).
-
-
-
-

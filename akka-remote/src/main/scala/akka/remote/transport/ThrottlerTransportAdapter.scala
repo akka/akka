@@ -1,11 +1,28 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
 
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.tailrec
+import scala.collection.immutable.Queue
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
+import scala.math.min
+import scala.util.{ Failure, Success }
+import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+
 import akka.actor._
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.ExecutionContexts
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import akka.pattern.{ ask, pipe, PromiseActorRef }
+import akka.remote.RARP
 import akka.remote.transport.ActorTransportAdapter.AssociateUnderlying
 import akka.remote.transport.AkkaPduCodec.Associate
 import akka.remote.transport.AssociationHandle.{
@@ -19,20 +36,6 @@ import akka.remote.transport.ThrottlerManager.{ Checkin, Handle, Listener, Liste
 import akka.remote.transport.ThrottlerTransportAdapter._
 import akka.remote.transport.Transport._
 import akka.util.{ ByteString, Timeout }
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
-
-import scala.annotation.tailrec
-import scala.collection.immutable.Queue
-import scala.concurrent.{ Future, Promise }
-import scala.concurrent.duration._
-import scala.math.min
-import scala.util.{ Failure, Success }
-import scala.util.control.NonFatal
-import akka.dispatch.sysmsg.{ Unwatch, Watch }
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.remote.RARP
-import com.github.ghik.silencer.silent
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ThrottlerProvider extends TransportAdapterProvider {
@@ -221,10 +224,22 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
   override def managementCommand(cmd: Any): Future[Boolean] = {
     import ActorTransportAdapter.AskTimeout
     cmd match {
-      case s: SetThrottle                 => (manager ? s).map { case SetThrottleAck => true }
-      case f: ForceDisassociate           => (manager ? f).map { case ForceDisassociateAck => true }
-      case f: ForceDisassociateExplicitly => (manager ? f).map { case ForceDisassociateAck => true }
-      case _                              => wrappedTransport.managementCommand(cmd)
+      case s: SetThrottle =>
+        (manager ? s).map {
+          case SetThrottleAck => true
+          case _              => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+        }
+      case f: ForceDisassociate =>
+        (manager ? f).map {
+          case ForceDisassociateAck => true
+          case _                    => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+        }
+      case f: ForceDisassociateExplicitly =>
+        (manager ? f).map {
+          case ForceDisassociateAck => true
+          case _                    => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+        }
+      case _ => wrappedTransport.managementCommand(cmd)
     }
   }
 }
@@ -232,7 +247,7 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[transport] object ThrottlerManager {
   final case class Checkin(origin: Address, handle: ThrottlerHandle) extends NoSerializationVerificationNeeded
 
@@ -250,7 +265,7 @@ private[transport] object ThrottlerManager {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[transport] class ThrottlerManager(wrappedTransport: Transport)
     extends ActorTransportAdapterManager
     with ActorLogging {
@@ -349,19 +364,25 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
   }
 
   // silent because of use of isTerminated
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private def askModeWithDeathCompletion(target: ActorRef, mode: ThrottleMode)(
       implicit timeout: Timeout): Future[SetThrottleAck.type] = {
     if (target.isTerminated) Future.successful(SetThrottleAck)
     else {
       val internalTarget = target.asInstanceOf[InternalActorRef]
-      val ref = PromiseActorRef(internalTarget.provider, timeout, target, mode.getClass.getName)
+      val ref =
+        PromiseActorRef(internalTarget.provider, timeout, target, mode.getClass.getName, internalTarget.path.name)
       internalTarget.sendSystemMessage(Watch(internalTarget, ref))
       target.tell(mode, ref)
       ref.result.future.transform({
-        case Terminated(t) if t.path == target.path => SetThrottleAck
-        case SetThrottleAck                         => { internalTarget.sendSystemMessage(Unwatch(target, ref)); SetThrottleAck }
-      }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ref.internalCallingThreadExecutionContext)
+        case Terminated(t) if t.path == target.path =>
+          SetThrottleAck
+        case SetThrottleAck =>
+          internalTarget.sendSystemMessage(Unwatch(target, ref))
+          SetThrottleAck
+        case _ =>
+          throw new IllegalArgumentException() // won't happen, compiler exhaustiveness check pleaser
+      }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ExecutionContexts.parasitic)
     }
   }
 
@@ -420,7 +441,7 @@ private[transport] object ThrottledAssociation {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[transport] class ThrottledAssociation(
     val manager: ActorRef,
     val associationHandler: AssociationEventListener,
@@ -453,7 +474,7 @@ private[transport] class ThrottledAssociation(
 
   when(WaitOrigin) {
     case Event(InboundPayload(p), ExposedHandle(exposedHandle)) =>
-      throttledMessages = throttledMessages.enqueue(p)
+      throttledMessages = throttledMessages :+ p
       peekOrigin(p) match {
         case Some(origin) =>
           manager ! Checkin(origin, exposedHandle)
@@ -464,7 +485,7 @@ private[transport] class ThrottledAssociation(
 
   when(WaitMode) {
     case Event(InboundPayload(p), _) =>
-      throttledMessages = throttledMessages.enqueue(p)
+      throttledMessages = throttledMessages :+ p
       stay()
     case Event(mode: ThrottleMode, ExposedHandle(exposedHandle)) =>
       inboundThrottleMode = mode
@@ -481,7 +502,7 @@ private[transport] class ThrottledAssociation(
 
   when(WaitUpstreamListener) {
     case Event(InboundPayload(p), _) =>
-      throttledMessages = throttledMessages.enqueue(p)
+      throttledMessages = throttledMessages :+ p
       stay()
     case Event(Listener(listener), _) =>
       upstreamListener = listener
@@ -496,7 +517,7 @@ private[transport] class ThrottledAssociation(
       self ! Dequeue
       goto(Throttling)
     case Event(InboundPayload(p), _) =>
-      throttledMessages = throttledMessages.enqueue(p)
+      throttledMessages = throttledMessages :+ p
       stay()
   }
 
@@ -564,11 +585,11 @@ private[transport] class ThrottledAssociation(
           inboundThrottleMode = newbucket
           upstreamListener.notify(InboundPayload(payload))
         } else {
-          throttledMessages = throttledMessages.enqueue(payload)
+          throttledMessages = throttledMessages :+ payload
           scheduleDequeue(inboundThrottleMode.timeToAvailable(System.nanoTime(), tokens))
         }
       } else {
-        throttledMessages = throttledMessages.enqueue(payload)
+        throttledMessages = throttledMessages :+ payload
       }
     }
   }
@@ -584,7 +605,7 @@ private[transport] class ThrottledAssociation(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[transport] final case class ThrottlerHandle(_wrappedHandle: AssociationHandle, throttlerActor: ActorRef)
     extends AbstractTransportAdapterHandle(_wrappedHandle, SchemeIdentifier) {
 

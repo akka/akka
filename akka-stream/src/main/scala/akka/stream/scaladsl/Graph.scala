@@ -1,27 +1,27 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.SplittableRandom
 
-import akka.NotUsed
-import akka.annotation.InternalApi
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl._
-import akka.stream.impl.fusing.GraphStages
-import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.util.ConstantFun
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
+
+import akka.NotUsed
+import akka.annotation.InternalApi
+import akka.stream._
 import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.impl._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.util.ConstantFun
 
 /**
  * INTERNAL API
@@ -37,6 +37,9 @@ private[stream] final class GenericGraph[S <: Shape, Mat](
 
   override def withAttributes(attr: Attributes): Graph[S, Mat] =
     new GenericGraphWithChangedAttributes(shape, traversalBuilder, attr)
+
+  def mapMaterializedValue[Mat2](f: Mat => Mat2): GenericGraph[S, Mat2] =
+    new GenericGraph(shape, traversalBuilder.transformMat(f))
 }
 
 /**
@@ -1200,10 +1203,13 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
       // Without this field the completion signalling would take one extra pull
       var willShutDown = false
 
+      private val contextPropagation = ContextPropagation()
+
       val grabInlet = grab[A] _
       val pullInlet = pull[A] _
 
       private def pushAll(): Unit = {
+        contextPropagation.resumeContext()
         push(out, zipper(shape.inlets.map(grabInlet)))
         if (willShutDown) completeStage()
         else shape.inlets.foreach(pullInlet)
@@ -1213,20 +1219,22 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
         shape.inlets.foreach(pullInlet)
       }
 
-      shape.inlets.foreach(in => {
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            pending -= 1
-            if (pending == 0) pushAll()
-          }
+      shape.inlets.zipWithIndex.foreach {
+        case (in, i) =>
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = {
+              // Only one context can be propagated. Picked the first element as an arbitrary but deterministic choice.
+              if (i == 0) contextPropagation.suspendContext()
+              pending -= 1
+              if (pending == 0) pushAll()
+            }
 
-          override def onUpstreamFinish(): Unit = {
-            if (!isAvailable(in)) completeStage()
-            willShutDown = true
-          }
-
-        })
-      })
+            override def onUpstreamFinish(): Unit = {
+              if (!isAvailable(in)) completeStage()
+              willShutDown = true
+            }
+          })
+      }
 
       def onPull(): Unit = {
         pending += n
@@ -1241,11 +1249,34 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
 
 object Concat {
 
+  // two streams is so common that we can re-use a single instance to avoid some allocations
+  private val _concatTwo = new Concat[Any](2)
+  private def concatTwo[T]: GraphStage[UniformFanInShape[T, T]] =
+    _concatTwo.asInstanceOf[GraphStage[UniformFanInShape[T, T]]]
+
   /**
-   * Create a new `Concat`.
+   * Create a new `Concat`. Note that this for historical reasons creates a "detached" Concat which
+   * will eagerly pull each input on materialization and act as a one element buffer for each input.
    */
   def apply[T](inputPorts: Int = 2): Graph[UniformFanInShape[T, T], NotUsed] =
-    GraphStages.withDetachedInputs(new Concat[T](inputPorts))
+    apply(inputPorts, detachedInputs = true)
+
+  /**
+   * Create a new `Concat` operator that will concatenate two or more streams.
+   * @param inputPorts The number of fan-in input ports
+   * @param detachedInputs If the ports should be detached (eagerly pull both inputs) useful to avoid deadlocks in graphs with loops
+   * @return
+   */
+  def apply[T](inputPorts: Int, detachedInputs: Boolean): Graph[UniformFanInShape[T, T], NotUsed] = {
+    val concat = {
+      if (inputPorts == 2) concatTwo[T]
+      else new Concat[T](inputPorts)
+    }
+
+    if (detachedInputs) GraphStages.withDetachedInputs(concat)
+    else concat
+  }
+
 }
 
 /**
@@ -1390,6 +1421,137 @@ private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]
 
   override def toString: String = s"OrElse"
 
+}
+
+object MergeSequence {
+
+  private case class Pushed[T](in: Inlet[T], sequence: Long, elem: T)
+
+  private implicit def ordering[T]: Ordering[Pushed[T]] = Ordering.by[Pushed[T], Long](_.sequence).reverse
+
+  /** @see [[MergeSequence]] **/
+  def apply[T](inputPorts: Int = 2)(extractSequence: T => Long): Graph[UniformFanInShape[T, T], NotUsed] =
+    GraphStages.withDetachedInputs(new MergeSequence[T](inputPorts)(extractSequence))
+}
+
+/**
+ * Takes multiple streams whose elements in aggregate have a defined linear
+ * sequence with difference 1, starting at 0, and outputs a single stream
+ * containing these elements, in order. That is, given a set of input streams
+ * with combined elements *e<sub>k</sub>*:
+ *
+ * *e<sub>0</sub>*, *e<sub>1</sub>*, *e<sub>2</sub>*, ..., *e<sub>n</sub>*
+ *
+ * This will output a stream ordered by *k*.
+ *
+ * The elements in the input streams must already be sorted according to the
+ * sequence. The input streams do not need to be linear, but the aggregate
+ * stream must be linear, no element *k* may be skipped or duplicated, either
+ * of these conditions will cause the stream to fail.
+ *
+ * The typical use case for this is to merge a partitioned stream back
+ * together while maintaining order. This can be achieved by first using
+ * `zipWithIndex` on the input stream, then partitioning using a
+ * [[Partition]] fanout, and then maintaining the index through the processing
+ * of each partition before bringing together with this stage.
+ *
+ * '''Emits when''' one of the upstreams has the next expected element in the
+ * sequence available.
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ */
+final class MergeSequence[T](val inputPorts: Int)(extractSequence: T => Long)
+    extends GraphStage[UniformFanInShape[T, T]] {
+  require(inputPorts > 1, "A MergeSequence must have more than 1 input ports")
+  private val in: IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i => Inlet[T]("MergeSequence.in" + i))
+  private val out: Outlet[T] = Outlet("MergeSequence.out")
+  override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
+
+  import MergeSequence._
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler {
+      private var nextSequence = 0L
+      private val available = mutable.PriorityQueue.empty[Pushed[T]]
+      private var complete = 0
+
+      setHandler(out, this)
+
+      in.zipWithIndex.foreach {
+        case (inPort, idx) =>
+          setHandler(
+            inPort,
+            new InHandler {
+              override def onPush(): Unit = {
+                val elem = grab(inPort)
+                val sequence = extractSequence(elem)
+                if (sequence < nextSequence) {
+                  failStage(
+                    new IllegalStateException(s"Sequence regression from $nextSequence to $sequence on port $idx"))
+                } else if (sequence == nextSequence && isAvailable(out)) {
+                  push(out, elem)
+                  tryPull(inPort)
+                  nextSequence += 1
+                } else {
+                  available.enqueue(Pushed(inPort, sequence, elem))
+                  detectMissedSequence()
+                }
+              }
+
+              override def onUpstreamFinish(): Unit = {
+                complete += 1
+                if (complete == inputPorts && available.isEmpty) {
+                  completeStage()
+                } else {
+                  detectMissedSequence()
+                }
+              }
+            })
+      }
+
+      def onPull(): Unit =
+        if (available.nonEmpty && available.head.sequence == nextSequence) {
+          val pushed = available.dequeue()
+          push(out, pushed.elem)
+          if (complete == inputPorts && available.isEmpty) {
+            completeStage()
+          } else {
+            if (available.nonEmpty && available.head.sequence == nextSequence) {
+              failStage(
+                new IllegalStateException(
+                  s"Duplicate sequence $nextSequence on ports ${pushed.in} and ${available.head.in}"))
+            }
+            tryPull(pushed.in)
+            nextSequence += 1
+          }
+        } else {
+          detectMissedSequence()
+        }
+
+      private def detectMissedSequence(): Unit =
+        // Cheap to calculate, but doesn't give the right answer, because there might be input ports
+        // that are both complete and still have one last buffered element.
+        if (isAvailable(out) && available.size + complete >= inputPorts) {
+          // So in the event that this was true we count the number of ports that we have elements buffered for that
+          // are not yet closed, and add that to the complete ones, to see if we're in a dead lock.
+          if (available.count(pushed => !isClosed(pushed.in)) + complete == inputPorts) {
+            failStage(
+              new IllegalStateException(
+                s"Expected sequence $nextSequence, but all input ports have pushed or are complete, " +
+                "but none have pushed the next sequence number. Pushed sequences: " +
+                available.toVector.map(p => s"${p.in}: ${p.sequence}").mkString(", ")))
+          }
+        }
+
+      override def preStart(): Unit =
+        in.foreach(pull)
+    }
+
+  override def toString: String = s"MergeSequence($inputPorts)"
 }
 
 object GraphDSL extends GraphApply {

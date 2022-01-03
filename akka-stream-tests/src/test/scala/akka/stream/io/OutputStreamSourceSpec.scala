@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -8,23 +8,23 @@ import java.io.IOException
 import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeoutException
 
-import akka.stream.Attributes.inputBuffer
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration.Zero
+import scala.util.Random
+
 import akka.stream._
+import akka.stream.Attributes.inputBuffer
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.StreamConverters
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration.Zero
-import scala.concurrent.duration._
-import scala.util.Random
 
 class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
@@ -57,7 +57,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   "OutputStreamSource" must {
     "read bytes from OutputStream" in assertAllStagesStopped {
-      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run()
       val s = probe.expectSubscription()
 
       outputStream.write(bytesArray)
@@ -74,7 +74,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           StreamConverters
             .asOutputStream()
             .toMat(Sink.fold[ByteString, ByteString](ByteString.empty)(_ ++ _))(Keep.both)
-            .run
+            .run()
         outputStream.write(bytesArray)
         outputStream.close()
         result.futureValue should be(ByteString(bytesArray))
@@ -82,7 +82,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "not block flushes when buffer is empty" in assertAllStagesStopped {
-      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run()
       val s = probe.expectSubscription()
 
       outputStream.write(bytesArray)
@@ -104,7 +104,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .asOutputStream()
         .toMat(TestSink.probe[ByteString])(Keep.both)
         .withAttributes(Attributes.inputBuffer(16, 16))
-        .run
+        .run()
       val s = probe.expectSubscription()
 
       (1 to 16).foreach { _ =>
@@ -126,7 +126,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "throw error when write after stream is closed" in assertAllStagesStopped {
-      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run()
 
       probe.expectSubscription()
       outputStream.close()
@@ -135,7 +135,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "throw IOException when writing to the stream after the subscriber has cancelled the reactive stream" in assertAllStagesStopped {
-      val (outputStream, sink) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, sink) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run()
 
       val s = sink.expectSubscription()
 
@@ -202,7 +202,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .asOutputStream(timeout)
         .addAttributes(Attributes.inputBuffer(bufSize, bufSize))
         .toMat(TestSink.probe[ByteString])(Keep.both)
-        .run
+        .run()
 
       // fill the buffer up
       (1 to (bufSize - 1)).foreach(outputStream.write)

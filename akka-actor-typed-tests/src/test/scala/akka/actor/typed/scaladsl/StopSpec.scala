@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.PostStop
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class StopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   import BehaviorInterceptor._
@@ -31,7 +32,7 @@ class StopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCa
 
     "execute the post stop" in {
       val probe = TestProbe[Done]()
-      val ref = spawn(Behaviors.receiveMessage[String] {
+      val ref = spawn(Behaviors.receiveMessagePartial[String] {
         case "stop" =>
           Behaviors.stopped { () =>
             probe.ref ! Done
@@ -45,7 +46,7 @@ class StopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCa
       val probe = TestProbe[String]()
       val ref = spawn(
         Behaviors
-          .receiveMessage[String] {
+          .receiveMessagePartial[String] {
             case "stop" =>
               Behaviors.stopped { () =>
                 probe.ref ! "callback"

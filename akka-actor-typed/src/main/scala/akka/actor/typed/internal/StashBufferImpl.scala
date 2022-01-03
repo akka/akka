@@ -1,15 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
-import java.util.function.{ Function => JFunction }
-
-import akka.actor.DeadLetter
-
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+import akka.actor.DeadLetter
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
@@ -19,12 +16,16 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.japi.function.Procedure
 import akka.util.{ unused, ConstantFun }
+import akka.util.OptionVal
+
+import java.util.function.{ Function => JFunction }
+import java.util.function.Predicate
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object StashBufferImpl {
-  private final class Node[T](var next: Node[T], val message: T) {
+  private[akka] final class Node[T](var next: Node[T], val message: T) {
     def apply(f: T => Unit): Unit = f(message)
   }
 
@@ -46,6 +47,8 @@ import akka.util.{ unused, ConstantFun }
   import StashBufferImpl.Node
 
   private var _size: Int = if (_first eq null) 0 else 1
+
+  private var currentBehaviorWhenUnstashInProgress: OptionVal[Behavior[T]] = OptionVal.None
 
   override def isEmpty: Boolean = _first eq null
 
@@ -73,6 +76,13 @@ import akka.util.{ unused, ConstantFun }
 
     _size += 1
     this
+  }
+
+  override def clear(): Unit = {
+    _first = null
+    _last = null
+    _size = 0
+    stashCleared(ctx)
   }
 
   @InternalStableApi
@@ -118,6 +128,21 @@ import akka.util.{ unused, ConstantFun }
 
   override def forEach(f: Procedure[T]): Unit = foreach(f.apply)
 
+  override def contains[U >: T](message: U): Boolean =
+    exists(_ == message)
+
+  override def exists(predicate: T => Boolean): Boolean = {
+    var hasElement = false
+    var node = _first
+    while (node != null && !hasElement) {
+      hasElement = predicate(node.message)
+      node = node.next
+    }
+    hasElement
+  }
+
+  override def anyMatch(predicate: Predicate[T]): Boolean = exists(predicate.test)
+
   override def unstashAll(behavior: Behavior[T]): Behavior[T] = {
     val behav = unstash(behavior, size, ConstantFun.scalaIdentityFunction[T])
     stashCleared(ctx)
@@ -128,15 +153,24 @@ import akka.util.{ unused, ConstantFun }
     if (isEmpty)
       behavior // optimization
     else {
-      val iter = new Iterator[Node[T]] {
-        override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
-        override def next(): Node[T] = {
-          val next = StashBufferImpl.this.dropHeadForUnstash()
-          unstashed(ctx, next)
-          next
-        }
-      }.take(math.min(numberOfMessages, size))
-      interpretUnstashedMessages(behavior, ctx, iter, wrap)
+      // currentBehaviorWhenUnstashInProgress is needed to keep track of current Behavior for Behaviors.same
+      // when unstash is called when a previous unstash is already in progress (in same call stack)
+      val unstashAlreadyInProgress = currentBehaviorWhenUnstashInProgress.isDefined
+      try {
+        val iter = new Iterator[Node[T]] {
+          override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
+
+          override def next(): Node[T] = {
+            val next = StashBufferImpl.this.dropHeadForUnstash()
+            unstashed(ctx, next)
+            next
+          }
+        }.take(math.min(numberOfMessages, size))
+        interpretUnstashedMessages(behavior, ctx, iter, wrap)
+      } finally {
+        if (!unstashAlreadyInProgress)
+          currentBehaviorWhenUnstashInProgress = OptionVal.None
+      }
     }
   }
 
@@ -147,6 +181,7 @@ import akka.util.{ unused, ConstantFun }
       wrap: T => T): Behavior[T] = {
     @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
       val b2 = Behavior.start(b, ctx)
+      currentBehaviorWhenUnstashInProgress = OptionVal.Some(b2)
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
       else {
         val node = messages.next()
@@ -183,7 +218,10 @@ import akka.util.{ unused, ConstantFun }
       if (Behavior.isUnhandled(started))
         throw new IllegalArgumentException("Cannot unstash with unhandled as starting behavior")
       else if (started == BehaviorImpl.same) {
-        ctx.asScala.currentBehavior
+        currentBehaviorWhenUnstashInProgress match {
+          case OptionVal.Some(c) => c
+          case _                 => ctx.asScala.currentBehavior
+        }
       } else started
 
     if (Behavior.isAlive(actualInitialBehavior)) {

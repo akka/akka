@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,29 +7,30 @@ package akka.stream.scaladsl
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import akka.Done
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream._
 import akka.stream.Attributes._
 import akka.stream.Supervision.resumingDecider
-import akka.stream._
 import akka.stream.impl.SinkModule
 import akka.stream.impl.fusing.GroupBy
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestLatch
 import akka.util.ByteString
-import akka.Done
-import akka.NotUsed
-import org.reactivestreams.Publisher
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Promise
 
 object FlowGroupBySpec {
 
@@ -568,9 +569,6 @@ class FlowGroupBySpec extends StreamSpec("""
           promise.success(probe)
           (probe, probe)
         }
-        override protected def newInstance(
-            shape: SinkShape[ByteString]): SinkModule[ByteString, TestSubscriber.Probe[ByteString]] =
-          new ProbeSink(attributes, shape)
         override def withAttributes(attr: Attributes): SinkModule[ByteString, TestSubscriber.Probe[ByteString]] =
           new ProbeSink(attr, amendShape(attr))
       }
@@ -658,7 +656,7 @@ class FlowGroupBySpec extends StreamSpec("""
     "not block all substreams when one is blocked but has a buffer in front" in assertAllStagesStopped {
       case class Elem(id: Int, substream: Int, f: () => Any)
       val queue = Source
-        .queue[Elem](3, OverflowStrategy.backpressure)
+        .queue[Elem](3)
         .groupBy(2, _.substream)
         .buffer(2, OverflowStrategy.backpressure)
         .map { _.f() }

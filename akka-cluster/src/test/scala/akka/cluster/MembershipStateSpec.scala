@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.actor.Address
-import akka.cluster.MemberStatus.Up
-
 import scala.collection.immutable.SortedSet
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.cluster.MemberStatus.Up
 
 class MembershipStateSpec extends AnyWordSpec with Matchers {
   // DC-a is in reverse age order

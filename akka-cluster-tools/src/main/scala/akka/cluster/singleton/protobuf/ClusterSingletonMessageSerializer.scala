@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton.protobuf
+
+import java.io.NotSerializableException
 
 import akka.actor.ExtendedActorSystem
 import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverDone
@@ -11,7 +13,6 @@ import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverToMe
 import akka.cluster.singleton.ClusterSingletonManager.Internal.TakeOverFromMe
 import akka.serialization.BaseSerializer
 import akka.serialization.SerializerWithStringManifest
-import java.io.NotSerializableException
 
 /**
  * INTERNAL API: Serializer of ClusterSingleton messages.

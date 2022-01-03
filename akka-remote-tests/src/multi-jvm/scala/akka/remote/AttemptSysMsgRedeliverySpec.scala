@@ -1,20 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import testkit.MultiNodeConfig
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.Identify
+import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import testkit.MultiNodeConfig
-import akka.actor.PoisonPill
-import com.typesafe.config.ConfigFactory
 
 class AttemptSysMsgRedeliveryMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
@@ -48,21 +50,21 @@ class ArteryAttemptSysMsgRedeliveryMultiJvmNode3
 object AttemptSysMsgRedeliverySpec {
   class Echo extends Actor {
     def receive = {
-      case m => sender ! m
+      case m => sender() ! m
     }
   }
 }
 
 abstract class AttemptSysMsgRedeliverySpec(multiNodeConfig: AttemptSysMsgRedeliveryMultiJvmSpec)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import AttemptSysMsgRedeliverySpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 
   "AttemptSysMsgRedelivery" must {
     "redeliver system message after inactivity" taggedAs LongRunningTest in {
-      system.actorOf(Props[Echo], "echo")
+      system.actorOf(Props[Echo](), "echo")
       enterBarrier("echo-started")
 
       system.actorSelection(node(first) / "user" / "echo") ! Identify(None)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -7,9 +7,10 @@ package akka.remote.artery.compress
 import java.util
 import java.util.Comparator
 
-import akka.util.HashCode
 import org.agrona.collections.Hashing
 import org.agrona.collections.Object2IntHashMap
+
+import akka.util.HashCode
 
 /**
  * INTERNAL API: Versioned compression table to be advertised between systems

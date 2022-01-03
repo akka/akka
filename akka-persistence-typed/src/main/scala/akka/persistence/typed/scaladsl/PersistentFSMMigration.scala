@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.persistence.fsm.PersistentFSM.PersistentFSMSnapshot
 import akka.persistence.typed.SnapshotAdapter
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Helper functions for migration from PersistentFSM to Persistence Typed
@@ -28,7 +28,7 @@ object PersistentFSMMigration {
       override def fromJournal(from: Any): State = {
         from match {
           case PersistentFSMSnapshot(stateIdentifier, data, timeout) => adapt(stateIdentifier, data, timeout)
-          case data: State @unchecked                                => data
+          case data                                                  => data.asInstanceOf[State]
         }
       }
     }

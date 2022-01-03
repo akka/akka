@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
 import akka.annotation.InternalApi
-import akka.cluster.ddata.ORMap._
 import akka.cluster.{ Cluster, UniqueAddress }
+import akka.cluster.ddata.ORMap._
 
 object ORMultiMap {
 

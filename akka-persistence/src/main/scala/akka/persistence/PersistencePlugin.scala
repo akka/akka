@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.tailrec
+import scala.reflect.ClassTag
+import scala.util.Failure
+
+import com.typesafe.config.Config
+
 import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.PersistencePlugin.PluginHolder
-import com.typesafe.config.Config
-
-import scala.annotation.tailrec
-import scala.reflect.ClassTag
-import scala.util.Failure
 
 /**
  * INTERNAL API
@@ -44,7 +45,7 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
     implicit ev: PluginProvider[T, ScalaDsl, JavaDsl]) {
 
   private val plugins = new AtomicReference[Map[String, ExtensionId[PluginHolder[ScalaDsl, JavaDsl]]]](Map.empty)
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[PersistencePlugin[_, _, _]])
 
   @tailrec
   final protected def pluginFor(pluginId: String, readJournalPluginConfig: Config): PluginHolder[ScalaDsl, JavaDsl] = {

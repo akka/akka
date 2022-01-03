@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,21 +7,21 @@ package akka.stream.scaladsl
 import java.nio.ByteOrder
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Random
+
 import akka.stream._
 import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.stage.GraphStage
 import akka.stream.stage._
+import akka.stream.stage.GraphStage
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
 import akka.util.unused
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Random
 
 class FramingSpec extends StreamSpec {
 
@@ -188,6 +188,7 @@ class FramingSpec extends StreamSpec {
         byteOrder match {
           case ByteOrder.LITTLE_ENDIAN => h.take(fieldLength)
           case ByteOrder.BIG_ENDIAN    => h.drop(4 - fieldLength)
+          case unexpected              => throw new RuntimeException(s"Unexpected: $unexpected")
         }
       }
       offset ++ header ++ payload ++ tail
@@ -385,7 +386,7 @@ class FramingSpec extends StreamSpec {
 
       def computeFrameSize(@unused arr: Array[Byte], @unused l: Int): Int = 8
 
-      val bs = ByteString.newBuilder.putInt(0xFF010203).putInt(0x04050607).result
+      val bs = ByteString.newBuilder.putInt(0xFF010203).putInt(0x04050607).result()
 
       val res =
         Source

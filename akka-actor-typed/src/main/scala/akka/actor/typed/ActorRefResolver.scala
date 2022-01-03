@@ -1,13 +1,11 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import akka.actor.ActorRefWithCell
-import akka.actor.ExtendedActorSystem
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
+import akka.actor.{ ActorRefWithCell, ExtendedActorSystem }
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 object ActorRefResolver extends ExtensionId[ActorRefResolver] {
   def get(system: ActorSystem[_]): ActorRefResolver = apply(system)
@@ -75,8 +73,13 @@ abstract class ActorRefResolver extends Extension {
     }
   }
 
-  override def resolveActorRef[T](serializedActorRef: String): ActorRef[T] =
-    classicSystem.provider.resolveActorRef(serializedActorRef)
+  override def resolveActorRef[T](serializedActorRef: String): ActorRef[T] = {
+    val ref = classicSystem.provider.resolveActorRef(serializedActorRef)
+    if (ref eq classicSystem.provider.ignoreRef)
+      classicSystem.toTyped.ignoreRef
+    else
+      ref
+  }
 }
 
 object ActorRefResolverSetup {

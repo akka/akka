@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -9,6 +9,7 @@ import akka.cluster.ClusterEvent.{ CurrentClusterState, MemberUp }
 import akka.cluster.ClusterHeartbeatSender.Heartbeat
 import akka.cluster.ClusterHeartbeatSenderSpec.TestClusterHeartBeatSender
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.util.Version
 
 object ClusterHeartbeatSenderSpec {
   class TestClusterHeartBeatSender(probe: TestProbe) extends ClusterHeartbeatSender {
@@ -34,7 +35,8 @@ class ClusterHeartbeatSenderSpec extends AkkaSpec("""
       val underTest = system.actorOf(Props(new TestClusterHeartBeatSender(probe)))
       underTest ! CurrentClusterState()
       underTest ! MemberUp(
-        Member(UniqueAddress(Address("akka", system.name), 1L), Set("dc-default")).copy(status = MemberStatus.Up))
+        Member(UniqueAddress(Address("akka", system.name), 1L), Set("dc-default"), Version.Zero)
+          .copy(status = MemberStatus.Up))
 
       probe.expectMsgType[Heartbeat].sequenceNr shouldEqual 1
       probe.expectMsgType[Heartbeat].sequenceNr shouldEqual 2

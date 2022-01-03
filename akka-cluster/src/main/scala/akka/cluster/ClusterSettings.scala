@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.collection.immutable
+import scala.concurrent.duration._
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigObject
 
-import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
-import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
-
-import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
+import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
+import akka.util.Version
 
 object ClusterSettings {
   type DataCenter = String
@@ -77,7 +77,10 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
 
   val SeedNodes: immutable.IndexedSeq[Address] =
-    immutableSeq(cc.getStringList("seed-nodes")).map { case AddressFromURIString(address) => address }.toVector
+    immutableSeq(cc.getStringList("seed-nodes")).map {
+      case AddressFromURIString(address) => address
+      case _                             => throw new RuntimeException() // compiler exhaustiveness check pleaser
+    }.toVector
   val SeedNodeTimeout: FiniteDuration = cc.getMillisDuration("seed-node-timeout")
   val RetryUnsuccessfulJoinAfter: Duration = {
     val key = "retry-unsuccessful-join-after"
@@ -134,7 +137,16 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     cc.getMillisDuration("quarantine-removed-node-after")
       .requiring(_ > Duration.Zero, "quarantine-removed-node-after must be > 0")
 
-  val AllowWeaklyUpMembers: Boolean = cc.getBoolean("allow-weakly-up-members")
+  val WeaklyUpAfter: FiniteDuration = {
+    val key = "allow-weakly-up-members"
+    toRootLowerCase(cc.getString(key)) match {
+      case "off" => Duration.Zero
+      case "on"  => 7.seconds // for backwards compatibility when it wasn't a duration
+      case _     => cc.getMillisDuration(key).requiring(_ > Duration.Zero, key + " > 0s, or off")
+    }
+  }
+
+  val AllowWeaklyUpMembers: Boolean = WeaklyUpAfter != Duration.Zero
 
   val SelfDataCenter: DataCenter = cc.getString("multi-data-center.self-data-center")
 
@@ -145,6 +157,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
     configuredRoles + s"$DcRolePrefix$SelfDataCenter"
   }
+
+  val AppVersion: Version =
+    Version(cc.getString("app-version"))
 
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")

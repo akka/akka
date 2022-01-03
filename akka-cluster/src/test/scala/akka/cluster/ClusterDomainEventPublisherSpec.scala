@@ -1,23 +1,25 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
+
 import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.PoisonPill
 import akka.actor.Props
-import akka.cluster.MemberStatus._
-import akka.cluster.InternalClusterAction._
 import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterSettings.DefaultDataCenter
+import akka.cluster.InternalClusterAction._
+import akka.cluster.MemberStatus._
+import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.actor.ActorRef
-import akka.remote.RARP
 import akka.testkit.TestProbe
-import akka.cluster.ClusterSettings.DefaultDataCenter
 
 object ClusterDomainEventPublisherSpec {
   val config = """
@@ -101,7 +103,7 @@ class ClusterDomainEventPublisherSpec
     system.eventStream.subscribe(memberSubscriber.ref, classOf[LeaderChanged])
     system.eventStream.subscribe(memberSubscriber.ref, ClusterShuttingDown.getClass)
 
-    publisher = system.actorOf(Props[ClusterDomainEventPublisher])
+    publisher = system.actorOf(Props[ClusterDomainEventPublisher]())
     publisher ! PublishChanges(state0)
     memberSubscriber.expectMsg(MemberUp(aUp))
     memberSubscriber.expectMsg(LeaderChanged(Some(aUp.address)))

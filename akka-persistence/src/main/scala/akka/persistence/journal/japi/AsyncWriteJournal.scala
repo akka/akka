@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.japi
 
 import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Try
+
 import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal => SAsyncWriteJournal }
 import akka.util.ccompat._
-import scala.concurrent.Future
-import scala.util.Try
-import scala.util.Failure
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Java API: abstract journal, optimized for asynchronous, non-blocking writes.

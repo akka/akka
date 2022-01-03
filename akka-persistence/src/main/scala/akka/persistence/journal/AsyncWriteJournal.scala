@@ -1,22 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
 
-import scala.concurrent.duration._
-
-import akka.actor._
-import akka.pattern.pipe
-import akka.persistence._
-import akka.util.Helpers.toRootLowerCase
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
+import akka.actor._
 import akka.pattern.CircuitBreaker
+import akka.pattern.pipe
+import akka.persistence._
+import akka.util.Helpers.toRootLowerCase
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
@@ -69,6 +68,11 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
         val prepared = Try(preparePersistentBatch(messages))
         val writeResult = (prepared match {
+          case Success(prep) if prep.isEmpty =>
+            // prep is empty when all messages are instances of NonPersistentRepr (used for defer) in that case,
+            // we continue right away without calling the journal plugin (most plugins fail calling head on empty Seq).
+            // Ordering of the replies is handled by Resequencer
+            Future.successful(Nil)
           case Success(prep) =>
             // try in case the asyncWriteMessages throws
             try breaker.withCircuitBreaker(asyncWriteMessages(prep))
@@ -117,7 +121,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
             }
 
           case Failure(e) =>
-            resequencer ! Desequenced(WriteMessagesFailed(e), cctr, persistentActor, self)
+            resequencer ! Desequenced(WriteMessagesFailed(e, atomicWriteCount), cctr, persistentActor, self)
             var n = cctr + 1
             messages.foreach {
               case a: AtomicWrite =>

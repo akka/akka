@@ -4,18 +4,22 @@ Accumulate incoming events until the specified number of elements have been accu
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #grouped }
+@apidoc[Source.grouped](Source) { scala="#grouped(n:Int):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#grouped(int)" }
+@apidoc[Flow.grouped](Flow) { scala="#grouped(n:Int):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#grouped(int)" }
 
-@@@
 
 ## Description
 
 Accumulate incoming events until the specified number of elements have been accumulated and then pass the collection of
 elements downstream.
+
+See also:
+
+* @ref[groupedWeighted](groupedWeighted.md) for a variant that groups based on element weight
+* @ref[groupedWithin](groupedWithin.md) for a variant that groups based on number of elements and a time window
+* @ref[groupedWeightedWithin](groupedWeightedWithin.md) for a variant that groups based on element weight and a time window
 
 ## Examples
 

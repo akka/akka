@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
-import akka.actor.ActorSystem
-import akka.util.ccompat._
+import java.util.concurrent.TimeUnit.MILLISECONDS
+
+import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.reflect.ClassTag
-import scala.collection.immutable
-import java.util.concurrent.TimeUnit.MILLISECONDS
+
+import akka.actor.ActorSystem
+import akka.util.ccompat._
 
 package object testkit {
   @ccompatUsedUntil213

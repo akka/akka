@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
@@ -12,8 +12,6 @@ import jdocs.AbstractJavaTest;
 import static jdocs.actor.Messages.Swap.Swap;
 import static jdocs.actor.Messages.*;
 import akka.actor.CoordinatedShutdown;
-
-import akka.Done;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -524,14 +522,17 @@ public class ActorDocTest extends AbstractJavaTest {
     // #creating-props-deprecated
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  // Commented out because this 'Props.create' overload is now deprecated
+  // @Test(expected = IllegalArgumentException.class)
   public void creatingPropsIllegal() {
+    /*
     // #creating-props-illegal
     // This will throw an IllegalArgumentException since some runtime
     // type information of the lambda is erased.
     // Use Props.create(actorClass, Creator) instead.
     Props props = Props.create(() -> new ActorWithArgs("arg"));
     // #creating-props-illegal
+    */
   }
 
   public
@@ -847,51 +848,11 @@ public class ActorDocTest extends AbstractJavaTest {
     };
   }
 
-  private CompletionStage<Done> cleanup() {
-    return null;
-  }
-
-  @Test
-  public void coordinatedShutdown() {
-    final ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
-    // #coordinated-shutdown-addTask
-    CoordinatedShutdown.get(system)
-        .addTask(
-            CoordinatedShutdown.PhaseBeforeServiceUnbind(),
-            "someTaskName",
-            () -> {
-              return akka.pattern.Patterns.ask(someActor, "stop", Duration.ofSeconds(5))
-                  .thenApply(reply -> Done.getInstance());
-            });
-    // #coordinated-shutdown-addTask
-
-    // #coordinated-shutdown-cancellable
-    Cancellable cancellable =
-        CoordinatedShutdown.get(system)
-            .addCancellableTask(
-                CoordinatedShutdown.PhaseBeforeServiceUnbind(), "someTaskCleanup", () -> cleanup());
-    // much later...
-    cancellable.cancel();
-    // #coordinated-shutdown-cancellable
-
-    // #coordinated-shutdown-jvm-hook
-    CoordinatedShutdown.get(system)
-        .addJvmShutdownHook(() -> System.out.println("custom JVM shutdown hook..."));
-    // #coordinated-shutdown-jvm-hook
-
-    // don't run this
-    if (false) {
-      // #coordinated-shutdown-run
-      CompletionStage<Done> done =
-          CoordinatedShutdown.get(system).runAll(CoordinatedShutdown.unknownReason());
-      // #coordinated-shutdown-run
-    }
-  }
-
   @Test
   public void coordinatedShutdownActorTermination() {
     ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
     someActor.tell(PoisonPill.getInstance(), ActorRef.noSender());
+    // https://github.com/akka/akka/issues/29056
     // #coordinated-shutdown-addActorTerminationTask
     CoordinatedShutdown.get(system)
         .addActorTerminationTask(

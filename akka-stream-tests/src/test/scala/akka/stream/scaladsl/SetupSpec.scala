@@ -1,17 +1,16 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
+
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
-import com.github.ghik.silencer.silent
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class SetupSpec extends StreamSpec {
-
-  import system.dispatcher
 
   "Source.setup" should {
 
@@ -48,7 +47,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      source.runWith(Sink.head).futureValue shouldBe Some("my-name")
+      source.runWith(Sink.head).futureValue shouldBe Some("setup-my-name")
     }
 
     "propagate attributes when nested" in {
@@ -60,7 +59,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      source.runWith(Sink.head).futureValue shouldBe Some("my-name")
+      source.runWith(Sink.head).futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "handle factory failure" in {
@@ -122,7 +121,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("my-name")
+      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-my-name")
     }
 
     "propagate attributes when nested" in {
@@ -134,7 +133,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("my-name")
+      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "handle factory failure" in {
@@ -168,7 +167,7 @@ class SetupSpec extends StreamSpec {
         Sink.fold(mat.isShutdown)(Keep.left)
       }
 
-      Source.empty.runWith(sink).flatMap(identity).futureValue shouldBe false
+      Source.empty.runWith(sink).flatten.futureValue shouldBe false
     }
 
     "expose attributes" in {
@@ -176,7 +175,7 @@ class SetupSpec extends StreamSpec {
         Sink.fold(attr.attributeList)(Keep.left)
       }
 
-      Source.empty.runWith(sink).flatMap(identity).futureValue should not be empty
+      Source.empty.runWith(sink).flatten.futureValue should not be empty
     }
 
     "propagate materialized value" in {
@@ -184,7 +183,7 @@ class SetupSpec extends StreamSpec {
         Sink.fold(NotUsed)(Keep.left)
       }
 
-      Source.empty.runWith(sink).flatMap(identity).futureValue shouldBe NotUsed
+      Source.empty.runWith(sink).flatten.futureValue shouldBe NotUsed
     }
 
     "propagate attributes" in {
@@ -194,7 +193,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatMap(identity).futureValue shouldBe Some("my-name")
+      Source.empty.runWith(sink).flatten.futureValue shouldBe Some("my-name-setup")
     }
 
     "propagate attributes when nested" in {
@@ -206,7 +205,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatMap(identity).flatMap(identity).futureValue shouldBe Some("my-name")
+      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some("my-name-setup-setup")
     }
 
     "handle factory failure" in {

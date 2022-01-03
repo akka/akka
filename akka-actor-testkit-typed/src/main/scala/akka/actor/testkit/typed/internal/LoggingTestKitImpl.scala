@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
@@ -10,6 +10,8 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
 
+import org.slf4j.event.Level
+
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.javadsl
@@ -17,13 +19,13 @@ import akka.actor.testkit.typed.scaladsl
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.testkit.TestKit
-import org.slf4j.event.Level
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object LoggingTestKitImpl {
-  def empty: LoggingTestKitImpl = new LoggingTestKitImpl(1, None, None, None, None, None, None, Map.empty, None)
+  def empty: LoggingTestKitImpl =
+    new LoggingTestKitImpl(1, None, None, None, None, None, None, Map.empty, checkExcess = true, None)
 }
 
 /**
@@ -38,6 +40,7 @@ import org.slf4j.event.Level
     messageRegex: Option[Regex],
     cause: Option[Class[_ <: Throwable]],
     mdc: Map[String, String],
+    checkExcess: Boolean,
     custom: Option[Function[LoggingEvent, Boolean]])
     extends javadsl.LoggingTestKit
     with scaladsl.LoggingTestKit {
@@ -91,14 +94,14 @@ import org.slf4j.event.Level
     try {
       val result = code
 
-      // wait some more when occurrences=0 to find asynchronous exceess messages
+      // wait some more when occurrences=0 to find asynchronous excess messages
       if (occurrences == 0)
         awaitNoExcess(settings.ExpectNoMessageDefaultTimeout)
 
       if (!awaitDone(settings.FilterLeeway))
         if (todo > 0)
           throw new AssertionError(s"Timeout (${settings.FilterLeeway}) waiting for $todo messages on $this.")
-        else
+        else if (checkExcess)
           throw new AssertionError(s"Received ${-todo} excess messages on $this.")
       result
     } finally {
@@ -150,6 +153,9 @@ import org.slf4j.event.Level
     import akka.util.ccompat.JavaConverters._
     withMdc(newMdc.asScala.toMap)
   }
+
+  override def withCheckExcess(check: Boolean): LoggingTestKitImpl =
+    copy(checkExcess = check)
 
   override def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingTestKitImpl =
     copy(custom = Option(newCustom))

@@ -271,6 +271,9 @@ Scala
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-protocol }
 
+Note that the response message hierarchy in this case could be completely avoided by using the @apiDoc[StatusReply] API 
+instead (see @ref[Generic Response Wrapper](interaction-patterns.md#generic-response-wrapper)).
+
 ## Public versus private messages
 
 Often an actor has some messages that are only for its internal implementation and not part of the public
@@ -387,23 +390,41 @@ in the pattern match and return `Behaviors.unhandled`.
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-unhandled }
 
-One thing to be aware of is the exhaustiveness check is not enabled when there is a guard condition in any of the
-pattern match cases.
-
-Scala
-:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-guard }
-
-Therefore, for the purposes of exhaustivity checking, it is be better to not use guards and instead move the `if`s after the `=>`.
-
-Scala
-:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-without-guard }
-
 It's recommended to use the `sealed` trait and total functions with exhaustiveness check to detect mistakes
 of forgetting to handle some messages. Sometimes that can be inconvenient and then you can use a `PartialFunction`
 with `Behaviors.receivePartial` or `Behaviors.receiveMessagePartial`
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-partial }
+
+@@@
+
+@@@ div {.group-scala}
+
+## How to compose Partial Functions
+
+Following up from previous section, there are times when one might want to combine different `PartialFunction`s into one `Behavior`.
+
+A good use case for composing two or more `PartialFunction`s is when there is a bit of behavior that repeats across different states of the Actor. Below, you can find a simplified example for this use case.
+
+The Command definition is still highly recommended be kept within a `sealed` Trait:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #messages-sealed-composition }
+
+In this particular case, the Behavior that is repeating over is the one in charge to handle
+the `GetValue` Command, as it behaves the same regardless of the Actor's internal state.
+Instead of defining the specific handlers as a `Behavior`, we can define them as a `PartialFunction`:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #get-handler-partial #set-handler-non-zero-partial #set-handler-zero-partial }
+
+Finally, we can go on defining the two different behaviors for this specific actor. For each `Behavior` we would go and concatenate all needed `PartialFunction` instances with `orElse` to finally apply the command to the resulting one:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #top-level-behaviors-partial }
+
+Even though in this particular example we could use `receiveMessage` as we cover all cases, we use `receiveMessagePartial` instead to cover potential future unhandled message cases.
 
 @@@
 
@@ -446,8 +467,8 @@ be good to know that it's optional in case you would prefer a different approach
 * direct processing because there is only one message type
 * if or switch statements
 * annotation processor
-* [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching)
-* future pattern matching in Java ([JEP 305](http://openjdk.java.net/jeps/305))
+* [Vavr Pattern Matching DSL](https://www.vavr.io/vavr-docs/#_pattern_matching)
+* pattern matching since JDK 14 ([JEP 305](https://openjdk.java.net/jeps/305))
 
 In `Behaviors` there are `receive`, `receiveMessage` and `receiveSignal` factory methods that takes functions
 instead of using the `ReceiveBuilder`, which is the `receive` with the class parameter.
@@ -456,6 +477,29 @@ In `AbstractBehavior` you can return your own `akka.actor.typed.javadsl.Receive`
 of using `newReceiveBuilder`. Implement the `receiveMessage` and `receiveSignal` in the `Receive` subclass.
 
 @@@
+
+## Nesting setup
+
+When an actor behavior needs more than one of `setup`, `withTimers` and `withStash` the methods can be nested to access
+the needed dependencies:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #nesting }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #nesting }
+
+The order of the nesting does not change the behavior as long as there is no additional logic in any other function than the innermost one. 
+It can be nice to default to put `setup` outermost as that is the least likely block that will be removed if the actor logic changes. 
+
+Note that adding `supervise` to the mix is different as it will restart the behavior it wraps, but not the behavior around itself:   
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #nesting-supervise }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #nesting-supervise }
+
 
 ## Additional naming conventions
 

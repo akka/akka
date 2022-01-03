@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.snapshot.local
 
-import akka.persistence.CapabilityFlag
 import com.typesafe.config.ConfigFactory
+
+import akka.persistence.CapabilityFlag
 import akka.persistence.PluginCleanup
 import akka.persistence.snapshot.SnapshotStoreSpec
 
@@ -19,5 +20,5 @@ class LocalSnapshotStoreSpec
     """))
     with PluginCleanup {
 
-  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on()
 }

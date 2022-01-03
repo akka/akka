@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Try
-import akka.testkit._
-import akka.cluster.metrics.StandardMetrics._
-import com.github.ghik.silencer.silent
 
-@silent
+import scala.annotation.nowarn
+
+import akka.cluster.metrics.StandardMetrics._
+import akka.testkit._
+
+@nowarn
 class MetricsCollectorSpec
     extends AkkaSpec(MetricsConfig.defaultEnabled)
     with ImplicitSender
@@ -23,8 +25,8 @@ class MetricsCollectorSpec
 
     "merge 2 metrics that are tracking the same metric" in {
       for (_ <- 1 to 20) {
-        val sample1 = collector.sample.metrics
-        val sample2 = collector.sample.metrics
+        val sample1 = collector.sample().metrics
+        val sample2 = collector.sample().metrics
         sample2.flatMap(latest =>
           sample1.collect {
             case peer if latest.sameAs(peer) =>
@@ -34,8 +36,8 @@ class MetricsCollectorSpec
               m
           })
 
-        val sample3 = collector.sample.metrics
-        val sample4 = collector.sample.metrics
+        val sample3 = collector.sample().metrics
+        val sample4 = collector.sample().metrics
         sample4.flatMap(latest =>
           sample3.collect {
             case peer if latest.sameAs(peer) =>
@@ -55,7 +57,7 @@ class MetricsCollectorSpec
     }
 
     "collect accurate metrics for a node" in {
-      val sample = collector.sample
+      val sample = collector.sample()
       val metrics = sample.metrics.collect { case m                        => (m.name, m.value) }
       val used = metrics.collectFirst { case (HeapMemoryUsed, b)           => b }
       val committed = metrics.collectFirst { case (HeapMemoryCommitted, b) => b }
@@ -93,7 +95,7 @@ class MetricsCollectorSpec
 
     "collect 50 node metrics samples in an acceptable duration" taggedAs LongRunningTest in within(10 seconds) {
       (1 to 50).foreach { _ =>
-        val sample = collector.sample
+        val sample = collector.sample()
         sample.metrics.size should be >= 3
         Thread.sleep(100)
       }

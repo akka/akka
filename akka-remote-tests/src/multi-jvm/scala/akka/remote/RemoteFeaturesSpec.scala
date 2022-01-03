@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -27,7 +29,6 @@ import akka.routing.RoundRobinGroup
 import akka.routing.RoundRobinPool
 import akka.routing.RoutedActorRef
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 
 class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends MultiNodeConfig {
 
@@ -43,7 +44,6 @@ class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends Mu
       akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
-      akka.remote.artery.advanced.flight-recorder.enabled = off
       """).withFallback(RemotingMultiNodeSpec.commonConfig)
 
   commonConfig(debugConfig(on = false).withFallback(baseConfig))
@@ -230,8 +230,9 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
 
   import RemoteWatcher._
-  import akka.remote.routing.RemoteRoundRobinSpec._
   import multiNodeConfig._
+
+  import akka.remote.routing.RemoteRoundRobinSpec._
 
   override def initialParticipants: Int = roles.size
 
@@ -273,7 +274,7 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
     "send messages to remote paths" in {
 
       runOn(first, second, third) {
-        system.actorOf(Props[SomeActor], name = "target-" + myself.name)
+        system.actorOf(Props[SomeActor](), name = "target-" + myself.name)
         enterBarrier("start", "end")
       }
 
@@ -311,7 +312,7 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]), "service-hello")
+        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]()), "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         for (_ <- 0 until iterationCount; _ <- 0 until workerInstances) {

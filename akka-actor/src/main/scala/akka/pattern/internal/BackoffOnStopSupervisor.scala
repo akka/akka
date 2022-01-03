@@ -1,15 +1,23 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern.internal
 
-import akka.actor.SupervisorStrategy.{ Directive, Escalate }
-import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
-import akka.annotation.InternalApi
-import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
-
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
+import akka.actor.SupervisorStrategy.{ Directive, Escalate }
+import akka.annotation.InternalApi
+import akka.pattern.{
+  BackoffReset,
+  BackoffSupervisor,
+  ForwardDeathLetters,
+  ForwardTo,
+  HandleBackoff,
+  HandlingWhileStopped,
+  ReplyWith
+}
 
 /**
  * INTERNAL API
@@ -26,7 +34,7 @@ import scala.concurrent.duration.FiniteDuration
     val reset: BackoffReset,
     randomFactor: Double,
     strategy: SupervisorStrategy,
-    replyWhileStopped: Option[Any],
+    handlingWhileStopped: HandlingWhileStopped,
     finalStopMessage: Option[Any => Boolean])
     extends Actor
     with HandleBackoff
@@ -35,16 +43,19 @@ import scala.concurrent.duration.FiniteDuration
   import BackoffSupervisor._
   import context.dispatcher
 
-  override val supervisorStrategy = strategy match {
-    case oneForOne: OneForOneStrategy =>
-      OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
-        case ex =>
-          val defaultDirective: Directive =
-            super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) => Escalate)
+  override val supervisorStrategy: SupervisorStrategy = {
+    val decider = super.supervisorStrategy.decider
+    strategy match {
+      case oneForOne: OneForOneStrategy =>
+        OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
+          case ex =>
+            val defaultDirective: Directive =
+              decider.applyOrElse(ex, (_: Any) => Escalate)
 
-          strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
-      }
-    case s => s
+            strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
+        }
+      case s => s
+    }
   }
 
   def onTerminated: Receive = {
@@ -84,13 +95,14 @@ import scala.concurrent.duration.FiniteDuration
         case None      =>
       }
     case None =>
-      replyWhileStopped match {
-        case Some(r) => sender() ! r
-        case None    => context.system.deadLetters.forward(msg)
-      }
       finalStopMessage match {
         case Some(fsm) if fsm(msg) => context.stop(self)
-        case _                     =>
+        case _ =>
+          handlingWhileStopped match {
+            case ForwardDeathLetters => context.system.deadLetters.forward(msg)
+            case ForwardTo(h)        => h.forward(msg)
+            case ReplyWith(r)        => sender() ! r
+          }
       }
   }
 }

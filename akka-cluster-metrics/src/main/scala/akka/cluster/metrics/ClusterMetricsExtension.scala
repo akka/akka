@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.SupervisorStrategy
-import akka.event.LoggingAdapter
-import akka.event.Logging
+import scala.collection.immutable
+
 import com.typesafe.config.Config
 
-import scala.collection.immutable
-import akka.actor.Props
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.Deploy
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.Props
+import akka.actor.SupervisorStrategy
+import akka.event.Logging
+import akka.event.LoggingAdapter
 
 /**
  * Cluster metrics extension.
@@ -51,7 +52,7 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
       SupervisorStrategyProvider,
       immutable.Seq(classOf[Config] -> SupervisorStrategyConfiguration))
     .getOrElse {
-      val log: LoggingAdapter = Logging(system, getClass)
+      val log: LoggingAdapter = Logging(system, classOf[ClusterMetricsExtension])
       log.error(s"Configured strategy provider ${SupervisorStrategyProvider} failed to load, using default ${classOf[
         ClusterMetricsStrategy].getName}.")
       new ClusterMetricsStrategy(SupervisorStrategyConfiguration)

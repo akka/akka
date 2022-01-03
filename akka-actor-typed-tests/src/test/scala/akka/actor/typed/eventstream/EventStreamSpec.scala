@@ -1,19 +1,20 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.eventstream
 
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 class EventStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-  import EventStreamSpec._
   import EventStream._
+  import EventStreamSpec._
 
   private final val ShortWait = 100.millis
 
@@ -45,9 +46,9 @@ class EventStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
   }
 
   "a system event stream subscriber" must {
-    val rootEventListener = testKit.createTestProbe[Root]
-    val level1EventListener = testKit.createTestProbe[Level1]
-    val rootEventListenerForLevel1 = testKit.createTestProbe[Root]
+    val rootEventListener = testKit.createTestProbe[Root]()
+    val level1EventListener = testKit.createTestProbe[Level1]()
+    val rootEventListenerForLevel1 = testKit.createTestProbe[Root]()
     testKit.system.eventStream ! Subscribe(rootEventListener.ref)
     testKit.system.eventStream ! Subscribe(level1EventListener.ref)
     testKit.system.eventStream ! Subscribe[Level1](rootEventListenerForLevel1.ref)

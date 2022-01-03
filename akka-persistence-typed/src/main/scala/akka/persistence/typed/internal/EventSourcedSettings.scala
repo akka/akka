@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -8,10 +8,11 @@ import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
-import com.typesafe.config.Config
 
 /**
  * INTERNAL API
@@ -40,6 +41,8 @@ import com.typesafe.config.Config
     val recoveryEventTimeout: FiniteDuration =
       journalConfig.getDuration("recovery-event-timeout", TimeUnit.MILLISECONDS).millis
 
+    val useContextLoggerForInternalLogging = typedConfig.getBoolean("use-context-logger-for-internal-logging")
+
     Persistence.verifyPluginConfigExists(config, snapshotPluginId, "Snapshot store")
 
     EventSourcedSettings(
@@ -48,7 +51,8 @@ import com.typesafe.config.Config
       logOnStashing = logOnStashing,
       recoveryEventTimeout,
       journalPluginId,
-      snapshotPluginId)
+      snapshotPluginId,
+      useContextLoggerForInternalLogging)
   }
 
   private def journalConfigFor(config: Config, journalPluginId: String): Config = {
@@ -75,7 +79,8 @@ private[akka] final case class EventSourcedSettings(
     logOnStashing: Boolean,
     recoveryEventTimeout: FiniteDuration,
     journalPluginId: String,
-    snapshotPluginId: String) {
+    snapshotPluginId: String,
+    useContextLoggerForInternalLogging: Boolean) {
 
   require(journalPluginId != null, "journal plugin id must not be null; use empty string for 'default' journal")
   require(

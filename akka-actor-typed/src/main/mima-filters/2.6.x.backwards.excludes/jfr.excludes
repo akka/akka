@@ -1,0 +1,2 @@
+# JDK9+ classes for JFR
+ProblemFilters.exclude[Problem]("akka.actor.typed.internal.jfr.*")

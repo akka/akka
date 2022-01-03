@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.routing
 
+import scala.concurrent.Await
+
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
+import akka.remote.testkit.MultiNodeConfig
 import akka.routing.{ Broadcast, ConsistentHashingGroup, GetRoutees, Routees }
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.testkit._
-
-import scala.concurrent.Await
 
 object ClusterConsistentHashingGroupMultiJvmSpec extends MultiNodeConfig {
 
@@ -41,8 +41,7 @@ class ClusterConsistentHashingGroupMultiJvmNode2 extends ClusterConsistentHashin
 class ClusterConsistentHashingGroupMultiJvmNode3 extends ClusterConsistentHashingGroupSpec
 
 abstract class ClusterConsistentHashingGroupSpec
-    extends MultiNodeSpec(ClusterConsistentHashingGroupMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterConsistentHashingGroupMultiJvmSpec)
     with ImplicitSender
     with DefaultTimeout {
   import ClusterConsistentHashingGroupMultiJvmSpec._
@@ -52,7 +51,7 @@ abstract class ClusterConsistentHashingGroupSpec
 
   "A cluster router with a consistent hashing group" must {
     "start cluster with 3 nodes" taggedAs LongRunningTest in {
-      system.actorOf(Props[Destination], "dest")
+      system.actorOf(Props[Destination](), "dest")
       awaitClusterUp(first, second, third)
       enterBarrier("after-1")
     }

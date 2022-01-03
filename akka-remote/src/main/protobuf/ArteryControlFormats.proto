@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 syntax = "proto2";
@@ -86,4 +86,8 @@ message UniqueAddress {
 // RemoteWatcher.ArteryHeartbeatRsp
 message ArteryHeartbeatRsp {
   required uint64 uid = 1;
+}
+
+message FlushAck {
+  optional int32 expectedAcks = 1;
 }

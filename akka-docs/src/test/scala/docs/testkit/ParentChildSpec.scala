@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.testkit
@@ -21,7 +21,7 @@ import org.scalatest.BeforeAndAfterAll
  */
 //#test-example
 class Parent extends Actor {
-  val child = context.actorOf(Props[Child], "child")
+  val child = context.actorOf(Props[Child](), "child")
   var ponged = false
 
   def receive = {
@@ -71,12 +71,12 @@ class GenericDependentParent(childMaker: ActorRefFactory => ActorRef) extends Ac
  */
 class MockedChild extends Actor {
   def receive = {
-    case "ping" => sender ! "pong"
+    case "ping" => sender() ! "pong"
   }
 }
 
 class ParentChildSpec extends AnyWordSpec with Matchers with TestKitBase with BeforeAndAfterAll {
-  implicit lazy val system = ActorSystem("ParentChildSpec")
+  implicit lazy val system: ActorSystem = ActorSystem("ParentChildSpec")
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -139,8 +139,8 @@ class ParentChildSpec extends AnyWordSpec with Matchers with TestKitBase with Be
       val parent = system.actorOf(Props(new Actor {
         val child = context.actorOf(Props(new Child), "child")
         def receive = {
-          case x if sender == child => proxy.ref.forward(x)
-          case x                    => child.forward(x)
+          case x if sender() == child => proxy.ref.forward(x)
+          case x                      => child.forward(x)
         }
       }))
 

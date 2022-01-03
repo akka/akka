@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package doc.akka.serialization.jackson.v2c
@@ -16,7 +16,7 @@ class ItemAddedMigration extends JacksonMigration {
   override def transform(fromVersion: Int, json: JsonNode): JsonNode = {
     val root = json.asInstanceOf[ObjectNode]
     if (fromVersion <= 1) {
-      root.set("itemId", root.get("productId"))
+      root.set[JsonNode]("itemId", root.get("productId"))
       root.remove("productId")
     }
     root

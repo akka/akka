@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
 
-import akka.testkit._
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+
+import akka.testkit._
 
 class CircuitBreakerMTSpec extends AkkaSpec {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
   "A circuit breaker being called by many threads" must {
     val callTimeout = 2.second.dilated
     val resetTimeout = 3.seconds.dilated

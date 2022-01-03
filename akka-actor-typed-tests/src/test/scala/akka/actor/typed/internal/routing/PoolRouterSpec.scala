@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal.routing
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ ActorRef, Behavior, DispatcherSelector }
 import akka.actor.typed.scaladsl.{ Behaviors, Routers }
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object PoolRouterSpec {
 

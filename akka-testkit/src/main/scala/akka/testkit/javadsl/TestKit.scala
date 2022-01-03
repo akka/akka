@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit.javadsl
 
-import java.util.function.{ Supplier, Function => JFunction }
 import java.util.{ List => JList }
-
-import akka.actor._
-import akka.testkit.{ TestActor, TestDuration, TestProbe }
-import akka.util.JavaDurationConverters._
+import java.util.function.{ Supplier, Function => JFunction }
 
 import scala.annotation.varargs
-import akka.util.ccompat.JavaConverters._
-import com.github.ghik.silencer.silent
-
 import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.testkit.{ TestActor, TestDuration, TestProbe }
+import akka.util.JavaDurationConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Java API: Test kit for testing actors. Inheriting from this class enables
@@ -534,7 +535,7 @@ class TestKit(system: ActorSystem) {
    * Use this variant to implement more complicated or conditional
    * processing.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def expectMsgPF[T](max: java.time.Duration, hint: String, f: JFunction[Any, T]): T = expectMsgPF(max.asScala, hint, f)
 
   /**
@@ -728,7 +729,7 @@ class TestKit(system: ActorSystem) {
    * @return the last received message, i.e. the first one for which the
    *         partial function returned true
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def fishForMessage(max: java.time.Duration, hint: String, f: JFunction[Any, Boolean]): Any =
     fishForMessage(max.asScala, hint, f)
 
@@ -746,7 +747,7 @@ class TestKit(system: ActorSystem) {
   /**
    * Same as `fishForMessage`, but gets a different partial function and returns properly typed message.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def fishForSpecificMessage[T](max: java.time.Duration, hint: String, f: JFunction[Any, T]): T =
     fishForSpecificMessage(max.asScala, hint, f)
 
@@ -931,7 +932,8 @@ object TestKit {
  * This class is used internal to [[akka.testkit.javadsl.TestKit]] and
  * should not be extended by client code directly.
  */
-private abstract class CachingPartialFunction[A, B] extends scala.runtime.AbstractPartialFunction[A, B] {
+@InternalApi
+private[akka] abstract class CachingPartialFunction[A, B] extends scala.runtime.AbstractPartialFunction[A, B] {
   import akka.japi.JavaPartialFunction._
 
   @throws(classOf[Exception])

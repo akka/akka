@@ -1,0 +1,4 @@
+# Changes to internal/private/do not extend
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.scaladsl.EventSourcedBehavior.withReplication")
+ProblemFilters.exclude[Problem]("akka.persistence.typed.internal.*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.scaladsl.EventSourcedBehavior.withEventPublishing")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 syntax = "proto2";
@@ -21,6 +21,7 @@ message PersistentMessage {
   optional string manifest = 12;
   optional string writerUuid = 13;
   optional sint64 timestamp = 14;
+  optional PersistentPayload metadata = 15;
 }
 
 message PersistentPayload {

@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.actor.InternalActorRef
-import akka.util.OptionVal
 import akka.actor.ActorRef
+import akka.actor.InternalActorRef
 import akka.actor.NoSerializationVerificationNeeded
+import akka.util.OptionVal
 
 /**
  * INTERNAL API

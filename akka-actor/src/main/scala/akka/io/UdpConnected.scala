@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -8,12 +8,14 @@ import java.lang.{ Iterable => JIterable }
 import java.net.InetSocketAddress
 
 import scala.collection.immutable
+
+import scala.annotation.nowarn
+
+import akka.actor._
 import akka.io.Inet.SocketOption
 import akka.io.Udp.UdpSettings
 import akka.util.ByteString
-import akka.actor._
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
 
 /**
  * UDP Extension for Akka’s IO layer.
@@ -23,7 +25,7 @@ import com.github.ghik.silencer.silent
  * from whom data can be received. For “unconnected” UDP mode see [[Udp]].
  *
  * For a full description of the design and philosophy behind this IO
- * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
+ * implementation please refer to <a href="https://akka.io/docs/">the Akka online documentation</a>.
  *
  * The Java API for generating UDP commands is available at [[UdpConnectedMessage]].
  */
@@ -92,7 +94,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * which is restricted to sending to and receiving from the given `remoteAddress`.
    * All received datagrams will be sent to the designated `handler` actor.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final case class Connect(
       handler: ActorRef,
       remoteAddress: InetSocketAddress,
@@ -180,8 +182,8 @@ class UdpConnectedExt(system: ExtendedActorSystem) extends IO.Extension {
  * Java API: factory methods for the message types used when communicating with the UdpConnected service.
  */
 object UdpConnectedMessage {
-  import language.implicitConversions
   import UdpConnected._
+  import language.implicitConversions
 
   /**
    * Send this message to the [[UdpExt#manager]] in order to bind to a local

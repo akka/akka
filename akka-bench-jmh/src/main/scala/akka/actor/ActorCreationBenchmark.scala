@@ -1,13 +1,15 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
-import org.openjdk.jmh.annotations._
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
 
 /*
 regex checking:
@@ -26,7 +28,7 @@ hand checking:
 class ActorCreationBenchmark {
   implicit val system: ActorSystem = ActorSystem()
 
-  final val props = Props[MyActor]
+  final val props = Props[MyActor]()
 
   var i = 1
   def name = {

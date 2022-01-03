@@ -1,10 +1,13 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
@@ -18,7 +21,6 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit._
 import akka.util.ccompat._
-import com.typesafe.config.ConfigFactory
 
 @ccompatUsedUntil213
 object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {

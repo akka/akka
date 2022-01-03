@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -17,6 +17,7 @@ import scala.io.StdIn.readLine
 //#imports
 
 import akka.testkit.AkkaSpec
+import scala.concurrent.ExecutionContext
 
 object TwitterStreamQuickstartDocSpec {
   //#fiddle_code
@@ -70,7 +71,7 @@ object TwitterStreamQuickstartDocSpec {
 class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
 
-  implicit val executionContext = system.dispatcher
+  implicit val executionContext: ExecutionContext = system.dispatcher
 
   // Disable println
   def println(s: Any): Unit = ()
@@ -79,7 +80,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#fiddle_code
     //#first-sample
     //#system-setup
-    implicit val system = ActorSystem("reactive-tweets")
+    implicit val system: ActorSystem = ActorSystem("reactive-tweets")
     //#system-setup
     //#first-sample
 

@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
+import scala.runtime.AbstractFunction2
+
+import scala.annotation.nowarn
+
 import akka.actor.Address
-import MemberStatus._
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
-import com.github.ghik.silencer.silent
-
-import scala.runtime.AbstractFunction2
+import akka.cluster.MemberStatus._
+import akka.util.Version
 
 /**
  * Represents the address, current status, and roles of a cluster member node.
@@ -23,7 +25,8 @@ class Member private[cluster] (
     val uniqueAddress: UniqueAddress,
     private[cluster] val upNumber: Int, // INTERNAL API
     val status: MemberStatus,
-    val roles: Set[String])
+    val roles: Set[String],
+    val appVersion: Version)
     extends Serializable {
 
   lazy val dataCenter: DataCenter = roles
@@ -33,23 +36,22 @@ class Member private[cluster] (
 
   def address: Address = uniqueAddress.address
 
-  override def hashCode = uniqueAddress.##
-  override def equals(other: Any) = other match {
+  override def hashCode: Int = uniqueAddress.##
+  override def equals(other: Any): Boolean = other match {
     case m: Member => uniqueAddress == m.uniqueAddress
     case _         => false
   }
-  override def toString =
-    if (dataCenter == ClusterSettings.DefaultDataCenter)
-      s"Member(address = $address, status = $status)"
-    else
-      s"Member(address = $address, dataCenter = $dataCenter, status = $status)"
+  override def toString: String = {
+    s"Member($address, $status${if (dataCenter == ClusterSettings.DefaultDataCenter) "" else s", $dataCenter"}${if (appVersion == Version.Zero) ""
+    else s", $appVersion"})"
+  }
 
   def hasRole(role: String): Boolean = roles.contains(role)
 
   /**
    * Java API
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
 
@@ -82,12 +84,12 @@ class Member private[cluster] (
     if (status == oldStatus) this
     else {
       require(allowedTransitions(oldStatus)(status), s"Invalid member status transition [ ${this} -> ${status}]")
-      new Member(uniqueAddress, upNumber, status, roles)
+      new Member(uniqueAddress, upNumber, status, roles, appVersion)
     }
   }
 
   def copyUp(upNumber: Int): Member = {
-    new Member(uniqueAddress, upNumber, status, roles).copy(Up)
+    new Member(uniqueAddress, upNumber, status, roles, appVersion).copy(Up)
   }
 }
 
@@ -102,14 +104,15 @@ object Member {
    * INTERNAL API
    * Create a new member with status Joining.
    */
-  private[akka] def apply(uniqueAddress: UniqueAddress, roles: Set[String]): Member =
-    new Member(uniqueAddress, Int.MaxValue, Joining, roles)
+  @InternalApi
+  private[akka] def apply(uniqueAddress: UniqueAddress, roles: Set[String], appVersion: Version): Member =
+    new Member(uniqueAddress, Int.MaxValue, Joining, roles, appVersion)
 
   /**
    * INTERNAL API
    */
   private[cluster] def removed(node: UniqueAddress): Member =
-    new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.DcRolePrefix + "-N/A"))
+    new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.DcRolePrefix + "-N/A"), Version.Zero)
 
   /**
    * `Address` ordering type class, sorts addresses by host and port.
@@ -192,6 +195,7 @@ object Member {
 
   /**
    * Picks the Member with the highest "priority" MemberStatus.
+   * Where highest priority is furthest along the membership state machine
    */
   def highestPriorityOf(m1: Member, m2: Member): Member = {
     if (m1.status == m2.status)
@@ -199,19 +203,23 @@ object Member {
       if (m1.isOlderThan(m2)) m1 else m2
     else
       (m1.status, m2.status) match {
-        case (Removed, _)  => m1
-        case (_, Removed)  => m2
-        case (Down, _)     => m1
-        case (_, Down)     => m2
-        case (Exiting, _)  => m1
-        case (_, Exiting)  => m2
-        case (Leaving, _)  => m1
-        case (_, Leaving)  => m2
-        case (Joining, _)  => m2
-        case (_, Joining)  => m1
-        case (WeaklyUp, _) => m2
-        case (_, WeaklyUp) => m1
-        case (Up, Up)      => m1
+        case (Removed, _)              => m1
+        case (_, Removed)              => m2
+        case (ReadyForShutdown, _)     => m1
+        case (_, ReadyForShutdown)     => m2
+        case (Down, _)                 => m1
+        case (_, Down)                 => m2
+        case (Exiting, _)              => m1
+        case (_, Exiting)              => m2
+        case (Leaving, _)              => m1
+        case (_, Leaving)              => m2
+        case (Joining, _)              => m2
+        case (_, Joining)              => m1
+        case (WeaklyUp, _)             => m2
+        case (_, WeaklyUp)             => m1
+        case (PreparingForShutdown, _) => m1
+        case (_, PreparingForShutdown) => m2
+        case (Up, Up)                  => m1
       }
   }
 
@@ -232,41 +240,53 @@ object MemberStatus {
   @SerialVersionUID(1L) case object Exiting extends MemberStatus
   @SerialVersionUID(1L) case object Down extends MemberStatus
   @SerialVersionUID(1L) case object Removed extends MemberStatus
+  @SerialVersionUID(1L) case object PreparingForShutdown extends MemberStatus
+  @SerialVersionUID(1L) case object ReadyForShutdown extends MemberStatus
 
   /**
-   * Java API: retrieve the “joining” status singleton
+   * Java API: retrieve the `Joining` status singleton
    */
   def joining: MemberStatus = Joining
 
   /**
-   * Java API: retrieve the “weaklyUp” status singleton.
+   * Java API: retrieve the `WeaklyUp` status singleton.
    */
   def weaklyUp: MemberStatus = WeaklyUp
 
   /**
-   * Java API: retrieve the “up” status singleton
+   * Java API: retrieve the `Up` status singleton
    */
   def up: MemberStatus = Up
 
   /**
-   * Java API: retrieve the “leaving” status singleton
+   * Java API: retrieve the `Leaving` status singleton
    */
   def leaving: MemberStatus = Leaving
 
   /**
-   * Java API: retrieve the “exiting” status singleton
+   * Java API: retrieve the `Exiting` status singleton
    */
   def exiting: MemberStatus = Exiting
 
   /**
-   * Java API: retrieve the “down” status singleton
+   * Java API: retrieve the `Down` status singleton
    */
   def down: MemberStatus = Down
 
   /**
-   * Java API: retrieve the “removed” status singleton
+   * Java API: retrieve the `Removed` status singleton
    */
   def removed: MemberStatus = Removed
+
+  /**
+   * Java API: retrieve the `ShuttingDown` status singleton
+   */
+  def shuttingDown: MemberStatus = PreparingForShutdown
+
+  /**
+   * Java API: retrieve the `ShutDown` status singleton
+   */
+  def shutDown: MemberStatus = ReadyForShutdown
 
   /**
    * INTERNAL API
@@ -275,15 +295,16 @@ object MemberStatus {
     Map(
       Joining -> Set(WeaklyUp, Up, Leaving, Down, Removed),
       WeaklyUp -> Set(Up, Leaving, Down, Removed),
-      Up -> Set(Leaving, Down, Removed),
+      Up -> Set(Leaving, Down, Removed, PreparingForShutdown),
       Leaving -> Set(Exiting, Down, Removed),
       Down -> Set(Removed),
       Exiting -> Set(Removed, Down),
+      PreparingForShutdown -> Set(ReadyForShutdown, Removed, Leaving, Down),
+      ReadyForShutdown -> Set(Removed, Leaving, Down),
       Removed -> Set.empty[MemberStatus])
 }
 
 object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
-
   // for binary compatibility
   @deprecated("Use Long UID apply instead", since = "2.4.11")
   def apply(address: Address, uid: Int) = new UniqueAddress(address, uid.toLong)
@@ -291,6 +312,9 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
   def apply(remoteUniqueAddress: akka.remote.UniqueAddress): UniqueAddress =
     new UniqueAddress(remoteUniqueAddress.address, remoteUniqueAddress.uid)
 
+  def apply(address: Address, longUid: Long) = new UniqueAddress(address, longUid)
+
+  def unapply(address: UniqueAddress): Option[(Address, Long)] = Some((address.address, address.longUid))
 }
 
 /**
@@ -299,9 +323,27 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
  * incarnations of a member with same hostname and port.
  */
 @SerialVersionUID(1L)
-final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[UniqueAddress] {
+final class UniqueAddress(val address: Address, val longUid: Long)
+    extends Product
+    with Serializable
+    with Ordered[UniqueAddress] {
 
   override def hashCode = java.lang.Long.hashCode(longUid)
+
+  override def productArity: Int = 2
+  override def productElement(n: Int): Any = n match {
+    case 0 => address
+    case 1 => longUid
+  }
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[UniqueAddress]
+
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case ua: UniqueAddress => this.address.equals(ua.address) && this.longUid.equals(ua.longUid)
+      case _                 => false
+    }
+
+  override def toString = s"UniqueAddress($address,$longUid)"
 
   def compare(that: UniqueAddress): Int = {
     val result = Member.addressOrdering.compare(this.address, that.address)
@@ -322,7 +364,7 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
    * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
    */
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid.toLong)
 
 }

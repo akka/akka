@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.stream.StreamSubscriptionTimeoutTerminationMode.{ CancelTermination, NoopTermination, WarnTermination }
-import akka.stream.StreamSubscriptionTimeoutSettings
-import com.github.ghik.silencer.silent
-import org.reactivestreams._
-
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
+
+import scala.annotation.nowarn
+import org.reactivestreams._
+
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.stream.StreamSubscriptionTimeoutSettings
+import akka.stream.StreamSubscriptionTimeoutTerminationMode.{ CancelTermination, NoopTermination, WarnTermination }
 
 /**
  * INTERNAL API
@@ -57,7 +58,7 @@ import scala.util.control.NoStackTrace
  *
  * See `akka.stream.materializer.subscription-timeout` for configuration options.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @InternalApi private[akka] trait StreamSubscriptionTimeoutSupport {
   this: Actor with ActorLogging =>
 
@@ -113,7 +114,7 @@ import scala.util.control.NoStackTrace
   /**
    * Called by the actor when a subscription has timed out. Expects the actual `Publisher` or `Processor` target.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   protected def subscriptionTimedOut(target: Publisher[_]): Unit = subscriptionTimeoutSettings.mode match {
     case NoopTermination   => // ignore...
     case WarnTermination   => warn(target, subscriptionTimeoutSettings.timeout)

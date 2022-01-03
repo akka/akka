@@ -1,8 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.streamref
+
+import scala.util.{ Failure, Success, Try }
+
+import scala.annotation.nowarn
 
 import akka.Done
 import akka.NotUsed
@@ -13,9 +17,6 @@ import akka.stream._
 import akka.stream.scaladsl.Sink
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
-import com.github.ghik.silencer.silent
-
-import scala.util.{ Failure, Success, Try }
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
@@ -48,7 +49,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
   private def initialRefName: String =
     initialPartnerRef match {
       case OptionVal.Some(ref) => ref.toString
-      case OptionVal.None      => "<no-initial-ref>"
+      case _                   => "<no-initial-ref>"
     }
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SourceRef[In]) =
@@ -64,7 +65,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       private[this] val streamRefsMaster = StreamRefsMaster(eagerMaterializer.system)
 
       // settings ---
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val subscriptionTimeout = {
         import StreamRefAttributes._
         val settings = eagerMaterializer.settings.streamRefSettings
@@ -75,7 +76,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
 
       override protected val stageActorName: String = streamRefsMaster.nextSinkRefStageName()
       private[this] val self: GraphStageLogic.StageActor =
-        getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false)(initialReceive)
+        getEagerStageActor(eagerMaterializer)(initialReceive)
       override val ref: ActorRef = self.ref
       implicit def selfSender: ActorRef = ref
 
@@ -83,7 +84,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       private def getPartnerRef: ActorRef =
         partnerRef match {
           case OptionVal.Some(ref) => ref
-          case OptionVal.None      => throw TargetRefNotInitializedYetException()
+          case _                   => throw TargetRefNotInitializedYetException()
         }
 
       val SubscriptionTimeoutTimerKey = "SubscriptionTimeoutKey"
@@ -114,7 +115,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
               "Illegal initialPartnerRef! This may be a bug, please report your " +
               "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
             tryPull()
-          case OptionVal.None =>
+          case _ =>
             log.debug(
               "[{}] Created SinkRef with initial partner, local worker: {}, subscription timeout: {}",
               stageActorName,
@@ -141,7 +142,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
                 failStage(ex)
               case OptionVal.Some(_ /* known to be Success*/ ) =>
                 completeStage() // other side has terminated (in response to a completion message) so we can safely terminate
-              case OptionVal.None =>
+              case _ =>
                 failStage(
                   RemoteStreamRefActorTerminatedException(
                     s"Remote target receiver of data $partnerRef terminated. " +
@@ -195,7 +196,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       }
 
       private def tryPull(): Unit =
-        if (remoteCumulativeDemandConsumed < remoteCumulativeDemandReceived && !hasBeenPulled(in)) {
+        if (remoteCumulativeDemandConsumed < remoteCumulativeDemandReceived && !hasBeenPulled(in) && !isClosed(in)) {
           pull(in)
         }
 
@@ -208,6 +209,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
             s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
 
           throw ex
+
+        case other => throw new IllegalArgumentException(s"Unknown timer key: $other")
       }
 
       private def grabSequenced[T](in: Inlet[T]): StreamRefsProtocol.SequencedOnNext[T] = {
@@ -270,7 +273,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
               finishedWithAwaitingPartnerTermination = OptionVal(Success(Done))
               setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
 
-            case OptionVal.None =>
+            case _ =>
               if (partner != getPartnerRef) {
                 val ex = InvalidPartnerActorException(partner, getPartnerRef, failureMsg)
                 partner ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)

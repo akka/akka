@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
 
 object ManyRecoveriesSpec {
 

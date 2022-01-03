@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization.jackson
@@ -11,6 +11,27 @@ import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.util.Failure
 import scala.util.Success
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.PropertyAccessor
+import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.core.JsonFactoryBuilder
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.StreamReadFeature
+import com.fasterxml.jackson.core.StreamWriteFeature
+import com.fasterxml.jackson.core.json.JsonReadFeature
+import com.fasterxml.jackson.core.json.JsonWriteFeature
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.Module
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
+import com.typesafe.config.Config
+
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.DynamicAccess
@@ -23,25 +44,6 @@ import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.util.unused
-import com.fasterxml.jackson.annotation.JsonAutoDetect
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.PropertyAccessor
-import com.fasterxml.jackson.core.JsonFactory
-import com.fasterxml.jackson.core.JsonFactoryBuilder
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.Module
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
-import com.typesafe.config.Config
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.StreamReadFeature
-import com.fasterxml.jackson.core.StreamWriteFeature
-import com.fasterxml.jackson.core.json.JsonReadFeature
-import com.fasterxml.jackson.core.json.JsonWriteFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
 
 object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
@@ -70,9 +72,15 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       config: Config,
       baseJsonFactory: Option[JsonFactory]): JsonFactory = {
 
-    val jsonFactoryBuilder = baseJsonFactory match {
-      case Some(jsonFactory) => new JsonFactoryBuilder(jsonFactory)
-      case None              => new JsonFactoryBuilder()
+    val jsonFactory: JsonFactory = baseJsonFactory match {
+      case Some(factory) =>
+        // Issue #28918 not possible to use new JsonFactoryBuilder(jsonFactory) here.
+        // It doesn't preserve the formatParserFeatures and formatGeneratorFeatures in
+        // CBORFactor. Therefore we use JsonFactory and configure the features with mappedFeature
+        // instead of using JsonFactoryBuilder (new in Jackson 2.10.0).
+        factory
+      case None =>
+        new JsonFactoryBuilder().build()
     }
 
     val configuredStreamReadFeatures =
@@ -82,7 +90,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     val streamReadFeatures =
       objectMapperFactory.overrideConfiguredStreamReadFeatures(bindingName, configuredStreamReadFeatures)
     streamReadFeatures.foreach {
-      case (feature, value) => jsonFactoryBuilder.configure(feature, value)
+      case (feature, value) => jsonFactory.configure(feature.mappedFeature, value)
     }
 
     val configuredStreamWriteFeatures =
@@ -92,7 +100,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     val streamWriteFeatures =
       objectMapperFactory.overrideConfiguredStreamWriteFeatures(bindingName, configuredStreamWriteFeatures)
     streamWriteFeatures.foreach {
-      case (feature, value) => jsonFactoryBuilder.configure(feature, value)
+      case (feature, value) => jsonFactory.configure(feature.mappedFeature, value)
     }
 
     val configuredJsonReadFeatures =
@@ -102,7 +110,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     val jsonReadFeatures =
       objectMapperFactory.overrideConfiguredJsonReadFeatures(bindingName, configuredJsonReadFeatures)
     jsonReadFeatures.foreach {
-      case (feature, value) => jsonFactoryBuilder.configure(feature, value)
+      case (feature, value) => jsonFactory.configure(feature.mappedFeature, value)
     }
 
     val configuredJsonWriteFeatures =
@@ -112,10 +120,10 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     val jsonWriteFeatures =
       objectMapperFactory.overrideConfiguredJsonWriteFeatures(bindingName, configuredJsonWriteFeatures)
     jsonWriteFeatures.foreach {
-      case (feature, value) => jsonFactoryBuilder.configure(feature, value)
+      case (feature, value) => jsonFactory.configure(feature.mappedFeature, value)
     }
 
-    jsonFactoryBuilder.build()
+    jsonFactory
   }
 
   private def configureObjectMapperFeatures(
@@ -169,6 +177,25 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     jsonGeneratorFeatures.foreach {
       case (feature, value) => objectMapper.configure(feature, value)
     }
+  }
+
+  private def configureObjectVisibility(
+      bindingName: String,
+      objectMapper: ObjectMapper,
+      objectMapperFactory: JacksonObjectMapperFactory,
+      config: Config): Unit = {
+
+    val configuredVisibility: immutable.Seq[(PropertyAccessor, JsonAutoDetect.Visibility)] =
+      configPairs(config, "visibility").map {
+        case (property, visibility) =>
+          PropertyAccessor.valueOf(property) -> JsonAutoDetect.Visibility.valueOf(visibility)
+      }
+    val visibility =
+      objectMapperFactory.overrideConfiguredVisibility(bindingName, configuredVisibility)
+    visibility.foreach {
+      case (property, visibility) => objectMapper.setVisibility(property, visibility)
+    }
+
   }
 
   private def configureObjectMapperModules(
@@ -236,8 +263,9 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
 
     configureObjectMapperFeatures(bindingName, mapper, objectMapperFactory, config)
     configureObjectMapperModules(bindingName, mapper, objectMapperFactory, config, dynamicAccess, log)
+    configureObjectVisibility(bindingName, mapper, objectMapperFactory, config)
 
-    mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+    mapper
   }
 
   private def isModuleEnabled(fqcn: String, dynamicAccess: DynamicAccess): Boolean =
@@ -255,6 +283,12 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     import akka.util.ccompat.JavaConverters._
     val cfg = config.getConfig(section)
     cfg.root.keySet().asScala.map(key => key -> cfg.getBoolean(key)).toList
+  }
+
+  private def configPairs(config: Config, section: String): immutable.Seq[(String, String)] = {
+    import akka.util.ccompat.JavaConverters._
+    val cfg = config.getConfig(section)
+    cfg.root.keySet().asScala.map(key => key -> cfg.getString(key)).toList
   }
 }
 
@@ -526,4 +560,20 @@ class JacksonObjectMapperFactory {
       @unused bindingName: String,
       configuredFeatures: immutable.Seq[(JsonWriteFeature, Boolean)]): immutable.Seq[(JsonWriteFeature, Boolean)] =
     configuredFeatures
+
+  /**
+   * Visibility settings used to configure the `JsonFactoryBuilder` that, if provided, will later be used to create
+   * an `ObjectMapper`. These settings can be amended programmatically by overriding this method and return the values
+   * that are to be applied to the `JsonFactoryBuilder`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `PropertyAccessor`/`JsonAutoDetect.Visibility` that were configured in
+   *                           `akka.serialization.jackson.visibility`
+   */
+  def overrideConfiguredVisibility(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(PropertyAccessor, JsonAutoDetect.Visibility)])
+      : immutable.Seq[(PropertyAccessor, JsonAutoDetect.Visibility)] =
+    configuredFeatures
+
 }

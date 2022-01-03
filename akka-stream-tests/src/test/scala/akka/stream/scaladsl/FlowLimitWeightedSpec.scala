@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+
 import akka.stream.StreamLimitReachedException
 import akka.stream.testkit.StreamSpec
 import akka.util.unused
-
-import scala.concurrent.Await
 
 class FlowLimitWeightedSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

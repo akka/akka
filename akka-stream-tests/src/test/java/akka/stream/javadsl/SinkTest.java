@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl;
@@ -9,11 +9,10 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.japi.function.Function;
@@ -40,8 +39,7 @@ public class SinkTest extends StreamTest {
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
     final Sink<Object, Publisher<Object>> pubSink = Sink.asPublisher(AsPublisher.WITH_FANOUT);
     @SuppressWarnings("unused")
-    final Publisher<Object> publisher =
-        Source.from(new ArrayList<Object>()).runWith(pubSink, system);
+    final Publisher<Object> publisher = Source.from(new ArrayList<>()).runWith(pubSink, system);
   }
 
   @Test
@@ -49,7 +47,7 @@ public class SinkTest extends StreamTest {
     final Sink<Integer, CompletionStage<Integer>> futSink = Sink.head();
     final List<Integer> list = Collections.singletonList(1);
     final CompletionStage<Integer> future = Source.from(list).runWith(futSink, system);
-    assert future.toCompletableFuture().get(1, TimeUnit.SECONDS).equals(1);
+    assertEquals(1, future.toCompletableFuture().get(1, TimeUnit.SECONDS).intValue());
   }
 
   @Test
@@ -128,14 +126,14 @@ public class SinkTest extends StreamTest {
         Sink.<String>head().preMaterialize(system);
 
     CompletableFuture<String> future = pair.first().toCompletableFuture();
-    assertEquals(false, future.isDone()); // not yet, only once actually source attached
+    assertFalse(future.isDone()); // not yet, only once actually source attached
 
     String element = "element";
     Source.single(element).runWith(pair.second(), system);
 
     String got = future.get(3, TimeUnit.SECONDS); // should complete nicely
     assertEquals(element, got);
-    assertEquals(true, future.isDone());
+    assertTrue(future.isDone());
   }
 
   public void mustSuitablyOverrideAttributeHandlingMethods() {
@@ -152,5 +150,21 @@ public class SinkTest extends StreamTest {
     final akka.stream.scaladsl.Sink<Integer, NotUsed> scalaSink =
         akka.stream.scaladsl.Sink.cancelled();
     Sink<Integer, NotUsed> javaSink = scalaSink.asJava();
+  }
+
+  @Test
+  public void sinkForeachMustBeDocumented()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    // #foreach
+    Sink<Integer, CompletionStage<Done>> printlnSink = Sink.foreach(System.out::println);
+    CompletionStage<Done> cs = Source.from(Arrays.asList(1, 2, 3, 4)).runWith(printlnSink, system);
+    Done done = cs.toCompletableFuture().get(100, TimeUnit.MILLISECONDS);
+    // will print
+    // 1
+    // 2
+    // 3
+    // 4
+    // #foreach
+    assertEquals(Done.done(), done);
   }
 }

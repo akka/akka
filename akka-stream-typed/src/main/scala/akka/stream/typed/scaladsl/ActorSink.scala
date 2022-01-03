@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.scaladsl
 
+import akka.NotUsed
 import akka.actor.typed._
 import akka.stream.scaladsl._
-import akka.NotUsed
 
 /**
  * Collection of Sinks aimed at integrating with typed Actors.
@@ -34,8 +34,8 @@ object ActorSink {
     Sink.actorRef(ref.toClassic, onCompleteMessage, onFailureMessage)
 
   /**
-   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
-   * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
+   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signals.
+   * The first element is always `onInitMessage`, then stream is waiting for acknowledgement message
    * `ackMessage` from the given actor which means that it is ready to process
    * elements. It also requires `ackMessage` message after each stream element
    * to make backpressure work.
@@ -45,6 +45,13 @@ object ActorSink {
    * will be sent to the destination actor.
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * function will be sent to the destination actor.
+   *
+   * @param ref the receiving actor as `ActorRef[T]` (where `T` must include the control messages below)
+   * @param messageAdapter a function that wraps the stream elements to be sent to the actor together with an `ActorRef[A]` which accepts the ack message
+   * @param onInitMessage a function that wraps an `ActorRef[A]` into a messages to couple the receiving actor to the sink
+   * @param ackMessage a fixed message that is expected after every element sent to the receiving actor
+   * @param onCompleteMessage the message to be sent to the actor when the stream completes
+   * @param onFailureMessage a function that creates a message to be sent to the actor in case the stream fails from a `Throwable`
    */
   def actorRefWithBackpressure[T, M, A](
       ref: ActorRef[M],
@@ -57,7 +64,40 @@ object ActorSink {
       ref.toClassic,
       messageAdapter.curried.compose(actorRefAdapter),
       onInitMessage.compose(actorRefAdapter),
-      ackMessage,
+      Some(ackMessage),
+      onCompleteMessage,
+      onFailureMessage)
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signals.
+   * The first element is always `onInitMessage`, then stream is waiting for acknowledgement message
+   * from the given actor which means that it is ready to process elements.
+   * It also requires an ack message after each stream element
+   * to make backpressure work. This variant will consider any message as ack message.
+   *
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure - result of `onFailureMessage(throwable)`
+   * function will be sent to the destination actor.
+   *
+   * @param ref the receiving actor as `ActorRef[T]` (where `T` must include the control messages below)
+   * @param messageAdapter a function that wraps the stream elements to be sent to the actor together with an `ActorRef[A]` which accepts the ack message
+   * @param onInitMessage a function that wraps an `ActorRef[A]` into a messages to couple the receiving actor to the sink
+   * @param onCompleteMessage the message to be sent to the actor when the stream completes
+   * @param onFailureMessage a function that creates a message to be sent to the actor in case the stream fails from a `Throwable`
+   */
+  def actorRefWithBackpressure[T, M, A](
+      ref: ActorRef[M],
+      messageAdapter: (ActorRef[A], T) => M,
+      onInitMessage: ActorRef[A] => M,
+      onCompleteMessage: M,
+      onFailureMessage: Throwable => M): Sink[T, NotUsed] =
+    Sink.actorRefWithAck(
+      ref.toClassic,
+      messageAdapter.curried.compose(actorRefAdapter),
+      onInitMessage.compose(actorRefAdapter),
+      None,
       onCompleteMessage,
       onFailureMessage)
 

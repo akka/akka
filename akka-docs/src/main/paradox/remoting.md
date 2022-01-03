@@ -25,9 +25,12 @@ such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
 To use Akka Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-remote_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-remote" }
@@ -63,7 +66,7 @@ akka {
 }
 ```
 
-As you can see in the example above there are five things you need to add to get started:
+As you can see in the example above there are four things you need to add to get started:
 
  * Change provider from `local`. We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
  * Disable artery remoting. Artery is the default remoting implementation since `2.6.0`
@@ -271,22 +274,22 @@ Scala
 Java
 :   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
-### Remote deployment whitelist
+### Remote deployment allow list
 
-As remote deployment can potentially be abused by both users and even attackers a whitelist feature
+As remote deployment can potentially be abused by both users and even attackers an allow list feature
 is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
 is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
 remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
-only a specific set of known actors by enabling the whitelist feature.
+only a specific set of known actors by enabling the allow list feature.
 
-To enable remote deployment whitelisting set the `akka.remote.deployment.enable-whitelist` value to `on`.
+To enable remote deployment allow list set the `akka.remote.deployment.enable-allow-list` value to `on`.
 The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentAllowListSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentAllowListSpec.scala) { #allow-list-config }
 
-Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
+Actor classes not included in the allow list will not be allowed to be remote deployed onto this system.
 
 ## Lifecycle and Failure Recovery Model
 
@@ -431,7 +434,7 @@ compromising any node with certificates issued by the same internal PKI tree.
 
 By default, @ref[Java serialization](serialization.md#java-serialization) is disabled in Akka.
 That is also security best-practice because of its multiple
-[known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+[known attack surfaces](https://community.microfocus.com/cyberres/fortify/f/fortify-discussions/317555/the-perils-of-java-deserialization).
 
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
@@ -476,7 +479,7 @@ akka {
 Always use [substitution from environment variables](https://github.com/lightbend/config#optional-system-or-env-variable-overrides)
 for passwords. Don't define real passwords in config files.
 
-According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
+According to [RFC 7525](https://www.rfc-editor.org/rfc/rfc7525.html) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
 
  * TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
  * TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
@@ -486,13 +489,13 @@ According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended alg
 You should always check the latest information about security and algorithm recommendations though before you configure your system.
 
 Creating and working with keystores and certificates is well documented in the
-[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+[Generating X.509 Certificates](https://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
 Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
 need to be configured on each remoting node participating in the cluster.
 
-The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
+The official [Java Secure Socket Extension documentation](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html)
 as well as the [Oracle documentation on creating KeyStore and TrustStores](https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html)
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
@@ -620,4 +623,4 @@ Keep in mind that local.address will most likely be in one of private network ra
  * *172.16.0.0 - 172.31.255.255* (network class B)
  * *192.168.0.0 - 192.168.255.255* (network class C)
 
-For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
+For further details see [RFC 1597](https://www.rfc-editor.org/rfc/rfc1597.html) and [RFC 1918](https://www.rfc-editor.org/rfc/rfc1918.html).

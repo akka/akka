@@ -1,22 +1,23 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Future
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {
@@ -262,7 +263,9 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     }
     val sys = setup match {
       case None    => ActorSystem[Any](Behaviors.empty[Any], name, bootstrap)
-      case Some(s) => ActorSystem[Any](Behaviors.empty[Any], name, s.and(bootstrap))
+      case Some(s) =>
+        // explicit Props.empty: https://github.com/lampepfl/dotty/issues/12679
+        ActorSystem[Any](Behaviors.empty[Any], name, s.and(bootstrap), Props.empty)
     }
 
     try f(sys)

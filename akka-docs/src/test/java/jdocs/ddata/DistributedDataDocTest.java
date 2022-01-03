@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.ddata;
@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import akka.cluster.Cluster;
 import akka.cluster.ddata.*;
 import akka.japi.pf.ReceiveBuilder;
 
@@ -127,7 +126,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   static
   // #update-request-context
   class DemonstrateUpdateWithRequestContext extends AbstractActor {
-    final Cluster node = Cluster.get(getContext().getSystem());
+    final SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();
     final ActorRef replicator = DistributedData.get(getContext().getSystem()).replicator();
 
     final WriteConsistency writeTwo = new WriteTo(2, Duration.ofSeconds(3));

@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.testkit.typed.LoggingEvent
-import org.slf4j.event.Level
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.event.Level
+
+import akka.actor.testkit.typed.LoggingEvent
 
 class LoggingTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

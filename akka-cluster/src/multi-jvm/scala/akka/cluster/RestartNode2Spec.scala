@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.collection.immutable
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
 import akka.actor.ActorSystem
@@ -17,7 +19,6 @@ import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -45,17 +46,16 @@ object RestartNode2SpecMultiJvmSpec extends MultiNodeConfig {
 class RestartNode2SpecMultiJvmNode1 extends RestartNode2SpecSpec
 class RestartNode2SpecMultiJvmNode2 extends RestartNode2SpecSpec
 
-abstract class RestartNode2SpecSpec
-    extends MultiNodeSpec(RestartNode2SpecMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with ImplicitSender {
+abstract class RestartNode2SpecSpec extends MultiNodeClusterSpec(RestartNode2SpecMultiJvmSpec) with ImplicitSender {
 
   import RestartNode2SpecMultiJvmSpec._
 
   @volatile var seedNode1Address: Address = _
 
   // use a separate ActorSystem, to be able to simulate restart
-  lazy val seed1System = ActorSystem(system.name, system.settings.config)
+  lazy val seed1System = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
+
+  override def verifySystemShutdown: Boolean = true
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seedNode1Address, seed2)
 

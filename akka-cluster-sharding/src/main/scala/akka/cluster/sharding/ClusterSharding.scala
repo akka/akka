@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
-import akka.util.ccompat.JavaConverters._
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -31,11 +31,16 @@ import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.ReplicatorSettings
+import akka.cluster.sharding.internal.CustomStateStoreModeProvider
+import akka.cluster.sharding.internal.DDataRememberEntitiesProvider
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesProvider
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.event.Logging
 import akka.pattern.BackoffOpts
 import akka.pattern.ask
 import akka.util.ByteString
+import akka.util.ccompat.JavaConverters._
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -108,11 +113,10 @@ import akka.util.ByteString
  *
  * '''Shard Allocation''':
  * The logic deciding which shards to rebalance is defined in a plugable shard allocation
- * strategy. The default implementation [[ShardCoordinator.LeastShardAllocationStrategy]]
+ * strategy. The default implementation `LeastShardAllocationStrategy`
  * picks shards for handoff from the `ShardRegion` with highest number of previously allocated shards.
  * They will then be allocated to the `ShardRegion` with lowest number of previously allocated shards,
- * i.e. new members in the cluster. There is a configurable `rebalance-threshold` of how large
- * the difference must be to begin the rebalancing. This strategy can be replaced by an application
+ * i.e. new members in the cluster. This strategy can be replaced by an application
  * specific implementation.
  *
  * '''Recovery''':
@@ -167,10 +171,9 @@ object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProv
  */
 class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   import ClusterShardingGuardian._
-  import ShardCoordinator.LeastShardAllocationStrategy
   import ShardCoordinator.ShardAllocationStrategy
 
-  private val log = Logging(system, this.getClass)
+  private val log = Logging(system, classOf[ClusterSharding])
 
   private val cluster = Cluster(system)
 
@@ -181,7 +184,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     val guardianName: String =
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
     val dispatcher = system.settings.config.getString("akka.cluster.sharding.use-dispatcher")
-    system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
+    system.systemActorOf(Props[ClusterShardingGuardian]().withDispatcher(dispatcher), guardianName)
   }
 
   /**
@@ -298,7 +301,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
             extractShardId,
             allocationStrategy,
             handOffStopMessage)
-          val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
+          val shardRegion = Await.result((guardian ? startMsg).mapTo[Started], timeout.duration).shardRegion
           regions.put(typeName, shardRegion)
           shardRegion
         case ref => ref // already started, use cached ActorRef
@@ -542,7 +545,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
         implicit val timeout = system.settings.CreationTimeout
         val settings = ClusterShardingSettings(system).withRole(role)
         val startMsg = StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId)
-        val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
+        val shardRegion = Await.result((guardian ? startMsg).mapTo[Started], timeout.duration).shardRegion
         // it must be possible to start several proxies, one per data center
         proxies.put(proxyName(typeName, dataCenter), shardRegion)
         shardRegion
@@ -627,7 +630,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       case null =>
         proxies.get(proxyName(typeName, None)) match {
           case null =>
-            throw new IllegalStateException(s"Shard type [$typeName] must be started first")
+            throw new IllegalStateException(
+              s"Shard type [$typeName] must be started first. Started ${regions.keySet()} proxies ${proxies.keySet()}")
           case ref => ref
         }
       case ref => ref
@@ -650,13 +654,20 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
-   * given `settings`. This could be changed in the future.
+   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
    */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
-    val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
-    val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
-    new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    if (settings.tuningParameters.leastShardAllocationAbsoluteLimit > 0) {
+      // new algorithm
+      val absoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit
+      val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
+      ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
+    } else {
+      // old algorithm
+      val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
+      val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
+      new ShardCoordinator.LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    }
   }
 }
 
@@ -695,8 +706,6 @@ private[akka] class ClusterShardingGuardian extends Actor {
   val sharding = ClusterSharding(context.system)
 
   val majorityMinCap = context.system.settings.config.getInt("akka.cluster.sharding.distributed-data.majority-min-cap")
-  private lazy val replicatorSettings =
-    ReplicatorSettings(context.system.settings.config.getConfig("akka.cluster.sharding.distributed-data"))
   private var replicatorByRole = Map.empty[Option[String], ActorRef]
 
   private def coordinatorSingletonManagerName(encName: String): String =
@@ -705,8 +714,21 @@ private[akka] class ClusterShardingGuardian extends Actor {
   private def coordinatorPath(encName: String): String =
     (self.path / coordinatorSingletonManagerName(encName) / "singleton" / "coordinator").toStringWithoutAddress
 
+  private def replicatorSettings(shardingSettings: ClusterShardingSettings) = {
+    val configuredSettings =
+      ReplicatorSettings(context.system.settings.config.getConfig("akka.cluster.sharding.distributed-data"))
+    // Use members within the data center and with the given role (if any)
+    val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter) ++ shardingSettings.role
+    val settingsWithRoles = configuredSettings.withRoles(replicatorRoles)
+    if (shardingSettings.rememberEntities)
+      settingsWithRoles
+    else
+      settingsWithRoles.withDurableKeys(Set.empty[String])
+  }
+
   private def replicator(settings: ClusterShardingSettings): ActorRef = {
-    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
+    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData ||
+        settings.stateStoreMode == ClusterShardingSettings.RememberEntitiesStoreCustom) {
       // one Replicator per role
       replicatorByRole.get(settings.role) match {
         case Some(ref) => ref
@@ -715,9 +737,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
             case Some(r) => URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
             case None    => "replicator"
           }
-          // Use members within the data center and with the given role (if any)
-          val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter) ++ settings.role
-          val ref = context.actorOf(Replicator.props(replicatorSettings.withRoles(replicatorRoles)), name)
+          val ref = context.actorOf(Replicator.props(replicatorSettings(settings)), name)
           replicatorByRole = replicatorByRole.updated(settings.role, ref)
           ref
       }
@@ -739,16 +759,41 @@ private[akka] class ClusterShardingGuardian extends Actor {
         import settings.tuningParameters.coordinatorFailureBackoff
 
         val rep = replicator(settings)
+        val rememberEntitiesStoreProvider: Option[RememberEntitiesProvider] =
+          if (!settings.rememberEntities) None
+          else {
+            // with the deprecated persistence state store mode we always use the event sourced provider for shard regions
+            // and no store for coordinator (the coordinator is a PersistentActor in that case)
+            val rememberEntitiesProvider =
+              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
+                ClusterShardingSettings.RememberEntitiesStoreEventsourced
+              } else {
+                settings.rememberEntitiesStore
+              }
+            Some(rememberEntitiesProvider match {
+              case ClusterShardingSettings.RememberEntitiesStoreDData =>
+                new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
+              case ClusterShardingSettings.RememberEntitiesStoreEventsourced =>
+                new EventSourcedRememberEntitiesProvider(typeName, settings)
+              case ClusterShardingSettings.RememberEntitiesStoreCustom =>
+                new CustomStateStoreModeProvider(typeName, context.system, settings)
+              case unknown =>
+                throw new IllegalArgumentException(s"Unknown store type: $unknown") // compiler exhaustiveness check pleaser
+            })
+          }
+
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
         val shardRegion = context.child(encName).getOrElse {
           if (context.child(cName).isEmpty) {
             val coordinatorProps =
-              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
                 ShardCoordinator.props(typeName, settings, allocationStrategy)
-              else
-                ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
+              } else {
+                ShardCoordinator
+                  .props(typeName, settings, allocationStrategy, rep, majorityMinCap, rememberEntitiesStoreProvider)
+              }
             val singletonProps =
               BackoffOpts
                 .onStop(
@@ -778,8 +823,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 extractEntityId = extractEntityId,
                 extractShardId = extractShardId,
                 handOffStopMessage = handOffStopMessage,
-                replicator = rep,
-                majorityMinCap)
+                rememberEntitiesStoreProvider)
               .withDispatcher(context.props.dispatcher),
             name = encName)
         }
@@ -810,9 +854,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 settings = settings,
                 coordinatorPath = cPath,
                 extractEntityId = extractEntityId,
-                extractShardId = extractShardId,
-                replicator = context.system.deadLetters,
-                majorityMinCap)
+                extractShardId = extractShardId)
               .withDispatcher(context.props.dispatcher),
             name = actorName)
         }

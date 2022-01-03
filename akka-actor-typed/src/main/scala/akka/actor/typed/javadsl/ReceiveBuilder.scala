@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
 import scala.annotation.tailrec
-import akka.japi.function.Creator
+
+import akka.actor.typed.{ Behavior, Signal }
+import akka.actor.typed.MessageAdaptionFailure
+import akka.annotation.InternalApi
 import akka.japi.function.{ Function => JFunction }
 import akka.japi.function.{ Predicate => JPredicate }
-import akka.actor.typed.{ Behavior, Signal }
-import akka.annotation.InternalApi
+import akka.japi.function.Creator
 import akka.util.OptionVal
 
 /**
@@ -24,9 +26,16 @@ final class ReceiveBuilder[T] private (
     private var messageHandlers: List[ReceiveBuilder.Case[T, T]],
     private var signalHandlers: List[ReceiveBuilder.Case[T, Signal]]) {
 
-  import ReceiveBuilder.Case
+  import ReceiveBuilder._
 
-  def build(): Receive[T] = new BuiltReceive[T](messageHandlers.reverse, signalHandlers.reverse)
+  def build(): Receive[T] = {
+    // signal handlers will often be empty so optimize for that
+    val builtSignalHandlers =
+      if (signalHandlers.isEmpty) defaultSignalHandlers[T]
+      else (adapterExceptionSignalHandler[T] :: signalHandlers).reverse
+
+    new BuiltReceive[T](messageHandlers.reverse, builtSignalHandlers)
+  }
 
   /**
    * Add a new case to the message handling.
@@ -157,6 +166,26 @@ object ReceiveBuilder {
       `type`: OptionVal[Class[_ <: MT]],
       test: OptionVal[JPredicate[MT]],
       handler: JFunction[MT, Behavior[BT]])
+
+  /** INTERNAL API */
+  @InternalApi
+  private val _adapterExceptionSignalHandler = Case[Any, MessageAdaptionFailure](
+    OptionVal.Some(classOf[MessageAdaptionFailure]),
+    OptionVal.None,
+    failure => throw failure.exception)
+
+  /** INTERNAL API */
+  @InternalApi
+  private def adapterExceptionSignalHandler[T]: Case[T, Signal] =
+    _adapterExceptionSignalHandler.asInstanceOf[Case[T, Signal]]
+
+  /** INTERNAL API */
+  @InternalApi
+  private val _defaultSignalHandlers = adapterExceptionSignalHandler :: Nil
+
+  /** INTERNAL API */
+  @InternalApi
+  private def defaultSignalHandlers[T] = _defaultSignalHandlers.asInstanceOf[List[Case[T, Signal]]]
 
 }
 

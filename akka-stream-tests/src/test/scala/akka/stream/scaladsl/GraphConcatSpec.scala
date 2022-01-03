@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import scala.concurrent.{ Promise }
+import scala.concurrent.Promise
 
 import akka.stream._
 import akka.stream.testkit._

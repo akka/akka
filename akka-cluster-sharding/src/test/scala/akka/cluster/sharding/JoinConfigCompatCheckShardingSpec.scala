@@ -1,17 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
+import scala.collection.{ immutable => im }
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor.ActorSystem
 import akka.cluster.{ Cluster, ClusterReadView }
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, LongRunningTest }
-import com.typesafe.config.{ Config, ConfigFactory }
-import scala.concurrent.duration._
-import scala.collection.{ immutable => im }
 
-class JoinConfigCompatCheckShardingSpec extends AkkaSpec() {
+class JoinConfigCompatCheckShardingSpec extends AkkaSpec() with WithLogCapturing {
 
   def initCluster(system: ActorSystem): ClusterReadView = {
     val cluster = Cluster(system)
@@ -24,9 +27,12 @@ class JoinConfigCompatCheckShardingSpec extends AkkaSpec() {
   val baseConfig: Config =
     ConfigFactory.parseString("""
      akka.actor.provider = "cluster"
+     akka.loglevel = DEBUG
+     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
      akka.coordinated-shutdown.terminate-actor-system = on
      akka.remote.classic.netty.tcp.port = 0
      akka.remote.artery.canonical.port = 0
+     akka.cluster.sharding.verbose-debug-logging = on
      """)
 
   "A Joining Node" must {

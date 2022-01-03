@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.sharding.typed
@@ -50,7 +50,7 @@ object HelloWorldPersistentEntityExample {
   object HelloWorld {
 
     // Command
-    trait Command extends CborSerializable
+    sealed trait Command extends CborSerializable
     final case class Greet(whom: String)(val replyTo: ActorRef[Greeting]) extends Command
     // Response
     final case class Greeting(whom: String, numberOfPeople: Int) extends CborSerializable

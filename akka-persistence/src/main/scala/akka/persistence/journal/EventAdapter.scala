@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
@@ -105,14 +105,14 @@ final case class SingleEventSeq(event: Any) extends EventSeq { // TODO try to ma
 }
 
 sealed trait EmptyEventSeq extends EventSeq
-final object EmptyEventSeq extends EmptyEventSeq {
+object EmptyEventSeq extends EmptyEventSeq {
   override def events = Nil
 }
 
 final case class EventsSeq[E](events: immutable.Seq[E]) extends EventSeq
 
 /** No-op model adapter which passes through the incoming events as-is. */
-final case object IdentityEventAdapter extends EventAdapter {
+case object IdentityEventAdapter extends EventAdapter {
   override def toJournal(event: Any): Any = event
   override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single(event)
   override def manifest(event: Any): String = ""

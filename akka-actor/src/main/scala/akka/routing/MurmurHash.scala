@@ -1,14 +1,14 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+**  __\ \/ /__/ __ |/ /__/ __ |    https://scala-lang.org/              **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
 /**
  * An implementation of Austin Appleby's MurmurHash 3.0 algorithm
- *  (32 bit version); reference: http://code.google.com/p/smhasher
+ *  (32 bit version); reference: https://github.com/aappleby/smhasher
  *
  *  This is the hash used by collections and case classes (including
  *  tuples).
@@ -21,8 +21,9 @@ package akka.routing
 
 import java.lang.Integer.{ rotateLeft => rotl }
 
+import scala.annotation.nowarn
+
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
 
 /**
  * An object designed to generate well-distributed non-cryptographic
@@ -132,7 +133,7 @@ object MurmurHash {
    *  where the order of appearance of elements does not matter.
    *  This is useful for hashing sets, for example.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def symmetricHash[T](xs: IterableOnce[T], seed: Int): Int = {
     var a, b, n = 0
     var c = 1

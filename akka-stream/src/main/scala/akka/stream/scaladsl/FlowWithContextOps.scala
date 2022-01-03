@@ -1,23 +1,27 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.annotation.unchecked.uncheckedVariance
+import scala.concurrent.duration.FiniteDuration
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
-import akka.util.ConstantFun
-import akka.event.LoggingAdapter
+import akka.stream.impl.Throttle
+import akka.util.{ ccompat, ConstantFun }
+import ccompat._
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
  * element with each data element.
  *
  */
+@ccompatUsedUntil213
 trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
     type ReprMat[+OO, +CC, +MatMat] = FlowWithContextOps.this.ReprMat[OO, CC, MatMat]
@@ -27,6 +31,10 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
    * taking and producing tuples of (data, context).
+   *
+   *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
+   *  by the downstream elements, such as reordering. For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
    *
    * This can be used as an escape hatch for operations that are not (yet) provided with automatic
    * context propagation here.
@@ -38,6 +46,10 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
    * taking and producing tuples of (data, context).
+   *
+   *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
+   *  by the downstream elements, such as reordering. For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
    *
    * This can be used as an escape hatch for operations that are not (yet) provided with automatic
    * context propagation here.
@@ -73,7 +85,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    */
   def mapAsync[Out2](parallelism: Int)(f: Out => Future[Out2]): Repr[Out2, Ctx] =
     via(flow.mapAsync(parallelism) {
-      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.sameThreadExecutionContext)
+      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.parasitic)
     })
 
   /**
@@ -162,9 +174,9 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapConcat]]
    */
-  def mapConcat[Out2](f: Out => immutable.Iterable[Out2]): Repr[Out2, Ctx] =
+  def mapConcat[Out2](f: Out => IterableOnce[Out2]): Repr[Out2, Ctx] =
     via(flow.mapConcat {
-      case (e, ctx) => f(e).map(_ -> ctx)
+      case (e, ctx) => f(e).iterator.map(_ -> ctx)
     })
 
   /**
@@ -183,6 +195,57 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.log(name, extractWithContext)(log))
   }
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.logWithMarker]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: (Out, Ctx) => LogMarker,
+      extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+      implicit log: MarkerLoggingAdapter = null): Repr[Out, Ctx] = {
+    val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
+    via(flow.logWithMarker(name, marker.tupled, extractWithContext)(log))
+  }
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(elements: Int, per: FiniteDuration): Repr[Out, Ctx] =
+    throttle(elements, per, Throttle.AutomaticMaximumBurst, ConstantFun.oneInt, ThrottleMode.Shaping)
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int, mode: ThrottleMode): Repr[Out, Ctx] =
+    throttle(elements, per, maximumBurst, ConstantFun.oneInt, mode)
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(cost: Int, per: FiniteDuration, costCalculation: (Out) => Int): Repr[Out, Ctx] =
+    throttle(cost, per, Throttle.AutomaticMaximumBurst, costCalculation, ThrottleMode.Shaping)
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: FiniteDuration,
+      maximumBurst: Int,
+      costCalculation: (Out) => Int,
+      mode: ThrottleMode): Repr[Out, Ctx] =
+    via(flow.throttle(cost, per, maximumBurst, a => costCalculation(a._1), mode))
 
   private[akka] def flow[T, C]: Flow[(T, C), (T, C), NotUsed] = Flow[(T, C)]
 }

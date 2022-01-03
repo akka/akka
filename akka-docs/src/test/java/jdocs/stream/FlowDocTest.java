@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -51,12 +52,11 @@ public class FlowDocTest extends AbstractJavaTest {
     final Source<Integer, NotUsed> source =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
     source.map(x -> 0); // has no effect on source, since it's immutable
-    source.runWith(Sink.fold(0, (agg, next) -> agg + next), system); // 55
+    source.runWith(Sink.fold(0, Integer::sum), system); // 55
 
     // returns new Source<Integer>, with `map()` appended
     final Source<Integer, NotUsed> zeroes = source.map(x -> 0);
-    final Sink<Integer, CompletionStage<Integer>> fold =
-        Sink.<Integer, Integer>fold(0, (agg, next) -> agg + next);
+    final Sink<Integer, CompletionStage<Integer>> fold = Sink.fold(0, Integer::sum);
     zeroes.runWith(fold, system); // 0
     // #source-immutable
 
@@ -70,8 +70,7 @@ public class FlowDocTest extends AbstractJavaTest {
     final Source<Integer, NotUsed> source =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
     // note that the Future is scala.concurrent.Future
-    final Sink<Integer, CompletionStage<Integer>> sink =
-        Sink.<Integer, Integer>fold(0, (aggr, next) -> aggr + next);
+    final Sink<Integer, CompletionStage<Integer>> sink = Sink.fold(0, Integer::sum);
 
     // connect the Source to the Sink, obtaining a RunnableFlow
     final RunnableGraph<CompletionStage<Integer>> runnable = source.toMat(sink, Keep.right());
@@ -89,10 +88,9 @@ public class FlowDocTest extends AbstractJavaTest {
     // #materialization-runWith
     final Source<Integer, NotUsed> source =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
-    final Sink<Integer, CompletionStage<Integer>> sink =
-        Sink.<Integer, Integer>fold(0, (aggr, next) -> aggr + next);
+    final Sink<Integer, CompletionStage<Integer>> sink = Sink.fold(0, Integer::sum);
 
-    // materialize the flow, getting the Sinks materialized value
+    // materialize the flow, getting the Sink's materialized value
     final CompletionStage<Integer> sum = source.runWith(sink, system);
     // #materialization-runWith
 
@@ -104,8 +102,7 @@ public class FlowDocTest extends AbstractJavaTest {
   public void materializedMapUnique() throws Exception {
     // #stream-reuse
     // connect the Source to the Sink, obtaining a RunnableGraph
-    final Sink<Integer, CompletionStage<Integer>> sink =
-        Sink.<Integer, Integer>fold(0, (aggr, next) -> aggr + next);
+    final Sink<Integer, CompletionStage<Integer>> sink = Sink.fold(0, Integer::sum);
     final RunnableGraph<CompletionStage<Integer>> runnable =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).toMat(sink, Keep.right());
 
@@ -125,7 +122,6 @@ public class FlowDocTest extends AbstractJavaTest {
   @Test
   @SuppressWarnings("unused")
   public void compoundSourceCannotBeUsedAsKey() throws Exception {
-    // #compound-source-is-not-keyed-runWith
     final Object tick = new Object();
 
     final Duration oneSecond = Duration.ofSeconds(1);
@@ -137,27 +133,24 @@ public class FlowDocTest extends AbstractJavaTest {
     final Source<String, Cancellable> timerMap = timer.map(t -> "tick");
     // WRONG: returned type is not the timers Cancellable!
     // Cancellable timerCancellable = Sink.ignore().runWith(timerMap, mat);
-    // #compound-source-is-not-keyed-runWith
 
-    // #compound-source-is-not-keyed-run
     // retain the materialized map, in order to retrieve the timer's Cancellable
     final Cancellable timerCancellable = timer.to(Sink.ignore()).run(system);
     timerCancellable.cancel();
-    // #compound-source-is-not-keyed-run
   }
 
   @Test
   public void creatingSourcesSinks() throws Exception {
     // #source-sink
     // Create a source from an Iterable
-    List<Integer> list = new LinkedList<Integer>();
+    List<Integer> list = new LinkedList<>();
     list.add(1);
     list.add(2);
     list.add(3);
     Source.from(list);
 
     // Create a source form a Future
-    Source.fromFuture(Futures.successful("Hello Streams!"));
+    Source.future(Futures.successful("Hello Streams!"));
 
     // Create a source from a single element
     Source.single("only one element");
@@ -167,7 +160,7 @@ public class FlowDocTest extends AbstractJavaTest {
 
     // Sink that folds over the stream and returns a Future
     // of the final result in the MaterializedMap
-    Sink.fold(0, (Integer aggr, Integer next) -> aggr + next);
+    Sink.fold(0, Integer::sum);
 
     // Sink that returns a Future in the MaterializedMap,
     // containing the first element of the stream
@@ -274,7 +267,17 @@ public class FlowDocTest extends AbstractJavaTest {
   @Test
   public void sourcePreMaterialization() {
     // #source-prematerialization
-    Source<String, ActorRef> matValuePoweredSource = Source.actorRef(100, OverflowStrategy.fail());
+    Source<String, ActorRef> matValuePoweredSource =
+        Source.actorRef(
+            elem -> {
+              // complete stream immediately if we send it Done
+              if (elem == Done.done()) return Optional.of(CompletionStrategy.immediately());
+              else return Optional.empty();
+            },
+            // never fail the stream because of a message
+            elem -> Optional.empty(),
+            100,
+            OverflowStrategy.fail());
 
     Pair<ActorRef, Source<String, NotUsed>> actorRefSourcePair =
         matValuePoweredSource.preMaterialize(system);

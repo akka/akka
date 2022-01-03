@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
-import akka.stream.stage.GraphStage
 import akka.stream.{ scaladsl, UniformFanInShape }
-
+import akka.stream.stage.GraphStage
 import akka.util.ccompat.JavaConverters._
 
 /**

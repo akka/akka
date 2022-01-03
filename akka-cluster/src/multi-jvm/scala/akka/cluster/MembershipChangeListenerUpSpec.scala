@@ -1,15 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
-import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.Deploy
+import akka.actor.Props
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 object MembershipChangeListenerUpMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -23,12 +22,10 @@ class MembershipChangeListenerUpMultiJvmNode1 extends MembershipChangeListenerUp
 class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUpSpec
 class MembershipChangeListenerUpMultiJvmNode3 extends MembershipChangeListenerUpSpec
 
-abstract class MembershipChangeListenerUpSpec
-    extends MultiNodeSpec(MembershipChangeListenerUpMultiJvmSpec)
-    with MultiNodeClusterSpec {
+abstract class MembershipChangeListenerUpSpec extends MultiNodeClusterSpec(MembershipChangeListenerUpMultiJvmSpec) {
 
-  import MembershipChangeListenerUpMultiJvmSpec._
   import ClusterEvent._
+  import MembershipChangeListenerUpMultiJvmSpec._
 
   "A set of connected cluster systems" must {
 

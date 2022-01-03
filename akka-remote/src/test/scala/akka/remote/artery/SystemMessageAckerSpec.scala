@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -32,6 +32,7 @@ class SystemMessageAckerSpec extends AkkaSpec("""
       .map {
         case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) =>
           InboundEnvelope(recipient, sysMsg, OptionVal.None, ackReplyTo.uid, inboundContext.association(ackReplyTo.uid))
+        case _ => throw new RuntimeException()
       }
       .via(new SystemMessageAcker(inboundContext))
       .map { case env: InboundEnvelope => env.message }

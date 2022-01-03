@@ -1,15 +1,18 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.serialization
 
-import akka.protobufv3.internal.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.protobufv3.internal.ByteString
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization._
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
+
+import java.nio.charset.StandardCharsets
 
 /** INTERNAL API */
 @InternalApi
@@ -43,6 +46,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     case _: SinkRefImpl[_] => SinkRefManifest
     //    case _: MaterializedSinkRef[_]                   => SinkRefManifest
     case StreamRefsProtocol.Ack => AckManifest
+    case unknown                => throw new IllegalArgumentException(s"Unsupported object ${unknown.getClass}")
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
@@ -60,6 +64,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     case ref: SourceRefImpl[_] => serializeSourceRef(ref).toByteArray
     //    case ref: MaterializedSourceRef[_]               => serializeSourceRef(ref.).toByteArray
     case StreamRefsProtocol.Ack => Array.emptyByteArray
+    case unknown                => throw new IllegalArgumentException(s"Unsupported object ${unknown.getClass}")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
@@ -73,6 +78,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     case SinkRefManifest   => deserializeSinkRef(bytes)
     case SourceRefManifest => deserializeSourceRef(bytes)
     case AckManifest       => StreamRefsProtocol.Ack
+    case unknown           => throw new IllegalArgumentException(s"Unsupported manifest '$unknown''")
   }
 
   // -----
@@ -83,7 +89,10 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
 
   private def serializeRemoteSinkFailure(
       d: StreamRefsProtocol.RemoteStreamFailure): StreamRefMessages.RemoteStreamFailure = {
-    StreamRefMessages.RemoteStreamFailure.newBuilder().setCause(ByteString.copyFrom(d.msg.getBytes)).build()
+    StreamRefMessages.RemoteStreamFailure
+      .newBuilder()
+      .setCause(UnsafeByteOperations.unsafeWrap(d.msg.getBytes(StandardCharsets.UTF_8)))
+      .build()
   }
 
   private def serializeRemoteSinkCompleted(
@@ -105,7 +114,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
 
     val payloadBuilder = StreamRefMessages.Payload
       .newBuilder()
-      .setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(p)))
+      .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(msgSerializer.toBinary(p)))
       .setSerializerId(msgSerializer.identifier)
 
     val ms = Serializers.manifestFor(msgSerializer, p)

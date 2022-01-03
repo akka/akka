@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
+import scala.concurrent.duration.{ FiniteDuration, _ }
+
 import akka.annotation.InternalApi
+import akka.stream._
 import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
-import akka.stream._
 import akka.util.NanoTimeTokenBucket
-
-import scala.concurrent.duration.{ FiniteDuration, _ }
 
 /**
  * INTERNAL API
@@ -40,7 +40,7 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
   private val nanosBetweenTokens = per.toNanos / cost
   // 100 ms is a realistic minimum between tokens, otherwise the maximumBurst is adjusted
   // to be able to support higher rates
-  val effectiveMaximumBurst =
+  val effectiveMaximumBurst: Long =
     if (maximumBurst == Throttle.AutomaticMaximumBurst) math.max(1, ((100 * 1000 * 1000) / nanosBetweenTokens))
     else maximumBurst
   require(!(mode == ThrottleMode.Enforcing && effectiveMaximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")

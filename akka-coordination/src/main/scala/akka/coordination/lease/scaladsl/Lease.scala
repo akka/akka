@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.coordination.lease.scaladsl
 
-import akka.coordination.lease.LeaseSettings
-
 import scala.concurrent.Future
+
+import akka.coordination.lease.LeaseSettings
 
 abstract class Lease(val settings: LeaseSettings) {
 

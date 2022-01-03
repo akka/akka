@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.osgi
 
-import akka.event.Logging
 import org.osgi.service.log.LogService
+
+import akka.event.Logging
 import akka.event.Logging.{ DefaultLogger, LogEvent }
 import akka.event.Logging.Error.NoCause
 

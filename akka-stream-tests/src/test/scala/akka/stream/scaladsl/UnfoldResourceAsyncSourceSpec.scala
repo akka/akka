@@ -1,30 +1,30 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.Done
-import akka.stream.ActorAttributes
-import akka.stream.Materializer
-import akka.stream.Supervision
-import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.impl.StreamSupervisor
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestSubscriber
-import akka.testkit.TestLatch
-import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import akka.Done
+import akka.stream.ActorAttributes
+import akka.stream.Materializer
+import akka.stream.Supervision
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.impl.StreamSupervisor
+import akka.stream.impl.StreamSupervisor.Children
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 
 object UnfoldResourceAsyncSourceSpec {
 
@@ -80,7 +80,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       val probe = TestSubscriber.probe[Int]()
       Source
-        .unfoldResourceAsync[Int, ResourceDummy[Int]](resource.create _, _.read, _.close)
+        .unfoldResourceAsync[Int, ResourceDummy[Int]](() => resource.create, _.read, _.close())
         .runWith(Sink.fromSubscriber(probe))
 
       probe.request(1)
@@ -106,7 +106,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val resource = new ResourceDummy[Int](1 :: Nil, firstReadFuture = firstRead.future)
 
       Source
-        .unfoldResourceAsync[Int, ResourceDummy[Int]](resource.create _, _.read, _.close)
+        .unfoldResourceAsync[Int, ResourceDummy[Int]](() => resource.create, _.read, _.close())
         .runWith(Sink.fromSubscriber(probe))
 
       probe.request(1L)
@@ -158,7 +158,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .unfoldResourceAsync[Unit, Unit](
           () => Future.successful(()),
           _ => Future.successful[Option[Unit]](None),
-          _ => Future.failed(throw TE("")))
+          _ => Future.failed(TE("")))
         .runWith(Sink.fromSubscriber(probe))
       probe.ensureSubscription()
       probe.request(1L)
@@ -172,8 +172,9 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           iterator =>
             if (iterator.hasNext) {
               iterator.next() match {
-                case n: Int => Future.successful(Some(n))
-                case e: TE  => throw e
+                case n: Int     => Future.successful(Some(n))
+                case e: TE      => throw e
+                case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
               }
             } else Future.successful(None),
           _ => Future.successful(Done))
@@ -190,8 +191,9 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           iterator =>
             if (iterator.hasNext) {
               iterator.next() match {
-                case n: Int => Future.successful(Some(n))
-                case e: TE  => Future.failed(e)
+                case n: Int     => Future.successful(Some(n))
+                case e: TE      => Future.failed(e)
+                case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
               }
             } else Future.successful(None),
           _ => Future.successful(Done))
@@ -216,7 +218,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             if (!failed) {
               failed = true
               throw TE("read-error")
-            } else if (reader.hasNext) Future.successful(Some(reader.next))
+            } else if (reader.hasNext) Future.successful(Some(reader.next()))
             else Future.successful(None),
           _ => Future.successful(Done))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
@@ -241,7 +243,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             if (!failed) {
               failed = true
               Future.failed(TE("read-error"))
-            } else if (reader.hasNext) Future.successful(Some(reader.next))
+            } else if (reader.hasNext) Future.successful(Some(reader.next()))
             else Future.successful(None),
           _ => Future.successful(Done))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
@@ -319,7 +321,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       Source
         .unfoldResourceAsync[String, Unit](
-          () => Promise[Unit].future, // never complete
+          () => Promise[Unit]().future, // never complete
           _ => ???,
           _ => ???)
         .runWith(Sink.ignore)

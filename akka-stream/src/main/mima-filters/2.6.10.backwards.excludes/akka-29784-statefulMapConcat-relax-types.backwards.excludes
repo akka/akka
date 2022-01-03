@@ -1,0 +1,7 @@
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.*.mapConcat")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.*.mapConcat")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.*.statefulMapConcat")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.*.statefulMapConcat")
+
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.fusing.StatefulMapConcat.f")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.fusing.StatefulMapConcat.this")

@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
+
+import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 import akka.actor.ActorRef
 import akka.stream.Attributes
@@ -11,13 +14,10 @@ import akka.stream.stage.AsyncCallback
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestDuration
-
-import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 object GraphStageTimersSpec {
   case object TestSingleTimer
@@ -80,6 +80,7 @@ class GraphStageTimersSpec extends StreamSpec {
           scheduleOnce("TestCancelTimer", 500.milli.dilated)
         case TestRepeatedTimer =>
           scheduleWithFixedDelay("TestRepeatedTimer", 100.millis.dilated, 100.millis.dilated)
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
     }
   }

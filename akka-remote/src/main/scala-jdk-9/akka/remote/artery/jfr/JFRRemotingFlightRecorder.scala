@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.jfr
@@ -16,7 +16,7 @@ import akka.remote.artery.RemotingFlightRecorder
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class JFRRemotingFlightRecorder(system: ExtendedActorSystem) extends RemotingFlightRecorder {
+private[akka] final class JFRRemotingFlightRecorder() extends RemotingFlightRecorder {
   override def transportMediaDriverStarted(directoryName: String): Unit =
     new TransportMediaDriverStarted(directoryName).commit()
 

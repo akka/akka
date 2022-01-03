@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.ActorTags
 import akka.actor.typed.{ DispatcherSelector, MailboxSelector, Props }
+import akka.actor.typed.ActorTags
 import akka.annotation.InternalApi
 
 /**

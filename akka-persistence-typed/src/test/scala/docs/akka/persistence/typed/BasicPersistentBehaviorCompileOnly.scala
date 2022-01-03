@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.persistence.typed
@@ -15,6 +15,7 @@ import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.EventSeq
+import akka.persistence.typed.scaladsl.Recovery
 //#structure
 //#behavior
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -24,10 +25,10 @@ import akka.persistence.typed.PersistenceId
 //#structure
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotFailed
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 // unused variables in pattern match are useful in the docs
-@silent
+@nowarn
 object BasicPersistentBehaviorCompileOnly {
 
   import akka.persistence.typed.scaladsl.RetentionCriteria
@@ -107,10 +108,10 @@ object BasicPersistentBehaviorCompileOnly {
   import MyPersistentBehavior._
 
   object RecoveryBehavior {
-    def apply(): Behavior[Command] =
+    def apply(persistenceId: PersistenceId): Behavior[Command] =
       //#recovery
       EventSourcedBehavior[Command, Event, State](
-        persistenceId = PersistenceId.ofUniqueId("abc"),
+        persistenceId = persistenceId,
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -119,6 +120,18 @@ object BasicPersistentBehaviorCompileOnly {
             throw new NotImplementedError("TODO: add some end-of-recovery side-effect here")
         }
     //#recovery
+  }
+
+  object RecoveryDisabledBehavior {
+    def apply(): Behavior[Command] =
+      //#recovery-disabled
+      EventSourcedBehavior[Command, Event, State](
+        persistenceId = PersistenceId.ofUniqueId("abc"),
+        emptyState = State(),
+        commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
+        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
+        .withRecovery(Recovery.disabled)
+    //#recovery-disabled
   }
 
   object TaggingBehavior {
@@ -241,7 +254,7 @@ object BasicPersistentBehaviorCompileOnly {
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-    .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)
+    .withRecovery(Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none))
   //#snapshotSelection
 
   //#retentionCriteria

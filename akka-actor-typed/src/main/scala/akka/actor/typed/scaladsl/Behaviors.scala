@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 package scaladsl
 
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.actor.typed.internal._
+import scala.reflect.ClassTag
 
-import scala.reflect.{ classTag, ClassTag }
+import akka.actor.typed.internal._
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
@@ -73,6 +73,9 @@ object Behaviors {
    * The `PostStop` signal that results from stopping this actor will first be passed to the
    * current behavior and then the provided `postStop` callback will be invoked.
    * All other messages and signals will effectively be ignored.
+   *
+   * An example of when the callback can be useful compared to the `PostStop` signal
+   * if you want to send a reply to the message that initiated a graceful stop.
    */
   def stopped[T](postStop: () => Unit): Behavior[T] = BehaviorImpl.stopped(postStop)
 
@@ -219,8 +222,8 @@ object Behaviors {
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
 
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
-    def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
-      val tag = classTag[Thr]
+    def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(
+        implicit tag: ClassTag[Thr] = ThrowableClassTag): Behavior[T] = {
       val effectiveTag = if (tag == ClassTag.Nothing) ThrowableClassTag else tag
       Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
     }

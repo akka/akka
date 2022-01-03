@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb.javadsl
@@ -18,13 +18,14 @@ import akka.stream.javadsl.Source
  *   PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, LeveldbReadJournal.Identifier());
  * }}}
  *
- * Corresponding Scala API is in [[akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal]].
+ * Corresponding Scala API is in [[akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal]].
  *
  * Configuration settings can be defined in the configuration section with the
  * absolute path corresponding to the identifier, which is `"akka.persistence.query.journal.leveldb"`
  * for the default [[LeveldbReadJournal#Identifier]]. See `reference.conf`.
  *
  */
+@deprecated("Use another journal implementation", "2.6.15")
 class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal)
     extends ReadJournal
     with PersistenceIdsQuery

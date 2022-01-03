@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
 import java.util.Optional
 
+import scala.compat.java8.OptionConverters._
+
 import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.stream.scaladsl
 import akka.util.JavaDurationConverters._
-
-import scala.compat.java8.OptionConverters._
 
 object RetryFlow {
 

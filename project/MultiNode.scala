@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
 import akka.TestExtras.Filter.Keys._
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.multiJvmCreateLogger
-import com.typesafe.sbt.SbtMultiJvm
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
+import com.typesafe.sbt.{ MultiJvmPlugin => SbtMultiJvm }
+import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys._
 import sbt.{ Def, _ }
 import sbt.Keys._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
@@ -24,8 +24,7 @@ object MultiNode extends AutoPlugin {
 
   // MultiJvm tests can be excluded from normal test target an validatePullRequest
   // with -Dakka.test.multi-in-test=false
-  val multiNodeTestInTest: Boolean =
-    System.getProperty("akka.test.multi-in-test", "true") == "true"
+  val multiNodeTestInTest: Boolean = sys.props.getOrElse("akka.test.multi-in-test", "true").toBoolean
 
   object CliOptions {
     val multiNode = CliOption("akka.test.multi-node", false)
@@ -37,8 +36,8 @@ object MultiNode extends AutoPlugin {
   }
 
   val multiExecuteTests =
-    CliOptions.multiNode.ifTrue(multiNodeExecuteTests in MultiJvm).getOrElse(executeTests in MultiJvm)
-  val multiTest = CliOptions.multiNode.ifTrue(multiNodeTest in MultiJvm).getOrElse(test in MultiJvm)
+    CliOptions.multiNode.ifTrue(MultiJvm / multiNodeExecuteTests).getOrElse(MultiJvm / executeTests)
+  val multiTest = CliOptions.multiNode.ifTrue(MultiJvm / multiNodeTest).getOrElse(MultiJvm / test)
 
   override def trigger = noTrigger
   override def requires = plugins.JvmPlugin
@@ -52,7 +51,7 @@ object MultiNode extends AutoPlugin {
     // -Dmultinode.Djava.net.preferIPv4Stack=true -Dmultinode.Xmx512m -Dmultinode.XX:MaxPermSize=256M
     // -DMultiJvm.akka.cluster.Stress.nrOfNodes=15
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
-    val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
+    val knownPrefix = Set("akka.", "MultiJvm.", "aeron.")
     val akkaProperties = System.getProperties.stringPropertyNames.asScala.toList.collect {
       case MultinodeJvmArgs(a, b) =>
         val value = System.getProperty("multinode." + a + b)
@@ -70,34 +69,34 @@ object MultiNode extends AutoPlugin {
     inConfig(MultiJvm)(scalafmtConfigSettings) ++
     Seq(
       // Hack because 'provided' dependencies by default are not picked up by the multi-jvm plugin:
-      managedClasspath in MultiJvm ++= (managedClasspath in Compile).value.filter(_.data.name.contains("silencer-lib")),
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      scalacOptions in MultiJvm := (scalacOptions in Test).value,
-      logLevel in multiJvmCreateLogger := Level.Debug, //  to see ssh establishment
-      assemblyMergeStrategy in assembly in MultiJvm := {
-        case n if n.endsWith("logback-test.xml") ⇒ MergeStrategy.first
+      MultiJvm / managedClasspath ++= (Compile / managedClasspath).value.filter(_.data.name.contains("silencer-lib")),
+      MultiJvm / jvmOptions := defaultMultiJvmOptions,
+      MultiJvm / scalacOptions := (Test / scalacOptions).value,
+      multiJvmCreateLogger / logLevel := Level.Debug, //  to see ssh establishment
+      MultiJvm / assembly / assemblyMergeStrategy := {
+        case n if n.endsWith("logback-test.xml")                => MergeStrategy.first
         case n if n.toLowerCase.matches("meta-inf.*\\.default") => MergeStrategy.first
-        case n => (assemblyMergeStrategy in assembly in MultiJvm).value.apply(n)
+        case n                                                  => (MultiJvm / assembly / assemblyMergeStrategy).value.apply(n)
       },
-      multiJvmCreateLogger in MultiJvm := { // to use normal sbt logging infra instead of custom sbt-multijvm-one
-        val previous = (multiJvmCreateLogger in MultiJvm).value
+      MultiJvm / multiJvmCreateLogger := { // to use normal sbt logging infra instead of custom sbt-multijvm-one
+        val previous = (MultiJvm / multiJvmCreateLogger).value
         val logger = streams.value.log
         (name: String) =>
           new Logger {
             def trace(t: => Throwable): Unit = { logger.trace(t) }
-            def success(message: => String): Unit = { success(message) }
+            def success(message: => String): Unit = { logger.success(message) }
             def log(level: Level.Value, message: => String): Unit =
               logger.log(level, s"[${scala.Console.BLUE}$name${scala.Console.RESET}] $message")
           }
       }) ++
-    CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
-    CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
-    CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++
+    CliOptions.hostsFileName.map(MultiJvm / multiNodeHostsFileName := _) ++
+    CliOptions.javaName.map(MultiJvm / multiNodeJavaName := _) ++
+    CliOptions.targetDirName.map(MultiJvm / multiNodeTargetDirName := _) ++
     (if (multiNodeTestInTest) {
        // make sure that MultiJvm tests are executed by the default test target,
        // and combine the results from ordinary test and multi-jvm tests
-       (executeTests in Test) := {
-         val testResults = (executeTests in Test).value
+       (Test / executeTests) := {
+         val testResults = (Test / executeTests).value
          val multiNodeResults = multiExecuteTests.value
          val overall =
            if (testResults.overall.id < multiNodeResults.overall.id)
@@ -111,9 +110,9 @@ object MultiNode extends AutoPlugin {
            testResults.summaries ++ multiNodeResults.summaries)
        }
      } else Nil) ++
-    Def.settings((compile in MultiJvm) := {
-      (headerCreate in MultiJvm).value
-      (compile in MultiJvm).value
+    Def.settings((MultiJvm / compile) := {
+      (MultiJvm / headerCreate).value
+      (MultiJvm / compile).value
     }) ++ headerSettings(MultiJvm) ++ Seq(validateCompile := compile.?.all(anyConfigsInThisProject).value)
 
   implicit class TestResultOps(val self: TestResult) extends AnyVal {
@@ -134,11 +133,11 @@ object MultiNodeScalaTest extends AutoPlugin {
 
   override lazy val projectSettings =
     Seq(
-      extraOptions in MultiJvm := {
-        val src = (sourceDirectory in MultiJvm).value
+      MultiJvm / extraOptions := {
+        val src = (MultiJvm / sourceDirectory).value
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      scalatestOptions in MultiJvm := {
+      MultiJvm / scalatestOptions := {
         Seq("-C", "org.scalatest.extra.QuietReporter") ++
         (if (excludeTestTags.value.isEmpty) Seq.empty
          else

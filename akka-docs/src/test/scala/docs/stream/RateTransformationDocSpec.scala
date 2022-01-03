@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -28,7 +28,11 @@ class RateTransformationDocSpec extends AkkaSpec {
     //#conflate-summarize
 
     val fut =
-      Source.fromIterator(() => Iterator.continually(Random.nextGaussian)).via(statsFlow).grouped(10).runWith(Sink.head)
+      Source
+        .fromIterator(() => Iterator.continually(Random.nextGaussian()))
+        .via(statsFlow)
+        .grouped(10)
+        .runWith(Sink.head)
 
     fut.futureValue
   }
@@ -38,8 +42,8 @@ class RateTransformationDocSpec extends AkkaSpec {
     val p = 0.01
     val sampleFlow = Flow[Double]
       .conflateWithSeed(immutable.Seq(_)) {
-        case (acc, elem) if Random.nextDouble < p => acc :+ elem
-        case (acc, _)                             => acc
+        case (acc, elem) if Random.nextDouble() < p => acc :+ elem
+        case (acc, _)                               => acc
       }
       .mapConcat(identity)
     //#conflate-sample
@@ -84,7 +88,7 @@ class RateTransformationDocSpec extends AkkaSpec {
       case (d, _) => latch.countDown(); Iterator.from(1).map(d -> _)
     }
 
-    val (pub, sub) = TestSource.probe[Double].via(realDriftFlow).toMat(TestSink.probe[(Double, Int)])(Keep.both).run()
+    val (pub, sub) = TestSource.probe[Double].via(realDriftFlow).toMat(TestSink[(Double, Int)]())(Keep.both).run()
 
     sub.request(1)
     pub.sendNext(1.0)
@@ -105,7 +109,7 @@ class RateTransformationDocSpec extends AkkaSpec {
     val latch = TestLatch(2)
     val realDriftFlow = Flow[Double].expand(d => { latch.countDown(); Iterator.from(0).map(d -> _) })
 
-    val (pub, sub) = TestSource.probe[Double].via(realDriftFlow).toMat(TestSink.probe[(Double, Int)])(Keep.both).run()
+    val (pub, sub) = TestSource.probe[Double].via(realDriftFlow).toMat(TestSink[(Double, Int)]())(Keep.both).run()
 
     sub.request(1)
     pub.sendNext(1.0)

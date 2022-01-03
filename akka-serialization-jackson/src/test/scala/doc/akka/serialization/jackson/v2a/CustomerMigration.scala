@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package doc.akka.serialization.jackson.v2a
@@ -17,10 +17,10 @@ class CustomerMigration extends JacksonMigration {
     val root = json.asInstanceOf[ObjectNode]
     if (fromVersion <= 1) {
       val shippingAddress = root.`with`("shippingAddress")
-      shippingAddress.set("street", root.get("street"))
-      shippingAddress.set("city", root.get("city"))
-      shippingAddress.set("zipCode", root.get("zipCode"))
-      shippingAddress.set("country", root.get("country"))
+      shippingAddress.set[JsonNode]("street", root.get("street"))
+      shippingAddress.set[JsonNode]("city", root.get("city"))
+      shippingAddress.set[JsonNode]("zipCode", root.get("zipCode"))
+      shippingAddress.set[JsonNode]("country", root.get("country"))
       root.remove("street")
       root.remove("city")
       root.remove("zipCode")

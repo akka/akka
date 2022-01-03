@@ -1,10 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.routing
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -16,7 +19,6 @@ import akka.routing.Broadcast
 import akka.routing.RandomPool
 import akka.routing.RoutedActorRef
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 class RemoteRandomConfig(artery: Boolean) extends MultiNodeConfig {
 
@@ -60,8 +62,8 @@ object RemoteRandomSpec {
 class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig)
     with DefaultTimeout {
-  import multiNodeConfig._
   import RemoteRandomSpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 
@@ -74,7 +76,7 @@ class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig)
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RandomPool(nrOfInstances = 0).props(Props[SomeActor]), "service-hello")
+        val actor = system.actorOf(RandomPool(nrOfInstances = 0).props(Props[SomeActor]()), "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         val connectionCount = 3

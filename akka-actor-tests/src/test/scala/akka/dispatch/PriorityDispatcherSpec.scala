@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
-import language.postfixOps
+import scala.concurrent.duration._
+
 import com.typesafe.config.Config
+import language.postfixOps
+
 import akka.actor.{ Actor, ActorSystem, Props }
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.util.unused
-
-import scala.concurrent.duration._
 
 object PriorityDispatcherSpec {
 
@@ -29,12 +30,14 @@ object PriorityDispatcherSpec {
       extends UnboundedPriorityMailbox(PriorityGenerator({
         case i: Int => i //Reverse order
         case Result => Int.MaxValue
+        case _      => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }: Any => Int))
 
   class Bounded(@unused settings: ActorSystem.Settings, @unused config: Config)
       extends BoundedPriorityMailbox(PriorityGenerator({
         case i: Int => i //Reverse order
         case Result => Int.MaxValue
+        case _      => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }: Any => Int), 1000, 10 seconds)
 
 }
@@ -82,7 +85,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
 
     }))
 
-    expectMsgType[List[Int]] should ===(msgs)
+    (expectMsgType[List[Int]]: List[Int]) should ===(msgs)
   }
 
 }

@@ -1,27 +1,28 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
 
 import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
-import akka.annotation.InternalApi
-import akka.io.SimpleDnsCache
-import akka.io.dns.CachePolicy.{ Never, Ttl }
-import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
-import akka.io.dns.internal.DnsClient._
-import akka.io.dns._
-import akka.pattern.AskTimeoutException
-import akka.pattern.{ ask, pipe }
-import akka.util.{ Helpers, Timeout }
-import akka.util.PrettyDuration._
-
 import scala.collection.immutable
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
+import akka.annotation.InternalApi
+import akka.io.SimpleDnsCache
+import akka.io.dns._
+import akka.io.dns.CachePolicy.{ Never, Ttl }
+import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
+import akka.io.dns.internal.DnsClient._
+import akka.pattern.{ ask, pipe }
+import akka.pattern.AskTimeoutException
+import akka.util.{ Helpers, Timeout }
+import akka.util.PrettyDuration._
 
 /**
  * INTERNAL API
@@ -36,10 +37,33 @@ private[io] final class AsyncDnsResolver(
 
   import AsyncDnsResolver._
 
-  implicit val ec = context.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
+
+  // avoid ever looking up localhost by pre-populating cache
+  {
+    val loopback = InetAddress.getLoopbackAddress
+    val (ipv4Address, ipv6Address) = loopback match {
+      case ipv6: Inet6Address => (InetAddress.getByName("127.0.0.1"), ipv6)
+      case ipv4: Inet4Address => (ipv4, InetAddress.getByName("::1"))
+      case unknown            => throw new IllegalArgumentException(s"Loopback address was [$unknown]")
+    }
+    cache.put(
+      "localhost" -> Ip(),
+      DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, loopback) :: Nil),
+      Ttl.effectivelyForever)
+    cache.put(
+      "localhost" -> Ip(ipv6 = false, ipv4 = true),
+      DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, ipv4Address) :: Nil),
+      Ttl.effectivelyForever)
+    cache.put(
+      "localhost" -> Ip(ipv6 = true, ipv4 = false),
+      DnsProtocol.Resolved("localhost", ARecord("localhost", Ttl.effectivelyForever, ipv6Address) :: Nil),
+      Ttl.effectivelyForever)
+
+  }
 
   // For ask to DNS Client
-  implicit val timeout = Timeout(settings.ResolveTimeout)
+  implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
 
   val nameServers = settings.NameServers
 
@@ -93,6 +117,7 @@ private[io] final class AsyncDnsResolver(
           val record = address match {
             case _: Inet4Address           => ARecord(name, Ttl.effectivelyForever, address)
             case ipv6address: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6address)
+            case unexpected                => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
           }
           DnsProtocol.Resolved(name, record :: Nil)
         }
@@ -201,7 +226,7 @@ private[io] final class AsyncDnsResolver(
  * INTERNAL API
  */
 @InternalApi
-private[io] object AsyncDnsResolver {
+private[akka] object AsyncDnsResolver {
 
   private val ipv4Address =
     """^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$""".r
@@ -209,9 +234,14 @@ private[io] object AsyncDnsResolver {
   private val ipv6Address =
     """^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$""".r
 
-  private def isInetAddress(name: String): Boolean =
-    ipv4Address.findAllMatchIn(name).nonEmpty ||
+  private[akka] def isIpv4Address(name: String): Boolean =
+    ipv4Address.findAllMatchIn(name).nonEmpty
+
+  private[akka] def isIpv6Address(name: String): Boolean =
     ipv6Address.findAllMatchIn(name).nonEmpty
+
+  private def isInetAddress(name: String): Boolean =
+    isIpv4Address(name) || isIpv6Address(name)
 
   private val Empty =
     Future.successful(Answer(-1, immutable.Seq.empty[ResourceRecord], immutable.Seq.empty[ResourceRecord]))

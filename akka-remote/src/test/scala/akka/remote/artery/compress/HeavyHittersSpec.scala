@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -159,6 +159,16 @@ class HeavyHittersSpec extends AnyWordSpecLike with Matchers {
       hitters.lowestHitterWeight should ===(2)
       hitters.update("B", 4)
       hitters.lowestHitterWeight should ===(3)
+    }
+
+    "be disabled with max=0" in {
+      val hitters = new TopHeavyHitters[String](0)
+      hitters.update("A", 10) shouldBe true
+      hitters.iterator.toSet should ===(Set.empty)
+
+      hitters.update("B", 5) shouldBe false
+      hitters.update("C", 15) shouldBe true
+      hitters.iterator.toSet should ===(Set.empty)
     }
 
   }

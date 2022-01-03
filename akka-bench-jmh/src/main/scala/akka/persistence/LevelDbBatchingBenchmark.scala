@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -8,12 +8,14 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.apache.commons.io.FileUtils
+import org.openjdk.jmh.annotations._
 import akka.actor._
 import akka.persistence.journal.AsyncWriteTarget._
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.testkit.TestProbe
-import org.apache.commons.io.FileUtils
-import org.openjdk.jmh.annotations._
+
+import scala.annotation.nowarn
 
 /*
   # OS:   OSX 10.9.3
@@ -46,13 +48,14 @@ class LevelDbBatchingBenchmark {
   val batch_200 = List.fill(200) { AtomicWrite(PersistentRepr("data", 12, "pa")) }
 
   @Setup(Level.Trial)
+  @nowarn("msg=deprecated")
   def setup(): Unit = {
     sys = ActorSystem("sys")
     deleteStorage(sys)
     SharedLeveldbJournal.setStore(store, sys)
 
     probe = TestProbe()(sys)
-    store = sys.actorOf(Props[SharedLeveldbStore], "store")
+    store = sys.actorOf(Props[SharedLeveldbStore](), "store")
   }
 
   @TearDown(Level.Trial)

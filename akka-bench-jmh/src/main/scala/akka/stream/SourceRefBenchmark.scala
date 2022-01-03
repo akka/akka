@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -7,15 +7,16 @@ package akka.stream
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
-import akka.remote.artery.BenchTestSource
-import akka.stream.scaladsl._
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Success
+
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
+import akka.actor.ActorSystem
+import akka.remote.artery.BenchTestSource
+import akka.stream.scaladsl._
 
 /*
    Just a brief reference run (3.1 GHz Intel Core i7, MacBook Pro late 2017):
@@ -33,7 +34,7 @@ class SourceRefBenchmark {
         loglevel = "WARNING"
       }""".stripMargin).withFallback(ConfigFactory.load())
 
-  implicit val system = ActorSystem("test", config)
+  implicit val system: ActorSystem = ActorSystem("test", config)
 
   final val successMarker = Success(1)
   final val successFailure = Success(new Exception)

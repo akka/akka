@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
 
+import scala.collection.immutable
+
 import akka.actor.Address
-import akka.annotation.DoNotInherit
-import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
-import akka.cluster._
-import akka.japi.Util
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
 import akka.actor.typed.ExtensionSetup
+import akka.annotation.DoNotInherit
+import akka.cluster._
+import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
 import akka.cluster.typed.internal.AdapterClusterImpl
-
-import scala.collection.immutable
+import akka.japi.Util
 
 /**
  * Messages for subscribing to changes in the cluster state
@@ -149,6 +149,26 @@ object Leave {
  * this method.
  */
 final case class Down(address: Address) extends ClusterCommand
+
+/**
+ * Initiate a full cluster shutdown. This stops:
+ * - New members joining the cluster
+ * - New rebalances in Cluster Sharding
+ * - Singleton handovers
+ *
+ * However, it does not stop the nodes. That is expected to be signalled externally.
+ *
+ * Not for user extension
+ */
+@DoNotInherit sealed trait PrepareForFullClusterShutdown extends ClusterCommand
+
+case object PrepareForFullClusterShutdown extends PrepareForFullClusterShutdown {
+
+  /**
+   * Java API
+   */
+  def prepareForFullClusterShutdown(): PrepareForFullClusterShutdown = this
+}
 
 /**
  * Akka Typed Cluster API entry point

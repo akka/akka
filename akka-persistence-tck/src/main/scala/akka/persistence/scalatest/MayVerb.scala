@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.scalatest
@@ -41,7 +41,7 @@ trait MayVerb {
      * @see <a href="https://www.rfc-editor.org/rfc/rfc2119.txt">RFC 2119</a>
      */
     def may(right: => Unit)(implicit fun: StringVerbBlockRegistration, pos: Position): Unit = {
-      fun(leftSideString, "may", pos, right _)
+      fun(leftSideString, "may", pos, () => right)
     }
   }
 

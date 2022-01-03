@@ -1,12 +1,14 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
 
-import akka.testkit.AkkaSpec
 import java.io.File
+
 import org.apache.commons.io.FileUtils
+
+import akka.testkit.AkkaSpec
 
 trait Cleanup { this: AkkaSpec =>
   val storageLocations =

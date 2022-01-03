@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import scala.collection.immutable
 import java.lang.reflect.InvocationTargetException
 
-import akka.annotation.DoNotInherit
-
+import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Try
+
+import akka.annotation.DoNotInherit
 
 /**
  * This is the default [[akka.actor.DynamicAccess]] implementation used by [[akka.actor.ExtendedActorSystem]]
@@ -49,7 +49,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
     }
 
   override def classIsOnClasspath(fqcn: String): Boolean =
-    getClassFor(fqcn) match {
+    getClassFor[Any](fqcn) match {
       case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
         false
       case _ =>
@@ -69,6 +69,8 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
           case null                  => throw new NullPointerException
           case x if !t.isInstance(x) => throw new ClassCastException(fqcn + " is not a subtype of " + t)
           case x: T                  => x
+          case unexpected =>
+            throw new IllegalArgumentException(s"Unexpected module field: $unexpected") // will not happen, for exhaustiveness check
         }
       }.recover { case i: InvocationTargetException if i.getTargetException ne null => throw i.getTargetException }
     }

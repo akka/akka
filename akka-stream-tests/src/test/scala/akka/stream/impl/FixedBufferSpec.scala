@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
+
+import scala.annotation.nowarn
 
 import akka.stream.ActorAttributes
 import akka.stream.ActorAttributes.MaxFixedBufferSize
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit.StreamSpec
-import com.github.ghik.silencer.silent
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class FixedBufferSpec extends StreamSpec {
 
   for (size <- List(1, 3, 4)) {
@@ -100,17 +101,22 @@ class FixedBufferSpec extends StreamSpec {
         import language.reflectiveCalls
         val buf = FixedSizeBuffer[Int](size)
 
-        val cheat = buf.asInstanceOf[{ def readIdx_=(l: Long): Unit; def writeIdx_=(l: Long): Unit }]
-        cheat.readIdx_=(Int.MaxValue)
-        cheat.writeIdx_=(Int.MaxValue)
+        try {
+          val cheat = buf.asInstanceOf[{ def readIdx_=(l: Long): Unit; def writeIdx_=(l: Long): Unit }]
+          cheat.readIdx_=(Int.MaxValue)
+          cheat.writeIdx_=(Int.MaxValue)
 
-        for (_ <- 1 to 10) {
-          buf.isEmpty should be(true)
-          buf.isFull should be(false)
-          for (elem <- 1 to size) buf.enqueue(elem)
-          buf.isEmpty should be(false)
-          buf.isFull should be(true)
-          for (elem <- 1 to size) buf.dequeue() should be(elem)
+          for (_ <- 1 to 10) {
+            buf.isEmpty should be(true)
+            buf.isFull should be(false)
+            for (elem <- 1 to size) buf.enqueue(elem)
+            buf.isEmpty should be(false)
+            buf.isFull should be(true)
+            for (elem <- 1 to size) buf.dequeue() should be(elem)
+          }
+        } catch {
+          case _: NoSuchMethodException =>
+          // our 'cheat' doesn't work on Scala 3
         }
       }
 

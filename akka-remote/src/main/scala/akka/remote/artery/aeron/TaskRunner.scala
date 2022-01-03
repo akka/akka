@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -7,16 +7,17 @@ package aeron
 
 import java.util.concurrent.TimeUnit.{ MICROSECONDS, MILLISECONDS }
 
-import akka.Done
-import akka.actor.ExtendedActorSystem
-import akka.dispatch.{ AbstractNodeQueue, MonitorableThreadFactory }
-import akka.event.Logging
-import org.agrona.concurrent.{ BackoffIdleStrategy, BusySpinIdleStrategy, IdleStrategy, SleepingIdleStrategy }
-
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+
+import org.agrona.concurrent.{ BackoffIdleStrategy, BusySpinIdleStrategy, IdleStrategy, SleepingIdleStrategy }
+
+import akka.Done
+import akka.actor.ExtendedActorSystem
+import akka.dispatch.{ AbstractNodeQueue, MonitorableThreadFactory }
+import akka.event.Logging
 
 /**
  * INTERNAL API
@@ -115,7 +116,7 @@ private[akka] object TaskRunner {
 private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: Int) extends Runnable {
   import TaskRunner._
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[TaskRunner])
   private[this] var running = false
   private[this] val cmdQueue = new CommandQueue
   private[this] val tasks = new ArrayBag[Task]

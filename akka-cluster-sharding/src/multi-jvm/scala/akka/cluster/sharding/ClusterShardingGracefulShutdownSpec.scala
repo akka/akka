@@ -1,80 +1,39 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
-import java.io.File
+import akka.Done
 
+import scala.concurrent.duration._
 import akka.actor._
-import akka.cluster.{ Cluster, MultiNodeClusterSpec }
-import akka.cluster.sharding.ShardRegion.GracefulShutdown
-import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
+import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GracefulShutdown }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.apache.commons.io.FileUtils
 
-import scala.concurrent.duration._
+import scala.concurrent.Future
 
-object ClusterShardingGracefulShutdownSpec {
-  case object StopEntity
-
-  class Entity extends Actor {
-    def receive = {
-      case id: Int => sender() ! id
-      case StopEntity =>
-        context.stop(self)
-    }
-  }
-
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int => (id.toString, id)
-  }
-
-  val extractShardId: ShardRegion.ExtractShardId = msg =>
-    msg match {
-      case id: Int => id.toString
-    }
-
-}
-
-abstract class ClusterShardingGracefulShutdownSpecConfig(val mode: String) extends MultiNodeConfig {
+abstract class ClusterShardingGracefulShutdownSpecConfig(mode: String)
+    extends MultiNodeClusterShardingConfig(
+      mode,
+      additionalConfig =
+        """
+        akka.loglevel = info
+        akka.persistence.journal.leveldb-shared.store.native = off
+        # We set this high to allow pausing coordinated shutdown make sure the handoff completes 'immediately' and not
+        # relies on the member removal, which could make things take longer then necessary
+        akka.coordinated-shutdown.phases.cluster-sharding-shutdown-region.timeout = 60s
+        """) {
   val first = role("first")
   val second = role("second")
-
-  commonConfig(
-    ConfigFactory
-      .parseString(s"""
-    akka.loglevel = INFO
-    akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
-    akka.persistence.journal.leveldb-shared {
-      timeout = 5s
-      store {
-        native = off
-        dir = "target/ClusterShardingGracefulShutdownSpec/journal"
-      }
-    }
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/ClusterShardingGracefulShutdownSpec/snapshots"
-    akka.cluster.sharding.state-store-mode = "$mode"
-    akka.cluster.sharding.distributed-data.durable.lmdb {
-      dir = target/ClusterShardingGracefulShutdownSpec/sharding-ddata
-      map-size = 10 MiB
-    }
-    """)
-      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
-      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 object PersistentClusterShardingGracefulShutdownSpecConfig
-    extends ClusterShardingGracefulShutdownSpecConfig("persistence")
-object DDataClusterShardingGracefulShutdownSpecConfig extends ClusterShardingGracefulShutdownSpecConfig("ddata")
+    extends ClusterShardingGracefulShutdownSpecConfig(ClusterShardingSettings.StateStoreModePersistence)
+object DDataClusterShardingGracefulShutdownSpecConfig
+    extends ClusterShardingGracefulShutdownSpecConfig(ClusterShardingSettings.StateStoreModeDData)
 
 class PersistentClusterShardingGracefulShutdownSpec
     extends ClusterShardingGracefulShutdownSpec(PersistentClusterShardingGracefulShutdownSpecConfig)
@@ -87,76 +46,41 @@ class PersistentClusterShardingGracefulShutdownMultiJvmNode2 extends PersistentC
 class DDataClusterShardingGracefulShutdownMultiJvmNode1 extends DDataClusterShardingGracefulShutdownSpec
 class DDataClusterShardingGracefulShutdownMultiJvmNode2 extends DDataClusterShardingGracefulShutdownSpec
 
-abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracefulShutdownSpecConfig)
-    extends MultiNodeSpec(config)
-    with STMultiNodeSpec
+abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShardingGracefulShutdownSpecConfig)
+    extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender {
-  import ClusterShardingGracefulShutdownSpec._
-  import config._
 
-  override def initialParticipants = roles.size
+  import MultiNodeClusterShardingSpec.ShardedEntity
+  import multiNodeConfig._
 
-  val storageLocations = List(
-    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
+  private val typeName = "Entity"
 
-  override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-    enterBarrier("startup")
-  }
-
-  override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-  }
-
-  def join(from: RoleName, to: RoleName): Unit = {
+  def join(from: RoleName, to: RoleName, typeName: String): Unit = {
+    super.join(from, to)
     runOn(from) {
-      Cluster(system).join(node(to).address)
-      startSharding()
+      startSharding(typeName)
     }
-    enterBarrier(from.name + "-joined")
+    enterBarrier(s"$from-started")
   }
 
-  def startSharding(): Unit = {
-    val allocationStrategy =
-      new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
-    ClusterSharding(system).start(
-      typeName = "Entity",
-      entityProps = Props[Entity],
-      settings = ClusterShardingSettings(system),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId,
-      allocationStrategy,
-      handOffStopMessage = StopEntity)
-  }
+  def startSharding(typeName: String): ActorRef =
+    startSharding(
+      system,
+      typeName,
+      entityProps = Props[ShardedEntity](),
+      extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
+      extractShardId = MultiNodeClusterShardingSpec.intExtractShardId,
+      allocationStrategy = ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 2, relativeLimit = 1.0),
+      handOffStopMessage = ShardedEntity.Stop)
 
-  lazy val region = ClusterSharding(system).shardRegion("Entity")
+  lazy val region = ClusterSharding(system).shardRegion(typeName)
 
-  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
-
-  s"Cluster sharding ($mode)" must {
-
-    if (!isDdataMode) {
-      "setup shared journal" in {
-        // start the Persistence extension
-        Persistence(system)
-        runOn(first) {
-          system.actorOf(Props[SharedLeveldbStore], "store")
-        }
-        enterBarrier("peristence-started")
-
-        runOn(first, second) {
-          system.actorSelection(node(first) / "user" / "store") ! Identify(None)
-          val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
-          SharedLeveldbJournal.setStore(sharedStore, system)
-        }
-
-        enterBarrier("after-1")
-      }
-    }
-
+  s"Cluster sharding (${multiNodeConfig.mode})" must {
     "start some shards in both regions" in within(30.seconds) {
-      join(first, first)
-      join(second, first)
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
+
+      join(first, first, typeName) // oldest
+      join(second, first, typeName)
 
       awaitAssert {
         val p = TestProbe()
@@ -168,11 +92,20 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
         regionAddresses.size should be(2)
       }
       enterBarrier("after-2")
+
+      region ! ShardRegion.GetCurrentRegions
+      expectMsgType[CurrentRegions].regions.size should be(2)
     }
 
-    "gracefully shutdown a region" in within(30.seconds) {
+    "gracefully shutdown the region on the newest node" in within(30.seconds) {
       runOn(second) {
-        region ! ShardRegion.GracefulShutdown
+        // Make sure the 'cluster-sharding-shutdown-region' phase takes at least 40 seconds,
+        // to validate region shutdown completion is propagated immediately and not postponed
+        // until when the cluster member leaves
+        CoordinatedShutdown(system).addTask("cluster-sharding-shutdown-region", "postpone-actual-stop")(() => {
+          akka.pattern.after(40.seconds)(Future.successful(Done))
+        })
+        CoordinatedShutdown(system).run(CoordinatedShutdown.unknownReason)
       }
 
       runOn(first) {
@@ -187,6 +120,16 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
       }
       enterBarrier("handoff-completed")
 
+      // Check that the coordinator is correctly notified the region has stopped:
+      runOn(first) {
+        // the coordinator side should observe that the region has stopped
+        awaitAssert {
+          region ! ShardRegion.GetCurrentRegions
+          expectMsgType[CurrentRegions].regions.size should be(1)
+        }
+        // without having to wait for the member to be entirely removed (as that would cause unnecessary latency)
+      }
+
       runOn(second) {
         watch(region)
         expectTerminated(region)
@@ -197,16 +140,7 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
 
     "gracefully shutdown empty region" in within(30.seconds) {
       runOn(first) {
-        val allocationStrategy =
-          new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
-        val regionEmpty = ClusterSharding(system).start(
-          typeName = "EntityEmpty",
-          entityProps = Props[Entity],
-          settings = ClusterShardingSettings(system),
-          extractEntityId = extractEntityId,
-          extractShardId = extractShardId,
-          allocationStrategy,
-          handOffStopMessage = StopEntity)
+        val regionEmpty = startSharding(typeName = "EntityEmpty")
 
         watch(regionEmpty)
         regionEmpty ! GracefulShutdown

@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
-import akka.NotUsed
-import akka.stream.stage.GraphStageLogic.{ EagerTerminateInput, EagerTerminateOutput }
-import akka.stream.testkit.StreamSpec
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.stream.stage._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.impl.fusing._
+import scala.concurrent.duration.Duration
+
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.duration.Duration
+import akka.NotUsed
+import akka.stream._
+import akka.stream.impl.fusing._
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.stream.stage.GraphStageLogic.{ EagerTerminateInput, EagerTerminateOutput }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
 
 class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with ScalaFutures {
 
@@ -281,7 +282,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
           })
           .runWith(Sink.ignore)
       }
-      ex.getMessage should startWith("No handler defined in stage [stage-name] for in port [in")
+      ex.getMessage should startWith("No handler defined in stage [").and(include("] for in port [in"))
     }
 
     "give a good error message if out handler missing" in {
@@ -307,7 +308,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
           .map(_ => "whatever")
           .runWith(Sink.ignore)
       }
-      ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
+      ex.getMessage should startWith("No handler defined in stage [").and(include("] for out port [out"))
     }
 
     "give a good error message if out handler missing with downstream boundary" in {
@@ -331,7 +332,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
           })
           .runWith(Sink.ignore.async)
       }
-      ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
+      ex.getMessage should startWith("No handler defined in stage [").and(include("] for out port [out"))
     }
 
     "give a good error message if handler missing with downstream publisher" in {
@@ -356,7 +357,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
           })
           .runWith(Sink.ignore)
       }
-      ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
+      ex.getMessage should startWith("No handler defined in stage [").and(include("] for out port [out"))
     }
 
     "give a good error message if handler missing when stage is an island" in {
@@ -381,7 +382,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
           .async
           .runWith(Sink.ignore)
       }
-      ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
+      ex.getMessage should startWith("No handler defined in stage [").and(include("] for out port [out"))
     }
 
     "give a good error message if sub source is pushed twice" in {

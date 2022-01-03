@@ -5,9 +5,12 @@
 To use I/O, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -29,8 +32,8 @@ full-service high-level NIO wrapper for end users.
 The I/O API is completely actor based, meaning that all operations are implemented with message passing instead of
 direct method calls. Every I/O driver (TCP, UDP) has a special actor, called a *manager* that serves
 as an entry point for the API. I/O is broken into several drivers. The manager for a particular driver
-is accessible @scala[through the `IO` entry point]@java[by querying an `ActorSystem`]. For example the following code
-looks up the TCP manager and returns its `ActorRef`:
+is accessible @scala[through the @scaladoc[IO](akka.io.IO$) entry point]@java[by querying an @javadoc[ActorSystem](akka.actor.ActorSystem)]. For example the following code
+looks up the TCP manager and returns its @apidoc[ActorRef](akka.actor.ActorRef):
 
 Scala
 :  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #manager }
@@ -39,9 +42,9 @@ Java
 :  @@snip [EchoManager.java](/akka-docs/src/test/java/jdocs/io/japi/EchoManager.java) { #manager }
 
 The manager receives I/O command messages and instantiates worker actors in response. The worker actors present
-themselves to the API user in the reply to the command that was sent. For example after a `Connect` command sent to
+themselves to the API user in the reply to the command that was sent. For example after a @apidoc[Connect](akka.io.Tcp.Connect) command sent to
 the TCP manager the manager creates an actor representing the TCP connection. All operations related to the given TCP
-connections can be invoked by sending messages to the connection actor which announces itself by sending a `Connected`
+connections can be invoked by sending messages to the connection actor which announces itself by sending a @apidoc[Connected](akka.io.Tcp.Connected)
 message.
 
 ### DeathWatch and Resource Management
@@ -68,8 +71,8 @@ Akka supports two types of flow control:
 
 Each of these models is available in both the TCP and the UDP implementations of Akka I/O.
 
-Individual writes can be acknowledged by providing an ack object in the write message (`Write` in the case of TCP and
-`Send` for UDP). When the write is complete the worker will send the ack object to the writing actor. This can be
+Individual writes can be acknowledged by providing an ack object in the write message (@apidoc[Write](akka.io.Tcp.Write) in the case of TCP and
+@apidoc[Send](akka.io.Udp.Send) for UDP). When the write is complete the worker will send the ack object to the writing actor. This can be
 used to implement *ack-based* flow control; sending new data only when old data has been acknowledged.
 
 If a write (or any other command) fails, the driver notifies the actor that sent the command with a special message
@@ -89,28 +92,28 @@ not error handling. In other words, data may still be lost, even if every write 
 
 ### ByteString
 
-To maintain isolation, actors should communicate with immutable objects only. `ByteString` is an
+To maintain isolation, actors should communicate with immutable objects only. @apidoc[ByteString](akka.util.ByteString) is an
 immutable container for bytes. It is used by Akka's I/O system as an efficient, immutable alternative
-the traditional byte containers used for I/O on the JVM, such as @scala[`Array[Byte]`]@java[`byte[]`] and `ByteBuffer`.
+the traditional byte containers used for I/O on the JVM, such as @scala[@scaladoc[Array](scala.Array)[@scaladoc[Byte](scala.Byte)]]@java[`byte[]`] and @javadoc[ByteBuffer](java.nio.ByteBuffer).
 
-`ByteString` is a [rope-like](http://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
+`ByteString` is a [rope-like](https://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
 and provides fast concatenation and slicing operations (perfect for I/O). When two `ByteString`s are concatenated
 together they are both stored within the resulting `ByteString` instead of copying both to a new @scala[`Array`]@java[array]. Operations
-such as `drop` and `take` return `ByteString`s that still reference the original @scala[`Array`]@java[array], but just change the
+such as @apidoc[drop](akka.util.ByteString) {scala="#drop(n:Int):akka.util.ByteString" java="#drop(int)"} and @apidoc[take](akka.util.ByteString) {scala="#take(n:Int):akka.util.ByteString" java="#take(int)"} return `ByteString`s that still reference the original @scala[`Array`]@java[array], but just change the
 offset and length that is visible. Great care has also been taken to make sure that the internal @scala[`Array`]@java[array] cannot be
 modified. Whenever a potentially unsafe @scala[`Array`]@java[array] is used to create a new `ByteString` a defensive copy is created. If
-you require a `ByteString` that only blocks as much memory as necessary for it's content, use the `compact` method to
-get a `CompactByteString` instance. If the `ByteString` represented only a slice of the original array, this will
+you require a `ByteString` that only blocks as much memory as necessary for its content, use the @apidoc[compact](akka.util.ByteString) {scala="#compact:akka.util.CompactByteString" java="#compact()"} method to
+get a @apidoc[CompactByteString](akka.util.CompactByteString) instance. If the `ByteString` represented only a slice of the original array, this will
 result in copying all bytes in that slice.
 
-`ByteString` inherits all methods from `IndexedSeq`, and it also has some new ones. For more information, look up the `akka.util.ByteString` class and it's companion object in the ScalaDoc.
+`ByteString` inherits all methods from @scaladoc[IndexedSeq](scala.collection.immutable.IndexedSeq), and it also has some new ones. For more information, look up the @apidoc[akka.util.ByteString](akka.util.ByteString) class and @scaladoc[its companion object](akka.util.ByteString$) in the ScalaDoc.
 
-`ByteString` also comes with its own optimized builder and iterator classes `ByteStringBuilder` and
-`ByteIterator` which provide extra features in addition to those of normal builders and iterators.
+`ByteString` also comes with its own optimized builder and iterator classes @apidoc[ByteStringBuilder](akka.util.ByteStringBuilder) and
+@apidoc[ByteIterator](akka.util.ByteIterator) which provide extra features in addition to those of normal builders and iterators.
 
 #### Compatibility with java.io
 
-A `ByteStringBuilder` can be wrapped in a `java.io.OutputStream` via the `asOutputStream` method. Likewise, `ByteIterator` can be wrapped in a `java.io.InputStream` via `asInputStream`. Using these, `akka.io` applications can integrate legacy code based on `java.io` streams.
+A @apidoc[ByteStringBuilder](akka.util.ByteStringBuilder) can be wrapped in a @javadoc[java.io.OutputStream](java.io.OutputStream) via the @apidoc[asOutputStream](akka.util.ByteStringBuilder) {scala="#asOutputStream:java.io.OutputStream" java="#asOutputStream()"} method. Likewise, @apidoc[ByteIterator](akka.util.ByteIterator) can be wrapped in a @javadoc[java.io.InputStream](java.io.InputStream) via @apidoc[asInputStream](akka.util.ByteIterator) {scala="#asInputStream:java.io.InputStream" java="#asInputStream()"}. Using these, `akka.io` applications can integrate legacy code based on `java.io` streams.
 
 ## Architecture in-depth
 

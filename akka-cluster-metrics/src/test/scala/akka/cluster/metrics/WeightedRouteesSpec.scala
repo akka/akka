@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
+import scala.Vector
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.Address
 import akka.actor.RootActorPath
 import akka.remote.RARP
-import akka.testkit.AkkaSpec
-import akka.routing.ActorSelectionRoutee
 import akka.routing.ActorRefRoutee
-import scala.Vector
+import akka.routing.ActorSelectionRoutee
+import akka.testkit.AkkaSpec
 
 class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       akka.actor.provider = "cluster"

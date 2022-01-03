@@ -1,22 +1,24 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
+import java.util.concurrent.ThreadLocalRandom
+
+import scala.collection.immutable
+
+import scala.annotation.nowarn
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.Props
 import akka.actor.Address
+import akka.actor.DeadLetterSuppression
+import akka.actor.Props
+import akka.cluster.Cluster
 import akka.cluster.ClusterEvent
 import akka.cluster.Member
-import akka.cluster.Cluster
-import scala.collection.immutable
 import akka.cluster.MemberStatus
-import java.util.concurrent.ThreadLocalRandom
-import akka.actor.DeadLetterSuppression
-
-import com.github.ghik.silencer.silent
 
 /**
  *  Runtime collection management commands.
@@ -50,8 +52,8 @@ case object CollectionStopMessage extends CollectionControlMessage {
  */
 private[metrics] class ClusterMetricsSupervisor extends Actor with ActorLogging {
   val metrics = ClusterMetricsExtension(context.system)
-  import metrics.settings._
   import context._
+  import metrics.settings._
 
   override val supervisorStrategy = metrics.strategy
 
@@ -94,7 +96,7 @@ trait ClusterMetricsEvent
 final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterMetricsEvent {
 
   /** Java API */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getNodeMetrics: java.lang.Iterable[NodeMetrics] =
     scala.collection.JavaConverters.asJavaIterableConverter(nodeMetrics).asJava
 }
@@ -132,8 +134,8 @@ private[metrics] object ClusterMetricsCollector {
  * Actor responsible for periodic data sampling in the node and publication to the cluster.
  */
 private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
-  import ClusterMetricsCollector._
   import ClusterEvent._
+  import ClusterMetricsCollector._
   import Member.addressOrdering
   import context.dispatcher
   val cluster = Cluster(context.system)
@@ -198,7 +200,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
 
   }
 
-  override def postStop: Unit = {
+  override def postStop(): Unit = {
     cluster.unsubscribe(self)
     gossipTask.cancel()
     sampleTask.cancel()

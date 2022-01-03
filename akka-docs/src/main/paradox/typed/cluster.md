@@ -4,6 +4,8 @@ project.description: Build distributed applications that scale across the networ
 # Cluster Usage
   
 This document describes how to use Akka Cluster and the Cluster APIs. 
+The [Stateful or Stateless Applications: To Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation) video is a good starting point to understand the motivation to use Akka Cluster.
+
 For specific documentation topics see: 
 
 * @ref:[When and where to use Akka Cluster](choosing-cluster.md)
@@ -13,7 +15,7 @@ For specific documentation topics see:
 * @ref:[Rolling Updates](../additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
 
-For the Akka Classic documentation of this feature see @ref:[Classic Cluster](../cluster-usage.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Cluster](../cluster-usage.md).
 
 You have to enable @ref:[serialization](../serialization.md)  to send messages between ActorSystems (nodes) in the Cluster.
 @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
@@ -24,9 +26,12 @@ recommendation if you don't have other preferences or constraints.
 To use Akka Cluster add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-typed" }
@@ -143,9 +148,9 @@ Please refer to its documentation for more details.
 
 #### Joining configured seed nodes
 
-When a new node is started it sends a message to all seed nodes and then sends join command to the one that
-answers first. If no one of the seed nodes replied (might not be started yet)
-it retries this procedure until successful or shutdown.
+When a new node is started it sends a message to all seed nodes and then sends a join command to the one that
+answers first. If none of the seed nodes replies (might not be started yet)
+it retries this procedure until success or shutdown.
 
 You can define the seed nodes in the @ref:[configuration](#configuration) file (application.conf):
 
@@ -164,7 +169,7 @@ This can also be defined as Java system properties when starting the JVM using t
 
 
 When a new node is started it sends a message to all configured `seed-nodes` and then sends a join command to the
-one that answers first. If none of the seed nodes replied (might not be started yet) it retries this procedure
+one that answers first. If none of the seed nodes replies (might not be started yet) it retries this procedure
 until successful or shutdown.
 
 The seed nodes can be started in any order. It is not necessary to have all
@@ -224,7 +229,7 @@ and a restart with new seed-nodes should be tried after unsuccessful attempts.
 
 ```
 akka.cluster.shutdown-after-unsuccessful-join-seed-nodes = 20s
-akka.coordinated-shutdown.terminate-actor-system = on
+akka.coordinated-shutdown.exit-jvm = on
 ```
 
 If you don't configure seed nodes or use one of the join seed node functions, you need to join the cluster manually
@@ -266,7 +271,7 @@ be necessary to set the node’s status to `Down` in order to complete the remov
 In many cases a member can gracefully exit from the cluster, as described in @ref:[Leaving](#leaving), but
 there are scenarios when an explicit downing decision is needed before it can be removed. For example in case
 of abrupt termination of the the JVM process, system overload that doesn't recover, or network partitions
-that don't heal. I such cases the node(s) will be detected as unreachable by other nodes, but they must also
+that don't heal. In such cases, the node(s) will be detected as unreachable by other nodes, but they must also
 be marked as `Down` before they are removed.
 
 When a member is considered by the failure detector to be `unreachable` the
@@ -275,22 +280,21 @@ new joining members to 'Up'. The node must first become `reachable` again, or th
 status of the unreachable member must be changed to `Down`. Changing status to `Down`
 can be performed automatically or manually.
 
-By default, downing must be performed manually using @ref:[HTTP](../additional/operations.md#http) or @ref:[JMX](../additional/operations.md#jmx).
+We recommend that you enable the @ref:[Split Brain Resolver](../split-brain-resolver.md) that is part of the
+Akka Cluster module. You enable it with configuration:
+
+```
+akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+```
+
+You should also consider the different available @ref:[downing strategies](../split-brain-resolver.md#strategies).
+
+If a downing provider is not configured downing must be performed manually using 
+@ref:[HTTP](../additional/operations.md#http) or @ref:[JMX](../additional/operations.md#jmx).
 
 Note that @ref:[Cluster Singleton](cluster-singleton.md) or @ref:[Cluster Sharding entities](cluster-sharding.md) that
 are running on a crashed (unreachable) node will not be started on another node until the previous node has
 been removed from the Cluster. Removal of crashed (unreachable) nodes is performed after a downing decision.
-
-A production solution for downing is provided by
-[Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html),
-which is part of the [Lightbend Platform](http://www.lightbend.com/platform).
-If you don’t have a Lightbend Platform Subscription, you should still carefully read the 
-[documentation](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
-of the Split Brain Resolver and make sure that the solution you are using handles the concerns and scenarios
-described there.
-
-A custom downing strategy can be implemented with a @apidoc[akka.cluster.DowningProvider] and enabled with
-configuration `akka.cluster.downing-provider-class`.  
 
 Downing can also be performed programmatically with @scala[`Cluster(system).manager ! Down(address)`]@java[`Cluster.get(system).manager().tell(Down(address))`],
 but that is mostly useful from tests and when implementing a `DowningProvider`.
@@ -313,7 +317,7 @@ The node roles are defined in the configuration property named `akka.cluster.rol
 and typically defined in the start script as a system property or environment variable.
 
 The roles are part of the membership information in `MemberEvent` that you can subscribe to. The roles
-of the own node are available from the `selfMember` and that can be used for conditionally start certain
+of the own node are available from the `selfMember` and that can be used for conditionally starting certain
 actors:
 
 Scala
@@ -365,14 +369,14 @@ configuration descriptions, default values and options.
 A common use case is to start actors after the cluster has been initialized,
 members have joined, and the cluster has reached a certain size.
 
-With a configuration option you can define required number of members
+With a configuration option you can define the required number of members
 before the leader changes member status of 'Joining' members to 'Up'.:
 
 ```
 akka.cluster.min-nr-of-members = 3
 ```
 
-In a similar way you can define required number of members of a certain role
+In a similar way you can define the required number of members of a certain role
 before the leader changes member status of 'Joining' members to 'Up'.:
 
 ```
@@ -439,12 +443,17 @@ See @ref:[Cluster Sharding](cluster-sharding.md).
 @@include[cluster.md](../includes/cluster.md) { #cluster-ddata } 
 See @ref:[Distributed Data](distributed-data.md).
 
-@@include[cluster.md](../includes/cluster.md) { #cluster-pubsub } 
-Classic Pub Sub can be used by leveraging the `.toClassic` adapters.
-See @ref:[Distributed Publish Subscribe in Cluster](distributed-pub-sub.md). The API is @github[#26338](#26338).
+@@include[cluster.md](../includes/cluster.md) { #cluster-pubsub }
+See @ref:[Distributed Publish Subscribe](distributed-pub-sub.md).
+
+@@include[cluster.md](../includes/cluster.md) { #cluster-router }
+See @ref:[Group Routers](routers.md#group-router). 
 
 @@include[cluster.md](../includes/cluster.md) { #cluster-multidc }
 See @ref:[Cluster Multi-DC](cluster-dc.md).
+
+@@include[cluster.md](../includes/cluster.md) { #reliable-delivery }
+See @ref:[Reliable Delivery](reliable-delivery.md)
 
 ## Example project
 

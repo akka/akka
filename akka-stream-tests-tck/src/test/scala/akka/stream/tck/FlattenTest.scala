@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
+import org.reactivestreams.Publisher
+
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ConstantFun
-import org.reactivestreams.Publisher
 
 class FlattenTest extends AkkaPublisherVerification[Int] {
 

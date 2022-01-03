@@ -1,25 +1,26 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
-
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSource
-import akka.testkit.TestProbe
-import akka.Done
-import akka.NotUsed
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-import org.reactivestreams.Subscription
-import org.scalatest.Assertion
 
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.xml.Node
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+import org.scalatest.Assertion
+
+import akka.Done
+import akka.NotUsed
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSource
+import akka.testkit.TestProbe
 
 class CoupledTerminationFlowSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -130,7 +131,7 @@ class CoupledTerminationFlowSpec extends StreamSpec("""
 
       val flow = Flow.fromSinkAndSourceCoupledMat(sink, source)(Keep.right)
 
-      val (source1, source2) = TestSource.probe[Int].viaMat(flow)(Keep.both).toMat(Sink.ignore)(Keep.left).run
+      val (source1, source2) = TestSource.probe[Int].viaMat(flow)(Keep.both).toMat(Sink.ignore)(Keep.left).run()
 
       source1.sendComplete()
       source2.expectCancellation()

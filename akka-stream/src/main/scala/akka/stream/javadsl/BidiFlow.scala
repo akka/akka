@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
+import scala.concurrent.duration.FiniteDuration
+
+import scala.annotation.nowarn
+
 import akka.NotUsed
 import akka.japi.function
 import akka.stream._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration.FiniteDuration
 
 object BidiFlow {
 
@@ -24,8 +25,8 @@ object BidiFlow {
    */
   def fromGraph[I1, O1, I2, O2, M](g: Graph[BidiShape[I1, O1, I2, O2], M]): BidiFlow[I1, O1, I2, O2, M] =
     g match {
-      case bidi: BidiFlow[I1, O1, I2, O2, M] => bidi
-      case other                             => new BidiFlow(scaladsl.BidiFlow.fromGraph(other))
+      case bidi: BidiFlow[I1, O1, I2, O2, M] @unchecked => bidi
+      case other                                        => new BidiFlow(scaladsl.BidiFlow.fromGraph(other))
     }
 
   /**
@@ -109,7 +110,7 @@ object BidiFlow {
    * every second in one direction, but no elements are flowing in the other direction. I.e. this operator considers
    * the *joint* frequencies of the elements in both directions.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def bidirectionalIdleTimeout[I, O](timeout: java.time.Duration): BidiFlow[I, I, O, O, NotUsed] = {
     import akka.util.JavaDurationConverters._
     bidirectionalIdleTimeout(timeout.asScala)

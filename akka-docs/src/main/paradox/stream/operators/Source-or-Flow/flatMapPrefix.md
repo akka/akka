@@ -4,13 +4,11 @@ Use the first `n` elements from the stream to determine how to process the rest.
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #flatMapPrefix }
+@apidoc[Source.flatMapPrefix](Source) { scala="#flatMapPrefix[Out2,Mat2](n:Int)(f:scala.collection.immutable.Seq[Out]=&gt;akka.stream.scaladsl.Flow[Out,Out2,Mat2]):FlowOps.this.Repr[Out2]" java="#flatMapPrefix(int,akka.japi.function.Function)" }
+@apidoc[Flow.flatMapPrefix](Flow) { scala="#flatMapPrefix[Out2,Mat2](n:Int)(f:scala.collection.immutable.Seq[Out]=&gt;akka.stream.scaladsl.Flow[Out,Out2,Mat2]):FlowOps.this.Repr[Out2]" java="#flatMapPrefix(int,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

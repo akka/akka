@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -27,15 +27,15 @@ private[remote] class MessageDispatcher(system: ExtendedActorSystem, provider: R
   private val debugLogEnabled: Boolean = log.isDebugEnabled
 
   def dispatch(inboundEnvelope: InboundEnvelope): Unit = {
-    import provider.remoteSettings.Artery._
     import Logging.messageClassName
+    import provider.remoteSettings.Artery._
 
     val recipient = inboundEnvelope.recipient.get
     val message = inboundEnvelope.message
     val senderOption = inboundEnvelope.sender
     val originAddress = inboundEnvelope.association match {
       case OptionVal.Some(a) => OptionVal.Some(a.remoteAddress)
-      case OptionVal.None    => OptionVal.None
+      case _                 => OptionVal.None
     }
 
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)

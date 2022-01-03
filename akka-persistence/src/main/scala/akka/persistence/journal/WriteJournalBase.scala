@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
 
+import scala.collection.immutable
+
 import akka.actor.Actor
 import akka.persistence.{ Persistence, PersistentEnvelope, PersistentRepr }
-import scala.collection.immutable
 import akka.persistence.AtomicWrite
 
 private[akka] trait WriteJournalBase {

@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata;
 
 import java.util.Optional;
-
-import akka.cluster.UniqueAddress;
 
 // different delta type
 public class JavaImplOfDeltaReplicatedData2

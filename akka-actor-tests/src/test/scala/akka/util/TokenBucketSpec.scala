@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
-import akka.testkit.AkkaSpec
-
 import scala.util.Random
+
+import akka.testkit.AkkaSpec
 
 class TokenBucketSpec extends AkkaSpec {
 

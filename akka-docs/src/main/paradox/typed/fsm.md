@@ -3,7 +3,7 @@ project.description: Finite State Machines (FSM) with Akka Actors.
 ---
 # Behaviors as finite state machines
 
-For the Akka Classic documentation of this feature see @ref:[Classic FSM](../fsm.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic FSM](../fsm.md).
 
 An actor can be used to model a Finite State Machine (FSM).
 
@@ -43,7 +43,7 @@ Scala
 Java
 :  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #simple-state}
 
-@scala[
+@@@ div { .group-scala }
 The method `idle` above makes use of `Behaviors.unhandled` which advises the system to reuse the previous behavior, 
 including the hint that the message has not been handled.
 There are two related behaviors:
@@ -53,7 +53,7 @@ There are two related behaviors:
   Unhandled messages are still logged with this behavior.
 - return `Behaviors.ignore` as next behavior in case you don't care about unhandled messages. 
   All messages sent to an actor with such a behavior are simply dropped and ignored (without logging)
-]
+@@@
 
 To set state timeouts use `Behaviors.withTimers` along with a `startSingleTimer`.
 

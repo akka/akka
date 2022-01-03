@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -16,20 +16,7 @@ import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import akka.Done
-import akka.actor.Address
-import akka.actor.Cancellable
-import akka.actor.ExtendedActorSystem
-import akka.event.Logging
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteTransportException
-import akka.remote.artery.compress._
-import akka.stream.KillSwitches
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.util.ccompat._
+
 import io.aeron.Aeron
 import io.aeron.AvailableImageHandler
 import io.aeron.CncFileDescriptor
@@ -46,6 +33,21 @@ import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.concurrent.status.CountersReader.MetaData
+
+import akka.Done
+import akka.actor.Address
+import akka.actor.Cancellable
+import akka.actor.ExtendedActorSystem
+import akka.event.Logging
+import akka.remote.RemoteActorRefProvider
+import akka.remote.RemoteTransportException
+import akka.remote.artery.compress._
+import akka.stream.KillSwitches
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -89,7 +91,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       } else {
         // create a random name but include the actor system name for easier debugging
         val uniquePart = UUID.randomUUID().toString
-        val randomName = s"${CommonContext.AERON_DIR_PROP_DEFAULT}-${system.name}-$uniquePart"
+        val randomName = s"${CommonContext.getAeronDirectoryName}${File.separator}${system.name}-$uniquePart"
         driverContext.aeronDirectoryName(randomName)
       }
       driverContext.clientLivenessTimeoutNs(settings.Advanced.Aeron.ClientLivenessTimeout.toNanos)
@@ -146,6 +148,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     // make sure we only close the driver once or we will crash the JVM
     val maybeDriver = mediaDriver.getAndSet(None)
     maybeDriver.foreach { driver =>
+      log.info("Stopping embedded media driver in directory [{}]", driver.aeronDirectoryName)
       // this is only for embedded media driver
       try driver.close()
       catch {
@@ -379,6 +382,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
             .via(laneKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
+            .via(Flow.fromGraph(new DuplicateFlush(inboundLanes, system, envelopeBufferPool)))
 
         val (resourceLife, compressionAccess, laneHub) =
           laneSource
@@ -464,8 +468,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   def autoSelectPort(hostname: String): Int = {
-    import java.nio.channels.DatagramChannel
     import java.net.InetSocketAddress
+    import java.nio.channels.DatagramChannel
 
     val socket = DatagramChannel.open().socket()
     socket.bind(new InetSocketAddress(hostname, 0))

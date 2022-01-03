@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import com.typesafe.config.Config
-import scala.concurrent.duration.FiniteDuration
-import akka.util.Helpers.Requiring
-import akka.util.Helpers.ConfigOps
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
+import akka.util.Helpers.ConfigOps
+import akka.util.Helpers.Requiring
 
 /**
  * Metrics extension settings. Documented in: `src/main/resources/reference.conf`.

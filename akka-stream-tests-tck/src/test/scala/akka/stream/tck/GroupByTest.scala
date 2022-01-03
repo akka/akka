@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
@@ -7,10 +7,11 @@ package akka.stream.tck
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import org.reactivestreams.Publisher
+
 import akka.stream.impl.EmptyPublisher
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import org.reactivestreams.Publisher
 
 class GroupByTest extends AkkaPublisherVerification[Int] {
 

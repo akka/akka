@@ -1,8 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
+
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.language.reflectiveCalls
 
 import akka.Done
 import akka.actor.ActorRef
@@ -11,16 +16,11 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
-import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.language.reflectiveCalls
 
 class AsyncCallbackSpec extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = off
@@ -38,7 +38,7 @@ class AsyncCallbackSpec extends AkkaSpec("""
     val shape = FlowShape(in, out)
 
     def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, AsyncCallback[AnyRef]) = {
-      val logic = new GraphStageLogic(shape) {
+      val logic: GraphStageLogic { val callback: AsyncCallback[AnyRef] } = new GraphStageLogic(shape) {
         val callback = getAsyncCallback((whatever: AnyRef) => {
           whatever match {
             case t: Throwable     => throw t
@@ -245,7 +245,7 @@ class AsyncCallbackSpec extends AkkaSpec("""
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-          val logic = new GraphStageLogic(shape) {
+          val logic: GraphStageLogic { val callbacks: Set[AsyncCallback[AnyRef]] } = new GraphStageLogic(shape) {
             val callbacks = (0 to 10).map(_ => getAsyncCallback[AnyRef](probe ! _)).toSet
             setHandler(out, new OutHandler {
               def onPull(): Unit = ()

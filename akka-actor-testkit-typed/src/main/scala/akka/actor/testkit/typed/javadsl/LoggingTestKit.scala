@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
 
 import java.util.function.Supplier
 
+import org.slf4j.event.Level
+
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.internal.LoggingTestKitImpl
 import akka.actor.typed.ActorSystem
 import akka.annotation.DoNotInherit
-import org.slf4j.event.Level
 
 /**
  * Facilities for verifying logs.
@@ -74,6 +75,11 @@ import org.slf4j.event.Level
    * The event MDC may have more entries than the given `Map`.
    */
   def withMdc(newMdc: java.util.Map[String, String]): LoggingTestKit
+
+  /**
+   * After matching the expected number of hits, check for excess messages
+   */
+  def withCheckExcess(check: Boolean): LoggingTestKit
 
   /**
    * Matching events for which the supplied function returns `true`.

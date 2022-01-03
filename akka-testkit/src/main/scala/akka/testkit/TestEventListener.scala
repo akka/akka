@@ -1,23 +1,23 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
-import scala.util.matching.Regex
+import java.lang.{ Iterable => JIterable }
+
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
+import scala.util.matching.Regex
 
 import akka.actor.{ ActorSystem, DeadLetter, UnhandledMessage }
-import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
-import akka.event.Logging.{ Debug, Error, Info, InitializeLogger, LogEvent, LoggerInitialized, Warning }
-import akka.event.Logging
-import akka.actor.NoSerializationVerificationNeeded
-import akka.japi.Util.immutableSeq
-import java.lang.{ Iterable => JIterable }
-
 import akka.actor.Dropped
+import akka.actor.NoSerializationVerificationNeeded
+import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
+import akka.event.Logging
+import akka.event.Logging.{ Debug, Error, Info, InitializeLogger, LogEvent, LoggerInitialized, Warning }
+import akka.japi.Util.immutableSeq
 import akka.util.BoxedType
 import akka.util.ccompat._
 

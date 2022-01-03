@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
+import scala.concurrent.duration._
+
 import akka.annotation.InternalApi
 import akka.pattern.BackoffSupervisor
+import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.stream.SubscriptionWithCancelException.NonFailureCancellation
 import akka.stream.stage._
-import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.util.OptionVal
-
-import scala.concurrent.duration._
 
 /**
  * INTERNAL API.
@@ -98,16 +98,16 @@ import scala.concurrent.duration._
         override def onPush(): Unit = {
           val result = grab(internalIn)
           elementInProgress match {
-            case OptionVal.None =>
-              failStage(
-                new IllegalStateException(
-                  s"inner flow emitted unexpected element $result; the flow must be one-in one-out"))
             case OptionVal.Some(_) if retryNo == maxRetries => pushExternal(result)
             case OptionVal.Some(in) =>
               decideRetry(in, result) match {
                 case None          => pushExternal(result)
                 case Some(element) => planRetry(element)
               }
+            case _ =>
+              failStage(
+                new IllegalStateException(
+                  s"inner flow emitted unexpected element $result; the flow must be one-in one-out"))
           }
         }
       })

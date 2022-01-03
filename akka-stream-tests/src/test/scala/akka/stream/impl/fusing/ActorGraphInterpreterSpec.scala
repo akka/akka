@@ -1,10 +1,18 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
 
 import java.util.concurrent.CountDownLatch
+
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
 import akka.Done
 import akka.stream._
@@ -22,13 +30,6 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 import akka.testkit.TestLatch
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-import org.reactivestreams.Subscription
-
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 class ActorGraphInterpreterSpec extends StreamSpec {
   "ActorGraphInterpreter" must {
@@ -232,7 +233,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       val takeAll = Flow[Int].grouped(200).toMat(Sink.head)(Keep.right)
 
       val (f1, f2) = RunnableGraph
-        .fromGraph(GraphDSL.create(takeAll, takeAll)(Keep.both) { implicit b => (out1, out2) =>
+        .fromGraph(GraphDSL.createGraph(takeAll, takeAll)(Keep.both) { implicit b => (out1, out2) =>
           import GraphDSL.Implicits._
           val bidi = b.add(rotatedBidi)
 

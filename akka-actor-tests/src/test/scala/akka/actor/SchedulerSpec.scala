@@ -1,27 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import language.postfixOps
 import java.io.Closeable
 import java.util.concurrent._
-import atomic.{ AtomicInteger, AtomicReference }
+import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-
 import scala.util.Try
+import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-import org.scalatest.BeforeAndAfterEach
+
+import atomic.{ AtomicInteger, AtomicReference }
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
+import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
 import akka.pattern.ask
 import akka.testkit._
-import com.github.ghik.silencer.silent
-
-import scala.util.control.NoStackTrace
 
 object SchedulerSpec {
   val testConfRevolver =
@@ -330,7 +330,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
               case Crash => throw new Exception("CRASH")
             }
 
-            override def postRestart(reason: Throwable) = restartLatch.open
+            override def postRestart(reason: Throwable) = restartLatch.open()
           })
           val actor = Await.result((supervisor ? props).mapTo[ActorRef], timeout.duration)
 
@@ -496,7 +496,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
       "execute multiple jobs at once when expiring multiple buckets" taggedAs TimingTest in {
         withScheduler() { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
           val start = step / 2
           (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello"))
@@ -511,7 +511,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
       "properly defer jobs even when the timer thread oversleeps" taggedAs TimingTest in {
         withScheduler() { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
           sched.scheduleOnce(step * 3, probe.ref, "hello")
           wakeUp(step * 5)
@@ -526,7 +526,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
       "correctly wrap around wheel rounds" taggedAs TimingTest in {
         withScheduler(config = ConfigFactory.parseString("akka.scheduler.ticks-per-wheel=2")) { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
           val start = step / 2
           (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, probe.ref, "hello"))
@@ -553,7 +553,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
       "correctly execute jobs when clock wraps around" taggedAs TimingTest in {
         withScheduler(Long.MaxValue - 200000000L) { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
           val start = step / 2
           (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello"))
@@ -583,7 +583,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         val targetTicks = Int.MaxValue - numEvents + 20
 
         withScheduler(_startTick = Int.MaxValue - 100) { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
 
           val start = step / 2
@@ -684,47 +684,48 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     def reportFailure(t: Throwable): Unit = { t.printStackTrace() }
   }
 
-  @silent
+  @nowarn
   def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(
       thunk: (Scheduler with Closeable, Driver) => Unit): Unit = {
-    import akka.actor.{ LightArrayRevolverScheduler => LARS }
     val lbq = new AtomicReference[LinkedBlockingQueue[Long]](new LinkedBlockingQueue[Long])
     val prb = TestProbe()
     val tf = system.asInstanceOf[ActorSystemImpl].threadFactory
-    val sched =
-      new { @volatile var time = start } with LARS(config.withFallback(system.settings.config), log, tf) {
-        override protected def clock(): Long = {
-          // println(s"clock=$time")
-          time
-        }
 
-        override protected def getShutdownTimeout: FiniteDuration = (10 seconds).dilated
-
-        override protected def waitNanos(ns: Long): Unit = {
-          // println(s"waiting $ns")
-          prb.ref ! ns
-          try time += (lbq.get match {
-              case q: LinkedBlockingQueue[Long] => q.take()
-              case _                            => 0L
-            })
-          catch {
-            case _: InterruptedException => Thread.currentThread.interrupt()
-          }
-        }
-
-        override protected def startTick: Int = _startTick
+    @volatile var time: Long = start
+    val sched = new LightArrayRevolverScheduler(config.withFallback(system.settings.config), log, tf) {
+      override protected def clock(): Long = {
+        // println(s"clock=$time")
+        time
       }
+
+      override protected def getShutdownTimeout: FiniteDuration = (10 seconds).dilated
+
+      override protected def waitNanos(ns: Long): Unit = {
+        // println(s"waiting $ns")
+        prb.ref ! ns
+        try time += (lbq.get match {
+            case q: LinkedBlockingQueue[Long] => q.take()
+            case null                         => 0L
+          })
+        catch {
+          case _: InterruptedException => Thread.currentThread.interrupt()
+        }
+      }
+
+      override protected def startTick: Int = _startTick
+    }
+
     val driver = new Driver {
       def wakeUp(d: FiniteDuration) = lbq.get match {
         case q: LinkedBlockingQueue[Long] => q.offer(d.toNanos)
-        case _                            =>
+        case null                         =>
       }
       def expectWait(): FiniteDuration = probe.expectMsgType[Long].nanos
       def probe = prb
       def step = sched.TickDuration
       def close() = lbq.getAndSet(null) match {
         case q: LinkedBlockingQueue[Long] => q.offer(0L)
-        case _                            =>
+        case null                         =>
       }
     }
     driver.expectWait()

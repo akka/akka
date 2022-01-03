@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import scala.concurrent.duration._
+
 import akka.stream.ClosedShape
 import akka.stream.OverflowStrategy
-
-import scala.concurrent.duration._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphUnzipSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.sharding.typed
+
+import akka.Done
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -12,6 +14,7 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
+import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -51,58 +54,56 @@ class AccountExampleSpec
   "Account example" must {
 
     "handle Deposit" in {
-      val probe = createTestProbe[OperationResult]()
+      val probe = createTestProbe[StatusReply[Done]]()
       val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "1")
       ref ! CreateAccount(probe.ref)
-      probe.expectMessage(Confirmed)
+      probe.expectMessage(StatusReply.Ack)
       ref ! Deposit(100, probe.ref)
-      probe.expectMessage(Confirmed)
+      probe.expectMessage(StatusReply.Ack)
       ref ! Deposit(10, probe.ref)
-      probe.expectMessage(Confirmed)
+      probe.expectMessage(StatusReply.Ack)
     }
 
     "handle Withdraw" in {
-      // OperationResult is the expected reply type for these commands, but it should also be
-      // possible to use the super type AccountCommandReply
-      val probe = createTestProbe[CommandReply]()
+      val doneProbe = createTestProbe[StatusReply[Done]]()
       val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "2")
-      ref ! CreateAccount(probe.ref)
-      probe.expectMessage(Confirmed)
-      ref ! Deposit(100, probe.ref)
-      probe.expectMessage(Confirmed)
-      ref ! Withdraw(10, probe.ref)
-      probe.expectMessage(Confirmed)
+      ref ! CreateAccount(doneProbe.ref)
+      doneProbe.expectMessage(StatusReply.Ack)
+      ref ! Deposit(100, doneProbe.ref)
+      doneProbe.expectMessage(StatusReply.Ack)
+      ref ! Withdraw(10, doneProbe.ref)
+      doneProbe.expectMessage(StatusReply.Ack)
 
-      // The same probe can be used with other commands too:
-      ref ! GetBalance(probe.ref)
-      probe.expectMessage(CurrentBalance(90))
+      val balanceProbe = createTestProbe[CurrentBalance]()
+      ref ! GetBalance(balanceProbe.ref)
+      balanceProbe.expectMessage(CurrentBalance(90))
     }
 
     "reject Withdraw overdraft" in {
-      // AccountCommand[_] is the command type, but it should also be possible to narrow it to
-      // AccountCommand[OperationResult]
-      val probe = createTestProbe[OperationResult]()
-      val ref = ClusterSharding(system).entityRefFor[Command[OperationResult]](AccountEntity.TypeKey, "3")
+      val probe = createTestProbe[StatusReply[Done]]()
+      val ref = ClusterSharding(system).entityRefFor[Command](AccountEntity.TypeKey, "3")
       ref ! CreateAccount(probe.ref)
-      probe.expectMessage(Confirmed)
+      probe.expectMessage(StatusReply.Ack)
       ref ! Deposit(100, probe.ref)
-      probe.expectMessage(Confirmed)
+      probe.expectMessage(StatusReply.Ack)
       ref ! Withdraw(110, probe.ref)
-      probe.expectMessageType[Rejected]
+      probe.expectMessageType[StatusReply[Done]].isError should ===(true)
 
+      // Account.Command is the command type, but it should also be possible to narrow it
       // ... thus restricting the entity ref from being sent other commands, e.g.:
+      // val ref2 = ClusterSharding(system).entityRefFor[Deposit](AccountEntity.TypeKey, "3")
       // val probe2 = createTestProbe[CurrentBalance]()
       // val msg = GetBalance(probe2.ref)
-      // ref ! msg // type mismatch: GetBalance NOT =:= AccountCommand[OperationResult]
+      // ref2 ! msg // type mismatch: GetBalance NOT =:= Deposit
     }
 
     "handle GetBalance" in {
-      val opProbe = createTestProbe[OperationResult]()
+      val opProbe = createTestProbe[StatusReply[Done]]()
       val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "4")
       ref ! CreateAccount(opProbe.ref)
-      opProbe.expectMessage(Confirmed)
+      opProbe.expectMessage(StatusReply.Ack)
       ref ! Deposit(100, opProbe.ref)
-      opProbe.expectMessage(Confirmed)
+      opProbe.expectMessage(StatusReply.Ack)
 
       val getProbe = createTestProbe[CurrentBalance]()
       ref ! GetBalance(getProbe.ref)
@@ -111,26 +112,25 @@ class AccountExampleSpec
 
     "be usable with ask" in {
       val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "5")
-      val createResult: Future[OperationResult] = ref.ask(CreateAccount(_))
-      createResult.futureValue should ===(Confirmed)
+      val createResult: Future[Done] = ref.askWithStatus(CreateAccount(_))
+      createResult.futureValue should ===(Done)
       implicit val ec: ExecutionContext = testKit.system.executionContext
 
       // Errors are shown in IntelliJ Scala plugin 2019.1.6, but compiles with Scala 2.12.8.
       // Ok in IntelliJ if using ref.ask[OperationResult].
-      ref.ask(Deposit(100, _)).futureValue should ===(Confirmed)
-      ref.ask(Withdraw(10, _)).futureValue should ===(Confirmed)
-      ref.ask(GetBalance(_)).map(_.balance).futureValue should ===(90)
+      val deposited = ref.askWithStatus(Deposit(100, _)).futureValue
+      deposited should ===(Done)
+      val withdrawn = ref.askWithStatus(Withdraw(10, _)).futureValue
+      withdrawn should ===(Done)
+      ref.ask(GetBalance.apply).map(_.balance).futureValue should ===(90)
     }
 
     "verifySerialization" in {
-      val opProbe = createTestProbe[OperationResult]()
+      val opProbe = createTestProbe[StatusReply[Done]]()
       serializationTestKit.verifySerialization(CreateAccount(opProbe.ref))
       serializationTestKit.verifySerialization(Deposit(100, opProbe.ref))
       serializationTestKit.verifySerialization(Withdraw(90, opProbe.ref))
       serializationTestKit.verifySerialization(CloseAccount(opProbe.ref))
-
-      serializationTestKit.verifySerialization(Confirmed)
-      serializationTestKit.verifySerialization(Rejected("overdraft"))
 
       val getProbe = createTestProbe[CurrentBalance]()
       serializationTestKit.verifySerialization(GetBalance(getProbe.ref))

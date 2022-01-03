@@ -1,21 +1,23 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
 import java.util.concurrent.{ Executor, ExecutorService, Executors }
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.concurrent.{ blocking, Await, Future, Promise }
 import scala.concurrent.duration._
-import akka.testkit.{ AkkaSpec, DefaultTimeout, TestLatch }
-import akka.util.SerializedSuspendableExecutionContext
-import akka.testkit.TestActorRef
-import akka.actor.Props
+
 import akka.actor.Actor
-import akka.testkit.TestProbe
+import akka.actor.Props
+import akka.testkit.{ AkkaSpec, DefaultTimeout, TestLatch }
 import akka.testkit.CallingThreadDispatcher
+import akka.testkit.TestActorRef
+import akka.testkit.TestProbe
+import akka.util.SerializedSuspendableExecutionContext
 
 class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 
@@ -139,7 +141,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "work with same-thread executor plus blocking" in {
-      val ec = akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+      val ec = akka.dispatch.ExecutionContexts.parasitic
       var x = 0
       ec.execute(new Runnable {
         override def run = {
@@ -206,9 +208,9 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       awaitCond(counter.get == 2)
       perform(_ + 4)
       perform(_ * 2)
-      sec.size should ===(2)
+      sec.size() should ===(2)
       Thread.sleep(500)
-      sec.size should ===(2)
+      sec.size() should ===(2)
       counter.get should ===(2)
       sec.resume()
       awaitCond(counter.get == 12)
@@ -270,7 +272,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       }
       perform(x => { sec.suspend(); x * 2 })
       perform(_ + 8)
-      sec.size should ===(13)
+      sec.size() should ===(13)
       sec.resume()
       awaitCond(counter.get == 2)
       sec.resume()

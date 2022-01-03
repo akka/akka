@@ -1,19 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
-import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Address, Identify, PoisonPill, Props }
-import akka.cluster.MemberStatus.Up
-import akka.cluster.TestLeaseActor._
-import akka.cluster.singleton.ClusterSingletonManagerLeaseSpec.ImportantSingleton.Response
-import akka.cluster._
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit._
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Address, Identify, PoisonPill, Props }
+import akka.cluster._
+import akka.cluster.MemberStatus.Up
+import akka.cluster.singleton.ClusterSingletonManagerLeaseSpec.ImportantSingleton.Response
+import akka.coordination.lease.TestLeaseActor
+import akka.coordination.lease.TestLeaseActorClient
+import akka.coordination.lease.TestLeaseActorClientExt
+import akka.remote.testkit.{ MultiNodeConfig, STMultiNodeSpec }
+import akka.testkit._
 
 object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -24,14 +27,14 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
 
   testTransport(true)
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
     akka.cluster.testkit.auto-down-unreachable-after = 0s
     test-lease {
-        lease-class = akka.cluster.TestLeaseActorClient
+        lease-class = ${classOf[TestLeaseActorClient].getName}
         heartbeat-interval = 1s
         heartbeat-timeout = 120s
         lease-operation-timeout = 3s
@@ -71,13 +74,13 @@ class ClusterSingletonManagerLeaseMultiJvmNode4 extends ClusterSingletonManagerL
 class ClusterSingletonManagerLeaseMultiJvmNode5 extends ClusterSingletonManagerLeaseSpec
 
 class ClusterSingletonManagerLeaseSpec
-    extends MultiNodeSpec(ClusterSingletonManagerLeaseSpec)
+    extends MultiNodeClusterSpec(ClusterSingletonManagerLeaseSpec)
     with STMultiNodeSpec
-    with ImplicitSender
-    with MultiNodeClusterSpec {
+    with ImplicitSender {
 
-  import ClusterSingletonManagerLeaseSpec.ImportantSingleton._
   import ClusterSingletonManagerLeaseSpec._
+  import ClusterSingletonManagerLeaseSpec.ImportantSingleton._
+  import TestLeaseActor._
 
   override def initialParticipants = roles.size
 
@@ -90,24 +93,30 @@ class ClusterSingletonManagerLeaseSpec
       awaitClusterUp(controller, first)
       enterBarrier("initial-up")
       runOn(second) {
-        joinWithin(first)
-        awaitAssert({
-          cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up)
-        }, 10.seconds)
+        within(10.seconds) {
+          joinWithin(first)
+          awaitAssert {
+            cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up)
+          }
+        }
       }
       enterBarrier("second-up")
       runOn(third) {
-        joinWithin(first)
-        awaitAssert({
-          cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up)
-        }, 10.seconds)
+        within(10.seconds) {
+          joinWithin(first)
+          awaitAssert {
+            cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up)
+          }
+        }
       }
       enterBarrier("third-up")
       runOn(fourth) {
-        joinWithin(first)
-        awaitAssert({
-          cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up, Up)
-        }, 10.seconds)
+        within(10.seconds) {
+          joinWithin(first)
+          awaitAssert {
+            cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up, Up)
+          }
+        }
       }
       enterBarrier("fourth-up")
     }
@@ -127,10 +136,11 @@ class ClusterSingletonManagerLeaseSpec
     }
 
     "Start singleton and ping from all nodes" in {
-      runOn(first, second, third, fourth) {
+      // fourth doesn't have the worker role
+      runOn(first, second, third) {
         system.actorOf(
           ClusterSingletonManager
-            .props(props(), PoisonPill, ClusterSingletonManagerSettings(system).withRole("worker")),
+            .props(ImportantSingleton.props(), PoisonPill, ClusterSingletonManagerSettings(system).withRole("worker")),
           "important")
       }
       enterBarrier("singleton-started")

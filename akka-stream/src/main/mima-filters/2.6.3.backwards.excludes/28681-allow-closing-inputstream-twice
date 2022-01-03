@@ -1,0 +1,3 @@
+# private[stream]
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.InputStreamAdapter.isActive")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.InputStreamAdapter.isActive_=")

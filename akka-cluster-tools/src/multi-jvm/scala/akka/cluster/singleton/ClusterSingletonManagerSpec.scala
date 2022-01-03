@@ -1,16 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
-import language.postfixOps
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.ActorSelection
+import akka.actor.Identify
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.Cluster
@@ -19,12 +23,9 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
+import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.actor.Identify
-import akka.actor.ActorIdentity
-import akka.actor.ActorSelection
-import akka.serialization.jackson.CborSerializable
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -42,7 +43,8 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
     akka.cluster.testkit.auto-down-unreachable-after = 0s
-                                          """))
+    akka.remote.artery.advanced.aeron.idle-cpu-level = 3
+    """))
 
   nodeConfig(first, second, third, fourth, fifth, sixth)(ConfigFactory.parseString("akka.cluster.roles =[worker]"))
 
@@ -172,8 +174,8 @@ class ClusterSingletonManagerSpec
     with ImplicitSender {
 
   import ClusterSingletonManagerSpec._
-  import ClusterSingletonManagerSpec.PointToPointChannel._
   import ClusterSingletonManagerSpec.Consumer._
+  import ClusterSingletonManagerSpec.PointToPointChannel._
 
   override def initialParticipants = roles.size
 
@@ -333,7 +335,7 @@ class ClusterSingletonManagerSpec
 
       runOn(controller) {
         // watch that it is not terminated, which would indicate misbehavior
-        watch(system.actorOf(Props[PointToPointChannel], "queue"))
+        watch(system.actorOf(Props[PointToPointChannel](), "queue"))
       }
       enterBarrier("queue-started")
 

@@ -1,24 +1,24 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 // unused names in pattern match can be useful in the docs
-@silent
+@nowarn
 object PersistentActorCompileOnlyTest {
 
   import akka.persistence.typed.scaladsl.EventSourcedBehavior._
@@ -290,7 +290,7 @@ object PersistentActorCompileOnlyTest {
 
     private val commandHandler: CommandHandler[Command, Event, State] = CommandHandler.command {
       case Enough =>
-        Effect.persist(Done).thenRun((_: State) => println("yay")).thenStop
+        Effect.persist(Done).thenRun((_: State) => println("yay")).thenStop()
     }
 
     private val eventHandler: (State, Event) => State = {

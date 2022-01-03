@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.japi
 
 import java.util.function.Consumer
+
 import scala.concurrent.Future
 
 import akka.actor.Actor
-import akka.persistence.journal.{ AsyncRecovery => SAsyncReplay }
 import akka.persistence.PersistentRepr
+import akka.persistence.journal.{ AsyncRecovery => SAsyncReplay }
 
 /**
  * Java API: asynchronous message replay and sequence number recovery interface.

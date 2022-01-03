@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -43,7 +43,7 @@ object FSMDocSpec {
     // initial state
     def apply(): Behavior[Event] = idle(Uninitialized)
 
-    private def idle(data: Data): Behavior[Event] = Behaviors.receiveMessage[Event] { message: Event =>
+    private def idle(data: Data): Behavior[Event] = Behaviors.receiveMessage[Event] { message =>
       (message, data) match {
         case (SetTarget(ref), Uninitialized) =>
           idle(Todo(ref, Vector.empty))
@@ -80,7 +80,7 @@ class FSMDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Log
   "FSMDocSpec" must {
     "work" in {
       val buncher = spawn(Buncher())
-      val probe = TestProbe[Buncher.Batch]
+      val probe = TestProbe[Buncher.Batch]()
       buncher ! Buncher.SetTarget(probe.ref)
       buncher ! Buncher.Queue(42)
       buncher ! Buncher.Queue(43)

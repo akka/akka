@@ -1,30 +1,31 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
+import java.io.Closeable
 import java.util.logging.LogManager
 
-import org.slf4j.bridge.SLF4JBridgeHandler
-import akka.testkit.AkkaSpec
-import akka.actor.ExtendedActorSystem
-import akka.actor.Address
-import java.io.Closeable
+import scala.language.postfixOps
 
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.Actor
-import akka.dispatch.RequiresMessageQueue
-import akka.actor.Deploy
-import akka.dispatch.UnboundedMessageQueueSemantics
-import akka.actor.PoisonPill
-import akka.actor.ActorLogging
 import org.scalatestplus.mockito.MockitoSugar
+import org.slf4j.bridge.SLF4JBridgeHandler
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.Deploy
+import akka.actor.ExtendedActorSystem
+import akka.actor.PoisonPill
+import akka.actor.Props
 import akka.dispatch.Dispatchers
+import akka.dispatch.RequiresMessageQueue
+import akka.dispatch.UnboundedMessageQueueSemantics
 import akka.remote.RARP
+import akka.testkit.AkkaSpec
 
 /**
  * Redirect different logging sources to SLF4J.
@@ -78,8 +79,8 @@ case class MockitoSigarProvider(
     // Note "thenReturn(0)" invocation is consumed in collector construction.
 
     val cpuPerc = mock[CpuPerc]
-    when(cpuPerc.getCombined).thenReturn(0, increase(cpuCombined): _*)
-    when(cpuPerc.getStolen).thenReturn(0, increase(cpuStolen): _*)
+    when(cpuPerc.getCombined).thenReturn(0.0, increase(cpuCombined): _*)
+    when(cpuPerc.getStolen).thenReturn(0.0, increase(cpuStolen): _*)
 
     val sigar = mock[SigarProxy]
     when(sigar.getPid).thenReturn(pid)

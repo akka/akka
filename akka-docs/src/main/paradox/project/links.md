@@ -2,18 +2,18 @@
 
 ## Commercial Support
 
-Commercial support is provided by [Lightbend](http://www.lightbend.com).
-Akka is part of the [Lightbend Platform](http://www.lightbend.com/platform).
+Commercial support is provided by [Lightbend](https://www.lightbend.com).
+Akka is part of the [Akka Platform](https://www.lightbend.com/akka-platform).
 
 ## Sponsors
 
 **Lightbend** is the company behind the Akka Project, Scala Programming Language,
 Play Web Framework, Lagom, sbt and many other open source projects. 
-It also provides the Lightbend Reactive Platform, which is powered by an open source core and commercial Enterprise Suite for building scalable Reactive systems on the JVM. Learn more at [lightbend.com](http://www.lightbend.com).
+It also provides the Lightbend Reactive Platform, which is powered by an open source core and commercial Enterprise Suite for building scalable Reactive systems on the JVM. Learn more at [lightbend.com](https://www.lightbend.com).
 
 ## Akka Discuss Forums
 
-[Akka Discuss Forums](http://discuss.akka.io)
+[Akka Discuss Forums](https://discuss.akka.io)
 
 ## Gitter
 
@@ -28,16 +28,11 @@ Akka uses Git and is hosted at [Github akka/akka](https://github.com/akka/akka).
 ## Releases Repository
 
 All Akka releases are published via Sonatype to Maven Central, see
-[search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.typesafe.akka%22)
+[search.maven.org](https://search.maven.org/search?q=g:com.typesafe.akka)
 
 ## Snapshots Repository
 
-Nightly builds are available in [https://repo.akka.io/snapshots](https://repo.akka.io/snapshots/) as both `SNAPSHOT` and
-timestamped versions.
-
-For timestamped versions, pick a timestamp from
-[https://repo.akka.io/snapshots/com/typesafe/akka](https://repo.akka.io/snapshots/com/typesafe/akka).
-All Akka modules that belong to the same build have the same timestamp.
+Snapshot builds are available at [https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/](https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/). All Akka modules that belong to the same build have the same version.
 
 @@@ warning
 
@@ -50,14 +45,14 @@ The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unles
 Make sure that you add the repository to the sbt resolvers:
 
 ```
-resolvers += "Akka Snapshots" at "https://repo.akka.io/snapshots/"
+resolvers += Resolver.sonatypeRepo("snapshots")
 ```
 
-Define the library dependencies with the timestamp as version. For example:
+Define the library dependencies with the complete version. For example:
 
 @@@vars
 ```
-libraryDependencies += "com.typesafe.akka" % "akka-remote_$scala.binary_version$" % "2.5-20170510-230859"
+libraryDependencies += "com.typesafe.akka" % "akka-remote_$scala.binary.version$" % "2.6.14+72-53943d99-SNAPSHOT"
 ```
 @@@
 
@@ -68,10 +63,12 @@ Make sure that you add the repository to the Maven repositories in pom.xml:
 ```
 <repositories>
   <repository>
-    <id>akka-snapshots</id>
-    <name>Akka Snapshots</name>
-    <url>https://repo.akka.io/snapshots/</url>
+    <id>oss-sonatype</id>
+    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     <layout>default</layout>
+    <snapshots>
+      <enabled>true</enabled>
+    </snapshots>
   </repository>
 </repositories>
 ```
@@ -83,8 +80,8 @@ Define the library dependencies with the timestamp as version. For example:
 <dependencies>
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-remote_$scala.binary_version$</artifactId>
-    <version>2.5-20170510-230859</version>
+    <artifactId>akka-remote_$scala.binary.version$</artifactId>
+    <version>2.6.14+72-53943d99-SNAPSHOT</version>
   </dependency>
 </dependencies>
 ```

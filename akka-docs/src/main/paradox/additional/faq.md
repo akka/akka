@@ -4,7 +4,7 @@
 
 ### Where does the name Akka come from?
 
-It is the name of a beautiful Swedish [mountain](https://lh4.googleusercontent.com/-z28mTALX90E/UCOsd249TdI/AAAAAAAAAB0/zGyNNZla-zY/w442-h331/akka-beautiful-panorama.jpg)
+It is the name of a beautiful Swedish [mountain](https://en.wikipedia.org/wiki/%C3%81hkk%C3%A1)
 up in the northern part of Sweden called Laponia. The mountain is also sometimes
 called 'The Queen of Laponia'.
 
@@ -16,9 +16,9 @@ Also, the name AKKA is a palindrome of the letters A and K as in Actor Kernel.
 
 Akka is also:
 
- * the name of the goose that Nils traveled across Sweden on in [The Wonderful Adventures of Nils](http://en.wikipedia.org/wiki/The_Wonderful_Adventures_of_Nils) by the Swedish writer Selma Lagerlöf.
+ * the name of the goose that Nils traveled across Sweden on in [The Wonderful Adventures of Nils](https://en.wikipedia.org/wiki/The_Wonderful_Adventures_of_Nils) by the Swedish writer Selma Lagerlöf.
  * the Finnish word for 'nasty elderly woman' and the word for 'elder sister' in the Indian languages Tamil, Telugu, Kannada and Marathi.
- * a [font](http://www.dafont.com/akka.font)
+ * a [font](https://www.dafont.com/akka.font)
  * a town in Morocco
  * a near-earth asteroid
 
@@ -71,3 +71,10 @@ akka.loglevel = DEBUG
 ```
 
 Read more about it in the docs for @ref:[Logging](../typed/logging.md).
+
+# Other questions?
+
+Do you have a question not covered here? Find out how to
+[get involved in the community](https://akka.io/get-involved) or
+[set up a time](https://lightbend.com/contact) to discuss enterprise-grade
+expert support from [Lightbend](https://www.lightbend.com/).

@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch;
 
 import akka.util.Unsafe;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Lock-free bounded non-blocking multiple-producer single-consumer queue based on the works of:
@@ -16,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *     (Apache V2: https://github.com/plokhotnyuk/actors/blob/master/LICENSE)
  *
  * Dmitriy Vyukov's non-intrusive MPSC queue:
- *   - http://www.1024cores.net/home/lock-free-algorithms/queues/non-intrusive-mpsc-node-based-queue
+ *   - https://www.1024cores.net/home/lock-free-algorithms/queues/non-intrusive-mpsc-node-based-queue
  *   (Simplified BSD)
  */
 @SuppressWarnings("serial")
@@ -37,29 +35,29 @@ public abstract class AbstractBoundedNodeQueue<T> {
         setEnq(n);
     }
 
-    private final void setEnq(Node<T> n) {
+    private void setEnq(Node<T> n) {
         Unsafe.instance.putObjectVolatile(this, enqOffset, n);
     }
 
     @SuppressWarnings("unchecked")
-    private final Node<T> getEnq() {
+    private Node<T> getEnq() {
         return (Node<T>)Unsafe.instance.getObjectVolatile(this, enqOffset);
     }
 
-    private final boolean casEnq(Node<T> old, Node<T> nju) {
+    private boolean casEnq(Node<T> old, Node<T> nju) {
         return Unsafe.instance.compareAndSwapObject(this, enqOffset, old, nju);
     }
 
-    private final void setDeq(Node<T> n) {
+    private void setDeq(Node<T> n) {
         Unsafe.instance.putObjectVolatile(this, deqOffset, n);
     }
 
     @SuppressWarnings("unchecked")
-    private final Node<T> getDeq() {
+    private Node<T> getDeq() {
         return (Node<T>)Unsafe.instance.getObjectVolatile(this, deqOffset);
     }
 
-    private final boolean casDeq(Node<T> old, Node<T> nju) {
+    private boolean casDeq(Node<T> old, Node<T> nju) {
         return Unsafe.instance.compareAndSwapObject(this, deqOffset, old, nju);
     }
 

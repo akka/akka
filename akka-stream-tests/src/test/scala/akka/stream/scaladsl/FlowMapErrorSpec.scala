@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-
-import scala.util.control.NoStackTrace
 
 class FlowMapErrorSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
@@ -67,12 +67,7 @@ class FlowMapErrorSpec extends StreamSpec("""
     }
 
     "finish stream if it's empty" in assertAllStagesStopped {
-      Source.empty
-        .map(identity)
-        .mapError { case _: Throwable => boom }
-        .runWith(TestSink.probe[Int])
-        .request(1)
-        .expectComplete()
+      Source.empty.mapError { case _: Throwable => boom }.runWith(TestSink.probe[Int]).request(1).expectComplete()
     }
   }
 }

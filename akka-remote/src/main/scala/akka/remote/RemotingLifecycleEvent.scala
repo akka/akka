@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.event.Logging.LogLevel
-import akka.event.{ Logging, LoggingAdapter }
-import akka.actor.{ ActorSystem, Address }
-import com.github.ghik.silencer.silent
-
 import scala.runtime.AbstractFunction2
 
-@silent("@SerialVersionUID has no effect")
+import scala.annotation.nowarn
+
+import akka.actor.{ ActorSystem, Address }
+import akka.event.{ Logging, LoggingAdapter }
+import akka.event.Logging.LogLevel
+
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 sealed trait RemotingLifecycleEvent extends Serializable {
   def logLevel: Logging.LogLevel
 }
 
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 sealed trait AssociationEvent extends RemotingLifecycleEvent {
@@ -65,7 +66,7 @@ final case class AssociationErrorEvent(
 }
 
 @SerialVersionUID(1L)
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final case class RemotingListenEvent(listenAddresses: Set[Address]) extends RemotingLifecycleEvent {
   def getListenAddresses: java.util.Set[Address] =
     scala.collection.JavaConverters.setAsJavaSetConverter(listenAddresses).asJava
@@ -114,9 +115,6 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
   @deprecated("Use long uid", "2.4.x")
   def uid: Int = longUid.toInt
 
-  @silent("deprecated")
-  @deprecated("Use long uid copy method", "2.4.x")
-  def copy(address: Address = address, uid: Int = uid) = new QuarantinedEvent(address, uid.toLong)
 }
 
 /**
@@ -143,7 +141,7 @@ final case class ThisActorSystemQuarantinedEvent(localAddress: Address, remoteAd
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logLevel: Logging.LogLevel) {
   def notifyListeners(message: RemotingLifecycleEvent): Unit = {
     system.eventStream.publish(message)

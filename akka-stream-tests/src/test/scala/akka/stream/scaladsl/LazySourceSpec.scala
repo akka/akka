@@ -1,32 +1,34 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicBoolean
-
-import akka.stream._
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
-import akka.testkit.DefaultTimeout
-import akka.testkit.TestProbe
-import akka.Done
-import akka.NotUsed
-import org.scalatest.concurrent.ScalaFutures
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import org.scalatest.concurrent.ScalaFutures
+import akka.Done
+import akka.NotUsed
+import akka.stream.Attributes.Attribute
+import akka.stream._
+import akka.stream.scaladsl.AttributesSpec.AttributesSource
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.DefaultTimeout
+import akka.testkit.TestProbe
 
 class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import system.dispatcher
+  case class MyAttribute() extends Attribute
+  val myAttributes = Attributes(MyAttribute())
 
   "Source.lazySingle" must {
     "work like a normal source, happy path" in assertAllStagesStopped {
@@ -35,16 +37,14 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
-      val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
       Source
         .lazySingle { () =>
           constructed.set(true)
           1
         }
-        .toMat(Sink.fromSubscriber(probe))(Keep.left)
+        .toMat(Sink.cancelled)(Keep.left)
         .run()
-      probe.cancel()
 
       constructed.get() should ===(false)
     }
@@ -74,16 +74,17 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
-      val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
-      Source
-        .lazySingle { () =>
+      val termination = Source
+        .lazyFuture { () =>
           constructed.set(true)
-          1
+          Future.successful(1)
         }
-        .runWith(Sink.fromSubscriber(probe))
-      probe.cancel()
+        .watchTermination()(Keep.right)
+        .toMat(Sink.cancelled)(Keep.left)
+        .run()
 
+      termination.futureValue // stream should terminate
       constructed.get() should ===(false)
     }
 
@@ -125,18 +126,18 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
-      val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
-      val result = Source
+      val (lazySourceMatVal, termination) = Source
         .lazySource { () =>
           constructed.set(true); Source(List(1, 2, 3))
         }
-        .toMat(Sink.fromSubscriber(probe))(Keep.left)
+        .watchTermination()(Keep.both)
+        .toMat(Sink.cancelled)(Keep.left)
         .run()
-      probe.cancel()
 
+      termination.futureValue // stream should terminate
       constructed.get() should ===(false)
-      result.isCompleted should ===(false)
+      lazySourceMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
     "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
@@ -215,7 +216,9 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          throw matFail
+          if ("confuse IntellIJ dead code checker".length > 2) {
+            throw matFail
+          }
         }
       }
 
@@ -244,6 +247,18 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       killswitch.abort(boom)
       doneF.failed.futureValue should ===(boom)
     }
+
+    "provide attributes to inner source" in {
+      // This stage never stops, but that's OK, that's not what we're testing here.
+      val attributes = Source
+        .lazySource(() => Source.fromGraph(new AttributesSource()))
+        .addAttributes(myAttributes)
+        .to(Sink.ignore)
+        .run()
+
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
+    }
   }
 
   "Source.lazyFutureSource" must {
@@ -260,21 +275,21 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
-      val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
-      val result = Source
+      val (lazyFutureSourceMatval, termination) = Source
         .lazyFutureSource { () =>
           Future {
             constructed.set(true)
             Source(List(1, 2, 3))
           };
         }
-        .toMat(Sink.fromSubscriber(probe))(Keep.left)
+        .watchTermination()(Keep.both)
+        .toMat(Sink.cancelled)(Keep.left)
         .run()
-      probe.cancel()
 
+      termination.futureValue // stream should terminate
       constructed.get() should ===(false)
-      result.isCompleted should ===(false)
+      lazyFutureSourceMatval.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
     "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
@@ -372,7 +387,9 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          throw matFail
+          if ("confuse IntellIJ dead code checker".length > 2) {
+            throw matFail
+          }
         }
       }
 
@@ -410,6 +427,17 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       terminationF.failed.futureValue should ===(boom)
     }
 
+    "provide attributes to inner source" in {
+      // This stage never stops, but that's OK, that's not what we're testing here.
+      val attributes = Source
+        .lazyFutureSource(() => Future(Source.fromGraph(new AttributesSource())))
+        .addAttributes(myAttributes)
+        .to(Sink.ignore)
+        .run()
+
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
+    }
   }
 
 }

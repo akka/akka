@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
-import akka.actor.{ Actor, ActorRef }
 import java.util.{ Set, TreeSet }
+
+import akka.actor.{ Actor, ActorRef }
 
 sealed trait ListenerMessage
 final case class Listen(listener: ActorRef) extends ListenerMessage

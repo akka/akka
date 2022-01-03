@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -17,7 +19,6 @@ import akka.cluster.MemberStatus
 import akka.cluster.singleton.ClusterSingletonLeavingSpeedSpec.TheSingleton
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 
 object ClusterSingletonLeavingSpeedSpec {
 

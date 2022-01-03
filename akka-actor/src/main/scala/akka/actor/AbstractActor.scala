@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.annotation.DoNotInherit
-import akka.japi.pf.ReceiveBuilder
-
-import scala.runtime.BoxedUnit
 import java.util.Optional
-
-import akka.util.JavaDurationConverters
-import com.github.ghik.silencer.silent
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
+import scala.runtime.BoxedUnit
+
+import scala.annotation.nowarn
+
+import akka.annotation.DoNotInherit
+import akka.japi.pf.ReceiveBuilder
+import akka.util.JavaDurationConverters
 
 /**
  * Java API: compatible with lambda expressions
@@ -273,7 +273,7 @@ abstract class AbstractActor extends Actor {
   // TODO In 2.6.0 we can remove deprecation and make the method final
   @deprecated("Override preRestart with message parameter with Optional type instead", "2.5.0")
   @throws(classOf[Exception])
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     import scala.compat.java8.OptionConverters._
     preRestart(reason, message.asJava)

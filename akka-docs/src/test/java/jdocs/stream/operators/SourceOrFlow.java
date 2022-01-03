@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.operators;
 
+import akka.Done;
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
 import akka.stream.javadsl.Flow;
@@ -16,32 +18,37 @@ import akka.japi.function.Function2;
 // #zip-with-index
 // #or-else
 // #prepend
+// #prependLazy
 // #concat
+// #concatLazy
 // #interleave
 // #merge
 // #merge-sorted
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
-import java.util.Arrays;
+
+import java.util.*;
 
 // #merge-sorted
 // #merge
 // #interleave
 // #concat
+// #concatLazy
 // #prepend
+// #prependLazy
 // #or-else
 // #zip-with-index
 // #zip-with
 // #zip
 
 // #log
+import akka.event.LogMarker;
 import akka.stream.Attributes;
 
 // #log
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -61,11 +68,25 @@ class SourceOrFlow {
     ;
   }
 
+  void logWithMarkerExample() {
+    Flow.of(String.class)
+        // #logWithMarker
+        .logWithMarker(
+            "myStream", (e) -> LogMarker.create("myMarker", Collections.singletonMap("element", e)))
+        .addAttributes(
+            Attributes.createLogLevels(
+                Attributes.logLevelOff(), // onElement
+                Attributes.logLevelInfo(), // onFinish
+                Attributes.logLevelError())) // onFailure
+    // #logWithMarker
+    ;
+  }
+
   void zipWithIndexExample() {
     // #zip-with-index
     Source.from(Arrays.asList("apple", "orange", "banana"))
         .zipWithIndex()
-        .runWith(Sink.foreach(System.out::print), system);
+        .runForeach(System.out::println, system);
     // this will print ('apple', 0), ('orange', 1), ('banana', 2)
     // #zip-with-index
   }
@@ -74,7 +95,7 @@ class SourceOrFlow {
     // #zip
     Source<String, NotUsed> sourceFruits = Source.from(Arrays.asList("apple", "orange", "banana"));
     Source<String, NotUsed> sourceFirstLetters = Source.from(Arrays.asList("A", "O", "B"));
-    sourceFruits.zip(sourceFirstLetters).runWith(Sink.foreach(System.out::print), system);
+    sourceFruits.zip(sourceFirstLetters).runForeach(System.out::println, system);
     // this will print ('apple', 'A'), ('orange', 'O'), ('banana', 'B')
 
     // #zip
@@ -88,7 +109,7 @@ class SourceOrFlow {
         .zipWith(
             sourceFruits,
             (Function2<String, String, String>) (countStr, fruitName) -> countStr + " " + fruitName)
-        .runWith(Sink.foreach(System.out::print), system);
+        .runForeach(System.out::println, system);
     // this will print 'one apple', 'two orange', 'three banana'
 
     // #zip-with
@@ -98,7 +119,17 @@ class SourceOrFlow {
     // #prepend
     Source<String, NotUsed> ladies = Source.from(Arrays.asList("Emma", "Emily"));
     Source<String, NotUsed> gentlemen = Source.from(Arrays.asList("Liam", "William"));
-    gentlemen.prepend(ladies).runWith(Sink.foreach(System.out::print), system);
+    gentlemen.prepend(ladies).runForeach(System.out::println, system);
+    // this will print "Emma", "Emily", "Liam", "William"
+
+    // #prepend
+  }
+
+  void prependLazyExample() {
+    // #prepend
+    Source<String, NotUsed> ladies = Source.from(Arrays.asList("Emma", "Emily"));
+    Source<String, NotUsed> gentlemen = Source.from(Arrays.asList("Liam", "William"));
+    gentlemen.prependLazy(ladies).runForeach(System.out::println, system);
     // this will print "Emma", "Emily", "Liam", "William"
 
     // #prepend
@@ -108,7 +139,17 @@ class SourceOrFlow {
     // #concat
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
-    sourceA.concat(sourceB).runWith(Sink.foreach(System.out::print), system);
+    sourceA.concat(sourceB).runForeach(System.out::println, system);
+    // prints 1, 2, 3, 4, 10, 20, 30, 40
+
+    // #concat
+  }
+
+  void concatLazyExample() {
+    // #concat
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
+    sourceA.concatLazy(sourceB).runForeach(System.out::println, system);
     // prints 1, 2, 3, 4, 10, 20, 30, 40
 
     // #concat
@@ -118,7 +159,7 @@ class SourceOrFlow {
     // #interleave
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
-    sourceA.interleave(sourceB, 2).runWith(Sink.foreach(System.out::print), system);
+    sourceA.interleave(sourceB, 2).runForeach(System.out::println, system);
     // prints 1, 2, 10, 20, 3, 4, 30, 40
 
     // #interleave
@@ -128,10 +169,37 @@ class SourceOrFlow {
     // #merge
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
-    sourceA.merge(sourceB).runWith(Sink.foreach(System.out::print), system);
+    sourceA.merge(sourceB).runForeach(System.out::println, system);
     // merging is not deterministic, can for example print 1, 2, 3, 4, 10, 20, 30, 40
 
     // #merge
+  }
+
+  void mergePreferredExample() {
+    // #mergePreferred
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
+
+    sourceA.mergePreferred(sourceB, false, false).runForeach(System.out::println, system);
+    // prints 1, 10, ... since both sources have their first element ready and the left source is
+    // preferred
+
+    sourceA.mergePreferred(sourceB, true, false).runForeach(System.out::println, system);
+    // prints 10, 1, ... since both sources have their first element ready and the right source is
+    // preferred
+    // #mergePreferred
+  }
+
+  void mergePrioritizedExample() {
+    // #mergePrioritized
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
+
+    sourceA.mergePrioritized(sourceB, 99, 1, false).runForeach(System.out::println, system);
+    // prints e.g. 1, 10, 2, 3, 4, 20, 30, 40 since both sources have their first element ready and
+    // the left source has higher priority – if both sources have elements ready, sourceA has a
+    // 99% chance of being picked next while sourceB has a 1% chance
+    // #mergePrioritized
   }
 
   void mergeSortedExample() {
@@ -140,13 +208,13 @@ class SourceOrFlow {
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(2, 4, 6, 8));
     sourceA
         .mergeSorted(sourceB, Comparator.<Integer>naturalOrder())
-        .runWith(Sink.foreach(System.out::print), system);
+        .runForeach(System.out::println, system);
     // prints 1, 2, 3, 4, 5, 6, 7, 8
 
     Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(20, 1, 1, 1));
     sourceA
         .mergeSorted(sourceC, Comparator.<Integer>naturalOrder())
-        .runWith(Sink.foreach(System.out::print), system);
+        .runForeach(System.out::println, system);
     // prints 1, 3, 5, 7, 20, 1, 1, 1
     // #merge-sorted
   }
@@ -157,10 +225,10 @@ class SourceOrFlow {
     Source<String, NotUsed> source2 = Source.from(Arrays.asList("Second source"));
     Source<String, NotUsed> emptySource = Source.empty();
 
-    source1.orElse(source2).runWith(Sink.foreach(System.out::print), system);
+    source1.orElse(source2).runForeach(System.out::println, system);
     // this will print "First source"
 
-    emptySource.orElse(source2).runWith(Sink.foreach(System.out::print), system);
+    emptySource.orElse(source2).runForeach(System.out::println, system);
     // this will print "Second source"
 
     // #or-else
@@ -292,8 +360,24 @@ class SourceOrFlow {
     // #grouped
   }
 
+  void groupedWeightedExample() {
+    // #groupedWeighted
+    Source.from(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4), Arrays.asList(5, 6)))
+        .groupedWeighted(4, x -> (long) x.size())
+        .runForeach(System.out::println, system);
+    // [[1, 2], [3, 4]]
+    // [[5, 6]]
+
+    Source.from(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4), Arrays.asList(5, 6)))
+        .groupedWeighted(3, x -> (long) x.size())
+        .runForeach(System.out::println, system);
+    // [[1, 2], [3, 4]]
+    // [[5, 6]]
+    // #groupedWeighted
+  }
+
   static
-  // #fold
+  // #fold // #foldAsync
   class Histogram {
     final long low;
     final long high;
@@ -306,6 +390,8 @@ class SourceOrFlow {
     // Immutable start value
     public static Histogram INSTANCE = new Histogram(0L, 0L);
 
+    // #foldAsync
+
     public Histogram add(int number) {
       if (number < 100) {
         return new Histogram(low + 1L, high);
@@ -313,19 +399,42 @@ class SourceOrFlow {
         return new Histogram(low, high + 1L);
       }
     }
+    // #fold
+
+    // #foldAsync
+    public CompletionStage<Histogram> addAsync(Integer n) {
+      if (n < 100) {
+        return CompletableFuture.supplyAsync(() -> new Histogram(low + 1L, high));
+      } else {
+        return CompletableFuture.supplyAsync(() -> new Histogram(low, high + 1L));
+      }
+    }
+    // #fold
   }
-  // #fold
+  // #fold // #foldAsync
 
   void foldExample() {
     // #fold
 
     // Folding over the numbers from 1 to 150:
     Source.range(1, 150)
-        .fold(Histogram.INSTANCE, (acc, n) -> acc.add(n))
+        .fold(Histogram.INSTANCE, Histogram::add)
         .runForeach(h -> System.out.println("Histogram(" + h.low + ", " + h.high + ")"), system);
 
     // Prints: Histogram(99, 51)
     // #fold
+  }
+
+  void foldAsyncExample() {
+    // #foldAsync
+
+    // Folding over the numbers from 1 to 150:
+    Source.range(1, 150)
+        .foldAsync(Histogram.INSTANCE, Histogram::addAsync)
+        .runForeach(h -> System.out.println("Histogram(" + h.low + ", " + h.high + ")"), system);
+
+    // Prints: Histogram(99, 51)
+    // #foldAsync
   }
 
   void takeExample() {
@@ -360,7 +469,7 @@ class SourceOrFlow {
 
     Source<String, NotUsed> longWords = words.filter(w -> w.length() > 6);
 
-    longWords.runWith(Sink.foreach(System.out::print), system);
+    longWords.runForeach(System.out::println, system);
     // consectetur
     // adipiscing
     // eiusmod
@@ -379,11 +488,132 @@ class SourceOrFlow {
 
     Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 6);
 
-    longWords.runWith(Sink.foreach(System.out::print), system);
+    longWords.runForeach(System.out::println, system);
     // consectetur
     // adipiscing
     // eiusmod
     // incididunt
     // #filterNot
+  }
+
+  void dropExample() {
+    // #drop
+    Source<Integer, NotUsed> fiveIntegers = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+    Source<Integer, NotUsed> droppedThreeInts = fiveIntegers.drop(3);
+
+    droppedThreeInts.runForeach(System.out::println, system);
+    // 4
+    // 5
+    // #drop
+  }
+
+  void dropWhileExample() {
+    // #dropWhile
+    Source<Integer, NotUsed> droppedWhileNegative =
+        Source.from(Arrays.asList(-3, -2, -1, 0, 1, 2, 3, -1)).dropWhile(integer -> integer < 0);
+
+    droppedWhileNegative.runForeach(System.out::println, system);
+    // 1
+    // 2
+    // 3
+    // -1
+    // #dropWhile
+  }
+
+  static void reduceExample() {
+    // #reduceExample
+    Source<Integer, NotUsed> source = Source.range(1, 100).reduce((acc, element) -> acc + element);
+    CompletionStage<Integer> result = source.runWith(Sink.head(), system);
+    result.thenAccept(System.out::println);
+    // 5050
+    // #reduceExample
+  }
+
+  void watchExample() {
+    // #watch
+    final ActorRef ref = someActor();
+    Flow<String, String, NotUsed> flow =
+        Flow.of(String.class)
+            .watch(ref)
+            .recover(akka.stream.WatchedActorTerminatedException.class, () -> ref + " terminated");
+    // #watch
+  }
+
+  void groupByExample() {
+    // #groupBy
+    Source.range(1, 10)
+        .groupBy(2, i -> i % 2 == 0) // create two sub-streams with odd and even numbers
+        .reduce(Integer::sum) // for each sub-stream, sum its elements
+        .mergeSubstreams() // merge back into a stream
+        .runForeach(System.out::println, system);
+    // 25
+    // 30
+    // #groupBy
+  }
+
+  void watchTerminationExample() {
+    // #watchTermination
+    Source.range(1, 5)
+        .watchTermination(
+            (prevMatValue, completionStage) -> {
+              completionStage.whenComplete(
+                  (done, exc) -> {
+                    if (done != null)
+                      System.out.println("The stream materialized " + prevMatValue.toString());
+                    else System.out.println(exc.getMessage());
+                  });
+              return prevMatValue;
+            })
+        .runForeach(System.out::println, system);
+
+    /*
+    Prints:
+    1
+    2
+    3
+    4
+    5
+    The stream materialized NotUsed
+     */
+
+    Source.range(1, 5)
+        .watchTermination(
+            (prevMatValue, completionStage) -> {
+              // this function will be run when the stream terminates
+              // the CompletionStage provided as a second parameter indicates whether
+              // the stream completed successfully or failed
+              completionStage.whenComplete(
+                  (done, exc) -> {
+                    if (done != null)
+                      System.out.println("The stream materialized " + prevMatValue.toString());
+                    else System.out.println(exc.getMessage());
+                  });
+              return prevMatValue;
+            })
+        .runForeach(
+            element -> {
+              if (element == 3) throw new Exception("Boom");
+              else System.out.println(element);
+            },
+            system);
+    /*
+    Prints:
+    1
+    2
+    Boom
+     */
+    // #watchTermination
+  }
+
+  static CompletionStage<Done> completionTimeoutExample() {
+    // #completionTimeout
+    Source<Integer, NotUsed> source = Source.range(1, 100000).map(number -> number * number);
+    CompletionStage<Done> result = source.completionTimeout(Duration.ofMillis(10)).run(system);
+    return result;
+    // #completionTimeout
+  }
+
+  private ActorRef someActor() {
+    return null;
   }
 }

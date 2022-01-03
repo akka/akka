@@ -1,10 +1,17 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
 
 import java.util.concurrent.ThreadLocalRandom
+
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+import org.reactivestreams.Publisher
+import org.scalatest.matchers.should.Matchers
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -16,15 +23,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher._
 import akka.stream.testkit.TestSubscriber._
-import org.reactivestreams.Publisher
-
-import scala.annotation.tailrec
-import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-
-import akka.stream.SystemMaterializer
-import com.github.ghik.silencer.silent
-import org.scalatest.matchers.should.Matchers
 
 trait ScriptedTest extends Matchers {
 
@@ -237,7 +235,7 @@ trait ScriptedTest extends Matchers {
 
   }
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def runScript[In, Out, M](script: Script[In, Out])(op: Flow[In, In, NotUsed] => Flow[In, Out, M])(
       implicit system: ActorSystem): Unit =
     runScript(script, SystemMaterializer(system).materializer.settings)(op)(system)

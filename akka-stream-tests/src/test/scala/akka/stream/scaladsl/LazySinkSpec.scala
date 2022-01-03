@@ -1,13 +1,20 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.TimeoutException
-
-import akka.NotUsed
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.annotation.nowarn
+import akka.{ Done, NotUsed }
+import akka.stream.Attributes.Attribute
 import akka.stream._
+import akka.stream.scaladsl.AttributesSpec.AttributesSink
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.testkit.StreamSpec
@@ -16,21 +23,17 @@ import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import com.github.ghik.silencer.silent
 
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class LazySinkSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
     akka.stream.materializer.max-input-buffer-size = 1
   """) {
 
+  import system.dispatcher
   val ex = TE("")
+  case class MyAttribute() extends Attribute
+  val myAttributes = Attributes(MyAttribute())
 
   "A LazySink" must {
     "work in happy case" in assertAllStagesStopped {
@@ -130,7 +133,9 @@ class LazySinkSpec extends StreamSpec("""
         val in = Inlet[String]("in")
         val shape = SinkShape(in)
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          throw matFail
+          if ("confuse IntellIJ dead code checker".length > 2) {
+            throw matFail
+          }
         }
       }
 
@@ -154,6 +159,17 @@ class LazySinkSpec extends StreamSpec("""
       // the actual matval from Sink.seq should be failed when the stream fails
       innerMatVal.failed.futureValue should ===(MyException)
 
+    }
+
+    "provide attributes to inner sink" in assertAllStagesStopped {
+      val attributes = Source
+        .single(Done)
+        .toMat(Sink.lazyFutureSink(() => Future(Sink.fromGraph(new AttributesSink()))))(Keep.right)
+        .addAttributes(myAttributes)
+        .run()
+
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute should contain(MyAttribute())
     }
   }
 

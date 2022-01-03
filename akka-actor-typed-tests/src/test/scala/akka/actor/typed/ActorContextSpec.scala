@@ -1,22 +1,21 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import akka.actor.InvalidMessageException
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.scaladsl.TestProbe
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-import akka.actor.UnhandledMessage
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.eventstream.EventStream
-import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.scaladsl.Behaviors
 
 object ActorSpecMessages {
 
@@ -86,8 +85,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
     }
 
     "canonicalize behaviors" in {
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      val unhandledProbe = createUnhandledMessageProbe()
       val probe = TestProbe[Event]()
 
       lazy val behavior: Behavior[Command] = Behaviors
@@ -523,7 +521,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
 
     "return the right context info" in {
       type Info = (ActorSystem[Nothing], ActorRef[String])
-      val probe = TestProbe[Info]
+      val probe = TestProbe[Info]()
       val actor = spawn(
         Behaviors
           .receivePartial[String] {
@@ -649,7 +647,8 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
     }
 
     "not allow null messages" in {
-      val actor = spawn(Behaviors.empty[Null].decorate)
+      // Scala 3 doesn't generate an implicit `ClassTag[Null]` (https://github.com/lampepfl/dotty/issues/9586)
+      val actor = spawn(decoration(ClassTag.Null)(Behaviors.empty[Null]))
       intercept[InvalidMessageException] {
         actor ! null
       }

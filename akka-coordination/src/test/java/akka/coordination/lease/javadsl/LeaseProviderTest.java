@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.coordination.lease.javadsl;
@@ -29,14 +29,14 @@ public class LeaseProviderTest {
   public void loadLeaseImpl() {
     Lease leaseA = LeaseProvider.get(system).getLease("a", "lease-a", "owner1");
 
-    assertEquals(leaseA.getSettings().leaseName(), "a");
-    assertEquals(leaseA.getSettings().ownerName(), "owner1");
-    assertEquals(leaseA.getSettings().leaseConfig().getString("key1"), "value1");
+    assertEquals("a", leaseA.getSettings().leaseName());
+    assertEquals("owner1", leaseA.getSettings().ownerName());
+    assertEquals("value1", leaseA.getSettings().leaseConfig().getString("key1"));
 
     Lease leaseB = LeaseProvider.get(system).getLease("b", "lease-b", "owner2");
 
-    assertEquals(leaseB.getSettings().leaseName(), "b");
-    assertEquals(leaseB.getSettings().ownerName(), "owner2");
-    assertEquals(leaseB.getSettings().leaseConfig().getString("key2"), "value2");
+    assertEquals("b", leaseB.getSettings().leaseName());
+    assertEquals("owner2", leaseB.getSettings().ownerName());
+    assertEquals("value2", leaseB.getSettings().leaseConfig().getString("key2"));
   }
 }

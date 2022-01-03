@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -7,15 +7,14 @@ package akka.actor
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
-
-import akka.util.JavaDurationConverters
-import com.github.ghik.silencer.silent
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import scala.annotation.nowarn
+
 import akka.annotation.InternalApi
-import com.github.ghik.silencer.silent
+import akka.util.JavaDurationConverters
 
 /**
  * This exception is thrown by Scheduler.schedule* when scheduling is not
@@ -99,13 +98,17 @@ trait Scheduler {
         }
       }
 
-      @tailrec final def cancel(): Boolean = {
-        get match {
-          case null => false
-          case c =>
-            if (c.cancel()) compareAndSet(c, null)
-            else compareAndSet(c, null) || cancel()
+      final def cancel(): Boolean = {
+        @tailrec def tailrecCancel(): Boolean = {
+          get match {
+            case null => false
+            case c =>
+              if (c.cancel()) compareAndSet(c, null)
+              else compareAndSet(c, null) || tailrecCancel()
+          }
         }
+
+        tailrecCancel()
       }
 
       override def isCancelled: Boolean = get == null
@@ -159,7 +162,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def scheduleWithFixedDelay(
       initialDelay: FiniteDuration,
       delay: FiniteDuration,
@@ -234,7 +237,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, runnable)(executor)
@@ -303,7 +306,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def scheduleAtFixedRate(
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
@@ -356,7 +359,7 @@ trait Scheduler {
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, receiver: ActorRef, message: Any)(
       implicit
       executor: ExecutionContext,

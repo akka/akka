@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.collection.immutable.SortedSet
-import akka.actor.Props
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
+import akka.actor.Props
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -28,7 +30,11 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
       remote.log-remote-lifecycle-events = off
-      cluster.failure-detector.monitored-by-nr-of-members = 3
+      cluster {
+        failure-detector.monitored-by-nr-of-members = 3
+        downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+        split-brain-resolver.active-strategy = keep-majority
+      }
     }
     """))
 
@@ -40,11 +46,10 @@ class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec
 class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec
 class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec
 
-abstract class SunnyWeatherSpec extends MultiNodeSpec(SunnyWeatherMultiJvmSpec) with MultiNodeClusterSpec {
-
-  import SunnyWeatherMultiJvmSpec._
+abstract class SunnyWeatherSpec extends MultiNodeClusterSpec(SunnyWeatherMultiJvmSpec) {
 
   import ClusterEvent._
+  import SunnyWeatherMultiJvmSpec._
 
   "A normal cluster" must {
     "be healthy" taggedAs LongRunningTest in {

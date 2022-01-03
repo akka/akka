@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import akka.annotation.InternalApi
-
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.Duration
-import akka.util.JavaDurationConverters._
+import scala.concurrent.duration.FiniteDuration
+
 import org.slf4j.event.Level
+
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.util.JavaDurationConverters._
 
 object SupervisorStrategy {
 
@@ -179,6 +181,8 @@ object SupervisorStrategy {
       resetBackoffAfter: FiniteDuration,
       loggingEnabled: Boolean = true,
       logLevel: Level = Level.ERROR,
+      criticalLogLevel: Level = Level.ERROR,
+      criticalLogLevelAfter: Int = Int.MaxValue,
       maxRestarts: Int = -1,
       stopChildren: Boolean = true,
       stashCapacity: Int = -1)
@@ -206,11 +210,18 @@ object SupervisorStrategy {
       copy(loggingEnabled = enabled)
 
     override def withLogLevel(level: Level): BackoffSupervisorStrategy =
-      copy(logLevel = logLevel)
+      copy(logLevel = level)
+
+    override def withCriticalLogLevel(criticalLevel: Level, afterErrors: Int): BackoffSupervisorStrategy =
+      copy(criticalLogLevel = criticalLevel, criticalLogLevelAfter = afterErrors)
 
   }
 }
 
+/**
+ * Not for user extension
+ */
+@DoNotInherit
 sealed abstract class SupervisorStrategy {
   def loggingEnabled: Boolean
   def logLevel: Level
@@ -221,6 +232,10 @@ sealed abstract class SupervisorStrategy {
 
 }
 
+/**
+ * Not for user extension
+ */
+@DoNotInherit
 sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
 
   /**
@@ -276,6 +291,10 @@ sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
 
 }
 
+/**
+ * Not for user extension
+ */
+@DoNotInherit
 sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
   def resetBackoffAfter: FiniteDuration
 
@@ -321,5 +340,15 @@ sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
   override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy
 
   override def withLogLevel(level: Level): BackoffSupervisorStrategy
+
+  /**
+   * Possibility to use another log level after a given number of errors.
+   * The initial errors are logged at the level defined with [[BackoffSupervisorStrategy.withLogLevel]].
+   * For example, the first 3 errors can be logged at INFO level and thereafter at ERROR level.
+   *
+   * The counter (and log level) is reset after the [[BackoffSupervisorStrategy.withResetBackoffAfter]]
+   * duration.
+   */
+  def withCriticalLogLevel(criticalLevel: Level, afterErrors: Int): BackoffSupervisorStrategy
 
 }

@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 object MaterializationBenchmark {
 
@@ -60,7 +61,7 @@ object MaterializationBenchmark {
     })
 
   val graphWithImportedFlowBuilder = (numOfFlows: Int) =>
-    RunnableGraph.fromGraph(GraphDSL.create(Source.single(())) { implicit b => source =>
+    RunnableGraph.fromGraph(GraphDSL.createGraph(Source.single(())) { implicit b => source =>
       import GraphDSL.Implicits._
       val flow = Flow[Unit].map(identity)
       var out: Outlet[Unit] = source.out
@@ -96,7 +97,7 @@ class MaterializationBenchmark {
 
   import MaterializationBenchmark._
 
-  implicit val system = ActorSystem("MaterializationBenchmark")
+  implicit val system: ActorSystem = ActorSystem("MaterializationBenchmark")
 
   var flowWithMap: RunnableGraph[NotUsed] = _
   var graphWithJunctionsGradual: RunnableGraph[NotUsed] = _

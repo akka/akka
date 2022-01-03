@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators
@@ -32,28 +32,28 @@ object BroadcastDocExample {
 
   val (count: Future[Int], min: Future[Int], max: Future[Int]) =
     RunnableGraph
-      .fromGraph(GraphDSL.create(countSink, minSink, maxSink)(Tuple3.apply) {
+      .fromGraph(GraphDSL.createGraph(countSink, minSink, maxSink)(Tuple3.apply) {
         implicit builder => (countS, minS, maxS) =>
           import GraphDSL.Implicits._
           val broadcast = builder.add(Broadcast[Int](3))
           source ~> broadcast
-          broadcast ~> countS
-          broadcast ~> minS
-          broadcast ~> maxS
+          broadcast.out(0) ~> countS
+          broadcast.out(1) ~> minS
+          broadcast.out(2) ~> maxS
           ClosedShape
       })
       .run()
   //#broadcast
 
   //#broadcast-async
-  RunnableGraph.fromGraph(GraphDSL.create(countSink.async, minSink.async, maxSink.async)(Tuple3.apply) {
+  RunnableGraph.fromGraph(GraphDSL.createGraph(countSink.async, minSink.async, maxSink.async)(Tuple3.apply) {
     implicit builder => (countS, minS, maxS) =>
       import GraphDSL.Implicits._
       val broadcast = builder.add(Broadcast[Int](3))
       source ~> broadcast
-      broadcast ~> countS
-      broadcast ~> minS
-      broadcast ~> maxS
+      broadcast.out(0) ~> countS
+      broadcast.out(1) ~> minS
+      broadcast.out(2) ~> maxS
       ClosedShape
   })
   //#broadcast-async

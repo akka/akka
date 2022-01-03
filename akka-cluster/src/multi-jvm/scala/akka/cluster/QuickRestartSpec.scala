@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ ActorSystem, Address }
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.immutable
-import scala.concurrent.duration._
 
 // This test was a reproducer for issue #20639
 object QuickRestartMultiJvmSpec extends MultiNodeConfig {
@@ -34,10 +35,7 @@ class QuickRestartMultiJvmNode1 extends QuickRestartSpec
 class QuickRestartMultiJvmNode2 extends QuickRestartSpec
 class QuickRestartMultiJvmNode3 extends QuickRestartSpec
 
-abstract class QuickRestartSpec
-    extends MultiNodeSpec(QuickRestartMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with ImplicitSender {
+abstract class QuickRestartSpec extends MultiNodeClusterSpec(QuickRestartMultiJvmSpec) with ImplicitSender {
 
   import QuickRestartMultiJvmSpec._
 
@@ -45,6 +43,7 @@ abstract class QuickRestartSpec
 
   val rounds = 3
 
+  override def verifySystemShutdown: Boolean = true
   override def expectedTestDuration: FiniteDuration = 45.seconds * rounds
 
   "Quickly restarting node" must {
@@ -60,20 +59,21 @@ abstract class QuickRestartSpec
       for (n <- 1 to rounds) {
         log.info("round-" + n)
         runOn(second) {
-          restartingSystem =
-            if (restartingSystem == null)
-              ActorSystem(
-                system.name,
-                ConfigFactory.parseString(s"akka.cluster.roles = [round-$n]").withFallback(system.settings.config))
-            else
-              ActorSystem(
-                system.name,
-                // use the same port
-                ConfigFactory.parseString(s"""
+          restartingSystem = if (restartingSystem == null) {
+            ActorSystem(
+              system.name,
+              MultiNodeSpec.configureNextPortIfFixed(
+                ConfigFactory.parseString(s"akka.cluster.roles = [round-$n]").withFallback(system.settings.config)))
+          } else {
+            ActorSystem(
+              system.name,
+              // use the same port
+              ConfigFactory.parseString(s"""
                        akka.cluster.roles = [round-$n]
                        akka.remote.classic.netty.tcp.port = ${Cluster(restartingSystem).selfAddress.port.get}
                        akka.remote.artery.canonical.port = ${Cluster(restartingSystem).selfAddress.port.get}
                      """).withFallback(system.settings.config))
+          }
           log.info("Restarting node has address: {}", Cluster(restartingSystem).selfUniqueAddress)
           Cluster(restartingSystem).joinSeedNodes(seedNodes)
           within(20.seconds) {

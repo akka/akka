@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -9,12 +9,14 @@ import scala.util.Failure
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
+import scala.annotation.nowarn
+
 import akka.ConfigurationException
 import akka.Done
+import akka.actor._
 import akka.actor.SystemGuardian.RegisterTerminationHook
 import akka.actor.SystemGuardian.TerminationHook
 import akka.actor.SystemGuardian.TerminationHookDone
-import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
@@ -36,7 +38,6 @@ import akka.serialization.Serialization
 import akka.util.ErrorMessages
 import akka.util.OptionVal
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -187,6 +188,7 @@ private[akka] class RemoteActorRefProvider(
 
   override def rootPath: ActorPath = local.rootPath
   override def deadLetters: InternalActorRef = local.deadLetters
+  override def ignoreRef: ActorRef = local.ignoreRef
 
   // these are only available after init()
   override def rootGuardian: InternalActorRef = local.rootGuardian
@@ -197,6 +199,7 @@ private[akka] class RemoteActorRefProvider(
     local.registerTempActor(actorRef, path)
   override def unregisterTempActor(path: ActorPath): Unit = local.unregisterTempActor(path)
   override def tempPath(): ActorPath = local.tempPath()
+  override def tempPath(prefix: String): ActorPath = local.tempPath(prefix)
   override def tempContainer: VirtualPathContainer = local.tempContainer
 
   @volatile private var _internals: Internals = _
@@ -286,7 +289,7 @@ private[akka] class RemoteActorRefProvider(
       remoting: String,
       libraryMissing: String,
       link: String): Unit = {
-    system.dynamicAccess.getClassFor(className) match {
+    system.dynamicAccess.getClassFor[Any](className) match {
       case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
         throw new IllegalStateException(
           s"$remoting remoting is enabled but $libraryMissing is not on the classpath, it must be added explicitly. See $link")
@@ -370,9 +373,6 @@ private[akka] class RemoteActorRefProvider(
       async: Boolean): InternalActorRef =
     if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
     else {
-
-      if (!system.dispatchers.hasDispatcher(props.dispatcher))
-        throw new ConfigurationException(s"Dispatcher [${props.dispatcher}] not configured for path $path")
 
       /*
        * This needs to deal with “mangled” paths, which are created by remote
@@ -514,8 +514,10 @@ private[akka] class RemoteActorRefProvider(
     // using thread local LRU cache, which will call internalResolveActorRef
     // if the value is not cached
     actorRefResolveThreadLocalCache match {
-      case null => internalResolveActorRef(path) // not initialized yet
-      case c    => c.threadLocalCache(this).getOrCompute(path)
+      case null =>
+        internalResolveActorRef(path) // not initialized yet
+      case c =>
+        c.threadLocalCache(this).resolve(path)
     }
   }
 
@@ -524,6 +526,9 @@ private[akka] class RemoteActorRefProvider(
    * public `resolveActorRef(path: String)`.
    */
   private[akka] def internalResolveActorRef(path: String): ActorRef = path match {
+
+    case p if IgnoreActorRef.isIgnoreRefPath(p) => this.ignoreRef
+
     case ActorPathExtractor(address, elems) =>
       if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
       else {
@@ -542,6 +547,7 @@ private[akka] class RemoteActorRefProvider(
             new EmptyLocalActorRef(this, rootPath, eventStream)
         }
       }
+
     case _ =>
       log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
@@ -600,7 +606,7 @@ private[akka] class RemoteActorRefProvider(
   @InternalApi override private[akka] def serializationInformation: Serialization.Information =
     serializationInformationCache match {
       case OptionVal.Some(info) => info
-      case OptionVal.None =>
+      case _ =>
         if ((transport eq null) || (transport.defaultAddress eq null))
           local.serializationInformation // address not know yet, access before complete init and binding
         else {
@@ -629,7 +635,7 @@ private[akka] class RemoteActorRefProvider(
   override private[akka] def addressString: String = {
     _addressString match {
       case OptionVal.Some(addr) => addr
-      case OptionVal.None       =>
+      case _                    =>
         // not initialized yet, fallback
         local.addressString
     }
@@ -670,7 +676,7 @@ private[akka] class RemoteActorRef private[akka] (
   // used by artery to direct messages to separate specialized streams
   @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
     s.headOption match {
@@ -712,7 +718,7 @@ private[akka] class RemoteActorRef private[akka] (
           else if (provider.remoteWatcher.isDefined)
             remote.send(message, OptionVal.None, this)
           else
-            provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Watch")
+            provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "Watch")
 
         //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
         case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) =>

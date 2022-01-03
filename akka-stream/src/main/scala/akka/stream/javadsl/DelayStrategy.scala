@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.annotation.InternalApi
 import akka.stream.scaladsl
 import akka.util.JavaDurationConverters.JavaDurationOps
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Allows to manage delay and can be stateful to compute delay for any sequence of elements,

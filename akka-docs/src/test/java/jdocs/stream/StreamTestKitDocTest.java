@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream;
@@ -8,16 +8,19 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import akka.Done;
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import akka.actor.*;
 import akka.japi.Pair;
@@ -52,7 +55,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     final CompletionStage<Integer> future =
         Source.from(Arrays.asList(1, 2, 3, 4)).runWith(sinkUnderTest, system);
     final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assert (result == 20);
+    assertEquals(20, result.intValue());
     // #strict-collection
   }
 
@@ -64,7 +67,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     final CompletionStage<List<Integer>> future =
         sourceUnderTest.take(10).runWith(Sink.seq(), system);
     final List<Integer> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assertEquals(result, Collections.nCopies(10, 2));
+    assertEquals(Collections.nCopies(10, 2), result);
     // #grouped-infinite
   }
 
@@ -79,7 +82,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
             .via(flowUnderTest)
             .runWith(Sink.fold(0, (agg, next) -> agg + next), system);
     final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assert (result == 10);
+    assertEquals(10, result.intValue());
     // #folded-stream
   }
 
@@ -128,7 +131,16 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
             .toMat(Sink.fold("", (agg, next) -> agg + next), Keep.right());
 
     final Pair<ActorRef, CompletionStage<String>> refAndCompletionStage =
-        Source.<Integer>actorRef(8, OverflowStrategy.fail())
+        Source.<Integer>actorRef(
+                elem -> {
+                  // complete stream immediately if we send it Done
+                  if (elem == Done.done()) return Optional.of(CompletionStrategy.immediately());
+                  else return Optional.empty();
+                },
+                // never fail the stream because of a message
+                elem -> Optional.empty(),
+                8,
+                OverflowStrategy.fail())
             .toMat(sinkUnderTest, Keep.both())
             .run(system);
     final ActorRef ref = refAndCompletionStage.first();
@@ -137,10 +149,10 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     ref.tell(1, ActorRef.noSender());
     ref.tell(2, ActorRef.noSender());
     ref.tell(3, ActorRef.noSender());
-    ref.tell(new akka.actor.Status.Success("done"), ActorRef.noSender());
+    ref.tell(Done.getInstance(), ActorRef.noSender());
 
     final String result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    assertEquals(result, "123");
+    assertEquals("123", result);
     // #source-actorref
   }
 
@@ -181,13 +193,10 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     final CompletionStage<Integer> future = probeAndCompletionStage.second();
     probe.sendError(new Exception("boom"));
 
-    try {
-      future.toCompletableFuture().get(3, TimeUnit.SECONDS);
-      assert false;
-    } catch (ExecutionException ee) {
-      final Throwable exception = ee.getCause();
-      assertEquals(exception.getMessage(), "boom");
-    }
+    ExecutionException exception =
+        Assert.assertThrows(
+            ExecutionException.class, () -> future.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals("boom", exception.getCause().getMessage());
     // #injecting-failure
   }
 
@@ -221,7 +230,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
 
     pub.sendError(new Exception("Power surge in the linear subroutine C-47!"));
     final Throwable ex = sub.expectError();
-    assert (ex.getMessage().contains("C-47"));
+    assertTrue(ex.getMessage().contains("C-47"));
     // #test-source-and-sink
   }
 }

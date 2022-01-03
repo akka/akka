@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ Actor, Props }
 import akka.event.Logging
 import akka.event.Logging.Warning
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
-import com.typesafe.config.ConfigFactory
 
 object OptionalSnapshotStoreSpec {
 
@@ -34,7 +35,6 @@ object OptionalSnapshotStoreSpec {
 class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    akka.persistence.journal.leveldb.dir = "target/journal-${classOf[OptionalSnapshotStoreSpec].getName}"
 
     akka.actor.warn-about-java-serializer-usage = off
 

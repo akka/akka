@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender }
-import com.typesafe.config.{ Config, ConfigFactory }
 
 object ClusterLogSpec {
   val config = """

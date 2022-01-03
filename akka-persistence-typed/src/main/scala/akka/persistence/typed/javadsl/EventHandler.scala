@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl
@@ -7,10 +7,10 @@ package akka.persistence.typed.javadsl
 import java.util.Objects
 import java.util.function.{ BiFunction, Predicate, Supplier, Function => JFunction }
 
+import scala.compat.java8.FunctionConverters._
+
 import akka.annotation.InternalApi
 import akka.util.OptionVal
-
-import scala.compat.java8.FunctionConverters._
 
 /**
  * FunctionalInterface for reacting on events having been persisted
@@ -327,11 +327,11 @@ final class EventHandlerBuilderByState[S <: State, State, Event](
         }
 
         result match {
-          case OptionVal.None =>
+          case OptionVal.Some(s) => s
+          case _ =>
             val stateClass = if (state == null) "null" else state.getClass.getName
             throw new MatchError(
               s"No match found for event [${event.getClass}] and state [$stateClass]. Has this event been stored using an EventAdapter?")
-          case OptionVal.Some(s) => s
         }
       }
     }

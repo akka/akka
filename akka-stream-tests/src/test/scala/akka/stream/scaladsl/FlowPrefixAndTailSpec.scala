@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
-
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import scala.annotation.nowarn
+
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowPrefixAndTailSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -30,7 +31,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       val fut = Source.empty.prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(Nil)
-      val tailSubscriber = TestSubscriber.manualProbe[Int]
+      val tailSubscriber = TestSubscriber.manualProbe[Int]()
       tailFlow.to(Sink.fromSubscriber(tailSubscriber)).run()
       tailSubscriber.expectSubscriptionAndComplete()
     }
@@ -40,7 +41,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       val fut = Source(List(1, 2, 3)).prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(List(1, 2, 3))
-      val tailSubscriber = TestSubscriber.manualProbe[Int]
+      val tailSubscriber = TestSubscriber.manualProbe[Int]()
       tailFlow.to(Sink.fromSubscriber(tailSubscriber)).run()
       tailSubscriber.expectSubscriptionAndComplete()
     }
@@ -91,27 +92,31 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
 
     "throw if tail is attempted to be materialized twice" in assertAllStagesStopped {
       val futureSink = newHeadSink
-      val fut = Source(1 to 2).prefixAndTail(1).runWith(futureSink)
-      val (takes, tail) = Await.result(fut, 3.seconds)
-      takes should be(Seq(1))
+      val fut = Source(1 to 3).prefixAndTail(1).runWith(futureSink)
+      val (prefix, tail) = Await.result(fut, 3.seconds)
+      prefix should be(Seq(1))
 
       val subscriber1 = TestSubscriber.probe[Int]()
       tail.to(Sink.fromSubscriber(subscriber1)).run()
+      // make sure it was materialized once before ...
+      subscriber1.ensureSubscription()
+      subscriber1.request(1)
+      subscriber1.expectNext(2)
 
+      // ... verifying what happens on a second materialization
       val subscriber2 = TestSubscriber.probe[Int]()
       tail.to(Sink.fromSubscriber(subscriber2)).run()
       val ex = subscriber2.expectSubscriptionAndError()
       ex.getMessage should ===("Substream Source(TailSource) cannot be materialized more than once")
       ex.getStackTrace.exists(_.getClassName contains "FlowPrefixAndTailSpec") shouldBe true
 
-      subscriber1.requestNext(2).expectComplete()
-
+      subscriber1.requestNext(3).expectComplete()
     }
 
     "signal error if substream has been not subscribed in time" in assertAllStagesStopped {
       val ms = 300
 
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val tightTimeoutMaterializer =
         ActorMaterializer(
           ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(
@@ -130,7 +135,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
         s"Substream Source(TailSource) has not been materialized in ${ms} milliseconds")
     }
     "not fail the stream if substream has not been subscribed in time and configured subscription timeout is noop" in assertAllStagesStopped {
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val tightTimeoutMaterializer =
         ActorMaterializer(
           ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(

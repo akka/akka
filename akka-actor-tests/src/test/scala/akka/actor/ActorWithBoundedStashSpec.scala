@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.ActorSystem.Settings
+import akka.dispatch.BoundedDequeBasedMailbox
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-import akka.dispatch.BoundedDequeBasedMailbox
-
-import scala.concurrent.duration._
-import akka.actor.ActorSystem.Settings
 import akka.util.unused
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.BeforeAndAfterEach
 
 object ActorWithBoundedStashSpec {
 
@@ -62,6 +63,8 @@ object ActorWithBoundedStashSpec {
 
   val dispatcherId1 = "my-dispatcher-1"
   val dispatcherId2 = "my-dispatcher-2"
+  val aliasedDispatcherId1 = "my-aliased-dispatcher-1"
+  val aliasedDispatcherId2 = "my-aliased-dispatcher-2"
   val mailboxId1 = "my-mailbox-1"
   val mailboxId2 = "my-mailbox-2"
 
@@ -74,6 +77,8 @@ object ActorWithBoundedStashSpec {
       mailbox-type = "${classOf[Bounded100].getName}"
       stash-capacity = 20
     }
+    $aliasedDispatcherId1 = $dispatcherId1
+    $aliasedDispatcherId2 = $aliasedDispatcherId1
     $mailboxId1 {
       mailbox-type = "${classOf[Bounded10].getName}"
       stash-capacity = 20
@@ -92,7 +97,7 @@ class ActorWithBoundedStashSpec
     with ImplicitSender {
   import ActorWithBoundedStashSpec._
 
-  override def atStartup: Unit = {
+  override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*hello.*")))
   }
 
@@ -135,23 +140,28 @@ class ActorWithBoundedStashSpec
   "An Actor with Stash" must {
 
     "end up in DeadLetters in case of a capacity violation when configured via dispatcher" in {
-      val stasher = system.actorOf(Props[StashingActor].withDispatcher(dispatcherId1))
+      val stasher = system.actorOf(Props[StashingActor]().withDispatcher(dispatcherId1))
       testDeadLetters(stasher)
     }
 
     "end up in DeadLetters in case of a capacity violation when configured via mailbox" in {
-      val stasher = system.actorOf(Props[StashingActor].withMailbox(mailboxId1))
+      val stasher = system.actorOf(Props[StashingActor]().withMailbox(mailboxId1))
       testDeadLetters(stasher)
     }
 
     "throw a StashOverflowException in case of a stash capacity violation when configured via dispatcher" in {
-      val stasher = system.actorOf(Props[StashingActorWithOverflow].withDispatcher(dispatcherId2))
+      val stasher = system.actorOf(Props[StashingActorWithOverflow]().withDispatcher(dispatcherId2))
       testStashOverflowException(stasher)
     }
 
     "throw a StashOverflowException in case of a stash capacity violation when configured via mailbox" in {
-      val stasher = system.actorOf(Props[StashingActorWithOverflow].withMailbox(mailboxId2))
+      val stasher = system.actorOf(Props[StashingActorWithOverflow]().withMailbox(mailboxId2))
       testStashOverflowException(stasher)
+    }
+
+    "get stash capacity from aliased dispatchers" in {
+      val stasher = system.actorOf(Props[StashingActor]().withDispatcher(aliasedDispatcherId2))
+      testDeadLetters(stasher)
     }
   }
 }

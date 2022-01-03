@@ -1,75 +1,54 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.cluster.MultiNodeClusterSpec
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.serialization.jackson.CborSerializable
-import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
-object ClusterShardingQueriesSpec {
-  case class Ping(id: Long) extends CborSerializable
-  case object Pong extends CborSerializable
+import akka.actor.Props
+import akka.testkit.TestProbe
 
-  class EntityActor extends Actor with ActorLogging {
-    def receive: Receive = {
-      case _: Ping => sender() ! Pong
-    }
-  }
+object ClusterShardingQueriesSpec {
+  import MultiNodeClusterShardingSpec.PingPongActor
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ Ping(id) => (id.toString, msg)
+    case msg @ PingPongActor.Ping(id) => (id.toString, msg)
   }
 
   val numberOfShards = 6
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Ping(id) => (id % numberOfShards).toString
+    case PingPongActor.Ping(id) => (id % numberOfShards).toString
+    case _                      => throw new RuntimeException()
   }
 
   val shardTypeName = "DatatypeA"
 }
 
-object ClusterShardingQueriesSpecConfig extends MultiNodeConfig {
+object ClusterShardingQueriesSpecConfig
+    extends MultiNodeClusterShardingConfig(additionalConfig = """
+        akka.log-dead-letters-during-shutdown = off
+        akka.cluster.sharding {
+          shard-region-query-timeout = 2ms
+          updating-state-timeout = 2s
+          waiting-for-state-timeout = 2s
+        }
+        """) {
 
   val controller = role("controller")
-  val first = role("first")
+  val busy = role("busy")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-    akka.loglevel = INFO
-    akka.actor.provider = "cluster"
-    akka.remote.classic.log-remote-lifecycle-events = off
-    akka.log-dead-letters-during-shutdown = off
-    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
-    akka.cluster.testkit.auto-down-unreachable-after = 0s
-    akka.cluster.sharding {
-      state-store-mode = "ddata"
-      shard-region-query-timeout = 0ms
-      updating-state-timeout = 2s
-      waiting-for-state-timeout = 2s
-    }
-    akka.cluster.sharding.distributed-data.durable.lmdb {
-      dir = target/ClusterShardingGetStatsSpec/sharding-ddata
-      map-size = 10 MiB
-    }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig)))
+  val shardRoles = ConfigFactory.parseString("""akka.cluster.roles=["shard"]""")
 
-  nodeConfig(first, second, third)(ConfigFactory.parseString("""akka.cluster.roles=["shard"]"""))
+  nodeConfig(busy)(
+    ConfigFactory.parseString("akka.cluster.sharding.shard-region-query-timeout = 0ms").withFallback(shardRoles))
+  nodeConfig(second, third)(shardRoles)
 
 }
 
@@ -79,43 +58,37 @@ class ClusterShardingQueriesSpecMultiJvmNode3 extends ClusterShardingQueriesSpec
 class ClusterShardingQueriesSpecMultiJvmNode4 extends ClusterShardingQueriesSpec
 
 abstract class ClusterShardingQueriesSpec
-    extends MultiNodeSpec(ClusterShardingQueriesSpecConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterShardingSpec(ClusterShardingQueriesSpecConfig)
     with ScalaFutures {
 
   import ClusterShardingQueriesSpec._
   import ClusterShardingQueriesSpecConfig._
-
-  def startShard(): ActorRef = {
-    ClusterSharding(system).start(
-      typeName = shardTypeName,
-      entityProps = Props(new EntityActor),
-      settings = ClusterShardingSettings(system).withRole("shard"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
-  }
-
-  def startProxy(): ActorRef = {
-    ClusterSharding(system).startProxy(
-      typeName = shardTypeName,
-      role = Some("shard"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
-  }
+  import MultiNodeClusterShardingSpec.PingPongActor
 
   lazy val region = ClusterSharding(system).shardRegion(shardTypeName)
 
   "Querying cluster sharding" must {
 
     "join cluster, initialize sharding" in {
-      awaitClusterUp(controller, first, second, third)
+      awaitClusterUp(controller, busy, second, third)
 
       runOn(controller) {
-        startProxy()
+        startProxy(
+          system,
+          typeName = shardTypeName,
+          role = Some("shard"),
+          extractEntityId = extractEntityId,
+          extractShardId = extractShardId)
       }
 
-      runOn(first, second, third) {
-        startShard()
+      runOn(busy, second, third) {
+        startSharding(
+          system,
+          typeName = shardTypeName,
+          entityProps = Props(new PingPongActor),
+          settings = settings.withRole("shard"),
+          extractEntityId = extractEntityId,
+          extractShardId = extractShardId)
       }
 
       enterBarrier("sharding started")
@@ -126,9 +99,9 @@ abstract class ClusterShardingQueriesSpec
         within(10.seconds) {
           awaitAssert {
             val pingProbe = TestProbe()
-            (0 to 20).foreach(n => region.tell(Ping(n), pingProbe.ref))
+            (0 to 20).foreach(n => region.tell(PingPongActor.Ping(n), pingProbe.ref))
             pingProbe.receiveWhile(messages = 20) {
-              case Pong => ()
+              case PingPongActor.Pong => ()
             }
           }
         }
@@ -136,8 +109,8 @@ abstract class ClusterShardingQueriesSpec
       enterBarrier("sharded actors started")
     }
 
-    "get ShardIds of shards that timed out per region" in {
-      runOn(roles: _*) {
+    "return shard stats of cluster sharding regions if one or more shards timeout, versus all as empty" in {
+      runOn(busy, second, third) {
         val probe = TestProbe()
         val region = ClusterSharding(system).shardRegion(shardTypeName)
         region.tell(ShardRegion.GetClusterShardingStats(10.seconds), probe.ref)
@@ -146,13 +119,32 @@ abstract class ClusterShardingQueriesSpec
         val timeouts = numberOfShards / regions.size
 
         // 3 regions, 2 shards per region, all 2 shards/region were unresponsive
-        // within shard-region-query-timeout = 0ms
-        regions.values.forall { s =>
-          s.stats.isEmpty && s.failed.size == timeouts
-        } shouldBe true
+        // within shard-region-query-timeout, which only on first is 0ms
+        regions.values.map(_.stats.size).sum shouldEqual 4
+        regions.values.map(_.failed.size).sum shouldEqual timeouts
+      }
+      enterBarrier("received failed stats from timed out shards vs empty")
+    }
 
-        regions.values.map(_.failed.size).sum shouldEqual numberOfShards
-        enterBarrier("received stats")
+    "return shard state of sharding regions if one or more shards timeout, versus all as empty" in {
+      runOn(busy) {
+        val probe = TestProbe()
+        val region = ClusterSharding(system).shardRegion(shardTypeName)
+        region.tell(ShardRegion.GetShardRegionState, probe.ref)
+        val state = probe.expectMsgType[ShardRegion.CurrentShardRegionState]
+        state.shards.isEmpty shouldEqual true
+        state.failed.size shouldEqual 2
+      }
+      enterBarrier("query-timeout-on-busy-node")
+
+      runOn(second, third) {
+        val probe = TestProbe()
+        val region = ClusterSharding(system).shardRegion(shardTypeName)
+
+        region.tell(ShardRegion.GetShardRegionState, probe.ref)
+        val state = probe.expectMsgType[ShardRegion.CurrentShardRegionState]
+        state.shards.size shouldEqual 2
+        state.failed.isEmpty shouldEqual true
       }
       enterBarrier("done")
     }

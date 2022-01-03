@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-
-import scala.concurrent.duration._
 
 class FlowIntersperseSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -41,7 +41,7 @@ class FlowIntersperseSpec extends StreamSpec("""
     }
 
     "surround empty stream with []" in {
-      val probe = Source(List()).map(_.toString).intersperse("[", ",", "]").runWith(TestSink.probe)
+      val probe = Source(List()).intersperse("[", ",", "]").runWith(TestSink.probe)
 
       probe.expectSubscription()
       probe.toStrict(1.second).mkString("") should ===(List().mkString("[", ",", "]"))
@@ -55,14 +55,14 @@ class FlowIntersperseSpec extends StreamSpec("""
     }
 
     "complete the stage when the Source has been completed" in {
-      val (p1, p2) = TestSource.probe[String].intersperse(",").toMat(TestSink.probe[String])(Keep.both).run
+      val (p1, p2) = TestSource.probe[String].intersperse(",").toMat(TestSink.probe[String])(Keep.both).run()
       p2.request(10)
       p1.sendNext("a").sendNext("b").sendComplete()
       p2.expectNext("a").expectNext(",").expectNext("b").expectComplete()
     }
 
     "complete the stage when the Sink has been cancelled" in {
-      val (p1, p2) = TestSource.probe[String].intersperse(",").toMat(TestSink.probe[String])(Keep.both).run
+      val (p1, p2) = TestSource.probe[String].intersperse(",").toMat(TestSink.probe[String])(Keep.both).run()
       p2.request(10)
       p1.sendNext("a").sendNext("b")
       p2.expectNext("a").expectNext(",").cancel()

@@ -1,38 +1,37 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
 import java.io.IOException
 import java.net.{ InetSocketAddress, ServerSocket }
+import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import java.nio.channels._
-import java.nio.channels.spi.SelectorProvider
 import java.nio.channels.SelectionKey._
-
-import com.typesafe.config.ConfigFactory
+import java.nio.channels.spi.SelectorProvider
+import java.nio.file.Files
+import java.util.Random
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
-import org.scalatest.matchers._
-import akka.io.Tcp._
-import akka.io.SelectionHandler._
-import akka.io.Inet.SocketOption
-import akka.actor._
-import akka.testkit.{ AkkaSpec, EventFilter, SocketUtil, TestActorRef, TestProbe }
-import akka.util.{ ByteString, Helpers }
-import akka.testkit.SocketUtil.temporaryServerAddress
-import java.util.Random
-import java.net.SocketTimeoutException
-import java.nio.file.Files
-
-import akka.testkit.WithLogCapturing
-import com.google.common.jimfs.{ Configuration, Jimfs }
-
 import scala.util.Try
+import scala.util.control.NonFatal
+
+import com.google.common.jimfs.{ Configuration, Jimfs }
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers._
+
+import akka.actor._
+import akka.io.Inet.SocketOption
+import akka.io.SelectionHandler._
+import akka.io.Tcp._
+import akka.testkit.{ AkkaSpec, EventFilter, SocketUtil, TestActorRef, TestProbe }
+import akka.testkit.SocketUtil.temporaryServerAddress
+import akka.testkit.WithLogCapturing
+import akka.util.{ ByteString, Helpers }
 
 object TcpConnectionSpec {
   case class Ack(i: Int) extends Event
@@ -289,7 +288,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
 
     /*
-     * Disabled on Windows: http://support.microsoft.com/kb/214397
+     * Disabled on Windows: https://support.microsoft.com/kb/214397
      *
      * "To optimize performance at the application layer, Winsock copies data buffers from application send calls
      * to a Winsock kernel buffer. Then, the stack uses its own heuristics (such as Nagle algorithm) to determine
@@ -391,28 +390,19 @@ class TcpConnectionSpec extends AkkaSpec("""
         connectionHandler.expectNoMessage(100.millis)
 
         connectionActor ! ResumeReading
-        interestCallReceiver.expectMsg(OP_READ)
-        selector.send(connectionActor, ChannelReadable)
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(ts)
 
-        interestCallReceiver.expectNoMessage(100.millis)
         connectionHandler.expectNoMessage(100.millis)
 
         connectionActor ! ResumeReading
-        interestCallReceiver.expectMsg(OP_READ)
-        selector.send(connectionActor, ChannelReadable)
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(us)
 
-        // make sure that after reading all pending data we don't yet register for reading more data
-        interestCallReceiver.expectNoMessage(100.millis)
         connectionHandler.expectNoMessage(100.millis)
 
         val vs = "v" * (maxBufferSize / 2)
         serverSideChannel.write(ByteBuffer.wrap(vs.getBytes("ASCII")))
 
         connectionActor ! ResumeReading
-        interestCallReceiver.expectMsg(OP_READ)
-        selector.send(connectionActor, ChannelReadable)
 
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(vs)
       } finally shutdown(system)
@@ -472,7 +462,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
 
     /*
-     * Partly disabled on Windows: http://support.microsoft.com/kb/214397
+     * Partly disabled on Windows: https://support.microsoft.com/kb/214397
      *
      * "To optimize performance at the application layer, Winsock copies data buffers from application send calls
      * to a Winsock kernel buffer. Then, the stack uses its own heuristics (such as Nagle algorithm) to determine
@@ -945,7 +935,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         })
   }
 
-  trait SmallRcvBuffer { _: LocalServerTest =>
+  trait SmallRcvBuffer { this: LocalServerTest =>
     override def setServerSocketOptions(): Unit = localServerChannel.socket.setReceiveBufferSize(1024)
   }
 
@@ -957,7 +947,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     override def run(body: => Unit): Unit = super.run {
       registerCallReceiver.expectMsg(Registration(clientSideChannel, 0))
-      registerCallReceiver.sender should ===(connectionActor)
+      registerCallReceiver.sender() should ===(connectionActor)
       body
     }
   }
@@ -1128,7 +1118,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       try channel.socket.setSoLinger(true, 0) // causes the following close() to send TCP RST
       catch {
         case NonFatal(e) =>
-          // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
+          // setSoLinger can fail due to https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6799574
           // (also affected: OS/X Java 1.6.0_37)
           log.debug("setSoLinger(true, 0) failed with {}", e)
       }

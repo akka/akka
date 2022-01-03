@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
 import scala.concurrent.duration._
+
+import language.postfixOps
+
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 final case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val controller = role("controller")
@@ -33,8 +34,7 @@ class LeaderElectionWithAccrualFailureDetectorMultiJvmNode4 extends LeaderElecti
 class LeaderElectionWithAccrualFailureDetectorMultiJvmNode5 extends LeaderElectionSpec(failureDetectorPuppet = false)
 
 abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(multiNodeConfig) {
 
   def this(failureDetectorPuppet: Boolean) = this(LeaderElectionMultiNodeConfig(failureDetectorPuppet))
 
@@ -106,6 +106,8 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
 
           enterBarrier("completed" + n)
 
+        case _ =>
+          fail()
       }
     }
 

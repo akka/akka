@@ -1,27 +1,23 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
 
+import akka.actor.testkit.typed.CapturedLogEvent
 import akka.actor.typed._
 import akka.actor.typed.internal._
-import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.{ ActorPath, InvalidMessageException }
+import akka.actor.{ ActorPath, ActorRefProvider, InvalidMessageException }
 import akka.annotation.InternalApi
 import akka.util.Helpers
 import akka.{ actor => classic }
-import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
+import org.slf4j.Logger
+import org.slf4j.helpers.{ MessageFormatter, SubstituteLoggerFactory }
 
+import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-
-import akka.actor.ActorRefProvider
-import org.slf4j.Logger
-import org.slf4j.helpers.MessageFormatter
-import org.slf4j.helpers.SubstituteLoggerFactory
 
 /**
  * INTERNAL API
@@ -62,11 +58,18 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
  * provides only stubs for the effects an Actor can perform and replaces
  * created child Actors by a synchronous Inbox (see `Inbox.sync`).
  */
-@InternalApi private[akka] class StubbedActorContext[T](val path: ActorPath, currentBehaviorProvider: () => Behavior[T])
+@InternalApi private[akka] class StubbedActorContext[T](
+    val system: ActorSystemStub,
+    val path: ActorPath,
+    currentBehaviorProvider: () => Behavior[T])
     extends ActorContextImpl[T] {
 
+  def this(system: ActorSystemStub, name: String, currentBehaviorProvider: () => Behavior[T]) = {
+    this(system, (system.path / name).withUid(rnd().nextInt()), currentBehaviorProvider)
+  }
+
   def this(name: String, currentBehaviorProvider: () => Behavior[T]) = {
-    this((TestInbox.address / name).withUid(rnd().nextInt()), currentBehaviorProvider)
+    this(new ActorSystemStub("StubbedActorContext"), name, currentBehaviorProvider)
   }
 
   /**
@@ -75,7 +78,6 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   @InternalApi private[akka] val selfInbox = new TestInboxImpl[T](path)
 
   override val self = selfInbox.ref
-  override val system = new ActorSystemStub("StubbedActorContext")
   private var _children = TreeMap.empty[String, BehaviorTestKitImpl[_]]
   private val childName = Iterator.from(0).map(Helpers.base64(_))
   private val substituteLoggerFactory = new SubstituteLoggerFactory
@@ -86,30 +88,40 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     throw new UnsupportedOperationException(
       "No classic ActorContext available with the stubbed actor context, to spawn materializers and run streams you will need a real actor")
 
-  override def children: Iterable[ActorRef[Nothing]] = _children.values.map(_.context.self)
+  override def children: Iterable[ActorRef[Nothing]] = {
+    checkCurrentActorThread()
+    _children.values.map(_.context.self)
+  }
   def childrenNames: Iterable[String] = _children.keys
 
-  override def child(name: String): Option[ActorRef[Nothing]] = _children.get(name).map(_.context.self)
+  override def child(name: String): Option[ActorRef[Nothing]] = {
+    checkCurrentActorThread()
+    _children.get(name).map(_.context.self)
+  }
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
-    val btk = new BehaviorTestKitImpl[U]((path / childName.next()).withUid(rnd().nextInt()), behavior)
+    checkCurrentActorThread()
+    val btk = new BehaviorTestKitImpl[U](system, (path / childName.next()).withUid(rnd().nextInt()), behavior)
     _children += btk.context.self.path.name -> btk
     btk.context.self
   }
-  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
+    checkCurrentActorThread()
     _children.get(name) match {
       case Some(_) => throw classic.InvalidActorNameException(s"actor name $name is already taken")
       case None =>
-        val btk = new BehaviorTestKitImpl[U]((path / name).withUid(rnd().nextInt()), behavior)
+        val btk = new BehaviorTestKitImpl[U](system, (path / name).withUid(rnd().nextInt()), behavior)
         _children += name -> btk
         btk.context.self
     }
+  }
 
   /**
    * Do not actually stop the child inbox, only simulate the liveness check.
    * Removal is asynchronous, explicit removeInbox is needed from outside afterwards.
    */
   override def stop[U](child: ActorRef[U]): Unit = {
+    checkCurrentActorThread()
     if (child.path.parent != self.path)
       throw new IllegalArgumentException(
         "Only direct children of an actor can be stopped through the actor context, " +
@@ -119,11 +131,21 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
       _children -= child.path.name
     }
   }
-  override def watch[U](other: ActorRef[U]): Unit = ()
-  override def watchWith[U](other: ActorRef[U], message: T): Unit = ()
-  override def unwatch[U](other: ActorRef[U]): Unit = ()
-  override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = ()
-  override def cancelReceiveTimeout(): Unit = ()
+  override def watch[U](other: ActorRef[U]): Unit = {
+    checkCurrentActorThread()
+  }
+  override def watchWith[U](other: ActorRef[U], message: T): Unit = {
+    checkCurrentActorThread()
+  }
+  override def unwatch[U](other: ActorRef[U]): Unit = {
+    checkCurrentActorThread()
+  }
+  override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = {
+    checkCurrentActorThread()
+  }
+  override def cancelReceiveTimeout(): Unit = {
+    checkCurrentActorThread()
+  }
 
   override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): classic.Cancellable =
     new classic.Cancellable {
@@ -141,13 +163,13 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val p = (path / n).withUid(rnd().nextInt())
-    val i = new BehaviorTestKitImpl[U](p, BehaviorImpl.ignore)
+    val i = new BehaviorTestKitImpl[U](system, p, BehaviorImpl.ignore)
     _children += p.name -> i
 
     new FunctionRef[U](p, (message, _) => {
       val m = f(message);
       if (m != null) {
-        selfInbox.ref ! m; i.selfInbox.ref ! message
+        selfInbox.ref ! m; i.selfInbox().ref ! message
       }
     })
   }
@@ -185,11 +207,20 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
   override def toString: String = s"Inbox($self)"
 
-  override def log: Logger = logger
+  override def log: Logger = {
+    checkCurrentActorThread()
+    logger
+  }
 
-  override def setLoggerName(name: String): Unit = () // nop as we don't track logger
+  override def setLoggerName(name: String): Unit = {
+    // nop as we don't track logger
+    checkCurrentActorThread()
+  }
 
-  override def setLoggerName(clazz: Class[_]): Unit = () // nop as we don't track logger
+  override def setLoggerName(clazz: Class[_]): Unit = {
+    // nop as we don't track logger
+    checkCurrentActorThread()
+  }
 
   /**
    * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through

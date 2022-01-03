@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.eventstream
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed.ActorRef
 import akka.annotation.{ DoNotInherit, InternalApi }
-import scala.reflect.ClassTag
 
 object EventStream {
 

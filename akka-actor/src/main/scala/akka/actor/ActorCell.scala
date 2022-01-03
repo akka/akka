@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -12,14 +12,16 @@ import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+
 import akka.actor.dungeon.ChildrenContainer
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.{ Envelope, MessageDispatcher }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
-import akka.util.{ unused, Reflect }
-import akka.annotation.{ InternalApi, InternalStableApi }
-import com.github.ghik.silencer.silent
+import akka.util.unused
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -320,6 +322,7 @@ private[akka] trait Cell {
    * schedule the actor to run, depending on which type of cell it is.
    * Is only allowed to throw Fatal Throwables.
    */
+  @InternalStableApi
   final def sendMessage(message: Any, sender: ActorRef): Unit =
     sendMessage(Envelope(message, sender, system))
 
@@ -404,11 +407,11 @@ private[akka] object ActorCell {
  * supported APIs in this place. This is not the API you were looking
  * for! (waves hand)
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] class ActorCell(
     val system: ActorSystemImpl,
     val self: InternalActorRef,
-    final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
+    _initialProps: Props,
     val dispatcher: MessageDispatcher,
     val parent: InternalActorRef)
     extends AbstractActor.ActorContext
@@ -418,6 +421,9 @@ private[akka] class ActorCell(
     with dungeon.Dispatch
     with dungeon.DeathWatch
     with dungeon.FaultHandling {
+
+  private[this] var _props = _initialProps
+  def props: Props = _props
 
   import ActorCell._
 
@@ -433,7 +439,6 @@ private[akka] class ActorCell(
   protected def uid: Int = self.path.uid
   private[this] var _actor: Actor = _
   def actor: Actor = _actor
-  protected def actor_=(a: Actor): Unit = _actor = a
   var currentMessage: Envelope = _
   private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
   private[this] var sysmsgStash: LatestFirstSystemMessageList = SystemMessageList.LNil
@@ -561,6 +566,8 @@ private[akka] class ActorCell(
       case PoisonPill                 => self.stop()
       case sel: ActorSelectionMessage => receiveSelection(sel)
       case Identify(messageId)        => sender() ! ActorIdentity(messageId, Some(self))
+      case unexpected =>
+        throw new RuntimeException(s"Unexpected message for autoreceive: $unexpected") // for exhaustiveness check, will not happen
     }
   }
 
@@ -613,6 +620,7 @@ private[akka] class ActorCell(
 
       // If no becomes were issued, the actors behavior is its receive method
       behaviorStack = if (behaviorStack.isEmpty) instance.receive :: behaviorStack else behaviorStack
+      _actor = instance
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -622,29 +630,28 @@ private[akka] class ActorCell(
   }
 
   protected def create(failure: Option[ActorInitializationException]): Unit = {
-    def clearOutActorIfNonNull(): Unit = {
-      if (actor != null) {
+    def failActor(): Unit =
+      if (_actor != null) {
         clearActorFields(actor, recreate = false)
-        actor = null // ensure that we know that we failed during creation
+        setFailedFatally()
+        _actor = null // ensure that we know that we failed during creation
       }
-    }
 
     failure.foreach { throw _ }
 
     try {
       val created = newActor()
-      actor = created
       created.aroundPreStart()
       checkReceiveTimeout(reschedule = true)
       if (system.settings.DebugLifecycle)
         publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
       case e: InterruptedException =>
-        clearOutActorIfNonNull()
+        failActor()
         Thread.currentThread().interrupt()
         throw ActorInitializationException(self, "interruption during creation", e)
       case NonFatal(e) =>
-        clearOutActorIfNonNull()
+        failActor()
         e match {
           case i: InstantiationException =>
             throw ActorInitializationException(
@@ -682,25 +689,17 @@ private[akka] class ActorCell(
     case _                               =>
   }
 
-  final protected def clearActorCellFields(cell: ActorCell): Unit = {
-    cell.unstashAll()
-    if (!Reflect.lookupAndSetField(classOf[ActorCell], cell, "props", ActorCell.terminatedProps))
-      throw new IllegalArgumentException("ActorCell has no props field")
-  }
-
+  @InternalStableApi
+  @nowarn("msg=never used")
   final protected def clearActorFields(actorInstance: Actor, recreate: Boolean): Unit = {
-    setActorFields(actorInstance, context = null, self = if (recreate) self else system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
-
-  final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
-    if (actorInstance ne null) {
-      if (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
-          || !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
-        throw IllegalActorStateException(
-          s"${actorInstance.getClass} is not an Actor class. It doesn't extend the 'Actor' trait")
-    }
+  final protected def clearFieldsForTermination(): Unit = {
+    unstashAll()
+    _props = ActorCell.terminatedProps
+    _actor = null
+  }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do
   protected final def publish(e: LogEvent): Unit =

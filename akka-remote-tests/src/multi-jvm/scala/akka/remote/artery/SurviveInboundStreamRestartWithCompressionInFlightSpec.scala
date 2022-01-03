@@ -1,8 +1,13 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
+
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
 
 import akka.actor._
 import akka.actor.ActorIdentity
@@ -10,10 +15,6 @@ import akka.actor.Identify
 import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.util.control.NoStackTrace
 
 object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeConfig {
   val first = role("first")

@@ -1,23 +1,23 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
 
 import java.net.InetSocketAddress
 
+import scala.collection.immutable.Queue
+import scala.concurrent.duration._
+
 import akka.actor._
-import akka.io.Tcp.ConnectionClosed
-import akka.io.Tcp.ResumeReading
 import akka.io.IO
 import akka.io.Tcp
+import akka.io.Tcp.ConnectionClosed
+import akka.io.Tcp.ResumeReading
 import akka.stream.testkit._
 import akka.testkit.SocketUtil.temporaryServerAddress
 import akka.testkit.TestProbe
 import akka.util.ByteString
-
-import scala.collection.immutable.Queue
-import scala.concurrent.duration._
 
 object TcpHelper {
   case class ClientWrite(bytes: ByteString) extends NoSerializationVerificationNeeded
@@ -55,7 +55,7 @@ object TcpHelper {
         writePending = true
         connection ! Tcp.Write(bytes, WriteAck)
       case ClientWrite(bytes) =>
-        queuedWrites = queuedWrites.enqueue(bytes)
+        queuedWrites = queuedWrites :+ bytes
       case WriteAck if queuedWrites.nonEmpty =>
         val (next, remaining) = queuedWrites.dequeue
         queuedWrites = remaining

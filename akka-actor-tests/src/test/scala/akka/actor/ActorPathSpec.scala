@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -92,11 +92,11 @@ class ActorPathSpec extends AnyWordSpec with Matchers {
 
     "detect valid and invalid chars in host names when not using AddressFromURIString, e.g. docker host given name" in {
       Seq(
-        Address("akka", "sys", Some("valid"), Some(0)),
-        Address("akka", "sys", Some("is_valid.org"), Some(0)),
-        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))).forall(_.hasInvalidHostCharacters) shouldBe false
+        Address("akka", "sys", "valid", 0),
+        Address("akka", "sys", "is_valid.org", 0),
+        Address("akka", "sys", "fu.is_valid.org", 0)).forall(_.hasInvalidHostCharacters) shouldBe false
 
-      Seq(Address("akka", "sys", Some("in_valid"), Some(0)), Address("akka", "sys", Some("invalid._org"), Some(0)))
+      Seq(Address("akka", "sys", "in_valid", 0), Address("akka", "sys", "invalid._org", 0))
         .forall(_.hasInvalidHostCharacters) shouldBe true
 
       intercept[MalformedURLException](AddressFromURIString("akka://sys@in_valid:5001"))
@@ -104,19 +104,19 @@ class ActorPathSpec extends AnyWordSpec with Matchers {
 
     "not fail fast if the check is called on valid chars in host names" in {
       Seq(
-        Address("akka", "sys", Some("localhost"), Some(0)),
-        Address("akka", "sys", Some("is_valid.org"), Some(0)),
-        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))).foreach(_.checkHostCharacters())
+        Address("akka", "sys", "localhost", 0),
+        Address("akka", "sys", "is_valid.org", 0),
+        Address("akka", "sys", "fu.is_valid.org", 0)).foreach(_.checkHostCharacters())
     }
 
     "fail fast if the check is called when invalid chars are in host names" in {
       Seq(
-        Address("akka", "sys", Some("localhost"), Some(0)),
-        Address("akka", "sys", Some("is_valid.org"), Some(0)),
-        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))).foreach(_.checkHostCharacters())
+        Address("akka", "sys", "localhost", 0),
+        Address("akka", "sys", "is_valid.org", 0),
+        Address("akka", "sys", "fu.is_valid.org", 0)).foreach(_.checkHostCharacters())
 
-      intercept[IllegalArgumentException](Address("akka", "sys", Some("in_valid"), Some(0)).checkHostCharacters())
-      intercept[IllegalArgumentException](Address("akka", "sys", Some("invalid._org"), Some(0)).checkHostCharacters())
+      intercept[IllegalArgumentException](Address("akka", "sys", "in_valid", 0).checkHostCharacters())
+      intercept[IllegalArgumentException](Address("akka", "sys", "invalid._org", 0).checkHostCharacters())
     }
   }
 }

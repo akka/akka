@@ -1,9 +1,12 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent._
+import scala.concurrent.duration._
+import org.scalatest.time.Span
 import akka.Done
 import akka.actor.Status
 import akka.pattern.pipe
@@ -16,18 +19,18 @@ import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
-import org.scalatest.time.Span
 
-import scala.concurrent._
-import scala.concurrent.duration._
+import scala.annotation.nowarn
 
 class QueueSourceSpec extends StreamSpec {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
   val pause = 300.millis
 
   // more frequent checks than defaults from AkkaSpec
-  implicit val testPatience =
-    PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(5, org.scalatest.time.Millis))
+  implicit val testPatience: PatienceConfig = {
+    import akka.testkit.TestDuration
+    PatienceConfig(testKitSettings.DefaultTimeout.duration.dilated, Span(5, org.scalatest.time.Millis))
+  }
 
   def assertSuccess(f: Future[QueueOfferResult]): Unit = {
     f.futureValue should ===(QueueOfferResult.Enqueued)
@@ -38,7 +41,7 @@ class QueueSourceSpec extends StreamSpec {
     "emit received messages to the stream" in {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(10, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
       for (i <- 1 to 3) {
         sub.request(1)
         assertSuccess(queue.offer(i))
@@ -85,7 +88,7 @@ class QueueSourceSpec extends StreamSpec {
     "buffer when needed" in {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(100, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
       for (n <- 1 to 20) assertSuccess(queue.offer(n))
       sub.request(10)
       for (n <- 1 to 10) assertSuccess(queue.offer(n))
@@ -101,7 +104,7 @@ class QueueSourceSpec extends StreamSpec {
     "not fail when 0 buffer space and demand is signalled" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(0, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
       sub.request(1)
 
       assertSuccess(queue.offer(1))
@@ -112,7 +115,7 @@ class QueueSourceSpec extends StreamSpec {
     "wait for demand when buffer is 0" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(0, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
       queue.offer(1).pipeTo(testActor)
       expectNoMessage(pause)
       sub.request(1)
@@ -124,9 +127,9 @@ class QueueSourceSpec extends StreamSpec {
     "finish offer and complete futures when stream completed" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(0, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
 
-      queue.watchCompletion.pipeTo(testActor)
+      queue.watchCompletion().pipeTo(testActor)
       queue.offer(1).pipeTo(testActor)
       expectNoMessage(pause)
 
@@ -137,14 +140,14 @@ class QueueSourceSpec extends StreamSpec {
 
     "fail future immediately when stream is already cancelled" in assertAllStagesStopped {
       val queue = Source.queue[Int](0, OverflowStrategy.dropHead).to(Sink.cancelled).run()
-      queue.watchCompletion.futureValue
+      queue.watchCompletion().futureValue
       queue.offer(1).failed.futureValue shouldBe a[StreamDetachedException]
     }
 
     "fail stream on buffer overflow in fail mode" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(1, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run()
-      s.expectSubscription
+      s.expectSubscription()
 
       queue.offer(1)
       queue.offer(2)
@@ -155,8 +158,8 @@ class QueueSourceSpec extends StreamSpec {
       val s = TestSubscriber.manualProbe[Int]()
       val probe = TestProbe()
       val queue =
-        TestSourceStage(new QueueSource[Int](1, OverflowStrategy.dropHead), probe).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+        TestSourceStage(new QueueSource[Int](1, OverflowStrategy.dropHead, 1), probe).to(Sink.fromSubscriber(s)).run()
+      val sub = s.expectSubscription()
 
       sub.request(1)
       probe.expectMsg(GraphStageMessages.Pull)
@@ -165,7 +168,7 @@ class QueueSourceSpec extends StreamSpec {
       sub.cancel()
     }
 
-    "fail offer future if user does not wait in backpressure mode" in assertAllStagesStopped {
+    "fail the second (concurrent) offer in backpressure mode with default maxConcurrentPulls" in assertAllStagesStopped {
       val (queue, probe) = Source.queue[Int](5, OverflowStrategy.backpressure).toMat(TestSink.probe)(Keep.both).run()
 
       for (i <- 1 to 5) assertSuccess(queue.offer(i))
@@ -180,6 +183,28 @@ class QueueSourceSpec extends StreamSpec {
       queue.complete()
 
       probe.request(6).expectNext(2, 3, 4, 5, 6).expectComplete()
+    }
+
+    "allow to wait `n` offer futures in backpressure mode with `n` maxConcurrentPulls" in assertAllStagesStopped {
+      val n = 2
+      val (queue, probe) = Source.queue[Int](5, OverflowStrategy.backpressure, n).toMat(TestSink.probe)(Keep.both).run()
+
+      for (i <- 1 to 5) assertSuccess(queue.offer(i))
+
+      queue.offer(6).pipeTo(testActor)
+      queue.offer(7).pipeTo(testActor)
+      queue.offer(8).pipeTo(testActor)
+      expectMsgType[Status.Failure].cause shouldBe an[IllegalStateException]
+
+      probe.requestNext(1)
+      expectMsg(QueueOfferResult.Enqueued)
+
+      probe.requestNext(2)
+      expectMsg(QueueOfferResult.Enqueued)
+
+      queue.complete()
+
+      probe.request(7).expectNext(3, 4, 5, 6, 7).expectComplete()
     }
 
     "complete watching future with failure if stream failed" in assertAllStagesStopped {
@@ -202,8 +227,9 @@ class QueueSourceSpec extends StreamSpec {
 
     "return false when element was not added to buffer" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
+      @nowarn("msg=deprecated")
       val queue = Source.queue(1, OverflowStrategy.dropNew).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
 
       queue.offer(1)
       queue.offer(2).pipeTo(testActor)
@@ -217,7 +243,7 @@ class QueueSourceSpec extends StreamSpec {
     "wait when buffer is full and backpressure is on" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(1, OverflowStrategy.backpressure).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
       assertSuccess(queue.offer(1))
 
       queue.offer(2).pipeTo(testActor)
@@ -235,8 +261,9 @@ class QueueSourceSpec extends StreamSpec {
 
     "fail offer future when stream is completed" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
+      @nowarn("msg=deprecated")
       val queue = Source.queue(1, OverflowStrategy.dropNew).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
       queue.watchCompletion().pipeTo(testActor)
       sub.cancel()
       expectMsg(Done)
@@ -259,7 +286,7 @@ class QueueSourceSpec extends StreamSpec {
       sourceQueue1.offer("hello")
       mat1subscriber.expectNext("hello")
       mat1subscriber.cancel()
-      sourceQueue1.watchCompletion.pipeTo(testActor)
+      sourceQueue1.watchCompletion().pipeTo(testActor)
       expectMsg(Done)
 
       sourceQueue2.watchCompletion().isCompleted should ===(false)

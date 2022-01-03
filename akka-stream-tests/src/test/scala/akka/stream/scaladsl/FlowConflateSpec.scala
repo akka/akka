@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.stream._
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Attributes.inputBuffer
 import akka.stream.Supervision.restartingDecider
 import akka.stream.Supervision.resumingDecider
-import akka.stream._
-import akka.stream.testkit.Utils.TE
 import akka.stream.testkit._
+import akka.stream.testkit.Utils.TE
 import akka.testkit.TestLatch
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class FlowConflateSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

@@ -1,26 +1,26 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.routing
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor._
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.routing.GetRoutees
 import akka.routing.RoundRobinGroup
 import akka.routing.RoundRobinPool
 import akka.routing.Routees
+import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object UseRoleIgnoredMultiJvmSpec extends MultiNodeConfig {
 
@@ -58,8 +58,7 @@ class UseRoleIgnoredMultiJvmNode2 extends UseRoleIgnoredSpec
 class UseRoleIgnoredMultiJvmNode3 extends UseRoleIgnoredSpec
 
 abstract class UseRoleIgnoredSpec
-    extends MultiNodeSpec(UseRoleIgnoredMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(UseRoleIgnoredMultiJvmSpec)
     with ImplicitSender
     with DefaultTimeout {
   import akka.cluster.routing.UseRoleIgnoredMultiJvmSpec._
@@ -110,7 +109,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               maxInstancesPerNode = 2,
               allowLocalRoutees = false,
-              useRoles = roles)).props(Props[SomeActor]),
+              useRoles = roles)).props(Props[SomeActor]()),
           "router-2")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -143,7 +142,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               routeesPaths = List("/user/foo", "/user/bar"),
               allowLocalRoutees = false,
-              useRoles = roles)).props,
+              useRoles = roles)).props(),
           "router-2b")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -176,7 +175,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               maxInstancesPerNode = 2,
               allowLocalRoutees = true,
-              useRoles = roles)).props(Props[SomeActor]),
+              useRoles = roles)).props(Props[SomeActor]()),
           "router-3")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -209,7 +208,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               routeesPaths = List("/user/foo", "/user/bar"),
               allowLocalRoutees = true,
-              useRoles = roles)).props,
+              useRoles = roles)).props(),
           "router-3b")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -242,7 +241,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               maxInstancesPerNode = 2,
               allowLocalRoutees = true,
-              useRoles = roles)).props(Props[SomeActor]),
+              useRoles = roles)).props(Props[SomeActor]()),
           "router-4")
 
         awaitAssert(currentRoutees(router).size should ===(2))
@@ -275,7 +274,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               routeesPaths = List("/user/foo", "/user/bar"),
               allowLocalRoutees = true,
-              useRoles = roles)).props,
+              useRoles = roles)).props(),
           "router-4b")
 
         awaitAssert(currentRoutees(router).size should ===(2))
@@ -308,7 +307,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               maxInstancesPerNode = 2,
               allowLocalRoutees = true,
-              useRoles = roles)).props(Props[SomeActor]),
+              useRoles = roles)).props(Props[SomeActor]()),
           "router-5")
 
         awaitAssert(currentRoutees(router).size should ===(6))
@@ -341,7 +340,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               routeesPaths = List("/user/foo", "/user/bar"),
               allowLocalRoutees = true,
-              useRoles = roles)).props,
+              useRoles = roles)).props(),
           "router-5b")
 
         awaitAssert(currentRoutees(router).size should ===(6))

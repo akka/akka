@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -8,10 +8,16 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
-import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
+import org.lmdbjava.Dbi
+import org.lmdbjava.DbiFlags
+import org.lmdbjava.Env
+import org.lmdbjava.EnvFlags
+import org.lmdbjava.Txn
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -27,12 +33,7 @@ import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ByteString
 import akka.util.OptionVal
-import com.typesafe.config.Config
-import org.lmdbjava.DbiFlags
-import org.lmdbjava.Env
-import org.lmdbjava.EnvFlags
-import org.lmdbjava.Txn
-import org.lmdbjava.Dbi
+import akka.util.ccompat.JavaConverters._
 
 /**
  * An actor implementing the durable store for the Distributed Data `Replicator`
@@ -112,8 +113,8 @@ object LmdbDurableStore {
 
 final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   import DurableStore._
-  import LmdbDurableStore.WriteBehind
   import LmdbDurableStore.Lmdb
+  import LmdbDurableStore.WriteBehind
 
   val serialization = SerializationExtension(context.system)
   val serializer = serialization.serializerFor(classOf[DurableDataEnvelope]).asInstanceOf[SerializerWithStringManifest]
@@ -136,7 +137,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
   private def lmdb(): Lmdb = _lmdb match {
     case OptionVal.Some(l) => l
-    case OptionVal.None =>
+    case _ =>
       val t0 = System.nanoTime()
       log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
       val env = {
@@ -166,7 +167,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     val valueBuffer = lmdb().valueBuffer
     if (valueBuffer.remaining < size) {
       DirectByteBufferPool.tryCleanDirectByteBuffer(valueBuffer)
-      _lmdb = OptionVal.Some(lmdb.copy(valueBuffer = ByteBuffer.allocateDirect(size * 2)))
+      _lmdb = OptionVal.Some(lmdb().copy(valueBuffer = ByteBuffer.allocateDirect(size * 2)))
     }
   }
 
@@ -191,7 +192,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     }
   }
 
-  def receive = init
+  def receive: Receive = init
 
   def init: Receive = {
     case LoadAll =>
@@ -273,8 +274,8 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       l.keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
       l.valueBuffer.put(value).flip()
       tx match {
-        case OptionVal.None    => l.db.put(l.keyBuffer, l.valueBuffer)
         case OptionVal.Some(t) => l.db.put(t, l.keyBuffer, l.valueBuffer)
+        case _                 => l.db.put(l.keyBuffer, l.valueBuffer)
       }
     } finally {
       val l = lmdb()

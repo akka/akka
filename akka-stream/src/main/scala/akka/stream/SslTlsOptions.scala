@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import javax.net.ssl._
 
-import akka.util.ByteString
-
 import scala.annotation.varargs
 import scala.collection.immutable
+
+import akka.util.ByteString
 
 /**
  * Many protocols are asymmetric and distinguish between the client and the

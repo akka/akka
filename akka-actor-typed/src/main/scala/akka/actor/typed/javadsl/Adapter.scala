@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
 import akka.actor
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
-import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Scheduler
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.internal.adapter.ActorContextAdapter
+import akka.actor.typed.scaladsl.adapter._
 import akka.japi.Creator
 
 /**

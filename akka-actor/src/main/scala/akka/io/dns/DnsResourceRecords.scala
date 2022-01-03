@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
 
 import java.net.{ Inet4Address, Inet6Address, InetAddress }
 
-import akka.actor.NoSerializationVerificationNeeded
-import akka.annotation.InternalApi
-import CachePolicy._
-import akka.annotation.DoNotInherit
-import akka.io.dns.internal.{ DomainName, _ }
-import akka.util.{ unused, ByteIterator, ByteString }
-
 import scala.annotation.switch
 import scala.concurrent.duration._
+
+import CachePolicy._
+
+import akka.actor.NoSerializationVerificationNeeded
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.io.dns.internal.{ DomainName, _ }
+import akka.util.{ unused, ByteIterator, ByteString }
 
 /**
  * Not for user extension
@@ -146,8 +147,10 @@ private[dns] object ResourceRecord {
     val name = DomainName.parse(it, msg)
     val recType = it.getShort
     val recClass = it.getShort
+    // If the number of cases increase remember to add a `@switch` annotation e.g.:
+    // val ttl = (it.getInt: @switch) match {
     // According to https://www.ietf.org/rfc/rfc1035.txt: "TTL: positive values of a signed 32 bit number."
-    val ttl = (it.getInt: @switch) match {
+    val ttl = (it.getInt) match {
       case 0       => Ttl.never
       case nonZero => Ttl.fromPositive(nonZero.seconds)
     }

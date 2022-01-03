@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -7,8 +7,11 @@ package akka
 import com.lightbend.paradox.sbt.ParadoxPlugin
 import com.lightbend.paradox.sbt.ParadoxPlugin.autoImport._
 import com.lightbend.paradox.apidoc.ApidocPlugin
+import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport._
 import sbt.Keys._
 import sbt._
+
+import scala.concurrent.duration._
 
 object Paradox {
 
@@ -19,6 +22,7 @@ object Paradox {
           .url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
         "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
         "extref.akka-management.base_url" -> "https://doc.akka.io/docs/akka-management/current/%s",
+        "extref.platform-guide.base_url" -> "https://developer.lightbend.com/docs/akka-platform-guide/%s",
         "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
         "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
         "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&amp;project=%s",
@@ -32,7 +36,7 @@ object Paradox {
         "javadoc.akka.http.base_url" -> "https://doc.akka.io/japi/akka-http/current",
         "javadoc.akka.http.link_style" -> "frames",
         "scala.version" -> scalaVersion.value,
-        "scala.binary_version" -> scalaBinaryVersion.value,
+        "scala.binary.version" -> scalaBinaryVersion.value,
         "akka.version" -> version.value,
         "scalatest.version" -> Dependencies.scalaTestVersion.value,
         "sigar_loader.version" -> "1.6.6-rev002",
@@ -40,9 +44,9 @@ object Paradox {
         "algolia.docsearch.index_name" -> "akka_io",
         "google.analytics.account" -> "UA-21117439-1",
         "google.analytics.domain.name" -> "akka.io",
-        "signature.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
-        "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
-        "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+        "signature.akka.base_dir" -> (ThisBuild / baseDirectory).value.getAbsolutePath,
+        "fiddle.code.base_dir" -> (Test / sourceDirectory).value.getAbsolutePath,
+        "fiddle.akka.base_dir" -> (ThisBuild / baseDirectory).value.getAbsolutePath,
         "aeron_version" -> Dependencies.aeronVersion,
         "netty_version" -> Dependencies.nettyVersion,
         "logback_version" -> Dependencies.logbackVersion))
@@ -67,15 +71,20 @@ object Paradox {
 
   val groupsSettings = Seq(Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")))
 
+  val parsingSettings = Seq(Compile / paradoxParsingTimeout := 5.seconds)
+
   val settings =
     propertiesSettings ++
     rootsSettings ++
     includesSettings ++
     groupsSettings ++
+    parsingSettings ++
     Seq(
-      name in (Compile, paradox) := "Akka",
+      Compile / paradox / name := "Akka",
       resolvers += Resolver.jcenterRepo,
       ApidocPlugin.autoImport.apidocRootPackage := "akka",
-      DeployRsync.autoImport.deployRsyncArtifact := List(
-          (Compile / paradox).value -> s"www/docs/akka/${version.value}"))
+      publishRsyncArtifacts += {
+        val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
+        ((Compile / paradox).value -> s"www/docs/akka/$releaseVersion")
+      })
 }

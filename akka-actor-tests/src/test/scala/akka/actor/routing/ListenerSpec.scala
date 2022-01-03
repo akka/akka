@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.routing
 
-import akka.testkit._
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.concurrent.Await
+
 import akka.actor._
 import akka.routing._
-import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.Await
+import akka.testkit._
 
 class ListenerSpec extends AkkaSpec {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -7,12 +7,14 @@ package akka.routing
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.immutable
-import akka.dispatch.Dispatchers
+
+import scala.annotation.nowarn
 import com.typesafe.config.Config
-import akka.actor.SupervisorStrategy
-import akka.japi.Util.immutableSeq
+
 import akka.actor.ActorSystem
-import com.github.ghik.silencer.silent
+import akka.actor.SupervisorStrategy
+import akka.dispatch.Dispatchers
+import akka.japi.Util.immutableSeq
 
 object RoundRobinRoutingLogic {
   def apply(): RoundRobinRoutingLogic = new RoundRobinRoutingLogic
@@ -22,7 +24,7 @@ object RoundRobinRoutingLogic {
  * Uses round-robin to select a routee. For concurrent calls,
  * round robin is just a best effort.
  */
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final class RoundRobinRoutingLogic extends RoutingLogic {
   val next = new AtomicLong

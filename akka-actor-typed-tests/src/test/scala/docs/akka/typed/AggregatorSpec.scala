@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -51,6 +51,7 @@ object AggregatorSpec {
                     .map {
                       case Hotel1.Quote(hotel, price) => Quote(hotel, price)
                       case Hotel2.Price(hotel, price) => Quote(hotel, price)
+                      case unknown                    => throw new RuntimeException(s"Unknown reply $unknown")
                     }
                     .sortBy(_.price)
                     .toList),

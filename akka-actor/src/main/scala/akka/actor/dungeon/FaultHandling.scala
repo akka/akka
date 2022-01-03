@@ -1,25 +1,38 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
 
+import scala.collection.immutable
+import scala.concurrent.duration.Duration
+import scala.util.control.Exception._
+import scala.util.control.NonFatal
+
+import akka.actor.{ ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
+import akka.actor.ActorRefScope
 import akka.actor.PostRestartException
 import akka.actor.PreRestartException
-import akka.actor.{ Actor, ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
+import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
 
-import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import scala.util.control.Exception._
-import scala.util.control.NonFatal
-import akka.actor.ActorRefScope
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object FaultHandling {
+  sealed trait FailedInfo
+  private case object NoFailedInfo extends FailedInfo
+  private final case class FailedRef(ref: ActorRef) extends FailedInfo
+  private case object FailedFatally extends FailedInfo
+}
 
 private[akka] trait FaultHandling { this: ActorCell =>
+  import FaultHandling._
 
   /* =================
    * T H E   R U L E S
@@ -44,11 +57,22 @@ private[akka] trait FaultHandling { this: ActorCell =>
    * a restart with dying children)
    * might well be replaced by ref to a Cancellable in the future (see #2299)
    */
-  private var _failed: ActorRef = null
-  private def isFailed: Boolean = _failed != null
-  private def setFailed(perpetrator: ActorRef): Unit = _failed = perpetrator
-  private def clearFailed(): Unit = _failed = null
-  private def perpetrator: ActorRef = _failed
+  private var _failed: FailedInfo = NoFailedInfo
+  private def isFailed: Boolean = _failed.isInstanceOf[FailedRef]
+  private def isFailedFatally: Boolean = _failed eq FailedFatally
+  private def perpetrator: ActorRef = _failed match {
+    case FailedRef(ref) => ref
+    case _              => null
+  }
+  private def setFailed(perpetrator: ActorRef): Unit = _failed = _failed match {
+    case FailedFatally => FailedFatally
+    case _             => FailedRef(perpetrator)
+  }
+  private def clearFailed(): Unit = _failed = _failed match {
+    case FailedRef(_) => NoFailedInfo
+    case other        => other
+  }
+  protected def setFailedFatally(): Unit = _failed = FailedFatally
 
   /**
    * Do re-create the actor in response to a failure.
@@ -65,7 +89,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
         val optionalMessage = if (currentMessage ne null) Some(currentMessage.message) else None
         try {
           // if the actor fails in preRestart, we can do nothing but log it: it’s best-effort
-          if (failedActor.context ne null) failedActor.aroundPreRestart(cause, optionalMessage)
+          if (!isFailedFatally) failedActor.aroundPreRestart(cause, optionalMessage)
         } catch handleNonFatalOrInterruptedException { e =>
           val ex = PreRestartException(self, e, cause, optionalMessage)
           publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
@@ -74,7 +98,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
         }
       }
       assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.currentStatus)
-      if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
+      if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause)
     } else {
       // need to keep that suspend counter balanced
       faultResume(causedByFailure = null)
@@ -101,7 +125,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
       system.eventStream.publish(
         Error(self.path.toString, clazz(actor), "changing Resume into Create after " + causedByFailure))
       faultCreate()
-    } else if (actor.context == null && causedByFailure != null) {
+    } else if (isFailedFatally && causedByFailure != null) {
       system.eventStream.publish(
         Error(self.path.toString, clazz(actor), "changing Resume into Restart after " + causedByFailure))
       faultRecreate(causedByFailure)
@@ -174,6 +198,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
     }
   }
 
+  @InternalStableApi
   final def handleInvokeFailure(childrenNotToSuspend: immutable.Iterable[ActorRef], t: Throwable): Unit = {
     // prevent any further messages to be processed until the actor has been restarted
     if (!isFailed) try {
@@ -226,12 +251,11 @@ private[akka] trait FaultHandling { this: ActorCell =>
         publish(Debug(self.path.toString, clazz(a), "stopped"))
 
       clearActorFields(a, recreate = false)
-      clearActorCellFields(this)
-      actor = null
+      clearFieldsForTermination()
     }
   }
 
-  private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = {
+  private def finishRecreate(cause: Throwable): Unit = {
     // need to keep a snapshot of the surviving children before the new actor instance creates new ones
     val survivors = children
 
@@ -240,8 +264,6 @@ private[akka] trait FaultHandling { this: ActorCell =>
       finally clearFailed() // must happen in any case, so that failure is propagated
 
       val freshActor = newActor()
-      actor = freshActor // this must happen before postRestart has a chance to fail
-      if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
       freshActor.aroundPostRestart(cause)
       checkReceiveTimeout(reschedule = true) // user may have set a receive timeout in preStart which is called from postRestart
@@ -255,6 +277,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
             publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
           })
     } catch handleNonFatalOrInterruptedException { e =>
+      setFailedFatally()
       clearActorFields(actor, recreate = false) // in order to prevent preRestart() from happening again
       handleInvokeFailure(survivors, PostRestartException(self, e, cause))
     }
@@ -301,7 +324,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
      * then we are continuing the previously suspended recreate/create/terminate action
      */
     status match {
-      case Some(ChildrenContainer.Recreation(cause)) => finishRecreate(cause, actor)
+      case Some(ChildrenContainer.Recreation(cause)) => finishRecreate(cause)
       case Some(ChildrenContainer.Creation())        => finishCreate()
       case Some(ChildrenContainer.Termination)       => finishTerminate()
       case _                                         =>

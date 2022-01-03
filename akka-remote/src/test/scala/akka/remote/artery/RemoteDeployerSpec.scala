@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
+
+import com.typesafe.config._
 
 import akka.ConfigurationException
 import akka.actor._
 import akka.remote.RemoteScope
 import akka.routing._
 import akka.testkit._
-import com.typesafe.config._
 
 object RemoteDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""

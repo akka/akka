@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
-
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
-import scala.concurrent.duration.FiniteDuration
+import akka.actor.typed.SupervisorStrategy
 
+import scala.concurrent.duration.FiniteDuration
 import akka.Done
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 //#oo-style
 //#fun-style
@@ -24,6 +24,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 //#fun-style
 import akka.actor.typed.scaladsl.AbstractBehavior
+import org.slf4j.Logger
 //#oo-style
 
 object StyleGuideDocExamples {
@@ -322,7 +323,7 @@ object StyleGuideDocExamples {
 
       sealed trait OperationResult
       case object Confirmed extends OperationResult
-      final case class Rejected(reason: String)
+      final case class Rejected(reason: String) extends OperationResult
     }
     //#message-protocol
   }
@@ -428,7 +429,7 @@ object StyleGuideDocExamples {
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = Timeout(3.seconds)
     val counter: ActorRef[Command] = ???
 
     val result: Future[OperationResult] = counter.ask(replyTo => Increment(delta = 2, replyTo))
@@ -459,43 +460,13 @@ object StyleGuideDocExamples {
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
       //#messages-sealed
-
-      def apply(countDownFrom: Int, notifyWhenZero: ActorRef[Done]): Behavior[Command] =
-        new CountDown(notifyWhenZero).counterWithGuard(countDownFrom)
     }
 
-    private class CountDown(notifyWhenZero: ActorRef[Done]) {
+    class CountDown() {
       import CountDown._
 
-      private def counterWithGuard(remaining: Int): Behavior[Command] = {
-        //#pattern-match-guard
-        // no exhaustiveness check because of guard condition
-        Behaviors.receiveMessage {
-          case Down if remaining == 1 =>
-            notifyWhenZero.tell(Done)
-            zero
-          case Down =>
-            counter(remaining - 1)
-        }
-        //#pattern-match-guard
-      }
-
-      @silent
-      private def counter(remaining: Int): Behavior[Command] = {
-        //#pattern-match-without-guard
-        Behaviors.receiveMessage {
-          case Down =>
-            if (remaining == 1) {
-              notifyWhenZero.tell(Done)
-              zero
-            } else
-              counter(remaining - 1)
-        }
-        //#pattern-match-without-guard
-      }
-
       //#pattern-match-unhandled
-      private val zero: Behavior[Command] = {
+      val zero: Behavior[Command] = {
         Behaviors.receiveMessage {
           case GetValue(replyTo) =>
             replyTo ! Value(0)
@@ -506,10 +477,10 @@ object StyleGuideDocExamples {
       }
       //#pattern-match-unhandled
 
-      @silent
+      @nowarn
       object partial {
         //#pattern-match-partial
-        private val zero: Behavior[Command] = {
+        val zero: Behavior[Command] = {
           Behaviors.receiveMessagePartial {
             case GetValue(replyTo) =>
               replyTo ! Value(0)
@@ -520,5 +491,97 @@ object StyleGuideDocExamples {
       }
 
     }
+  }
+
+  object BehaviorCompositionWithPartialFunction {
+
+    //#messages-sealed-composition
+    sealed trait Command
+    case object Down extends Command
+    final case class GetValue(replyTo: ActorRef[Value]) extends Command
+    final case class Value(n: Int)
+    //#messages-sealed-composition
+
+    //#get-handler-partial
+    def getHandler(value: Int): PartialFunction[Command, Behavior[Command]] = {
+      case GetValue(replyTo) =>
+        replyTo ! Value(value)
+        Behaviors.same
+    }
+    //#get-handler-partial
+
+    //#set-handler-non-zero-partial
+    def setHandlerNotZero(value: Int): PartialFunction[Command, Behavior[Command]] = {
+      case Down =>
+        if (value == 1)
+          zero
+        else
+          nonZero(value - 1)
+    }
+    //#set-handler-non-zero-partial
+
+    //#set-handler-zero-partial
+    def setHandlerZero(log: Logger): PartialFunction[Command, Behavior[Command]] = {
+      case Down =>
+        log.error("Counter is already at zero!")
+        Behaviors.same
+    }
+    //#set-handler-zero-partial
+
+    //#top-level-behaviors-partial
+    val zero: Behavior[Command] = Behaviors.setup { context =>
+      Behaviors.receiveMessagePartial(getHandler(0).orElse(setHandlerZero(context.log)))
+    }
+
+    def nonZero(capacity: Int): Behavior[Command] =
+      Behaviors.receiveMessagePartial(getHandler(capacity).orElse(setHandlerNotZero(capacity)))
+
+    // Default Initial Behavior for this actor
+    def apply(initialCapacity: Int): Behavior[Command] = nonZero(initialCapacity)
+    //#top-level-behaviors-partial
+  }
+
+  object NestingSample1 {
+    sealed trait Command
+
+    //#nesting
+    def apply(): Behavior[Command] =
+      Behaviors.setup[Command](context =>
+        Behaviors.withStash(100)(stash =>
+          Behaviors.withTimers { timers =>
+            context.log.debug("Starting up")
+
+            // behavior using context, stash and timers ...
+            //#nesting
+            timers.isTimerActive("aa")
+            stash.isEmpty
+            Behaviors.empty
+          //#nesting
+          }))
+    //#nesting
+  }
+
+  object NestingSample2 {
+    sealed trait Command
+
+    //#nesting-supervise
+    def apply(): Behavior[Command] =
+      Behaviors.setup { context =>
+        // only run on initial actor start, not on crash-restart
+        context.log.info("Starting")
+
+        Behaviors
+          .supervise(Behaviors.withStash[Command](100) { stash =>
+            // every time the actor crashes and restarts a new stash is created (previous stash is lost)
+            context.log.debug("Starting up with stash")
+            // Behaviors.receiveMessage { ... }
+            //#nesting-supervise
+            stash.isEmpty
+            Behaviors.empty
+            //#nesting-supervise
+          })
+          .onFailure[RuntimeException](SupervisorStrategy.restart)
+      }
+    //#nesting-supervise
   }
 }

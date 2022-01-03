@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -74,7 +74,7 @@ package object adapter {
    * Extension methods added to [[akka.actor.typed.ActorSystem]].
    */
   implicit class TypedActorSystemOps(val sys: ActorSystem[_]) extends AnyVal {
-    def toClassic: akka.actor.ActorSystem = ActorSystemAdapter.toClassic(sys)
+    def toClassic: akka.actor.ActorSystem = sys.classicSystem
 
     /**
      * INTERNAL API

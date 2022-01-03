@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
+import scala.concurrent.duration._
+
 import language.postfixOps
 
 import akka.actor._
-import scala.concurrent.duration._
 
 class TestFSMRefSpec extends AkkaSpec {
 
@@ -45,7 +46,7 @@ class TestFSMRefSpec extends AkkaSpec {
       val fsm = TestFSMRef(new Actor with FSM[Int, Null] {
         startWith(1, null)
         when(1) {
-          case _ => stay
+          case _ => stay()
         }
       }, "test-fsm-ref-2")
       fsm.isTimerActive("test") should ===(false)
@@ -65,7 +66,7 @@ class TestFSMRefSpec extends AkkaSpec {
     class TestFSMActor extends Actor with FSM[Int, Null] {
       startWith(1, null)
       when(1) {
-        case _ => stay
+        case _ => stay()
       }
       val supervisor = context.parent
       val name = context.self.path.name

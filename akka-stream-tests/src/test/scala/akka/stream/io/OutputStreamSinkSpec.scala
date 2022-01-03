@@ -1,29 +1,30 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
 
 import java.io.OutputStream
 
+import scala.util.Success
+
+import scala.annotation.nowarn
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.Done
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOOperationIncompleteException }
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOOperationIncompleteException }
 import akka.testkit.TestProbe
 import akka.util.ByteString
-import org.scalatest.concurrent.ScalaFutures
-import com.github.ghik.silencer.silent
 
-import scala.util.Success
-
-@silent
+@nowarn
 class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "OutputStreamSink" must {
     "write bytes to void OutputStream" in assertAllStagesStopped {

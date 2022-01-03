@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -38,7 +38,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   @volatile
   private var _cachedSelf: Member =
-    Member(cluster.selfUniqueAddress, cluster.selfRoles).copy(status = MemberStatus.Removed)
+    Member(cluster.selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
+      .copy(status = MemberStatus.Removed)
   @volatile
   private var _closed: Boolean = false
 
@@ -54,7 +55,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   private val eventBusListener: ActorRef = {
     cluster.system
       .systemActorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-        override def preStart(): Unit = cluster.subscribe(self, classOf[ClusterDomainEvent])
+        override def preStart(): Unit = cluster.subscribe(this.self, classOf[ClusterDomainEvent])
 
         def receive: Receive = {
           case e: ClusterDomainEvent if !_closed =>
@@ -87,7 +88,10 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
                 _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters - r.dataCenter)
               case r: UnreachableDataCenter =>
                 _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters + r.dataCenter)
-
+              case MemberTombstonesChanged(tombstones) =>
+                _state = _state.withMemberTombstones(tombstones)
+              case unexpected =>
+                throw new IllegalArgumentException(s"Unexpected cluster event type ${unexpected.getClass}") // compiler exhaustiveness check pleaser
             }
 
             e match {

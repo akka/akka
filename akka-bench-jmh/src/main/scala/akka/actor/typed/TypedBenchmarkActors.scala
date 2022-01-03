@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -16,7 +16,7 @@ object TypedBenchmarkActors {
 
   // to avoid benchmark to be dominated by allocations of message
   // we pass the respondTo actor ref into the behavior
-  final case object Message
+  case object Message
 
   private def echoBehavior(respondTo: ActorRef[Message.type]): Behavior[Message.type] = Behaviors.receive { (_, _) =>
     respondTo ! Message
@@ -95,7 +95,7 @@ object TypedBenchmarkActors {
         val startNanoTime = System.nanoTime()
         pairs.foreach(_ ! Message)
         var interactionsLeft = numPairs
-        Behaviors.receiveMessage {
+        Behaviors.receiveMessagePartial {
           case Done =>
             interactionsLeft -= 1
             if (interactionsLeft == 0) {

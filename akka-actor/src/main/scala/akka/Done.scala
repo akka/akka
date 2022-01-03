@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
 import java.io.Serializable
+
 import akka.annotation.DoNotInherit
 
 /**

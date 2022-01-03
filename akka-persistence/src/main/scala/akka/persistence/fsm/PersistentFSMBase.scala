@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.fsm
 
+import scala.collection.mutable
+import scala.concurrent.duration.FiniteDuration
+
+import language.implicitConversions
+
 import akka.actor._
 import akka.japi.pf.{ FSMTransitionHandlerBuilder, UnitMatch, UnitPFBuilder }
-import language.implicitConversions
-import scala.collection.mutable
-
 import akka.routing.{ Deafen, Listen, Listeners }
-import akka.util.unused
 import akka.util.JavaDurationConverters._
-import scala.concurrent.duration.FiniteDuration
+import akka.util.unused
 
 /**
  * Finite State Machine actor trait. Use as follows:
@@ -192,7 +193,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
   /**
    * Produce change descriptor to stop this FSM actor including specified reason.
    */
-  final def stop(reason: Reason, stateData: D): State = stay.copy(stopReason = Some(reason), stateData = stateData)
+  final def stop(reason: Reason, stateData: D): State = stay().copy0(stopReason = Some(reason), stateData = stateData)
 
   final class TransformHelper(func: StateFunction) {
     def using(andThen: PartialFunction[State, State]): StateFunction =
@@ -283,9 +284,9 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
     if (debugEvent)
       log.debug("setting " + (if (mode.repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     if (timers contains name) {
-      timers(name).cancel
+      timers(name).cancel()
     }
-    val timer = Timer(name, msg, mode, timerGen.next, this)(context)
+    val timer = Timer(name, msg, mode, timerGen.next(), this)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
   }
@@ -298,7 +299,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
     if (debugEvent)
       log.debug("canceling timer '" + name + "'")
     if (timers contains name) {
-      timers(name).cancel
+      timers(name).cancel()
       timers -= name
     }
   }
@@ -458,7 +459,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
   private val handleEventDefault: StateFunction = {
     case Event(value, _) =>
       log.warning("unhandled event " + value + " in state " + stateName)
-      stay
+      stay()
   }
   private var handleEvent: StateFunction = handleEventDefault
 
@@ -551,7 +552,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
 
   private[akka] def makeTransition(nextState: State): Unit = {
     if (!stateFunctions.contains(nextState.stateName)) {
-      terminate(stay.withStopReason(Failure("Next state %s does not exist".format(nextState.stateName))))
+      terminate(stay().withStopReason(Failure("Next state %s does not exist".format(nextState.stateName))))
     } else {
       nextState.replies.reverse.foreach { r =>
         sender() ! r
@@ -594,7 +595,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
      * setting this instance’s state to terminated does no harm during restart
      * since the new instance will initialize fresh using startWith()
      */
-    terminate(stay.withStopReason(Shutdown))
+    terminate(stay().withStopReason(Shutdown))
     super.postStop()
   }
 
@@ -720,11 +721,13 @@ object AbstractPersistentFSMBase {
  */
 @deprecated("Use EventSourcedBehavior", "2.6.0")
 abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D, E] {
+  import java.util.{ List => JList }
+
+  import PersistentFSM._
+
+  import akka.japi.pf.FI._
   import akka.persistence.fsm.japi.pf.FSMStateFunctionBuilder
   import akka.persistence.fsm.japi.pf.FSMStopBuilder
-  import akka.japi.pf.FI._
-  import java.util.{ List => JList }
-  import PersistentFSM._
 
   /**
    * Returns this AbstractActor's ActorContext

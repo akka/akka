@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -16,12 +16,12 @@ private[akka] object SubstreamCancelStrategies {
   /**
    * INTERNAL API
    */
-  private[akka] final case object Propagate extends SubstreamCancelStrategy
+  private[akka] case object Propagate extends SubstreamCancelStrategy
 
   /**
    * INTERNAL API
    */
-  private[akka] final case object Drain extends SubstreamCancelStrategy
+  private[akka] case object Drain extends SubstreamCancelStrategy
 }
 
 object SubstreamCancelStrategy {

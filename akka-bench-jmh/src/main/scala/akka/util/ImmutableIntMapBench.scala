@@ -1,12 +1,14 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
-import org.openjdk.jmh.annotations._
 import java.util.concurrent.TimeUnit
+
 import scala.annotation.tailrec
+
+import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))

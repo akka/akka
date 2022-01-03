@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
+import org.reactivestreams.{ Processor, Subscriber, Subscription }
+
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.stream.{ AbruptTerminationException, Attributes }
-import akka.stream.impl.ActorSubscriberMessage.{ OnComplete, OnError, OnNext, OnSubscribe }
-import org.reactivestreams.{ Processor, Subscriber, Subscription }
 import akka.event.Logging
+import akka.stream.{ AbruptTerminationException, Attributes }
 import akka.stream.ActorAttributes
+import akka.stream.impl.ActorSubscriberMessage.{ OnComplete, OnError, OnNext, OnSubscribe }
 import akka.util.unused
 
 /**
@@ -232,7 +233,7 @@ import akka.util.unused
 
   protected def downstreamRunning: Actor.Receive = {
     case SubscribePending =>
-      subscribePending(exposedPublisher.takePendingSubscribers())
+      subscribePending(exposedPublisher.takePendingSubscribers().asInstanceOf[Seq[Subscriber[Any]]])
     case RequestMore(_, elements) =>
       if (elements < 1) {
         error(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)

@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
 import java.util
 
-import akka.NotUsed
-import akka.stream._
-import akka.japi.{ function, Pair }
-import akka.util.ConstantFun
-
 import scala.annotation.unchecked.uncheckedVariance
-import akka.util.ccompat.JavaConverters._
+
+import akka.NotUsed
+import akka.japi.{ function, Pair }
+import akka.stream._
 import akka.stream.scaladsl.GenericGraph
+import akka.util.ConstantFun
+import akka.util.ccompat.JavaConverters._
 import akka.util.unused
 
 /**
@@ -380,8 +380,8 @@ object Balance {
  * '''Cancels when''' downstream cancels
  */
 object Zip {
-  import akka.japi.function.Function2
   import akka.japi.Pair
+  import akka.japi.function.Function2
 
   /**
    * Create a new `Zip` operator with the specified input types and zipping-function
@@ -409,8 +409,8 @@ object Zip {
  * '''Cancels when''' downstream cancels
  */
 object ZipLatest {
-  import akka.japi.function.Function2
   import akka.japi.Pair
+  import akka.japi.function.Function2
 
   /**
    * Create a new `ZipLatest` operator with the specified input types and zipping-function
@@ -519,7 +519,77 @@ object Concat {
   /**
    * Create a new anonymous `Concat` operator with the specified input types.
    */
+  def create[T](inputCount: Int, detachedInputs: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
+    scaladsl.Concat[T](inputCount, detachedInputs)
+
+  /**
+   * Create a new anonymous `Concat` operator with the specified input types.
+   */
   def create[T](@unused clazz: Class[T]): Graph[UniformFanInShape[T, T], NotUsed] = create()
+
+}
+
+/**
+ * Takes multiple streams whose elements in aggregate have a defined linear
+ * sequence with difference 1, starting at 0, and outputs a single stream
+ * containing these elements, in order. That is, given a set of input streams
+ * with combined elements *e<sub>k</sub>*:
+ *
+ * *e<sub>0</sub>*, *e<sub>1</sub>*, *e<sub>2</sub>*, ..., *e<sub>n</sub>*
+ *
+ * This will output a stream ordered by *k*.
+ *
+ * The elements in the input streams must already be sorted according to the
+ * sequence. The input streams do not need to be linear, but the aggregate
+ * stream must be linear, no element *k* may be skipped or duplicated, either
+ * of these conditions will cause the stream to fail.
+ *
+ * The typical use case for this is to merge a partitioned stream back
+ * together while maintaining order. This can be achieved by first using
+ * `zipWithIndex` on the input stream, then partitioning using a
+ * [[Partition]] fanout, and then maintaining the index through the processing
+ * of each partition before bringing together with this stage.
+ *
+ * '''Emits when''' one of the upstreams has the next expected element in the
+ * sequence available.
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ */
+object MergeSequence {
+
+  /**
+   * Create a new anonymous `MergeSequence` operator with two input ports.
+   *
+   * @param extractSequence The function to extract the sequence from an element.
+   */
+  def create[T](extractSequence: function.Function[T, Long]): Graph[UniformFanInShape[T, T], NotUsed] =
+    scaladsl.MergeSequence[T]()(extractSequence.apply)
+
+  /**
+   * Create a new anonymous `MergeSequence` operator.
+   *
+   * @param inputCount The number of input streams.
+   * @param extractSequence The function to extract the sequence from an element.
+   */
+  def create[T](inputCount: Int, extractSequence: function.Function[T, Long]): Graph[UniformFanInShape[T, T], NotUsed] =
+    scaladsl.MergeSequence[T](inputCount)(extractSequence.apply)
+
+  /**
+   * Create a new anonymous `Concat` operator with the specified input types.
+   *
+   * @param clazz a type hint for this method
+   * @param inputCount The number of input streams.
+   * @param extractSequence The function to extract the sequence from an element.
+   */
+  def create[T](
+      @unused clazz: Class[T],
+      inputCount: Int,
+      extractSequence: function.Function[T, Long]): Graph[UniformFanInShape[T, T], NotUsed] =
+    create(inputCount, extractSequence)
 
 }
 
@@ -598,15 +668,15 @@ object GraphDSL extends GraphCreate {
     def to[I, O](j: UniformFanInShape[I, O]): ReverseOps[I] = new ReverseOps(findIn(delegate, j, 0))
     def to[I, O](j: UniformFanOutShape[I, O]): ReverseOps[I] = new ReverseOps(j.in)
 
-    final class ForwardOps[T](out: Outlet[T]) {
-      def toInlet(in: Inlet[_ >: T]): Builder[Mat] = { out ~> in; self }
-      def to(dst: SinkShape[_ >: T]): Builder[Mat] = { out ~> dst; self }
-      def toFanIn[U](j: UniformFanInShape[_ >: T, U]): Builder[Mat] = { out ~> j; self }
-      def toFanOut[U](j: UniformFanOutShape[_ >: T, U]): Builder[Mat] = { out ~> j; self }
-      def via[U](f: FlowShape[_ >: T, U]): ForwardOps[U] = from((out ~> f).outlet)
-      def viaFanIn[U](j: UniformFanInShape[_ >: T, U]): ForwardOps[U] = from((out ~> j).outlet)
-      def viaFanOut[U](j: UniformFanOutShape[_ >: T, U]): ForwardOps[U] = from((out ~> j).outlet)
-      def out(): Outlet[T] = out
+    final class ForwardOps[T](_out: Outlet[T]) {
+      def toInlet(in: Inlet[_ >: T]): Builder[Mat] = { _out ~> in; self }
+      def to(dst: SinkShape[_ >: T]): Builder[Mat] = { _out ~> dst; self }
+      def toFanIn[U](j: UniformFanInShape[_ >: T, U]): Builder[Mat] = { _out ~> j; self }
+      def toFanOut[U](j: UniformFanOutShape[_ >: T, U]): Builder[Mat] = { _out ~> j; self }
+      def via[U](f: FlowShape[_ >: T, U]): ForwardOps[U] = from((_out ~> f).outlet)
+      def viaFanIn[U](j: UniformFanInShape[_ >: T, U]): ForwardOps[U] = from((_out ~> j).outlet)
+      def viaFanOut[U](j: UniformFanOutShape[_ >: T, U]): ForwardOps[U] = from((_out ~> j).outlet)
+      def out(): Outlet[T] = _out
     }
 
     final class ReverseOps[T](out: Inlet[T]) {

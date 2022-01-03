@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.testkit.AkkaSpec
-
 import scala.annotation.tailrec
 import scala.util.Random
 import scala.util.control.NonFatal
+
+import akka.testkit.AkkaSpec
 
 /*
  * This test is a simulation of the actual concurrent rolling log implemented in SnapshottableRollingEventLog. It

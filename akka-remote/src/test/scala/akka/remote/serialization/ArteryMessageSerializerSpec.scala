@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -7,7 +7,10 @@ package akka.remote.serialization
 import java.io.NotSerializableException
 
 import akka.actor._
+import akka.remote.artery.Flush
+import akka.remote.artery.FlushAck
 import akka.remote.{ RemoteWatcher, UniqueAddress }
+import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.CompressionProtocol.{
   ActorRefCompressionAdvertisement,
@@ -16,7 +19,6 @@ import akka.remote.artery.compress.CompressionProtocol.{
   ClassManifestCompressionAdvertisementAck
 }
 import akka.remote.artery.compress.CompressionTable
-import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 
@@ -29,6 +31,8 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
       "Quarantined" -> Quarantined(uniqueAddress(), uniqueAddress()),
       "ActorSystemTerminating" -> ActorSystemTerminating(uniqueAddress()),
       "ActorSystemTerminatingAck" -> ActorSystemTerminatingAck(uniqueAddress()),
+      "Flush" -> Flush,
+      "FlushAck" -> FlushAck(3),
       "HandshakeReq" -> HandshakeReq(uniqueAddress(), uniqueAddress().address),
       "HandshakeRsp" -> HandshakeRsp(uniqueAddress()),
       "ActorRefCompressionAdvertisement" -> ActorRefCompressionAdvertisement(

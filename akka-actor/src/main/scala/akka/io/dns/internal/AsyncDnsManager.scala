@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -7,19 +7,21 @@ package akka.io.dns.internal
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.Duration
+
+import scala.annotation.nowarn
+import com.typesafe.config.Config
+
 import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.io.{ Dns, DnsExt, DnsProvider }
 import akka.io.PeriodicCacheCleanup
 import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, DnsSettings }
 import akka.io.dns.internal.AsyncDnsManager.CacheCleanup
-import akka.io.{ Dns, DnsExt, DnsProvider }
 import akka.routing.FromConfig
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-
-import scala.concurrent.duration.Duration
 
 /**
  * INTERNAL API
@@ -35,7 +37,7 @@ private[akka] object AsyncDnsManager {
  * INTERNAL API
  */
 @InternalApi
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[io] final class AsyncDnsManager(
     name: String,
     system: ExtendedActorSystem,
@@ -62,10 +64,10 @@ private[io] final class AsyncDnsManager(
       ext.Settings.Dispatcher,
       ext.provider)
 
-  implicit val ec = context.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
 
   val settings = new DnsSettings(system, resolverConfig)
-  implicit val timeout = Timeout(settings.ResolveTimeout)
+  implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
 
   private val resolver = {
     val props: Props = FromConfig.props(
@@ -89,7 +91,7 @@ private[io] final class AsyncDnsManager(
   }
 
   // still support deprecated DNS API
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def receive: Receive = {
     case r: DnsProtocol.Resolve =>
       log.debug("Resolution request for {} {} from {}", r.name, r.requestType, sender())

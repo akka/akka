@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import akka.annotation.DoNotInherit
-import akka.{ actor => classic }
 import scala.annotation.unchecked.uncheckedVariance
 
+import akka.{ actor => classic }
 import akka.actor.typed.internal.InternalRecipientRef
+import akka.annotation.DoNotInherit
 
 /**
  * An ActorRef is the identity or address of an Actor instance. It is valid
@@ -66,7 +66,6 @@ object ActorRef {
      */
     def !(msg: T): Unit = ref.tell(msg)
   }
-
 }
 
 /**
@@ -78,8 +77,8 @@ private[akka] object SerializedActorRef {
   }
 
   def toAddress[T](actorRef: ActorRef[T]) = {
-    import akka.serialization.JavaSerializer.currentSystem
     import akka.actor.typed.scaladsl.adapter._
+    import akka.serialization.JavaSerializer.currentSystem
     val resolver = ActorRefResolver(currentSystem.value.toTyped)
     resolver.toSerializationFormat(actorRef)
   }
@@ -91,8 +90,8 @@ private[akka] object SerializedActorRef {
  */
 @SerialVersionUID(1L)
 private[akka] final case class SerializedActorRef[T] private (address: String) {
-  import akka.serialization.JavaSerializer.currentSystem
   import akka.actor.typed.scaladsl.adapter._
+  import akka.serialization.JavaSerializer.currentSystem
 
   def this(actorRef: ActorRef[T]) =
     this(SerializedActorRef.toAddress(actorRef))

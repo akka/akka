@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence;
@@ -139,7 +139,7 @@ public class LambdaPersistencePluginDocTest {
           public MyJournalSpecTest() {
             super(
                 ConfigFactory.parseString(
-                    "persistence.journal.plugin = "
+                    "akka.persistence.journal.plugin = "
                         + "\"akka.persistence.journal.leveldb-shared\""));
           }
 

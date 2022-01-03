@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import akka.annotation.InternalApi
-import akka.japi.function.{ Function => JFun, Function2 => JFun2 }
 import akka.japi.{ Pair => JPair }
+import akka.japi.function.{ Function => JFun, Function2 => JFun2 }
 
 /**
  * INTERNAL API

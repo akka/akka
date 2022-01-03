@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.snapshot
 
-import akka.persistence.scalatest.{ MayVerb, OptionalTests }
-
 import scala.collection.immutable.Seq
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.persistence._
 import akka.persistence.SnapshotProtocol._
+import akka.persistence.scalatest.{ MayVerb, OptionalTests }
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
 
 object SnapshotStoreSpec {
   val config: Config = ConfigFactory.parseString(s"""
@@ -44,12 +45,14 @@ abstract class SnapshotStoreSpec(config: Config)
     with MayVerb
     with OptionalTests
     with SnapshotStoreCapabilityFlags {
-  implicit lazy val system = ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
+  implicit lazy val system: ActorSystem =
+    ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
 
   private var senderProbe: TestProbe = _
   private var metadata: Seq[SnapshotMetadata] = Nil
 
   override protected def supportsSerialization: CapabilityFlag = true
+  override protected def supportsMetadata: CapabilityFlag = false
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -194,6 +197,28 @@ abstract class SnapshotStoreSpec(config: Config)
         senderProbe.expectMsgPF() {
           case LoadSnapshotResult(Some(SelectedSnapshot(SnapshotMetadata(Pid, 100, _), payload)), Long.MaxValue) =>
             payload should be(snap)
+        }
+      }
+    }
+    optional(flag = supportsMetadata) {
+      "store metadata" in {
+        // we do not have the actual ReplicatedSnapshot metadata on classpath, but since
+        // the plugin should defer to serialization defined by Akka, so in general the type
+        // should not really be important to the plugin
+        val fictionalMeta = "fictional metadata"
+        val metadata = SnapshotMetadata(pid, 100).withMetadata(fictionalMeta)
+        val snap = "snap"
+        snapshotStore.tell(SaveSnapshot(metadata, snap), senderProbe.ref)
+        senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) => md }
+
+        val Pid = pid
+        snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest, Long.MaxValue), senderProbe.ref)
+        senderProbe.expectMsgPF() {
+          case LoadSnapshotResult(
+              Some(SelectedSnapshot(meta @ SnapshotMetadata(Pid, 100, _), payload)),
+              Long.MaxValue) =>
+            payload should be(snap)
+            meta.metadata should ===(Some(fictionalMeta))
         }
       }
     }

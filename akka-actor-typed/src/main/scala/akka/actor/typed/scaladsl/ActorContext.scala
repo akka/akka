@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
-
-import akka.actor.ClassicActorContextProvider
-import akka.actor.typed._
-import akka.annotation.DoNotInherit
-import akka.util.Timeout
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
-import akka.annotation.InternalApi
 import org.slf4j.Logger
+import akka.actor.ClassicActorContextProvider
+import akka.actor.typed._
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.pattern.StatusReply
+import akka.util.Timeout
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -63,7 +63,7 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    * This field is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def system: ActorSystem[Nothing]
+  implicit def system: ActorSystem[Nothing]
 
   /**
    * An actor specific logger.
@@ -298,6 +298,15 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
 
   /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply.Success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply.Error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
+   */
+  def askWithStatus[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[StatusReply[Res]] => Req)(
+      mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+
+  /**
    * Sends the result of the given `Future` to this Actor (“`self`”), after adapted it with
    * the given function.
    *
@@ -335,5 +344,20 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    */
   @InternalApi
   private[akka] def clearMdc(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def setCurrentActorThread(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def clearCurrentActorThread(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def checkCurrentActorThread(): Unit
 
 }

@@ -1,19 +1,38 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
 
-import scala.concurrent.{ ExecutionContext, Future, Promise }
-import akka.actor._
-import scala.util.control.NonFatal
-import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
-import akka.dispatch.Futures
+import java.util.concurrent.CompletionStage
 import java.util.function.BiConsumer
 
+import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
+
+import akka.actor._
+import akka.dispatch.Futures
+
 trait FutureTimeoutSupport {
+
+  /**
+   * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided value
+   * after the specified duration.
+   */
+  def after[T](duration: FiniteDuration)(value: => Future[T])(
+      implicit system: ClassicActorSystemProvider): Future[T] = {
+    after(duration, using = system.classicSystem.scheduler)(value)(system.classicSystem.dispatcher)
+  }
+
+  /**
+   * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
+   * after the specified duration.
+   */
+  def afterCompletionStage[T](duration: FiniteDuration)(value: => CompletionStage[T])(
+      implicit system: ClassicActorSystemProvider): CompletionStage[T] =
+    afterCompletionStage(duration, system.classicSystem.scheduler)(value)(system.classicSystem.dispatcher)
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided value

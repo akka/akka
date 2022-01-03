@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
-import akka.stream.scaladsl.{ Sink, Source }
+import scala.concurrent.{ Await, Promise }
+import scala.concurrent.duration._
+
 import org.reactivestreams.{ Publisher, Subscriber }
 
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Promise }
+import akka.stream.scaladsl.{ Sink, Source }
 
 class FlatMapConcatDoubleSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
 

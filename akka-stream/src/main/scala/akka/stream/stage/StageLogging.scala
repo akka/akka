@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.stage
@@ -30,7 +30,7 @@ trait StageLogging { self: GraphStageLogic =>
     if (_log eq null) {
       materializer match {
         case p: MaterializerLoggingProvider =>
-          _log = p.makeLogger(logSource)
+          _log = p.makeLogger(logSource.asInstanceOf[Class[Any]])
         case _ =>
           _log = NoLogging
       }

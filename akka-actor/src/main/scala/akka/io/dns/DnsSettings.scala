@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
@@ -8,21 +8,22 @@ import java.io.File
 import java.net.{ InetSocketAddress, URI }
 import java.util
 
+import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{ Failure, Success, Try }
+
+import com.typesafe.config.{ Config, ConfigValueType }
+
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.io.dns.CachePolicy.{ CachePolicy, Forever, Never, Ttl }
 import akka.io.dns.internal.{ ResolvConf, ResolvConfParser }
 import akka.util.Helpers
 import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
-import akka.util.ccompat.JavaConverters._
 import akka.util.ccompat._
-import com.typesafe.config.{ Config, ConfigValueType }
-import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.util.{ Failure, Success, Try }
-
-import akka.event.Logging
+import akka.util.ccompat.JavaConverters._
 
 /** INTERNAL API */
 @InternalApi
@@ -77,7 +78,7 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
       parsed match {
         case Success(value) => Some(value)
         case Failure(exception) =>
-          val log = Logging(system, getClass)
+          val log = Logging(system, classOf[DnsSettings])
           if (log.isWarningEnabled) {
             log.error(exception, "Error parsing /etc/resolv.conf, ignoring.")
           }
@@ -135,10 +136,13 @@ object DnsSettings {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def parseNameserverAddress(str: String): InetSocketAddress = {
-    val inetSocketAddress(host, port) = str
-    new InetSocketAddress(host, Option(port).fold(DnsFallbackPort)(_.toInt))
-  }
+  @InternalApi private[akka] def parseNameserverAddress(str: String): InetSocketAddress =
+    str match {
+      case inetSocketAddress(host, port) =>
+        new InetSocketAddress(host, Option(port).fold(DnsFallbackPort)(_.toInt))
+      case unexpected =>
+        throw new IllegalArgumentException(s"Unparseable address string: $unexpected") // will not happen, for exhaustiveness check
+    }
 
   /**
    * INTERNAL API
@@ -164,14 +168,13 @@ object DnsSettings {
 
     def getNameserversUsingJNDI: Try[List[InetSocketAddress]] = {
       import java.util
-
       import javax.naming.Context
       import javax.naming.directory.InitialDirContext
       // Using jndi-dns to obtain the default name servers.
       //
       // See:
-      // - http://docs.oracle.com/javase/8/docs/technotes/guides/jndi/jndi-dns.html
-      // - http://mail.openjdk.java.net/pipermail/net-dev/2017-March/010695.html
+      // - https://docs.oracle.com/javase/8/docs/technotes/guides/jndi/jndi-dns.html
+      // - https://mail.openjdk.java.net/pipermail/net-dev/2017-March/010695.html
       val env = new util.Hashtable[String, String]
       env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory")
       env.put("java.naming.provider.url", "dns://")
@@ -192,7 +195,7 @@ object DnsSettings {
     // this method is used as a fallback in case JNDI results in an empty list
     // this method will not work when running modularised of course since it needs access to internal sun classes
     def getNameserversUsingReflection: Try[List[InetSocketAddress]] = {
-      system.dynamicAccess.getClassFor("sun.net.dns.ResolverConfiguration").flatMap { c =>
+      system.dynamicAccess.getClassFor[Any]("sun.net.dns.ResolverConfiguration").flatMap { c =>
         Try {
           val open = c.getMethod("open")
           val nameservers = c.getMethod("nameservers")

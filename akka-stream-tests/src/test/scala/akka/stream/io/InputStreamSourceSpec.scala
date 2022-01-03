@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -7,23 +7,24 @@ package akka.stream.io
 import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
+import scala.util.Success
+
+import scala.annotation.nowarn
+
 import akka.Done
+import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.util.ByteString
 
-import scala.util.Success
-import com.github.ghik.silencer.silent
-
-@silent
+@nowarn
 class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   private def inputStreamFor(bytes: Array[Byte]): InputStream =
     new ByteArrayInputStream(bytes)
@@ -41,7 +42,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       StreamConverters
         .fromInputStream(() => inputStreamFor(Array(1, 2, 3)))
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .futureValue shouldEqual IOResult(3, Success(Done))
     }
 
@@ -54,7 +55,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             override def close(): Unit = throw fail
           })
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail
@@ -67,7 +68,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           throw fail
         })
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail
@@ -78,7 +79,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       StreamConverters
         .fromInputStream(() => () => throw fail)
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail
@@ -89,7 +90,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .fromInputStream(() => inputStreamFor(Array.fill(100)(1)), 1)
         .take(1) // stream is not completely read
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .futureValue
 
       f.status shouldEqual Success(Done)

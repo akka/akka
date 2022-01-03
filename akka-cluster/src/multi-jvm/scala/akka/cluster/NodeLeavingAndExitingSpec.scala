@@ -1,16 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
-import akka.actor.Props
 import akka.actor.Actor
-import akka.cluster.MemberStatus._
 import akka.actor.Deploy
+import akka.actor.Props
+import akka.cluster.MemberStatus._
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -24,12 +23,10 @@ class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec
 class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec
 class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec
 
-abstract class NodeLeavingAndExitingSpec
-    extends MultiNodeSpec(NodeLeavingAndExitingMultiJvmSpec)
-    with MultiNodeClusterSpec {
+abstract class NodeLeavingAndExitingSpec extends MultiNodeClusterSpec(NodeLeavingAndExitingMultiJvmSpec) {
 
-  import NodeLeavingAndExitingMultiJvmSpec._
   import ClusterEvent._
+  import NodeLeavingAndExitingMultiJvmSpec._
 
   "A node that is LEAVING a non-singleton cluster" must {
 

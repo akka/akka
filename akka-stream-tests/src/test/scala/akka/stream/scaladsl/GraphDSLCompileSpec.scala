@@ -1,21 +1,23 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.impl.fusing.GraphStages
+import scala.annotation.nowarn
+
+import akka.NotUsed
 import akka.stream._
-import akka.stream.testkit._
+import akka.stream.impl.fusing.GraphStages
 import akka.stream.stage._
-import com.github.ghik.silencer.silent
+import akka.stream.testkit._
 
 object GraphDSLCompileSpec {
   class Fruit
   class Apple extends Fruit
 }
 
-@silent // tests deprecated APIs
+@nowarn // tests deprecated APIs
 class GraphDSLCompileSpec extends StreamSpec {
   import GraphDSLCompileSpec._
 
@@ -315,10 +317,10 @@ class GraphDSLCompileSpec extends StreamSpec {
 
     "build with implicits and variance" in {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
-        def appleSource = b.add(Source.fromPublisher(TestPublisher.manualProbe[Apple]()))
-        def fruitSource = b.add(Source.fromPublisher(TestPublisher.manualProbe[Fruit]()))
-        val outA = b.add(Sink.fromSubscriber(TestSubscriber.manualProbe[Fruit]()))
-        val outB = b.add(Sink.fromSubscriber(TestSubscriber.manualProbe[Fruit]()))
+        def appleSource = b.add(Source.fromPublisher(TestPublisher.ManualProbe[Apple]()))
+        def fruitSource = b.add(Source.fromPublisher(TestPublisher.ManualProbe[Fruit]()))
+        val outA = b.add(Sink.fromSubscriber(TestSubscriber.ManualProbe[Fruit]()))
+        val outB = b.add(Sink.fromSubscriber(TestSubscriber.ManualProbe[Fruit]()))
         val merge = b.add(Merge[Fruit](11))
         val unzip = b.add(Unzip[Int, String]())
         val whatever = b.add(Sink.asPublisher[Any](false))
@@ -408,8 +410,20 @@ class GraphDSLCompileSpec extends StreamSpec {
         .addAttributes(none)
         .named("useless")
 
-      ga.traversalBuilder.attributes.getFirst[Name] shouldEqual Some(Name("useless"))
-      ga.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+      val name = ga.traversalBuilder.attributes.getFirst[Name]
+      name shouldEqual Some(Name("useless"))
+      val boundary = ga.traversalBuilder.attributes.getFirst[AsyncBoundary.type]
+      boundary shouldEqual (Some(AsyncBoundary))
+    }
+
+    "support mapMaterializedValue" in {
+      val anOp = op[String, String]
+      val anOpWithMappedMatVal = anOp.mapMaterializedValue {
+        case NotUsed => (NotUsed, NotUsed)
+      }
+      val g = Source.empty[String].viaMat(anOpWithMappedMatVal)(Keep.right).to(Sink.cancelled)
+      val matVal = g.run()
+      matVal shouldEqual ((NotUsed, NotUsed))
     }
   }
 }

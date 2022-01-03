@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed
+
+import scala.compat.java8.FunctionConverters._
+import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.JavaDurationConverters._
 import akka.util.unused
-
-import scala.compat.java8.FunctionConverters._
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * All tracked effects for the [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit]] and
@@ -176,7 +176,7 @@ object Effect {
   final case class WatchedWith[U, T](other: ActorRef[U], message: T) extends Effect
 
   /**
-   * The behavior started watching `other`, through `context.unwatch(other)`
+   * The behavior stopped watching `other`, through `context.unwatch(other)`
    */
   final case class Unwatched[T](other: ActorRef[T]) extends Effect
 
@@ -191,7 +191,7 @@ object Effect {
     def duration(): java.time.Duration = d.asJava
   }
 
-  final case object ReceiveTimeoutCancelled extends ReceiveTimeoutCancelled
+  case object ReceiveTimeoutCancelled extends ReceiveTimeoutCancelled
 
   sealed abstract class ReceiveTimeoutCancelled extends Effect
 
@@ -202,6 +202,39 @@ object Effect {
   final case class Scheduled[U](delay: FiniteDuration, target: ActorRef[U], message: U) extends Effect {
     def duration(): java.time.Duration = delay.asJava
   }
+
+  final case class TimerScheduled[U](
+      key: Any,
+      msg: U,
+      delay: FiniteDuration,
+      mode: TimerScheduled.TimerMode,
+      overriding: Boolean)(val send: () => Unit)
+      extends Effect {
+    def duration(): java.time.Duration = delay.asJava
+  }
+
+  object TimerScheduled {
+    import akka.util.JavaDurationConverters._
+
+    sealed trait TimerMode
+    case object FixedRateMode extends TimerMode
+    case class FixedRateModeWithInitialDelay(initialDelay: FiniteDuration) extends TimerMode
+    case object FixedDelayMode extends TimerMode
+    case class FixedDelayModeWithInitialDelay(initialDelay: FiniteDuration) extends TimerMode
+    case object SingleMode extends TimerMode
+
+    /*Java API*/
+    def fixedRateMode = FixedRateMode
+    def fixedRateMode(initialDelay: java.time.Duration) = FixedRateModeWithInitialDelay(initialDelay.asScala)
+    def fixedDelayMode = FixedDelayMode
+    def fixedDelayMode(initialDelay: java.time.Duration) = FixedDelayModeWithInitialDelay(initialDelay.asScala)
+    def singleMode = SingleMode
+  }
+
+  /*Java API*/
+  def timerScheduled = TimerScheduled
+
+  final case class TimerCancelled(key: Any) extends Effect
 
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable

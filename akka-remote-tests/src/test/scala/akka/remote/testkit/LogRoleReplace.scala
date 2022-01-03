@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testkit
@@ -18,6 +18,7 @@ import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import java.io.StringReader
 import java.io.StringWriter
+
 import scala.annotation.tailrec
 
 /**
@@ -90,7 +91,7 @@ class LogRoleReplace {
 
   private val RoleStarted =
     """\[([\w\-]+)\].*Role \[([\w]+)\] started with address \[[\w\-\+\.]+://.*@([\w\-\.]+):([0-9]+)\]""".r
-  private val ColorCode = """\u001B?\[[0-9]+m"""
+  private val ColorCode = "\u001B?\\[[0-9]+m"
 
   private var replacements: Map[String, String] = Map.empty
 

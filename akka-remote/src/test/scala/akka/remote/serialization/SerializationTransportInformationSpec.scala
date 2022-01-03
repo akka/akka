@@ -1,26 +1,27 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
 
 import java.nio.charset.StandardCharsets
-
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import akka.actor.ActorIdentity
-import akka.serialization.Serialization
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.remote.RARP
+import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.JavaSerializable
 import akka.testkit.TestActors
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+
+import java.io.NotSerializableException
 
 object SerializationTransportInformationSpec {
 
@@ -31,6 +32,7 @@ object SerializationTransportInformationSpec {
     def identifier: Int = 666
     def manifest(o: AnyRef): String = o match {
       case _: TestMessage => "A"
+      case _              => throw new NotSerializableException()
     }
     def toBinary(o: AnyRef): Array[Byte] = o match {
       case TestMessage(from, to) =>
@@ -38,6 +40,7 @@ object SerializationTransportInformationSpec {
         val fromStr = Serialization.serializedActorPath(from)
         val toStr = Serialization.serializedActorPath(to)
         s"$fromStr,$toStr".getBytes(StandardCharsets.UTF_8)
+      case _ => throw new NotSerializableException()
     }
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
       verifyTransportInfo()
@@ -49,6 +52,7 @@ object SerializationTransportInformationSpec {
           val from = system.provider.resolveActorRef(fromStr)
           val to = system.provider.resolveActorRef(toStr)
           TestMessage(from, to)
+        case _ => throw new NotSerializableException()
       }
     }
 

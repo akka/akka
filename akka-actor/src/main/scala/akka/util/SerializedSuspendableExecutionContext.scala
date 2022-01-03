@@ -1,13 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
 import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.{ switch, tailrec }
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-import scala.annotation.{ switch, tailrec }
+
 import akka.dispatch.AbstractNodeQueue
 
 private[akka] object SerializedSuspendableExecutionContext {

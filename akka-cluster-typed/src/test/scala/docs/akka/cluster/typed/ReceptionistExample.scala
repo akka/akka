@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.typed
@@ -18,7 +18,7 @@ object PingPongExample {
     val PingServiceKey = ServiceKey[Ping]("pingService")
 
     final case class Ping(replyTo: ActorRef[Pong.type])
-    final case object Pong
+    case object Pong
 
     def apply(): Behavior[Ping] = {
       Behaviors.setup { context =>
@@ -77,11 +77,11 @@ object PingPongExample {
 
     def apply(): Behavior[Command] = {
       Behaviors.setup[Command] { context =>
-        val listingResponseAdapter = context.messageAdapter[Receptionist.Listing](ListingResponse)
+        val listingResponseAdapter = context.messageAdapter[Receptionist.Listing](ListingResponse.apply)
 
         context.spawnAnonymous(PingService())
 
-        Behaviors.receiveMessage {
+        Behaviors.receiveMessagePartial {
           case PingAll =>
             context.system.receptionist ! Receptionist.Find(PingService.PingServiceKey, listingResponseAdapter)
             Behaviors.same

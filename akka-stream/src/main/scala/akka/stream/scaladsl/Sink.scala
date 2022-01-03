@@ -1,24 +1,8 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
-
-import akka.actor.ActorRef
-import akka.actor.Status
-import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl._
-import akka.stream.impl.fusing.GraphStages
-import akka.stream.stage._
-import akka.stream.javadsl
-import akka.stream._
-import akka.util.ccompat._
-import akka.Done
-import akka.NotUsed
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
 
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
@@ -28,6 +12,23 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+
+import akka.Done
+import akka.NotUsed
+import akka.actor.ActorRef
+import akka.actor.Status
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.stream._
+import akka.stream.impl._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.javadsl
+import akka.stream.stage._
+import akka.util.ccompat._
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input.
@@ -138,7 +139,7 @@ object Sink {
   def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
       case s: Sink[T, M]                                       => s
-      case s: javadsl.Sink[T, M]                               => s.asScala
+      case s: javadsl.Sink[T, M] @unchecked                    => s.asScala
       case g: GraphStageWithMaterializedValue[SinkShape[T], M] =>
         // move these from the stage itself to make the returned source
         // behave as it is the stage with regards to attributes
@@ -158,7 +159,13 @@ object Sink {
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
   def fromMaterializer[T, M](factory: (Materializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
-    Sink.fromGraph(new SetupSinkStage(factory))
+    Flow
+      .fromMaterializer({ (mat, attr) =>
+        Flow.fromGraph(GraphDSL.createGraph(factory(mat, attr)) { b => sink =>
+          FlowShape(sink.in, b.materializedValue.outlet)
+        })
+      })
+      .to(Sink.head)
 
   /**
    * Defers the creation of a [[Sink]] until materialization. The `factory` function
@@ -167,8 +174,9 @@ object Sink {
    */
   @deprecated("Use 'fromMaterializer' instead", "2.6.0")
   def setup[T, M](factory: (ActorMaterializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
-    Sink.fromGraph(new SetupSinkStage((materializer, attributes) =>
-      factory(ActorMaterializerHelper.downcast(materializer), attributes)))
+    fromMaterializer { (mat, attr) =>
+      factory(ActorMaterializerHelper.downcast(mat), attr)
+    }
 
   /**
    * Helper to create [[Sink]] from `Subscriber`.
@@ -194,8 +202,7 @@ object Sink {
       .fromGraph(new HeadOptionStage[T])
       .withAttributes(DefaultAttributes.headSink)
       .mapMaterializedValue(e =>
-        e.map(_.getOrElse(throw new NoSuchElementException("head of empty stream")))(
-          ExecutionContexts.sameThreadExecutionContext))
+        e.map(_.getOrElse(throw new NoSuchElementException("head of empty stream")))(ExecutionContexts.parasitic))
 
   /**
    * A `Sink` that materializes into a `Future` of the optional first value received.
@@ -217,7 +224,7 @@ object Sink {
   def last[T]: Sink[T, Future[T]] = {
     Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastSink).mapMaterializedValue { e =>
       e.map(_.headOption.getOrElse(throw new NoSuchElementException("last of empty stream")))(
-        ExecutionContexts.sameThreadExecutionContext)
+        ExecutionContexts.parasitic)
     }
   }
 
@@ -230,7 +237,7 @@ object Sink {
    */
   def lastOption[T]: Sink[T, Future[Option[T]]] = {
     Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastOptionSink).mapMaterializedValue { e =>
-      e.map(_.headOption)(ExecutionContexts.sameThreadExecutionContext)
+      e.map(_.headOption)(ExecutionContexts.parasitic)
     }
   }
 
@@ -484,6 +491,7 @@ object Sink {
    * `ackMessage` from the given actor which means that it is ready to process
    * elements. It also requires `ackMessage` message after each stream element
    * to make backpressure work.
+   * If `ackMessage` is empty any message will be considered an acknowledgement message.
    *
    * Every message that is sent to the actor is first transformed using `messageAdapter`.
    * This can be used to capture the ActorRef of the actor that expects acknowledgments as
@@ -499,7 +507,7 @@ object Sink {
       ref: ActorRef,
       messageAdapter: ActorRef => T => Any,
       onInitMessage: ActorRef => Any,
-      ackMessage: Any,
+      ackMessage: Option[Any],
       onCompleteMessage: Any,
       onFailureMessage: (Throwable) => Any): Sink[T, NotUsed] =
     Sink.fromGraph(
@@ -530,7 +538,27 @@ object Sink {
       ackMessage: Any,
       onCompleteMessage: Any,
       onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
-    actorRefWithAck(ref, _ => identity, _ => onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
+    actorRefWithAck(ref, _ => identity, _ => onInitMessage, Some(ackMessage), onCompleteMessage, onFailureMessage)
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
+   * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
+   * from the given actor which means that it is ready to process
+   * elements. It also requires an ack message after each stream element
+   * to make backpressure work. This variant will consider any message as ack message.
+   *
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure - result of `onFailureMessage(throwable)`
+   * function will be sent to the destination actor.
+   */
+  def actorRefWithBackpressure[T](
+      ref: ActorRef,
+      onInitMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
+    actorRefWithAck(ref, _ => identity, _ => onInitMessage, None, onCompleteMessage, onFailureMessage)
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -551,8 +579,8 @@ object Sink {
       onInitMessage: Any,
       ackMessage: Any,
       onCompleteMessage: Any,
-      onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
-    actorRefWithAck(ref, _ => identity, _ => onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
+      onFailureMessage: (Throwable) => Any = Status.Failure.apply): Sink[T, NotUsed] =
+    actorRefWithAck(ref, _ => identity, _ => onInitMessage, Some(ackMessage), onCompleteMessage, onFailureMessage)
 
   /**
    * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueueWithCancel]].
@@ -607,8 +635,7 @@ object Sink {
   def lazyInit[T, M](sinkFactory: T => Future[Sink[T, M]], fallback: () => M): Sink[T, Future[M]] =
     Sink
       .fromGraph(new LazySink[T, M](sinkFactory))
-      .mapMaterializedValue(
-        _.recover { case _: NeverMaterializedException => fallback() }(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.recover { case _: NeverMaterializedException => fallback() }(ExecutionContexts.parasitic))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
@@ -622,7 +649,7 @@ object Sink {
   @deprecated("Use 'Sink.lazyFutureSink' instead", "2.6.0")
   def lazyInitAsync[T, M](sinkFactory: () => Future[Sink[T, M]]): Sink[T, Future[Option[M]]] =
     Sink.fromGraph(new LazySink[T, M](_ => sinkFactory())).mapMaterializedValue { m =>
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
+      implicit val ec = ExecutionContexts.parasitic
       m.map(Option.apply _).recover { case _: NeverMaterializedException => None }
     }
 

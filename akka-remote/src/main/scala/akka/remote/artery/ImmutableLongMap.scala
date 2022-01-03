@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import scala.annotation.tailrec
-import akka.util.OptionVal
-import scala.reflect.ClassTag
 import java.util.Arrays
+
+import scala.annotation.tailrec
+import scala.reflect.ClassTag
+
 import akka.util.HashCode
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -116,7 +118,7 @@ private[akka] class ImmutableLongMap[A >: Null] private (private val keys: Array
   }
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: ImmutableLongMap[A] =>
+    case other: ImmutableLongMap[_] =>
       if (other eq this) true
       else if (size != other.size) false
       else if (size == 0 && other.size == 0) true

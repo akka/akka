@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
-
-import scala.util.control.NoStackTrace
 
 case class Message(data: String, offset: Long)
 
@@ -20,7 +20,7 @@ class SourceWithContextSpec extends StreamSpec {
       Source(Vector(msg))
         .asSourceWithContext(_.offset)
         .toMat(TestSink.probe[(Message, Long)])(Keep.right)
-        .run
+        .run()
         .request(1)
         .expectNext((msg, 1L))
         .expectComplete()
@@ -57,7 +57,7 @@ class SourceWithContextSpec extends StreamSpec {
         .filter(_ != "b")
         .filterNot(_ == "d")
         .toMat(TestSink.probe[(String, Long)])(Keep.right)
-        .run
+        .run()
         .request(2)
         .expectNext(("a", 1L))
         .expectNext(("c", 4L))
@@ -100,7 +100,7 @@ class SourceWithContextSpec extends StreamSpec {
         }
         .grouped(2)
         .toMat(TestSink.probe[(Seq[String], Seq[Long])])(Keep.right)
-        .run
+        .run()
         .request(2)
         .expectNext((Seq("a-1", "a-2"), Seq(1L, 1L)), (Seq("a-3", "a-4"), Seq(1L, 1L)))
         .expectComplete()

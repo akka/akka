@@ -1,12 +1,14 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
 
-import akka.annotation.InternalApi
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+import akka.annotation.InternalApi
+
+import scala.annotation.tailrec
 
 /**
  * INTERNAL API
@@ -15,9 +17,17 @@ import org.slf4j.event.Level
   def loggerNameOrRoot(loggerName: String): String =
     if (loggerName == "") org.slf4j.Logger.ROOT_LOGGER_NAME else loggerName
 
-  def getLogbackLogger(loggerName: String): ch.qos.logback.classic.Logger = {
+  def getLogbackLogger(loggerName: String): ch.qos.logback.classic.Logger =
+    getLogbackLoggerInternal(loggerName, 50)
+
+  @tailrec
+  private def getLogbackLoggerInternal(loggerName: String, count: Int): ch.qos.logback.classic.Logger = {
     LoggerFactory.getLogger(loggerNameOrRoot(loggerName)) match {
-      case logger: ch.qos.logback.classic.Logger => logger
+      case logger: ch.qos.logback.classic.Logger              => logger
+      case _: org.slf4j.helpers.SubstituteLogger if count > 0 =>
+        // Wait for logging initialisation http://www.slf4j.org/codes.html#substituteLogger
+        Thread.sleep(50)
+        getLogbackLoggerInternal(loggerName, count - 1)
       case null =>
         throw new IllegalArgumentException(s"Couldn't find logger for [$loggerName].")
       case other =>

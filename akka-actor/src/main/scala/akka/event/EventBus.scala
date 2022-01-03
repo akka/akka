@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
 
-import akka.actor.{ ActorRef, ActorSystem }
-import akka.util.Index
-import java.util.concurrent.ConcurrentSkipListSet
 import java.util.Comparator
-import akka.util.{ Subclassification, SubclassifiedIndex }
+import java.util.concurrent.ConcurrentSkipListSet
+import java.util.concurrent.atomic.AtomicReference
+
 import scala.collection.immutable
-import java.util.concurrent.atomic.{ AtomicReference }
+
+import akka.actor.{ ActorRef, ActorSystem }
+import akka.util.{ Subclassification, SubclassifiedIndex }
+import akka.util.Index
 
 /**
  * Represents the base type for EventBuses
@@ -294,7 +296,8 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
   private val empty = immutable.TreeSet.empty[ActorRef]
 
   /** The unsubscriber takes care of unsubscribing actors, which have terminated. */
-  protected lazy val unsubscriber = ActorClassificationUnsubscriber.start(system, this)
+  protected lazy val unsubscriber =
+    ActorClassificationUnsubscriber.start(system, this.toString(), (this.unsubscribe: ActorRef => Unit))
 
   @tailrec
   protected final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {

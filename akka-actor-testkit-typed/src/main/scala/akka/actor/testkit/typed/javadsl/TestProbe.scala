@@ -1,18 +1,21 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
-import java.util.function.Supplier
 import java.util.{ List => JList }
+import java.util.function.Supplier
+import akka.japi.function.Creator
 
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestProbeImpl
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.RecipientRef
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
 import akka.util.unused
 
@@ -64,7 +67,7 @@ object TestProbe {
  * Not for user extension
  */
 @DoNotInherit
-abstract class TestProbe[M] {
+abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
 
   implicit protected def settings: TestKitSettings
 
@@ -241,7 +244,7 @@ abstract class TestProbe[M] {
    *
    * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def awaitAssert[A](max: Duration, interval: Duration, supplier: Supplier[A]): A
+  def awaitAssert[A](max: Duration, interval: Duration, creator: Creator[A]): A
 
   /**
    * Evaluate the given assert every 100 milliseconds until it does not throw an exception and return the
@@ -251,13 +254,13 @@ abstract class TestProbe[M] {
    *
    * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def awaitAssert[A](max: Duration, supplier: Supplier[A]): A
+  def awaitAssert[A](max: Duration, creator: Creator[A]): A
 
   /**
    * Evaluate the given assert every 100 milliseconds until it does not throw an exception and return the
    * result. A max time is taken it from the innermost enclosing `within` block.
    */
-  def awaitAssert[A](supplier: Supplier[A]): A
+  def awaitAssert[A](creator: Creator[A]): A
 
   // FIXME awaitAssert(Procedure): Unit would be nice for java people to not have to return null
 

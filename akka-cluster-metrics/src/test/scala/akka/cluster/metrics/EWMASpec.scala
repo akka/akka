@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import scala.concurrent.duration._
-import akka.testkit.{ AkkaSpec, LongRunningTest }
 import java.util.concurrent.ThreadLocalRandom
 
-import com.github.ghik.silencer.silent
+import scala.concurrent.duration._
 
-@silent
+import scala.annotation.nowarn
+
+import akka.testkit.{ AkkaSpec, LongRunningTest }
+
+@nowarn
 class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
 
   val collector = createMetricsCollector
@@ -51,7 +53,7 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
     }
 
     "calculate alpha from half-life and collect interval" in {
-      // according to http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+      // according to https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
       val expectedAlpha = 0.1
       // alpha = 2.0 / (1 + N)
       val n = 19
@@ -82,7 +84,7 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
         // wait a while between each message to give the metrics a chance to change
         Thread.sleep(100)
         usedMemory = usedMemory ++ Array.fill(1024)(ThreadLocalRandom.current.nextInt(127).toByte)
-        val changes = collector.sample.metrics.flatMap { latest =>
+        val changes = collector.sample().metrics.flatMap { latest =>
           streamingDataSet.get(latest.name) match {
             case None => Some(latest)
             case Some(previous) =>

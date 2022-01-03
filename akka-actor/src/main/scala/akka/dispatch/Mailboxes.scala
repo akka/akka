@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -8,8 +8,15 @@ import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
+import akka.annotation.InternalStableApi
 import akka.dispatch.sysmsg.{
   EarliestFirstSystemMessageList,
   LatestFirstSystemMessageList,
@@ -19,11 +26,6 @@ import akka.dispatch.sysmsg.{
 import akka.event.EventStream
 import akka.event.Logging.Warning
 import akka.util.Reflect
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.util.control.NonFatal
-import scala.annotation.tailrec
-import scala.concurrent.duration.Duration
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"
@@ -40,10 +42,7 @@ private[akka] class Mailboxes(
   import Mailboxes._
 
   val deadLetterMailbox: Mailbox = new Mailbox(new MessageQueue {
-    def enqueue(receiver: ActorRef, envelope: Envelope): Unit = envelope.message match {
-      case _: DeadLetter => // actor subscribing to DeadLetter, drop it
-      case msg           => deadLetters.tell(DeadLetter(msg, envelope.sender, receiver), envelope.sender)
-    }
+    def enqueue(receiver: ActorRef, envelope: Envelope): Unit = onDeadLetterMailboxEnqueue(receiver, envelope)
     def dequeue() = null
     def hasMessages = false
     def numberOfMessages = 0
@@ -54,6 +53,12 @@ private[akka] class Mailboxes(
       deadLetters ! DeadLetter(handle, receiver, receiver)
     def systemDrain(newContents: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = SystemMessageList.ENil
     def hasSystemMessages = false
+  }
+
+  @InternalStableApi
+  private[akka] def onDeadLetterMailboxEnqueue(receiver: ActorRef, envelope: Envelope): Unit = envelope.message match {
+    case _: DeadLetter => // actor subscribing to DeadLetter, drop it
+    case msg           => deadLetters.tell(DeadLetter(msg, envelope.sender, receiver), envelope.sender)
   }
 
   private val mailboxTypeConfigurators = new ConcurrentHashMap[String, MailboxType]
@@ -107,6 +112,8 @@ private[akka] class Mailboxes(
           case x =>
             throw new IllegalArgumentException(s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
         }
+      case unexpected =>
+        throw new IllegalArgumentException(s"Unexpected actor class marker: $unexpected") // will not happen, for exhaustiveness check
     }
 
   // don’t care if this happens twice
@@ -130,6 +137,8 @@ private[akka] class Mailboxes(
               throw new IllegalArgumentException(
                 s"no wildcard type allowed in ProducesMessageQueue argument (was [$x])")
           }
+        case unexpected =>
+          throw new IllegalArgumentException(s"Unexpected message queue type marker: $unexpected") // will not happen, for exhaustiveness check
       }
   }
 
@@ -139,7 +148,7 @@ private[akka] class Mailboxes(
   protected[akka] def getMailboxType(props: Props, dispatcherConfig: Config): MailboxType = {
     val id = dispatcherConfig.getString("id")
     val deploy = props.deploy
-    val actorClass = props.actorClass
+    val actorClass = props.actorClass()
     lazy val actorRequirement = getRequiredType(actorClass)
 
     val mailboxRequirement: Class[_] = getMailboxRequirement(dispatcherConfig)
@@ -302,7 +311,7 @@ private[akka] class Mailboxes(
   }
 
   private def stashCapacityFromConfig(dispatcher: String, mailbox: String): Int = {
-    val disp = settings.config.getConfig(dispatcher)
+    val disp = Dispatchers.getConfig(settings.config, dispatcher)
     val fallback = disp.withFallback(settings.config.getConfig(Mailboxes.DefaultMailboxId))
     val config =
       if (mailbox == Mailboxes.DefaultMailboxId) fallback

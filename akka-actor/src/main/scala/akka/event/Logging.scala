@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -7,21 +7,23 @@ package akka.event
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorSystem.Settings
-import akka.actor._
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.dispatch.RequiresMessageQueue
-import akka.event.Logging._
-import akka.util.unused
-import akka.util.{ Helpers, ReentrantGuard }
-import akka.{ AkkaException, ConfigurationException }
-import com.github.ghik.silencer.silent
-
 import scala.annotation.implicitNotFound
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.language.existentials
 import scala.util.control.{ NoStackTrace, NonFatal }
+
+import scala.annotation.nowarn
+
+import akka.{ AkkaException, ConfigurationException }
+import akka.actor._
+import akka.actor.ActorSystem.Settings
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.dispatch.RequiresMessageQueue
+import akka.event.Logging._
+import akka.util.{ Helpers, ReentrantGuard }
+import akka.util.Timeout
+import akka.util.unused
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -168,7 +170,7 @@ trait LoggingBus extends ActorEventBus {
    * Internal Akka use only
    */
   private[akka] def stopDefaultLoggers(system: ActorSystem): Unit = {
-    @silent("never used")
+    @nowarn("msg=never used")
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
@@ -198,7 +200,7 @@ trait LoggingBus extends ActorEventBus {
       logName: String): ActorRef = {
     val name = "log" + LogExt(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz).withDispatcher(system.settings.LoggersDispatcher), name)
-    implicit def timeout = system.settings.LoggerStartTimeout
+    implicit def timeout: Timeout = system.settings.LoggerStartTimeout
     import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration)
     catch {
@@ -1512,7 +1514,7 @@ trait LoggingFilter {
  * In retrospect should have been abstract, but we cannot change that
  * without breaking binary compatibility
  */
-@silent("never us")
+@nowarn("msg=never us")
 trait LoggingFilterWithMarker extends LoggingFilter {
   def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
     isErrorEnabled(logClass, logSource)
@@ -1577,7 +1579,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    * Scala API:
    * Mapped Diagnostic Context for application defined values
    * which can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
-   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Visit <a href="https://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    *
    * @return A Map containing the MDC values added by the application, or empty Map if no value was added.
    */
@@ -1587,7 +1589,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    * Scala API:
    * Sets the values to be added to the MDC (Mapped Diagnostic Context) before the log is appended.
    * These values can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
-   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Visit <a href="https://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    */
   def mdc(mdc: MDC): Unit = _mdc = if (mdc != null) mdc else emptyMDC
 
@@ -1595,7 +1597,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    * Java API:
    * Mapped Diagnostic Context for application defined values
    * which can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
-   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Visit <a href="https://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    * Note tha it returns a <b>COPY</b> of the actual MDC values.
    * You cannot modify any value by changing the returned Map.
    * Code like the following won't have any effect unless you set back the modified Map.
@@ -1615,7 +1617,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    * Java API:
    * Sets the values to be added to the MDC (Mapped Diagnostic Context) before the log is appended.
    * These values can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
-   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Visit <a href="https://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    */
   def setMDC(jMdc: java.util.Map[String, Any]): Unit = mdc(if (jMdc != null) jMdc.asScala.toMap else emptyMDC)
 

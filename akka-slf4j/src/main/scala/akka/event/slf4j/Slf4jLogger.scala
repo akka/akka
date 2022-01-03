@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.slf4j
 
 import org.slf4j.{ MDC, Marker, MarkerFactory, Logger => SLFLogger, LoggerFactory => SLFLoggerFactory }
-import akka.event.Logging._
+
 import akka.actor._
-import akka.event.{ LogMarker, _ }
-import akka.util.{ unused, Helpers }
 import akka.dispatch.RequiresMessageQueue
+import akka.event.{ LogMarker, _ }
+import akka.event.Logging._
+import akka.util.{ unused, Helpers }
 
 /**
  * Base trait for all classes that wants to be able use the SLF4J logging infrastructure.

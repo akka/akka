@@ -29,7 +29,7 @@ UID.
  
 ## Member States
 
-The cluster membership state is a specialized [CRDT](http://hal.upmc.fr/docs/00/55/55/88/PDF/techreport.pdf), which means that it has a monotonic
+The cluster membership state is a specialized [CRDT](https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf), which means that it has a monotonic
 merge function. When concurrent changes occur on different nodes the updates can always be
 merged and converge to the same end result.
 
@@ -38,6 +38,8 @@ merged and converge to the same end result.
  * **weakly up** - transient state while network split (only if `akka.cluster.allow-weakly-up-members=on`)
    
  * **up** - normal operating state
+ 
+ * **preparing for shutdown** / **ready for shutdown** - an optional state that can be moved to before doing a full cluster shut down
    
  * **leaving** / **exiting** - states during graceful removal
    
@@ -58,6 +60,8 @@ Note that the node might already have been shutdown when this event is published
 of at least one other node.
  * `ClusterEvent.ReachableMember` - A member is considered as reachable again, after having been unreachable.
 All nodes that previously detected it as unreachable has detected it as reachable again.
+ * `ClusterEvent.MemberPreparingForShutdown` - A member is preparing for a full cluster shutdown
+ * `ClusterEvent.MemberReadyForShutdown` - A member is ready for a full cluster shutdown
 
 ## Membership Lifecycle
 
@@ -108,8 +112,7 @@ performs in such a case must be designed in a way that all concurrent leaders wo
 might be impossible in general and only feasible under additional constraints). The most important case of that kind is a split
 brain scenario where nodes need to be downed, either manually or automatically, to bring the cluster back to convergence.
 
-See the [Lightbend Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
-for an implementation of that.
+The @ref:[Split Brain Resolver](../split-brain-resolver.md) is the built-in implementation of that.
 
 Another transition that is possible without convergence is marking members as `WeaklyUp` as described in the next section.
 
@@ -127,6 +130,27 @@ that are in this state, but you should be aware of that members on the other
 side of a network partition have no knowledge about the existence of the
 new members. You should for example not count `WeaklyUp` members in quorum decisions.
 
+## Full cluster shutdown
+
+In some rare cases it may be desirable to do a full cluster shutdown rather than a rolling deploy. 
+For example, a protocol change where it is simpler to restart the cluster than to make the protocol change
+backward compatible.
+
+As of Akka `2.6.13` it can be signalled that a full cluster shutdown is about to happen and any expensive actions such as:
+
+* Cluster sharding rebalances
+* Moving of Cluster singletons
+
+Won't happen. That way the shutdown will be as quick as possible and a new version can be started up without delay.
+
+If a cluster isn't to be restarted right away then there is no need to prepare it for shutdown.
+
+To use this feature use `Cluster(system).prepareForFullClusterShutdown()` in classic or @apidoc[PrepareForFullClusterShutdown] in typed.
+
+Wait for all `Up` members to become `ReadyForShutdown` and then all nodes can be shutdown and restarted.
+Members that aren't `Up` yet will remain in the `Joining` or `WeaklyUp` states. Any node that is already leaving 
+the cluster i.e. in the `Leaving` or `Exiting` states will continue to leave the cluster via the normal path.
+
 ## State Diagrams
 
 ### State Diagram for the Member States 
@@ -140,7 +164,7 @@ startup if a node to join have been specified in the configuration
    
  * **leave** - tell a node to leave the cluster gracefully, normally triggered by ActorSystem or JVM shutdown through @ref[coordinated shutdown](../coordinated-shutdown.md)
    
- * **down** - mark a node as down. This action is required to remove crashed nodes (that did not 'leave') from the cluster. It can be triggered manually, through [Cluster HTTP Management](https://doc.akka.io/docs/akka-management/current/cluster-http-management.html#put-cluster-members-address-responses), or automatically by a @ref[downing provider](cluster.md#downing) like [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
+ * **down** - mark a node as down. This action is required to remove crashed nodes (that did not 'leave') from the cluster. It can be triggered manually, through [Cluster HTTP Management](https://doc.akka.io/docs/akka-management/current/cluster-http-management.html#put-cluster-members-address-responses), or automatically by a @ref[downing provider](cluster.md#downing) like @ref:[Split Brain Resolver](../split-brain-resolver.md)
    
 #### Leader Actions
 

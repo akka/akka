@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -11,8 +11,9 @@ import java.util.concurrent.CompletionStage
 
 import akka.stream.{ javadsl, scaladsl, IOResult }
 import akka.util.ByteString
-
 import akka.util.ccompat.JavaConverters._
+import akka.stream.scaladsl.SinkToCompletionStage
+import akka.stream.scaladsl.SourceToCompletionStage
 
 /**
  * Java API: Factories to create sinks and sources from files

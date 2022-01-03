@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.client.protobuf
 
-import akka.actor.ExtendedActorSystem
-import akka.testkit.AkkaSpec
-import akka.cluster.client.ClusterReceptionist.Internal._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("deprecated")
+import akka.actor.ExtendedActorSystem
+import akka.cluster.client.ClusterReceptionist.Internal._
+import akka.testkit.AkkaSpec
+
+@nowarn("msg=deprecated")
 class ClusterClientMessageSerializerSpec extends AkkaSpec {
 
   val serializer = new ClusterClientMessageSerializer(system.asInstanceOf[ExtendedActorSystem])

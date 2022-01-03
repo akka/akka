@@ -1,13 +1,12 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport.headerSources
 import sbt.Keys.sourceDirectory
-import sbt.{Compile, Def, Test, _}
-
+import sbt.{ Compile, Def, Test, _ }
 
 object CopyrightHeaderForJdk9 extends CopyrightHeader {
 
@@ -15,14 +14,13 @@ object CopyrightHeaderForJdk9 extends CopyrightHeader {
     super.headerMappingSettings
     import Jdk9._
     Seq(
-      headerSources in Compile ++=
-        (((sourceDirectory in Compile).value / SCALA_SOURCE_DIRECTORY) ** "*.scala").get,
-      headerSources in Test ++=
-        (((sourceDirectory in Test).value / SCALA_TEST_SOURCE_DIRECTORY) ** "*.scala").get,
-      headerSources in Compile ++=
-        (((sourceDirectory in Compile).value / JAVA_SOURCE_DIRECTORY) ** "*.java").get,
-      headerSources in Test ++=
-        (((sourceDirectory in Test).value / JAVA_TEST_SOURCE_DIRECTORY) ** "*.java").get,
-    )
+      Compile / headerSources ++=
+        (((Compile / sourceDirectory).value / SCALA_SOURCE_DIRECTORY) ** "*.scala").get,
+      Test / headerSources ++=
+        (((Test / sourceDirectory).value / SCALA_TEST_SOURCE_DIRECTORY) ** "*.scala").get,
+      Compile / headerSources ++=
+        (((Compile / sourceDirectory).value / JAVA_SOURCE_DIRECTORY) ** "*.java").get,
+      Test / headerSources ++=
+        (((Test / sourceDirectory).value / JAVA_TEST_SOURCE_DIRECTORY) ** "*.java").get)
   }
 }

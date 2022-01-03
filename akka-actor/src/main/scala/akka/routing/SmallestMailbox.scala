@@ -1,20 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
-import scala.annotation.tailrec
-import scala.collection.immutable
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.tailrec
+import scala.collection.immutable
+
+import scala.annotation.nowarn
 import com.typesafe.config.Config
+
 import akka.actor.ActorCell
 import akka.actor.ActorRefWithCell
+import akka.actor.ActorSystem
 import akka.actor.SupervisorStrategy
 import akka.dispatch.Dispatchers
-import akka.actor.ActorSystem
-import com.github.ghik.silencer.silent
 
 object SmallestMailboxRoutingLogic {
   def apply(): SmallestMailboxRoutingLogic = new SmallestMailboxRoutingLogic
@@ -31,7 +33,7 @@ object SmallestMailboxRoutingLogic {
  *     since their mailbox size is unknown</li>
  * </ul>
  */
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 class SmallestMailboxRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
@@ -81,7 +83,7 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
   }
 
   // TODO should we rewrite this not to use isTerminated?
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   protected def isTerminated(a: Routee): Boolean = a match {
     case ActorRefRoutee(ref) => ref.isTerminated
     case _                   => false
@@ -179,7 +181,7 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
  * @param routerDispatcher dispatcher to use for the router head actor, which handles
  *   supervision, death watch and router management messages
  */
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final case class SmallestMailboxPool(
     nrOfInstances: Int,

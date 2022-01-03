@@ -1,32 +1,32 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
 
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
-
-import akka.NotUsed
-import akka.annotation.InternalApi
-import akka.stream.ActorAttributes.StreamSubscriptionTimeout
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.fusing.GraphStages.SingleSource
-import akka.stream.impl.ActorSubscriberMessage
-import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.{ Buffer => BufferImpl }
-import akka.stream.scaladsl._
-import akka.stream.stage._
-import akka.util.OptionVal
-import akka.util.ccompat.JavaConverters._
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
+import akka.NotUsed
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.Attributes.SourceLocation
+import akka.stream.impl.{ Buffer => BufferImpl }
+import akka.stream.impl.ActorSubscriberMessage
+import akka.stream.impl.ActorSubscriberMessage.OnError
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.util.OptionVal
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
@@ -39,96 +39,98 @@ import scala.util.control.NonFatal
   override def initialAttributes = DefaultAttributes.flattenMerge
   override val shape = FlowShape(in, out)
 
-  override def createLogic(enclosingAttributes: Attributes) = new GraphStageLogic(shape) {
-    var sources = Set.empty[SubSinkInlet[T]]
-    var pendingSingleSources = 0
-    def activeSources = sources.size + pendingSingleSources
+  override def createLogic(enclosingAttributes: Attributes) =
+    new GraphStageLogic(shape) with OutHandler with InHandler {
+      var sources = Set.empty[SubSinkInlet[T]]
+      var pendingSingleSources = 0
+      def activeSources = sources.size + pendingSingleSources
 
-    // To be able to optimize for SingleSource without materializing them the queue may hold either
-    // SubSinkInlet[T] or SingleSource
-    var queue: BufferImpl[AnyRef] = _
+      // To be able to optimize for SingleSource without materializing them the queue may hold either
+      // SubSinkInlet[T] or SingleSource
+      var queue: BufferImpl[AnyRef] = _
 
-    override def preStart(): Unit = queue = BufferImpl(breadth, enclosingAttributes)
+      override def preStart(): Unit = queue = BufferImpl(breadth, enclosingAttributes)
 
-    def pushOut(): Unit = {
-      queue.dequeue() match {
-        case src: SubSinkInlet[T] @unchecked =>
-          push(out, src.grab())
-          if (!src.isClosed) src.pull()
-          else removeSource(src)
-        case single: SingleSource[T] @unchecked =>
-          push(out, single.elem)
-          removeSource(single)
+      def pushOut(): Unit = {
+        queue.dequeue() match {
+          case src: SubSinkInlet[T] @unchecked =>
+            push(out, src.grab())
+            if (!src.isClosed) src.pull()
+            else removeSource(src)
+          case single: SingleSource[T] @unchecked =>
+            push(out, single.elem)
+            removeSource(single)
+          case other =>
+            throw new IllegalStateException(s"Unexpected source type in queue: '${other.getClass}'")
+        }
       }
-    }
 
-    setHandler(in, new InHandler {
       override def onPush(): Unit = {
         val source = grab(in)
         addSource(source)
         if (activeSources < breadth) tryPull(in)
       }
-      override def onUpstreamFinish(): Unit = if (activeSources == 0) completeStage()
-    })
 
-    setHandler(out, new OutHandler {
+      override def onUpstreamFinish(): Unit = if (activeSources == 0) completeStage()
       override def onPull(): Unit = {
         pull(in)
-        setHandler(out, outHandler)
-      }
-    })
-
-    val outHandler = new OutHandler {
-      // could be unavailable due to async input having been executed before this notification
-      override def onPull(): Unit = if (queue.nonEmpty && isAvailable(out)) pushOut()
-    }
-
-    def addSource(source: Graph[SourceShape[T], M]): Unit = {
-      // If it's a SingleSource or wrapped such we can push the element directly instead of materializing it.
-      // Have to use AnyRef because of OptionVal null value.
-      TraversalBuilder.getSingleSource(source.asInstanceOf[Graph[SourceShape[AnyRef], M]]) match {
-        case OptionVal.Some(single) =>
-          if (isAvailable(out) && queue.isEmpty) {
-            push(out, single.elem.asInstanceOf[T])
-          } else {
-            queue.enqueue(single)
-            pendingSingleSources += 1
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            // could be unavailable due to async input having been executed before this notification
+            if (queue.nonEmpty && isAvailable(out)) pushOut()
           }
-        case _ =>
-          val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
-          sinkIn.setHandler(new InHandler {
-            override def onPush(): Unit = {
-              if (isAvailable(out)) {
-                push(out, sinkIn.grab())
-                sinkIn.pull()
-              } else {
-                queue.enqueue(sinkIn)
-              }
+        })
+      }
+
+      setHandlers(in, out, this)
+
+      def addSource(source: Graph[SourceShape[T], M]): Unit = {
+        // If it's a SingleSource or wrapped such we can push the element directly instead of materializing it.
+        // Have to use AnyRef because of OptionVal null value.
+        TraversalBuilder.getSingleSource(source.asInstanceOf[Graph[SourceShape[AnyRef], M]]) match {
+          case OptionVal.Some(single) =>
+            if (isAvailable(out) && queue.isEmpty) {
+              push(out, single.elem.asInstanceOf[T])
+            } else {
+              queue.enqueue(single)
+              pendingSingleSources += 1
             }
-            override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
-          })
-          sinkIn.pull()
-          sources += sinkIn
-          val graph = Source.fromGraph(source).to(sinkIn.sink)
-          interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
+          case _ =>
+            val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
+            sinkIn.setHandler(new InHandler {
+              override def onPush(): Unit = {
+                if (isAvailable(out)) {
+                  push(out, sinkIn.grab())
+                  sinkIn.pull()
+                } else {
+                  queue.enqueue(sinkIn)
+                }
+              }
+              override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
+            })
+            sinkIn.pull()
+            sources += sinkIn
+            val graph = Source.fromGraph(source).to(sinkIn.sink)
+            interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
+        }
       }
-    }
 
-    def removeSource(src: AnyRef): Unit = {
-      val pullSuppressed = activeSources == breadth
-      src match {
-        case sub: SubSinkInlet[T] @unchecked =>
-          sources -= sub
-        case _: SingleSource[_] =>
-          pendingSingleSources -= 1
+      def removeSource(src: AnyRef): Unit = {
+        val pullSuppressed = activeSources == breadth
+        src match {
+          case sub: SubSinkInlet[T] @unchecked =>
+            sources -= sub
+          case _: SingleSource[_] =>
+            pendingSingleSources -= 1
+          case other => throw new IllegalArgumentException(s"Unexpected source type: '${other.getClass}'")
+        }
+        if (pullSuppressed) tryPull(in)
+        if (activeSources == 0 && isClosed(in)) completeStage()
       }
-      if (pullSuppressed) tryPull(in)
-      if (activeSources == 0 && isClosed(in)) completeStage()
+
+      override def postStop(): Unit = sources.foreach(_.cancel())
+
     }
-
-    override def postStop(): Unit = sources.foreach(_.cancel())
-
-  }
 
   override def toString: String = s"FlattenMerge($breadth)"
 }
@@ -221,7 +223,7 @@ import scala.util.control.NonFatal
     override def onUpstreamFinish(): Unit = {
       if (!prefixComplete) {
         // This handles the unpulled out case as well
-        emit(out, (builder.result, Source.empty), () => completeStage())
+        emit(out, (builder.result(), Source.empty), () => completeStage())
       } else {
         if (!tailSource.isClosed) tailSource.complete()
         completeStage()
@@ -364,7 +366,7 @@ import scala.util.control.NonFatal
         }
 
       private def runSubstream(key: K, value: T): Unit = {
-        val substreamSource = new SubstreamSource("GroupBySource " + nextId, key, value)
+        val substreamSource = new SubstreamSource("GroupBySource " + nextId(), key, value)
         activeSubstreamsMap.put(key, substreamSource)
         firstPushCounter += 1
         if (isAvailable(out)) {
@@ -413,7 +415,7 @@ import scala.util.control.NonFatal
 
         override def onPull(): Unit = {
           cancelTimer(key)
-          if (firstPush) {
+          if (firstPush()) {
             firstPushCounter -= 1
             push(firstElement)
             firstElement = null.asInstanceOf[T]
@@ -474,14 +476,18 @@ import scala.util.control.NonFatal
     val p: T => Boolean,
     val substreamCancelStrategy: SubstreamCancelStrategy)
     extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
+
   val in: Inlet[T] = Inlet("Split.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("Split.out")
+
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
 
   private val propagateSubstreamCancel = substreamCancelStrategy match {
     case SubstreamCancelStrategies.Propagate => true
     case SubstreamCancelStrategies.Drain     => false
   }
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.split and SourceLocation.forLambda(p)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     import Split._
@@ -698,9 +704,14 @@ import scala.util.control.NonFatal
         if (!status.compareAndSet(RequestOneScheduledBeforeMaterialization, newState))
           dispatchCommand(RequestOneScheduledBeforeMaterialization)
 
+      case _: CancelScheduledBeforeMaterialization if newState.isInstanceOf[CancelScheduledBeforeMaterialization] =>
+      // already cancelled, just ignore the new cancel and keep the old cause
+
       case cmd: CommandScheduledBeforeMaterialization =>
         throw new IllegalStateException(
           s"${newState.command} on subsink($name) is illegal when ${cmd.command} is still pending")
+
+      case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
     }
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler {
@@ -734,6 +745,8 @@ import scala.util.control.NonFatal
 
         case _: /* Materialized */ AsyncCallback[Command @unchecked] =>
           failStage(materializationException.getOrElse(createMaterializedTwiceException()))
+
+        case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
       }
 
     override def preStart(): Unit =
@@ -774,6 +787,9 @@ import scala.util.control.NonFatal
     case null =>
       if (!status.compareAndSet(null, ActorSubscriberMessage.OnComplete))
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(ActorSubscriberMessage.OnComplete)
+    case OnError(_)                        => // already failed out, keep the exception as that happened first
+    case ActorSubscriberMessage.OnComplete => // it was already completed
+    case _                                 => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   def failSubstream(ex: Throwable): Unit = status.get match {
@@ -782,6 +798,9 @@ import scala.util.control.NonFatal
       val failure = ActorSubscriberMessage.OnError(ex)
       if (!status.compareAndSet(null, failure))
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(failure)
+    case ActorSubscriberMessage.OnComplete => // it was already completed, ignore failure as completion happened first
+    case OnError(_)                        => // already failed out, keep the exception as that happened first
+    case _                                 => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   def timeout(d: FiniteDuration): Boolean =
@@ -807,6 +826,7 @@ import scala.util.control.NonFatal
         case ActorSubscriberMessage.OnError(ex) => failStage(ex)
         case _: AsyncCallback[_] =>
           failStage(materializationException.getOrElse(createMaterializedTwiceException()))
+        case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
       }
     }
 

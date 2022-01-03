@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -107,3 +107,9 @@ final class ChildFailed(ref: ActorRef[Nothing], val cause: Throwable) extends Te
     case _                           => false
   }
 }
+
+/**
+ * Signal passed to the actor when a message adapter has thrown an exception adapting an incoming message.
+ * Default signal handlers will re-throw the exception so that such failures are handled by supervision.
+ */
+final case class MessageAdaptionFailure(exception: Throwable) extends Signal

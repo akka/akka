@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.routing._
-import akka.util.WildcardIndex
-import com.github.ghik.silencer.silent
-import com.typesafe.config._
 import scala.annotation.tailrec
 
+import scala.annotation.nowarn
+import com.typesafe.config._
+
 import akka.annotation.InternalApi
+import akka.routing._
+import akka.util.WildcardIndex
 
 object Deploy {
   final val NoDispatcherGiven = ""
@@ -119,13 +120,13 @@ final class Deploy(
     new Deploy(path, config, routerConfig, scope, dispatcher, mailbox, tags)
 
   override def productElement(n: Int): Any = n match {
-    case 1 => path
-    case 2 => config
-    case 3 => routerConfig
-    case 4 => scope
-    case 5 => dispatcher
-    case 6 => mailbox
-    case 7 => tags
+    case 0 => path
+    case 1 => config
+    case 2 => routerConfig
+    case 3 => scope
+    case 4 => dispatcher
+    case 5 => mailbox
+    case 6 => tags
   }
 
   override def productArity: Int = 7
@@ -171,7 +172,7 @@ trait Scope {
   def withFallback(other: Scope): Scope
 }
 
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 abstract class LocalScope extends Scope
 
@@ -180,7 +181,7 @@ abstract class LocalScope extends Scope
  * which do not set a different scope. It is also the only scope handled by
  * the LocalActorRefProvider.
  */
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 case object LocalScope extends LocalScope {
 
@@ -195,7 +196,7 @@ case object LocalScope extends LocalScope {
 /**
  * This is the default value and as such allows overrides.
  */
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 abstract class NoScopeGiven extends Scope
 @SerialVersionUID(1L)
@@ -243,7 +244,8 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   def lookup(path: Iterable[String]): Option[Deploy] = deployments.get().find(path)
 
   def deploy(d: Deploy): Unit = {
-    @tailrec def add(path: Array[String], d: Deploy, w: WildcardIndex[Deploy] = deployments.get): Unit = {
+    @tailrec def add(path: Array[String], d: Deploy): Unit = {
+      val w: WildcardIndex[Deploy] = deployments.get
       for (i <- path.indices) path(i) match {
         case "" => throw InvalidActorNameException(s"Actor name in deployment [${d.path}] must not be empty")
         case el => ActorPath.validatePathElement(el, fullPath = d.path)

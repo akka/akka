@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
+
+import org.reactivestreams.Subscription
 
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -10,7 +12,6 @@ import akka.stream.testkit.TestPublisher._
 import akka.stream.testkit.TestSubscriber._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.AkkaSpec
-import org.reactivestreams.Subscription
 
 class TestPublisherSubscriberSpec extends AkkaSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

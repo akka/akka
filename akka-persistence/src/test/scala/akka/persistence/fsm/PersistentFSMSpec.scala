@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.fsm
 
 import java.io.File
 
-import akka.actor.{ ActorSystem, _ }
-import akka.persistence._
-import akka.persistence.fsm.PersistentFSM._
-import akka.testkit._
-import com.github.ghik.silencer.silent
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.apache.commons.io.FileUtils
-
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
-@silent("deprecated")
+import scala.annotation.nowarn
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.apache.commons.io.FileUtils
+
+import akka.actor.{ ActorSystem, _ }
+import akka.persistence._
+import akka.persistence.fsm.PersistentFSM._
+import akka.testkit._
+
+@nowarn("msg=deprecated|Unused import")
 abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import PersistentFSMSpec._
 
@@ -289,7 +290,6 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
     "can extract state name" in {
       StateChangeEvent("xxx", None) match {
         case StateChangeEvent(name, _) => name should equal("xxx")
-        case _                         => fail("unable to extract state name")
       }
     }
 
@@ -340,6 +340,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectMsgPF() {
         case SnapshotOffer(SnapshotMetadata(_, _, timestamp), PersistentFSMSnapshot(stateIdentifier, cart, None)) =>
           stateIdentifier should ===(Paid.identifier)
+          import org.scalatest.matchers.should.Matchers.unconstrainedEquality
           cart should ===(NonEmptyShoppingCart(List(shirt, shoes, coat)))
           timestamp should be > 0L
       }
@@ -368,7 +369,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
         ConfigFactory.parseString("""
             akka.persistence.fsm.enable-snapshot-after = on
             akka.persistence.fsm.snapshot-after = 3
-          """).withFallback(PersistenceSpec.config("leveldb", "PersistentFSMSpec2")))
+          """).withFallback(PersistenceSpec.config("inmem", "PersistentFSMSpec2")))
 
       try {
         val probe = TestProbe()
@@ -389,10 +390,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       } finally {
         val storageLocations =
-          List(
-            "akka.persistence.journal.leveldb.dir",
-            "akka.persistence.journal.leveldb-shared.store.dir",
-            "akka.persistence.snapshot-store.local.dir").map(s => new File(sys2.settings.config.getString(s)))
+          List("akka.persistence.snapshot-store.local.dir").map(s => new File(sys2.settings.config.getString(s)))
         shutdown(sys2)
         storageLocations.foreach(FileUtils.deleteDirectory)
       }
@@ -400,7 +398,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
   }
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 object PersistentFSMSpec {
   //#customer-states
   sealed trait UserState extends FSMState
@@ -464,7 +462,7 @@ object PersistentFSMSpec {
     startWith(LookingAround, EmptyShoppingCart)
 
     when(LookingAround) {
-      case Event("stay", _) => stay
+      case Event("stay", _) => stay()
       case Event(_, _)      => goto(LookingAround)
     }
 
@@ -493,12 +491,12 @@ object PersistentFSMSpec {
       case Event(AddItem(item), _) =>
         goto(Shopping).applying(ItemAdded(item)).forMax(1 seconds)
       case Event(GetCurrentCart, data) =>
-        stay.replying(data)
+        stay().replying(data)
     }
 
     when(Shopping) {
       case Event(AddItem(item), _) =>
-        stay.applying(ItemAdded(item)).forMax(1 seconds)
+        stay().applying(ItemAdded(item)).forMax(1 seconds)
       case Event(Buy, _) =>
         //#customer-andthen-example
         goto(Paid).applying(OrderExecuted).andThen {
@@ -512,14 +510,14 @@ object PersistentFSMSpec {
       //#customer-andthen-example
       case Event(Leave, _) =>
         //#customer-snapshot-example
-        stop.applying(OrderDiscarded).andThen {
+        stop().applying(OrderDiscarded).andThen {
           case _ =>
             reportActor ! ShoppingCardDiscarded
             saveStateSnapshot()
         }
       //#customer-snapshot-example
       case Event(GetCurrentCart, data) =>
-        stay.replying(data)
+        stay().replying(data)
       case Event(StateTimeout, _) =>
         goto(Inactive).forMax(2 seconds)
     }
@@ -528,7 +526,7 @@ object PersistentFSMSpec {
       case Event(AddItem(item), _) =>
         goto(Shopping).applying(ItemAdded(item)).forMax(1 seconds)
       case Event(StateTimeout, _) =>
-        stop.applying(OrderDiscarded).andThen {
+        stop().applying(OrderDiscarded).andThen {
           case _ => reportActor ! ShoppingCardDiscarded
         }
     }
@@ -536,7 +534,7 @@ object PersistentFSMSpec {
     when(Paid) {
       case Event(Leave, _) => stop()
       case Event(GetCurrentCart, data) =>
-        stay.replying(data)
+        stay().replying(data)
     }
     //#customer-fsm-body
 
@@ -633,7 +631,7 @@ object PersistentFSMSpec {
 
     when(PersistSingleAtOnce) {
       case Event(i: Int, _) =>
-        stay.applying(IntAdded(i))
+        stay().applying(IntAdded(i))
       case Event("4x", _) =>
         goto(Persist4xAtOnce)
       case Event(SaveSnapshotSuccess(metadata), _) =>
@@ -643,7 +641,7 @@ object PersistentFSMSpec {
 
     when(Persist4xAtOnce) {
       case Event(i: Int, _) =>
-        stay.applying(IntAdded(i), IntAdded(i), IntAdded(i), IntAdded(i))
+        stay().applying(IntAdded(i), IntAdded(i), IntAdded(i), IntAdded(i))
       case Event(SaveSnapshotSuccess(metadata), _) =>
         probe ! s"SeqNo=${metadata.sequenceNr}, StateData=${stateData}"
         stay()
@@ -652,5 +650,4 @@ object PersistentFSMSpec {
 
 }
 
-class LeveldbPersistentFSMSpec extends PersistentFSMSpec(PersistenceSpec.config("leveldb", "PersistentFSMSpec"))
 class InmemPersistentFSMSpec extends PersistentFSMSpec(PersistenceSpec.config("inmem", "PersistentFSMSpec"))

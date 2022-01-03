@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.flow
@@ -16,9 +16,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Tcp
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
 import scala.concurrent.duration._
@@ -37,7 +34,7 @@ object FromSinkAndSource {
 
     val serverFlow = Flow.fromSinkAndSource(sink, source)
 
-    Tcp().bind("127.0.0.1", 9999).runForeach { incomingConnection =>
+    Tcp(system).bind("127.0.0.1", 9999, halfClose = true).runForeach { incomingConnection =>
       incomingConnection.handleWith(serverFlow)
     }
     // #halfClosedTcpServer
@@ -54,7 +51,7 @@ object FromSinkAndSource {
 
     val serverFlow = Flow.fromSinkAndSource(sinkWithFraming, sourceWithFraming)
 
-    Tcp().bind("127.0.0.1", 9999).runForeach { incomingConnection =>
+    Tcp(system).bind("127.0.0.1", 9999).runForeach { incomingConnection =>
       incomingConnection.handleWith(serverFlow)
     }
     // #chat
@@ -63,7 +60,7 @@ object FromSinkAndSource {
   def testing(): Unit = {
     def myApiThatTakesAFlow[In, Out](flow: Flow[In, Out, NotUsed]): Unit = ???
     // #testing
-    val inProbe = TestSubscriber.probe[String]
+    val inProbe = TestSubscriber.probe[String]()
     val outProbe = TestPublisher.probe[String]()
     val testFlow = Flow.fromSinkAndSource(Sink.fromSubscriber(inProbe), Source.fromPublisher(outProbe))
 

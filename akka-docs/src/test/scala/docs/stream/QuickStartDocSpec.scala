@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -24,13 +24,13 @@ import org.scalatest.concurrent._
 
 //#main-app
 object Main extends App {
-  implicit val system = ActorSystem("QuickStart")
+  implicit val system: ActorSystem = ActorSystem("QuickStart")
   // Code here
 }
 //#main-app
 
 class QuickStartDocSpec extends AnyWordSpec with BeforeAndAfterAll with ScalaFutures {
-  implicit val patience = PatienceConfig(5.seconds)
+  implicit val patience: PatienceConfig = PatienceConfig(5.seconds)
 
   def println(any: Any) = () // silence printing stuff
 

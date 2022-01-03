@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class FlowReduceSpec extends StreamSpec {
 

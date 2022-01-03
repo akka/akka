@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.ActorSystem
-import akka.discovery.ServiceDiscovery.Resolved
-import akka.testkit.TestKit
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.ActorSystem
+import akka.discovery.ServiceDiscovery.Resolved
+import akka.testkit.TestKit
 
 class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
 

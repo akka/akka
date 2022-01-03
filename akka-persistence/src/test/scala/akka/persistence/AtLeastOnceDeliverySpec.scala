@@ -1,17 +1,16 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
-import akka.actor._
-import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot, UnconfirmedWarning }
-import akka.testkit._
-import com.typesafe.config._
-
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NoStackTrace
+
+import akka.actor._
+import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot, UnconfirmedWarning }
+import akka.testkit._
 
 object AtLeastOnceDeliverySpec {
 
@@ -188,7 +187,10 @@ object AtLeastOnceDeliverySpec {
 
 }
 
-abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
+class AtLeastOnceDeliverySpec
+    extends PersistenceSpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))
+    with ImplicitSender {
+
   import akka.persistence.AtLeastOnceDeliverySpec._
 
   "AtLeastOnceDelivery" must {
@@ -400,11 +402,11 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
         snd.tell(Req("c-" + n), probe.ref)
       }
       val deliverWithin = 20.seconds
-      probeA.receiveN(N, deliverWithin).map { case a: Action => a.payload }.toSet should ===(
+      probeA.receiveN(N, deliverWithin).collect { case a: Action => a.payload }.toSet should ===(
         (1 to N).map(n => "a-" + n).toSet)
-      probeB.receiveN(N, deliverWithin).map { case a: Action => a.payload }.toSet should ===(
+      probeB.receiveN(N, deliverWithin).collect { case a: Action => a.payload }.toSet should ===(
         (1 to N).map(n => "b-" + n).toSet)
-      probeC.receiveN(N, deliverWithin).map { case a: Action => a.payload }.toSet should ===(
+      probeC.receiveN(N, deliverWithin).collect { case a: Action => a.payload }.toSet should ===(
         (1 to N).map(n => "c-" + n).toSet)
     }
 
@@ -439,9 +441,3 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
     }
   }
 }
-
-class LeveldbAtLeastOnceDeliverySpec
-    extends AtLeastOnceDeliverySpec(PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec"))
-
-class InmemAtLeastOnceDeliverySpec
-    extends AtLeastOnceDeliverySpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))

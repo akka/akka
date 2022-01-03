@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.remote.FailureDetector
 import com.typesafe.config.Config
+
 import akka.event.EventStream
+import akka.remote.FailureDetector
 import akka.util.unused
 
 /**
@@ -16,7 +17,7 @@ import akka.util.unused
  */
 class FailureDetectorPuppet(@unused config: Config, @unused ev: EventStream) extends FailureDetector {
 
-  trait Status
+  sealed trait Status
   object Up extends Status
   object Down extends Status
   object Unknown extends Status
@@ -30,6 +31,7 @@ class FailureDetectorPuppet(@unused config: Config, @unused ev: EventStream) ext
   override def isAvailable: Boolean = status.get match {
     case Unknown | Up => true
     case Down         => false
+
   }
 
   override def isMonitoring: Boolean = status.get != Unknown

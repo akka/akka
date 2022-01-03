@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.serialization
 
 import java.io._
+
 import akka.actor._
 import akka.serialization._
 import akka.util.ByteString.UTF_8

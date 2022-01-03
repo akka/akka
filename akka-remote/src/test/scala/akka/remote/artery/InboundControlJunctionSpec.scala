@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
+
+import scala.util.Try
 
 import akka.Done
 import akka.actor.Address
@@ -15,8 +17,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.util.OptionVal
-
-import scala.util.Try
 
 object InboundControlJunctionSpec {
   trait TestControlMessage extends ControlMessage

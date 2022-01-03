@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.AssociationHandle
 import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
-import com.github.ghik.silencer.silent
 
 object RemoteGatePiercingSpec extends MultiNodeConfig {
   val first = role("first")
@@ -47,7 +48,7 @@ object RemoteGatePiercingSpec extends MultiNodeConfig {
 class RemoteGatePiercingSpecMultiJvmNode1 extends RemoteGatePiercingSpec
 class RemoteGatePiercingSpecMultiJvmNode2 extends RemoteGatePiercingSpec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class RemoteGatePiercingSpec extends RemotingMultiNodeSpec(RemoteGatePiercingSpec) {
 
   import RemoteGatePiercingSpec._
@@ -62,7 +63,7 @@ abstract class RemoteGatePiercingSpec extends RemotingMultiNodeSpec(RemoteGatePi
   "RemoteGatePiercing" must {
 
     "allow restarted node to pass through gate" taggedAs LongRunningTest in {
-      system.actorOf(Props[Subject], "subject")
+      system.actorOf(Props[Subject](), "subject")
       enterBarrier("actors-started")
 
       runOn(first) {

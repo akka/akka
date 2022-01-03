@@ -1,25 +1,24 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-
-import akka.stream.ThrottleMode.{ Enforcing, Shaping }
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.util.ByteString
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
-
 import akka.Done
+import akka.stream._
+import akka.stream.ThrottleMode.{ Enforcing, Shaping }
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestDuration
 import akka.testkit.TimingTest
+import akka.util.ByteString
 
 class FlowThrottleSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -112,9 +111,23 @@ class FlowThrottleSpec extends StreamSpec("""
     }
 
     "send elements downstream as soon as time comes" in assertAllStagesStopped {
-      val probe = Source(1 to 10).throttle(2, 750.millis, 0, Shaping).runWith(TestSink.probe[Int]).request(5)
-      probe.receiveWithin(900.millis) should be(Seq(1, 2))
-      probe.expectNoMessage(150.millis).expectNext(3).expectNoMessage(150.millis).expectNext(4).cancel()
+      val throttleInterval = 500.millis.dilated
+      val elementsAndTimestampsMs = Source(1 to 5)
+        .throttle(1, throttleInterval)
+        .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
+          (System.nanoTime() / 1000000, n) :: acc
+        }
+        .futureValue(timeout(5.seconds.dilated))
+        .reverse
+
+      val startMs = elementsAndTimestampsMs.head._1
+      val elemsAndTimeFromStart = elementsAndTimestampsMs.map { case (ts, n) => (ts - startMs, n) }
+      val perThrottleInterval = elemsAndTimeFromStart.groupBy {
+        case (fromStart, _) => math.round(fromStart.toDouble / throttleInterval.toMillis).toInt
+      }
+      withClue(perThrottleInterval) {
+        perThrottleInterval.forall { case (_, entries) => entries.size == 1 } should ===(true)
+      }
     }
 
     "burst according to its maximum if enough time passed" in assertAllStagesStopped {
@@ -226,9 +239,23 @@ class FlowThrottleSpec extends StreamSpec("""
     }
 
     "send elements downstream as soon as time comes" in assertAllStagesStopped {
-      val probe = Source(1 to 10).throttle(4, 500.millis, 0, _ => 2, Shaping).runWith(TestSink.probe[Int]).request(5)
-      probe.receiveWithin(600.millis) should be(Seq(1, 2))
-      probe.expectNoMessage(100.millis).expectNext(3).expectNoMessage(100.millis).expectNext(4).cancel()
+      val throttleInterval = 500.millis.dilated
+      val elementsAndTimestampsMs = Source(1 to 5)
+        .throttle(2, throttleInterval, _ => 2)
+        .runFold(Nil: List[(Long, Int)]) { (acc, n) =>
+          (System.nanoTime() / 1000000, n) :: acc
+        }
+        .futureValue(timeout(5.seconds.dilated))
+        .reverse
+
+      val startMs = elementsAndTimestampsMs.head._1
+      val elemsAndTimeFromStart = elementsAndTimestampsMs.map { case (ts, n) => (ts - startMs, n) }
+      val perThrottleInterval = elemsAndTimeFromStart.groupBy {
+        case (fromStart, _) => math.round(fromStart.toDouble / throttleInterval.toMillis).toInt
+      }
+      withClue(perThrottleInterval) {
+        perThrottleInterval.forall { case (_, entries) => entries.size == 1 } should ===(true)
+      }
     }
 
     "burst according to its maximum if enough time passed" in assertAllStagesStopped {

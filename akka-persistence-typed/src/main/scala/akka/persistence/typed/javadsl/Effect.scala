@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl
 
-import akka.util.ccompat.JavaConverters._
+import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
-import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
-import akka.actor.typed.ActorRef
+import akka.persistence.typed.internal.SideEffect
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API: see `class EffectFactories`

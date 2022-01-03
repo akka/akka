@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -9,6 +9,8 @@ import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Success
+
+import org.apache.commons.io.FileUtils
 
 import akka.actor.ActorRef
 import akka.actor.Props
@@ -23,11 +25,12 @@ import akka.persistence.SnapshotSelectionCriteria
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors.EchoActor
-import org.apache.commons.io.FileUtils
+import akka.testkit.WithLogCapturing
 
 object RemoveInternalClusterShardingDataSpec {
   val config = """
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -41,14 +44,17 @@ object RemoveInternalClusterShardingDataSpec {
     akka.cluster.sharding.snapshot-after = 5
     akka.cluster.sharding.state-store-mode = persistence
     akka.cluster.sharding.keep-nr-of-batches = 0
+    akka.cluster.sharding.verbose-debug-logging = on
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case msg: Int => (msg.toString, msg)
+    case _        => throw new IllegalArgumentException()
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case msg: Int => (msg % 10).toString
+    case _        => throw new IllegalArgumentException()
   }
 
   class HasSnapshots(override val persistenceId: String, replyTo: ActorRef) extends PersistentActor {
@@ -93,7 +99,8 @@ object RemoveInternalClusterShardingDataSpec {
 
 class RemoveInternalClusterShardingDataSpec
     extends AkkaSpec(RemoveInternalClusterShardingDataSpec.config)
-    with ImplicitSender {
+    with ImplicitSender
+    with WithLogCapturing {
   import RemoveInternalClusterShardingDataSpec._
 
   val storageLocations =

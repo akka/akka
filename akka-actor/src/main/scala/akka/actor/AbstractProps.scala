@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import java.lang.reflect.{ Modifier, ParameterizedType, TypeVariable }
+import java.lang.reflect.Constructor
+
+import scala.annotation.tailrec
+import scala.annotation.varargs
+
 import akka.japi.Creator
 import akka.util.Reflect
-import scala.annotation.varargs
-import scala.annotation.tailrec
-import java.lang.reflect.Constructor
 
 /**
  *
@@ -20,9 +22,15 @@ private[akka] trait AbstractProps {
   /**
    * INTERNAL API
    */
-  private[akka] def validate(clazz: Class[_]) =
-    if (Modifier.isAbstract(clazz.getModifiers))
+  private[akka] def validate(clazz: Class[_]): Unit = {
+    if (Modifier.isAbstract(clazz.getModifiers)) {
       throw new IllegalArgumentException(s"Actor class [${clazz.getName}] must not be abstract")
+    } else if (!classOf[Actor].isAssignableFrom(clazz) &&
+               !classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
+      throw new IllegalArgumentException(
+        s"Actor class [${clazz.getName}] must be subClass of akka.actor.Actor or akka.actor.IndirectActorProducer.")
+    }
+  }
 
   /**
    * Java API: create a Props given a class and its constructor arguments.
@@ -57,6 +65,8 @@ private[akka] trait AbstractProps {
       case c: Class[_] if c == coc =>
         throw new IllegalArgumentException(
           "erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead")
+      case unexpected =>
+        throw new IllegalArgumentException(s"unexpected type: $unexpected")
     }
     create(classOf[CreatorConsumer], actorClass, creator)
   }
@@ -65,6 +75,7 @@ private[akka] trait AbstractProps {
    * Create new Props from the given [[akka.japi.Creator]] with the type set to the given actorClass.
    */
   def create[T <: Actor](actorClass: Class[T], creator: Creator[T]): Props = {
+    checkCreatorClosingOver(creator.getClass)
     create(classOf[CreatorConsumer], actorClass, creator)
   }
 

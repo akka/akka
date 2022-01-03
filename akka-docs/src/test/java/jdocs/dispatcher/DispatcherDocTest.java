@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.dispatcher;
@@ -15,7 +15,6 @@ import jdocs.actor.MyBoundedActor;
 import jdocs.actor.MyActor;
 import org.junit.ClassRule;
 import org.junit.Test;
-import scala.concurrent.ExecutionContext;
 import scala.concurrent.ExecutionContextExecutor;
 
 // #imports

@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import akka.annotation.InternalApi
-
 import scala.concurrent.ExecutionContextExecutor
+
+import akka.annotation.InternalApi
 
 object Dispatchers {
 

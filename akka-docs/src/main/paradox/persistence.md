@@ -1,5 +1,5 @@
 ---
-project.description: Akka Persistence Classic, event sourcing with Akka, At-Least-Once delivery, snapshots, recovery and replay with Akka actors.
+project.description: Akka Persistence Classic, Event Sourcing with Akka, At-Least-Once delivery, snapshots, recovery and replay with Akka actors.
 ---
 # Classic Persistence
 
@@ -11,9 +11,16 @@ For the full documentation of this feature and for new projects see @ref:[Event 
 To use Akka Persistence, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-persistence_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-persistence_$scala.binary.version$"
+  version=AkkaVersion
+  group2="com.typesafe.akka"
+  artifact2="akka-persistence-testkit_$scala.binary.version$"
+  version2=AkkaVersion
+  scope2=test
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
@@ -37,17 +44,17 @@ recover its state from these messages.
 case of sender and receiver JVM crashes.
  * `AsyncWriteJournal`: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
 are journaled and which are received by the persistent actor without being journaled. Journal maintains `highestSequenceNr` that is increased on each message.
-The storage backend of a journal is pluggable. The persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem.
-Replicated journals are available as [Community plugins](http://akka.io/community/).
+The storage backend of a journal is pluggable. 
+Replicated journals are available as [Community plugins](https://akka.io/community/).
  * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's state. Snapshots are
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
-The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem. Replicated snapshot stores are available as [Community plugins](http://akka.io/community/)
- * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
-development of event sourced applications (see section @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts)).
+The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem. Replicated snapshot stores are available as [Community plugins](https://akka.io/community/)
+ * *Event Sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
+development of event sourced applications (see section @ref:[Event Sourcing](typed/persistence.md#event-sourcing-concepts)).
 
 ## Example
 
-Akka persistence supports event sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
+Akka persistence supports Event Sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
 `persist` method to persist and handle events. The behavior of @scala[a `PersistentActor`]@java[an `AbstractPersistentActor`]
 is defined by implementing @scala[`receiveRecover`]@java[`createReceiveRecover`] and @scala[`receiveCommand`]@java[`createReceive`]. This is demonstrated in the following example.
 
@@ -451,7 +458,7 @@ timer-based which keeps latencies at a minimum.
 It is possible to delete all messages (journaled by a single persistent actor) up to a specified sequence number;
 Persistent actors may call the `deleteMessages` method to this end.
 
-Deleting messages in event sourcing based applications is typically either not used at all, or used in conjunction with
+Deleting messages in Event Sourcing based applications is typically either not used at all, or used in conjunction with
 [snapshotting](#snapshots), i.e. after a snapshot has been successfully stored, a `deleteMessages(toSequenceNr)`
 up until the sequence number of the data held by that snapshot can be issued to safely delete the previous events
 while still having access to the accumulated state during replays - by loading the snapshot.
@@ -564,9 +571,11 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #save-snapshot }
 
-where `metadata` is of type `SnapshotMetadata`:
+where `metadata` is of type `SnapshotMetadata` and contains:
 
-@@snip [SnapshotProtocol.scala](/akka-persistence/src/main/scala/akka/persistence/SnapshotProtocol.scala) { #snapshot-metadata }
+* persistenceId 
+* sequenceNr
+* timestamp
 
 During recovery, the persistent actor is offered the latest saved snapshot via a `SnapshotOffer` message from
 which it can initialize internal state.
@@ -631,6 +640,19 @@ If failure messages are left unhandled by the actor, a default warning log messa
 No default action is performed on the success messages, however you're free to handle them e.g. in order to delete
 an in memory representation of the snapshot, or in the case of failure to attempt save the snapshot again.
 
+### Optional snapshots
+
+By default, the persistent actor will unconditionally be stopped if the snapshot can't be loaded in the recovery.
+It is possible to make snapshot loading optional. This can be useful when it is alright to ignore snapshot in case
+of for example deserialization errors. When snapshot loading fails it will instead recover by replaying all events.
+
+Enable this feature by setting `snapshot-is-optional = true` in the snapshot store configuration. 
+
+@@@ warning
+
+Don't set `snapshot-is-optional = true` if events have been deleted because that would result in wrong recovered state if snapshot load fails.
+
+@@@
 
 ## Scaling out
 
@@ -746,7 +768,7 @@ configuration key. The method can be overridden by implementation classes to ret
 
 ## Event Adapters
 
-In long running projects using event sourcing sometimes the need arises to detach the data model from the domain model
+In long running projects using Event Sourcing sometimes the need arises to detach the data model from the domain model
 completely.
 
 Event Adapters help in situations where:
@@ -804,7 +826,11 @@ to the application configuration. If not specified, an exception will be throw w
 
 For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
 
-## Testing
+## Testing with LevelDB journal
+
+The LevelDB journal is deprecated and will be removed from a future Akka version, it is not advised to build new applications 
+with it. For testing the built in "inmem" journal or the actual journal that will be used in production of the application 
+is recommended. See @ref[Persistence Plugins](persistence-plugins.md) for some journal implementation choices.
 
 When running tests with LevelDB default settings in `sbt`, make sure to set `fork := true` in your sbt project. Otherwise, you'll see an `UnsatisfiedLinkError`. Alternatively, you can switch to a LevelDB Java port by setting
 
@@ -814,9 +840,7 @@ or
 
 @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-native-config }
 
-in your Akka configuration. The LevelDB Java port is for testing purposes only.
-
-Also note that for the LevelDB Java port, you will need the following dependencies:
+in your Akka configuration. Also note that for the LevelDB Java port, you will need the following dependencies:
 
 @@dependency[sbt,Maven,Gradle] {
   group="org.iq80.leveldb"
@@ -889,5 +913,5 @@ Java
 ## See also
 
 * @ref[Persistent FSM](persistence-fsm.md)
-* @ref[Building a new storage backend](persistence-plugins.md)
+* @ref[Persistence plugins](persistence-plugins.md)
 * @ref[Building a new storage backend](persistence-journals.md)

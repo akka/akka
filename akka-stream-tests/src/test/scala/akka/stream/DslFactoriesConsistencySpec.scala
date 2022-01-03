@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -29,7 +29,8 @@ class DslFactoriesConsistencySpec extends AnyWordSpec with Matchers {
       "lazyFutureFlow", // lazyCompletionStageFlow
       "futureFlow", // completionStageFlow
       "futureSink", // completionStageSink
-      "lazyFutureSink" // lazyCompletionStageSink
+      "lazyFutureSink", // lazyCompletionStageSink
+      "createGraph" // renamed/overload of create for getting type inference working in Scala 3
     )
 
   val javaIgnore =

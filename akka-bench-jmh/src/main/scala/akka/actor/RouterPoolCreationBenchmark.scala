@@ -1,16 +1,19 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+
 import akka.routing.RoundRobinPool
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import org.openjdk.jmh.annotations._
-import java.util.concurrent.TimeUnit
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.SingleShotTime))
@@ -21,7 +24,7 @@ class RouterPoolCreationBenchmark {
   implicit val system: ActorSystem = ActorSystem()
   val probe = TestProbe()
 
-  Props[TestActors.EchoActor]
+  Props[TestActors.EchoActor]()
 
   @Param(Array("1000", "2000", "3000", "4000"))
   var size = 0

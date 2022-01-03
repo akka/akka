@@ -1,34 +1,33 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import scala.concurrent.duration._
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import java.util.Optional
 import java.util.concurrent._
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-
-import akka.Done
-import com.typesafe.config.Config
-import scala.concurrent.duration.FiniteDuration
-import scala.annotation.tailrec
-
-import com.typesafe.config.ConfigFactory
-import akka.pattern.after
-import scala.util.control.NonFatal
-
-import akka.event.Logging
-import akka.dispatch.ExecutionContexts
-import scala.util.Try
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
-import java.util.Optional
 
+import scala.annotation.tailrec
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
+import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
+import akka.Done
 import akka.annotation.InternalApi
-import akka.util.{ OptionVal, Timeout }
+import akka.dispatch.ExecutionContexts
+import akka.event.Logging
+import akka.pattern.after
+import akka.util.OptionVal
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
 
@@ -251,7 +250,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
         system.whenTerminated.map { _ =>
           if (exitJvm && !runningJvmHook) System.exit(exitCode)
           Done
-        }(ExecutionContexts.sameThreadExecutionContext)
+        }(ExecutionContexts.parasitic)
       } else if (exitJvm) {
         System.exit(exitCode)
         Future.successful(Done)
@@ -356,7 +355,7 @@ final class CoordinatedShutdown private[akka] (
   import CoordinatedShutdown.{ Reason, UnknownReason }
 
   /** INTERNAL API */
-  private[akka] val log = Logging(system, getClass)
+  private[akka] val log = Logging(system, classOf[CoordinatedShutdown])
   private val knownPhases = phases.keySet ++ phases.values.flatMap(_.dependsOn)
 
   /** INTERNAL API */
@@ -458,7 +457,7 @@ final class CoordinatedShutdown private[akka] (
       override val size: Int = tasks.size
 
       override def run(recoverEnabled: Boolean)(implicit ec: ExecutionContext): Future[Done] = {
-        Future.sequence(tasks.map(_.run(recoverEnabled))).map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+        Future.sequence(tasks.map(_.run(recoverEnabled))).map(_ => Done)(ExecutionContexts.parasitic)
       }
 
       // This method may be run multiple times during the compare-and-set loop of ConcurrentHashMap, so it must be side-effect-free
@@ -614,10 +613,12 @@ final class CoordinatedShutdown private[akka] (
   def addActorTerminationTask(phase: String, taskName: String, actor: ActorRef, stopMsg: Option[Any]): Unit =
     addTask(phase, taskName) { () =>
       stopMsg.foreach(msg => actor ! msg)
-      import akka.pattern.ask
       // addTask will verify that phases(phase) exists, so this should be safe
-      implicit val timeout = Timeout(phases(phase).timeout)
-      (terminationWatcher ? CoordinatedShutdownTerminationWatcher.Watch(actor)).mapTo[Done]
+      val deadline = phases(phase).timeout.fromNow
+      // Note: we cannot use ask because we cannot spawn actors during shutdown
+      val completionPromise = Promise[Done]()
+      terminationWatcher ! CoordinatedShutdownTerminationWatcher.Watch(actor, deadline, completionPromise)
+      completionPromise.future
     }
 
   /**
@@ -686,7 +687,7 @@ final class CoordinatedShutdown private[akka] (
     if (runStarted.compareAndSet(None, Some(reason))) {
       implicit val ec: ExecutionContext = system.dispatchers.internalDispatcher
       val debugEnabled = log.isDebugEnabled
-      log.debug("Running CoordinatedShutdown with reason [{}]", reason)
+      log.info("Running CoordinatedShutdown with reason [{}]", reason)
       def loop(remainingPhases: List[String]): Future[Done] = {
         remainingPhases match {
           case Nil => Future.successful(Done)
@@ -710,7 +711,7 @@ final class CoordinatedShutdown private[akka] (
                 val deadline = Deadline.now + timeout
                 val timeoutFut = try {
                   after(timeout, system.scheduler) {
-                    if (phaseName == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft) {
+                    if (phaseName == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft()) {
                       // too early, i.e. triggered by system termination
                       result
                     } else if (result.isCompleted)
@@ -879,28 +880,58 @@ final class CoordinatedShutdown private[akka] (
 /** INTERNAL API */
 @InternalApi
 private[akka] object CoordinatedShutdownTerminationWatcher {
-  final case class Watch(actor: ActorRef)
+  final case class Watch(actor: ActorRef, deadline: Deadline, completionPromise: Promise[Done])
+  private final case class WatchedTimedOut(actor: ActorRef, completionPromise: Promise[Done], timeout: FiniteDuration)
 
   def props: Props = Props(new CoordinatedShutdownTerminationWatcher)
 }
 
 /** INTERNAL API */
 @InternalApi
-private[akka] class CoordinatedShutdownTerminationWatcher extends Actor {
+private[akka] class CoordinatedShutdownTerminationWatcher extends Actor with Timers {
+
+  private var waitingForActor: Map[ActorRef, Set[Promise[Done]]] = Map.empty
+  private var alreadySeenTerminated = Set.empty[ActorRef]
 
   import CoordinatedShutdownTerminationWatcher._
 
-  private var watching = Map.empty[ActorRef, List[ActorRef]].withDefaultValue(Nil)
-
   override def receive: Receive = {
 
-    case Watch(actor: ActorRef) =>
-      watching += (actor -> (sender() :: watching(actor)))
-      context.watch(actor)
+    case Watch(actor, deadline, completionPromise) =>
+      if (alreadySeenTerminated(actor)) completionPromise.trySuccess(Done)
+      else {
+        val newWaiting =
+          waitingForActor.get(actor) match {
+            case Some(alreadyWaiting) =>
+              alreadyWaiting + completionPromise
+            case None =>
+              context.watch(actor)
+              Set(completionPromise)
+          }
+        waitingForActor = waitingForActor.updated(actor, newWaiting)
+        timers.startSingleTimer(
+          completionPromise,
+          WatchedTimedOut(actor, completionPromise, deadline.time),
+          deadline.timeLeft)
+      }
 
     case Terminated(actor) =>
-      watching(actor).foreach(_ ! Done)
-      watching -= actor
+      for {
+        waitingPromises <- waitingForActor.get(actor)
+        waitingPromise <- waitingPromises
+      } {
+        if (waitingPromise.trySuccess(Done)) {
+          timers.cancel(waitingPromise)
+        }
+      }
+      waitingForActor = waitingForActor - actor
+      alreadySeenTerminated += actor
+
+    case WatchedTimedOut(actor, completionPromise, timeout) =>
+      if (!completionPromise.isCompleted)
+        completionPromise.tryFailure(
+          new TimeoutException(s"Actor [$actor] termination timed out after [$timeout] during coordinated shutdown"))
+
   }
 
 }

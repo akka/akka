@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
-import akka.{ Done, NotUsed }
-import akka.stream.stage._
+import java.util.concurrent.atomic.AtomicReference
 
-import scala.concurrent.{ Future, Promise }
 import scala.collection.concurrent.TrieMap
+import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
-import java.util.concurrent.atomic.AtomicReference
+import akka.{ Done, NotUsed }
+import akka.stream.stage._
 
 /**
  * Creates shared or single kill switches which can be used to control completion of graphs from the outside.
@@ -61,7 +61,7 @@ object KillSwitches {
         case _            =>
           // callback.invoke is a simple actor send, so it is fine to run on the invoking thread
           terminationSignal.onComplete(getAsyncCallback[Try[Done]](onSwitch).invoke)(
-            akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            akka.dispatch.ExecutionContexts.parasitic)
       }
     }
 
@@ -78,7 +78,7 @@ object KillSwitches {
     override def toString: String = "UniqueKillSwitchFlow"
 
     override def createLogicAndMaterializedValue(attr: Attributes) = {
-      val promise = Promise[Done]
+      val promise = Promise[Done]()
       val switch = new UniqueKillSwitch(promise)
 
       val logic = new KillableGraphStageLogic(promise.future, shape) with InHandler with OutHandler {
@@ -104,7 +104,7 @@ object KillSwitches {
     override def toString: String = "UniqueKillSwitchBidi"
 
     override def createLogicAndMaterializedValue(attr: Attributes) = {
-      val promise = Promise[Done]
+      val promise = Promise[Done]()
       val switch = new UniqueKillSwitch(promise)
 
       val logic = new KillableGraphStageLogic(promise.future, shape) {
@@ -159,7 +159,7 @@ trait KillSwitch {
 
 private[stream] final class TerminationSignal {
   final class Listener private[TerminationSignal] {
-    private[TerminationSignal] val promise = Promise[Done]
+    private[TerminationSignal] val promise = Promise[Done]()
     def future: Future[Done] = promise.future
     def unregister(): Unit = removeListener(this)
   }

@@ -1,19 +1,21 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.dispatch.MailboxType
-import akka.dispatch.ProducesMessageQueue
-import akka.dispatch.BoundedNodeMessageQueue
-import com.typesafe.config.Config
-import akka.dispatch.MessageQueue
-import akka.dispatch.BoundedMessageQueueSemantics
-import scala.concurrent.duration.Duration
-import akka.dispatch.Envelope
-import org.jctools.queues.MpscGrowableArrayQueue
 import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
+
+import com.typesafe.config.Config
+import org.jctools.queues.MpscGrowableArrayQueue
+
+import akka.dispatch.BoundedMessageQueueSemantics
+import akka.dispatch.BoundedNodeMessageQueue
+import akka.dispatch.Envelope
+import akka.dispatch.MailboxType
+import akka.dispatch.MessageQueue
+import akka.dispatch.ProducesMessageQueue
 
 case class JCToolsMailbox(val capacity: Int) extends MailboxType with ProducesMessageQueue[BoundedNodeMessageQueue] {
 

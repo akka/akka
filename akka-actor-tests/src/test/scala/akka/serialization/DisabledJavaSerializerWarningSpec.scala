@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
 
 import java.nio.{ ByteBuffer, ByteOrder }
 
-import akka.actor.ExtendedActorSystem
-
 import scala.concurrent.duration._
+
+import akka.actor.ExtendedActorSystem
 import akka.testkit._
 
 object DisabledJavaSerializerWarningSpec {

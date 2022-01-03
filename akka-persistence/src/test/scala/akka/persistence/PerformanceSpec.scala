@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -116,7 +116,7 @@ object PerformanceSpec {
 class PerformanceSpec
     extends PersistenceSpec(
       PersistenceSpec
-        .config("leveldb", "PerformanceSpec", serialization = "off")
+        .config("inmem", "PerformanceSpec", serialization = "off")
         .withFallback(ConfigFactory.parseString(PerformanceSpec.config)))
     with ImplicitSender {
   import PerformanceSpec._

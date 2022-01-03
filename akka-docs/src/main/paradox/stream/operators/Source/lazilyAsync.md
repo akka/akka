@@ -1,4 +1,4 @@
-# lazilyAsync
+# Source.lazilyAsync
 
 Deprecated by @ref:[`Source.lazyFutureSource`](lazyFutureSource.md).
 

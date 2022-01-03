@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch.sysmsg
 
-import akka.testkit.AkkaSpec
 import akka.actor.Props
+import akka.testkit.AkkaSpec
 
 class SystemMessageListSpec extends AkkaSpec {
-  import SystemMessageList.LNil
   import SystemMessageList.ENil
+  import SystemMessageList.LNil
 
   val child = system.actorOf(Props.empty, "dummy") // need an ActorRef for the Failed msg
 

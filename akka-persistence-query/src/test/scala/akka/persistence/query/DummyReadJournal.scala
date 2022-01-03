@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
 import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.NotUsed
 import akka.actor.ExtendedActorSystem
+import akka.stream.scaladsl.Source
 import akka.util.unused
 
 /**
@@ -55,11 +56,15 @@ class DummyReadJournalProvider(dummyValue: String) extends ReadJournalProvider {
   // mandatory zero-arg constructor
   def this() = this("dummy")
 
-  override val scaladslReadJournal: DummyReadJournal =
-    new DummyReadJournal(dummyValue)
+  val readJournal = new DummyReadJournal(dummyValue)
 
-  override val javadslReadJournal: DummyReadJournalForJava =
-    new DummyReadJournalForJava(scaladslReadJournal)
+  override def scaladslReadJournal(): DummyReadJournal =
+    readJournal
+
+  val javaReadJournal = new DummyReadJournalForJava(readJournal)
+
+  override def javadslReadJournal(): DummyReadJournalForJava =
+    javaReadJournal
 }
 
 class DummyReadJournalProvider2(@unused sys: ExtendedActorSystem) extends DummyReadJournalProvider

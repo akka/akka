@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -8,25 +8,23 @@ package aeron
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import io.aeron.Aeron
+import org.agrona.IoUtil
+
 import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Source
 import akka.testkit._
 import akka.util.ByteString
-import com.typesafe.config.ConfigFactory
-import io.aeron.Aeron
-import io.aeron.driver.MediaDriver
-import org.agrona.IoUtil
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object AeronStreamConsistencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -49,13 +47,13 @@ class AeronStreamConsistencySpecMultiJvmNode1 extends AeronStreamConsistencySpec
 class AeronStreamConsistencySpecMultiJvmNode2 extends AeronStreamConsistencySpec
 
 abstract class AeronStreamConsistencySpec
-    extends MultiNodeSpec(AeronStreamConsistencySpec)
+    extends AeronStreamMultiNodeSpec(AeronStreamConsistencySpec)
     with STMultiNodeSpec
     with ImplicitSender {
 
   import AeronStreamConsistencySpec._
 
-  val driver = MediaDriver.launchEmbedded()
+  val driver = startDriver()
 
   val aeron = {
     val ctx = new Aeron.Context
@@ -76,13 +74,6 @@ abstract class AeronStreamConsistencySpec
 
   override def initialParticipants = roles.size
 
-  def channel(roleName: RoleName) = {
-    val n = node(roleName)
-    system.actorSelection(n / "user" / "updPort") ! UdpPortActor.GetUdpPort
-    val port = expectMsgType[Int]
-    s"aeron:udp?endpoint=${n.address.host.get}:$port"
-  }
-
   val streamId = 1
   val giveUpMessageAfter = 30.seconds
 
@@ -97,7 +88,7 @@ abstract class AeronStreamConsistencySpec
   "Message consistency of Aeron Streams" must {
 
     "start upd port" in {
-      system.actorOf(Props[UdpPortActor], "updPort")
+      system.actorOf(Props[UdpPortActor](), "updPort")
       enterBarrier("udp-port-started")
     }
 

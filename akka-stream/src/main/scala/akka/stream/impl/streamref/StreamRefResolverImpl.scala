@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.streamref
@@ -18,11 +18,13 @@ import akka.stream.StreamRefResolver
   def toSerializationFormat[T](ref: SourceRef[T]): String = ref match {
     case SourceRefImpl(actorRef) =>
       actorRef.path.toSerializationFormatWithAddress(system.provider.getDefaultAddress)
+    case other => throw new IllegalArgumentException(s"Unexpected SourceRef impl: ${other.getClass}")
   }
 
   def toSerializationFormat[T](ref: SinkRef[T]): String = ref match {
     case SinkRefImpl(actorRef) =>
       actorRef.path.toSerializationFormatWithAddress(system.provider.getDefaultAddress)
+    case other => throw new IllegalArgumentException(s"Unexpected SinkRef impl: ${other.getClass}")
   }
 
   def resolveSourceRef[T](serializedSourceRef: String): SourceRef[T] =

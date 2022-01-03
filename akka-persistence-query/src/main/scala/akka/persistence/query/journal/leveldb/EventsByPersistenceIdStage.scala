@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
 
-import akka.NotUsed
+import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol.RecoverySuccess
@@ -25,8 +25,6 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogicWithLogging
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -53,14 +51,10 @@ final private[akka] class EventsByPersistenceIdStage(
   override def shape: SourceShape[EventEnvelope] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    throw new UnsupportedOperationException("Not used")
+    new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[EventEnvelope] {
+      override def doPush(out: Outlet[EventEnvelope], elem: EventEnvelope): Unit = super.push(out, elem)
 
-  override private[akka] def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes,
-      materializer: Materializer): (GraphStageLogic, NotUsed) = {
-    val logic = new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[EventEnvelope] {
       val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
-      var currSeqNo = fromSequenceNr
       var stageActorRef: ActorRef = null
       var replayInProgress = false
       var outstandingReplay = false
@@ -141,6 +135,8 @@ final private[akka] class EventsByPersistenceIdStage(
 
           case EventAppended(_) =>
             requestMore()
+
+          case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
       }
 
@@ -161,7 +157,4 @@ final private[akka] class EventsByPersistenceIdStage(
 
       setHandler(out, this)
     }
-    (logic, NotUsed)
-  }
-
 }

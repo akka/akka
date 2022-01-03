@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
 
+import org.reactivestreams.Publisher
+
 import akka.stream._
 import akka.stream.scaladsl._
-import org.reactivestreams.Publisher
 
 abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
 

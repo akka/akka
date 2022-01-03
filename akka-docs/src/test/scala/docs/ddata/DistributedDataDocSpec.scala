@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.ddata
@@ -63,7 +63,7 @@ object DistributedDataDocSpec {
     import DataBot._
 
     val replicator = DistributedData(context.system).replicator
-    implicit val node = DistributedData(context.system).selfUniqueAddress
+    implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
 
     import context.dispatcher
     val tickTask = context.system.scheduler.scheduleWithFixedDelay(5.seconds, 5.seconds, self, Tick)
@@ -104,10 +104,10 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
   "demonstrate update" in {
     val probe = TestProbe()
-    implicit val self = probe.ref
+    implicit val self: ActorRef = probe.ref
 
     //#update
-    implicit val node = DistributedData(system).selfUniqueAddress
+    implicit val node: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
     val replicator = DistributedData(system).replicator
 
     val Counter1Key = PNCounterKey("counter1")
@@ -148,7 +148,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
   "demonstrate update with request context" in {
     import Actor.Receive
     val probe = TestProbe()
-    implicit val self = probe.ref
+    implicit val self: ActorRef = probe.ref
     def sender() = self
 
     //#update-request-context
@@ -173,7 +173,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
   "demonstrate get" in {
     val probe = TestProbe()
-    implicit val self = probe.ref
+    implicit val self: ActorRef = probe.ref
 
     //#get
     val replicator = DistributedData(system).replicator
@@ -220,7 +220,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
   "demonstrate get with request context" in {
     import Actor.Receive
     val probe = TestProbe()
-    implicit val self = probe.ref
+    implicit val self: ActorRef = probe.ref
     def sender() = self
 
     //#get-request-context
@@ -248,7 +248,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
   "demonstrate subscribe" in {
     import Actor.Receive
     val probe = TestProbe()
-    implicit val self = probe.ref
+    implicit val self: ActorRef = probe.ref
     def sender() = self
 
     //#subscribe
@@ -270,7 +270,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
   "demonstrate delete" in {
     val probe = TestProbe()
-    implicit val self = probe.ref
+    implicit val self: ActorRef = probe.ref
 
     //#delete
     val replicator = DistributedData(system).replicator
@@ -372,7 +372,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     case class Record(version: Int, name: String, address: String)
 
     implicit val node = DistributedData(system).selfUniqueAddress
-    implicit val recordClock = new LWWRegister.Clock[Record] {
+    implicit val recordClock: LWWRegister.Clock[Record] = new LWWRegister.Clock[Record] {
       override def apply(currentTimestamp: Long, value: Record): Long =
         value.version
     }

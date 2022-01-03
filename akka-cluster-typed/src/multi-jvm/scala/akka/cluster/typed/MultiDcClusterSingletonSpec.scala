@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.{ MemberStatus, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object MultiDcClusterSingletonSpecConfig extends MultiNodeConfig {
   val first: RoleName = role("first")
@@ -41,8 +42,8 @@ abstract class MultiDcClusterSingletonSpec
     extends MultiNodeSpec(MultiDcClusterSingletonSpecConfig)
     with MultiNodeTypedClusterSpec {
 
-  import MultiDcPinger._
   import MultiDcClusterSingletonSpecConfig._
+  import MultiDcPinger._
 
   "A cluster with multiple data centers" must {
     "be able to form" in {
@@ -65,7 +66,7 @@ abstract class MultiDcClusterSingletonSpec
       runOn(first) {
         val singleton = ClusterSingleton(typedSystem)
         val pinger = singleton.init(SingletonActor(MultiDcPinger(), "ping").withStopMessage(NoMore))
-        val probe = TestProbe[Pong]
+        val probe = TestProbe[Pong]()
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc1"))
         enterBarrier("singleton-up")
@@ -82,7 +83,7 @@ abstract class MultiDcClusterSingletonSpec
           SingletonActor(MultiDcPinger(), "ping")
             .withStopMessage(NoMore)
             .withSettings(ClusterSingletonSettings(typedSystem).withDataCenter("dc1")))
-        val probe = TestProbe[Pong]
+        val probe = TestProbe[Pong]()
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc1"))
       }
@@ -94,7 +95,7 @@ abstract class MultiDcClusterSingletonSpec
       runOn(second, third) {
         val singleton = ClusterSingleton(typedSystem)
         val pinger = singleton.init(SingletonActor(MultiDcPinger(), "ping").withStopMessage(NoMore))
-        val probe = TestProbe[Pong]
+        val probe = TestProbe[Pong]()
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc2"))
       }

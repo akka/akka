@@ -4,13 +4,10 @@ Just like `unfold` but the fold function returns a @scala[`Future`] @java[`Compl
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfoldAsync }
+@apidoc[Source.unfoldAsync](Source$) { scala="#unfoldAsync[S,E](s:S)(f:S=&gt;scala.concurrent.Future[Option[(S,E)]]):akka.stream.scaladsl.Source[E,akka.NotUsed]" java="#unfoldAsync(java.lang.Object,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

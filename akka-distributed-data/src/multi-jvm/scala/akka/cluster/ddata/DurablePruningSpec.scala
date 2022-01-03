@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.cluster.Cluster
+import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
-import scala.concurrent.Await
-import akka.cluster.MemberStatus
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -46,7 +47,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
 
   def startReplicator(sys: ActorSystem): ActorRef =
@@ -74,7 +75,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       join(first, first)
       join(second, first)
 
-      val sys2 = ActorSystem(system.name, system.settings.config)
+      val sys2 = ActorSystem(system.name, MultiNodeSpec.configureNextPortIfFixed(system.settings.config))
       val cluster2 = Cluster(sys2)
       val distributedData2 = DistributedData(sys2)
       val replicator2 = startReplicator(sys2)
@@ -167,6 +168,11 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
         val replicator3 = startReplicator(sys3)
         val probe3 = TestProbe()(sys3)
         cluster3.join(node(first).address)
+
+        awaitAssert({
+          cluster.state.members.exists(m =>
+            m.uniqueAddress == cluster3.selfUniqueAddress && m.status == MemberStatus.Up) should ===(true)
+        }, 10.seconds)
 
         within(10.seconds) {
           var values = Set.empty[Int]

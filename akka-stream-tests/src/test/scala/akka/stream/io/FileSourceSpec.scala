@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -8,34 +8,34 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{ Files, NoSuchFileException }
 import java.util.Random
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+import com.google.common.jimfs.{ Configuration, Jimfs }
+
 import akka.actor.ActorSystem
-import akka.stream.IOResult._
 import akka.stream._
+import akka.stream.IOResult._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.io.FileSourceSpec.Settings
 import akka.stream.scaladsl.{ FileIO, Keep, Sink }
+import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
-import com.google.common.jimfs.{ Configuration, Jimfs }
-
-import scala.concurrent.duration._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.Future
 
 object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
 
-@silent
+@nowarn
 class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   val fs = Jimfs.newFileSystem("FileSourceSpec", Configuration.unix())
 

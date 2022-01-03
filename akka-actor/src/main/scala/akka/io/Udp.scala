@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -7,15 +7,16 @@ package akka.io
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 
+import scala.collection.immutable
+
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
-import scala.collection.immutable
-import akka.io.Inet.{ SoJavaFactories, SocketOption }
-import akka.util.Helpers.Requiring
-import akka.util.ByteString
 import akka.actor._
+import akka.io.Inet.{ SoJavaFactories, SocketOption }
+import akka.util.ByteString
+import akka.util.Helpers.Requiring
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
 
 /**
  * UDP Extension for Akka’s IO layer.
@@ -25,7 +26,7 @@ import com.github.ghik.silencer.silent
  * from whom data can be received. For “connected” UDP mode see [[UdpConnected]].
  *
  * For a full description of the design and philosophy behind this IO
- * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
+ * implementation please refer to <a href="https://akka.io/docs/">the Akka online documentation</a>.
  *
  * The Java API for generating UDP commands is available at [[UdpMessage]].
  */
@@ -99,7 +100,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * The listener actor for the newly bound port will reply with a [[Bound]]
    * message, or the manager will reply with a [[CommandFailed]] message.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final case class Bind(
       handler: ActorRef,
       localAddress: InetSocketAddress,
@@ -123,7 +124,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * The “simple sender” will not stop itself, you will have to send it a [[akka.actor.PoisonPill]]
    * when you want to close the socket.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   case class SimpleSender(options: immutable.Traversable[SocketOption] = Nil) extends Command
   object SimpleSender extends SimpleSender(Nil)
 
@@ -244,8 +245,10 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
  * Java API: factory methods for the message types used when communicating with the Udp service.
  */
 object UdpMessage {
-  import Udp._
   import java.lang.{ Iterable => JIterable }
+
+  import Udp._
+
   import akka.util.ccompat.JavaConverters._
 
   /**

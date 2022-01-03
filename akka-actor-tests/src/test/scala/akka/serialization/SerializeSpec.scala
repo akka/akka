@@ -1,29 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
 
-import language.postfixOps
-
-import akka.testkit.{ AkkaSpec, EventFilter }
-import akka.actor._
 import java.io._
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 import scala.concurrent.Await
-
-import akka.util.{ unused, Timeout }
 import scala.concurrent.duration._
 
-import com.typesafe.config._
-import akka.pattern.ask
-import java.nio.ByteOrder
-import java.nio.ByteBuffer
-
-import akka.actor.dungeon.SerializationCheckFailedException
-import com.github.ghik.silencer.silent
-import test.akka.serialization.NoVerification
 import SerializationTests._
+import scala.annotation.nowarn
+import com.typesafe.config._
+import language.postfixOps
+import test.akka.serialization.NoVerification
+
+import akka.actor._
+import akka.actor.dungeon.SerializationCheckFailedException
+import akka.pattern.ask
+import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.util.{ unused, Timeout }
 import akka.util.ByteString
 
 object SerializationTests {
@@ -60,10 +58,10 @@ object SerializationTests {
 
   protected[akka] trait Marker
   protected[akka] trait Marker2
-  @silent // can't use unused otherwise case class below gets a deprecated
+  @nowarn // can't use unused otherwise case class below gets a deprecated
   class SimpleMessage(s: String) extends Marker
 
-  @silent
+  @nowarn
   class ExtendedSimpleMessage(s: String, i: Int) extends SimpleMessage(s)
 
   trait AnotherInterface extends Marker
@@ -272,11 +270,34 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
         ser.serialize(new Other).get
       }
     }
+
+    "detect duplicate serializer ids" in {
+      (intercept[IllegalArgumentException] {
+        val sys = ActorSystem(
+          "SerializeSpec",
+          ConfigFactory.parseString(s"""
+          akka {
+            actor {
+              serializers {
+                test = "akka.serialization.NoopSerializer"
+                test-same = "akka.serialization.NoopSerializerSameId"
+              }
+      
+              serialization-bindings {
+                "akka.serialization.SerializationTests$$Person" = test
+                "akka.serialization.SerializationTests$$Address" = test-same
+              }
+            }
+          }
+          """))
+        shutdown(sys)
+      }.getMessage should include).regex("Serializer identifier \\[9999\\].*is not unique")
+    }
   }
 }
 
 class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerializabilityConf) {
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout: Timeout = Timeout(5 seconds)
 
   "verify config" in {
     system.settings.SerializeAllCreators should ===(true)
@@ -284,7 +305,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "verify creators" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     system.stop(a)
 
     val b = system.actorOf(Props(new FooAbstractActor))
@@ -307,7 +328,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "verify messages" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     Await.result(a ? "pigdog", timeout.duration) should ===("pigdog")
 
     EventFilter[SerializationCheckFailedException](
@@ -319,7 +340,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "not verify akka messages" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     EventFilter.warning(start = "ok", occurrences = 1).intercept {
       // ActorSystem is not possible to serialize, but ok since it starts with "akka."
       val message = system
@@ -579,6 +600,8 @@ protected[akka] class NoopSerializer2 extends Serializer {
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
 }
+
+protected[akka] class NoopSerializerSameId extends NoopSerializer
 
 @SerialVersionUID(1)
 protected[akka] final case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {

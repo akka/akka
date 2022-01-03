@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import org.reactivestreams.Publisher
+
 import akka.stream._
 import akka.stream.testkit._
 import akka.testkit.EventFilter
-import org.reactivestreams.Publisher
-
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 class GraphZipLatestWithSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
@@ -96,6 +97,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
       probe.expectError() match {
         case a: java.lang.ArithmeticException =>
           a.getMessage should be("/ by zero")
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
       probe.expectNoMessage(200.millis)
     }

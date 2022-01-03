@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io.compression
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
-import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
+
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
+import akka.util.ByteString
 
 trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite =>
 
@@ -73,7 +74,7 @@ est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscin
       "\r\n",
       "\n")
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 }

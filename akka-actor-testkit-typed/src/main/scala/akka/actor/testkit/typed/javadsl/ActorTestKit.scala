@@ -1,30 +1,32 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
+import com.typesafe.config.Config
+
+import akka.actor.DeadLetter
+import akka.actor.Dropped
+import akka.actor.UnhandledMessage
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.internal.TestKitUtils
+import akka.actor.testkit.typed.scaladsl
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.internal.TestKitUtils
-import akka.actor.testkit.typed.scaladsl
-import akka.util.Timeout
-import com.typesafe.config.Config
 import akka.util.JavaDurationConverters._
+import akka.util.Timeout
 
 object ActorTestKit {
 
   /**
-   * Create a testkit named from the class that is calling this method.
+   * Create a testkit named from the ActorTestKit class.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
-   * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    *
@@ -36,7 +38,19 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.testNameFromCallStack(classOf[ActorTestKit])))
 
   /**
-   * Create a named testkit.
+   * Create a testkit from the provided actor system.
+   *
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from the provided actor if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   */
+  def create(system: ActorSystem[_]): ActorTestKit =
+    new ActorTestKit(scaladsl.ActorTestKit(system))
+
+  /**
+   * Create a testkit using the provided name.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
@@ -51,11 +65,11 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(name))
 
   /**
-   * Create a testkit named from the class that is calling this method,
+   * Create a testkit named from the ActorTestKit class,
    * and use a custom config for the actor system.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
-   * e.g. threads will include the name.
+   * It will also used the provided customConfig provided to create the `ActorSystem`
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
@@ -63,10 +77,14 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]), customConfig))
 
   /**
-   * Create a named testkit, and use a custom config for the actor system.
+   * Create a test kit named based on the provided name,
+   * and uses the provided custom config for the actor system.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
+   *
+   * It will also used the provided customConfig provided to create the `ActorSystem`
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
@@ -74,11 +92,14 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(name, customConfig))
 
   /**
-   * Create a named testkit, and use a custom config for the actor system,
-   * and a custom [[akka.actor.testkit.typed.TestKitSettings]]
+   * Create an [[akka.actor.typed.ActorSystem]] named based on the provided name,
+   * use the provided custom config for the actor system, and the testkit will use the provided setting.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
+   *
+   * It will also used the provided customConfig provided to create the `ActorSystem`, and provided setting.
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
@@ -216,6 +237,25 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](name: String, clazz: Class[M]): TestProbe[M] = TestProbe.create(name, clazz, system)
+
+  /**
+   * @return A test probe that is subscribed to dropped letters from the system event bus. Subscription
+   *         will be completed and verified so any dropped letter after it will be caught by the probe.
+   */
+  def createDroppedMessageProbe(): TestProbe[Dropped] =
+    delegate.createDroppedMessageProbe().asJava
+
+  /**
+   * @return A test probe that is subscribed to dead letters from the system event bus. Subscription
+   *         will be completed and verified so any dead letter after it will be caught by the probe.
+   */
+  def createDeadLetterProbe(): TestProbe[DeadLetter] = delegate.createDeadLetterProbe().asJava
+
+  /**
+   * @return A test probe that is subscribed to unhandled messages from the system event bus. Subscription
+   *         will be completed and verified so any unhandled message after it will be caught by the probe.
+   */
+  def createUnhandledMessageProbe(): TestProbe[UnhandledMessage] = delegate.createUnhandledMessageProbe().asJava
 
   // Note that if more methods are added here they should also be added to TestKitJunitResource
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -41,18 +41,19 @@ import akka.util.ByteString
    * The streamId` is encoded as 1 byte.
    */
   def encodeConnectionHeader(streamId: Int): ByteString =
-    Magic ++ ByteString(streamId.toByte)
+    Magic ++ ByteString.fromArrayUnsafe(Array(streamId.toByte))
 
   /**
    * Each frame starts with the frame header that contains the length
    * of the frame. The `frameLength` is encoded as 4 bytes (little endian).
    */
   def encodeFrameHeader(frameLength: Int): ByteString =
-    ByteString(
-      (frameLength & 0xff).toByte,
-      ((frameLength & 0xff00) >> 8).toByte,
-      ((frameLength & 0xff0000) >> 16).toByte,
-      ((frameLength & 0xff000000) >> 24).toByte)
+    ByteString.fromArrayUnsafe(
+      Array[Byte](
+        (frameLength & 0xff).toByte,
+        ((frameLength & 0xff00) >> 8).toByte,
+        ((frameLength & 0xff0000) >> 16).toByte,
+        ((frameLength & 0xff000000) >> 24).toByte))
 }
 
 /**
@@ -68,13 +69,13 @@ import akka.util.ByteString
 
     case object ReadMagic extends Step {
       override def parse(reader: ByteReader): ParseResult[EnvelopeBuffer] = {
-        val magic = reader.take(TcpFraming.Magic.size)
+        val magic = reader.take(TcpFraming.Magic.length)
         if (magic == TcpFraming.Magic)
           ParseResult(None, ReadStreamId)
         else
           throw new FramingException(
             "Stream didn't start with expected magic bytes, " +
-            s"got [${(magic ++ reader.remainingData).take(10).map(_.formatted("%02x")).mkString(" ")}] " +
+            s"got [${(magic ++ reader.remainingData).take(10).map("%02x".format(_)).mkString(" ")}] " +
             "Connection is rejected. Probably invalid accidental access.")
       }
     }

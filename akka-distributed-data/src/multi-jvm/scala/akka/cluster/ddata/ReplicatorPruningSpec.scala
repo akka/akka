@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.InitialStateAsEvents
@@ -13,7 +15,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object ReplicatorPruningSpec extends MultiNodeConfig {
   val first = role("first")
@@ -36,13 +37,13 @@ class ReplicatorPruningSpecMultiJvmNode2 extends ReplicatorPruningSpec
 class ReplicatorPruningSpecMultiJvmNode3 extends ReplicatorPruningSpec
 
 class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with STMultiNodeSpec with ImplicitSender {
-  import ReplicatorPruningSpec._
   import Replicator._
+  import ReplicatorPruningSpec._
 
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
   val replicator = system.actorOf(
     Replicator.props(

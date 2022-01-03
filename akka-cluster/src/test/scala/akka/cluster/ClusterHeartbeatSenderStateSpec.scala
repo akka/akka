@@ -1,20 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.actor.Address
-import akka.remote.FailureDetector
-import akka.remote.DefaultFailureDetectorRegistry
 import java.util.concurrent.ThreadLocalRandom
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.remote.DefaultFailureDetectorRegistry
+import akka.remote.FailureDetector
 
 object ClusterHeartbeatSenderStateSpec {
   class FailureDetectorStub extends FailureDetector {
 
-    trait Status
+    sealed trait Status
     object Up extends Status
     object Down extends Status
     object Unknown extends Status
@@ -218,6 +220,7 @@ class ClusterHeartbeatSenderStateSpec extends AnyWordSpec with Matchers {
 
               }
 
+            case _ => throw new RuntimeException()
           }
         } catch {
           case e: Throwable =>

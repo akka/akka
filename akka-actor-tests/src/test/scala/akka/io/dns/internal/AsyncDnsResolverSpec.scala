@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
 
 import java.net.{ Inet6Address, InetAddress }
 
-import akka.actor.Status.Failure
+import scala.collection.{ immutable => im }
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory, ConfigValueFactory }
+
 import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
+import akka.actor.Status.Failure
 import akka.io.SimpleDnsCache
+import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol._
 import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
 import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
-import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.testkit.{ AkkaSpec, TestProbe, WithLogCapturing }
-import com.typesafe.config.{ Config, ConfigFactory, ConfigValueFactory }
-
-import scala.collection.{ immutable => im }
-import scala.concurrent.duration._
 
 class AsyncDnsResolverSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
@@ -39,7 +40,7 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
     val dnsClient2 = TestProbe()
     val r = resolver(List(dnsClient1.ref, dnsClient2.ref), defaultConfig)
     val senderProbe = TestProbe()
-    implicit val sender = senderProbe.ref
+    implicit val sender: ActorRef = senderProbe.ref
   }
 
   "Async DNS Resolver" must {
@@ -122,9 +123,14 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       r ! Resolve(name)
       dnsClient1.expectNoMessage(50.millis)
       val answer = senderProbe.expectMsgType[Resolved]
-      val Seq(AAAARecord("1:2:3:0:0:0:0:0", Ttl.effectivelyForever, _)) = answer.records.collect {
-        case r: AAAARecord => r
+      val aaaaRecord = answer.records match {
+        case Seq(r: AAAARecord) => r
+        case _                  => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
+      aaaaRecord.name should be("1:2:3:0:0:0:0:0")
+      aaaaRecord.ttl should be(Ttl.effectivelyForever)
+      // The leading '/' indicates no reverse lookup was performed
+      aaaaRecord.ip.toString should be("/1:2:3:0:0:0:0:0")
     }
 
     "return additional records for SRV requests" in new Setup {

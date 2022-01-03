@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.operators;
@@ -36,7 +36,7 @@ public class PartitionDocExample {
             .to(Sink.ignore());
     Sink<Integer, NotUsed> odd =
         Flow.of(Integer.class)
-            .log("even")
+            .log("odd")
             .withAttributes(Attributes.createLogLevels(Attributes.logLevelInfo()))
             .to(Sink.ignore());
 

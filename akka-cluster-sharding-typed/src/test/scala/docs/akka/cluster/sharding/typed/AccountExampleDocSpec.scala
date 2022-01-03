@@ -1,106 +1,82 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.sharding.typed
 
 //#test
-import java.util.UUID
-
+import akka.Done
+import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
+import akka.persistence.typed.PersistenceId
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.persistence.typed.PersistenceId
+import akka.pattern.StatusReply
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.wordspec.AnyWordSpecLike
 
 //#test
 
-//#test-events
-import akka.persistence.journal.inmem.InmemJournal
-import akka.actor.typed.eventstream.EventStream
-
-//#test-events
-
 import docs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity
 
-object AccountExampleDocSpec {
-  val inmemConfig =
-    //#inmem-config
-    """ 
-    akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    akka.persistence.journal.inmem.test-serialization = on
-    """
-  //#inmem-config
-
-  val snapshotConfig =
-    //#snapshot-store-config
-    s""" 
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
-    """
-  //#snapshot-store-config
-}
-
 //#test
-class AccountExampleDocSpec extends ScalaTestWithActorTestKit(s"""
-      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-      akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
-    """) with AnyWordSpecLike with LogCapturing {
+//#testkit
+class AccountExampleDocSpec
+    extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
+    //#testkit
+    with AnyWordSpecLike
+    with BeforeAndAfterEach
+    with LogCapturing {
+
+  private val eventSourcedTestKit =
+    EventSourcedBehaviorTestKit[AccountEntity.Command, AccountEntity.Event, AccountEntity.Account](
+      system,
+      AccountEntity("1", PersistenceId("Account", "1")))
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    eventSourcedTestKit.clear()
+  }
 
   "Account" must {
 
+    "be created with zero balance" in {
+      val result = eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.CreateAccount(_))
+      result.reply shouldBe StatusReply.Ack
+      result.event shouldBe AccountEntity.AccountCreated
+      result.stateOfType[AccountEntity.OpenedAccount].balance shouldBe 0
+    }
+
     "handle Withdraw" in {
-      val probe = createTestProbe[AccountEntity.OperationResult]()
-      val ref = spawn(AccountEntity("1", PersistenceId("Account", "1")))
-      ref ! AccountEntity.CreateAccount(probe.ref)
-      probe.expectMessage(AccountEntity.Confirmed)
-      ref ! AccountEntity.Deposit(100, probe.ref)
-      probe.expectMessage(AccountEntity.Confirmed)
-      ref ! AccountEntity.Withdraw(10, probe.ref)
-      probe.expectMessage(AccountEntity.Confirmed)
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.CreateAccount(_))
+
+      val result1 = eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Deposit(100, _))
+      result1.reply shouldBe StatusReply.Ack
+      result1.event shouldBe AccountEntity.Deposited(100)
+      result1.stateOfType[AccountEntity.OpenedAccount].balance shouldBe 100
+
+      val result2 = eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Withdraw(10, _))
+      result2.reply shouldBe StatusReply.Ack
+      result2.event shouldBe AccountEntity.Withdrawn(10)
+      result2.stateOfType[AccountEntity.OpenedAccount].balance shouldBe 90
     }
 
     "reject Withdraw overdraft" in {
-      val probe = createTestProbe[AccountEntity.OperationResult]()
-      val ref = spawn(AccountEntity("2", PersistenceId("Account", "2")))
-      ref ! AccountEntity.CreateAccount(probe.ref)
-      probe.expectMessage(AccountEntity.Confirmed)
-      ref ! AccountEntity.Deposit(100, probe.ref)
-      probe.expectMessage(AccountEntity.Confirmed)
-      ref ! AccountEntity.Withdraw(110, probe.ref)
-      probe.expectMessageType[AccountEntity.Rejected]
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.CreateAccount(_))
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Deposit(100, _))
+
+      val result = eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Withdraw(110, _))
+      result.reply.isError shouldBe true
+      result.hasNoEvents shouldBe true
     }
 
     "handle GetBalance" in {
-      val opProbe = createTestProbe[AccountEntity.OperationResult]()
-      val ref = spawn(AccountEntity("3", PersistenceId("Account", "3")))
-      ref ! AccountEntity.CreateAccount(opProbe.ref)
-      opProbe.expectMessage(AccountEntity.Confirmed)
-      ref ! AccountEntity.Deposit(100, opProbe.ref)
-      opProbe.expectMessage(AccountEntity.Confirmed)
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.CreateAccount(_))
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Deposit(100, _))
 
-      val getProbe = createTestProbe[AccountEntity.CurrentBalance]()
-      ref ! AccountEntity.GetBalance(getProbe.ref)
-      getProbe.expectMessage(AccountEntity.CurrentBalance(100))
+      val result = eventSourcedTestKit.runCommand[AccountEntity.CurrentBalance](AccountEntity.GetBalance(_))
+      result.reply.balance shouldBe 100
+      result.hasNoEvents shouldBe true
     }
-
-    //#test
-    //#test-events
-    "store events" in {
-      val eventProbe = createTestProbe[InmemJournal.Operation]()
-      system.eventStream ! EventStream.Subscribe(eventProbe.ref)
-
-      val probe = createTestProbe[AccountEntity.OperationResult]()
-      val ref = spawn(AccountEntity("4", PersistenceId("Account", "4")))
-      ref ! AccountEntity.CreateAccount(probe.ref)
-      eventProbe.expectMessageType[InmemJournal.Write].event should ===(AccountEntity.AccountCreated)
-
-      ref ! AccountEntity.Deposit(100, probe.ref)
-      probe.expectMessage(AccountEntity.Confirmed)
-      eventProbe.expectMessageType[InmemJournal.Write].event should ===(AccountEntity.Deposited(100))
-    }
-    //#test-events
-    //#test
   }
 }
 //#test

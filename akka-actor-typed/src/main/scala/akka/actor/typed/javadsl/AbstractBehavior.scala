@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
@@ -41,21 +41,22 @@ abstract class AbstractBehavior[T](context: ActorContext[T]) extends ExtensibleB
 
   private var _receive: OptionVal[Receive[T]] = OptionVal.None
   private def receive: Receive[T] = _receive match {
-    case OptionVal.None =>
+    case OptionVal.Some(r) => r
+    case _ =>
       val receive = createReceive
       _receive = OptionVal.Some(receive)
       receive
-    case OptionVal.Some(r) => r
   }
 
   protected def getContext: ActorContext[T] = context
 
-  private def checkRightContext(ctx: TypedActorContext[T]): Unit =
+  private def checkRightContext(ctx: TypedActorContext[T]): Unit = {
     if (ctx.asJava ne context)
       throw new IllegalStateException(
         s"Actor [${ctx.asJava.getSelf}] of AbstractBehavior class " +
         s"[${getClass.getName}] was created with wrong ActorContext [${context.asJava.getSelf}]. " +
         "Wrap in Behaviors.setup and pass the context to the constructor of AbstractBehavior.")
+  }
 
   @throws(classOf[Exception])
   override final def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] = {

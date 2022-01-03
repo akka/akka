@@ -1,8 +1,13 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.scaladsl
+
+import scala.concurrent.Future
+import scala.util.Success
+
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -11,10 +16,6 @@ import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-
-import scala.concurrent.Future
-import scala.util.Success
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class MaterializerForTypedSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
@@ -37,7 +38,7 @@ class MaterializerForTypedSpec extends ScalaTestWithActorTestKit with AnyWordSpe
       val actor = testKit.spawn(Behaviors.setup[String] { context =>
         val materializerForActor = Materializer(context)
 
-        Behaviors.receiveMessage[String] {
+        Behaviors.receiveMessagePartial[String] {
           case "run" =>
             val f = Source.single("hello").runWith(Sink.head)(materializerForActor)
             f.onComplete(probe.ref ! _)(system.executionContext)

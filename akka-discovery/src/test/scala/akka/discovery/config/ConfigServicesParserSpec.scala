@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery.config
 
-import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
-import akka.discovery.config.ConfigServicesParserSpec._
-import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.collection.immutable
+
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
+import akka.discovery.config.ConfigServicesParserSpec._
 
 object ConfigServicesParserSpec {
   val exampleConfig: Config = ConfigFactory.parseString("""

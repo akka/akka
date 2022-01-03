@@ -1,0 +1,69 @@
+name: Pull Requests
+
+on:
+  pull_request:
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-code-style:
+    name: Check / Code Style
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Code style check
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Dsbt.override.build.repos=false \
+          -Dsbt.log.noformat=false \
+          verifyCodeStyle
+
+  pull-request-validation:
+    name: Check / Tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: sbt validatePullRequest
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.mima.enabled=false \
+          -Dakka.ci-server=true \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.timefactor=2 \
+          -Dakka.actor.testkit.typed.timefactor=2 \
+          -Dakka.test.tags.exclude=gh-exclude \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dakka.test.multi-node=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+          validateCompile validatePullRequest

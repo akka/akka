@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -9,9 +9,10 @@ import java.nio.ByteOrder
 
 import scala.util.Random
 
+import com.typesafe.config.ConfigFactory
+
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
-import com.typesafe.config.ConfigFactory
 
 object PrimitivesSerializationSpec {
   val serializationTestOverrides = ""

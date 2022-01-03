@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.AssociationHandle
 import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
-import com.github.ghik.silencer.silent
 
 object Ticket15109Spec extends MultiNodeConfig {
   val first = role("first")
@@ -46,7 +47,7 @@ object Ticket15109Spec extends MultiNodeConfig {
 class Ticket15109SpecMultiJvmNode1 extends Ticket15109Spec
 class Ticket15109SpecMultiJvmNode2 extends Ticket15109Spec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
 
   import Ticket15109Spec._
@@ -73,7 +74,7 @@ abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
       var subject: ActorRef = system.deadLetters
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
       }
 
       enterBarrier("actors-started")

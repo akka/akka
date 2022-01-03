@@ -1,23 +1,24 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
-import akka.stream.scaladsl._
-import org.openjdk.jmh.annotations._
-
 import scala.concurrent._
 import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+
+import akka.actor.ActorSystem
+import akka.stream.scaladsl._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class EmptySourceBenchmark {
-  implicit val system = ActorSystem("EmptySourceBenchmark")
+  implicit val system: ActorSystem = ActorSystem("EmptySourceBenchmark")
 
   @TearDown
   def shutdown(): Unit = {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -7,20 +7,22 @@ package akka.remote
 import scala.collection.mutable
 import scala.concurrent.duration._
 
+import scala.annotation.nowarn
+
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
-import akka.dispatch.Dispatchers
 import akka.remote.artery.ArteryTransport
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object RemoteWatcher {
 
   /**
@@ -90,6 +92,7 @@ private[akka] object RemoteWatcher {
  * both directions, but independent of each other.
  *
  */
+@InternalApi
 private[akka] class RemoteWatcher(
     failureDetector: FailureDetectorRegistry[Address],
     heartbeatInterval: FiniteDuration,
@@ -110,18 +113,18 @@ private[akka] class RemoteWatcher(
     if (artery) (ArteryHeartbeat, ArteryHeartbeatRsp(AddressUidExtension(context.system).longAddressUid))
     else {
       // For classic remoting the 'int' part is sufficient
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val addressUid = AddressUidExtension(context.system).addressUid
       (Heartbeat, HeartbeatRsp(addressUid))
     }
 
   // actors that this node is watching, map of watchee -> Set(watchers)
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]()
     with mutable.MultiMap[InternalActorRef, InternalActorRef]
 
   // nodes that this node is watching, i.e. expecting heartbeats from these nodes. Map of address -> Set(watchee) on this address
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   val watcheeByNodes = new mutable.HashMap[Address, mutable.Set[InternalActorRef]]()
     with mutable.MultiMap[Address, InternalActorRef]
   def watchingNodes = watcheeByNodes.keySet
@@ -192,8 +195,10 @@ private[akka] class RemoteWatcher(
       }
     }
 
-  def publishAddressTerminated(address: Address): Unit =
+  def publishAddressTerminated(address: Address): Unit = {
+    log.debug("Publish AddressTerminated [{}]", address)
     AddressTerminatedTopic(context.system).publish(AddressTerminated(address))
+  }
 
   def quarantine(address: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
     remoteProvider.transport match {
@@ -205,7 +210,7 @@ private[akka] class RemoteWatcher(
   /** Returns true if either has cluster or `akka.remote.use-unsafe-remote-features-outside-cluster`
    * is enabled. Can be overridden when using RemoteWatcher as a superclass.
    */
-  @InternalApi protected def shouldWatch(@unused watchee: InternalActorRef): Boolean = {
+  protected def shouldWatch(@unused watchee: InternalActorRef): Boolean = {
     // In this it is unnecessary if only created by RARP, but cluster needs it.
     // Cleaner than overriding Cluster watcher addWatch/removeWatch just for one boolean test
     remoteProvider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
@@ -220,7 +225,7 @@ private[akka] class RemoteWatcher(
 
       // add watch from self, this will actually send a Watch to the target when necessary
       context.watch(watchee)
-    } else remoteProvider.warnIfUnsafeDeathwatchWithoutCluster(watcher, watchee, "Watch")
+    } else remoteProvider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "Watch")
   }
 
   def watchNode(watchee: InternalActorRef): Unit = {
@@ -249,7 +254,7 @@ private[akka] class RemoteWatcher(
           }
         case None =>
       }
-    } else remoteProvider.warnIfUnsafeDeathwatchWithoutCluster(watcher, watchee, "Unwatch")
+    } else remoteProvider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "Unwatch")
   }
 
   def removeWatchee(watchee: InternalActorRef): Unit = {

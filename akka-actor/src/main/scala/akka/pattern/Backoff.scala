@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
+
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import scala.annotation.nowarn
 
 import akka.actor.{ OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.DoNotInherit
 import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 import akka.util.JavaDurationConverters._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * @deprecated This API is superseded by the [[BackoffOpts]] object.
@@ -566,7 +567,7 @@ trait BackoffOptions {
   private[akka] def props: Props
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private final case class BackoffOptionsImpl(
     backoffType: BackoffType = RestartImpliesFailure,
     childProps: Props,
@@ -616,7 +617,7 @@ private final case class BackoffOptionsImpl(
             backoffReset,
             randomFactor,
             supervisorStrategy,
-            replyWhileStopped))
+            replyWhileStopped.map(msg => ReplyWith(msg)).getOrElse(ForwardDeathLetters)))
       //onStop method in companion object
       case StopImpliesFailure =>
         Props(
@@ -628,12 +629,12 @@ private final case class BackoffOptionsImpl(
             backoffReset,
             randomFactor,
             supervisorStrategy,
-            replyWhileStopped,
+            replyWhileStopped.map(msg => ReplyWith(msg)).getOrElse(ForwardDeathLetters),
             finalStopMessage))
     }
   }
 }
 
 private sealed trait BackoffType
-private final case object StopImpliesFailure extends BackoffType
-private final case object RestartImpliesFailure extends BackoffType
+private case object StopImpliesFailure extends BackoffType
+private case object RestartImpliesFailure extends BackoffType

@@ -1,25 +1,31 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.ActorRef
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors
-import scala.concurrent.duration.FiniteDuration
+import akka.testkit.WithLogCapturing
 
 object ProxyShardingSpec {
   val config = """
-  akka.actor.provider = "cluster"
+  akka.actor.provider = cluster
+  akka.loglevel = DEBUG
+  akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
   akka.remote.classic.netty.tcp.port = 0
   akka.remote.artery.canonical.port = 0
+  akka.cluster.sharding.verbose-debug-logging = on
+  akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
   """
 }
 
-class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
+class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) with WithLogCapturing {
 
   val role = "Shard"
   val clusterSharding: ClusterSharding = ClusterSharding(system)
@@ -30,11 +36,12 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
   }
 
   val idExtractor: ShardRegion.ExtractEntityId = {
-    case msg @ id => (id.toString, msg)
+    case msg => (msg.toString, msg)
   }
 
   val shardResolver: ShardRegion.ExtractShardId = {
     case id: Int => id.toString
+    case _       => throw new IllegalArgumentException()
   }
 
   val shardProxy: ActorRef =

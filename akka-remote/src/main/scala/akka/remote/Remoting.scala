@@ -1,39 +1,40 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
+import java.net.URLEncoder
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeoutException
+
+import scala.collection.immutable
+import scala.collection.immutable.{ HashMap, Seq }
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
+import scala.util.control.NonFatal
+
+import scala.annotation.nowarn
+import com.typesafe.config.Config
+
 import akka.Done
-import akka.actor.SupervisorStrategy._
 import akka.actor._
+import akka.actor.ActorInitializationException
+import akka.actor.SupervisorStrategy._
+import akka.annotation.InternalStableApi
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.{ ask, gracefulStop, pipe }
 import akka.remote.EndpointManager._
 import akka.remote.Remoting.TransportSupervisor
-import akka.remote.transport.Transport.{ ActorAssociationEventListener, AssociationEventListener, InboundAssociation }
 import akka.remote.transport._
-import com.typesafe.config.Config
-import java.net.URLEncoder
-import java.util.concurrent.TimeoutException
-
-import scala.collection.immutable.{ HashMap, Seq }
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
-import java.util.concurrent.ConcurrentHashMap
-
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.remote.transport.Transport.{ ActorAssociationEventListener, AssociationEventListener, InboundAssociation }
 import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
-
-import scala.collection.immutable
-import akka.actor.ActorInitializationException
-import akka.annotation.InternalStableApi
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -54,7 +55,7 @@ private[akka] final case class RARP(provider: RemoteActorRefProvider) extends Ex
  */
 private[akka] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
-  override def lookup() = RARP
+  override def lookup = RARP
 
   override def createExtension(system: ExtendedActorSystem) = RARP(system.provider.asInstanceOf[RemoteActorRefProvider])
 }
@@ -77,7 +78,7 @@ private[akka] trait HeartbeatMessage extends PriorityMessage
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object Remoting {
 
   final val EndpointManagerName = "endpointManager"
@@ -133,7 +134,7 @@ private[remote] object Remoting {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @ccompatUsedUntil213
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends RemoteTransport(_system, _provider) {
@@ -149,14 +150,14 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   import provider.remoteSettings._
 
-  private implicit val ec = system.dispatchers.lookup(Dispatcher)
+  private implicit val ec: MessageDispatcher = system.dispatchers.lookup(Dispatcher)
 
-  val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]), "transports")
+  val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]()), "transports")
 
   override def localAddressForRemote(remote: Address): Address =
     Remoting.localAddressForRemote(transportMapping, remote)
 
-  val log: LoggingAdapter = Logging(system.eventStream, getClass)
+  val log: LoggingAdapter = Logging(system.eventStream, classOf[Remoting])
   val eventPublisher = new EventPublisher(system, log, RemoteLifecycleEventsLogLevel)
 
   private def notifyError(msg: String, cause: Throwable): Unit =
@@ -257,7 +258,10 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
     case Some(manager) =>
       implicit val timeout = CommandAckTimeout
-      (manager ? ManagementCommand(cmd)).map { case ManagementCommandAck(status) => status }
+      (manager ? ManagementCommand(cmd)).map {
+        case ManagementCommandAck(status) => status
+        case unexpected                   => throw new IllegalArgumentException(s"Unexpected response type: ${unexpected.getClass}")
+      }
     case None =>
       throw new RemoteTransportExceptionNoStackTrace(
         "Attempted to send management command but Remoting is not running.",
@@ -287,7 +291,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object EndpointManager {
 
   // Messages between Remoting and EndpointManager
@@ -459,17 +463,17 @@ private[remote] object EndpointManager {
 
     def prune(): Unit = {
       addressToWritable = addressToWritable.collect {
-        case entry @ (_, Gated(timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, Gated(timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // Gated removed when no time left
           entry
-        case entry @ (_, Quarantined(_, timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, Quarantined(_, timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // Quarantined removed when no time left
           entry
         case entry @ (_, _: Pass) => entry
       }
 
       addressToRefuseUid = addressToRefuseUid.collect {
-        case entry @ (_, (_, timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, (_, timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // // Quarantined/refuseUid removed when no time left
           entry
       }
@@ -480,7 +484,7 @@ private[remote] object EndpointManager {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
@@ -536,7 +540,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
           case d: FiniteDuration =>
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
             eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid.toLong))
-          case _ => // disabled
+          case null => // disabled
         }
         Stop
 
@@ -647,7 +651,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ManagementCommand(cmd) =>
       val allStatuses: immutable.Seq[Future[Boolean]] =
         transportMapping.values.iterator.map(transport => transport.managementCommand(cmd)).to(immutable.IndexedSeq)
-      akka.compat.Future.fold(allStatuses)(true)(_ && _).map(ManagementCommandAck).pipeTo(sender())
+      akka.compat.Future.fold(allStatuses)(true)(_ && _).map(ManagementCommandAck.apply).pipeTo(sender())
 
     case Quarantine(address, uidToQuarantineOption) =>
       // Stop writers
@@ -779,7 +783,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ShutdownAndFlush =>
       // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       def shutdownAll[T](resources: IterableOnce[T])(shutdown: T => Future[Boolean]): Future[Boolean] = {
         Future.sequence(resources.toList.map(shutdown)).map(_.forall(identity)).recover {
           case NonFatal(_) => false

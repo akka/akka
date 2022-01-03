@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -7,18 +7,25 @@ package internal
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import akka.Done
-import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
-import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.scaladsl.Behaviors
+
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.Done
+import akka.actor.dungeon.Dispatch
+import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.scaladsl.Behaviors
+import com.typesafe.config.ConfigFactory
+import org.scalatest.time.Span
+
+import akka.actor.testkit.typed.TestKitSettings
 
 class ActorSystemSpec
     extends AnyWordSpec
@@ -28,15 +35,18 @@ class ActorSystemSpec
     with Eventually
     with LogCapturing {
 
-  override implicit val patienceConfig = PatienceConfig(1.second)
-  def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
+  private val testKitSettings = TestKitSettings(ConfigFactory.load().getConfig("akka.actor.testkit.typed"))
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(testKitSettings.SingleExpectDefaultTimeout, Span(100, org.scalatest.time.Millis))
+  def system[T](behavior: Behavior[T], name: String, props: Props = Props.empty) =
+    ActorSystem(behavior, name, ConfigFactory.empty(), props)
   def suite = "adapter"
 
   case class Probe(message: String, replyTo: ActorRef[String])
 
-  def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(
+  def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true, props: Props = Props.empty)(
       block: ActorSystem[T] => Unit): Unit = {
-    val sys = system(behavior, s"$suite-$name")
+    val sys = system(behavior, s"$suite-$name", props)
     try {
       block(sys)
       if (doTerminate) {
@@ -73,7 +83,7 @@ class ActorSystemSpec
         Behaviors.receiveMessage[Done] { _ =>
           Behaviors.stopped
         }
-      withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] =>
+      withSystem("shutdown", stoppable, doTerminate = false) { (sys: ActorSystem[Done]) =>
         sys ! Done
         sys.whenTerminated.futureValue
       }
@@ -133,7 +143,7 @@ class ActorSystemSpec
 
     "have a working thread factory" in {
       withSystem("thread", Behaviors.empty[String]) { sys =>
-        val p = Promise[Int]
+        val p = Promise[Int]()
         sys.threadFactory
           .newThread(new Runnable {
             def run(): Unit = p.success(42)
@@ -161,6 +171,29 @@ class ActorSystemSpec
     "return default address " in {
       withSystem("address", Behaviors.empty[String]) { sys =>
         sys.address shouldBe Address("akka", "adapter-address")
+      }
+    }
+
+    case class WhatsYourMailbox(replyTo: ActorRef[String])
+    "use a custom mailbox type for the user guardian" in {
+      withSystem(
+        "guardian-mailbox",
+        Behaviors.receive[WhatsYourMailbox] {
+          case (context, WhatsYourMailbox(replyTo)) =>
+            replyTo ! context
+              .asInstanceOf[ActorContextImpl[_]]
+              .classicActorContext
+              .asInstanceOf[Dispatch]
+              .mailbox
+              .messageQueue
+              .getClass
+              .getName
+            Behaviors.same
+        },
+        props = MailboxSelector.bounded(5)) { implicit sys =>
+        val probe = TestProbe[String]()
+        sys ! WhatsYourMailbox(probe.ref)
+        probe.expectMessage("akka.dispatch.BoundedMailbox$MessageQueue")
       }
     }
   }

@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
+
+import scala.annotation.nowarn
 
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
-import com.github.ghik.silencer.silent
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class FlowDispatcherSpec extends StreamSpec(s"my-dispatcher = $${akka.test.stream-dispatcher}") {
 
   val defaultSettings = ActorMaterializerSettings(system)
@@ -19,12 +20,13 @@ class FlowDispatcherSpec extends StreamSpec(s"my-dispatcher = $${akka.test.strea
       settings: ActorMaterializerSettings = defaultSettings,
       dispatcher: String = "akka.test.stream-dispatcher") = {
 
-    implicit val materializer = ActorMaterializer(settings)
+    implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
     val probe = TestProbe()
     Source(List(1, 2, 3)).map(i => { probe.ref ! Thread.currentThread().getName(); i }).to(Sink.ignore).run()
     probe.receiveN(3).foreach {
-      case s: String => s should startWith(system.name + "-" + dispatcher)
+      case s: String  => s should startWith(system.name + "-" + dispatcher)
+      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
     }
   }
 

@@ -16,7 +16,8 @@
 .#*
 .*.swp
 .DS_Store
-.cache
+.bloop/
+.bsp/
 .cache
 .classpath
 .codefellow
@@ -25,6 +26,7 @@
 .history
 .idea
 .manager
+.metals/
 .multi-jvm
 .project
 .sbtserver
@@ -60,6 +62,7 @@ etags
 lib_managed
 logs
 manifest.mf
+metals.sbt
 mongoDB/
 multiverse.log
 out
@@ -87,8 +90,14 @@ test-output
 factorials.txt
 factorial2.txt
 
+all-projects.txt
+multi-node-projects.txt
+/multi-node-test.hosts
+
 # Default sigar library extract location.
 native/
 
 /dumps/
 /core
+
+.tmp

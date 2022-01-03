@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
+
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.util.control.NoStackTrace
 
 import akka.AkkaException
 import akka.Done
 import akka.actor._
 import akka.annotation.InternalStableApi
 import akka.event.LoggingAdapter
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.util.control.NoStackTrace
 import akka.util.{ unused, OptionVal }
 
 /**

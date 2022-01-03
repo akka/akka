@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.internal
 
 import scala.concurrent.duration._
 
-import akka.annotation.InternalApi
-import akka.cluster.{ ddata => dd }
-import akka.pattern.ask
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.util.Timeout
-import akka.util.JavaDurationConverters._
+import akka.annotation.InternalApi
+import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.ReplicatedData
-import akka.actor.typed.Terminated
+import akka.pattern.ask
+import akka.util.JavaDurationConverters._
+import akka.util.Timeout
 
 /**
  * INTERNAL API
@@ -71,7 +71,7 @@ import akka.actor.typed.Terminated
                 Behaviors.same
 
               case cmd: JReplicator.Get[d] =>
-                implicit val timeout = Timeout(cmd.consistency.timeout match {
+                implicit val timeout: Timeout = Timeout(cmd.consistency.timeout match {
                   case java.time.Duration.ZERO => localAskTimeout
                   case t                       => t.asScala + additionalAskTimeout
                 })
@@ -99,7 +99,7 @@ import akka.actor.typed.Terminated
                 Behaviors.same
 
               case cmd: JReplicator.Update[d] =>
-                implicit val timeout = Timeout(cmd.writeConsistency.timeout match {
+                implicit val timeout: Timeout = Timeout(cmd.writeConsistency.timeout match {
                   case java.time.Duration.ZERO => localAskTimeout
                   case t                       => t.asScala + additionalAskTimeout
                 })
@@ -166,7 +166,7 @@ import akka.actor.typed.Terminated
                 Behaviors.same
 
               case cmd: JReplicator.Delete[d] =>
-                implicit val timeout = Timeout(cmd.consistency.timeout match {
+                implicit val timeout: Timeout = Timeout(cmd.consistency.timeout match {
                   case java.time.Duration.ZERO => localAskTimeout
                   case t                       => t.asScala + additionalAskTimeout
                 })
@@ -205,6 +205,8 @@ import akka.actor.typed.Terminated
                 classicReplicator.tell(dd.Replicator.FlushChanges, sender = akka.actor.ActorRef.noSender)
                 Behaviors.same
 
+              case unexpected =>
+                throw new RuntimeException(s"Unexpected message: ${unexpected.getClass}") // compiler exhaustiveness check pleaser
             }
           }
           .receiveSignal {

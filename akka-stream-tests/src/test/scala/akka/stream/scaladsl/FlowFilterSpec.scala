@@ -1,10 +1,13 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
+
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 import akka.stream.ActorAttributes._
 import akka.stream.Attributes
@@ -13,9 +16,6 @@ import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class FlowFilterSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

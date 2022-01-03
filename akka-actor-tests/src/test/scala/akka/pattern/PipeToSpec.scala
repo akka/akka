@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
 
+import scala.concurrent.Future
+
+import akka.actor.Status
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
-import scala.concurrent.Future
-import akka.actor.Status
 
 class PipeToSpec extends AkkaSpec {
 
@@ -43,7 +44,7 @@ class PipeToSpec extends AkkaSpec {
 
     "work in Java form with sender()" in {
       val p = TestProbe()
-      pipe(Future(42)) to (p.ref, testActor)
+      pipe(Future(42)).to(p.ref, testActor)
       p.expectMsg(42)
       p.lastSender should ===(testActor)
     }
@@ -85,7 +86,7 @@ class PipeToSpec extends AkkaSpec {
     "work in Java form with sender()" in {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
-      pipe(Future(42)) to (sel, testActor)
+      pipe(Future(42)).to(sel, testActor)
       p.expectMsg(42)
       p.lastSender should ===(testActor)
     }

@@ -1,19 +1,20 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.japi
 
 import java.util.Collections.{ emptyList, singletonList }
 
-import akka.util.Collections.EmptyImmutableSeq
-import com.github.ghik.silencer.silent
-
 import scala.collection.immutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.runtime.AbstractPartialFunction
 import scala.util.control.NoStackTrace
+
+import scala.annotation.nowarn
+
+import akka.util.Collections.EmptyImmutableSeq
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
@@ -83,7 +84,7 @@ object Pair {
  *
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Creator]].
  */
-@silent("@SerialVersionUID has no effect")
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 trait Creator[T] extends Serializable {
 
@@ -257,7 +258,7 @@ object Util {
         if (i.hasNext) {
           val builder = new immutable.VectorBuilder[T]
 
-          do { builder += i.next() } while (i.hasNext)
+          while ({ builder += i.next(); i.hasNext }) ()
 
           builder.result()
         } else EmptyImmutableSeq

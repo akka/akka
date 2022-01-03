@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
 import scala.annotation.tailrec
+
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.DoNotInherit
 
@@ -54,13 +55,13 @@ object SpawnProtocol {
   def apply(): Behavior[Command] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
-        case Spawn(bhvr, name, props, replyTo) =>
+        case Spawn(bhvr: Behavior[t], name, props, replyTo) =>
           val ref =
             if (name == null || name.equals(""))
               ctx.spawnAnonymous(bhvr, props)
             else {
 
-              @tailrec def spawnWithUniqueName(c: Int): ActorRef[Any] = {
+              @tailrec def spawnWithUniqueName(c: Int): ActorRef[t] = {
                 val nameSuggestion = if (c == 0) name else s"$name-$c"
                 ctx.child(nameSuggestion) match {
                   case Some(_) => spawnWithUniqueName(c + 1) // already taken, try next

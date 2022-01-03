@@ -1,19 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
+
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.util.{ Failure, Try }
+import scala.util.control.NoStackTrace
 
 import akka.actor.{ OneForOneStrategy, _ }
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent, TestProbe }
-
-import scala.collection.immutable
-import scala.util.control.NoStackTrace
-import scala.util.{ Failure, Try }
-
-import scala.concurrent.Future
 
 object EventSourcedActorFailureSpec {
   import PersistentActorSpec.{ Cmd, Evt, ExamplePersistentActor }
@@ -40,19 +39,20 @@ object EventSourcedActorFailureSpec {
       val readFromStore = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       if (readFromStore.isEmpty)
         Future.successful(())
-      else if (isCorrupt(readFromStore))
+      else if (isCorrupt(readFromStore.map(_._1)))
         Future.failed(new SimulatedException(s"blahonga $fromSequenceNr $toSequenceNr"))
       else {
-        readFromStore.foreach(recoveryCallback)
+        readFromStore.map(_._1).foreach(recoveryCallback)
         Future.successful(())
       }
     }
 
     def isWrong(messages: immutable.Seq[AtomicWrite]): Boolean =
-      messages.exists {
-        case a: AtomicWrite =>
-          a.payload.exists { case PersistentRepr(Evt(s: String), _) => s.contains("wrong") }
-        case _ => false
+      messages.exists { a =>
+        a.payload.exists {
+          case PersistentRepr(Evt(s: String), _) => s.contains("wrong")
+          case _                                 => false
+        }
       }
 
     def checkSerializable(messages: immutable.Seq[AtomicWrite]): immutable.Seq[Try[Unit]] =
@@ -67,7 +67,10 @@ object EventSourcedActorFailureSpec {
       }
 
     def isCorrupt(events: Seq[PersistentRepr]): Boolean =
-      events.exists { case PersistentRepr(Evt(s: String), _) => s.contains("corrupt") }
+      events.exists {
+        case PersistentRepr(Evt(s: String), _) => s.contains("corrupt")
+        case _                                 => false
+      }
 
   }
 

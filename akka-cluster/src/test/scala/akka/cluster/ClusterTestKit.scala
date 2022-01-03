@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.actor.ActorSystem
-import akka.cluster.MemberStatus.Removed
-import akka.testkit.{ AkkaSpec, TestKitBase }
-import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.util.Random
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.actor.ActorSystem
+import akka.testkit.{ AkkaSpec, TestKitBase }
 
 /**
  * Builds on TestKitBase to provide some extra utilities to run cluster test.
@@ -115,14 +115,22 @@ trait ClusterTestKit extends TestKitBase {
       val port = cluster.selfAddress.port.get
 
       // remove old before starting the new one
-      cluster.leave(cluster.readView.selfAddress)
-      awaitCond(
-        cluster.readView.status == Removed,
-        message =
-          s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]")
+      cluster.leave(cluster.selfAddress)
+      awaitCond(cluster.isTerminated, message = s"awaiting node [${cluster.selfAddress}] to leave and be terminated")
+
+      awaitAssert {
+        actorSystems.foreach { sys =>
+          if (sys != actorSystem && Cluster(sys).selfMember.status == MemberStatus.Up) {
+            // check that it's removed from members
+            if (Cluster(sys).state.members.exists(_.uniqueAddress == cluster.selfUniqueAddress))
+              throw new AssertionError(
+                s"awaiting node [${cluster.selfAddress}] to be removed, " +
+                s"still member in [${Cluster(sys).selfAddress}]: ${Cluster(sys).state}")
+          }
+        }
+      }
 
       shutdown(actorSystem)
-      awaitCond(cluster.isTerminated)
 
       // remove from internal list
       actorSystems = actorSystems.filterNot(_ == actorSystem)
@@ -139,12 +147,12 @@ trait ClusterTestKit extends TestKitBase {
     /**
      * Returns true if the cluster instance for the provided [[ActorSystem]] is [[MemberStatus.Up]].
      */
-    def isMemberUp(system: ActorSystem): Boolean = Cluster(system).readView.status == MemberStatus.Up
+    def isMemberUp(system: ActorSystem): Boolean = Cluster(system).selfMember.status == MemberStatus.Up
 
     /**
      * Returns true if the cluster instance for the provided [[ActorSystem]] has be shutdown.
      */
-    def isTerminated(system: ActorSystem): Boolean = Cluster(system).readView.isTerminated
+    def isTerminated(system: ActorSystem): Boolean = Cluster(system).isTerminated
 
   }
 }
@@ -208,9 +216,11 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
       val rolling = Random.shuffle(nodes)
 
       for (restarting <- rolling.tail) {
-        val restarted = util.quitAndRestart(restarting, config(upgradeConfig))
-        util.joinCluster(restarted)
-        awaitCond(if (shouldRejoin) util.isMemberUp(restarted) else util.isTerminated(restarted), timeout)
+        within(timeout) {
+          val restarted = util.quitAndRestart(restarting, config(upgradeConfig))
+          util.joinCluster(restarted)
+          awaitCond(if (shouldRejoin) util.isMemberUp(restarted) else util.isTerminated(restarted))
+        }
       }
       awaitCond(Cluster(rolling.head).readView.members.size == (if (shouldRejoin) rolling.size else 1), awaitAll)
 

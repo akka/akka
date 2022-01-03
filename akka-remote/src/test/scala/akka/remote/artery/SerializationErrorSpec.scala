@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import akka.actor.{ ActorIdentity, Identify, RootActorPath }
+import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import akka.testkit.EventFilter
 
 object SerializationErrorSpec {
 
-  object NotSerializableMsg
+  class NotSerializableMsg
 
 }
 
@@ -42,7 +42,7 @@ class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defau
       expectMsg("ping")
 
       EventFilter[java.io.NotSerializableException](start = "Failed to serialize message", occurrences = 1).intercept {
-        remoteRef ! NotSerializableMsg
+        remoteRef ! new NotSerializableMsg()
       }
 
       remoteRef ! "ping2"

@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
 
 import akka.annotation.InternalApi
-import akka.persistence.typed.scaladsl
 import akka.persistence.typed.javadsl
+import akka.persistence.typed.scaladsl
 
 /**
  * INTERNAL API

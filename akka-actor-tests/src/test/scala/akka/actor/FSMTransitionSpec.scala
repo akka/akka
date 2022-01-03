@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.testkit._
-
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import akka.testkit._
 
 object FSMTransitionSpec {
 
@@ -35,7 +35,7 @@ object FSMTransitionSpec {
       case Event("tick", _) => goto(0)
     }
     whenUnhandled {
-      case Event("reply", _) => stay.replying("reply")
+      case Event("reply", _) => stay().replying("reply")
     }
     initialize()
     override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { target ! "restarted" }

@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testkit
 
 import java.io.File
 
-import akka.remote.testconductor.RoleName
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import akka.remote.testconductor.RoleName
 
 /**
  * INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
  */
-private[akka] trait PerfFlamesSupport { _: MultiNodeSpec =>
+private[akka] trait PerfFlamesSupport { self: MultiNodeSpec =>
 
   /**
    * Runs `perf-java-flames` script on given node (JVM process).

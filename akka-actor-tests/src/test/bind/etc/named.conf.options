@@ -3,7 +3,7 @@ options {
 
 	// If there is a firewall between you and nameservers you want
 	// to talk to, you may need to fix the firewall to allow multiple
-	// ports to talk.  See http://www.kb.cert.org/vuls/id/800113
+	// ports to talk.  See https://www.kb.cert.org/vuls/id/800113
 
 	// If your ISP provided one or more IP addresses for stable 
 	// nameservers, you probably want to use them as forwarders.  

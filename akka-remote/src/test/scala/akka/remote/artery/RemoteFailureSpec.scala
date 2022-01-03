@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.remote.EndpointDisassociatedException
-import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent }
 import scala.concurrent.duration._
 
+import akka.remote.EndpointDisassociatedException
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent }
 import akka.testkit.DeadLettersFilter
 import akka.testkit.TestEvent.Mute
 

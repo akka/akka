@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
-import akka.actor._
-import akka.testkit._
-import akka.cluster.metrics.StandardMetrics._
+import scala.language.postfixOps
+
 import akka.cluster.Cluster
+import akka.cluster.metrics.StandardMetrics._
+import akka.testkit._
 
 class ClusterMetricsExtensionSpec
     extends AkkaSpec(MetricsConfig.clusterSigarMock)
@@ -82,6 +82,7 @@ class ClusterMetricsExtensionSpec
               loadAverageMock.get should ===(loadAverageEwma +- epsilon)
               cpuCombinedMock.get should ===(cpuCombinedEwma +- epsilon)
               cpuStolenMock.get should ===(cpuStolenEwma +- epsilon)
+            case _ => fail()
           }
       }
     }

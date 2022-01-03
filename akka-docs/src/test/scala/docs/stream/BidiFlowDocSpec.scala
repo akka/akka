@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -168,23 +168,23 @@ class BidiFlowDocSpec extends AkkaSpec {
       // test it by plugging it into its own inverse and closing the right end
       val pingpong = Flow[Message].collect { case Ping(id) => Pong(id) }
       val flow = stack.atop(stack.reversed).join(pingpong)
-      val result = Source((0 to 9).map(Ping)).via(flow).limit(20).runWith(Sink.seq)
-      Await.result(result, 1.second) should ===((0 to 9).map(Pong))
+      val result = Source((0 to 9).map(Ping(_))).via(flow).limit(20).runWith(Sink.seq)
+      Await.result(result, 1.second) should ===((0 to 9).map(Pong(_)))
       //#compose
     }
 
     "work when chopped up" in {
       val stack = codec.atop(framing)
       val flow = stack.atop(chopUp).atop(stack.reversed).join(Flow[Message].map { case Ping(id) => Pong(id) })
-      val f = Source((0 to 9).map(Ping)).via(flow).limit(20).runWith(Sink.seq)
-      Await.result(f, 1.second) should ===((0 to 9).map(Pong))
+      val f = Source((0 to 9).map(Ping(_))).via(flow).limit(20).runWith(Sink.seq)
+      Await.result(f, 1.second) should ===((0 to 9).map(Pong(_)))
     }
 
     "work when accumulated" in {
       val stack = codec.atop(framing)
       val flow = stack.atop(accumulate).atop(stack.reversed).join(Flow[Message].map { case Ping(id) => Pong(id) })
-      val f = Source((0 to 9).map(Ping)).via(flow).limit(20).runWith(Sink.seq)
-      Await.result(f, 1.second) should ===((0 to 9).map(Pong))
+      val f = Source((0 to 9).map(Ping(_))).via(flow).limit(20).runWith(Sink.seq)
+      Await.result(f, 1.second) should ===((0 to 9).map(Pong(_)))
     }
 
   }

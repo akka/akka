@@ -3,16 +3,23 @@ project.description: Event Sourcing with Akka Persistence enables actors to pers
 ---
 # Event Sourcing
 
-For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Akka Persistence](../persistence.md).
 
 ## Module info
 
 To use Akka Persistence, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-persistence-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-persistence-typed_$scala.binary.version$
+  version=AkkaVersion
+  group2=com.typesafe.akka
+  artifact2=akka-persistence-testkit_$scala.binary.version$
+  version2=AkkaVersion
+  scope2=test
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
@@ -25,14 +32,18 @@ You also have to select journal plugin and optionally snapshot store plugin, see
 Akka Persistence enables stateful actors to persist their state so that it can be recovered when an actor
 is either restarted, such as after a JVM crash, by a supervisor or a manual stop-start, or migrated within a cluster. The key concept behind Akka
 Persistence is that only the _events_ that are persisted by the actor are stored, not the actual state of the actor
-(though actor state snapshot support is also available). The events are persisted by appending to storage (nothing is ever mutated) which
+(although actor state snapshot support is available). The events are persisted by appending to storage (nothing is ever mutated) which
 allows for very high transaction rates and efficient replication. A stateful actor is recovered by replaying the stored
 events to the actor, allowing it to rebuild its state. This can be either the full history of changes
-or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
+or starting from a checkpoint in a snapshot, which can dramatically reduce recovery times. 
+
+Akka Persistence also supports @ref:[Durable State Behaviors](durable-state/persistence.md), which is based on 
+persistence of the latest state of the actor. In this implementation, the _latest_ state is persisted, instead of events. 
+Hence this is more similar to CRUD based applications.
 
 The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video)
-is a good starting point for learning Event Sourcing, and then followed by the
-[CQRS with Akka 2.6 video](https://akka.io/blog/news/2020/02/05/akka-cqrs-video).
+is a good starting point for learning Event Sourcing, together with the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) 
+that illustrates how to implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
 
 @@@ note
 
@@ -45,9 +56,9 @@ provides tools to facilitate in building GDPR capable systems.
 
 @@@
 
-### Event sourcing concepts
+### Event Sourcing concepts
 
-See an [introduction to EventSourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx) at MSDN.
+See an [introduction to Event Sourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559%28v=pandp.10%29) at MSDN.
 
 Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493)
 by Randy Shoup. It is a short and recommended read if you're starting developing Events based applications.
@@ -100,7 +111,9 @@ The @apidoc[akka.persistence.typed.PersistenceId] is the stable unique identifie
 event journal and snapshot store.
 
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `EventSourcedBehavior` to ensure
-that there is only one active entity for each `PersistenceId` (`entityId`).
+that there is only one active entity for each `PersistenceId` (`entityId`). There are techniques to ensure this 
+uniqueness, an example of which can be found in the 
+@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
 
 The `entityId` in Cluster Sharding is the business domain identifier of the entity. The `entityId` might not
 be unique enough to be used as the `PersistenceId` by itself. For example two different types of
@@ -119,10 +132,6 @@ in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.P
 you should use `""` as the separator.
 
 @@@
-
-The @ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example)
-illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the
-`EntityContext`.
 
 A custom identifier can be created with `PersistenceId.ofUniqueId`.  
 
@@ -143,11 +152,12 @@ More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-
 
 In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
-function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
+function e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 ### Event handler
 
 When an event has been persisted successfully the new state is created by applying the event to the current state with the `eventHandler`.
+In the case of multiple persisted events, the `eventHandler` is called with each event in the same order as they were passed to @scala[`Effect.persist(..)`]@java[`Effect().persist(..)`].
 
 The state is typically defined as an immutable class and then the event handler returns a new instance of the state.
 You may choose to use a mutable class for the state, and then the event handler may update the state instance and
@@ -225,10 +235,11 @@ Note that only one of those can be chosen per incoming command. It is not possib
 
 In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
-function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
+function e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 In the example below the state is sent to the `subscriber` ActorRef. Note that the new state after applying 
-the event is passed as parameter of the `thenRun` function.
+the event is passed as parameter of the `thenRun` function. In the case where multiple events have been persisted,
+the state passed to `thenRun` is the updated state after all events have been handled.
 
 All `thenRun` registered callbacks are executed sequentially after successful execution of the persist statement
 (or immediately, in case of `none` and `unhandled`).
@@ -284,10 +295,10 @@ multiple events. This is signalled to an `EventSourcedBehavior` via an `EventRej
 
 ## Cluster Sharding and EventSourcedBehavior
 
-In a use case where the number of persistent actors needed is higher than what would fit in the memory of one node or
-where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
-resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
-cluster and address them by id.
+@ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
+cluster, addressing them by id. It makes it possible to have more persistent actors exist in the cluster than what 
+would fit in the memory of one node. Cluster sharding improves the resilience of the cluster. If a node crashes, 
+the persistent actors are quickly started on a new node and can resume operations.
 
 The `EventSourcedBehavior` can then be run as with any plain actor as described in @ref:[actors documentation](actors.md),
 but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
@@ -343,7 +354,7 @@ Scala
 Java
 :  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #commands }
 
-@java[The commandler handler to process each command is decided by the state class (or state predicate) that is
+@java[The command handler to process each command is decided by the state class (or state predicate) that is
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
@@ -384,8 +395,13 @@ The @ref:[Request-Response interaction pattern](interaction-patterns.md#request-
 persistent actors, because you typically want to know if the command was rejected due to validation errors and
 when accepted you want a confirmation when the events have been successfully stored.
 
-Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`] in the
-commands. After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
+Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]. If the 
+command can either have a successful response or a validation error returned, the generic response type @scala[`StatusReply[ReplyType]]`]
+@java[`StatusReply<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
+a pre defined @scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`]
+can be used.
+
+After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
 be sent to the `ActorRef`.
 
 Scala
@@ -406,8 +422,8 @@ Since this is such a common pattern there is a reply effect for this purpose. It
 it can be used to enforce that replies are not forgotten when implementing the `EventSourcedBehavior`.
 If it's defined with @scala[`EventSourcedBehavior.withEnforcedReplies`]@java[`EventSourcedBehaviorWithEnforcedReplies`]
 there will be compilation errors if the returned effect isn't a `ReplyEffect`, which can be
-created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
-@scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
+created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
+@scala[`Effect.thenReply`]@java[`Effect().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effect().thenNoReply`].
 
 Scala
 :  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.scala) { #withEnforcedReplies }
@@ -423,8 +439,8 @@ Scala
 Java
 :  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.java) { #reply-command }
 
-The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
-@scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
+The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
+@scala[`Effect.thenReply`]@java[`Effect().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effect().thenNoReply`].
 
 @java[Note that command handlers are defined with `newCommandHandlerWithReplyBuilder` when using
 `EventSourcedBehaviorWithEnforcedReplies`, as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
@@ -515,6 +531,20 @@ akka.persistence.journal.leveldb.replay-filter {
   mode = repair-by-discard-old
 }
 ```
+
+### Disable recovery
+
+You can also completely disable the recovery of events and snapshots:
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery-disabled }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery-disabled }
+
+Please refer to @ref[snapshots](persistence-snapshot.md#snapshots) if you need to disable only the snapshot recovery, or you need to select specific snapshots.
+
+In any case, the highest sequence number will always be recovered so you can keep persisting new events without corrupting your event log.
 
 ## Tagging
 
@@ -636,9 +666,9 @@ cluster and address them by id.
 Akka Persistence is based on the single-writer principle. For a particular `PersistenceId` only one `EventSourcedBehavior`
 instance should be active at one time. If multiple instances were to persist events at the same time, the events would
 be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
-active entity (`EventSourcedBehavior`) for each id within a data center. Lightbend's
-[Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-supports active-active persistent entities across data centers.
+active entity (`EventSourcedBehavior`) for each id within a data center.
+@ref:[Replicated Event Sourcing](replicated-eventsourcing.md) supports active-active persistent entities across
+data centers.
 
 ## Configuration
 
@@ -655,13 +685,11 @@ reference documentation of the chosen plugin.
 is an example project that can be downloaded, and with instructions of how to run.
 This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
 
-The Shopping Cart sample is expanded further in the
-@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
-@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
-sample. In that sample the events are tagged to be consumed by even processors to build other representations
+The Shopping Cart sample is expanded further in the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/).
+In that sample the events are tagged to be consumed by even processors to build other representations
 from the events, or publish the events to other services.
 
 @java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
 @scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
-illustrates how to use Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-with active-active persistent entities across data centers.
+illustrates how to use @ref:[Replicated Event Sourcing](replicated-eventsourcing.md) that supports
+active-active persistent entities across data centers.

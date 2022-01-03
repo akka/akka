@@ -1,21 +1,23 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.{ ActorRef, PostStop, Props }
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import com.typesafe.config.ConfigFactory
+import akka.actor.testkit.typed.TestException
+
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
-
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.{ ActorRef, PostStop, Props }
+import akka.pattern.StatusReply
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString("""
@@ -51,7 +53,7 @@ class ActorContextAskSpec
       val snitch = Behaviors.setup[Pong] { context =>
         // Timeout comes from TypedAkkaSpec
 
-        context.ask(pingPong, Ping) {
+        context.ask(pingPong, Ping.apply) {
           case Success(_)  => Pong(context.self.path.name + "1", Thread.currentThread().getName)
           case Failure(ex) => throw ex
         }
@@ -77,21 +79,20 @@ class ActorContextAskSpec
       case class Ping(respondTo: ActorRef[Pong.type]) extends Protocol
       case object Pong extends Protocol
 
-      val pingPong = spawn(Behaviors.receive[Protocol]((_, message) =>
-        message match {
-          case Ping(respondTo) =>
-            respondTo ! Pong
-            Behaviors.same
-        }))
+      val pingPong = spawn(Behaviors.receiveMessagePartial[Protocol] {
+        case Ping(respondTo) =>
+          respondTo ! Pong
+          Behaviors.same
+      })
 
       val snitch = Behaviors.setup[AnyRef] { context =>
-        context.ask(pingPong, Ping) {
+        context.ask(pingPong, Ping.apply) {
           case Success(message) => throw new NotImplementedError(message.toString)
           case Failure(x)       => x
         }
 
         Behaviors
-          .receive[AnyRef] {
+          .receivePartial[AnyRef] {
             case (_, message) =>
               probe.ref ! message
               Behaviors.same
@@ -185,6 +186,76 @@ class ActorContextAskSpec
       spawn(snitch)
 
       probe.receiveMessages(N).map(_.n) should ===(1 to N)
+    }
+
+    "unwrap successful StatusReply messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[StatusReply[Pong.type]])
+      case object Pong
+
+      val probe = createTestProbe[Any]()
+      spawn(Behaviors.setup[Pong.type] { ctx =>
+        ctx.askWithStatus(probe.ref, Ping.apply) {
+          case Success(Pong) => Pong
+          case Failure(ex)   => throw ex
+        }
+
+        Behaviors.receiveMessage {
+          case Pong =>
+            probe.ref ! "got pong"
+            Behaviors.same
+        }
+      })
+
+      val replyTo = probe.expectMessageType[Ping].ref
+      replyTo ! StatusReply.Success(Pong)
+      probe.expectMessage("got pong")
+    }
+
+    "unwrap error message StatusReply messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[StatusReply[Pong.type]])
+      case object Pong
+
+      val probe = createTestProbe[Any]()
+      spawn(Behaviors.setup[Throwable] { ctx =>
+        ctx.askWithStatus(probe.ref, Ping.apply) {
+          case Failure(ex) => ex
+          case wat         => throw new IllegalArgumentException(s"Unexpected response $wat")
+        }
+
+        Behaviors.receiveMessage {
+          case ex: Throwable =>
+            probe.ref ! s"got error: ${ex.getClass.getName}, ${ex.getMessage}"
+            Behaviors.same
+        }
+      })
+
+      val replyTo = probe.expectMessageType[Ping].ref
+      replyTo ! StatusReply.Error("boho")
+      probe.expectMessage("got error: akka.pattern.StatusReply$ErrorMessage, boho")
+    }
+
+    "unwrap error with custom exception StatusReply messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[StatusReply[Pong.type]])
+      case object Pong
+
+      val probe = createTestProbe[Any]()
+      case class Message(any: Any)
+      spawn(Behaviors.setup[Throwable] { ctx =>
+        ctx.askWithStatus(probe.ref, Ping.apply) {
+          case Failure(ex) => ex
+          case wat         => throw new IllegalArgumentException(s"Unexpected response $wat")
+        }
+
+        Behaviors.receiveMessage {
+          case ex: Throwable =>
+            probe.ref ! s"got error: ${ex.getClass.getName}, ${ex.getMessage}"
+            Behaviors.same
+        }
+      })
+
+      val replyTo = probe.expectMessageType[Ping].ref
+      replyTo ! StatusReply.Error(TestException("boho"))
+      probe.expectMessage("got error: akka.actor.testkit.typed.TestException, boho")
     }
 
   }

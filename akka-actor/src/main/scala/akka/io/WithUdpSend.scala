@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -7,12 +7,12 @@ package akka.io
 import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, SelectionKey }
 
-import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.io.Udp.{ CommandFailed, Send }
-import akka.io.SelectionHandler._
-import akka.io.dns.DnsProtocol
-
 import scala.util.control.NonFatal
+
+import akka.actor.{ Actor, ActorLogging, ActorRef }
+import akka.io.SelectionHandler._
+import akka.io.Udp.{ CommandFailed, Send }
+import akka.io.dns.DnsProtocol
 
 /**
  * INTERNAL API
