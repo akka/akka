@@ -1579,7 +1579,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    * Scala API:
    * Mapped Diagnostic Context for application defined values
    * which can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
-   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Visit <a href="https://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    *
    * @return A Map containing the MDC values added by the application, or empty Map if no value was added.
    */
@@ -1589,7 +1589,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    * Scala API:
    * Sets the values to be added to the MDC (Mapped Diagnostic Context) before the log is appended.
    * These values can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
-   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Visit <a href="https://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    */
   def mdc(mdc: MDC): Unit = _mdc = if (mdc != null) mdc else emptyMDC
 
@@ -1597,7 +1597,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    * Java API:
    * Mapped Diagnostic Context for application defined values
    * which can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
-   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Visit <a href="https://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    * Note tha it returns a <b>COPY</b> of the actual MDC values.
    * You cannot modify any value by changing the returned Map.
    * Code like the following won't have any effect unless you set back the modified Map.
@@ -1617,7 +1617,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
    * Java API:
    * Sets the values to be added to the MDC (Mapped Diagnostic Context) before the log is appended.
    * These values can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
-   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Visit <a href="https://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    */
   def setMDC(jMdc: java.util.Map[String, Any]): Unit = mdc(if (jMdc != null) jMdc.asScala.toMap else emptyMDC)
 
