@@ -104,7 +104,7 @@ In the above example, we used `toMat` to indicate that we want to transform the 
 sink, and we used the convenience function `Keep.right` to say that we are only interested in the materialized value
 of the sink.
 
-In our example, the `Sink` materializes a value of type `Future` which will represent the result
+In our example, the `Sink.fold` materializes a value of type `Future` which will represent the result
 of the folding process over the stream.  In general, a stream can expose multiple materialized values,
 but it is quite common to be interested in only the value of the Source or the Sink in the stream. For this reason
 there is a convenience method called `runWith()` available for `Sink`, `Source` or `Flow` requiring, respectively,
@@ -119,7 +119,7 @@ After running (materializing) the `RunnableGraph` we get a special container obj
 sources and sinks are able to put specific objects into this map. Whether they put something in or not is implementation
 dependent. 
 
-For example, a `Sink` will make a `CompletionStage` available in this map which will represent the result
+For example, a `Sink.fold` will make a `CompletionStage` available in this map which will represent the result
 of the folding process over the stream.  In general, a stream can expose multiple materialized values,
 but it is quite common to be interested in only the value of the Source or the Sink in the stream. For this reason
 there is a convenience method called `runWith()` available for `Sink`, `Source` or `Flow` requiring, respectively,
