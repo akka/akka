@@ -4,8 +4,6 @@
 
 package akka.remote
 
-import java.util.concurrent.ThreadLocalRandom
-
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
@@ -35,13 +33,7 @@ class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
 
   private def arteryEnabled = system.provider.asInstanceOf[RemoteActorRefProvider].remoteSettings.Artery.Enabled
 
-  val longAddressUid: Long = {
-    val tlr = ThreadLocalRandom.current
-    if (arteryEnabled) tlr.nextLong()
-    // with the old remoting we need to make toInt.toLong return the same number
-    // to keep wire compatibility
-    else tlr.nextInt().toLong
-  }
+  val longAddressUid: Long = system.uid
 
   // private because GenJavaDoc fails on deprecated annotated lazy val
   private lazy val _addressUid: Int = {

@@ -150,7 +150,8 @@ class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
         getClass.getClassLoader,
         None,
         Some(Props.empty),
-        ActorSystemSetup.empty)
+        ActorSystemSetup.empty,
+        42L)
       sys.start()
       try {
         userGuardianDispatcher(sys) should ===("akka.actor.default-dispatcher")

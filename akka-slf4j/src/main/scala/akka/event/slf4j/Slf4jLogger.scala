@@ -60,8 +60,10 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
   val mdcAkkaSourceAttributeName = "akkaSource"
   val mdcAkkaTimestamp = "akkaTimestamp"
   val mdcAkkaAddressAttributeName = "akkaAddress"
+  val mdcAkkaUidAttributeName = "akkaUid"
 
   private def akkaAddress = context.system.asInstanceOf[ExtendedActorSystem].provider.addressString
+  private val akkaUid: String = context.system.asInstanceOf[ExtendedActorSystem].uid.toString
 
   def receive = {
 
@@ -122,6 +124,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
     MDC.put(mdcAkkaTimestamp, formatTimestamp(logEvent.timestamp))
     MDC.put(mdcActorSystemAttributeName, context.system.name)
     MDC.put(mdcAkkaAddressAttributeName, akkaAddress)
+    MDC.put(mdcAkkaUidAttributeName, akkaUid)
     logEvent.mdc.foreach { case (k, v) => MDC.put(k, String.valueOf(v)) }
 
     try logStatement

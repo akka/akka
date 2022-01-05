@@ -268,8 +268,9 @@ object ActorSystem {
     val cl = bootstrapSettings.flatMap(_.classLoader).getOrElse(findClassLoader())
     val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
     val defaultEC = bootstrapSettings.flatMap(_.defaultExecutionContext)
+    val uid = ThreadLocalRandom.current.nextLong()
 
-    new ActorSystemImpl(name, appConfig, cl, defaultEC, None, setup).start()
+    new ActorSystemImpl(name, appConfig, cl, defaultEC, None, setup, uid).start()
   }
 
   /**
@@ -776,6 +777,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
   private[akka] def printTree: String
 
   /**
+   * INTERNAL API: random uid assigned at ActorSystem startup
+   */
+  @InternalApi private[akka] def uid: Long
+
+  /**
    * INTERNAL API: final step of `terminate()`
    */
   @InternalApi private[akka] def finalTerminate(): Unit
@@ -797,7 +803,8 @@ private[akka] class ActorSystemImpl(
     classLoader: ClassLoader,
     defaultExecutionContext: Option[ExecutionContext],
     val guardianProps: Option[Props],
-    setup: ActorSystemSetup)
+    setup: ActorSystemSetup,
+    val uid: Long)
     extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))

@@ -1,0 +1,4 @@
+# DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ExtendedActorSystem.uid")
+# InternalApi
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")

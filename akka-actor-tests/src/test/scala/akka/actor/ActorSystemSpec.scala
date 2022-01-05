@@ -359,7 +359,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         getClass.getClassLoader,
         None,
         Some(Props.empty),
-        ActorSystemSetup.empty)
+        ActorSystemSetup.empty,
+        42L)
       sys.start()
       try {
         intercept[UnsupportedOperationException] {
