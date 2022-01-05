@@ -4,10 +4,11 @@
 
 package akka.stream.scaladsl
 
+import akka.actor.ActorSystem
 import akka.stream.OverflowStrategy
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.testkit.{ AkkaSpec, ExplicitlyTriggeredScheduler }
-import com.typesafe.config.ConfigValueFactory
+import akka.testkit.{ AkkaSpec, ExplicitlyTriggeredScheduler, TestKitUtils }
+import com.typesafe.config.{ ConfigFactory, ConfigValueFactory }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
@@ -65,20 +66,27 @@ class AggregateWithBoundarySpec extends StreamSpec {
 
 // To run multiple tests in parallel using simulated timer,
 // the tests must be in separate Specs with different instances of the ActorSystem
-class StreamWithSimulatedTimeSpec
-    extends StreamSpec(
-      AkkaSpec.testConf.withValue(
-        "akka.scheduler.implementation",
-        ConfigValueFactory.fromAnyRef("akka.testkit.ExplicitlyTriggeredScheduler"))) {
+class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends StreamSpec {
 
-  val scheduler: ExplicitlyTriggeredScheduler = system.scheduler match {
-    case ets: ExplicitlyTriggeredScheduler => ets
-    case other                             => throw new Exception(s"expecting ${classOf[ExplicitlyTriggeredScheduler]} but got ${other.getClass}")
+  def createActorSystem =
+    ActorSystem(
+      TestKitUtils.testNameFromCallStack(classOf[StreamSpec], "".r),
+      ConfigFactory.load(
+        AkkaSpec.testConf.withValue(
+          "akka.scheduler.implementation",
+          ConfigValueFactory.fromAnyRef("akka.testkit.ExplicitlyTriggeredScheduler"))))
+
+  private def getEts(actor: ActorSystem): ExplicitlyTriggeredScheduler = {
+    actor.scheduler match {
+      case ets: ExplicitlyTriggeredScheduler => ets
+      case other                             => throw new Exception(s"expecting ${classOf[ExplicitlyTriggeredScheduler]} but got ${other.getClass}")
+    }
   }
 
-  def timePasses(amount: FiniteDuration): Unit = scheduler.timePasses(amount)
+  private def timePasses(amount: FiniteDuration)(implicit actorSystem: ActorSystem): Unit =
+    getEts(actorSystem).timePasses(amount)
 
-  def schedulerTimeMs: Long = scheduler.currentTimeMs
+  private def schedulerTimeMs(implicit actorSystem: ActorSystem): Long = getEts(actorSystem).currentTimeMs
 
   implicit class SourceWrapper[+Out, +Mat](val source: Source[Out, Mat]) {
 
@@ -123,11 +131,10 @@ class StreamWithSimulatedTimeSpec
     }
   }
 
-}
-
-class AggregateWithTimeBoundarySpec1 extends StreamWithSimulatedTimeSpec {
-
   "split aggregator by gap for slow upstream" in {
+
+    // create a local ActorSystem to mask the default one
+    implicit val system = createActorSystem
 
     val maxGap = 20.seconds
 
@@ -168,11 +175,12 @@ class AggregateWithTimeBoundarySpec1 extends StreamWithSimulatedTimeSpec {
     Await.result(result, 10.seconds) should be(Seq(Seq(1, 2), Seq(3, 4), Seq(5, 6, 7)))
 
   }
-}
-
-class AggregateWithTimeBoundarySpec2 extends StreamWithSimulatedTimeSpec {
 
   "split aggregator by total duration" in {
+
+    // create a local ActorSystem to mask the default one
+    implicit val system = createActorSystem
+
     val maxDuration = 400.seconds
 
     val p = TestPublisher.probe[Int]()
@@ -209,11 +217,11 @@ class AggregateWithTimeBoundarySpec2 extends StreamWithSimulatedTimeSpec {
     Await.result(result, 10.seconds) should be(Seq(Seq(1, 2, 3, 4), Seq(5, 6, 7)))
 
   }
-}
-
-class AggregateWithTimeBoundarySpec3 extends StreamWithSimulatedTimeSpec {
 
   "down stream back pressure should not miss data on completion with pull on start" in {
+
+    // create a local ActorSystem to mask the default one
+    implicit val system = createActorSystem
 
     val maxGap = 1.second
     val upstream = TestPublisher.probe[Int]()
