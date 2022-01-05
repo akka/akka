@@ -29,6 +29,11 @@ object QueueOfferResult {
   case object Enqueued extends QueueOfferResult
 
   /**
+   * Java API: To validate if the element is successfully enqueued.
+   */
+  def isEnqueued: Boolean = enqueued.equals(Enqueued)
+
+  /**
    * Java API: The `Enqueued` singleton instance
    */
   def enqueued: QueueOfferResult = Enqueued
