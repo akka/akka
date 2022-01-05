@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import java.util.concurrent.{ CompletionStage, ThreadFactory, ThreadLocalRandom }
+import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
@@ -278,7 +278,6 @@ object ActorSystem {
     val cl = bootstrapSettings.flatMap(_.classLoader).getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
     val executionContext = bootstrapSettings.flatMap(_.defaultExecutionContext)
-    val uid = ThreadLocalRandom.current.nextLong()
 
     val system = new classic.ActorSystemImpl(
       name,
@@ -287,8 +286,7 @@ object ActorSystem {
       executionContext,
       Some(
         PropsAdapter[Any](() => GuardianStartupBehavior(guardianBehavior), guardianProps, rethrowTypedFailure = false)),
-      setup,
-      uid)
+      setup)
     system.start()
 
     system.guardian ! GuardianStartupBehavior.Start

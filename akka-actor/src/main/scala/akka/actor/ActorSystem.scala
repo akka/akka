@@ -268,9 +268,8 @@ object ActorSystem {
     val cl = bootstrapSettings.flatMap(_.classLoader).getOrElse(findClassLoader())
     val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
     val defaultEC = bootstrapSettings.flatMap(_.defaultExecutionContext)
-    val uid = ThreadLocalRandom.current.nextLong()
 
-    new ActorSystemImpl(name, appConfig, cl, defaultEC, None, setup, uid).start()
+    new ActorSystemImpl(name, appConfig, cl, defaultEC, None, setup).start()
   }
 
   /**
@@ -803,9 +802,10 @@ private[akka] class ActorSystemImpl(
     classLoader: ClassLoader,
     defaultExecutionContext: Option[ExecutionContext],
     val guardianProps: Option[Props],
-    setup: ActorSystemSetup,
-    val uid: Long)
+    setup: ActorSystemSetup)
     extends ExtendedActorSystem {
+
+  val uid: Long = ThreadLocalRandom.current.nextLong()
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
