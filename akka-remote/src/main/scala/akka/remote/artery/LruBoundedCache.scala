@@ -17,7 +17,7 @@ private[akka] case class CacheStatistics(entries: Int, maxProbeDistance: Int, av
  *
  * This class is based on a Robin-Hood hashmap
  * (http://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
- * with backshift (http://codecapsule.com/2013/11/17/robin-hood-hashing-backward-shift-deletion/).
+ * with backshift (https://codecapsule.com/2013/11/17/robin-hood-hashing-backward-shift-deletion/).
  *
  * The main modification compared to an RH hashmap is that it never grows the map (no rehashes) instead it is allowed
  * to kick out entires that are considered old. The implementation tries to keep the map close to full, only evicting

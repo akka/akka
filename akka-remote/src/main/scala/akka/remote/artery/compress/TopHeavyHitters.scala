@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
  *
  * Keeps a number of specific heavy hitters around in memory.
  *
- * See also Section 5.2 of http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
+ * See also Section 5.2 of https://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
  * for a discussion about the assumptions made and guarantees about the Heavy Hitters made in this model.
  * We assume the Cash Register model in which there are only additions, which simplifies HH detection significantly.
  *
