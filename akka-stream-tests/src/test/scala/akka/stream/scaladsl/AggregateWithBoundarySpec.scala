@@ -7,8 +7,10 @@ package akka.stream.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.OverflowStrategy
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.testkit.{ AkkaSpec, ExplicitlyTriggeredScheduler, TestKitUtils }
+import akka.testkit.{ AkkaSpec, ExplicitlyTriggeredScheduler }
 import com.typesafe.config.{ ConfigFactory, ConfigValueFactory }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
@@ -66,11 +68,11 @@ class AggregateWithBoundarySpec extends StreamSpec {
 
 // To run multiple tests in parallel using simulated timer,
 // the tests must be in separate Specs with different instances of the ActorSystem
-class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends StreamSpec {
+class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends AnyWordSpecLike with Matchers {
 
-  def createActorSystem =
+  private def createActorSystem(id: String) =
     ActorSystem(
-      TestKitUtils.testNameFromCallStack(classOf[StreamSpec], "".r),
+      s"ActorSystemWithExplicitlyTriggeredScheduler-$id",
       ConfigFactory.load(
         AkkaSpec.testConf.withValue(
           "akka.scheduler.implementation",
@@ -133,8 +135,7 @@ class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends StreamSpec {
 
   "split aggregator by gap for slow upstream" in {
 
-    // create a local ActorSystem to mask the default one
-    implicit val system = createActorSystem
+    implicit val actorSystem = createActorSystem("1")
 
     val maxGap = 20.seconds
 
@@ -178,8 +179,7 @@ class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends StreamSpec {
 
   "split aggregator by total duration" in {
 
-    // create a local ActorSystem to mask the default one
-    implicit val system = createActorSystem
+    implicit val actorSystem = createActorSystem("2")
 
     val maxDuration = 400.seconds
 
@@ -220,8 +220,7 @@ class AggregateWithTimeBoundaryAndSimulatedTimeSpec extends StreamSpec {
 
   "down stream back pressure should not miss data on completion with pull on start" in {
 
-    // create a local ActorSystem to mask the default one
-    implicit val system = createActorSystem
+    implicit val actorSystem = createActorSystem("3")
 
     val maxGap = 1.second
     val upstream = TestPublisher.probe[Int]()
