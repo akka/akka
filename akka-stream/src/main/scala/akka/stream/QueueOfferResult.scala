@@ -33,7 +33,7 @@ object QueueOfferResult {
    */
   def isEnqueued: Boolean = enqueued match {
     case Enqueued => true
-    case _ => false
+    case _        => false
   }
 
   /**
