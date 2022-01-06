@@ -31,7 +31,10 @@ object QueueOfferResult {
   /**
    * Java API: To validate if the element is successfully enqueued.
    */
-  def isEnqueued: Boolean = enqueued.equals(Enqueued)
+  def isEnqueued: Boolean = enqueued match {
+    case Enqueued => true
+    case _ => false
+  }
 
   /**
    * Java API: The `Enqueued` singleton instance
