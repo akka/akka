@@ -13,6 +13,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.impl.AkkaSSLConfigExtensionIdApply
+import scala.annotation.nowarn
 
 @deprecated("Use Tcp and TLS with SSLEngine parameters instead. Setup the SSLEngine with needed parameters.", "2.6.0")
 object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with AkkaSSLConfigExtensionIdApply with ExtensionIdProvider {
@@ -130,6 +131,11 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
     log.debug("buildHostnameVerifier: created hostname verifier: {}", v)
     v
+  }
+
+  def validateDefaultTrustManager(@nowarn("msg=never used") sslConfig: SSLConfigSettings): Unit = {
+    log.warning(
+      "validateDefaultTrustManager is not doing anything since akka 2.6.19, it was useful only in Java 7 and below");
   }
 
   def configureProtocols(existingProtocols: Array[String], sslConfig: SSLConfigSettings): Array[String] = {
