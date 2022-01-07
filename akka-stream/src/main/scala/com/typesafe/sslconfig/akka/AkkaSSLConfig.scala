@@ -4,8 +4,6 @@
 
 package com.typesafe.sslconfig.akka
 
-import java.security.KeyStore
-import java.security.cert.CertPathValidatorException
 import java.util.Collections
 import javax.net.ssl._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
@@ -15,6 +13,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.impl.AkkaSSLConfigExtensionIdApply
+import scala.annotation.nowarn
 
 @deprecated("Use Tcp and TLS with SSLEngine parameters instead. Setup the SSLEngine with needed parameters.", "2.6.0")
 object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with AkkaSSLConfigExtensionIdApply with ExtensionIdProvider {
@@ -82,7 +81,6 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
   val sslEngineConfigurator = {
     val sslContext = if (config.default) {
       log.info("ssl-config.default is true, using the JDK's default SSLContext")
-      validateDefaultTrustManager(config)
       SSLContext.getDefault
     } else {
       // break out the static methods as much as we can...
@@ -135,38 +133,9 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
     v
   }
 
-  def validateDefaultTrustManager(sslConfig: SSLConfigSettings): Unit = {
-    // If we are using a default SSL context, we can't filter out certificates with weak algorithms
-    // We ALSO don't have access to the trust manager from the SSLContext without doing horrible things
-    // with reflection.
-    //
-    // However, given that the default SSLContextImpl will call out to the TrustManagerFactory and any
-    // configuration with system properties will also apply with the factory, we can use the factory
-    // method to recreate the trust manager and validate the trust certificates that way.
-    //
-    // This is really a last ditch attempt to satisfy https://wiki.mozilla.org/CA:MD5and1024 on root certificates.
-    //
-    // http://grepcode.com/file/repository.grepcode.com/java/root/jdk/openjdk/7-b147/sun/security/ssl/SSLContextImpl.java#79
-
-    val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-    tmf.init(null.asInstanceOf[KeyStore])
-    val trustManager: X509TrustManager = tmf.getTrustManagers()(0).asInstanceOf[X509TrustManager]
-
-    //    val disabledKeyAlgorithms = sslConfig.disabledKeyAlgorithms.getOrElse(Algorithms.disabledKeyAlgorithms) // was Option
-    val disabledKeyAlgorithms = sslConfig.disabledKeyAlgorithms.mkString(",") // TODO Sub optimal, we got a Seq...
-    val constraints =
-      AlgorithmConstraintsParser.parseAll(AlgorithmConstraintsParser.line, disabledKeyAlgorithms).get.toSet
-    val algorithmChecker = new AlgorithmChecker(mkLogger, keyConstraints = constraints, signatureConstraints = Set())
-    for (cert <- trustManager.getAcceptedIssuers) {
-      try {
-        algorithmChecker.checkKeyAlgorithms(cert)
-      } catch {
-        case e: CertPathValidatorException =>
-          log.warning(
-            "You are using ssl-config.default=true and have a weak certificate in your default trust store! (You can modify akka.ssl-config.disabledKeyAlgorithms to remove this message.)",
-            e)
-      }
-    }
+  def validateDefaultTrustManager(@nowarn("msg=never used") sslConfig: SSLConfigSettings): Unit = {
+    log.warning(
+      "validateDefaultTrustManager is not doing anything since akka 2.6.19, it was useful only in Java 7 and below");
   }
 
   def configureProtocols(existingProtocols: Array[String], sslConfig: SSLConfigSettings): Array[String] = {
@@ -181,15 +150,6 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
         Protocols.recommendedProtocols.filter(existingProtocols.contains)
     }
 
-    val allowWeakProtocols = sslConfig.loose.allowWeakProtocols
-    if (!allowWeakProtocols) {
-      val deprecatedProtocols = Protocols.deprecatedProtocols
-      for (deprecatedProtocol <- deprecatedProtocols) {
-        if (definedProtocols.contains(deprecatedProtocol)) {
-          throw new IllegalStateException(s"Weak protocol $deprecatedProtocol found in ssl-config.protocols!")
-        }
-      }
-    }
     definedProtocols
   }
 
@@ -200,18 +160,9 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
         configuredCiphers.filter(existingCiphers.contains(_)).toArray
 
       case None =>
-        Ciphers.recommendedCiphers.filter(existingCiphers.contains(_)).toArray
+        existingCiphers
     }
 
-    val allowWeakCiphers = sslConfig.loose.allowWeakCiphers
-    if (!allowWeakCiphers) {
-      val deprecatedCiphers = Ciphers.deprecatedCiphers
-      for (deprecatedCipher <- deprecatedCiphers) {
-        if (definedCiphers.contains(deprecatedCipher)) {
-          throw new IllegalStateException(s"Weak cipher $deprecatedCipher found in ssl-config.ciphers!")
-        }
-      }
-    }
     definedCiphers
   }
 
