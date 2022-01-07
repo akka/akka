@@ -67,6 +67,50 @@ object Topic {
   }
 
   /**
+   * Response to the `GetTopicStats` query.
+   *
+   * Note that this is a snapshot of the state at one point in time, that there was subscribers at that
+   * time does not guarantee there is once this response arrives. The information cannot be used to
+   * achieve delivery guarantees, but can be useful in for example tests, to observe a subscription
+   * completed before publishing messages.
+   *
+   * Not for user extension.
+   */
+  @DoNotInherit
+  trait TopicStats {
+
+    /**
+     * @return The number of local subscribers subscribing to this topic actor instance when the request was handled
+     */
+    def localSubscriberCount: Int
+
+    /**
+     * @return The number of known other topic actor instances for the topic (locally and across the cluster),
+     *         that has at least one subscriber. A topic only be counted towards this sum once it has at least
+     *         one subscriber and when the last local subscriber unsubscribes it will be subtracted from this sum
+     *         (the value is eventually consistent).
+     */
+    def topicInstanceCount: Int
+  }
+
+  /**
+   * Scala API: Get a summary of the state for a local topic actor.
+   *
+   * See [[TopicStats]] for caveats
+   */
+  object GetTopicStats {
+    def apply[T](replyTo: ActorRef[TopicStats]): Command[T] = TopicImpl.GetTopicStats(replyTo)
+  }
+
+  /**
+   * Java API: Get a summary of the state for a local topic actor.
+   *
+   * See [[TopicStats]] for caveats
+   */
+  def getTopicStats[T](replyTo: ActorRef[TopicStats]): Command[T] =
+    GetTopicStats(replyTo)
+
+  /**
    * Java API: Unsubscribe a previously subscribed actor from this topic.
    */
   def unsubscribe[T](subscriber: ActorRef[T]): Command[T] = Unsubscribe(subscriber)

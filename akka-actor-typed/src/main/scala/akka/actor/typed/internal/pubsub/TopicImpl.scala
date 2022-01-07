@@ -33,7 +33,7 @@ private[akka] object TopicImpl {
 
   // internal messages, note that the protobuf serializer for those sent remotely is defined in akka-cluster-typed
   final case class GetTopicStats[T](replyTo: ActorRef[TopicStats]) extends Topic.Command[T]
-  final case class TopicStats(localSubscriberCount: Int, topicInstanceCount: Int)
+  final case class TopicStats(localSubscriberCount: Int, topicInstanceCount: Int) extends Topic.TopicStats
   final case class TopicInstancesUpdated[T](topics: Set[ActorRef[TopicImpl.Command[T]]]) extends Command[T]
   final case class MessagePublished[T](message: T) extends Command[T]
   final case class SubscriberTerminated[T](subscriber: ActorRef[T]) extends Command[T]
