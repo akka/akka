@@ -4,7 +4,8 @@
 
 /*
  * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
- */package akka.stream.typed.scaladsl
+ */
+package akka.stream.typed.scaladsl
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.pubsub.TopicImpl
@@ -31,7 +32,7 @@ class PubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       val probe = testKit.createTestProbe[TopicImpl.TopicStats]()
       probe.awaitAssert {
         topic ! TopicImpl.GetTopicStats(probe.ref)
-        probe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should === (1)
+        probe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should ===(1)
       }
 
       topic ! Topic.Publish("published")
@@ -52,7 +53,7 @@ class PubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       val probe = testKit.createTestProbe[TopicImpl.TopicStats]()
       probe.awaitAssert {
         topic ! TopicImpl.GetTopicStats(probe.ref)
-        probe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should === (1)
+        probe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should ===(1)
       }
 
       Source.single("published").runWith(PubSub.sink(topic))

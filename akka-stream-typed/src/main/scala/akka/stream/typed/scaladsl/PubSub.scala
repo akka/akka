@@ -33,15 +33,16 @@ object PubSub {
    * @tparam T The type of the published messages
    */
   @ApiMayChange
-  def source[T](topicActor: ActorRef[Topic.Command[T]], bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, NotUsed] =
-    ActorSource.actorRef[T](
-      PartialFunction.empty,
-      PartialFunction.empty,
-      bufferSize,
-      overflowStrategy).mapMaterializedValue { ref =>
+  def source[T](
+      topicActor: ActorRef[Topic.Command[T]],
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy): Source[T, NotUsed] =
+    ActorSource
+      .actorRef[T](PartialFunction.empty, PartialFunction.empty, bufferSize, overflowStrategy)
+      .mapMaterializedValue { ref =>
         topicActor ! Topic.Subscribe(ref)
         NotUsed
-    }
+      }
 
   /**
    * Create a sink that will publish each message to the given topic. Note that there is no backpressure
@@ -54,8 +55,10 @@ object PubSub {
    */
   @ApiMayChange
   def sink[T](topicActor: ActorRef[Topic.Command[T]]): Sink[T, NotUsed] = {
-    Sink.foreach[T] { message =>
-      topicActor ! Topic.Publish(message)
-    }.mapMaterializedValue(_ => NotUsed)
+    Sink
+      .foreach[T] { message =>
+        topicActor ! Topic.Publish(message)
+      }
+      .mapMaterializedValue(_ => NotUsed)
   }
 }

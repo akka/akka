@@ -17,6 +17,7 @@ import akka.stream.javadsl.Source
  * publishing and subscribing of elements through a stream.
  */
 object PubSub {
+
   /**
    * Create a source that will subscribe to a topic and stream messages published to the topic. Can be materialized
    * multiple times, each materialized stream will contain messages published after it was started.
@@ -32,7 +33,10 @@ object PubSub {
    * @tparam T The type of the published messages
    */
   @ApiMayChange
-  def source[T](topicActor: ActorRef[Topic.Command[T]], bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, NotUsed] =
+  def source[T](
+      topicActor: ActorRef[Topic.Command[T]],
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy): Source[T, NotUsed] =
     akka.stream.typed.scaladsl.PubSub.source(topicActor, bufferSize, overflowStrategy).asJava
 
   /**
