@@ -71,9 +71,7 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
   def subscribe(key: Key[B], responseAdapter: Replicator.SubscribeResponse[B] => A): Unit = {
     // unsubscribe in case it's called more than once per key
     unsubscribe(key)
-    changedMessageAdapters.get(key).foreach { subscriber =>
-      replicator ! Replicator.Unsubscribe(key, subscriber)
-    }
+
     val replyTo: ActorRef[Replicator.SubscribeResponse[B]] =
       context.messageAdapter[Replicator.SubscribeResponse[B]](responseAdapter)
     changedMessageAdapters = changedMessageAdapters.updated(key, replyTo)
