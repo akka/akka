@@ -5,12 +5,22 @@
 package akka.stream
 
 import akka.annotation.DoNotInherit
+import akka.stream.QueueOfferResult.{ enqueued, Enqueued }
 
 /**
  * Not for user extension
  */
 @DoNotInherit
-sealed abstract class QueueOfferResult
+sealed abstract class QueueOfferResult {
+
+  /**
+   * Java API: To validate if the element is successfully enqueued.
+   */
+  def isEnqueued: Boolean = enqueued match {
+    case Enqueued => true
+    case _        => false
+  }
+}
 
 /**
  * Not for user extension
@@ -27,14 +37,6 @@ object QueueOfferResult {
    * Type is used to indicate that stream is successfully enqueued an element
    */
   case object Enqueued extends QueueOfferResult
-
-  /**
-   * Java API: To validate if the element is successfully enqueued.
-   */
-  def isEnqueued: Boolean = enqueued match {
-    case Enqueued => true
-    case _        => false
-  }
 
   /**
    * Java API: The `Enqueued` singleton instance
