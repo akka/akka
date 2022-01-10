@@ -776,6 +776,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
   private[akka] def printTree: String
 
   /**
+   * INTERNAL API: random uid assigned at ActorSystem startup
+   */
+  @InternalApi private[akka] def uid: Long
+
+  /**
    * INTERNAL API: final step of `terminate()`
    */
   @InternalApi private[akka] def finalTerminate(): Unit
@@ -799,6 +804,8 @@ private[akka] class ActorSystemImpl(
     val guardianProps: Option[Props],
     setup: ActorSystemSetup)
     extends ExtendedActorSystem {
+
+  val uid: Long = ThreadLocalRandom.current.nextLong()
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
