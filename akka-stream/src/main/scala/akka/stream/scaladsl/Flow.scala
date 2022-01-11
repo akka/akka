@@ -14,7 +14,7 @@ import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
-import akka.annotation.DoNotInherit
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream.Attributes.SourceLocation
 import akka.stream._
@@ -3272,6 +3272,32 @@ trait FlowOps[+Out, +Mat] {
    * asynchronously.
    */
   def async: Repr[Out]
+
+  /**
+   * Aggregate input elements into an arbitrary data structure that can be completed and emitted downstream
+   * when custom condition is met which can be triggered by aggregate or timer.
+   * It can be thought of a more general [[groupedWeightedWithin]].
+   *
+   * '''Emits when''' the aggregation function decides the aggregate is complete or the timer function returns true
+   *
+   * '''Backpressures when''' downstream backpressures and the aggregate is complete
+   *
+   * '''Completes when''' upstream completes and the last aggregate has been emitted downstream
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param allocate    allocate the initial data structure for aggregated elements
+   * @param aggregate   update the aggregated elements, return true if ready to emit after update.
+   * @param harvest     this is invoked before emit within the current stage/operator
+   * @param emitOnTimer decide whether the current aggregated elements can be emitted, the custom function is invoked on every interval
+   */
+  @ApiMayChange
+  def aggregateWithBoundary[Agg, Emit](allocate: () => Agg)(
+      aggregate: (Agg, Out) => (Agg, Boolean),
+      harvest: Agg => Emit,
+      emitOnTimer: Option[(Agg => Boolean, FiniteDuration)]): Repr[Emit] =
+    via(AggregateWithBoundary(allocate, aggregate, harvest, emitOnTimer))
+
 }
 
 /**
