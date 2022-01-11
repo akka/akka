@@ -47,8 +47,8 @@ object PubSub {
   /**
    * Create a sink that will publish each message to the given topic. Note that there is no backpressure
    * from the topic, so care must be taken to not publish messages at a higher rate than that can be handled
-   * by subscribers. If the topic does not have any subscribers when a message is published the message is
-   * sent to dead letters.
+   * by subscribers. If the topic does not have any subscribers when a message is published or the topic actor is stopped,
+   * the message is sent to dead letters.
    *
    * @param topicActor The actor ref for an `akka.actor.typed.pubsub.Topic` actor representing a specific topic.
    * @tparam T the type of the messages that can be published

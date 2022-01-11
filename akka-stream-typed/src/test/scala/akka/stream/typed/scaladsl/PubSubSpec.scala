@@ -17,15 +17,13 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class PubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
-  implicit def sys = testKit.system.classicSystem
-
   "PubSub.source" should {
 
     "emit messages from the topic" in {
       val topic = testKit.spawn(Topic[String]("my-topic-1"))
 
       val source = PubSub.source(topic, 100, OverflowStrategy.fail)
-      val sourceProbe = source.runWith(TestSink.probe)
+      val sourceProbe = source.runWith(TestSink())
       sourceProbe.ensureSubscription()
 
       // wait until subscription has been seen
