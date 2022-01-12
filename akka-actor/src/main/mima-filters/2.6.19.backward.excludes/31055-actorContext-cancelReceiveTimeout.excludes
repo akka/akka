@@ -1,0 +1,2 @@
+# internal actor class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.cancelReceiveTimeout")
