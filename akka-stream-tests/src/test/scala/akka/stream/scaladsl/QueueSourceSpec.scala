@@ -10,6 +10,7 @@ import org.scalatest.time.Span
 import akka.Done
 import akka.actor.Status
 import akka.pattern.pipe
+import akka.stream.QueueOfferResult.enqueued
 import akka.stream._
 import akka.stream.impl.QueueSource
 import akka.stream.testkit.GraphStageMessages
@@ -292,17 +293,6 @@ class QueueSourceSpec extends StreamSpec {
       sourceQueue2.watchCompletion().isCompleted should ===(false)
     }
 
-    "return true on Enqueuing the element successfully when reject elements on back-pressure" in {
-      val (source, probe) = Source.queue[Int](0, OverflowStrategy.backpressure).toMat(TestSink.probe)(Keep.both).run()
-      val f = source.offer(42)
-      val ex = source.offer(43).failed.futureValue
-      ex shouldBe a[IllegalStateException]
-      ex.getMessage should include("have to wait")
-      probe.requestNext() should ===(42)
-      f.futureValue should ===(QueueOfferResult.Enqueued)
-      assert(QueueOfferResult.Enqueued.isEnqueued)
-    }
-
     "complete the stream" when {
 
       "buffer is empty" in {
@@ -414,6 +404,12 @@ class QueueSourceSpec extends StreamSpec {
       expectMsg(Done)
     }
 
+  }
+
+  "QueueOfferResult" should {
+    "be enqueued for Enqueued" in {
+      enqueued.isSuccess shouldBe (true)
+    }
   }
 
 }

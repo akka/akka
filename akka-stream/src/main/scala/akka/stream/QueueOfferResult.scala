@@ -16,7 +16,7 @@ sealed abstract class QueueOfferResult {
   /**
    * Java API: To validate if the element is successfully enqueued.
    */
-  def isEnqueued: Boolean = enqueued match {
+  def isSuccess: Boolean = enqueued match {
     case Enqueued => true
     case _        => false
   }
