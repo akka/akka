@@ -22,12 +22,12 @@ For the full documentation of this feature and for new projects see @ref:[Distri
 
 ## Using the Replicator
 
-The `akka.cluster.ddata.Replicator` actor provides the API for interacting with the data.
+The @apidoc[akka.cluster.ddata.Replicator] actor provides the API for interacting with the data.
 The `Replicator` actor must be started on each node in the cluster, or group of nodes tagged
 with a specific role. It communicates with other `Replicator` instances with the same path
 (without address) that are running on other nodes . For convenience it can be used with the
-`akka.cluster.ddata.DistributedData` extension but it can also be started as an ordinary
-actor using the `Replicator.props`. If it is started as an ordinary actor it is important
+@apidoc[akka.cluster.ddata.DistributedData] extension but it can also be started as an ordinary
+actor using the @apidoc[Replicator.props](akka.cluster.ddata.Replicator$) {scala="#props(settings:akka.cluster.ddata.ReplicatorSettings):akka.actor.Props" java="#props(akka.cluster.ddata.ReplicatorSettings)"}. If it is started as an ordinary actor it is important
 that it is given the same name, started on same path, on all nodes.
 
 Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up),
@@ -39,7 +39,7 @@ as part of the cluster. So 3 nodes + 5 `WeaklyUp` is essentially a
 3 node cluster as far as consistent actions are concerned.
 
 Below is an example of an actor that schedules tick messages to itself and for each tick
-adds or removes elements from a `ORSet` (observed-remove set). It also subscribes to
+adds or removes elements from a @apidoc[ORSet](akka.cluster.ddata.ORSet) (observed-remove set). It also subscribes to
 changes of this.
 
 Scala
@@ -53,18 +53,18 @@ Java
 
 For the full documentation of this feature and for new projects see @ref:[Distributed Data - Update](typed/distributed-data.md#update).
 
-To modify and replicate a data value you send a `Replicator.Update` message to the local
-`Replicator`.
+To modify and replicate a data value you send a @apidoc[Replicator.Update](akka.cluster.ddata.Replicator.Update) message to the local
+@apidoc[akka.cluster.ddata.Replicator].
 
-The current data value for the `key` of the `Update` is passed as parameter to the `modify`
+The current data value for the `key` of the `Update` is passed as parameter to the @scala[@scaladoc[modify](akka.cluster.ddata.Replicator.Update#modify:Option[A]=%3EA)]@java[@javadoc[modify()](akka.cluster.ddata.Replicator.Update#modify())]
 function of the `Update`. The function is supposed to return the new value of the data, which
 will then be replicated according to the given consistency level.
 
 The `modify` function is called by the `Replicator` actor and must therefore be a pure
 function that only uses the data parameter and stable fields from enclosing scope. It must
-for example not access the sender (@scala[`sender()`]@java[`getSender()`]) reference of an enclosing actor.
+for example not access the sender (@scala[@scaladoc[sender()](akka.actor.Actor#sender():akka.actor.ActorRef)]@java[@javadoc[getSender()](akka.actor.AbstractActor#getSender())]) reference of an enclosing actor.
 
-`Update` is intended to only be sent from an actor running in same local `ActorSystem`
+`Update` is intended to only be sent from an actor running in same local @apidoc[akka.actor.ActorSystem]
  as the `Replicator`, because the `modify` function is typically not serializable.
  
 Scala
@@ -73,10 +73,10 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #update }
 
-As reply of the `Update` a `Replicator.UpdateSuccess` is sent to the sender of the
+As reply of the `Update` a @apidoc[Replicator.UpdateSuccess](akka.cluster.ddata.Replicator.UpdateSuccess) is sent to the sender of the
 `Update` if the value was successfully replicated according to the supplied 
-@ref:[write consistency level](typed/distributed-data.md#write-consistency) within the supplied timeout. Otherwise a `Replicator.UpdateFailure` subclass is
-sent back. Note that a `Replicator.UpdateTimeout` reply does not mean that the update completely failed
+@ref:[write consistency level](typed/distributed-data.md#write-consistency) within the supplied timeout. Otherwise a @apidoc[Replicator.UpdateFailure](akka.cluster.ddata.Replicator.UpdateFailure) subclass is
+sent back. Note that a @apidoc[Replicator.UpdateTimeout](akka.cluster.ddata.Replicator.UpdateTimeout) reply does not mean that the update completely failed
 or was rolled back. It may still have been replicated to some nodes, and will eventually
 be replicated to all nodes with the gossip protocol.
 
@@ -93,15 +93,15 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #update-response2 }
 
-You will always see your own writes. For example if you send two `Update` messages
+You will always see your own writes. For example if you send two @apidoc[akka.cluster.ddata.Replicator.Update] messages
 changing the value of the same `key`, the `modify` function of the second message will
 see the change that was performed by the first `Update` message.
 
 It is possible to abort the `Update` when inspecting the state parameter that is passed in to
 the `modify` function by throwing an exception. That happens before the update is performed and
-a `Replicator.ModifyFailure` is sent back as reply.
+a @apidoc[Replicator.ModifyFailure](akka.cluster.ddata.Replicator.ModifyFailure) is sent back as reply.
 
-In the `Update` message you can pass an optional request context, which the `Replicator`
+In the `Update` message you can pass an optional request context, which the @apidoc[akka.cluster.ddata.Replicator]
 does not care about, but is included in the reply messages. This is a convenient
 way to pass contextual information (e.g. original sender) without having to use `ask`
 or maintain local correlation data structures.
@@ -117,7 +117,7 @@ Java
 
 For the full documentation of this feature and for new projects see @ref:[Distributed Data - Get](typed/distributed-data.md#get).
 
-To retrieve the current value of a data you send `Replicator.Get` message to the
+To retrieve the current value of a data you send @apidoc[Replicator.Get](akka.cluster.ddata.Replicator.Get) message to the
 `Replicator`. You supply a consistency level which has the following meaning:
 
 Scala
@@ -126,9 +126,9 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #get }
 
-As reply of the `Get` a `Replicator.GetSuccess` is sent to the sender of the
-`Get` if the value was successfully retrieved according to the supplied @ref:[read consistency level](typed/distributed-data.md#read-consistency) within the supplied timeout. Otherwise a `Replicator.GetFailure` is sent.
-If the key does not exist the reply will be `Replicator.NotFound`.
+As reply of the `Get` a @apidoc[Replicator.GetSuccess](akka.cluster.ddata.Replicator.GetSuccess) is sent to the sender of the
+`Get` if the value was successfully retrieved according to the supplied @ref:[read consistency level](typed/distributed-data.md#read-consistency) within the supplied timeout. Otherwise a @apidoc[Replicator.GetFailure](akka.cluster.ddata.Replicator.GetFailure) is sent.
+If the key does not exist the reply will be @apidoc[Replicator.NotFound](akka.cluster.ddata.Replicator.NotFound).
 
 Scala
 : @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-response1 }
@@ -143,9 +143,9 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #get-response2 }
 
-In the `Get` message you can pass an optional request context in the same way as for the
-`Update` message, described above. For example the original sender can be passed and replied
-to after receiving and transforming `GetSuccess`.
+In the @apidoc[akka.cluster.ddata.Replicator.Get] message you can pass an optional request context in the same way as for the
+@apidoc[akka.cluster.ddata.Replicator.Update] message, described above. For example the original sender can be passed and replied
+to after receiving and transforming @apidoc[akka.cluster.ddata.Replicator.GetSuccess].
 
 Scala
 : @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-request-context }
@@ -157,15 +157,15 @@ Java
 
 For the full documentation of this feature and for new projects see @ref:[Distributed Data - Subscribe](typed/distributed-data.md#subscribe).
 
-You may also register interest in change notifications by sending `Replicator.Subscribe`
-message to the `Replicator`. It will send `Replicator.Changed` messages to the registered
+You may also register interest in change notifications by sending @apidoc[Replicator.Subscribe](akka.cluster.ddata.Replicator.Subscribe)
+message to the `Replicator`. It will send @apidoc[Replicator.Changed](akka.cluster.ddata.Replicator.Changed) messages to the registered
 subscriber when the data for the subscribed key is updated. Subscribers will be notified
 periodically with the configured `notify-subscribers-interval`, and it is also possible to
 send an explicit `Replicator.FlushChanges` message to the `Replicator` to notify the subscribers
 immediately.
 
 The subscriber is automatically removed if the subscriber is terminated. A subscriber can
-also be deregistered with the `Replicator.Unsubscribe` message.
+also be deregistered with the @apidoc[Replicator.Unsubscribe](akka.cluster.ddata.Replicator.Unsubscribe) message.
 
 Scala
 : @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #subscribe }
@@ -177,7 +177,7 @@ Java
 
 For the full documentation of this feature and for new projects see @ref:[Distributed Data Consistency](typed/distributed-data.md#consistency).
  
-Here is an example of using `WriteMajority` and `ReadMajority`:
+Here is an example of using @apidoc[akka.cluster.ddata.Replicator.WriteMajority] and @apidoc[akka.cluster.ddata.Replicator.ReadMajority]:
 
 Scala
 : @@snip [ShoppingCart.scala](/akka-docs/src/test/scala/docs/ddata/ShoppingCart.scala) { #read-write-majority }
@@ -199,11 +199,11 @@ Scala
 Java
 : @@snip [ShoppingCart.java](/akka-docs/src/test/java/jdocs/ddata/ShoppingCart.java) { #add-item }
 
-In some rare cases, when performing an `Update` it is needed to first try to fetch latest data from
-other nodes. That can be done by first sending a `Get` with `ReadMajority` and then continue with
-the `Update` when the `GetSuccess`, `GetFailure` or `NotFound` reply is received. This might be
-needed when you need to base a decision on latest information or when removing entries from an `ORSet`
-or `ORMap`. If an entry is added to an `ORSet` or `ORMap` from one node and removed from another
+In some rare cases, when performing an @apidoc[akka.cluster.ddata.Replicator.Update] it is needed to first try to fetch latest data from
+other nodes. That can be done by first sending a @apidoc[akka.cluster.ddata.Replicator.Get] with @apidoc[akka.cluster.ddata.Replicator.ReadMajority] and then continue with
+the @apidoc[akka.cluster.ddata.Replicator.Update] when the @apidoc[akka.cluster.ddata.Replicator.GetSuccess], @apidoc[akka.cluster.ddata.Replicator.GetFailure] or @apidoc[akka.cluster.ddata.Replicator.NotFound] reply is received. This might be
+needed when you need to base a decision on latest information or when removing entries from an @apidoc[akka.cluster.ddata.ORSet]
+or @apidoc[akka.cluster.ddata.ORMap]. If an entry is added to an `ORSet` or `ORMap` from one node and removed from another
 node the entry will only be removed if the added entry is visible on the node where the removal is
 performed (hence the name observed-removed set).
 
@@ -242,7 +242,7 @@ As deleted keys continue to be included in the stored data on each node as well 
 messages, a continuous series of updates and deletes of top-level entities will result in
 growing memory usage until an ActorSystem runs out of memory. To use Akka Distributed Data
 where frequent adds and removes are required, you should use a fixed number of top-level data
-types that support both updates and removals, for example `ORMap` or `ORSet`.
+types that support both updates and removals, for example @apidoc[akka.cluster.ddata.ORMap] or @apidoc[akka.cluster.ddata.ORSet].
 
 @@@
 
@@ -278,6 +278,6 @@ paper by Mark Shapiro et. al.
 
 ## Configuration
 
-The `DistributedData` extension can be configured with the following properties:
+The @apidoc[akka.cluster.ddata.DistributedData] extension can be configured with the following properties:
 
 @@snip [reference.conf](/akka-distributed-data/src/main/resources/reference.conf) { #distributed-data }
