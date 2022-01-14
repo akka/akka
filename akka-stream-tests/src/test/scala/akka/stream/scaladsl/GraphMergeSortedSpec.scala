@@ -11,10 +11,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
-import org.scalacheck.{ Gen, Shrink }
-import org.scalacheck.Shrink
 
-@nowarn // tests deprecated apis
 class GraphMergeSortedSpec extends TwoStreamsSetup with ScalaCheckPropertyChecks {
 
   override type Outputs = Int
@@ -27,6 +24,7 @@ class GraphMergeSortedSpec extends TwoStreamsSetup with ScalaCheckPropertyChecks
     override def out: Outlet[Outputs] = merge.out
   }
 
+  @nowarn("cat=deprecation")
   implicit def noShrink[T]: Shrink[T] =
     Shrink[T](_ => Stream.empty) // do not shrink failures, it only destroys evidence
 

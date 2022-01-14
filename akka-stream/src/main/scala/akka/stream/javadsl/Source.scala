@@ -715,7 +715,7 @@ object Source {
   def queue[T](bufferSize: Int): Source[T, BoundedSourceQueue[T]] =
     scaladsl.Source.queue(bufferSize).asJava
 
-    /**
+  /**
    * Merge the given [[Source]]s, taking elements as they arrive from input streams,
    * picking always the smallest of the available elements (waiting for one element from all inputs
    * to be available). This means that possible contiguity of the input streams is not exploited to avoid
@@ -736,7 +736,6 @@ object Source {
     val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
     new Source(scaladsl.Source.mergeSortedN(seq)(Ordering.comparatorToOrdering(comp)))
   }
-
 
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.javadsl.SourceQueueWithComplete]].

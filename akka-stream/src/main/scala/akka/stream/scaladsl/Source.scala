@@ -846,12 +846,11 @@ object Source {
     val source = sources match {
       case immutable.Seq()   => empty[T]
       case immutable.Seq(s1) => s1.mapMaterializedValue(_ => NotUsed)
-      case s1 +: s2 +: ss    => combine(s1, s2, ss: _*)(new MergeSortedN[T](_))
+      case sources    => combine(sources(0), sources(1), sources.drop(2): _*)(new MergeSortedN[T](_))
     }
 
     source.addAttributes(DefaultAttributes.mergeSortedN)
   }
-
 
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueueWithComplete]].

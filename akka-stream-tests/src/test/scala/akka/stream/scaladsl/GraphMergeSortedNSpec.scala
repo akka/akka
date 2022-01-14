@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -64,7 +64,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       val downstream = TestSubscriber.probe[Int]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.fromSubscriber(downstream)) { implicit b => out =>
           val mergeSortedN = b.add(MergeSortedN[Int](2))
 
           Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
@@ -94,7 +94,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       val downstream = TestSubscriber.probe[Int]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.fromSubscriber(downstream)) { implicit b => out =>
           val mergeSortedN = b.add(MergeSortedN[Int](2))
 
           Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
@@ -122,7 +122,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       val downstream = TestSubscriber.probe[Int]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.fromSubscriber(downstream)) { implicit b => out =>
           val mergeSortedN = b.add(MergeSortedN[Int](2))
 
           Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
@@ -225,7 +225,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       val downstream = TestSubscriber.probe[Int]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+        .fromGraph(GraphDSL.createGraph(Sink.fromSubscriber(downstream)) { implicit b => out =>
           val mergeSortedN = b.add(MergeSortedN[Int](2))
 
           Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
