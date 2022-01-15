@@ -880,6 +880,8 @@ timeout there must have been an idle period beforehand as configured via this me
 Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
 periods). Pass in `Duration.Undefined` to switch off this feature.
 
+To cancel the sending of receive timeout notifications, use `cancelReceiveTimeout`.
+
 Scala
 :  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #receive-timeout }
 
