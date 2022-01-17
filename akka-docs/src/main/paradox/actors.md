@@ -878,7 +878,7 @@ another message was enqueued; hence it is **not guaranteed** that upon reception
 timeout there must have been an idle period beforehand as configured via this method.
 
 Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
-periods). Pass in `Duration.Undefined` to switch off this feature.
+periods).
 
 To cancel the sending of receive timeout notifications, use `cancelReceiveTimeout`.
 
