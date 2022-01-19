@@ -585,6 +585,46 @@ public class ActorDocTest extends AbstractJavaTest {
     };
   }
 
+  static class ReceiveTimeoutWithCancelActor extends AbstractActor {
+    private ActorRef target = getContext().getSystem().deadLetters();
+
+    public ReceiveTimeoutWithCancelActor() {
+      getContext().setReceiveTimeout(Duration.ofSeconds(1));
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+          .matchEquals(
+              "Hello",
+              s -> {
+                target = getSender();
+                target.tell("Hello world", getSelf());
+                getContext().setReceiveTimeout(Duration.ofMillis(200));
+              })
+          .match(
+              ReceiveTimeout.class,
+              r -> {
+                getContext().cancelReceiveTimeout();
+                target.tell("timeout", getSelf());
+              })
+          .build();
+    }
+  }
+
+  @Test
+  public void cancel_receiveTimeout() {
+    final ActorRef myActor = system.actorOf(Props.create(ReceiveTimeoutWithCancelActor.class));
+    new TestKit(system) {
+      {
+        myActor.tell("Hello", getRef());
+        expectMsgEquals("Hello world");
+        expectMsgEquals("timeout");
+        expectNoMessage(Duration.ofMillis(400));
+      }
+    };
+  }
+
   public
   // #hot-swap-actor
   static class HotSwapActor extends AbstractActor {
