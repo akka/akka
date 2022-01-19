@@ -518,11 +518,13 @@ object ByteString {
       if (0 <= idx && idx < length) {
         var pos = 0
         var seen = 0
-        while (idx >= seen + bytestrings(pos).length) {
-          seen += bytestrings(pos).length
+        var frag = bytestrings(pos)
+        while (idx >= seen + frag.length) {
+          seen += frag.length
           pos += 1
+          frag = bytestrings(pos)
         }
-        bytestrings(pos)(idx - seen)
+        frag(idx - seen)
       } else throw new IndexOutOfBoundsException(idx.toString)
     }
 
