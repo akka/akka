@@ -31,6 +31,7 @@ object DurableStateBehaviorReplySpec {
   final case class IncrementReplyLater(replyTo: ActorRef[Done]) extends Command[Done]
   final case class ReplyNow(replyTo: ActorRef[Done]) extends Command[Done]
   final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
+  final case class ResetWithConfirmation(replyTo: ActorRef[Done]) extends Command[Done]
   case object Increment extends Command[Nothing]
   case class IncrementBy(by: Int) extends Command[Nothing]
 
@@ -60,6 +61,9 @@ object DurableStateBehaviorReplySpec {
 
           case GetValue(replyTo) =>
             Effect.reply(replyTo)(state)
+
+          case ResetWithConfirmation(replyTo) =>
+            Effect.reset[State]().thenReply(replyTo)(_ => Done)
 
           case _ => ???
 
@@ -107,6 +111,21 @@ class DurableStateBehaviorReplySpec
       val queryProbe = TestProbe[State]()
       c ! GetValue(queryProbe.ref)
       queryProbe.expectMessage(State(1))
+    }
+
+    "reset state thenReply" in {
+      val c = spawn(counter(nextPid()))
+      val updateProbe = TestProbe[Done]()
+      c ! IncrementWithConfirmation(updateProbe.ref)
+      updateProbe.expectMessage(Done)
+
+      val resetProbe = TestProbe[Done]()
+      c ! ResetWithConfirmation(resetProbe.ref)
+      resetProbe.expectMessage(Done)
+
+      val queryProbe = TestProbe[State]()
+      c ! GetValue(queryProbe.ref)
+      queryProbe.expectMessage(State(0))
     }
   }
 }

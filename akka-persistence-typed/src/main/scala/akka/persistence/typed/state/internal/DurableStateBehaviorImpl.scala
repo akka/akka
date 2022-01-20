@@ -176,6 +176,8 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
   final case class GetFailure(cause: Throwable) extends InternalProtocol
   case object UpsertSuccess extends InternalProtocol
   final case class UpsertFailure(cause: Throwable) extends InternalProtocol
+  case object DeleteSuccess extends InternalProtocol
+  final case class DeleteFailure(cause: Throwable) extends InternalProtocol
   case object RecoveryTimeout extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
 
