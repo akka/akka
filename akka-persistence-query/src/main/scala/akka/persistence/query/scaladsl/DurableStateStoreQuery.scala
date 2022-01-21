@@ -26,8 +26,8 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    * This will return changes that occurred up to when the `Source` returned by this call is materialized. Changes to
    * objects made since materialization are not guaranteed to be included in the results.
    *
-   * The [[DurableStateChange]] elements can be [[akka.persistence.query.UpdatedDurableState]] or `DeletedDurableState`.
-   * `DeletedDurableState` is not implemented yet, see issue https://github.com/akka/akka/issues/30446.
+   * The [[DurableStateChange]] elements can be [[akka.persistence.query.UpdatedDurableState]] or
+   * [[akka.persistence.query.DeletedDurableState]].
    *
    * @param tag The tag to get changes for.
    * @param offset The offset to get changes since. Must either be [[akka.persistence.query.NoOffset]] to get
@@ -48,8 +48,8 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    * in quick succession are likely to be skipped, with only the last update resulting in a change from this
    * source.
    *
-   * The [[DurableStateChange]] elements can be [[akka.persistence.query.UpdatedDurableState]] or `DeletedDurableState`.
-   * `DeletedDurableState` is not implemented yet, see issue https://github.com/akka/akka/issues/30446.
+   * The [[DurableStateChange]] elements can be [[akka.persistence.query.UpdatedDurableState]] or
+   * [[akka.persistence.query.DeletedDurableState]].
    *
    * @param tag The tag to get changes for.
    * @param offset The offset to get changes since. Must either be [[akka.persistence.query.NoOffset]] to get

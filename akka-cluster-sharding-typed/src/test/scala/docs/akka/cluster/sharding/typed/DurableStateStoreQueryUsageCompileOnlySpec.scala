@@ -19,12 +19,14 @@ object DurableStateStoreQueryUsageCompileOnlySpec {
     import akka.persistence.query.scaladsl.DurableStateStoreQuery
     import akka.persistence.query.DurableStateChange
     import akka.persistence.query.UpdatedDurableState
+    import akka.persistence.query.DeletedDurableState
 
     val durableStateStoreQuery =
       DurableStateStoreRegistry(system).durableStateStoreFor[DurableStateStoreQuery[Record]](pluginId)
     val source: Source[DurableStateChange[Record], NotUsed] = durableStateStoreQuery.changes("tag", offset)
     source.map {
-      case UpdatedDurableState(persistenceId, revision, value, offset, timestamp) => value
+      case UpdatedDurableState(persistenceId, revision, value, offset, timestamp) => Some(value)
+      case _: DeletedDurableState[_]                                              => None
     }
     //#get-durable-state-store-query-example
   }

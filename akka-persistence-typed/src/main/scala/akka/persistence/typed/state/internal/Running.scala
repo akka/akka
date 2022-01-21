@@ -141,8 +141,8 @@ private[akka] object Running {
         case _: PersistNothing.type =>
           (applySideEffects(sideEffects, state), true)
 
-        case _: Reset[_] =>
-          val nextState = internalDelete(setup.context, msg)
+        case _: Delete[_] =>
+          val nextState = internalDelete(setup.context, msg, state)
           (applySideEffects(sideEffects, nextState), true)
 
         case _: Unhandled.type =>

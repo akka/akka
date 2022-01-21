@@ -73,7 +73,7 @@ private[akka] final case class Persist[State](newState: State) extends EffectImp
 
 /** INTERNAL API */
 @InternalApi
-private[akka] case class Reset[State]() extends EffectImpl[State]
+private[akka] case class Delete[State]() extends EffectImpl[State]
 
 /** INTERNAL API */
 @InternalApi

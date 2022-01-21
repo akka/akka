@@ -26,11 +26,11 @@ object Effect {
   def persist[State](state: State): EffectBuilder[State] = Persist(state)
 
   /**
-   * Reset to the initial state and delete the persisted state.
+   * Delete the persisted state.
    *
    * Side effects can be chained with `thenRun`
    */
-  def reset[State](): EffectBuilder[State] = Reset()
+  def delete[State](): EffectBuilder[State] = Delete()
 
   /**
    * Do not persist anything
