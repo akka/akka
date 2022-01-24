@@ -120,12 +120,14 @@ jobs:
         # binary version is required and Akka build will set the right
         # full version from it.
         scalaVersion: ["2.12", "2.13"]
-        jdkVersion: ["adopt@1.8.0", "adopt@1.11"]
+        jdkVersion: ["adopt@1.8.0", "adopt@1.11", "openjdk@1.17.0"]
         include:
           - jdkVersion: adopt@1.8.0
             extraOpts: "-Dmultinode.XX:+PrintGCDetails -Dmultinode.XX:+PrintGCTimeStamps"
           - jdkVersion: adopt@1.11
             extraOpts: "-Dmultinode.Xlog:gc"
+          - jdkVersion: openjdk@1.17.0
+            extraopts: "-Dmultinode.Xlog:gc "
     steps:
       - name: Checkout
         uses: actions/checkout@v2
