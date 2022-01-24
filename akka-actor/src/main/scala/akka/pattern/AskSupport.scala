@@ -505,7 +505,7 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
  *
  * INTERNAL API
  */
-private[akka] final class PromiseActorRef private (
+private[akka] final class PromiseActorRef(
     val provider: ActorRefProvider,
     val result: Promise[Any],
     _mcn: String,
