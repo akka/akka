@@ -1,0 +1,2 @@
+# Issue #31080, internal changes
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.LruBoundedCache.isKeyCacheable")
