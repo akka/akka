@@ -129,7 +129,7 @@ Java
 
 ## MDC
 
-[MDC](http://logback.qos.ch/manual/mdc.html) allows for adding additional context dependent attributes to log entries.
+[MDC](https://logback.qos.ch/manual/mdc.html) allows for adding additional context dependent attributes to log entries.
 Out of the box, Akka will place the path of the actor in the the MDC attribute `akkaSource`.
 
 One or more tags can also be added to the MDC using the @apidoc[ActorTags$] props. The tags will be rendered as a comma separated
@@ -178,7 +178,7 @@ that are running actors and other tasks.
 ### Logback
 
 `akka-actor-typed` includes a dependency to the `slf4j-api`. In your runtime, you also need a SLF4J backend.
-We recommend [Logback](http://logback.qos.ch/):
+We recommend [Logback](https://logback.qos.ch/):
 
 @@dependency[sbt,Maven,Gradle] {
   group="ch.qos.logback"
@@ -189,7 +189,7 @@ We recommend [Logback](http://logback.qos.ch/):
 Logback has flexible configuration options and details can be found in the
 [Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
 
-One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender),
+One part that is important to highlight is the importance of configuring an [AsyncAppender](https://logback.qos.ch/manual/appenders.html#AsyncAppender),
 because it offloads rendering of logging events to a background thread, increasing performance. It doesn't block
 the threads of the @apidoc[typed.ActorSystem] while the underlying infrastructure writes the log messages to disk or other configured
 destination. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
@@ -232,7 +232,7 @@ When logging via the  @scala[@scaladoc[log](akka.actor.typed.scaladsl.ActorConte
 * `sourceActorSystem`: the name of the ActorSystem
 
 These MDC properties can be included in the Logback output with for example `%X{akkaSource}` specifier within the
-[pattern layout configuration](http://logback.qos.ch/manual/layouts.html#mdc):
+[pattern layout configuration](https://logback.qos.ch/manual/layouts.html#mdc):
 
 ```
   <encoder>

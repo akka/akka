@@ -383,7 +383,7 @@ There are several management tools for the cluster. Please refer to the
 @@@ warning
 
 **Deprecation warning** - The command line script has been deprecated and is scheduled for removal
-in the next major version. Use the @ref:[HTTP management](additional/operations.md#http) API with [curl](https://curl.haxx.se/)
+in the next major version. Use the @ref:[HTTP management](additional/operations.md#http) API with [curl](https://curl.se/)
 or similar instead.
 
 @@@

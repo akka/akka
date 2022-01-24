@@ -65,7 +65,7 @@ It reduces the need for some annotations.
 ## Security
 
 For security reasons it is disallowed to bind the Jackson serializers to
-open ended types that might be a target for [serialization gadgets](https://medium.com/@cowtowncoder/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
+open ended types that might be a target for [serialization gadgets](https://cowtowncoder.medium.com/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
 such as:
 
 * @javadoc[java.lang.Object](java.lang.Object)
