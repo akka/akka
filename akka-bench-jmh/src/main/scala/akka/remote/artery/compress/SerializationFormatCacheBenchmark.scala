@@ -11,6 +11,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.pattern.PromiseActorRef
 import akka.remote.artery.SerializationFormatCache
+import akka.serialization.Serialization
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Fork
 import org.openjdk.jmh.annotations.Level
@@ -32,7 +33,7 @@ import scala.concurrent.Promise
 @State(Scope.Benchmark)
 @nowarn
 class SerializationFormatCacheBenchmark {
-  
+
   // note 1 means only top level no temporary at all
   @Param(Array("1", "2", "5", "10"))
   private var everyNToToplevel = 0
@@ -87,13 +88,16 @@ class SerializationFormatCacheBenchmark {
   @Benchmark
   @OperationsPerInvocation(2000)
   def useCache(blackhole: Blackhole): Unit = {
-    var i: Int = 0
-    while (i < 2000) {
-      val actorRef =
-        if (i % everyNToToplevel == 0) topLevelActorRefs(i % uniqueTopLevelRefs)
-        else temporaryActorRefs(i % uniqueTemporaryRefs)
-      blackhole.consume(cache.getOrCompute(actorRef))
-      i += 1
+    // serialization requires this
+    Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
+      var i: Int = 0
+      while (i < 2000) {
+        val actorRef =
+          if (i % everyNToToplevel == 0) topLevelActorRefs(i % uniqueTopLevelRefs)
+          else temporaryActorRefs(i % uniqueTemporaryRefs)
+        blackhole.consume(cache.getOrCompute(actorRef))
+        i += 1
+      }
     }
   }
 

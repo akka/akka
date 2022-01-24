@@ -76,7 +76,9 @@ private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag]
     CacheStatistics(count, max, sum.toDouble / count)
   }
 
-  final def getOrCompute(k: K): V = {
+  final def getOrCompute(k: K): V = if (!isKeyCacheable(k)) {
+    compute(k)
+  } else {
     val h = hash(k)
     epoch += 1
 
@@ -182,6 +184,7 @@ private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag]
 
   protected def hash(k: K): Int
 
+  protected def isKeyCacheable(k: K): Boolean
   protected def isCacheable(v: V): Boolean
 
   override def toString =

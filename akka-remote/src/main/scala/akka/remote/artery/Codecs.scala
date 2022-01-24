@@ -346,6 +346,8 @@ private[remote] final class ActorRefResolveCacheWithAddress(
 
   override protected def compute(k: String): InternalActorRef =
     provider.resolveActorRefWithLocalAddress(k, localAddress.address)
+
+  override protected def isKeyCacheable(k: String): Boolean = true
 }
 
 /**
