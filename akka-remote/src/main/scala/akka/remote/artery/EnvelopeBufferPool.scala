@@ -4,14 +4,14 @@
 
 package akka.remote.artery
 
-import java.nio.{ByteBuffer, ByteOrder}
-import org.agrona.concurrent.{ManyToManyConcurrentArrayQueue, UnsafeBuffer}
+import java.nio.{ ByteBuffer, ByteOrder }
+import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
 import akka.actor.ActorRef
 import akka.actor.InternalActorRef
 import akka.io.DirectByteBufferPool
-import akka.remote.artery.compress.{CompressionTable, InboundCompressions, NoInboundCompressions}
+import akka.remote.artery.compress.{ CompressionTable, InboundCompressions, NoInboundCompressions }
 import akka.serialization.Serialization
-import akka.util.{OptionVal, Unsafe}
+import akka.util.{ OptionVal, Unsafe }
 
 /**
  * INTERNAL API
@@ -211,11 +211,9 @@ private[remote] final class SerializationFormatCache
   // Refs with ActorCell.undefinedUid will now collide all the time, but this is not a usual scenario anyway.
   override protected def hash(ref: ActorRef): Int = ref.path.uid
 
-
   override protected def isKeyCacheable(k: ActorRef): Boolean =
     // "temp" only for one request-response interaction so don't cache
     !InternalActorRef.isTemporaryRef(k)
-
 
   override protected def isCacheable(v: String): Boolean = true
 }

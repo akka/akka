@@ -39,7 +39,7 @@ class SerializationFormatCacheBenchmark {
   private var everyNToToplevel = 0
   // a few "normal" top level actors communicating
   @Param(Array("100"))
-  private var uniqueTopLevelRefs= 0
+  private var uniqueTopLevelRefs = 0
   // we want to simulate one per request-response, but create upfront, so very high number
   @Param(Array("100000"))
   private var uniqueTemporaryRefs = 0
@@ -63,13 +63,14 @@ class SerializationFormatCacheBenchmark {
   @Setup
   def init(): Unit = {
     system = ActorSystem("SerializationFormatCacheBenchmark")
-    temporaryActorRefs = Array.tabulate(uniqueTemporaryRefs)(n => new PromiseActorRef(
-      system.asInstanceOf[ExtendedActorSystem].provider,
-      Promise(),
-    "Any",
-      // request path is encoded in this string
-      s"_user_region_shard${n % 100}_entitypretendid${n}"
-    ))
+    temporaryActorRefs = Array.tabulate(uniqueTemporaryRefs)(
+      n =>
+        new PromiseActorRef(
+          system.asInstanceOf[ExtendedActorSystem].provider,
+          Promise(),
+          "Any",
+          // request path is encoded in this string
+          s"_user_region_shard${n % 100}_entitypretendid${n}"))
 
     topLevelActorRefs = Array.tabulate(uniqueTopLevelRefs)(n => system.actorOf(Props.empty, s"actor_$n"))
   }
