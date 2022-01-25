@@ -7,7 +7,7 @@ package akka.persistence.japi.snapshot
 import com.typesafe.config.Config
 import akka.persistence.CapabilityFlag
 import akka.persistence.snapshot.SnapshotStoreSpec
-import org.scalatest.{Args, ConfigMap, Filter, Status, Suite, TestData}
+import org.scalatest.{ Args, ConfigMap, Filter, Status, Suite, TestData }
 
 /**
  * JAVA API
@@ -22,7 +22,6 @@ import org.scalatest.{Args, ConfigMap, Filter, Status, Suite, TestData}
  */
 class JavaSnapshotStoreSpec(config: Config) extends SnapshotStoreSpec(config) {
   override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on()
-
 
   override def runTests(testName: Option[String], args: Args): Status =
     super.runTests(testName, args)

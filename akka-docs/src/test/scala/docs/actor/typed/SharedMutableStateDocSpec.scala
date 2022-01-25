@@ -79,7 +79,7 @@ class SharedMutableStateDocSpec {
         // into a message sent to self
         context.ask[Query, String](otherActor, Query(_)) {
           case Success(result) => UpdateState(result)
-          case Failure(ex)             => throw ex
+          case Failure(ex)     => throw ex
         }
         this
 
