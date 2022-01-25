@@ -4,12 +4,17 @@
 
 package akka.util
 
+import akka.annotation.InternalApi
+
 import scala.util.hashing.MurmurHash3
 
 /**
+ * INTERNAL API
+ *
  * A frequency sketch for estimating the popularity of items. For implementing the TinyLFU cache admission policy.
  * The frequency sketch includes the TinyLFU reset operation, which periodically halves all counters.
  */
+@InternalApi
 private[akka] object FrequencySketch {
 
   /**
@@ -58,6 +63,8 @@ private[akka] object FrequencySketch {
 }
 
 /**
+ * INTERNAL API
+ *
  * A frequency sketch for estimating the popularity of items. For implementing the TinyLFU cache admission policy.
 
  * This is a generalised frequency sketch with configurable depth (number of hash functions) and counter size.
@@ -88,6 +95,7 @@ private[akka] object FrequencySketch {
  * @param resetSize the size (number of counter increments) to apply the reset operation
  * @param hasher the hash function for the element type
  */
+@InternalApi
 private[akka] final class FrequencySketch[A](
     depth: Int,
     width: Int,
@@ -206,7 +214,11 @@ private[akka] final class FrequencySketch[A](
   def toDebugString: String = FrequencySketchUtil.debugString(matrix, rowWidth, slots, counterWidth, counterMask)
 }
 
-object FastFrequencySketch {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object FastFrequencySketch {
 
   /**
    * Create a new FastFrequencySketch based on the cache capacity (which will be increased to the nearest power of two).
@@ -224,6 +236,8 @@ object FastFrequencySketch {
 }
 
 /**
+ * INTERNAL API
+ *
  * A faster implementation of the frequency sketch (around twice as fast).
 
  * This frequency sketch uses a fixed depth (number of hash functions) of 4 and a counter size of 4 bits (0-15),
@@ -235,7 +249,8 @@ object FastFrequencySketch {
  * @param width width of the count-min sketch (number of counters)
  * @param resetSize the size (number of counter increments) to apply the reset operation
  */
-final class FastFrequencySketch[A](width: Int, resetSize: Int) {
+@InternalApi
+private[akka] final class FastFrequencySketch[A](width: Int, resetSize: Int) {
   require(FrequencySketch.Bits.isPowerOfTwo(width), "width must be a power of two")
 
   private final val Depth = 4
@@ -333,6 +348,10 @@ final class FastFrequencySketch[A](width: Int, resetSize: Int) {
     FrequencySketchUtil.debugString(matrix, rowWidth, slots = 16, counterWidth = 4, CounterMask)
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] object FrequencySketchUtil {
 
   /**
