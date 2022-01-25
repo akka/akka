@@ -33,8 +33,8 @@ object JdkOptions extends AutoPlugin {
     if (isJdk11orHigher) {
       // for aeron
       "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED" ::
-        // for LevelDB
-        "--add-opens=java.base/java.nio=ALL-UNNAMED" :: Nil
+      // for LevelDB
+      "--add-opens=java.base/java.nio=ALL-UNNAMED" :: Nil
     } else Nil
 
   def notOnJdk8[T](values: Seq[T]): Seq[T] = if (isJdk8) Seq.empty[T] else values

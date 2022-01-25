@@ -211,7 +211,7 @@ object AkkaBuild {
       defaults ++ CliOptions.runningOnCi
         .ifTrue(jvmGCLogOptions(JdkOptions.isJdk11orHigher, JdkOptions.isJdk8))
         .getOrElse(Nil) ++
-        JdkOptions.versionSpecificJavaOptions
+      JdkOptions.versionSpecificJavaOptions
     },
     // all system properties passed to sbt prefixed with "akka." or "aeron." will be passed on to the forked jvms as is
     Test / javaOptions := {
