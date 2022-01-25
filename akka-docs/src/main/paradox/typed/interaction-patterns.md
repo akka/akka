@@ -427,7 +427,7 @@ where multiple destination actors can perform the same piece of work, and where 
 more slowly than expected. In this case, sending the same work request (also known as a "backup request")
 to another actor results in decreased response time - because it's less probable that multiple actors
 are under heavy load simultaneously. This technique is explained in depth in Jeff Dean's presentation on
-[Achieving Rapid Response Times in Large Online Services](http://static.googleusercontent.com/media/research.google.com/en//people/jeff/Berkeley-Latency-Mar2012.pdf).
+[Achieving Rapid Response Times in Large Online Services](https://static.googleusercontent.com/media/research.google.com/en//people/jeff/Berkeley-Latency-Mar2012.pdf).
 
 There are many variations of this pattern and that is the reason this is provided as a documentation
 example rather than a built in `Behavior` in Akka. It is intended to be adjusted to your specific needs.

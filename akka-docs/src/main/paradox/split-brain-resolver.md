@@ -1,7 +1,7 @@
 # Split Brain Resolver
 
 When operating an Akka cluster you must consider how to handle
-[network partitions](http://en.wikipedia.org/wiki/Network_partition) (a.k.a. split brain scenarios)
+[network partitions](https://en.wikipedia.org/wiki/Network_partition) (a.k.a. split brain scenarios)
 and machine crashes (including JVM and hardware failures). This is crucial for correct behavior if
 you use @ref:[Cluster Singleton](typed/cluster-singleton.md) or @ref:[Cluster Sharding](typed/cluster-sharding.md),
 especially together with Akka Persistence.

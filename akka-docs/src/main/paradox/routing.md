@@ -603,7 +603,7 @@ Java
 
 The ConsistentHashingPool uses [consistent hashing](https://en.wikipedia.org/wiki/Consistent_hashing)
 to select a routee based on the sent message. This 
-[article](https://www.tom-e-white.com/2007/11/consistent-hashing.html) gives good 
+[article](https://tom-e-white.com/2007/11/consistent-hashing.html) gives good 
 insight into how consistent hashing is implemented.
 
 There is 3 ways to define what data to use for the consistent hash key.
@@ -754,13 +754,6 @@ With the code shown above, each routee will receive a `PoisonPill` message. Each
 continue to process its messages as normal, eventually processing the `PoisonPill`. This will
 cause the routee to stop. After all routees have stopped the router will itself be stopped
 automatically unless it is a dynamic router, e.g. using a resizer.
-
-@@@ note
-
-Brendan W McAdams' excellent blog post [Distributing Akka Workloads - And Shutting Down Afterwards](http://bytes.codes/2013/01/17/Distributing_Akka_Workloads_And_Shutting_Down_After/)
-discusses in more detail how `PoisonPill` messages can be used to shut down routers and routees.
-
-@@@
 
 ### Kill Messages
 

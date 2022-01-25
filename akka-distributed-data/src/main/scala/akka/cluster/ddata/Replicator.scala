@@ -1184,8 +1184,7 @@ object Replicator {
  * </ul>
  *
  * For good introduction to the CRDT subject watch the
- * <a href="http://www.ustream.tv/recorded/61448875">The Final Causal Frontier</a>
- * and <a href="https://www.infoq.com/presentations/CRDT/">Eventually Consistent Data Structures</a>
+ * <a href="https://www.infoq.com/presentations/CRDT/">Eventually Consistent Data Structures</a>
  * talk by Sean Cribbs and and the
  * <a href="https://www.microsoft.com/en-us/research/video/strong-eventual-consistency-and-conflict-free-replicated-data-types/">talk by Mark Shapiro</a>
  * and read the excellent paper <a href="https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf">
