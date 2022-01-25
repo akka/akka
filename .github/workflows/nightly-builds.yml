@@ -128,7 +128,7 @@ jobs:
           - jdkVersion: adopt@1.11
             extraOpts: "-Dmultinode.Xlog:gc"
           - jdkVersion: openjdk@1.17.0
-            extraopts: "-Dmultinode.Xlog:gc "
+            extraopts: "-Dmultinode.Xlog:gc"
     steps:
       - name: Checkout
         uses: actions/checkout@v2

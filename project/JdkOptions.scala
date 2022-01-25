@@ -26,6 +26,16 @@ object JdkOptions extends AutoPlugin {
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(s"=1.8"))
   val isJdk11orHigher: Boolean =
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=11"))
+  val isJdk17orHigher: Boolean =
+    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=17"))
+
+  val versionSpecificJavaOptions =
+    if (isJdk11orHigher) {
+      // for aeron
+      "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED" ::
+        // for LevelDB
+        "--add-opens=java.base/java.nio=ALL-UNNAMED" :: Nil
+    } else Nil
 
   def notOnJdk8[T](values: Seq[T]): Seq[T] = if (isJdk8) Seq.empty[T] else values
 
