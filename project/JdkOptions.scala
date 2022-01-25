@@ -30,7 +30,7 @@ object JdkOptions extends AutoPlugin {
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=17"))
 
   val versionSpecificJavaOptions =
-    if (isJdk11orHigher) {
+    if (isJdk17orHigher) {
       // for aeron
       "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED" ::
       // for LevelDB
