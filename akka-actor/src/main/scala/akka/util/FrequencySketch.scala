@@ -4,7 +4,7 @@
 
 package akka.util
 
-import scala.collection.immutable
+import scala.util.hashing.MurmurHash3
 
 /**
  * A frequency sketch for estimating the popularity of items. For implementing the TinyLFU cache admission policy.
@@ -20,7 +20,7 @@ private[akka] object FrequencySketch {
    * @param resetMultiplier the multiplier on the capacity for the reset size
    * @param depth the depth of count-min sketch (number of hash functions)
    * @param counterBits the size of the counters in bits: 2, 4, 8, 16, 32, or 64 bits
-   * @param hasher the hasher builder for hash functions
+   * @param hasher the hash function for the element type
    * @return a configured FrequencySketch
    */
   def apply[A](
@@ -28,36 +28,23 @@ private[akka] object FrequencySketch {
       widthMultiplier: Int = 4,
       resetMultiplier: Double = 10,
       depth: Int = 4,
-      counterBits: Int = 4)(implicit hasher: Hasher.Builder[A]): FrequencySketch[A] = {
+      counterBits: Int = 4)(implicit hasher: Hasher[A]): FrequencySketch[A] = {
     val width = widthMultiplier * Bits.ceilingPowerOfTwo(capacity)
     val resetSize = (resetMultiplier * capacity).toInt
-    new FrequencySketch(depth, width, counterBits, resetSize, hasher, Hasher.DefaultInitialSeed)
+    new FrequencySketch(depth, width, counterBits, resetSize, hasher)
   }
 
   sealed trait Hasher[A] {
     def hash(value: A): Int
   }
 
-  // Use a similar approach for hashing as the count-min sketch in Algebird,
-  // using MurmurHash3 with different random seeds for the pairwise independent hash functions.
   object Hasher {
-    final val DefaultInitialSeed = 135283237
+    final val DefaultSeed = 135283237
 
-    sealed trait Builder[A] {
-      def hasher(seed: Int): Hasher[A]
-    }
-
-    def generate[A](builder: Builder[A], hashers: Int, initialSeed: Int): immutable.IndexedSeq[Hasher[A]] = {
-      val random = new scala.util.Random(initialSeed)
-      (1 to hashers).map(_ => builder.hasher(seed = random.nextInt()))
-    }
-
-    implicit object StringHasher extends Hasher.Builder[String] {
-      override def hasher(seed: Int): Hasher[String] = new StringHasher(seed)
-    }
+    implicit val StringHasher: StringHasher = new StringHasher(DefaultSeed)
 
     final class StringHasher(seed: Int) extends Hasher[String] {
-      override def hash(value: String): Int = scala.util.hashing.MurmurHash3.stringHash(value, seed)
+      override def hash(value: String): Int = MurmurHash3.stringHash(value, seed)
     }
   }
 
@@ -81,6 +68,9 @@ private[akka] object FrequencySketch {
  * The frequency sketch includes the TinyLFU reset operation, which periodically halves all counters, to allow
  * smaller counters to be used while retaining reasonable accuracy of relative frequencies.
  *
+ * To get pairwise independent hash functions for the given depth, this implementation combines two hash functions
+ * using the "Building a Better Bloom Filter" approach, where gi(x) = h1(x) + i * h2(x) mod p.
+ *
  * References:
  *
  * "TinyLFU: A Highly Efficient Cache Admission Policy"
@@ -89,20 +79,21 @@ private[akka] object FrequencySketch {
  * "An Improved Data Stream Summary: The Count-Min Sketch and its Applications"
  * Graham Cormode, S. Muthukrishnan
  *
+ * "Less Hashing, Same Performance: Building a Better Bloom Filter"
+ * Adam Kirsch, Michael Mitzenmacher
+ *
  * @param depth depth of the count-min sketch (number of hash functions)
  * @param width width of the count-min sketch (number of counters)
  * @param counterBits the size of the counters in bits: 2, 4, 8, 16, 32, or 64 bits
  * @param resetSize the size (number of counter increments) to apply the reset operation
- * @param hasherBuilder the hasher builder for hash functions
- * @param initialSeed the initial seed for building hashers
+ * @param hasher the hash function for the element type
  */
 private[akka] final class FrequencySketch[A](
     depth: Int,
     width: Int,
     counterBits: Int,
     resetSize: Int,
-    hasherBuilder: FrequencySketch.Hasher.Builder[A],
-    initialSeed: Int) {
+    hasher: FrequencySketch.Hasher[A]) {
 
   require(FrequencySketch.Bits.isPowerOfTwo(width), "width must be a power of two")
   require(Set(2, 4, 8, 16, 32, 64)(counterBits), "counterBits must be 2, 4, 8, 16, 32, or 64 bits")
@@ -125,8 +116,6 @@ private[akka] final class FrequencySketch[A](
     (1 to slots).foldLeft(counterResetMask)((mask, count) => mask | (counterResetMask << (count * counterWidth)))
   }
 
-  private[this] val hashers = FrequencySketch.Hasher.generate(hasherBuilder, depth, initialSeed).toArray
-
   private[this] val matrix = Array.fill[Array[Long]](depth)(Array.ofDim[Long](rowWidth))
   private[this] val rowSizes = Array.ofDim[Int](depth)
   private[this] var updatedSize = 0
@@ -141,10 +130,12 @@ private[akka] final class FrequencySketch[A](
    * Note that frequencies are also periodically halved as an aging mechanism.
    */
   def frequency(value: A): Int = {
+    val hash1 = hasher.hash(value)
+    val hash2 = rehash(hash1)
     var minCount = Int.MaxValue
     var row = 0
     while (row < depth) {
-      val hash = hashers(row).hash(value)
+      val hash = hash1 + row * hash2
       minCount = Math.min(minCount, getCounter(row, hash))
       row += 1
     }
@@ -156,10 +147,12 @@ private[akka] final class FrequencySketch[A](
    * Note that frequencies are also periodically halved as an aging mechanism.
    */
   def increment(value: A): Unit = {
+    val hash1 = hasher.hash(value)
+    val hash2 = rehash(hash1)
     var updated = false
     var row = 0
     while (row < depth) {
-      val hash = hashers(row).hash(value)
+      val hash = hash1 + row * hash2
       updated |= incrementCounter(row, hash)
       row += 1
     }
@@ -168,6 +161,9 @@ private[akka] final class FrequencySketch[A](
       if (updatedSize == resetSize) reset()
     }
   }
+
+  private def rehash(hash: Int): Int =
+    MurmurHash3.finalizeHash(MurmurHash3.mixLast(hash, hash), 2)
 
   private def getCounter(row: Int, hash: Int): Int = {
     val column = (hash & columnMask) >>> slotShift
