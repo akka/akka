@@ -8,7 +8,7 @@ package akka.util
  * Zipfian generator algorithm from:
  * "Quickly Generating Billion-Record Synthetic Databases", Jim Gray et al.
  */
-private[akka] object ZipfianGenerator {
+object ZipfianGenerator {
   final val DefaultTheta = 0.99
   final val DefaultSeed = 502539523
 
@@ -30,7 +30,7 @@ private[akka] object ZipfianGenerator {
  * Zipfian generator algorithm from:
  * "Quickly Generating Billion-Record Synthetic Databases", Jim Gray et al.
  */
-private[akka] final class ZipfianGenerator(min: Int, max: Int, theta: Double, seed: Int) {
+final class ZipfianGenerator(min: Int, max: Int, theta: Double, seed: Int) {
   private val n = max - min + 1
   private val alpha = 1.0 / (1.0 - theta)
   private val zeta2 = ZipfianGenerator.zeta(2, theta)
