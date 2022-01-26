@@ -700,7 +700,7 @@ private[akka] class Shard(
     case msg: ShardQuery                 => receiveShardQuery(msg)
     case PassivateIntervalTick           => stash()
     case msg: RememberEntityStoreCrashed => rememberEntityStoreCrashed(msg)
-    case msg: ShardsUpdated => shardsUpdated(msg)
+    case msg: ShardsUpdated              => shardsUpdated(msg)
     case msg if extractEntityId.isDefinedAt(msg) =>
       deliverMessage(msg, sender())
     case msg =>
