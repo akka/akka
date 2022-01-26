@@ -6,7 +6,6 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 import java.util
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -24,6 +23,7 @@ import akka.cluster.ClusterEvent.InitialStateAsEvents
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberPreparingForShutdown
 import akka.cluster.ClusterEvent.MemberReadyForShutdown
+import akka.cluster.sharding.ShardRegion.ShardsUpdated
 import akka.cluster.sharding.internal.EntityPassivationStrategy
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
@@ -700,6 +700,7 @@ private[akka] class Shard(
     case msg: ShardQuery                 => receiveShardQuery(msg)
     case PassivateIntervalTick           => stash()
     case msg: RememberEntityStoreCrashed => rememberEntityStoreCrashed(msg)
+    case msg: ShardsUpdated => shardsUpdated(msg)
     case msg if extractEntityId.isDefinedAt(msg) =>
       deliverMessage(msg, sender())
     case msg =>
