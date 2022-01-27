@@ -63,7 +63,7 @@ you would need to reference it as `Wrapper$Message` instead of `Wrapper.Message`
 @@@
 
 Akka provides serializers for several primitive types and [protobuf](https://github.com/protocolbuffers/protobuf)
-[com.google.protobuf.GeneratedMessage](https://www.javadoc.io/doc/com.google.protobuf/protobuf-java/latest/com/google/protobuf/GeneratedMessage.html) (protobuf2) and [com.google.protobuf.GeneratedMessageV3](https://www.javadoc.io/doc/com.google.protobuf/protobuf-java/latest/com/google/protobuf/GeneratedMessageV3.html) (protobuf3) by default (the latter only if
+@javadoc[com.google.protobuf.GeneratedMessage](com.google.protobuf.GeneratedMessage) (protobuf2) and @javadoc[com.google.protobuf.GeneratedMessageV3](com.google.protobuf.GeneratedMessageV3) (protobuf3) by default (the latter only if
 depending on the akka-remote module), so normally you don't need to add
 configuration for that if you send raw protobuf messages as actor messages.
 
