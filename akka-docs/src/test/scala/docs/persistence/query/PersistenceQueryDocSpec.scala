@@ -36,11 +36,14 @@ object PersistenceQueryDocSpec {
   //#my-read-journal
   class MyReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
 
-    override val scaladslReadJournal: MyScaladslReadJournal =
+    private val readJournal: MyScaladslReadJournal =
       new MyScaladslReadJournal(system, config)
 
-    override val javadslReadJournal: MyJavadslReadJournal =
-      new MyJavadslReadJournal(scaladslReadJournal)
+    override def scaladslReadJournal(): MyScaladslReadJournal =
+      readJournal
+
+    override def javadslReadJournal(): MyJavadslReadJournal =
+      new MyJavadslReadJournal(readJournal)
   }
 
   class MyScaladslReadJournal(system: ExtendedActorSystem, config: Config)

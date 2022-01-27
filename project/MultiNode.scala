@@ -60,7 +60,7 @@ object MultiNode extends AutoPlugin {
     }
 
     "-Xmx256m" :: akkaProperties ::: CliOptions.sbtLogNoFormat.ifTrue("-Dakka.test.nocolor=true").toList
-  }
+  } ++ JdkOptions.versionSpecificJavaOptions
 
   private val anyConfigsInThisProject = ScopeFilter(configurations = inAnyConfiguration)
 

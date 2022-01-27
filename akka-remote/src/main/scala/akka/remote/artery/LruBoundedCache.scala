@@ -76,41 +76,44 @@ private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag]
     CacheStatistics(count, max, sum.toDouble / count)
   }
 
-  final def getOrCompute(k: K): V = {
-    val h = hash(k)
-    epoch += 1
+  final def getOrCompute(k: K): V =
+    if (!isKeyCacheable(k)) {
+      compute(k)
+    } else {
+      val h = hash(k)
+      epoch += 1
 
-    @tailrec def findOrCalculate(position: Int, probeDistance: Int): V = {
-      if (values(position) eq null) {
-        val value = compute(k)
-        if (isCacheable(value)) {
-          keys(position) = k
-          values(position) = value
-          hashes(position) = h
-          epochs(position) = epoch
-        }
-        value
-      } else {
-        val otherProbeDistance = probeDistanceOf(position)
-        // If probe distance of the element we try to get is larger than the current slot's, then the element cannot be in
-        // the table since because of the Robin-Hood property we would have swapped it with the current element.
-        if (probeDistance > otherProbeDistance) {
+      @tailrec def findOrCalculate(position: Int, probeDistance: Int): V = {
+        if (values(position) eq null) {
           val value = compute(k)
-          if (isCacheable(value)) move(position, k, h, value, epoch, probeDistance)
+          if (isCacheable(value)) {
+            keys(position) = k
+            values(position) = value
+            hashes(position) = h
+            epochs(position) = epoch
+          }
           value
-        } else if (hashes(position) == h && k == keys(position)) {
-          // Update usage
-          epochs(position) = epoch
-          values(position)
         } else {
-          // This is not our slot yet
-          findOrCalculate((position + 1) & Mask, probeDistance + 1)
+          val otherProbeDistance = probeDistanceOf(position)
+          // If probe distance of the element we try to get is larger than the current slot's, then the element cannot be in
+          // the table since because of the Robin-Hood property we would have swapped it with the current element.
+          if (probeDistance > otherProbeDistance) {
+            val value = compute(k)
+            if (isCacheable(value)) move(position, k, h, value, epoch, probeDistance)
+            value
+          } else if (hashes(position) == h && k == keys(position)) {
+            // Update usage
+            epochs(position) = epoch
+            values(position)
+          } else {
+            // This is not our slot yet
+            findOrCalculate((position + 1) & Mask, probeDistance + 1)
+          }
         }
       }
-    }
 
-    findOrCalculate(position = h & Mask, probeDistance = 0)
-  }
+      findOrCalculate(position = h & Mask, probeDistance = 0)
+    }
 
   @tailrec private def removeAt(position: Int): Unit = {
     val next = (position + 1) & Mask
@@ -182,6 +185,7 @@ private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag]
 
   protected def hash(k: K): Int
 
+  protected def isKeyCacheable(k: K): Boolean
   protected def isCacheable(v: V): Boolean
 
   override def toString =

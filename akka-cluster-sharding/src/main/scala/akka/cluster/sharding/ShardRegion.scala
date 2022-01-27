@@ -1025,7 +1025,9 @@ private[akka] class ShardRegion(
       shardsByRef = shardsByRef - ref
       shards = shards - shardId
       startingShards -= shardId
-      shards.values.foreach(_ ! ShardsUpdated(shards.size))
+      if (settings.passivationStrategy != ClusterShardingSettings.NoPassivationStrategy) {
+        shards.values.foreach(_ ! ShardsUpdated(shards.size))
+      }
       if (handingOff.contains(ref)) {
         handingOff = handingOff - ref
         log.debug("{}: Shard [{}] handoff complete", typeName, shardId)
@@ -1367,7 +1369,9 @@ private[akka] class ShardRegion(
             shardsByRef = shardsByRef.updated(shard, id)
             shards = shards.updated(id, shard)
             startingShards += id
-            shards.values.foreach(_ ! ShardsUpdated(shards.size))
+            if (settings.passivationStrategy != ClusterShardingSettings.NoPassivationStrategy) {
+              shards.values.foreach(_ ! ShardsUpdated(shards.size))
+            }
             None
           case Some(_) =>
             None

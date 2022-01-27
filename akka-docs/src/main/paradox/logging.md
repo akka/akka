@@ -344,8 +344,8 @@ stdout logger is `WARNING` and it can be silenced completely by setting
 
 ## SLF4J
 
-Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.
-It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](http://logback.qos.ch/):
+Akka provides a logger for [SLF4J](https://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.
+It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](https://logback.qos.ch/):
 
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
@@ -419,7 +419,7 @@ If you use the SLF4J API directly in your application, remember that the logging
 while the underlying infrastructure writes the log statements.
 
 This can be avoided by configuring the logging implementation to use
-a non-blocking appender. Logback provides [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender)
+a non-blocking appender. Logback provides [AsyncAppender](https://logback.qos.ch/manual/appenders.html#AsyncAppender)
 that does this.
 
 ### Logback configuration
@@ -427,7 +427,7 @@ that does this.
 Logback has flexible configuration options and details can be found in the
 [Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
 
-One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender),
+One part that is important to highlight is the importance of configuring an [AsyncAppender](https://logback.qos.ch/manual/appenders.html#AsyncAppender),
 because it offloads rendering of logging events to a background thread, increasing performance. It doesn't block
 the threads of the `ActorSystem` while the underlying infrastructure writes the log messages to disk or other configured
 destination. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
@@ -446,7 +446,7 @@ Place the `logback.xml` file in `src/main/resources/logback.xml`. For tests you 
 logging configuration in `src/test/resources/logback-test.xml`.
 
 MDC properties can be included in the Logback output with for example `%X{akkaSource}` specifier within the
-[pattern layout configuration](http://logback.qos.ch/manual/layouts.html#mdc):
+[pattern layout configuration](https://logback.qos.ch/manual/layouts.html#mdc):
 
 ```
   <encoder>
@@ -496,7 +496,7 @@ If you want to more accurately output the timestamp, use the MDC attribute `akka
 
 ### MDC values defined by the application
 
-One useful feature available in Slf4j is [MDC](http://logback.qos.ch/manual/mdc.html),
+One useful feature available in Slf4j is [MDC](https://logback.qos.ch/manual/mdc.html),
 Akka has a way to let the application specify custom values, for this you need to use a
 specialized `LoggingAdapter`, the `DiagnosticLoggingAdapter`. In order to
 get it you can use the factory, providing an @scala[Actor] @java[AbstractActor] as logSource:

@@ -760,7 +760,7 @@ akka {
 
 ## Different Testing Frameworks
 
-Akka’s test suite is written using [ScalaTest](http://www.scalatest.org),
+Akka’s test suite is written using [ScalaTest](https://www.scalatest.org),
 which also shines through in documentation examples. However, the TestKit and
 its facilities do not depend on that framework, so you can essentially use
 whichever suits your development style best.
