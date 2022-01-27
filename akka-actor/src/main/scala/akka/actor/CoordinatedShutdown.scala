@@ -188,6 +188,24 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     val conf = system.settings.config.getConfig("akka.coordinated-shutdown")
     val phases = phasesFromConfig(conf)
     val coord = new CoordinatedShutdown(system, phases)
+    init(system, conf, coord)
+    coord
+  }
+
+  // locate reason-specific overrides and merge with defaults.
+  @InternalApi private[akka] def confWithOverrides(conf: Config, reason: Option[Reason]): Config = {
+    reason
+      .flatMap { r =>
+        val basePath = s"""reason-overrides."${r.getClass.getName}""""
+        if (conf.hasPath(basePath)) Some(conf.getConfig(basePath).withFallback(conf)) else None
+      }
+      .getOrElse(conf)
+  }
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] def init(system: ExtendedActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
+    // separated for testability
     initPhaseActorSystemTerminate(system, conf, coord)
     initJvmHook(system, conf, coord)
     // Avoid leaking actor system references when system is terminated before JVM is #23384
@@ -206,17 +224,6 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     catch {
       case _: RejectedExecutionException => cleanupActorSystemJvmHook()
     }
-    coord
-  }
-
-  // locate reason-specific overrides and merge with defaults.
-  @InternalApi private[akka] def confWithOverrides(conf: Config, reason: Option[Reason]): Config = {
-    reason
-      .flatMap { r =>
-        val basePath = s"""reason-overrides."${r.getClass.getName}""""
-        if (conf.hasPath(basePath)) Some(conf.getConfig(basePath).withFallback(conf)) else None
-      }
-      .getOrElse(conf)
   }
 
   private def initPhaseActorSystemTerminate(
@@ -348,9 +355,28 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] trait JVMShutdownHooks {
+  def addHook(t: Thread): Unit
+  def removeHook(t: Thread): Boolean
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object JVMShutdownHooks extends JVMShutdownHooks {
+  override def addHook(t: Thread): Unit = Runtime.getRuntime.addShutdownHook(t)
+  override def removeHook(t: Thread): Boolean = Runtime.getRuntime.removeShutdownHook(t)
+}
+
 final class CoordinatedShutdown private[akka] (
     system: ExtendedActorSystem,
-    phases: Map[String, CoordinatedShutdown.Phase])
+    phases: Map[String, CoordinatedShutdown.Phase],
+    jvmShutdownHooks: JVMShutdownHooks = JVMShutdownHooks)
     extends Extension {
   import CoordinatedShutdown.{ Reason, UnknownReason }
 
@@ -817,12 +843,12 @@ final class CoordinatedShutdown private[akka] (
         }
         thread.setName(s"${system.name}-shutdown-hook-${newLatch.getCount}")
         try {
-          Runtime.getRuntime.addShutdownHook(thread)
+          jvmShutdownHooks.addHook(thread)
           new Cancellable {
             @volatile var cancelled = false
             def cancel(): Boolean = {
               try {
-                if (Runtime.getRuntime.removeShutdownHook(thread)) {
+                if (jvmShutdownHooks.removeHook(thread)) {
                   cancelled = true
                   _jvmHooksLatch.get.countDown()
                   true

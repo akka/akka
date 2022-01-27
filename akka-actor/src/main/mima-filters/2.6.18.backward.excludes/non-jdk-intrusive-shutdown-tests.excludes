@@ -1,0 +1,2 @@
+# internal constructor of CoordinatedShutdown changed for testability
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdown.this")
