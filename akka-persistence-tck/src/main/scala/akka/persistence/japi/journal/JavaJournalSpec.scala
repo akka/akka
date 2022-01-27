@@ -4,6 +4,8 @@
 
 package akka.persistence.japi.journal
 
+import scala.collection.immutable
+
 import com.typesafe.config.Config
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
@@ -59,6 +61,6 @@ class JavaJournalSpec(config: Config) extends JournalSpec(config) {
   override def runNestedSuites(args: Args): Status =
     super.runNestedSuites(args)
 
-  override def nestedSuites: IndexedSeq[Suite] =
+  override def nestedSuites: immutable.IndexedSeq[Suite] =
     super.nestedSuites
 }
