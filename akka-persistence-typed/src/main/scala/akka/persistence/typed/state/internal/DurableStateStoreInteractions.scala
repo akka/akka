@@ -56,9 +56,28 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
     newRunningState
   }
 
+  protected def internalDelete(
+      ctx: ActorContext[InternalProtocol],
+      cmd: Any,
+      state: Running.RunningState[S]): Running.RunningState[S] = {
+
+    val persistenceId = setup.persistenceId.id
+
+    onDeleteInitiated(ctx, cmd)
+
+    ctx.pipeToSelf[Done](setup.durableStateStore.deleteObject(persistenceId)) {
+      case Success(_)     => InternalProtocol.DeleteSuccess
+      case Failure(cause) => InternalProtocol.DeleteFailure(cause)
+    }
+
+    state.copy(state = setup.emptyState)
+  }
+
   // FIXME These hook methods are for Telemetry. What more parameters are needed? persistenceId?
   @InternalStableApi
   private[akka] def onWriteInitiated(@unused ctx: ActorContext[_], @unused cmd: Any): Unit = ()
+
+  private[akka] def onDeleteInitiated(@unused ctx: ActorContext[_], @unused cmd: Any): Unit = ()
 
   protected def requestRecoveryPermit(): Unit = {
     setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, setup.selfClassic)
