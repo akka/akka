@@ -42,7 +42,7 @@ The Cluster extension gives you access to management tasks such as @ref:[Joining
 and subscription of cluster membership events such as @ref:[MemberUp, MemberRemoved and UnreachableMember](cluster-membership.md#membership-lifecycle),
 which are exposed as event APIs.  
 
-It does this through these references on the @apidoc[typed.Cluster] extension:
+It does this through these references on the @apidoc[typed.Cluster$] extension:
 
 * `manager`: An @scala[@apidoc[typed.ActorRef]\[@apidoc[akka.cluster.typed.ClusterCommand](typed.ClusterCommand)\]]@java[@apidoc[typed.ActorRef]<@apidoc[akka.cluster.typed.ClusterCommand](typed.ClusterCommand)>] where a `ClusterCommand` is a command such as: @apidoc[Join], @apidoc[Leave] and @apidoc[Down]
 * `subscriptions`: An @scala[@apidoc[typed.ActorRef]\[@apidoc[akka.cluster.typed.ClusterStateSubscription](typed.ClusterStateSubscription)\]]@java[@apidoc[typed.ActorRef]<@apidoc[akka.cluster.typed.ClusterStateSubscription](typed.ClusterStateSubscription)>] where a `ClusterStateSubscription` is one of @apidoc[GetCurrentState] or @apidoc[Subscribe] and @apidoc[Unsubscribe] to cluster events like @apidoc[MemberRemoved](ClusterEvent.MemberRemoved)
