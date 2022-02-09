@@ -1,10 +1,7 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
- */
-
-/*
  * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.typed.scaladsl
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
