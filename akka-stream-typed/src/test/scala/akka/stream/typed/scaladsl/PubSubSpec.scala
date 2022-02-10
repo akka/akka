@@ -4,6 +4,7 @@
 
 package akka.stream.typed.scaladsl
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.pubsub.TopicImpl
 import akka.actor.typed.pubsub.Topic
@@ -12,7 +13,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class PubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
+class PubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "PubSub.source" should {
 
