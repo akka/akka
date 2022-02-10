@@ -6,7 +6,7 @@ A directory of persistence journal and snapshot store plugins is available at th
 
 Plugins maintained within the Akka organization are:
 
-* [akka-persistence-cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/)
+* [akka-persistence-cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/) (no Durable State support)
 * [akka-persistence-jdbc](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
 * [akka-persistence-r2dbc](https://doc.akka.io/docs/akka-persistence-r2dbc/current/)
 * [akka-persistence-spanner](https://doc.akka.io/docs/akka-persistence-spanner/current/)
