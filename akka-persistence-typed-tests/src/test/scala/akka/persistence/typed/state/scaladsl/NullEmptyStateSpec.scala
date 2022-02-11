@@ -4,10 +4,6 @@
 
 package akka.persistence.typed.state.scaladsl
 
-/*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
- */
-
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
