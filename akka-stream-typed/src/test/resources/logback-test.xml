@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Silence initial setup logging from Logback -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date{ISO8601} %-5level %logger %marker - %msg MDC: {%mdc}%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+    Logging from tests are silenced by this appender. When there is a test failure
+    the captured logging events are flushed to the appenders defined for the
+    akka.actor.testkit.typed.internal.CapturingAppenderDelegate logger.
+    -->
+    <appender name="CapturingAppender" class="akka.actor.testkit.typed.internal.CapturingAppender" />
+
+    <!--
+    The appenders defined for this CapturingAppenderDelegate logger are used
+    when there is a test failure and all logging events from the test are
+    flushed to these appenders.
+    -->
+    <logger name="akka.actor.testkit.typed.internal.CapturingAppenderDelegate" >
+      <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <root level="TRACE">
+        <appender-ref ref="CapturingAppender"/>
+    </root>
+</configuration>
