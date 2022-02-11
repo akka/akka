@@ -130,9 +130,13 @@ object PersistenceId {
    * If the separator `|` is not found it return the empty String (`""`).
    */
   def extractEntityType(id: String): String = {
-    val i = id.indexOf(PersistenceId.DefaultSeparator)
-    if (i == -1) ""
-    else id.substring(0, i)
+    if (ReplicationId.isReplicationId(id))
+      ReplicationId.fromString(id).typeName
+    else {
+      val i = id.indexOf(PersistenceId.DefaultSeparator)
+      if (i == -1) ""
+      else id.substring(0, i)
+    }
   }
 
   /**
@@ -140,9 +144,13 @@ object PersistenceId {
    * If the separator `|` is not found it return the `id`.
    */
   def extractEntityId(id: String): String = {
-    val i = id.indexOf(PersistenceId.DefaultSeparator)
-    if (i == -1) id
-    else id.substring(i + 1)
+    if (ReplicationId.isReplicationId(id))
+      ReplicationId.fromString(id).entityId
+    else {
+      val i = id.indexOf(PersistenceId.DefaultSeparator)
+      if (i == -1) id
+      else id.substring(i + 1)
+    }
   }
 
   def unapply(persistenceId: PersistenceId): Option[(String, String)] =

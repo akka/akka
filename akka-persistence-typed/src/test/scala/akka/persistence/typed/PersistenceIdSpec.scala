@@ -54,6 +54,13 @@ class PersistenceIdSpec extends AnyWordSpec with Matchers with LogCapturing {
       PersistenceId("SomeType", "abc").entityTypeHint should ===("SomeType")
     }
 
+    "be able to extract entityTypeHint from ReplicationId" in {
+      val replicaId = ReplicationId("SomeType", "abc", ReplicaId("A"))
+      val pid = replicaId.persistenceId
+      pid.entityTypeHint should ===("SomeType")
+      PersistenceId.extractEntityType(pid.id) should ===("SomeType")
+    }
+
     "be able to extract entityId" in {
       PersistenceId.extractEntityId("SomeType|abc") should ===("abc")
       PersistenceId.extractEntityId("abc") should ===("abc")
@@ -67,6 +74,13 @@ class PersistenceIdSpec extends AnyWordSpec with Matchers with LogCapturing {
           entityId should ===("abc")
         case _ => fail()
       }
+    }
+
+    "be able to extract entityId from ReplicationId" in {
+      val replicaId = ReplicationId("SomeType", "abc", ReplicaId("A"))
+      val pid = replicaId.persistenceId
+      pid.entityId should ===("abc")
+      PersistenceId.extractEntityId(pid.id) should ===("abc")
     }
   }
 
