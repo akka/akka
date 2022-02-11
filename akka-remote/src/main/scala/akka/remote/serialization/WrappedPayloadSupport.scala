@@ -75,7 +75,7 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
         serializer.fromBinary(payload.getEnclosedMessage.toByteArray, manifest)
       case _ =>
         // only old class based manifest serializers?
-        serialization.deserialize(payload.getEnclosedMessage.toByteArray, payload.getSerializerId, manifest)
+        serialization.deserialize(payload.getEnclosedMessage.toByteArray, payload.getSerializerId, manifest).get
     }
   }
 
