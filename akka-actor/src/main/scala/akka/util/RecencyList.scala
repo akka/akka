@@ -76,6 +76,16 @@ private[akka] final class RecencyList[A](clock: RecencyList.Clock) {
 
   def contains(value: A): Boolean = lookupNode.contains(value)
 
+  def leastRecent: OptionVal[A] = recency.getFirst match {
+    case OptionVal.Some(first) => OptionVal.Some(first.value)
+    case _                     => OptionVal.none
+  }
+
+  def mostRecent: OptionVal[A] = recency.getLast match {
+    case OptionVal.Some(last) => OptionVal.Some(last.value)
+    case _                    => OptionVal.none
+  }
+
   def leastToMostRecent: Iterator[A] = recency.forwardIterator.map(_.value)
 
   def mostToLeastRecent: Iterator[A] = recency.backwardIterator.map(_.value)

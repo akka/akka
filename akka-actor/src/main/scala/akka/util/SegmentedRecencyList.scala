@@ -89,6 +89,11 @@ private[akka] final class SegmentedRecencyList[A](
 
   def contains(value: A): Boolean = lookupNode.contains(value)
 
+  def leastRecent: OptionVal[A] = segments(lowest).getFirst match {
+    case OptionVal.Some(first) => OptionVal.Some(first.value)
+    case _                     => OptionVal.none
+  }
+
   def leastToMostRecentOf(level: Int): Iterator[A] = segments(level).forwardIterator.map(_.value)
 
   def removeLeastRecentOverLimit(): immutable.Seq[A] = {

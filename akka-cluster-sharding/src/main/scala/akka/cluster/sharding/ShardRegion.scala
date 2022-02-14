@@ -5,7 +5,6 @@
 package akka.cluster.sharding
 
 import java.net.URLEncoder
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
@@ -23,13 +22,13 @@ import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.Member
 import akka.cluster.MemberStatus
+import akka.cluster.sharding.ClusterShardingSettings.PassivationStrategy
 import akka.cluster.sharding.Shard.ShardStats
 import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.event.Logging
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.MessageBufferMap
-import akka.util.PrettyDuration
 import akka.util.Timeout
 
 /**
@@ -689,41 +688,12 @@ private[akka] class ShardRegion(
     if (settings.rememberEntities) {
       log.debug("{}: Entities will not be passivated automatically because 'rememberEntities' is enabled.", typeName)
     } else {
-      logPassivation(settings.passivationStrategy)
+      log.info(
+        "{}: Automatic entity passivation: {}",
+        typeName,
+        PassivationStrategy.describe(settings.passivationStrategy))
     }
   }
-
-  private def logPassivation(strategy: ClusterShardingSettings.PassivationStrategy): Unit =
-    strategy match {
-      case ClusterShardingSettings.IdlePassivationStrategy(timeout, interval) =>
-        log.info(
-          "{}: Idle entities will be passivated after [{}], checked every [{}]",
-          typeName,
-          PrettyDuration.format(timeout),
-          PrettyDuration.format(interval))
-      case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit, segmented, idle) =>
-        log.info("{}: Least recently used entities will be passivated when over [{}] entities", typeName, limit)
-        if (segmented.nonEmpty) {
-          log.info(
-            "{}: Least recently used strategy is segmented with [{}] levels with proportions of [{}]",
-            typeName,
-            segmented.size,
-            segmented.map(proportion => "%.2f".format(proportion)).mkString(", "))
-        }
-        idle.foreach(logPassivation)
-      case ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(limit, idle) =>
-        log.info("{}: Most recently used entities will be passivated when over [{}] entities", typeName, limit)
-        idle.foreach(logPassivation)
-      case ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(limit, dynamicAging, idle) =>
-        log.info(
-          "{}: Least frequently used entities will be passivated when over [{}] entities {}",
-          typeName,
-          limit,
-          if (dynamicAging) "with dynamic aging" else "")
-        idle.foreach(logPassivation)
-      case _ =>
-        log.debug("{}: Entities will not be passivated automatically", typeName)
-    }
 
   // when using proxy the data center can be different from the own data center
   private val targetDcRole = dataCenter match {
