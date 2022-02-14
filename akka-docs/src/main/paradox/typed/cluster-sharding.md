@@ -337,8 +337,13 @@ Cluster Sharding, can be enabled with configuration:
 
 @@snip [passivation new default strategy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy type=conf }
 
-This default strategy uses a [segmented least recently used policy](#segmented-least-recently-used-policy). The active
-entity limit can be configured:
+This default strategy uses a [composite passivation strategy](#composite-passivation-strategies) which combines
+recency-based and frequency-based tracking: the main area is configured with a [segmented least recently used
+policy](#segmented-least-recently-used-policy) with a frequency-biased [admission filter](#admission-filter), fronted
+by a recency-biased [admission window](#admission-window-policy) with [adaptive sizing](#admission-window-optimizer)
+enabled.
+
+The active entity limit for the default strategy can be configured:
 
 @@snip [passivation new default strategy configured](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy-configured type=conf }
 
@@ -455,6 +460,63 @@ Configure dynamic aging with the least frequently used policy:
 @@snip [LFUDA policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lfuda-policy type=conf }
 
 Or using custom `ClusterShardingSettings.PassivationStrategySettings.LeastFrequentlyUsedSettings`.
+
+### Composite passivation strategies
+
+Passivation strategies can be combined using an admission window and admission filter. The admission window tracks
+newly activated entities. Entities are replaced in the admission window using one of the replacement policies, such as
+the least recently used replacement policy. When an entity is replaced in the window area it has an opportunity to
+enter the main entity tracking area, based on the admission filter. The admission filter determines whether an entity
+that has left the window area should be admitted into the main area, or otherwise be passivated. A frequency sketch is
+the default admission filter and estimates the access frequency of entities over the lifespan of the cluster sharding
+node, selecting the entity that is estimated to be accessed more frequently. Composite passivation strategies with an
+admission window and admission filter are implementing the _Window-TinyLFU_ caching algorithm.
+
+#### Admission window policy
+
+The admission window tracks newly activated entities. When an entity is replaced in the window area, it has an
+opportunity to enter the main entity tracking area, based on the [admission filter](#admission-filter). The admission
+window can be enabled by selecting a policy (while the regular replacement policy is for the main area):
+
+@@snip [admission window policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #admission-window-policy type=conf }
+
+The proportion of the active entity limit used for the admission window can be configured (the default is 1%):
+
+@@snip [admission window proportion](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #admission-window-proportion type=conf }
+
+The proportion for the admission window can also be adapted and optimized dynamically, by enabling an [admission window
+optimizer](#admission-window-optimizer).
+
+#### Admission window optimizer
+
+The proportion of the active entity limit used for the admission window can be adapted dynamically using an optimizer.
+The window area will usually retain entities that are accessed again in a short time (recency-biased), while the main
+area can track entities that are accessed more frequently over longer times (frequency-biased). If access patterns for
+entities are changeable, then the adaptive sizing of the window allows the passivation strategy to adapt between
+recency-biased and frequency-biased workloads.
+
+The optimizer currently available uses a simple hill-climbing algorithm, which searches for a window proportion that
+provides an optimal active rate (where entities are already active when accessed, the _cache hit rate_). Enable
+adaptive window sizing by configuring the `hill-climbing` window optimizer:
+
+@@snip [admission window optimizer](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #admission-window-optimizer type=conf }
+
+See the `reference.conf` for parameters that can be tuned for the hill climbing admission window optimizer.
+
+#### Admission filter
+
+An admission filter can be enabled, which determines whether an entity that has left the window area (or a newly
+activated entity if there is no admission window) should be admitted into the main entity tracking area, or otherwise
+be passivated. If no admission filter is configured, then entities will always be admitted into the main area.
+
+A frequency sketch is the default admission filter and estimates the access frequency of entities over the lifespan of
+the cluster sharding node, selecting the entity that is estimated to be accessed more frequently. The frequency sketch
+automatically ages entries, using the approach from the _TinyLFU_ cache admission algorithm. Enable an admission filter
+by configuring the `frequency-sketch` admission filter:
+
+@@snip [admission policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #admission-policy type=conf }
+
+See the `reference.conf` for parameters that can be tuned for the frequency sketch admission filter.
 
 
 ## Sharding State 
