@@ -6,8 +6,8 @@ package akka.io
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
-import akka.actor.{Actor, ActorLogging, Deploy, Props}
-import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
+import akka.actor.{ Actor, ActorLogging, Deploy, Props }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing.FromConfig
 
 import scala.annotation.nowarn
@@ -40,13 +40,13 @@ final class SimpleDnsManager(val ext: DnsExt)
 
   @nowarn("cat=deprecation")
   val oldApis: Receive = {
-    case r@Dns.Resolve(name) =>
+    case r @ Dns.Resolve(name) =>
       log.debug("(deprecated) Resolution request for {} from {}", name, sender())
       resolver.forward(r)
   }
 
   // the inet resolver supports the old and new DNS APIs
-  override def receive: Receive = oldApis orElse {
+  override def receive: Receive = oldApis.orElse {
     case m: dns.DnsProtocol.Resolve =>
       log.debug("Resolution request for {} from {}", m.name, sender())
       resolver.forward(m)

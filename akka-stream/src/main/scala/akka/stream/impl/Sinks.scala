@@ -86,9 +86,7 @@ import akka.util.ccompat._
     val StreamSubscriptionTimeout(timeout, mode) =
       context.effectiveAttributes.mandatoryAttribute[StreamSubscriptionTimeout]
     if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
-      context.materializer.scheduleOnce(timeout,
-        () => proc.onSubscriptionTimeout(context.materializer, mode)
-      )
+      context.materializer.scheduleOnce(timeout, () => proc.onSubscriptionTimeout(context.materializer, mode))
     }
     (proc, proc)
   }
