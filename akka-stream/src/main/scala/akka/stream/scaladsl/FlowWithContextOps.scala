@@ -9,6 +9,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
@@ -55,7 +56,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * `unsafeDataVia` otherwise the context will no longer properly correspond to the data.
    * @see [[akka.stream.scaladsl.FlowOps.via]]
    */
-  def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, Ctx]
+  @ApiMayChange def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, Ctx]
 
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
