@@ -25,7 +25,7 @@ import scala.annotation.tailrec
     LoggerFactory.getLogger(loggerNameOrRoot(loggerName)) match {
       case logger: ch.qos.logback.classic.Logger              => logger
       case _: org.slf4j.helpers.SubstituteLogger if count > 0 =>
-        // Wait for logging initialisation http://www.slf4j.org/codes.html#substituteLogger
+        // Wait for logging initialisation https://www.slf4j.org/codes.html#substituteLogger
         Thread.sleep(50)
         getLogbackLoggerInternal(loggerName, count - 1)
       case null =>

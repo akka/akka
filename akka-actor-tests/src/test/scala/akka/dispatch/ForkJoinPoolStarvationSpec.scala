@@ -51,6 +51,10 @@ class ForkJoinPoolStarvationSpec extends AkkaSpec(ForkJoinPoolStarvationSpec.con
   "AkkaForkJoinPool" must {
 
     "not starve tasks arriving from external dispatchers under high internal traffic" in {
+      // TODO issue #31117: starvation with JDK 17 FJP
+      if (System.getProperty("java.specification.version") == "17")
+        pending
+
       // Two busy actors that will occupy the threads of the dispatcher
       // Since they submit to the local task queue via fork, they can starve external submissions
       system.actorOf(Props(new SelfBusyActor).withDispatcher("actorhang.task-dispatcher"))
