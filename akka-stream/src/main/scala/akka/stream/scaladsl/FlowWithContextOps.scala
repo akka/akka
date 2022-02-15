@@ -52,7 +52,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * element, the sequence of incoming contexts is re-combined with the outgoing
    * elements of the stream. If a flow not fulfilling this requirement is used the stream
    * will not fail but continue running in a corrupt state and re-combine incorrect pairs
-   * of elements and contexts.
+   * of elements and contexts or deadlock.
    *
    * For more background on these requirements
    *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
