@@ -5,41 +5,12 @@
 package akka.persistence.fsm;
 
 import akka.actor.*;
-import akka.japi.Option;
-import akka.persistence.PersistenceSpec;
-import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.javadsl.TestKit;
-import akka.testkit.TestProbe;
-import org.junit.ClassRule;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.time.Duration;
-
-import org.junit.Ignore;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.UserState;
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.ShoppingCart;
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.Item;
-
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.GetCurrentCart;
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.AddItem;
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.Buy;
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.Leave;
-
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.PurchaseWasMade;
-import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.ShoppingCardDiscarded;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @Deprecated
 public class AbstractPersistentFSMTest {
