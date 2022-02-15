@@ -48,13 +48,14 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * Transform this flow by the regular flow. The given flow works on the data portion of the stream and
    * ignores the context.
    *
-   *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
-   *  by the downstream elements, such as reordering. For more background on these requirements
-   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
+   * The given flow *must* not re-order, drop or emit multiple elements for one incoming
+   * element, the sequence of incoming contexts is re-combined with the outgoing
+   * elements of the stream. If a flow not fulfilling this requirement is used the stream
+   * will not fail but continue running in a corrupt state and re-combine incorrect pairs
+   * of elements and contexts.
    *
-   * When using `unsafeDataVia` one must be careful to not change the order of the data with the supplied
-   * `unsafeDataVia` otherwise the context will no longer properly correspond to the data.
-   * @see [[akka.stream.scaladsl.FlowOps.via]]
+   * For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
    */
   @ApiMayChange def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, Ctx]
 
