@@ -5,12 +5,12 @@
 package akka.io
 
 import java.util.concurrent.TimeUnit
-
 import scala.concurrent.duration.Duration
-
-import akka.actor.{ Actor, ActorLogging, Deploy, Props }
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.actor.{Actor, ActorLogging, Deploy, Props}
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
 import akka.routing.FromConfig
+
+import scala.annotation.nowarn
 
 final class SimpleDnsManager(val ext: DnsExt)
     extends Actor
@@ -38,12 +38,15 @@ final class SimpleDnsManager(val ext: DnsExt)
     system.scheduler.scheduleWithFixedDelay(interval, interval, self, SimpleDnsManager.CacheCleanup)
   }
 
-  // the inet resolver supports the old and new DNS APIs
-  override def receive: Receive = {
-    case r @ Dns.Resolve(name) =>
+  @nowarn("cat=deprecation")
+  val oldApis: Receive = {
+    case r@Dns.Resolve(name) =>
       log.debug("(deprecated) Resolution request for {} from {}", name, sender())
       resolver.forward(r)
+  }
 
+  // the inet resolver supports the old and new DNS APIs
+  override def receive: Receive = oldApis orElse {
     case m: dns.DnsProtocol.Resolve =>
       log.debug("Resolution request for {} from {}", m.name, sender())
       resolver.forward(m)

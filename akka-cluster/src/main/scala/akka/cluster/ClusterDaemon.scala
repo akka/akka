@@ -546,6 +546,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     context.become(initialized)
   }
 
+  // Still supports classic remoting as well
+  @nowarn("msg=Classic remoting is deprecated, use Artery")
   def initialized: Actor.Receive =
     ({
       case msg: GossipEnvelope => receiveGossip(msg)
