@@ -41,7 +41,7 @@ public class MyUnboundedMailbox
     }
 
     public void cleanUp(ActorRef owner, MessageQueue deadLetters) {
-      while(!queue.isEmpty()) {
+      while (!queue.isEmpty()) {
         deadLetters.enqueue(owner, dequeue());
       }
     }

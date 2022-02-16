@@ -421,6 +421,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   override def postRestart(reason: Throwable): Unit =
     throw new IllegalStateException("Restarting not supported for connection actors.")
 
+  @nowarn("cat=deprecation")
   def PendingWrite(commander: ActorRef, write: WriteCommand): PendingWrite = {
     @tailrec def create(head: WriteCommand, tail: WriteCommand): PendingWrite =
       head match {

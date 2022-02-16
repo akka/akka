@@ -83,16 +83,10 @@ import akka.util.ccompat._
   override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
 
     val proc = new VirtualPublisher[In]
-    context.materializer match {
-      case am: ActorMaterializer =>
-        val StreamSubscriptionTimeout(timeout, mode) =
-          context.effectiveAttributes.mandatoryAttribute[StreamSubscriptionTimeout]
-        if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
-          am.scheduleOnce(timeout, new Runnable {
-            def run(): Unit = proc.onSubscriptionTimeout(am, mode)
-          })
-        }
-      case _ => // not possible to setup timeout
+    val StreamSubscriptionTimeout(timeout, mode) =
+      context.effectiveAttributes.mandatoryAttribute[StreamSubscriptionTimeout]
+    if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
+      context.materializer.scheduleOnce(timeout, () => proc.onSubscriptionTimeout(context.materializer, mode))
     }
     (proc, proc)
   }

@@ -28,7 +28,7 @@ object Dependencies {
   val jacksonVersion = "2.11.4"
 
   val scala212Version = "2.12.15"
-  val scala213Version = "2.13.7"
+  val scala213Version = "2.13.8"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
   val scala3Version = "3.1.1-RC2"
