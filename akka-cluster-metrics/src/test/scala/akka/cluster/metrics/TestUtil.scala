@@ -159,6 +159,8 @@ object MetricsConfig {
       }
     }
     akka.actor.provider = remote
+    akka.remote.classic.netty.tcp.port = 0
+    akka.remote.artery.canonical.port = 0
   """
 
   /** Test w/o cluster, with collection disabled. */
@@ -169,6 +171,8 @@ object MetricsConfig {
       }
     }
     akka.actor.provider = remote
+    akka.remote.classic.netty.tcp.port = 0
+    akka.remote.artery.canonical.port = 0
   """
 
   /** Test in cluster, with manual collection activation, collector mock, fast. */
@@ -184,6 +188,8 @@ object MetricsConfig {
       }
     }
     akka.actor.provider = "cluster"
+    akka.remote.classic.netty.tcp.port = 0
+    akka.remote.artery.canonical.port = 0
   """
 }
 
