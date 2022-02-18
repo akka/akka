@@ -81,7 +81,9 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
           context.log.trace("Publishing message of type [{}] but no subscribers, dropping", msg.getClass)
           context.system.deadLetters ! Dropped(message, "No topic subscribers known", context.self.toClassic)
         } else {
-          context.log.trace("Publishing message of type [{}] to local subscribers only (topic listing not seen yet)", msg.getClass)
+          context.log.trace(
+            "Publishing message of type [{}] to local subscribers only (topic listing not seen yet)",
+            msg.getClass)
           localSubscribers.foreach(_ ! message)
         }
       } else {
