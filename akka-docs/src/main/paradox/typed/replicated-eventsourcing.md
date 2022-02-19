@@ -399,6 +399,8 @@ If all writes occur to one replica and the other replicas are not started there 
 
 This can be achieved automatically when `ReplicatedSharding` is used and direct replication of events is enabled as described in @ref[Direct Replication of Events](#direct-replication-of-events). When each written event is forwarded to the other replicas it will trigger them to start if they are not already started.
 
+Note that for a multiple data center setup, this will only work out-of-the-box if using a single Akka Cluster and `ReplicatedSharding` for all data centers. Otherwise you will need to implement a means to start the entities in other data centers.
+
 ## Examples
 
 More examples can be found in @ref[Replicated Event Sourcing Examples](./replicated-eventsourcing-examples.md)
