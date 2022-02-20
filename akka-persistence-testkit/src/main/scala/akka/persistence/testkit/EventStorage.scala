@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit
 
 import akka.NotUsed
-
 import java.util.{ List => JList }
+
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
+
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
 import akka.persistence.journal.Tagged
@@ -105,7 +106,8 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
   }
 
   def tryRead(processId: String, predicate: PersistentRepr => Boolean): immutable.Seq[PersistentRepr] = {
-    val batch = readAll().filter(predicate).toVector.sortBy(_.timestamp)
+    import EventStorage.persistentReprOrdering
+    val batch = readAll().filter(predicate).toVector.sorted
 
     currentPolicy.tryProcess(processId, ReadEvents(batch)) match {
       case ProcessingSuccess  => batch
@@ -152,6 +154,18 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
 
 object EventStorage {
   object JournalPolicies extends DefaultPolicies[JournalOperation]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] implicit val persistentReprOrdering: Ordering[PersistentRepr] =
+    Ordering.fromLessThan[PersistentRepr] { (a, b) =>
+      if (a eq b) false
+      else if (a.timestamp != b.timestamp) a.timestamp < b.timestamp
+      else if (a.persistenceId != b.persistenceId) a.persistenceId.compareTo(b.persistenceId) < 0
+      else if (a.sequenceNr != b.sequenceNr) a.sequenceNr < b.sequenceNr
+      else false
+    }
 }
 
 /**

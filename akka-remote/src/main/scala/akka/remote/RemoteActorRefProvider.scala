@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -108,6 +108,8 @@ private[akka] object RemoteActorRefProvider {
       extends DeadLetterActorRef(_provider, _path, _eventStream) {
     import EndpointManager.Send
 
+    // Still supports classic remoting as well
+    @nowarn("msg=Classic remoting is deprecated, use Artery")
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
       case Send(m, senderOption, recipient, seqOpt) =>
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved

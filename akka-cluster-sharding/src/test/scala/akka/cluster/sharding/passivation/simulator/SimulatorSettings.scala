@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.passivation.simulator
@@ -49,9 +49,40 @@ object SimulatorSettings {
     final case class LeastRecentlyUsed(perRegionLimit: Int, segmented: immutable.Seq[Double]) extends StrategySettings
     final case class MostRecentlyUsed(perRegionLimit: Int) extends StrategySettings
     final case class LeastFrequentlyUsed(perRegionLimit: Int, dynamicAging: Boolean) extends StrategySettings
+    case object NoStrategy extends StrategySettings
+
+    final case class Composite(
+        perRegionLimit: Int,
+        main: StrategySettings,
+        window: StrategySettings,
+        initialWindowProportion: Double,
+        minimumWindowProportion: Double,
+        maximumWindowProportion: Double,
+        filter: AdmissionFilterSettings,
+        optimizer: AdmissionOptimizerSettings)
+        extends StrategySettings
 
     def apply(simulatorConfig: Config, strategy: String): StrategySettings = {
-      val config = simulatorConfig.getConfig(strategy).withFallback(simulatorConfig.getConfig("strategy-defaults"))
+      val config = simulatorConfig.getConfig(strategy)
+      val fallbackConfig = simulatorConfig.getConfig("strategy-defaults")
+      lowerCase(config.getString("strategy")) match {
+        case "composite" =>
+          val compositeConfig = config.getConfig("composite").withFallback(fallbackConfig.getConfig("composite"))
+          Composite(
+            compositeConfig.getInt("per-region-limit"),
+            settings(compositeConfig.getConfig("main"), fallbackConfig),
+            settings(compositeConfig.getConfig("admission.window"), fallbackConfig),
+            compositeConfig.getDouble("admission.window.proportion"),
+            compositeConfig.getDouble("admission.window.minimum-proportion"),
+            compositeConfig.getDouble("admission.window.maximum-proportion"),
+            AdmissionFilterSettings(compositeConfig),
+            AdmissionOptimizerSettings(compositeConfig))
+        case _ => settings(config, fallbackConfig)
+      }
+    }
+
+    private def settings(strategyConfig: Config, fallbackConfig: Config): StrategySettings = {
+      val config = strategyConfig.withFallback(fallbackConfig)
       lowerCase(config.getString("strategy")) match {
         case "optimal" => Optimal(config.getInt("optimal.per-region-limit"))
         case "least-recently-used" =>
@@ -70,7 +101,55 @@ object SimulatorSettings {
           LeastFrequentlyUsed(
             config.getInt("least-frequently-used.per-region-limit"),
             config.getBoolean("least-frequently-used.dynamic-aging"))
-        case _ => sys.error(s"Unknown strategy for [$strategy]")
+        case _ => NoStrategy
+      }
+    }
+
+    sealed trait AdmissionFilterSettings
+
+    object AdmissionFilterSettings {
+      object NoFilter extends AdmissionFilterSettings
+      final case class FrequencySketchFilter(
+          widthMultiplier: Int,
+          resetMultiplier: Double,
+          depth: Int,
+          counterBits: Int)
+          extends AdmissionFilterSettings
+
+      def apply(config: Config): AdmissionFilterSettings = {
+        lowerCase(config.getString("admission.filter")) match {
+          case "frequency-sketch" =>
+            FrequencySketchFilter(
+              config.getInt("admission.frequency-sketch.width-multiplier"),
+              config.getDouble("admission.frequency-sketch.reset-multiplier"),
+              config.getInt("admission.frequency-sketch.depth"),
+              config.getInt("admission.frequency-sketch.counter-bits"))
+          case _ => NoFilter
+        }
+      }
+    }
+
+    sealed trait AdmissionOptimizerSettings
+
+    object AdmissionOptimizerSettings {
+      object NoOptimizer extends AdmissionOptimizerSettings
+      final case class HillClimbingOptimizer(
+          adjustMultiplier: Double,
+          initialStep: Double,
+          restartThreshold: Double,
+          stepDecay: Double)
+          extends AdmissionOptimizerSettings
+
+      def apply(config: Config): AdmissionOptimizerSettings = {
+        lowerCase(config.getString("admission.optimizer")) match {
+          case "hill-climbing" =>
+            HillClimbingOptimizer(
+              config.getDouble("admission.hill-climbing.adjust-multiplier"),
+              config.getDouble("admission.hill-climbing.initial-step"),
+              config.getDouble("admission.hill-climbing.restart-threshold"),
+              config.getDouble("admission.hill-climbing.step-decay"))
+          case _ => NoOptimizer
+        }
       }
     }
   }
@@ -141,11 +220,21 @@ object SimulatorSettings {
       }
     }
 
+    final case class Joined(patterns: Seq[PatternSettings]) extends PatternSettings
+
+    object Joined {
+      def apply(simulatorConfig: Config, patternConfig: Config): Joined = {
+        val patterns = patternConfig.getStringList("joined").asScala.toSeq
+        Joined(patterns.map(pattern => PatternSettings(simulatorConfig, pattern)))
+      }
+    }
+
     def apply(simulatorConfig: Config, pattern: String): PatternSettings = {
       val config = simulatorConfig.getConfig(pattern).withFallback(simulatorConfig.getConfig("pattern-defaults"))
       lowerCase(config.getString("pattern")) match {
         case "synthetic" => Synthetic(config)
         case "trace"     => Trace(config)
+        case "joined"    => Joined(simulatorConfig, config)
         case _           => sys.error(s"Unknown pattern for [$pattern]")
       }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -88,6 +88,11 @@ private[akka] final class SegmentedRecencyList[A](
   }
 
   def contains(value: A): Boolean = lookupNode.contains(value)
+
+  def leastRecent: OptionVal[A] = segments(lowest).getFirst match {
+    case OptionVal.Some(first) => OptionVal.Some(first.value)
+    case _                     => OptionVal.none
+  }
 
   def leastToMostRecentOf(level: Int): Iterator[A] = segments(level).forwardIterator.map(_.value)
 

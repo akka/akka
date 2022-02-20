@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit.state.scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.concurrent.Future
+
 import akka.{ Done, NotUsed }
 import akka.actor.ExtendedActorSystem
 import akka.persistence.Persistence
@@ -23,8 +25,9 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorSource
 import akka.stream.OverflowStrategy
-
 import scala.collection.immutable
+
+import akka.persistence.testkit.internal.CurrentTime
 
 object PersistenceTestKitDurableStateStore {
   val Identifier = "akka.persistence.testkit.state"
@@ -190,7 +193,7 @@ private final case class Record[A](
     revision: Long,
     value: A,
     tag: String,
-    timestamp: Long = System.currentTimeMillis) {
+    timestamp: Long = CurrentTime.now()) {
   def toDurableStateChange: DurableStateChange[A] =
     new UpdatedDurableState(persistenceId, revision, value, Sequence(globalOffset), timestamp)
 }

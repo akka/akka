@@ -181,6 +181,8 @@ jobs:
             "+~ ${{ matrix.scalaVersion }} doc"
 
       - name: Publish
+        # Publish (osgi bundle) not working with JDK 17, issue #31132
+        if: ${{ startsWith(matrix.jdkVersion, 'adopt@1.11') }}
         run: |-
           sudo apt-get install graphviz
           sbt -jvm-opts .jvmopts-ci \

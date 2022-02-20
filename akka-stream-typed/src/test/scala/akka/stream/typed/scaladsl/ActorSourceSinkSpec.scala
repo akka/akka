@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.scaladsl
@@ -23,7 +23,7 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
+class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   import ActorSourceSinkSpec._
 
   "ActorSink" should {

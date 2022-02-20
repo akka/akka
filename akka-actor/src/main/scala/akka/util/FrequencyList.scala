@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -99,6 +99,24 @@ private[akka] final class FrequencyList[A](dynamicAging: Boolean, clock: OptionV
   }
 
   def contains(value: A): Boolean = lookupNode.contains(value)
+
+  def leastFrequent: OptionVal[A] = frequency.getFirst match {
+    case OptionVal.Some(least) =>
+      least.nodes.getFirst match {
+        case OptionVal.Some(first) => OptionVal.Some(first.value)
+        case _                     => OptionVal.none
+      }
+    case _ => OptionVal.none
+  }
+
+  def mostFrequent: OptionVal[A] = frequency.getLast match {
+    case OptionVal.Some(most) =>
+      most.nodes.getLast match {
+        case OptionVal.Some(last) => OptionVal.Some(last.value)
+        case _                    => OptionVal.none
+      }
+    case _ => OptionVal.none
+  }
 
   def leastToMostFrequent: Iterator[A] = forwardIterator.map(_.value)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.passivation.simulator
@@ -145,6 +145,19 @@ object TraceFileReader {
   }
 
   /**
+   * Read binary traces from R3 Corda traces.
+   */
+  final class Corda(path: String) extends AccessPattern {
+    override val isSynthetic = false
+
+    override def entityIds: Source[EntityId, NotUsed] =
+      FileIO // binary file of longs
+        .fromPath(Paths.get(path), chunkSize = 8)
+        .map(bytes => bytes.toByteBuffer.getLong.toString)
+        .mapMaterializedValue(_ => NotUsed)
+  }
+
+  /**
    * Read traces provided with the "LIRS" (or "LIRS2") paper:
    * LIRS: An Efficient Low Inter-reference Recency Set Replacement Policy to Improve Buffer Cache Performance
    * Song Jiang and Xiaodong Zhang
@@ -178,4 +191,12 @@ object TraceFileReader {
       line.split(" ")(1) // second number is the id
     }
   }
+}
+
+class JoinedAccessPatterns(patterns: Seq[AccessPattern]) extends AccessPattern {
+  override def isSynthetic: Boolean =
+    patterns.exists(_.isSynthetic)
+
+  override def entityIds: Source[EntityId, NotUsed] =
+    patterns.map(_.entityIds).foldLeft(Source.empty[EntityId])(_.concat(_))
 }

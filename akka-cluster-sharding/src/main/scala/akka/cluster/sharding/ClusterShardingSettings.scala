@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -137,13 +137,33 @@ object ClusterShardingSettings {
       val idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
       val activeEntityLimit: Option[Int],
       val replacementPolicySettings: Option[PassivationStrategySettings.PolicySettings],
+      val admissionSettings: Option[PassivationStrategySettings.AdmissionSettings],
       private[akka] val oldSettingUsed: Boolean) {
+
+    private[akka] def this(
+        idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
+        activeEntityLimit: Option[Int],
+        replacementPolicySettings: Option[PassivationStrategySettings.PolicySettings],
+        oldSettingUsed: Boolean) =
+      this(idleEntitySettings, activeEntityLimit, replacementPolicySettings, admissionSettings = None, oldSettingUsed)
+
+    def this(
+        idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
+        activeEntityLimit: Option[Int],
+        replacementPolicySettings: Option[PassivationStrategySettings.PolicySettings],
+        admissionSettings: Option[PassivationStrategySettings.AdmissionSettings]) =
+      this(idleEntitySettings, activeEntityLimit, replacementPolicySettings, admissionSettings, oldSettingUsed = false)
 
     def this(
         idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
         activeEntityLimit: Option[Int],
         replacementPolicySettings: Option[PassivationStrategySettings.PolicySettings]) =
-      this(idleEntitySettings, activeEntityLimit, replacementPolicySettings, oldSettingUsed = false)
+      this(
+        idleEntitySettings,
+        activeEntityLimit,
+        replacementPolicySettings,
+        admissionSettings = None,
+        oldSettingUsed = false)
 
     import PassivationStrategySettings._
 
@@ -179,19 +199,29 @@ object ClusterShardingSettings {
     def withLeastFrequentlyUsedReplacement(): PassivationStrategySettings =
       withReplacementPolicy(LeastFrequentlyUsedSettings.defaults)
 
+    def withAdmission(settings: AdmissionSettings): PassivationStrategySettings =
+      copy(admissionSettings = Some(settings))
+
     private[akka] def withOldIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
       copy(
         idleEntitySettings = Some(new IdleSettings(timeout, None)),
         activeEntityLimit = None,
         replacementPolicySettings = None,
+        admissionSettings = None,
         oldSettingUsed = true)
 
     private def copy(
         idleEntitySettings: Option[IdleSettings] = idleEntitySettings,
         activeEntityLimit: Option[Int] = activeEntityLimit,
         replacementPolicySettings: Option[PolicySettings] = replacementPolicySettings,
+        admissionSettings: Option[AdmissionSettings] = admissionSettings,
         oldSettingUsed: Boolean = oldSettingUsed): PassivationStrategySettings =
-      new PassivationStrategySettings(idleEntitySettings, activeEntityLimit, replacementPolicySettings, oldSettingUsed)
+      new PassivationStrategySettings(
+        idleEntitySettings,
+        activeEntityLimit,
+        replacementPolicySettings,
+        admissionSettings,
+        oldSettingUsed)
   }
 
   /**
@@ -203,6 +233,7 @@ object ClusterShardingSettings {
       idleEntitySettings = None,
       activeEntityLimit = None,
       replacementPolicySettings = None,
+      admissionSettings = None,
       oldSettingUsed = false)
 
     val disabled: PassivationStrategySettings = defaults
@@ -340,6 +371,195 @@ object ClusterShardingSettings {
         new LeastFrequentlyUsedSettings(dynamicAging)
     }
 
+    object AdmissionSettings {
+      val defaults = new AdmissionSettings(filter = None, window = None)
+
+      object FilterSettings {
+        def optional(config: Config): Option[FilterSettings] =
+          toRootLowerCase(config.getString("filter")) match {
+            case "off" | "none"     => None
+            case "frequency-sketch" => Some(FrequencySketchSettings(config.getConfig("frequency-sketch")))
+            case _                  => None
+          }
+      }
+
+      sealed trait FilterSettings
+
+      object FrequencySketchSettings {
+        val defaults =
+          new FrequencySketchSettings(depth = 4, counterBits = 4, widthMultiplier = 4, resetMultiplier = 10.0)
+
+        def apply(config: Config): FrequencySketchSettings = {
+          val depth = config.getInt("depth")
+          val counterBits = config.getInt("counter-bits")
+          val widthMultiplier = config.getInt("width-multiplier")
+          val resetMultiplier = config.getDouble("reset-multiplier")
+          new FrequencySketchSettings(depth, counterBits, widthMultiplier, resetMultiplier)
+        }
+      }
+
+      final class FrequencySketchSettings(
+          val depth: Int,
+          val counterBits: Int,
+          val widthMultiplier: Int,
+          val resetMultiplier: Double)
+          extends FilterSettings {
+
+        def withDepth(depth: Int): FrequencySketchSettings =
+          copy(depth = depth)
+
+        def withCounterBits(bits: Int): FrequencySketchSettings =
+          copy(counterBits = bits)
+
+        def withWidthMultiplier(multiplier: Int): FrequencySketchSettings =
+          copy(widthMultiplier = multiplier)
+
+        def withResetMultiplier(multiplier: Double): FrequencySketchSettings =
+          copy(resetMultiplier = multiplier)
+
+        private def copy(
+            depth: Int = depth,
+            counterBits: Int = counterBits,
+            widthMultiplier: Int = widthMultiplier,
+            resetMultiplier: Double = resetMultiplier): FrequencySketchSettings =
+          new FrequencySketchSettings(depth, counterBits, widthMultiplier, resetMultiplier)
+
+      }
+
+      object WindowSettings {
+        val defaults: WindowSettings = new WindowSettings(
+          initialProportion = 0.01,
+          minimumProportion = 0.01,
+          maximumProportion = 1.0,
+          optimizer = None,
+          policy = None)
+
+        def apply(config: Config): WindowSettings = {
+          val initialProportion = config.getDouble("proportion")
+          val minimumProportion = config.getDouble("minimum-proportion")
+          val maximumProportion = config.getDouble("maximum-proportion")
+          val optimizer = OptimizerSettings.optional(config)
+          val policy = PolicySettings.optional(config)
+          new WindowSettings(initialProportion, minimumProportion, maximumProportion, optimizer, policy)
+        }
+
+        def optional(config: Config): Option[WindowSettings] =
+          toRootLowerCase(config.getString("policy")) match {
+            case "off" | "none" => None
+            case _              => Some(WindowSettings(config))
+          }
+      }
+
+      final class WindowSettings(
+          val initialProportion: Double,
+          val minimumProportion: Double,
+          val maximumProportion: Double,
+          val optimizer: Option[OptimizerSettings],
+          val policy: Option[PolicySettings]) {
+
+        def withInitialProportion(proportion: Double): WindowSettings =
+          copy(initialProportion = proportion)
+
+        def withMinimumProportion(proportion: Double): WindowSettings =
+          copy(minimumProportion = proportion)
+
+        def withMaximumProportion(proportion: Double): WindowSettings =
+          copy(maximumProportion = proportion)
+
+        def withOptimizer(settings: OptimizerSettings): WindowSettings =
+          copy(optimizer = Some(settings))
+
+        def withPolicy(settings: PolicySettings): WindowSettings =
+          copy(policy = Some(settings))
+
+        private def copy(
+            initialProportion: Double = initialProportion,
+            minimumProportion: Double = minimumProportion,
+            maximumProportion: Double = maximumProportion,
+            optimizer: Option[OptimizerSettings] = optimizer,
+            policy: Option[PolicySettings] = policy): WindowSettings =
+          new WindowSettings(initialProportion, minimumProportion, maximumProportion, optimizer, policy)
+      }
+
+      object OptimizerSettings {
+        def optional(config: Config): Option[OptimizerSettings] =
+          toRootLowerCase(config.getString("optimizer")) match {
+            case "off" | "none"  => None
+            case "hill-climbing" => Some(HillClimbingSettings(config.getConfig("hill-climbing")))
+            case _               => None
+          }
+      }
+
+      sealed trait OptimizerSettings
+
+      object HillClimbingSettings {
+        val defaults: HillClimbingSettings = new HillClimbingSettings(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98)
+
+        def apply(config: Config): HillClimbingSettings = {
+          val adjustMultiplier = config.getDouble("adjust-multiplier")
+          val initialStep = config.getDouble("initial-step")
+          val restartThreshold = config.getDouble("restart-threshold")
+          val stepDecay = config.getDouble("step-decay")
+          new HillClimbingSettings(adjustMultiplier, initialStep, restartThreshold, stepDecay)
+        }
+      }
+
+      final class HillClimbingSettings(
+          val adjustMultiplier: Double,
+          val initialStep: Double,
+          val restartThreshold: Double,
+          val stepDecay: Double)
+          extends OptimizerSettings {
+
+        def withAdjustMultiplier(multiplier: Double): HillClimbingSettings =
+          copy(adjustMultiplier = multiplier)
+
+        def withInitialStep(step: Double): HillClimbingSettings =
+          copy(initialStep = step)
+
+        def withRestartThreshold(threshold: Double): HillClimbingSettings =
+          copy(restartThreshold = threshold)
+
+        def withStepDecay(decay: Double): HillClimbingSettings =
+          copy(stepDecay = decay)
+
+        private def copy(
+            adjustMultiplier: Double = adjustMultiplier,
+            initialStep: Double = initialStep,
+            restartThreshold: Double = restartThreshold,
+            stepDecay: Double = stepDecay): HillClimbingSettings =
+          new HillClimbingSettings(adjustMultiplier, initialStep, restartThreshold, stepDecay)
+      }
+
+      def optional(config: Config): Option[AdmissionSettings] = {
+        val filter = FilterSettings.optional(config)
+        val window = WindowSettings.optional(config.getConfig("window"))
+        if (filter.isDefined || window.isDefined)
+          Some(new AdmissionSettings(filter, window))
+        else None
+      }
+    }
+
+    final class AdmissionSettings(
+        val filter: Option[AdmissionSettings.FilterSettings],
+        val window: Option[AdmissionSettings.WindowSettings]) {
+
+      def withFilter(settings: AdmissionSettings.FilterSettings): AdmissionSettings =
+        copy(filter = Some(settings))
+
+      def withWindow(settings: AdmissionSettings.WindowSettings): AdmissionSettings =
+        copy(window = Some(settings))
+
+      private def copy(
+          filter: Option[AdmissionSettings.FilterSettings] = filter,
+          window: Option[AdmissionSettings.WindowSettings] = window): AdmissionSettings =
+        new AdmissionSettings(filter, window)
+    }
+
     /**
      * API MAY CHANGE: Settings and configuration for passivation strategies may change after additional
      * testing and feedback.
@@ -357,7 +577,12 @@ object ClusterShardingSettings {
             case _              => Some(strategyConfig.getInt("active-entity-limit"))
           }
           val replacementPolicySettings = PolicySettings.optional(strategyConfig.getConfig("replacement"))
-          new PassivationStrategySettings(idleEntitySettings, activeEntityLimit, replacementPolicySettings)
+          val admissionSettings = AdmissionSettings.optional(strategyConfig.getConfig("admission"))
+          new PassivationStrategySettings(
+            idleEntitySettings,
+            activeEntityLimit,
+            replacementPolicySettings,
+            admissionSettings)
       }
     }
 
@@ -467,6 +692,101 @@ object ClusterShardingSettings {
 
   /**
    * INTERNAL API
+   */
+  @InternalApi
+  private[akka] object CompositePassivationStrategy {
+    object AdmissionFilter {
+      def apply(filterSettings: Option[PassivationStrategySettings.AdmissionSettings.FilterSettings]): AdmissionFilter =
+        filterSettings match {
+          case Some(settings: PassivationStrategySettings.AdmissionSettings.FrequencySketchSettings) =>
+            FrequencySketchAdmissionFilter(
+              widthMultiplier = settings.widthMultiplier,
+              resetMultiplier = settings.resetMultiplier,
+              depth = settings.depth,
+              counterBits = settings.counterBits)
+          case _ => AlwaysAdmissionFilter
+        }
+    }
+
+    sealed trait AdmissionFilter
+
+    case object AlwaysAdmissionFilter extends AdmissionFilter
+
+    case class FrequencySketchAdmissionFilter(
+        widthMultiplier: Int,
+        resetMultiplier: Double,
+        depth: Int,
+        counterBits: Int)
+        extends AdmissionFilter
+
+    object AdmissionOptimizer {
+      def apply(optimizerSettings: Option[PassivationStrategySettings.AdmissionSettings.OptimizerSettings])
+          : AdmissionOptimizer =
+        optimizerSettings match {
+          case Some(settings: PassivationStrategySettings.AdmissionSettings.HillClimbingSettings) =>
+            HillClimbingAdmissionOptimizer(
+              adjustMultiplier = settings.adjustMultiplier,
+              initialStep = settings.initialStep,
+              restartThreshold = settings.restartThreshold,
+              stepDecay = settings.stepDecay)
+          case _ => NoAdmissionOptimizer
+        }
+    }
+
+    sealed trait AdmissionOptimizer
+
+    case object NoAdmissionOptimizer extends AdmissionOptimizer
+
+    case class HillClimbingAdmissionOptimizer(
+        adjustMultiplier: Double,
+        initialStep: Double,
+        restartThreshold: Double,
+        stepDecay: Double)
+        extends AdmissionOptimizer
+
+    def apply(
+        limit: Int,
+        mainSettings: Option[PassivationStrategySettings.PolicySettings],
+        admissionSettings: PassivationStrategySettings.AdmissionSettings,
+        idle: Option[IdlePassivationStrategy]): CompositePassivationStrategy = {
+      val mainStrategy = PassivationStrategy(mainSettings, limit = 0, idle = None)
+      val windowStrategy = PassivationStrategy(admissionSettings.window.flatMap(_.policy), limit = 0, idle = None)
+      val initialWindowProportion = admissionSettings.window.fold(0.0)(_.initialProportion)
+      val minimumWindowProportion = admissionSettings.window.fold(0.0)(_.minimumProportion)
+      val maximumWindowProportion = admissionSettings.window.fold(0.0)(_.maximumProportion)
+      val windowOptimizer = AdmissionOptimizer(admissionSettings.window.flatMap(_.optimizer))
+      val admissionFilter = AdmissionFilter(admissionSettings.filter)
+      CompositePassivationStrategy(
+        limit,
+        mainStrategy,
+        windowStrategy,
+        initialWindowProportion,
+        minimumWindowProportion,
+        maximumWindowProportion,
+        windowOptimizer,
+        admissionFilter,
+        idle)
+    }
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] case class CompositePassivationStrategy(
+      limit: Int,
+      mainStrategy: PassivationStrategy,
+      windowStrategy: PassivationStrategy,
+      initialWindowProportion: Double,
+      minimumWindowProportion: Double,
+      maximumWindowProportion: Double,
+      windowOptimizer: CompositePassivationStrategy.AdmissionOptimizer,
+      admissionFilter: CompositePassivationStrategy.AdmissionFilter,
+      idle: Option[IdlePassivationStrategy])
+      extends PassivationStrategy
+
+  /**
+   * INTERNAL API
    * Determine the passivation strategy to use from settings.
    */
   @InternalApi
@@ -481,18 +801,103 @@ object ClusterShardingSettings {
         }
         settings.passivationStrategySettings.activeEntityLimit match {
           case Some(limit) =>
-            settings.passivationStrategySettings.replacementPolicySettings match {
-              case Some(settings: PassivationStrategySettings.LeastRecentlyUsedSettings) =>
-                LeastRecentlyUsedPassivationStrategy(settings, limit, idle)
-              case Some(_: PassivationStrategySettings.MostRecentlyUsedSettings) =>
-                MostRecentlyUsedPassivationStrategy(limit, idle)
-              case Some(settings: PassivationStrategySettings.LeastFrequentlyUsedSettings) =>
-                LeastFrequentlyUsedPassivationStrategy(settings, limit, idle)
-              case _ => idle.getOrElse(NoPassivationStrategy)
+            settings.passivationStrategySettings.admissionSettings match {
+              case Some(admission) =>
+                val main = settings.passivationStrategySettings.replacementPolicySettings
+                CompositePassivationStrategy(limit, main, admission, idle)
+              case _ =>
+                PassivationStrategy(settings.passivationStrategySettings.replacementPolicySettings, limit, idle)
             }
           case _ => idle.getOrElse(NoPassivationStrategy)
         }
       }
+
+    def apply(
+        policySettings: Option[PassivationStrategySettings.PolicySettings],
+        limit: Int,
+        idle: Option[IdlePassivationStrategy]): PassivationStrategy = policySettings match {
+      case Some(settings: PassivationStrategySettings.LeastRecentlyUsedSettings) =>
+        LeastRecentlyUsedPassivationStrategy(settings, limit, idle)
+      case Some(_: PassivationStrategySettings.MostRecentlyUsedSettings) =>
+        MostRecentlyUsedPassivationStrategy(limit, idle)
+      case Some(settings: PassivationStrategySettings.LeastFrequentlyUsedSettings) =>
+        LeastFrequentlyUsedPassivationStrategy(settings, limit, idle)
+      case _ => idle.getOrElse(NoPassivationStrategy)
+    }
+
+    def describe(strategy: PassivationStrategy): String = {
+      import akka.util.PrettyDuration._
+      strategy match {
+        case NoPassivationStrategy =>
+          "disabled"
+        case IdlePassivationStrategy(timeout, interval) =>
+          s"idle entities after [${timeout.pretty}], checked every [${interval.pretty}]"
+        case LeastRecentlyUsedPassivationStrategy(limit, segmented, idle) =>
+          s"least recently used entities" +
+          (if (limit > 0) s" when over [$limit] entities" else "") +
+          (if (segmented.nonEmpty) {
+             val levels = segmented.size
+             val proportions = segmented.map(proportion => "%.2f".format(proportion)).mkString(", ")
+             s" (segmented with [$levels] levels with proportions of [$proportions])"
+           } else "") +
+          idle.fold("")(idle => " and " + describe(idle))
+        case MostRecentlyUsedPassivationStrategy(limit, idle) =>
+          s"most recently used entities" +
+          (if (limit > 0) s" when over [$limit] entities" else "") +
+          idle.fold("")(idle => " and " + describe(idle))
+        case LeastFrequentlyUsedPassivationStrategy(limit, dynamicAging, idle) =>
+          s"least frequently used entities" +
+          (if (limit > 0) s" when over [$limit] entities" else "") +
+          (if (dynamicAging) " (with dynamic aging)" else "") +
+          idle.fold("")(idle => " and " + describe(idle))
+        case CompositePassivationStrategy(
+            limit,
+            mainStrategy,
+            windowStrategy,
+            initialWindowProportion,
+            minimumWindowProportion,
+            maximumWindowProportion,
+            windowOptimizer,
+            admissionFilter,
+            idle) =>
+          val describeWindow = windowStrategy match {
+            case NoPassivationStrategy => "no admission window"
+            case _ =>
+              s"admission window (${describe(windowStrategy)})" +
+              (windowOptimizer match {
+                case CompositePassivationStrategy.NoAdmissionOptimizer =>
+                  s" with proportion [$initialWindowProportion]"
+                case CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+                    adjustMultiplier,
+                    initialStep,
+                    restartThreshold,
+                    stepDecay) =>
+                  s" with proportions [initial = $initialWindowProportion, min = $minimumWindowProportion, max = $maximumWindowProportion]" +
+                  " adapting with hill-climbing optimizer [" +
+                  s"adjust multiplier = $adjustMultiplier, " +
+                  s"initial step = $initialStep, " +
+                  s"restart threshold = $restartThreshold, " +
+                  s"step decay = $stepDecay]"
+              })
+          }
+          val describeFilter = admissionFilter match {
+            case CompositePassivationStrategy.AlwaysAdmissionFilter => "always admit"
+            case CompositePassivationStrategy.FrequencySketchAdmissionFilter(
+                widthMultiplier,
+                resetMultiplier,
+                depth,
+                counterBits) =>
+              "admit using frequency sketch [" +
+              s"width multiplier = $widthMultiplier, " +
+              s"reset multiplier = $resetMultiplier, " +
+              s"depth = $depth, " +
+              s"counter bits = $counterBits]"
+          }
+          s"composite strategy with limit of [$limit] active entities, " +
+          s"$describeWindow, $describeFilter, main (${describe(mainStrategy)})" +
+          idle.fold("")(idle => " and " + describe(idle))
+      }
+    }
   }
 
   class TuningParameters(

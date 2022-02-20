@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -9,8 +9,12 @@ import akka.event.Logging
 import akka.protobufv3.internal.ByteString
 import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats
+import akka.serialization.ByteBufferSerializer
 import akka.serialization.{ SerializationExtension, Serializers }
 import akka.serialization.DisabledJavaSerializer
+import akka.serialization.SerializerWithStringManifest
+
+import java.nio.ByteOrder
 
 /**
  * INTERNAL API
@@ -48,19 +52,31 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
         if (manifest.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
 
       case _ =>
+        // already zero copy of the serialized byte string so no point in going via bytebuf even if supported here
         builder
           .setEnclosedMessage(ByteStringUtils.toProtoByteStringUnsafe(serializer.toBinary(payload)))
           .setSerializerId(serializer.identifier)
         val manifest = Serializers.manifestFor(serializer, payload)
         if (manifest.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
     }
-
     builder
   }
 
   def deserializePayload(payload: ContainerFormats.Payload): Any = {
     val manifest = if (payload.hasMessageManifest) payload.getMessageManifest.toStringUtf8 else ""
-    serialization.deserialize(payload.getEnclosedMessage.toByteArray, payload.getSerializerId, manifest).get
+    serialization.serializerByIdentity(payload.getSerializerId) match {
+      case serializer: ByteBufferSerializer =>
+        // may avoid one copy of the serialized payload if the proto byte is the right kind and the
+        // underlying payload serializer handles byte buffers
+        val buffer = payload.getEnclosedMessage.asReadOnlyByteBuffer()
+        buffer.order(ByteOrder.LITTLE_ENDIAN)
+        serializer.fromBinary(buffer, manifest)
+      case serializer: SerializerWithStringManifest =>
+        serializer.fromBinary(payload.getEnclosedMessage.toByteArray, manifest)
+      case _ =>
+        // only old class based manifest serializers?
+        serialization.deserialize(payload.getEnclosedMessage.toByteArray, payload.getSerializerId, manifest).get
+    }
   }
 
 }

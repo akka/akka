@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.dispatcher;
@@ -41,7 +41,7 @@ public class MyUnboundedMailbox
     }
 
     public void cleanUp(ActorRef owner, MessageQueue deadLetters) {
-      while(!queue.isEmpty()) {
+      while (!queue.isEmpty()) {
         deadLetters.enqueue(owner, dequeue());
       }
     }

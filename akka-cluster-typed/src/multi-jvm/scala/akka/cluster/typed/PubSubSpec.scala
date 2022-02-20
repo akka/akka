@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -8,7 +8,6 @@ import com.typesafe.config.ConfigFactory
 
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
-import akka.actor.typed.internal.pubsub.TopicImpl
 import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MultiNodeClusterSpec
@@ -66,9 +65,9 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
     }
 
     "see nodes with subscribers registered" in {
-      val statsProbe = TestProbe[TopicImpl.TopicStats]()
+      val statsProbe = TestProbe[Topic.TopicStats]()
       statsProbe.awaitAssert({
-        topic ! TopicImpl.GetTopicStats[Message](statsProbe.ref)
+        topic ! Topic.GetTopicStats[Message](statsProbe.ref)
         statsProbe.receiveMessage().topicInstanceCount should ===(3)
       })
       enterBarrier("topic instances with subscribers seen")
@@ -91,9 +90,9 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
       runOn(first) {
         topic ! Topic.Unsubscribe(topicProbe.ref)
         // unsubscribe does not need to be gossiped before it is effective
-        val statsProbe = TestProbe[TopicImpl.TopicStats]()
+        val statsProbe = TestProbe[Topic.TopicStats]()
         statsProbe.awaitAssert({
-          topic ! TopicImpl.GetTopicStats[Message](statsProbe.ref)
+          topic ! Topic.GetTopicStats[Message](statsProbe.ref)
           statsProbe.receiveMessage().topicInstanceCount should ===(2)
         })
       }
