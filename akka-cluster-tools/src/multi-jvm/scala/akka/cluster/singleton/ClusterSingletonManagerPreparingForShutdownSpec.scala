@@ -149,8 +149,8 @@ class ClusterSingletonManagerPreparingForShutdownSpec
 
     "last nodes should shut down" in {
       runOn(second) {
-        Cluster(system).leave(address(second))
         Cluster(system).leave(address(third))
+        Cluster(system).leave(address(second))
       }
       awaitAssert({
         withClue("self member: " + Cluster(system).selfMember) {
