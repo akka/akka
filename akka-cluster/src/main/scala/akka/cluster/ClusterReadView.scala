@@ -49,7 +49,8 @@ import akka.dispatch.UnboundedMessageQueueSemantics
     State(
       clusterState = CurrentClusterState(),
       reachability = Reachability.empty,
-      selfMember = Member(cluster.selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion),
+      selfMember = Member(cluster.selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
+        .copy(status = MemberStatus.Removed),
       latestStats = CurrentInternalStats(GossipStats(), VectorClockStats())))
 
   val selfAddress: Address = cluster.selfAddress
