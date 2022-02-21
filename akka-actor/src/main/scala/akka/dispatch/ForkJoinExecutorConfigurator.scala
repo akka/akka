@@ -5,8 +5,9 @@
 package akka.dispatch
 
 import java.util.concurrent.{ ExecutorService, ForkJoinPool, ForkJoinTask, ThreadFactory }
-
 import com.typesafe.config.Config
+
+import java.lang.invoke.MethodHandles
 
 object ForkJoinExecutorConfigurator {
 
@@ -28,10 +29,21 @@ object ForkJoinExecutorConfigurator {
 
     override def execute(r: Runnable): Unit =
       if (r ne null)
-        super.execute(
-          (if (r.isInstanceOf[ForkJoinTask[_]]) r else new AkkaForkJoinTask(r)).asInstanceOf[ForkJoinTask[Any]])
+        super.execute(createTask(r))
       else
         throw new NullPointerException("Runnable was null")
+
+    def executeExternal(r: Runnable): Unit =
+      handle.invokeWithArguments(createTask(r))
+
+    private val handle = {
+      val m = classOf[ForkJoinPool].getDeclaredMethod("externalPush", classOf[ForkJoinTask[_]])
+      m.setAccessible(true)
+      MethodHandles.lookup().unreflect(m).bindTo(this)
+    }
+
+    private def createTask(r: Runnable): ForkJoinTask[Any] =
+      (if (r.isInstanceOf[ForkJoinTask[_]]) r else new AkkaForkJoinTask(r)).asInstanceOf[ForkJoinTask[Any]]
 
     def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
