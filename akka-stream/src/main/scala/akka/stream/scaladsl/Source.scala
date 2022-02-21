@@ -846,7 +846,7 @@ object Source {
     val source = sources match {
       case immutable.Seq()   => empty[T]
       case immutable.Seq(s1) => s1.mapMaterializedValue(_ => NotUsed)
-      case sources    => combine(sources(0), sources(1), sources.drop(2): _*)(new MergeSortedN[T](_))
+      case sources           => combine(sources(0), sources(1), sources.drop(2): _*)(new MergeSortedN[T](_))
     }
 
     source.addAttributes(DefaultAttributes.mergeSortedN)
