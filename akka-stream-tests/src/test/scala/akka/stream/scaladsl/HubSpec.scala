@@ -678,7 +678,8 @@ class HubSpec extends StreamSpec {
 
     }
 
-    "properly signal error to consumers" in assertAllStagesStopped {
+    (0 to 500).foreach { i =>
+    s"properly signal error to consumers ($i)" in assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val source = Source
         .fromPublisher(upstream)
@@ -698,7 +699,7 @@ class HubSpec extends StreamSpec {
 
       (0 until 16).foreach(upstream.sendNext(_))
 
-      downstream1.expectNext(0, 2, 4, 6)
+      downstream1.expectNext(0, 2, 4, 6) // 8, 10, 12, 14 stays in buffer bc no demand
       downstream2.expectNext(1, 3, 5, 7, 9, 11, 13, 15)
 
       downstream1.expectNoMessage(100.millis)
@@ -708,7 +709,7 @@ class HubSpec extends StreamSpec {
 
       downstream1.expectError(TE("Failed"))
       downstream2.expectError(TE("Failed"))
-    }
+    }}
 
     "properly signal completion to consumers arriving after producer finished" in assertAllStagesStopped {
       val source =

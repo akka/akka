@@ -23,6 +23,8 @@ import akka.stream._
 import akka.stream.Attributes.LogLevels
 import akka.stream.stage._
 
+import scala.concurrent.duration.DurationInt
+
 /**
  * A MergeHub is a special streaming hub that is able to collect streamed elements from a dynamic set of
  * producers. It consists of two parts, a [[Source]] and a [[Sink]]. The [[Source]] streams the element to a consumer from
@@ -1293,6 +1295,8 @@ object PartitionHub {
       inheritedAttributes: Attributes): (GraphStageLogic, Source[T, NotUsed]) = {
     val idCounter = new AtomicLong
 
+    case object WaitingForWakeup
+
     val logic = new PartitionSinkLogic(shape)
 
     val source = new GraphStage[SourceShape[T]] {
@@ -1300,7 +1304,7 @@ object PartitionHub {
       override val shape: SourceShape[T] = SourceShape(out)
 
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-        new GraphStageLogic(shape) with OutHandler {
+        new TimerGraphStageLogic(shape) with OutHandler {
           private val id = idCounter.getAndIncrement()
           private var hubCallback: AsyncCallback[HubEvent] = _
           private val callback = getAsyncCallback(onCommand)
@@ -1341,12 +1345,26 @@ object PartitionHub {
               elem match {
                 case null =>
                   hubCallback.invoke(NeedWakeup(consumer))
+                  scheduleOnce(WaitingForWakeup, 100.millis)
                 case Completed =>
                   completeStage()
                 case _ =>
                   push(out, elem.asInstanceOf[T])
               }
             }
+          }
+
+
+          override protected def onTimer(timerKey: Any): Unit = timerKey match {
+            case WaitingForWakeup =>
+              // We asked for a wakeup, but "never" got one, this could be because
+              // our demand filled the buffer with elements for another partition,
+              // but that consumer only wanted a few of them, so never triggers any new
+              // pull/demand #31028
+              // FIXME this is obviously not what we want to pay for a sneaky corner case
+              hubCallback.invoke(NeedWakeup(consumer))
+            case _ =>
+              throw new IllegalArgumentException(s"Unexpected timer $timerKey")
           }
 
           override def postStop(): Unit = {
@@ -1360,6 +1378,7 @@ object PartitionHub {
               case HubCompleted(Some(ex)) => failStage(ex)
               case HubCompleted(None)     => completeStage()
               case Wakeup =>
+                cancelTimer(WaitingForWakeup)
                 if (isAvailable(out)) onPull()
               case Initialize =>
                 if (isAvailable(out) && (hubCallback ne null)) onPull()
