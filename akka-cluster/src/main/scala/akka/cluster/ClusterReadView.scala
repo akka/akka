@@ -57,6 +57,9 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       .systemActorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
         override def preStart(): Unit = cluster.subscribe(this.self, classOf[ClusterDomainEvent])
 
+        // make sure that final state has member status Removed
+        override def postStop(): Unit = selfRemoved()
+
         def receive: Receive = {
           case e: ClusterDomainEvent if !_closed =>
             e match {
@@ -187,9 +190,15 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
    */
   def close(): Unit = {
     _closed = true
-    _cachedSelf = self.copy(MemberStatus.Removed)
+    selfRemoved()
     if (!eventBusListener.isTerminated)
       eventBusListener ! PoisonPill
+  }
+
+  private def selfRemoved(): Unit = {
+    val removed = _cachedSelf.copy(MemberStatus.Removed)
+    _cachedSelf = removed
+    _state = _state.copy(members = _state.members - removed + removed)
   }
 
 }
