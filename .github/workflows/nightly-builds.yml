@@ -34,7 +34,7 @@ jobs:
             -Dakka.cluster.assert=on \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
-            -Dakka.test.tags.exclude=gh-exclude \
+            -Dakka.test.tags.exclude=gh-exclude,timing \
             -Dakka.log.timestamps=true \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms256M \
@@ -100,7 +100,7 @@ jobs:
           -Dakka.remote.artery.enabled=off \
           -Dakka.test.timefactor=2 \
           -Dakka.actor.testkit.typed.timefactor=2 \
-          -Dakka.test.tags.exclude=gh-exclude \
+          -Dakka.test.tags.exclude=gh-exclude,timing \
           -Dakka.cluster.assert=on \
           -Dakka.test.names.exclude=akka.cluster.Stress \
           -Dmultinode.XX:MetaspaceSize=128M \
@@ -151,7 +151,7 @@ jobs:
             -Dakka.log.timestamps=true \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
-            -Dakka.test.tags.exclude=gh-exclude \
+            -Dakka.test.tags.exclude=gh-exclude,timing \
             -Dakka.test.multi-in-test=false \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms256M \

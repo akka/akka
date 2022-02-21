@@ -52,7 +52,7 @@ jobs:
           -Dakka.test.timefactor=2 \
           -Dakka.actor.testkit.typed.timefactor=2 \
           -Dakka.test.multi-in-test=false \
-          -Dakka.test.tags.exclude=gh-exclude \
+          -Dakka.test.tags.exclude=gh-exclude,timing \
           -Dmultinode.XX:MetaspaceSize=128M \
           -Dmultinode.Xms256M \
           -Dmultinode.Xmx256M \
