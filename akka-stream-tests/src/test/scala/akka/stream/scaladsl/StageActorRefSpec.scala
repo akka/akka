@@ -143,7 +143,8 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       val (source, res) = Source.maybe[Int].toMat(sumStage(testActor))(Keep.both).run()
 
       val stageRef = expectMsgType[ActorRef]
-      stageRef ! Add(40)
+      stageRef ! AddAndTell(40)
+      expectMsg(40)
 
       val filter = EventFilter.custom {
         case _: Logging.Warning => true
