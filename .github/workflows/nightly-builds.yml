@@ -167,7 +167,6 @@ jobs:
         with:
           report_paths: '**/target/test-reports/TEST-*.xml'
           fail_if_no_tests: false
-          skip_publishing: true
 
       # Archive test results so we can do some diagnostics later
       - name: Upload test results
