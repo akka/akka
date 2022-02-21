@@ -38,3 +38,6 @@ jobs:
 
       - name: Report MiMa Binary Issues
         run: sbt -jvm-opts .jvmopts-ci "+~ ${{ matrix.scalaVersion }} mimaReportBinaryIssues"
+
+      - name: Check correct MiMa filter directories
+        run: sbt -jvm-opts .jvmopts-ci checkMimaFilterDirectories

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dispatch
@@ -19,7 +19,6 @@ import org.scalatest.Assertions._
 
 import akka.actor._
 import akka.dispatch._
-import akka.dispatch.sysmsg.SystemMessageList
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
@@ -398,32 +397,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
               }(dispatcher)
           }).start()
           boss ! "run"
-          try {
-            assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
-          } catch {
-            case e: Throwable =>
-              dispatcher match {
-                case dispatcher: BalancingDispatcher =>
-                  val team = dispatcher.team
-                  val mq = dispatcher.messageQueue
-
-                  System.err.println(
-                    "Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
-
-                  import akka.util.ccompat.JavaConverters._
-                  team.asScala.toList.sortBy(_.self.path).foreach { (cell: ActorCell) =>
-                    System.err.println(
-                      " - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.currentStatus + " "
-                      + cell.mailbox.numberOfMessages + " " + cell.mailbox.systemDrain(SystemMessageList.LNil).size)
-                  }
-
-                  System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
-                  Iterator.continually(mq.dequeue()).takeWhile(_ ne null).foreach(System.err.println)
-                case _ =>
-              }
-
-              throw e
-          }
+          assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
           assertCountDown(stopLatch, waitTime, "Expected all children to stop")
         } finally {
           keepAliveLatch.countDown()

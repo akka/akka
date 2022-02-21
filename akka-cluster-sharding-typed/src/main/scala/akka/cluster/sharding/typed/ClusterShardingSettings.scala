@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -171,13 +171,33 @@ object ClusterShardingSettings {
       val idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
       val activeEntityLimit: Option[Int],
       val replacementPolicySettings: Option[PassivationStrategySettings.PolicySettings],
+      val admissionSettings: Option[PassivationStrategySettings.AdmissionSettings],
       private[akka] val oldSettingUsed: Boolean) {
+
+    private[akka] def this(
+        idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
+        activeEntityLimit: Option[Int],
+        replacementPolicySettings: Option[PassivationStrategySettings.PolicySettings],
+        oldSettingUsed: Boolean) =
+      this(idleEntitySettings, activeEntityLimit, replacementPolicySettings, admissionSettings = None, oldSettingUsed)
+
+    def this(
+        idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
+        activeEntityLimit: Option[Int],
+        replacementPolicySettings: Option[PassivationStrategySettings.PolicySettings],
+        admissionSettings: Option[PassivationStrategySettings.AdmissionSettings]) =
+      this(idleEntitySettings, activeEntityLimit, replacementPolicySettings, admissionSettings, oldSettingUsed = false)
 
     def this(
         idleEntitySettings: Option[PassivationStrategySettings.IdleSettings],
         activeEntityLimit: Option[Int],
         replacementPolicySettings: Option[PassivationStrategySettings.PolicySettings]) =
-      this(idleEntitySettings, activeEntityLimit, replacementPolicySettings, oldSettingUsed = false)
+      this(
+        idleEntitySettings,
+        activeEntityLimit,
+        replacementPolicySettings,
+        admissionSettings = None,
+        oldSettingUsed = false)
 
     import PassivationStrategySettings._
 
@@ -213,19 +233,29 @@ object ClusterShardingSettings {
     def withLeastFrequentlyUsedReplacement(): PassivationStrategySettings =
       withReplacementPolicy(LeastFrequentlyUsedSettings.defaults)
 
+    def withAdmission(settings: AdmissionSettings): PassivationStrategySettings =
+      copy(admissionSettings = Some(settings))
+
     private[akka] def withOldIdleStrategy(timeout: FiniteDuration): PassivationStrategySettings =
       copy(
         idleEntitySettings = Some(new IdleSettings(timeout, None)),
         activeEntityLimit = None,
         replacementPolicySettings = None,
+        admissionSettings = None,
         oldSettingUsed = true)
 
     private def copy(
         idleEntitySettings: Option[IdleSettings] = idleEntitySettings,
         activeEntityLimit: Option[Int] = activeEntityLimit,
         replacementPolicySettings: Option[PolicySettings] = replacementPolicySettings,
+        admissionSettings: Option[AdmissionSettings] = admissionSettings,
         oldSettingUsed: Boolean = oldSettingUsed): PassivationStrategySettings =
-      new PassivationStrategySettings(idleEntitySettings, activeEntityLimit, replacementPolicySettings, oldSettingUsed)
+      new PassivationStrategySettings(
+        idleEntitySettings,
+        activeEntityLimit,
+        replacementPolicySettings,
+        admissionSettings,
+        oldSettingUsed)
   }
 
   /**
@@ -239,6 +269,7 @@ object ClusterShardingSettings {
       idleEntitySettings = None,
       activeEntityLimit = None,
       replacementPolicySettings = None,
+      admissionSettings = None,
       oldSettingUsed = false)
 
     val disabled: PassivationStrategySettings = defaults
@@ -248,6 +279,7 @@ object ClusterShardingSettings {
         classic.idleEntitySettings.map(IdleSettings.apply),
         classic.activeEntityLimit,
         classic.replacementPolicySettings.map(PolicySettings.apply),
+        classic.admissionSettings.map(AdmissionSettings.apply),
         classic.oldSettingUsed)
 
     def toClassic(settings: PassivationStrategySettings): ClassicPassivationStrategySettings =
@@ -255,6 +287,7 @@ object ClusterShardingSettings {
         settings.idleEntitySettings.map(IdleSettings.toClassic),
         settings.activeEntityLimit,
         settings.replacementPolicySettings.map(PolicySettings.toClassic),
+        settings.admissionSettings.map(AdmissionSettings.toClassic),
         settings.oldSettingUsed)
 
     object IdleSettings {
@@ -388,6 +421,221 @@ object ClusterShardingSettings {
 
       private def copy(dynamicAging: Boolean): LeastFrequentlyUsedSettings =
         new LeastFrequentlyUsedSettings(dynamicAging)
+    }
+
+    object AdmissionSettings {
+      val defaults = new AdmissionSettings(filter = None, window = None)
+
+      object FilterSettings {
+        def apply(classic: ClassicPassivationStrategySettings.AdmissionSettings.FilterSettings): FilterSettings =
+          classic match {
+            case classic: ClassicPassivationStrategySettings.AdmissionSettings.FrequencySketchSettings =>
+              FrequencySketchSettings(classic)
+          }
+
+        def toClassic(settings: FilterSettings): ClassicPassivationStrategySettings.AdmissionSettings.FilterSettings =
+          settings match {
+            case settings: FrequencySketchSettings => FrequencySketchSettings.toClassic(settings)
+          }
+      }
+
+      sealed trait FilterSettings
+
+      object FrequencySketchSettings {
+        val defaults =
+          new FrequencySketchSettings(depth = 4, counterBits = 4, widthMultiplier = 4, resetMultiplier = 10.0)
+
+        def apply(classic: ClassicPassivationStrategySettings.AdmissionSettings.FrequencySketchSettings)
+            : FrequencySketchSettings =
+          new FrequencySketchSettings(
+            classic.depth,
+            classic.counterBits,
+            classic.widthMultiplier,
+            classic.resetMultiplier)
+
+        def toClassic(settings: FrequencySketchSettings)
+            : ClassicPassivationStrategySettings.AdmissionSettings.FrequencySketchSettings =
+          new ClassicPassivationStrategySettings.AdmissionSettings.FrequencySketchSettings(
+            settings.depth,
+            settings.counterBits,
+            settings.widthMultiplier,
+            settings.resetMultiplier)
+      }
+
+      final class FrequencySketchSettings(
+          val depth: Int,
+          val counterBits: Int,
+          val widthMultiplier: Int,
+          val resetMultiplier: Double)
+          extends FilterSettings {
+
+        def withDepth(depth: Int): FrequencySketchSettings =
+          copy(depth = depth)
+
+        def withCounterBits(bits: Int): FrequencySketchSettings =
+          copy(counterBits = bits)
+
+        def withWidthMultiplier(multiplier: Int): FrequencySketchSettings =
+          copy(widthMultiplier = multiplier)
+
+        def withResetMultiplier(multiplier: Double): FrequencySketchSettings =
+          copy(resetMultiplier = multiplier)
+
+        private def copy(
+            depth: Int = depth,
+            counterBits: Int = counterBits,
+            widthMultiplier: Int = widthMultiplier,
+            resetMultiplier: Double = resetMultiplier): FrequencySketchSettings =
+          new FrequencySketchSettings(depth, counterBits, widthMultiplier, resetMultiplier)
+
+      }
+
+      object WindowSettings {
+        val defaults: WindowSettings = new WindowSettings(
+          initialProportion = 0.01,
+          minimumProportion = 0.01,
+          maximumProportion = 1.0,
+          optimizer = None,
+          policy = None)
+
+        def apply(classic: ClassicPassivationStrategySettings.AdmissionSettings.WindowSettings): WindowSettings =
+          new WindowSettings(
+            classic.initialProportion,
+            classic.minimumProportion,
+            classic.maximumProportion,
+            classic.optimizer.map(OptimizerSettings.apply),
+            classic.policy.map(PolicySettings.apply))
+
+        def toClassic(settings: WindowSettings): ClassicPassivationStrategySettings.AdmissionSettings.WindowSettings =
+          new ClassicPassivationStrategySettings.AdmissionSettings.WindowSettings(
+            settings.initialProportion,
+            settings.minimumProportion,
+            settings.maximumProportion,
+            settings.optimizer.map(OptimizerSettings.toClassic),
+            settings.policy.map(PolicySettings.toClassic))
+      }
+
+      final class WindowSettings(
+          val initialProportion: Double,
+          val minimumProportion: Double,
+          val maximumProportion: Double,
+          val optimizer: Option[OptimizerSettings],
+          val policy: Option[PolicySettings]) {
+
+        def withInitialProportion(proportion: Double): WindowSettings =
+          copy(initialProportion = proportion)
+
+        def withMinimumProportion(proportion: Double): WindowSettings =
+          copy(minimumProportion = proportion)
+
+        def withMaximumProportion(proportion: Double): WindowSettings =
+          copy(maximumProportion = proportion)
+
+        def withOptimizer(settings: OptimizerSettings): WindowSettings =
+          copy(optimizer = Some(settings))
+
+        def withPolicy(settings: PolicySettings): WindowSettings =
+          copy(policy = Some(settings))
+
+        private def copy(
+            initialProportion: Double = initialProportion,
+            minimumProportion: Double = minimumProportion,
+            maximumProportion: Double = maximumProportion,
+            optimizer: Option[OptimizerSettings] = optimizer,
+            policy: Option[PolicySettings] = policy): WindowSettings =
+          new WindowSettings(initialProportion, minimumProportion, maximumProportion, optimizer, policy)
+      }
+
+      object OptimizerSettings {
+        def apply(classic: ClassicPassivationStrategySettings.AdmissionSettings.OptimizerSettings): OptimizerSettings =
+          classic match {
+            case classic: ClassicPassivationStrategySettings.AdmissionSettings.HillClimbingSettings =>
+              HillClimbingSettings(classic)
+          }
+
+        def toClassic(
+            settings: OptimizerSettings): ClassicPassivationStrategySettings.AdmissionSettings.OptimizerSettings =
+          settings match {
+            case settings: HillClimbingSettings => HillClimbingSettings.toClassic(settings)
+          }
+      }
+
+      sealed trait OptimizerSettings
+
+      object HillClimbingSettings {
+        val defaults: HillClimbingSettings = new HillClimbingSettings(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98)
+
+        def apply(
+            classic: ClassicPassivationStrategySettings.AdmissionSettings.HillClimbingSettings): HillClimbingSettings =
+          new HillClimbingSettings(
+            classic.adjustMultiplier,
+            classic.initialStep,
+            classic.restartThreshold,
+            classic.stepDecay)
+
+        def toClassic(
+            settings: HillClimbingSettings): ClassicPassivationStrategySettings.AdmissionSettings.HillClimbingSettings =
+          new ClassicPassivationStrategySettings.AdmissionSettings.HillClimbingSettings(
+            settings.adjustMultiplier,
+            settings.initialStep,
+            settings.restartThreshold,
+            settings.stepDecay)
+      }
+
+      final class HillClimbingSettings(
+          val adjustMultiplier: Double,
+          val initialStep: Double,
+          val restartThreshold: Double,
+          val stepDecay: Double)
+          extends OptimizerSettings {
+
+        def withAdjustMultiplier(multiplier: Double): HillClimbingSettings =
+          copy(adjustMultiplier = multiplier)
+
+        def withInitialStep(step: Double): HillClimbingSettings =
+          copy(initialStep = step)
+
+        def withRestartThreshold(threshold: Double): HillClimbingSettings =
+          copy(restartThreshold = threshold)
+
+        def withStepDecay(decay: Double): HillClimbingSettings =
+          copy(stepDecay = decay)
+
+        private def copy(
+            adjustMultiplier: Double = adjustMultiplier,
+            initialStep: Double = initialStep,
+            restartThreshold: Double = restartThreshold,
+            stepDecay: Double = stepDecay): HillClimbingSettings =
+          new HillClimbingSettings(adjustMultiplier, initialStep, restartThreshold, stepDecay)
+      }
+
+      def apply(classic: ClassicPassivationStrategySettings.AdmissionSettings): AdmissionSettings =
+        new AdmissionSettings(classic.filter.map(FilterSettings.apply), classic.window.map(WindowSettings.apply))
+
+      def toClassic(settings: AdmissionSettings): ClassicPassivationStrategySettings.AdmissionSettings =
+        new ClassicPassivationStrategySettings.AdmissionSettings(
+          settings.filter.map(FilterSettings.toClassic),
+          settings.window.map(WindowSettings.toClassic))
+    }
+
+    final class AdmissionSettings(
+        val filter: Option[AdmissionSettings.FilterSettings],
+        val window: Option[AdmissionSettings.WindowSettings]) {
+
+      def withFilter(settings: AdmissionSettings.FilterSettings): AdmissionSettings =
+        copy(filter = Some(settings))
+
+      def withWindow(settings: AdmissionSettings.WindowSettings): AdmissionSettings =
+        copy(window = Some(settings))
+
+      private def copy(
+          filter: Option[AdmissionSettings.FilterSettings] = filter,
+          window: Option[AdmissionSettings.WindowSettings] = window): AdmissionSettings =
+        new AdmissionSettings(filter, window)
     }
 
     private[akka] def oldDefault(idleTimeout: FiniteDuration): PassivationStrategySettings =

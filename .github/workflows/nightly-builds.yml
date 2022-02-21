@@ -34,7 +34,7 @@ jobs:
             -Dakka.cluster.assert=on \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
-            -Dakka.test.tags.exclude=gh-exclude \
+            -Dakka.test.tags.exclude=gh-exclude,timing \
             -Dakka.log.timestamps=true \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms256M \
@@ -100,7 +100,7 @@ jobs:
           -Dakka.remote.artery.enabled=off \
           -Dakka.test.timefactor=2 \
           -Dakka.actor.testkit.typed.timefactor=2 \
-          -Dakka.test.tags.exclude=gh-exclude \
+          -Dakka.test.tags.exclude=gh-exclude,timing \
           -Dakka.cluster.assert=on \
           -Dakka.test.names.exclude=akka.cluster.Stress \
           -Dmultinode.XX:MetaspaceSize=128M \
@@ -151,7 +151,7 @@ jobs:
             -Dakka.log.timestamps=true \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
-            -Dakka.test.tags.exclude=gh-exclude \
+            -Dakka.test.tags.exclude=gh-exclude,timing \
             -Dakka.test.multi-in-test=false \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms256M \
@@ -167,7 +167,14 @@ jobs:
         with:
           report_paths: '**/target/test-reports/TEST-*.xml'
           fail_if_no_tests: false
-          skip_publishing: true
+
+      # Archive test results so we can do some diagnostics later
+      - name: Upload test results
+        uses: actions/upload-artifact@v2
+        if: success() || failure()        # run this step even if previous step failed
+        with:
+          name: test-results-${{ matrix.jdkVersion }}-${{ matrix.scalaVersion }}
+          path: '**/target/test-reports/TEST-*.xml'
 
       - name: Docs
         # Docs generation requires JDK 11. Checks with `startsWith` helps
@@ -181,6 +188,8 @@ jobs:
             "+~ ${{ matrix.scalaVersion }} doc"
 
       - name: Publish
+        # Publish (osgi bundle) not working with JDK 17, issue #31132
+        if: ${{ startsWith(matrix.jdkVersion, 'adopt@1.11') }}
         run: |-
           sudo apt-get install graphviz
           sbt -jvm-opts .jvmopts-ci \

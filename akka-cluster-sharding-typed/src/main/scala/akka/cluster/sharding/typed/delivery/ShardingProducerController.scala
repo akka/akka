@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.delivery
@@ -200,8 +200,12 @@ object ShardingProducerController {
       val bufferSize: Int,
       val internalAskTimeout: FiniteDuration,
       val cleanupUnusedAfter: FiniteDuration,
-      val resendFirsUnconfirmedIdleTimeout: FiniteDuration,
+      val resendFirstUnconfirmedIdleTimeout: FiniteDuration,
       val producerControllerSettings: ProducerController.Settings) {
+
+    @Deprecated
+    @deprecated("use resendFirstUnconfirmedIdleTimeout", "2.6.19")
+    def resendFirsUnconfirmedIdleTimeout: FiniteDuration = resendFirstUnconfirmedIdleTimeout
 
     if (producerControllerSettings.chunkLargeMessagesBytes > 0)
       throw new IllegalArgumentException("Chunked messages not implemented for sharding yet.")
@@ -221,11 +225,19 @@ object ShardingProducerController {
     def withCleanupUnusedAfter(newCleanupUnusedAfter: java.time.Duration): Settings =
       copy(cleanupUnusedAfter = newCleanupUnusedAfter.asScala)
 
-    def withResendFirsUnconfirmedIdleTimeout(newResendFirsUnconfirmedIdleTimeout: FiniteDuration): Settings =
-      copy(resendFirsUnconfirmedIdleTimeout = newResendFirsUnconfirmedIdleTimeout)
+    def withResendFirstUnconfirmedIdleTimeout(newResendFirstUnconfirmedIdleTimeout: FiniteDuration): Settings =
+      copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout)
 
-    def withResendFirsUnconfirmedIdleTimeout(newResendFirsUnconfirmedIdleTimeout: java.time.Duration): Settings =
-      copy(resendFirsUnconfirmedIdleTimeout = newResendFirsUnconfirmedIdleTimeout.asScala)
+    def withResendFirstUnconfirmedIdleTimeout(newResendFirstUnconfirmedIdleTimeout: java.time.Duration): Settings =
+      copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout.asScala)
+
+    @deprecated("use resendFirstUnconfirmedIdleTimeout", "2.6.19")
+    def withResendFirsUnconfirmedIdleTimeout(newResendFirstUnconfirmedIdleTimeout: FiniteDuration): Settings =
+      copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout)
+
+    @Deprecated
+    def withResendFirsUnconfirmedIdleTimeout(newResendFirstUnconfirmedIdleTimeout: java.time.Duration): Settings =
+      copy(resendFirstUnconfirmedIdleTimeout = newResendFirstUnconfirmedIdleTimeout.asScala)
 
     def withProducerControllerSettings(newProducerControllerSettings: ProducerController.Settings): Settings =
       copy(producerControllerSettings = newProducerControllerSettings)
@@ -237,17 +249,17 @@ object ShardingProducerController {
         bufferSize: Int = bufferSize,
         internalAskTimeout: FiniteDuration = internalAskTimeout,
         cleanupUnusedAfter: FiniteDuration = cleanupUnusedAfter,
-        resendFirsUnconfirmedIdleTimeout: FiniteDuration = resendFirsUnconfirmedIdleTimeout,
+        resendFirstUnconfirmedIdleTimeout: FiniteDuration = resendFirstUnconfirmedIdleTimeout,
         producerControllerSettings: ProducerController.Settings = producerControllerSettings) =
       new Settings(
         bufferSize,
         internalAskTimeout,
         cleanupUnusedAfter,
-        resendFirsUnconfirmedIdleTimeout,
+        resendFirstUnconfirmedIdleTimeout,
         producerControllerSettings)
 
     override def toString: String =
-      s"Settings($bufferSize,$internalAskTimeout,$resendFirsUnconfirmedIdleTimeout,$producerControllerSettings)"
+      s"Settings($bufferSize,$internalAskTimeout,$resendFirstUnconfirmedIdleTimeout,$producerControllerSettings)"
   }
 
   def apply[A: ClassTag](

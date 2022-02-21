@@ -1,12 +1,8 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.state.scaladsl
-
-/*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
- */
 
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -84,9 +84,22 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           strategy = default-strategy
         }
         #passivation-new-default-strategy
-      """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
         limit = 100000,
-        segmented = List(0.2, 0.8),
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 4, resetMultiplier = 10.0, depth = 4, counterBits = 4),
         idle = None)
     }
 
@@ -100,9 +113,22 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           }
         }
         #passivation-new-default-strategy-configured
-      """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
         limit = 1000000,
-        segmented = List(0.2, 0.8),
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 4, resetMultiplier = 10.0, depth = 4, counterBits = 4),
         idle = None)
     }
 
@@ -116,9 +142,22 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
           }
         }
         #passivation-new-default-strategy-with-idle
-      """).passivationStrategy shouldBe ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
         limit = 100000,
-        segmented = List(0.2, 0.8),
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 4, resetMultiplier = 10.0, depth = 4, counterBits = 4),
         idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 30.minutes, interval = 15.minutes)))
     }
 
@@ -387,6 +426,356 @@ class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
         limit = 42000,
         dynamicAging = true,
         idle = None)
+    }
+
+    "allow passivation strategy admission window policy to be configured (via config)" in {
+      settings("""
+        #admission-window-policy
+        akka.cluster.sharding.passivation {
+          strategy = custom-strategy-with-admission-window
+          custom-strategy-with-admission-window {
+            active-entity-limit = 1000000
+            admission.window.policy = least-recently-used
+            replacement.policy = least-frequently-used
+          }
+        }
+        #admission-window-policy
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 1000000,
+        mainStrategy =
+          ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(limit = 0, dynamicAging = false, idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.NoAdmissionOptimizer,
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy.AlwaysAdmissionFilter,
+        idle = None)
+    }
+
+    "allow passivation strategy admission window proportion to be configured (via config)" in {
+      settings("""
+        #admission-window-proportion
+        akka.cluster.sharding.passivation {
+          strategy = custom-strategy-with-admission-window
+          custom-strategy-with-admission-window {
+            active-entity-limit = 1000000
+            admission.window {
+              policy = least-recently-used
+              proportion = 0.1 # 10%
+            }
+            replacement.policy = least-frequently-used
+          }
+        }
+        #admission-window-proportion
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 1000000,
+        mainStrategy =
+          ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(limit = 0, dynamicAging = false, idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.1,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.NoAdmissionOptimizer,
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy.AlwaysAdmissionFilter,
+        idle = None)
+    }
+
+    "allow passivation strategy admission window optimizer to be configured (via config)" in {
+      settings("""
+        #admission-window-optimizer
+        akka.cluster.sharding.passivation {
+          strategy = custom-strategy-with-admission-window
+          custom-strategy-with-admission-window {
+            active-entity-limit = 1000000
+            admission.window {
+              policy = least-recently-used
+              optimizer = hill-climbing
+            }
+            replacement.policy = least-frequently-used
+          }
+        }
+        #admission-window-optimizer
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 1000000,
+        mainStrategy =
+          ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(limit = 0, dynamicAging = false, idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy.AlwaysAdmissionFilter,
+        idle = None)
+    }
+
+    "allow passivation strategy admission to be configured (via config)" in {
+      settings("""
+        #admission-policy
+        akka.cluster.sharding.passivation {
+          strategy = custom-strategy-with-admission
+          custom-strategy-with-admission {
+            active-entity-limit = 1000000
+            admission {
+              window {
+                policy = least-recently-used
+                optimizer = hill-climbing
+              }
+              filter = frequency-sketch
+            }
+            replacement {
+              policy = least-recently-used
+              least-recently-used {
+                segmented {
+                  levels = 2
+                  proportions = [0.2, 0.8]
+                }
+              }
+            }
+          }
+        }
+        #admission-policy
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 1000000,
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 4, resetMultiplier = 10.0, depth = 4, counterBits = 4),
+        idle = None)
+    }
+
+    "allow passivation strategy admission parameters to be tuned (via config)" in {
+      settings("""
+        akka.cluster.sharding.passivation {
+          strategy = custom-strategy-with-admission
+          custom-strategy-with-admission {
+            active-entity-limit = 1000000
+            admission {
+              window {
+                policy = least-recently-used
+                proportion = 0.1
+                minimum-proportion = 0.05
+                maximum-proportion = 0.50
+                optimizer = hill-climbing
+                hill-climbing {
+                  adjust-multiplier = 5
+                  initial-step = 0.05
+                  restart-threshold = 0.025
+                  step-decay = 0.95
+                }
+              }
+              filter = frequency-sketch
+              frequency-sketch {
+                depth = 3
+                counter-bits = 8
+                width-multiplier = 2
+                reset-multiplier = 50.0
+              }
+            }
+            replacement {
+              policy = least-recently-used
+              least-recently-used {
+                segmented {
+                  levels = 2
+                  proportions = [0.2, 0.8]
+                }
+              }
+            }
+          }
+        }
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 1000000,
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.1,
+        minimumWindowProportion = 0.05,
+        maximumWindowProportion = 0.5,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 5.0,
+          initialStep = 0.05,
+          restartThreshold = 0.025,
+          stepDecay = 0.95),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 2, resetMultiplier = 50.0, depth = 3, counterBits = 8),
+        idle = None)
+    }
+
+    "allow passivation strategy admission to be configured (via factory method)" in {
+      defaultSettings
+        .withPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.defaults
+            .withActiveEntityLimit(42000)
+            .withAdmission(ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.defaults
+              .withWindow(ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.WindowSettings.defaults
+                .withPolicy(ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults)
+                .withOptimizer(
+                  ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.HillClimbingSettings.defaults))
+              .withFilter(
+                ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.FrequencySketchSettings.defaults))
+            .withReplacementPolicy(
+              ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults
+                .withSegmented(proportions = List(0.2, 0.8))))
+        .passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 42000,
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 4, resetMultiplier = 10.0, depth = 4, counterBits = 4),
+        idle = None)
+    }
+
+    "allow passivation strategy admission settings to be tuned (via factory method)" in {
+      defaultSettings
+        .withPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.defaults
+            .withActiveEntityLimit(42000)
+            .withAdmission(ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.defaults
+              .withWindow(
+                ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.WindowSettings.defaults
+                  .withPolicy(ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults)
+                  .withInitialProportion(0.1)
+                  .withMinimumProportion(0.05)
+                  .withMaximumProportion(0.5)
+                  .withOptimizer(
+                    ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.HillClimbingSettings.defaults
+                      .withAdjustMultiplier(5)
+                      .withInitialStep(0.05)
+                      .withRestartThreshold(0.025)
+                      .withStepDecay(0.95)))
+              .withFilter(
+                ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.FrequencySketchSettings.defaults
+                  .withDepth(3)
+                  .withCounterBits(8)
+                  .withWidthMultiplier(2)
+                  .withResetMultiplier(50)))
+            .withReplacementPolicy(
+              ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults
+                .withSegmented(proportions = List(0.2, 0.8))))
+        .passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 42000,
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.1,
+        minimumWindowProportion = 0.05,
+        maximumWindowProportion = 0.5,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 5.0,
+          initialStep = 0.05,
+          restartThreshold = 0.025,
+          stepDecay = 0.95),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 2, resetMultiplier = 50.0, depth = 3, counterBits = 8),
+        idle = None)
+    }
+
+    "allow passivation strategy with admission and idle timeout to be configured (via config)" in {
+      settings("""
+        akka.cluster.sharding.passivation {
+          strategy = custom-strategy-with-admission
+          custom-strategy-with-admission {
+            active-entity-limit = 1000000
+            admission {
+              window {
+                policy = least-recently-used
+                optimizer = hill-climbing
+              }
+              filter = frequency-sketch
+            }
+            replacement {
+              policy = least-recently-used
+              least-recently-used {
+                segmented {
+                  levels = 2
+                  proportions = [0.2, 0.8]
+                }
+              }
+            }
+            idle-entity.timeout = 30.minutes
+          }
+        }
+      """).passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 1000000,
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 4, resetMultiplier = 10.0, depth = 4, counterBits = 4),
+        idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 30.minutes, interval = 15.minutes)))
+    }
+
+    "allow passivation strategy with admission and idle timeout to be configured (via factory method)" in {
+      defaultSettings
+        .withPassivationStrategy(
+          ClusterShardingSettings.PassivationStrategySettings.defaults
+            .withActiveEntityLimit(42000)
+            .withAdmission(ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.defaults
+              .withWindow(ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.WindowSettings.defaults
+                .withPolicy(ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults)
+                .withOptimizer(
+                  ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.HillClimbingSettings.defaults))
+              .withFilter(
+                ClusterShardingSettings.PassivationStrategySettings.AdmissionSettings.FrequencySketchSettings.defaults))
+            .withReplacementPolicy(
+              ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings.defaults.withSegmented(
+                proportions = List(0.2, 0.8)))
+            .withIdleEntityPassivation(timeout = 42.minutes))
+        .passivationStrategy shouldBe ClusterShardingSettings.CompositePassivationStrategy(
+        limit = 42000,
+        mainStrategy = ClusterShardingSettings
+          .LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = List(0.2, 0.8), idle = None),
+        windowStrategy =
+          ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit = 0, segmented = Nil, idle = None),
+        initialWindowProportion = 0.01,
+        minimumWindowProportion = 0.01,
+        maximumWindowProportion = 1.0,
+        windowOptimizer = ClusterShardingSettings.CompositePassivationStrategy.HillClimbingAdmissionOptimizer(
+          adjustMultiplier = 10.0,
+          initialStep = 0.0625,
+          restartThreshold = 0.05,
+          stepDecay = 0.98),
+        admissionFilter = ClusterShardingSettings.CompositePassivationStrategy
+          .FrequencySketchAdmissionFilter(widthMultiplier = 4, resetMultiplier = 10.0, depth = 4, counterBits = 4),
+        idle = Some(ClusterShardingSettings.IdlePassivationStrategy(timeout = 42.minutes, interval = 21.minutes)))
     }
 
     "disable automatic passivation if `remember-entities` is enabled (via config)" in {

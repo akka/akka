@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -28,7 +28,7 @@ object Dependencies {
   val jacksonVersion = "2.11.4"
 
   val scala212Version = "2.12.15"
-  val scala213Version = "2.13.7"
+  val scala213Version = "2.13.8"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
   val scala3Version = "3.1.1-RC2"
@@ -68,7 +68,7 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val config = "com.typesafe" % "config" % "1.4.0" // ApacheV2
+    val config = "com.typesafe" % "config" % "1.4.2" // ApacheV2
     val netty = "io.netty" % "netty" % nettyVersion // ApacheV2
 
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License

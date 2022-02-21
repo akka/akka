@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -546,6 +546,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     context.become(initialized)
   }
 
+  // Still supports classic remoting as well
+  @nowarn("msg=Classic remoting is deprecated, use Artery")
   def initialized: Actor.Receive =
     ({
       case msg: GossipEnvelope => receiveGossip(msg)

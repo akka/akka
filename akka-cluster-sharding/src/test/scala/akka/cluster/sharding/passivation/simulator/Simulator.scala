@@ -1,25 +1,41 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.passivation.simulator
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.cluster.sharding.internal.{
-  EntityPassivationStrategy,
-  LeastFrequentlyUsedEntityPassivationStrategy,
-  LeastRecentlyUsedEntityPassivationStrategy,
-  MostRecentlyUsedEntityPassivationStrategy,
-  SegmentedLeastRecentlyUsedEntityPassivationStrategy
-}
-import akka.stream.scaladsl.{ Flow, Source }
+import akka.cluster.sharding.internal.ActiveEntities
+import akka.cluster.sharding.internal.AdmissionFilter
+import akka.cluster.sharding.internal.AdmissionOptimizer
+import akka.cluster.sharding.internal.AlwaysAdmissionFilter
+import akka.cluster.sharding.internal.CompositeEntityPassivationStrategy
+import akka.cluster.sharding.internal.DisabledEntityPassivationStrategy
+import akka.cluster.sharding.internal.EntityPassivationStrategy
+import akka.cluster.sharding.internal.FrequencySketchAdmissionFilter
+import akka.cluster.sharding.internal.HillClimbingAdmissionOptimizer
+import akka.cluster.sharding.internal.LeastFrequentlyUsedEntityPassivationStrategy
+import akka.cluster.sharding.internal.LeastFrequentlyUsedReplacementPolicy
+import akka.cluster.sharding.internal.LeastRecentlyUsedEntityPassivationStrategy
+import akka.cluster.sharding.internal.LeastRecentlyUsedReplacementPolicy
+import akka.cluster.sharding.internal.MostRecentlyUsedEntityPassivationStrategy
+import akka.cluster.sharding.internal.MostRecentlyUsedReplacementPolicy
+import akka.cluster.sharding.internal.NoActiveEntities
+import akka.cluster.sharding.internal.NoAdmissionOptimizer
+import akka.cluster.sharding.internal.SegmentedLeastRecentlyUsedEntityPassivationStrategy
+import akka.cluster.sharding.internal.SegmentedLeastRecentlyUsedReplacementPolicy
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Source
 import akka.util.OptionVal
 import com.typesafe.config.ConfigFactory
 
-import scala.collection.{ immutable, mutable }
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.collection.immutable
+import scala.collection.mutable
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * Simulator for testing the efficiency of passivation strategies.
@@ -75,10 +91,10 @@ object Simulator {
         name = runSettings.name,
         numberOfShards = runSettings.shards,
         numberOfRegions = runSettings.regions,
-        accessPattern = accessPattern(runSettings),
+        accessPattern = accessPattern(runSettings.pattern),
         strategyCreator = strategyCreator(runSettings))
 
-    def accessPattern(runSettings: SimulatorSettings.RunSettings): AccessPattern = runSettings.pattern match {
+    def accessPattern(patternSettings: SimulatorSettings.PatternSettings): AccessPattern = patternSettings match {
       case SimulatorSettings.PatternSettings.Synthetic(generator, events) =>
         generator match {
           case SimulatorSettings.PatternSettings.Synthetic.Sequence(start) =>
@@ -99,6 +115,7 @@ object Simulator {
       case SimulatorSettings.PatternSettings.Trace(path, format) =>
         format match {
           case "arc"       => new TraceFileReader.Arc(path)
+          case "corda"     => new TraceFileReader.Corda(path)
           case "lirs"      => new TraceFileReader.Lirs(path)
           case "lirs2"     => new TraceFileReader.Lirs2(path)
           case "simple"    => new TraceFileReader.Simple(path)
@@ -106,6 +123,8 @@ object Simulator {
           case "wikipedia" => new TraceFileReader.Wikipedia(path)
           case _           => sys.error(s"Unknown trace file format [$format]")
         }
+      case SimulatorSettings.PatternSettings.Joined(patterns) =>
+        new JoinedAccessPatterns(patterns.map(accessPattern))
     }
 
     def strategyCreator(runSettings: SimulatorSettings.RunSettings): StrategyCreator =
@@ -118,6 +137,10 @@ object Simulator {
           new MostRecentlyUsedStrategyCreator(perRegionLimit)
         case SimulatorSettings.StrategySettings.LeastFrequentlyUsed(perRegionLimit, dynamicAging) =>
           new LeastFrequentlyUsedStrategyCreator(perRegionLimit, dynamicAging)
+        case settings: SimulatorSettings.StrategySettings.Composite =>
+          new CompositeStrategyCreator(settings)
+        case SimulatorSettings.StrategySettings.NoStrategy =>
+          DisabledStrategyCreator
       }
   }
 
@@ -294,6 +317,70 @@ object Simulator {
     override def create(shardId: ShardId): SimulatedStrategy =
       new PassivationStrategy(
         new LeastFrequentlyUsedEntityPassivationStrategy(perRegionLimit, dynamicAging, idleCheck = None))
+  }
+
+  final class CompositeStrategyCreator(settings: SimulatorSettings.StrategySettings.Composite)
+      extends PassivationStrategyCreator {
+    override def create(shardId: ShardId): SimulatedStrategy = {
+      val main = activeEntities(settings.main)
+      val window = activeEntities(settings.window)
+      val initialWindowProportion = if (window eq NoActiveEntities) 0.0 else settings.initialWindowProportion
+      val minimumWindowProportion = if (window eq NoActiveEntities) 0.0 else settings.minimumWindowProportion
+      val maximumWindowProportion = if (window eq NoActiveEntities) 0.0 else settings.maximumWindowProportion
+      val windowOptimizer =
+        if (window eq NoActiveEntities) NoAdmissionOptimizer
+        else admissionOptimizer(settings.perRegionLimit, settings.optimizer)
+      val admission = admissionFilter(settings.perRegionLimit, settings.filter)
+      new PassivationStrategy(
+        new CompositeEntityPassivationStrategy(
+          settings.perRegionLimit,
+          window,
+          initialWindowProportion,
+          minimumWindowProportion,
+          maximumWindowProportion,
+          windowOptimizer,
+          admission,
+          main,
+          idleCheck = None))
+    }
+
+    private def activeEntities(strategySettings: SimulatorSettings.StrategySettings): ActiveEntities =
+      strategySettings match {
+        case SimulatorSettings.StrategySettings.LeastRecentlyUsed(perRegionLimit, segmented) if segmented.isEmpty =>
+          new LeastRecentlyUsedReplacementPolicy(perRegionLimit)
+        case SimulatorSettings.StrategySettings.LeastRecentlyUsed(perRegionLimit, segmented) =>
+          new SegmentedLeastRecentlyUsedReplacementPolicy(perRegionLimit, segmented, idleEnabled = false)
+        case SimulatorSettings.StrategySettings.MostRecentlyUsed(perRegionLimit) =>
+          new MostRecentlyUsedReplacementPolicy(perRegionLimit)
+        case SimulatorSettings.StrategySettings.LeastFrequentlyUsed(perRegionLimit, dynamicAging) =>
+          new LeastFrequentlyUsedReplacementPolicy(perRegionLimit, dynamicAging, idleEnabled = false)
+        case _ => NoActiveEntities
+      }
+
+    private def admissionOptimizer(
+        capacity: Int,
+        optimizerSettings: SimulatorSettings.StrategySettings.AdmissionOptimizerSettings): AdmissionOptimizer =
+      optimizerSettings match {
+        case SimulatorSettings.StrategySettings.AdmissionOptimizerSettings.NoOptimizer => NoAdmissionOptimizer
+        case SimulatorSettings.StrategySettings.AdmissionOptimizerSettings
+              .HillClimbingOptimizer(adjustMultiplier, initialStep, restartThreshold, stepDecay) =>
+          new HillClimbingAdmissionOptimizer(capacity, adjustMultiplier, initialStep, restartThreshold, stepDecay)
+      }
+
+    private def admissionFilter(
+        capacity: Int,
+        filterSettings: SimulatorSettings.StrategySettings.AdmissionFilterSettings): AdmissionFilter =
+      filterSettings match {
+        case SimulatorSettings.StrategySettings.AdmissionFilterSettings.NoFilter => AlwaysAdmissionFilter
+        case SimulatorSettings.StrategySettings.AdmissionFilterSettings
+              .FrequencySketchFilter(widthMultiplier, resetMultiplier, depth, counterBits) =>
+          FrequencySketchAdmissionFilter(capacity, widthMultiplier, resetMultiplier, depth, counterBits)
+      }
+  }
+
+  object DisabledStrategyCreator extends PassivationStrategyCreator {
+    override def create(shardId: ShardId): SimulatedStrategy =
+      new PassivationStrategy(DisabledEntityPassivationStrategy)
   }
 
   // Clairvoyant passivation strategy using Bélády's algorithm.

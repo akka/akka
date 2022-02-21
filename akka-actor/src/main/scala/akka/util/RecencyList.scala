@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -75,6 +75,16 @@ private[akka] final class RecencyList[A](clock: RecencyList.Clock) {
   }
 
   def contains(value: A): Boolean = lookupNode.contains(value)
+
+  def leastRecent: OptionVal[A] = recency.getFirst match {
+    case OptionVal.Some(first) => OptionVal.Some(first.value)
+    case _                     => OptionVal.none
+  }
+
+  def mostRecent: OptionVal[A] = recency.getLast match {
+    case OptionVal.Some(last) => OptionVal.Some(last.value)
+    case _                    => OptionVal.none
+  }
 
   def leastToMostRecent: Iterator[A] = recency.forwardIterator.map(_.value)
 

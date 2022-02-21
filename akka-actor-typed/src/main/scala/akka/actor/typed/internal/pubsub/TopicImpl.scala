@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal.pubsub
@@ -33,7 +33,7 @@ private[akka] object TopicImpl {
 
   // internal messages, note that the protobuf serializer for those sent remotely is defined in akka-cluster-typed
   final case class GetTopicStats[T](replyTo: ActorRef[TopicStats]) extends Topic.Command[T]
-  final case class TopicStats(localSubscriberCount: Int, topicInstanceCount: Int)
+  final case class TopicStats(localSubscriberCount: Int, topicInstanceCount: Int) extends Topic.TopicStats
   final case class TopicInstancesUpdated[T](topics: Set[ActorRef[TopicImpl.Command[T]]]) extends Command[T]
   final case class MessagePublished[T](message: T) extends Command[T]
   final case class SubscriberTerminated[T](subscriber: ActorRef[T]) extends Command[T]
@@ -77,8 +77,15 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
 
     case Publish(message) =>
       if (topicInstances.isEmpty) {
-        context.log.trace("Publishing message of type [{}] but no subscribers, dropping", msg.getClass)
-        context.system.deadLetters ! Dropped(message, "No topic subscribers known", context.self.toClassic)
+        if (localSubscribers.isEmpty) {
+          context.log.trace("Publishing message of type [{}] but no subscribers, dropping", msg.getClass)
+          context.system.deadLetters ! Dropped(message, "No topic subscribers known", context.self.toClassic)
+        } else {
+          context.log.trace(
+            "Publishing message of type [{}] to local subscribers only (topic listing not seen yet)",
+            msg.getClass)
+          localSubscribers.foreach(_ ! message)
+        }
       } else {
         context.log.trace("Publishing message of type [{}]", msg.getClass)
         val pub = MessagePublished(message)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -143,7 +143,8 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       val (source, res) = Source.maybe[Int].toMat(sumStage(testActor))(Keep.both).run()
 
       val stageRef = expectMsgType[ActorRef]
-      stageRef ! Add(40)
+      stageRef ! AddAndTell(40)
+      expectMsg(40)
 
       val filter = EventFilter.custom {
         case _: Logging.Warning => true

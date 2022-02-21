@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.delivery
@@ -352,7 +352,7 @@ class ReliableDeliveryShardingSpec
         }))
 
       val shardingProducerSettings =
-        ShardingProducerController.Settings(system).withResendFirsUnconfirmedIdleTimeout(1500.millis)
+        ShardingProducerController.Settings(system).withResendFirstUnconfirmedIdleTimeout(1500.millis)
       val shardingProducerController =
         spawn(
           ShardingProducerController[TestConsumer.Job](producerId, region, None, shardingProducerSettings),
