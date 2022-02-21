@@ -352,7 +352,7 @@ class ReliableDeliveryShardingSpec
         }))
 
       val shardingProducerSettings =
-        ShardingProducerController.Settings(system).withResendFirsUnconfirmedIdleTimeout(1500.millis)
+        ShardingProducerController.Settings(system).withResendFirstUnconfirmedIdleTimeout(1500.millis)
       val shardingProducerController =
         spawn(
           ShardingProducerController[TestConsumer.Job](producerId, region, None, shardingProducerSettings),
