@@ -3,6 +3,7 @@ name: Multi node test
 on:
   schedule:
     - cron: '0 2 * * 1,3,5'
+  workflow_dispatch:
 
 concurrency:
   # Only run once for latest commit per ref and cancel other (previous) runs.
