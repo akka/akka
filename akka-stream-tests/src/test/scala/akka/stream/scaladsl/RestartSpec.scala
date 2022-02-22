@@ -34,6 +34,7 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.DefaultTimeout
 import akka.testkit.EventFilter
 import akka.testkit.TestDuration
+import akka.testkit.TimingTest
 
 class RestartSpec
     extends StreamSpec(Map("akka.test.single-expect-default" -> "10s", "akka.loglevel" -> "INFO"))
@@ -53,7 +54,7 @@ class RestartSpec
     RestartSettings(minBackoff, maxBackoff, 0).withLogSettings(logSettings)
 
   "A restart with backoff source" should {
-    "run normally" in assertAllStagesStopped {
+    "run normally" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(shortRestartSettings) { () =>
@@ -73,7 +74,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "restart on completion" in assertAllStagesStopped {
+    "restart on completion" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(shortRestartSettings) { () =>
@@ -95,7 +96,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "restart on failure" in assertAllStagesStopped {
+    "restart on failure" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(shortRestartSettings) { () =>
@@ -126,7 +127,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "backoff before restart" in assertAllStagesStopped {
+    "backoff before restart" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(restartSettings) { () =>
@@ -150,7 +151,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "reset exponential backoff back to minimum when source runs for at least minimum backoff without completing" in assertAllStagesStopped {
+    "reset exponential backoff back to minimum when source runs for at least minimum backoff without completing" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(restartSettings) { () =>
@@ -183,7 +184,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "cancel the currently running source when cancelled" in assertAllStagesStopped {
+    "cancel the currently running source when cancelled" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val promise = Promise[Done]()
       val probe = RestartSource
@@ -205,7 +206,7 @@ class RestartSpec
       created.get() should ===(1)
     }
 
-    "not restart the source when cancelled while backing off" in assertAllStagesStopped {
+    "not restart the source when cancelled while backing off" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(restartSettings) { () =>
@@ -224,7 +225,7 @@ class RestartSpec
       created.get() should ===(1)
     }
 
-    "stop on completion if it should only be restarted in failures" in assertAllStagesStopped {
+    "stop on completion if it should only be restarted in failures" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .onFailuresWithBackoff(shortRestartSettings) { () =>
@@ -249,7 +250,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "restart on failure when only due to failures should be restarted" in assertAllStagesStopped {
+    "restart on failure when only due to failures should be restarted" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .onFailuresWithBackoff(shortRestartSettings) { () =>
@@ -273,7 +274,7 @@ class RestartSpec
 
     }
 
-    "not restart the source when maxRestarts is reached" in assertAllStagesStopped {
+    "not restart the source when maxRestarts is reached" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(shortRestartSettings.withMaxRestarts(1, shortMinBackoff)) { () =>
@@ -291,7 +292,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "reset maxRestarts when source runs for at least minimum backoff without completing" in assertAllStagesStopped {
+    "reset maxRestarts when source runs for at least minimum backoff without completing" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(restartSettings.withMaxRestarts(2, minBackoff)) { () =>
@@ -318,7 +319,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" in assertAllStagesStopped {
+    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
         .withBackoff(shortRestartSettings.withMaxRestarts(2, 1.second)) { () =>
@@ -342,7 +343,7 @@ class RestartSpec
       probe.cancel()
     }
 
-    "provide attributes to inner source" in assertAllStagesStopped {
+    "provide attributes to inner source" taggedAs TimingTest in assertAllStagesStopped {
       val promisedAttributes = Promise[Attributes]()
       RestartSource
         .withBackoff(restartSettings) { () =>
@@ -361,7 +362,7 @@ class RestartSpec
   }
 
   "A restart with backoff sink" should {
-    "run normally" in assertAllStagesStopped {
+    "run normally" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val result = Promise[Seq[String]]()
       val probe = TestSource
@@ -381,7 +382,7 @@ class RestartSpec
       created.get() should ===(1)
     }
 
-    "restart on cancellation" in assertAllStagesStopped {
+    "restart on cancellation" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
@@ -407,7 +408,7 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "backoff before restart" in assertAllStagesStopped {
+    "backoff before restart" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
@@ -434,7 +435,7 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "reset exponential backoff back to minimum when sink runs for at least minimum backoff without completing" in assertAllStagesStopped {
+    "reset exponential backoff back to minimum when sink runs for at least minimum backoff without completing" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
@@ -476,7 +477,7 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "not restart the sink when completed while backing off" in assertAllStagesStopped {
+    "not restart the sink when completed while backing off" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
@@ -501,7 +502,7 @@ class RestartSpec
       sinkProbe.cancel()
     }
 
-    "not restart the sink when maxRestarts is reached" in assertAllStagesStopped {
+    "not restart the sink when maxRestarts is reached" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
@@ -525,7 +526,7 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "reset maxRestarts when sink runs for at least minimum backoff without completing" in assertAllStagesStopped {
+    "reset maxRestarts when sink runs for at least minimum backoff without completing" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
@@ -560,7 +561,7 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" in assertAllStagesStopped {
+    "allow using withMaxRestarts instead of minBackoff to determine the maxRestarts reset time" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
@@ -594,7 +595,7 @@ class RestartSpec
       probe.sendComplete()
     }
 
-    "provide attributes to inner sink" in assertAllStagesStopped {
+    "provide attributes to inner sink" taggedAs TimingTest in assertAllStagesStopped {
       val promisedAttributes = Promise[Attributes]()
       RestartSink
         .withBackoff(restartSettings) { () =>
@@ -675,7 +676,7 @@ class RestartSpec
       (created, source, flowInProbe, flowOutProbe, sink)
     }
 
-    "run normally" in assertAllStagesStopped {
+    "run normally" taggedAs TimingTest in assertAllStagesStopped {
       val created = new AtomicInteger()
       val (source, sink) = TestSource
         .probe[String]
@@ -696,7 +697,7 @@ class RestartSpec
       source.sendComplete()
     }
 
-    "restart on cancellation" in {
+    "restart on cancellation" taggedAs TimingTest in {
       val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
 
       source.sendNext("a")
@@ -718,7 +719,7 @@ class RestartSpec
       created.get() should ===(2)
     }
 
-    "restart on completion" in {
+    "restart on completion" taggedAs TimingTest in {
       val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
 
       source.sendNext("a")
@@ -744,7 +745,7 @@ class RestartSpec
       created.get() should ===(2)
     }
 
-    "restart on failure" in {
+    "restart on failure" taggedAs TimingTest in {
       val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
 
       source.sendNext("a")
@@ -769,7 +770,7 @@ class RestartSpec
       created.get() should ===(2)
     }
 
-    "backoff before restart" in {
+    "backoff before restart" taggedAs TimingTest in {
       val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(minBackoff, maxBackoff)
 
       source.sendNext("a")
@@ -795,7 +796,7 @@ class RestartSpec
       created.get() should ===(2)
     }
 
-    "continue running flow out port after in has been sent completion" in {
+    "continue running flow out port after in has been sent completion" taggedAs TimingTest in {
       val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, maxBackoff)
 
       source.sendNext("a")
@@ -819,7 +820,7 @@ class RestartSpec
       created.get() should ===(1)
     }
 
-    "continue running flow in port after out has been cancelled" in {
+    "continue running flow in port after out has been cancelled" taggedAs TimingTest in {
       val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, maxBackoff)
 
       source.sendNext("a")
@@ -842,7 +843,7 @@ class RestartSpec
       created.get() should ===(1)
     }
 
-    "not restart on completion when maxRestarts is reached" in {
+    "not restart on completion when maxRestarts is reached" taggedAs TimingTest in {
       val (created, _, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff, maxRestarts = 1)
 
       sink.request(1)
@@ -874,7 +875,7 @@ class RestartSpec
     }
 
     // onlyOnFailures -->
-    "stop on cancellation when using onlyOnFailuresWithBackoff" in {
+    "stop on cancellation when using onlyOnFailuresWithBackoff" taggedAs TimingTest in {
       val onlyOnFailures = true
       val (created, source, flowInProbe, flowOutProbe, sink) =
         setupFlow(shortMinBackoff, shortMaxBackoff, -1, onlyOnFailures)
@@ -894,7 +895,7 @@ class RestartSpec
       created.get() should ===(1)
     }
 
-    "stop on completion when using onlyOnFailuresWithBackoff" in {
+    "stop on completion when using onlyOnFailuresWithBackoff" taggedAs TimingTest in {
       val onlyOnFailures = true
       val (created, source, flowInProbe, flowOutProbe, sink) =
         setupFlow(shortMinBackoff, shortMaxBackoff, -1, onlyOnFailures)
@@ -911,7 +912,7 @@ class RestartSpec
       created.get() should ===(1)
     }
 
-    "restart on failure when using onlyOnFailuresWithBackoff" in {
+    "restart on failure when using onlyOnFailuresWithBackoff" taggedAs TimingTest in {
       val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff, -1, true)
 
       source.sendNext("a")
@@ -934,7 +935,7 @@ class RestartSpec
       created.get() should ===(2)
     }
 
-    "onFailuresWithBackoff, wrapped flow exception should restart configured times" in {
+    "onFailuresWithBackoff, wrapped flow exception should restart configured times" taggedAs TimingTest in {
       val flowCreations = new AtomicInteger(0)
       val failsSomeTimes = Flow[Int].map { i =>
         if (i % 3 == 0) throw TE("fail") else i
@@ -954,7 +955,7 @@ class RestartSpec
       flowCreations.get() shouldEqual 3
     }
 
-    "provide attributes to inner flow" in assertAllStagesStopped {
+    "provide attributes to inner flow" taggedAs TimingTest in assertAllStagesStopped {
       val promisedAttributes = Promise[Attributes]()
       RestartFlow
         .withBackoff(restartSettings) { () =>
