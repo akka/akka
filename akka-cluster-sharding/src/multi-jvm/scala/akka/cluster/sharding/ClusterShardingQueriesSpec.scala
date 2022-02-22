@@ -10,7 +10,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 import akka.actor.Props
 import akka.testkit.TestProbe
-import org.scalatest.concurrent.Eventually.eventually
 
 object ClusterShardingQueriesSpec {
   import MultiNodeClusterShardingSpec.PingPongActor
