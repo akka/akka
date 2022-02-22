@@ -32,7 +32,7 @@ spec:
         resources:
           requests:
             memory: "3Gi"
-            cpu: "1400m"
+            cpu: "2800m"
           limits:
             memory: "3Gi"
         lifecycle:
