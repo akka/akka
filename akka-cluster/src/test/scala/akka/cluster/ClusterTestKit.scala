@@ -99,7 +99,7 @@ trait ClusterTestKit extends TestKitBase {
       actorSystems.contains(actorSystem)
 
     /** Shuts down all registered [[ActorSystem]]s */
-    def shutdownAll(): Unit = actorSystems.foreach(sys => shutdown(sys))
+    def shutdownAll(): Unit = actorSystems.foreach(sys => shutdown(sys, 10.seconds, verifySystemShutdown = true))
 
     /**
      * Force the passed [[ActorSystem]] to quit the cluster and shutdown.
@@ -130,7 +130,7 @@ trait ClusterTestKit extends TestKitBase {
         }
       }
 
-      shutdown(actorSystem)
+      shutdown(actorSystem, 10.seconds, verifySystemShutdown = true)
 
       // remove from internal list
       actorSystems = actorSystems.filterNot(_ == actorSystem)
