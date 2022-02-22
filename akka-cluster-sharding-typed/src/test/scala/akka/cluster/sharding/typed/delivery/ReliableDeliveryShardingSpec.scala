@@ -29,10 +29,11 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import akka.testkit.GHExcludeTest
 
 object ReliableDeliveryShardingSpec {
   val config = ConfigFactory.parseString("""
+    // temporary on debug to diagnose https://github.com/akka/akka/issues/30664
+    akka.loglevel = debug
     akka.actor.provider = cluster
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -336,8 +337,10 @@ class ReliableDeliveryShardingSpec
       testKit.stop(shardingProducerController)
     }
 
-    // FIXME issue https://github.com/akka/akka/issues/30567
-    "deliver unconfirmed if ShardingConsumerController is terminated" taggedAs GHExcludeTest in {
+    // This test sometimes files on GitHub Actions (https://github.com/akka/akka/issues/30664),
+    // which might be a real issue.
+    // It seems msg-3, which is 'correctly' redelivered once, is sometimes redelivered twice.
+    "deliver unconfirmed if ShardingConsumerController is terminated" in {
       // for example if ShardingConsumerController is rebalanced, but no more messages are sent to the entity
       nextId()
 
