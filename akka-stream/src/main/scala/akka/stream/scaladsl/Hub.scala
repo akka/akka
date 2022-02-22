@@ -23,7 +23,7 @@ import akka.stream._
 import akka.stream.Attributes.LogLevels
 import akka.stream.stage._
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration._
 
 /**
  * A MergeHub is a special streaming hub that is able to collect streamed elements from a dynamic set of
@@ -1106,7 +1106,10 @@ object PartitionHub {
   // queue in Artery
   def createQueue(): PartitionQueue = new PartitionQueueImpl
 
-  private class PartitionSinkLogic(_shape: Shape) extends GraphStageLogic(_shape) with InHandler {
+  private class PartitionSinkLogic(_shape: Shape) extends TimerGraphStageLogic(_shape) with InHandler {
+
+    private case object DemandTimeout
+    private val demandTimeoutInterval = 100.millis
 
     // Half of buffer size, rounded up
     private val DemandThreshold = (bufferSize / 2) + (bufferSize % 2)
@@ -1148,8 +1151,10 @@ object PartitionHub {
     override def preStart(): Unit = {
       setKeepGoing(true)
       callbackPromise.success(getAsyncCallback[HubEvent](onEvent))
-      if (startAfterNrOfConsumers == 0)
+      if (startAfterNrOfConsumers == 0) {
         pull(in)
+        scheduleAtFixedRate(DemandTimeout, demandTimeoutInterval, demandTimeoutInterval)
+      }
     }
 
     override def onPush(): Unit = {
@@ -1201,6 +1206,20 @@ object PartitionHub {
         pull(in)
     }
 
+    override protected def onTimer(timerKey: Any): Unit = timerKey match {
+      case DemandTimeout =>
+        // this handles a corner case where buffer was full with element for other partitions
+        // when demand from one partition arrived, and other partitions has since consumed
+        // a subset of the elements in the buffer without requesting more - the demand from the
+        // first partition was dropped due to buffer full so nothing triggers a pull more elements
+        // in this scenario even though the buffer is no longer full - we know because the
+        // original consumer is in needWakeup
+        if (needWakeup.nonEmpty) tryPull()
+
+      case unknown =>
+        throw new IllegalArgumentException(s"Unknown timer event [$unknown]")
+    }
+
     private def onEvent(ev: HubEvent): Unit = {
       callbackCount += 1
       ev match {
@@ -1221,8 +1240,9 @@ object PartitionHub {
             val newConsumers = (consumerInfo.consumers :+ consumer).sortBy(_.id)
             consumerInfo = new ConsumerInfoImpl(newConsumers)
             queue.init(consumer.id)
-            if (newConsumers.size >= startAfterNrOfConsumers) {
+            if (newConsumers.size >= startAfterNrOfConsumers && !initialized) {
               initialized = true
+              scheduleAtFixedRate(DemandTimeout, demandTimeoutInterval, demandTimeoutInterval)
             }
 
             consumer.callback.invoke(Initialize)
@@ -1295,8 +1315,6 @@ object PartitionHub {
       inheritedAttributes: Attributes): (GraphStageLogic, Source[T, NotUsed]) = {
     val idCounter = new AtomicLong
 
-    case object WaitingForWakeup
-
     val logic = new PartitionSinkLogic(shape)
 
     val source = new GraphStage[SourceShape[T]] {
@@ -1304,7 +1322,7 @@ object PartitionHub {
       override val shape: SourceShape[T] = SourceShape(out)
 
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-        new TimerGraphStageLogic(shape) with OutHandler {
+        new GraphStageLogic(shape) with OutHandler {
           private val id = idCounter.getAndIncrement()
           private var hubCallback: AsyncCallback[HubEvent] = _
           private val callback = getAsyncCallback(onCommand)
@@ -1345,26 +1363,12 @@ object PartitionHub {
               elem match {
                 case null =>
                   hubCallback.invoke(NeedWakeup(consumer))
-                  scheduleOnce(WaitingForWakeup, 100.millis)
                 case Completed =>
                   completeStage()
                 case _ =>
                   push(out, elem.asInstanceOf[T])
               }
             }
-          }
-
-
-          override protected def onTimer(timerKey: Any): Unit = timerKey match {
-            case WaitingForWakeup =>
-              // We asked for a wakeup, but "never" got one, this could be because
-              // our demand filled the buffer with elements for another partition,
-              // but that consumer only wanted a few of them, so never triggers any new
-              // pull/demand #31028
-              // FIXME this is obviously not what we want to pay for a sneaky corner case
-              hubCallback.invoke(NeedWakeup(consumer))
-            case _ =>
-              throw new IllegalArgumentException(s"Unexpected timer $timerKey")
           }
 
           override def postStop(): Unit = {
@@ -1378,7 +1382,6 @@ object PartitionHub {
               case HubCompleted(Some(ex)) => failStage(ex)
               case HubCompleted(None)     => completeStage()
               case Wakeup =>
-                cancelTimer(WaitingForWakeup)
                 if (isAvailable(out)) onPull()
               case Initialize =>
                 if (isAvailable(out) && (hubCallback ne null)) onPull()

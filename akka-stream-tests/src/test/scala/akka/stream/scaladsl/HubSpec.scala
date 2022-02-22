@@ -679,37 +679,38 @@ class HubSpec extends StreamSpec {
     }
 
     (0 to 500).foreach { i =>
-    s"properly signal error to consumers ($i)" in assertAllStagesStopped {
-      val upstream = TestPublisher.probe[Int]()
-      val source = Source
-        .fromPublisher(upstream)
-        .runWith(PartitionHub.sink((size, elem) => elem % size, startAfterNrOfConsumers = 2, bufferSize = 8))
+      s"properly signal error to consumers ($i)" in assertAllStagesStopped {
+        val upstream = TestPublisher.probe[Int]()
+        val source = Source
+          .fromPublisher(upstream)
+          .runWith(PartitionHub.sink((size, elem) => elem % size, startAfterNrOfConsumers = 2, bufferSize = 8))
 
-      val downstream1 = TestSubscriber.probe[Int]()
-      source.runWith(Sink.fromSubscriber(downstream1))
-      val downstream2 = TestSubscriber.probe[Int]()
-      source.runWith(Sink.fromSubscriber(downstream2))
+        val downstream1 = TestSubscriber.probe[Int]()
+        source.runWith(Sink.fromSubscriber(downstream1))
+        val downstream2 = TestSubscriber.probe[Int]()
+        source.runWith(Sink.fromSubscriber(downstream2))
 
-      downstream1.request(4)
-      downstream2.request(8)
+        downstream1.request(4)
+        downstream2.request(8)
 
-      // to make sure downstream subscriptions are done before
-      // starting to send elements
-      Thread.sleep(100)
+        // to make sure downstream subscriptions are done before
+        // starting to send elements
+        Thread.sleep(100)
 
-      (0 until 16).foreach(upstream.sendNext(_))
+        (0 until 16).foreach(upstream.sendNext(_))
 
-      downstream1.expectNext(0, 2, 4, 6) // 8, 10, 12, 14 stays in buffer bc no demand
-      downstream2.expectNext(1, 3, 5, 7, 9, 11, 13, 15)
+        downstream1.expectNext(0, 2, 4, 6) // 8, 10, 12, 14 stays in buffer bc no demand
+        downstream2.expectNext(1, 3, 5, 7, 9, 11, 13, 15)
 
-      downstream1.expectNoMessage(100.millis)
-      downstream2.expectNoMessage(100.millis)
+        downstream1.expectNoMessage(100.millis)
+        downstream2.expectNoMessage(100.millis)
 
-      upstream.sendError(TE("Failed"))
+        upstream.sendError(TE("Failed"))
 
-      downstream1.expectError(TE("Failed"))
-      downstream2.expectError(TE("Failed"))
-    }}
+        downstream1.expectError(TE("Failed"))
+        downstream2.expectError(TE("Failed"))
+      }
+    }
 
     "properly signal completion to consumers arriving after producer finished" in assertAllStagesStopped {
       val source =
