@@ -629,7 +629,7 @@ class RestartSpec
         onlyOnFailures: Boolean = false) = {
       val created = new AtomicInteger()
 
-      val probe = TestProbe("in-probe")
+      val flowInProbe = TestProbe("in-probe")
 
       val (flowOutProbe: TestPublisher.Probe[String], flowOutSource: Source[String, NotUsed]) =
         TestSource.probe[String].toMat(BroadcastHub.sink)(Keep.both).run()
@@ -654,11 +654,11 @@ class RestartSpec
                 }
                 .to(Sink
                   .foreach[String] { msg =>
-                    probe.ref ! msg
+                    flowInProbe.ref ! msg
                   }
                   .mapMaterializedValue(_.onComplete {
-                    case Success(_) => probe.ref ! "in complete"
-                    case Failure(_) => probe.ref ! "in error"
+                    case Success(_) => flowInProbe.ref ! "in complete"
+                    case Failure(_) => flowInProbe.ref ! "in error"
                   })),
               flowOutSource
                 .takeWhile(_ != "complete")
@@ -668,13 +668,13 @@ class RestartSpec
                 }
                 .watchTermination()((_, term) =>
                   term.foreach(_ => {
-                    probe.ref ! "out complete"
+                    flowInProbe.ref ! "out complete"
                   })))
           })(Keep.left)
         .toMat(TestSink.probe[String])(Keep.both)
         .run()
 
-      (created, source, probe, flowOutProbe, sink)
+      (created, source, flowInProbe, flowOutProbe, sink)
     }
 
     "run normally" taggedAs TimingTest in assertAllStagesStopped {
@@ -699,19 +699,19 @@ class RestartSpec
     }
 
     "restart on cancellation" taggedAs TimingTest in {
-      val (created, source, inProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
+      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
 
       source.sendNext("a")
-      inProbe.expectMsg("a")
+      flowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
       source.sendNext("cancel")
-      inProbe.expectMsgAllOf("in complete", "out complete")
+      flowInProbe.expectMsgAllOf("in complete", "out complete")
 
       // and it should restart
       source.sendNext("c")
-      inProbe.expectMsg("c")
+      flowInProbe.expectMsg("c")
       flowOutProbe.sendNext("d")
       sink.requestNext("d")
 
@@ -719,10 +719,10 @@ class RestartSpec
     }
 
     "restart on completion" taggedAs TimingTest in {
-      val (created, source, inProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
+      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
 
       source.sendNext("a")
-      inProbe.expectMsg("a")
+      flowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
@@ -730,12 +730,12 @@ class RestartSpec
         sink.request(1)
         flowOutProbe.sendNext("complete")
 
-        inProbe.expectMsgAllOf("in complete", "out complete")
+        flowInProbe.expectMsgAllOf("in complete", "out complete")
       }
 
       // and it should restart
       source.sendNext("c")
-      inProbe.expectMsg("c")
+      flowInProbe.expectMsg("c")
       flowOutProbe.sendNext("d")
       sink.requestNext("d")
 
@@ -743,10 +743,10 @@ class RestartSpec
     }
 
     "restart on failure" taggedAs TimingTest in {
-      val (created, source, inProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
+      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff)
 
       source.sendNext("a")
-      inProbe.expectMsg("a")
+      flowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
@@ -755,12 +755,12 @@ class RestartSpec
         flowOutProbe.sendNext("error")
 
         // This should complete the in probe
-        inProbe.expectMsg("in complete")
+        flowInProbe.expectMsg("in complete")
       }
 
       // and it should restart
       source.sendNext("c")
-      inProbe.expectMsg("c")
+      flowInProbe.expectMsg("c")
       flowOutProbe.sendNext("d")
       sink.requestNext("d")
 
@@ -768,10 +768,10 @@ class RestartSpec
     }
 
     "backoff before restart" taggedAs TimingTest in {
-      val (created, source, inProbe, flowOutProbe, sink) = setupFlow(minBackoff, maxBackoff)
+      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(minBackoff, maxBackoff)
 
       source.sendNext("a")
-      inProbe.expectMsg("a")
+      flowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
@@ -781,25 +781,25 @@ class RestartSpec
       val deadline = minBackoff.fromNow
 
       source.sendNext("cancel")
-      inProbe.expectMsgAllOf("in complete", "out complete")
+      flowInProbe.expectMsgAllOf("in complete", "out complete")
 
       source.sendNext("c")
-      inProbe.expectMsg("c")
+      flowInProbe.expectMsg("c")
       deadline.isOverdue() should be(true)
 
       created.get() should ===(2)
     }
 
     "continue running flow out port after in has been sent completion" taggedAs TimingTest in {
-      val (created, source, inProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, maxBackoff)
+      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, maxBackoff)
 
       source.sendNext("a")
-      inProbe.expectMsg("a")
+      flowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
       source.sendComplete()
-      inProbe.expectMsg("in complete")
+      flowInProbe.expectMsg("in complete")
 
       flowOutProbe.sendNext("c")
       sink.requestNext("c")
@@ -808,50 +808,50 @@ class RestartSpec
 
       sink.request(1)
       flowOutProbe.sendComplete()
-      inProbe.expectMsg("out complete")
+      flowInProbe.expectMsg("out complete")
       sink.expectComplete()
 
       created.get() should ===(1)
     }
 
     "continue running flow in port after out has been cancelled" taggedAs TimingTest in {
-      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, maxBackoff)
+      val (created, source, flowflowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, maxBackoff)
 
       source.sendNext("a")
-      flowInProbe.expectMsg("a")
+      flowflowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
       sink.cancel()
-      flowInProbe.expectMsg("out complete")
+      flowflowInProbe.expectMsg("out complete")
 
       source.sendNext("c")
-      flowInProbe.expectMsg("c")
+      flowflowInProbe.expectMsg("c")
       source.sendNext("d")
-      flowInProbe.expectMsg("d")
+      flowflowInProbe.expectMsg("d")
 
       source.sendNext("cancel")
-      flowInProbe.expectMsg("in complete")
+      flowflowInProbe.expectMsg("in complete")
       source.expectCancellation()
 
       created.get() should ===(1)
     }
 
     "not restart on completion when maxRestarts is reached" taggedAs TimingTest in {
-      val (created, _, inProbe, flowOutProbe, sink) =
+      val (created, _, flowInProbe, flowOutProbe, sink) =
         setupFlow(shortMinBackoff, shortMaxBackoff, maxRestarts = 1)
 
       sink.request(1)
       flowOutProbe.sendNext("complete")
-      inProbe.expectMsgAllOf("in complete", "out complete")
+      flowInProbe.expectMsgAllOf("in complete", "out complete")
 
       // and it should restart
       sink.request(1)
       flowOutProbe.sendNext("complete")
 
       // This will complete the flow in probe and cancel the flow out probe
-      inProbe.expectMsg("out complete")
-      inProbe.expectNoMessage(shortMinBackoff * 3)
+      flowInProbe.expectMsg("out complete")
+      flowInProbe.expectNoMessage(shortMinBackoff * 3)
       sink.expectComplete()
 
       created.get() should ===(2)
@@ -860,17 +860,17 @@ class RestartSpec
     // onlyOnFailures -->
     "stop on cancellation when using onlyOnFailuresWithBackoff" taggedAs TimingTest in {
       val onlyOnFailures = true
-      val (created, source, inProbe, flowOutProbe, sink) =
+      val (created, source, flowInProbe, flowOutProbe, sink) =
         setupFlow(shortMinBackoff, shortMaxBackoff, -1, onlyOnFailures)
 
       source.sendNext("a")
-      inProbe.expectMsg("a")
+      flowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
       source.sendNext("cancel")
       // This will complete the flow in probe and cancel the flow out probe
-      inProbe.expectMsg("in complete")
+      flowInProbe.expectMsg("in complete")
 
       source.expectCancellation()
 
@@ -879,11 +879,11 @@ class RestartSpec
 
     "stop on completion when using onlyOnFailuresWithBackoff" taggedAs TimingTest in {
       val onlyOnFailures = true
-      val (created, source, inProbe, flowOutProbe, sink) =
+      val (created, source, flowInProbe, flowOutProbe, sink) =
         setupFlow(shortMinBackoff, shortMaxBackoff, -1, onlyOnFailures)
 
       source.sendNext("a")
-      inProbe.expectMsg("a")
+      flowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
@@ -895,11 +895,11 @@ class RestartSpec
     }
 
     "restart on failure when using onlyOnFailuresWithBackoff" taggedAs TimingTest in {
-      val (created, source, inProbe, flowOutProbe, sink) =
+      val (created, source, flowInProbe, flowOutProbe, sink) =
         setupFlow(shortMinBackoff, shortMaxBackoff, -1, true)
 
       source.sendNext("a")
-      inProbe.expectMsg("a")
+      flowInProbe.expectMsg("a")
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
@@ -907,11 +907,11 @@ class RestartSpec
       flowOutProbe.sendNext("error")
 
       // This should complete the in probe
-      inProbe.expectMsg("in complete")
+      flowInProbe.expectMsg("in complete")
 
       // and it should restart
       source.sendNext("c")
-      inProbe.expectMsg("c")
+      flowInProbe.expectMsg("c")
       flowOutProbe.sendNext("d")
       sink.requestNext("d")
 
