@@ -21,7 +21,6 @@ import akka.stream.impl.streamref.{ SinkRefImpl, SourceRefImpl }
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl._
-import akka.testkit.GHExcludeTest
 import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import akka.util.ByteString
 
@@ -171,7 +170,7 @@ object StreamRefsSpec {
   def config(): Config = {
     ConfigFactory.parseString(s"""
     akka {
-      loglevel = INFO
+      loglevel = DEBUG
 
       actor {
         provider = remote
@@ -350,7 +349,7 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) {
     }
 
     // FIXME https://github.com/akka/akka/issues/30844
-    "pass cancellation upstream across remoting before elements has been emitted" taggedAs GHExcludeTest in {
+    "pass cancellation upstream across remoting before elements has been emitted" in {
       val remoteProbe = TestProbe()(remoteSystem)
       remoteActor.tell("give-nothing-watch", remoteProbe.ref)
       val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
