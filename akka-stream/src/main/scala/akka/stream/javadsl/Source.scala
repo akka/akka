@@ -879,6 +879,28 @@ object Source {
   def upcast[SuperOut, Out <: SuperOut, Mat](source: Source[Out, Mat]): Source[SuperOut, Mat] =
     source.asInstanceOf[Source[SuperOut, Mat]]
 
+  /**
+   * Merge multiple [[Source]]s. Prefer the sources depending on the 'priority' parameters.
+   * The provided sources and priorities must have the same size and order.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergePrioritizedN[T](
+      sourcesAndPriorities: java.util.List[Pair[Source[T, _ <: Any], java.lang.Integer]],
+      eagerComplete: Boolean): javadsl.Source[T, NotUsed] = {
+    val seq =
+      if (sourcesAndPriorities != null)
+        Util.immutableSeq(sourcesAndPriorities).map(pair => (pair.first.asScala, pair.second.intValue()))
+      else
+        immutable.Seq()
+    new Source(scaladsl.Source.mergePrioritizedN(seq, eagerComplete))
+  }
 }
 
 /**

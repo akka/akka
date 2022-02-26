@@ -961,4 +961,27 @@ object Source {
       close: (S) => Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
 
+  /**
+   * Merge multiple [[Source]]s. Prefer the sources depending on the 'priority' parameters.
+   * The provided sources and priorities must have the same size and order.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergePrioritizedN[T](
+      sourcesAndPriorities: immutable.Seq[(Source[T, _], Int)],
+      eagerComplete: Boolean): Source[T, NotUsed] = {
+    sourcesAndPriorities match {
+      case immutable.Seq()            => Source.empty
+      case immutable.Seq((source, _)) => source.mapMaterializedValue(_ => NotUsed)
+      case sourcesAndPriorities =>
+        val (sources, priorities) = sourcesAndPriorities.unzip
+        combine(sources.head, sources(1), sources.drop(2): _*)(_ => MergePrioritized(priorities, eagerComplete))
+    }
+  }
 }

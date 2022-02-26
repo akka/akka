@@ -7,6 +7,7 @@ package jdocs.stream.operators;
 import akka.Done;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.japi.pf.PFBuilder;
 import akka.stream.javadsl.Flow;
 
@@ -200,6 +201,24 @@ class SourceOrFlow {
     // the left source has higher priority – if both sources have elements ready, sourceA has a
     // 99% chance of being picked next while sourceB has a 1% chance
     // #mergePrioritized
+  }
+
+  void mergePrioritizedNExample() {
+    // #mergePrioritizedN
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
+    Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(100, 200, 300, 400));
+    List<Pair<Source<Integer, ?>,Integer>> sourcesAndPriorities = Arrays.asList(
+        new Pair<>(sourceA, 9900),
+        new Pair<>(sourceB, 99),
+        new Pair<>(sourceC, 1));
+    Source.mergePrioritizedN(sourcesAndPriorities, false).runForeach(System.out::println, system);
+    // prints e.g. 1, 100, 2, 3, 4, 10, 20, 30, 40, 200, 300, 400  since both sources have their
+    // first element ready and
+    // the left sourceA has higher priority - if both sources have elements ready, sourceA has a 99%
+    // chance of being picked next
+    // while sourceB has a 0.99% chance and sourceC has a 0.01% chance
+    // #mergePrioritizedN
   }
 
   void mergeSortedExample() {
