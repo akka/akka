@@ -16,6 +16,7 @@ import akka.actor.typed.Behavior
 import akka.annotation.InternalApi
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery
+import akka.persistence.testkit.SnapshotMeta
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResult
@@ -23,6 +24,7 @@ import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResu
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.RestartResult
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.SerializationSettings
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
+import akka.persistence.testkit.scaladsl.SnapshotTestKit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetStateReply
@@ -94,6 +96,9 @@ import akka.stream.scaladsl.Sink
 
   override val persistenceTestKit: PersistenceTestKit = PersistenceTestKit(system)
   persistenceTestKit.clearAll()
+
+  override val snapshotTestKit: SnapshotTestKit = SnapshotTestKit(system)
+  snapshotTestKit.clearAll()
 
   private val queries =
     PersistenceQuery(system).readJournalFor[CurrentEventsByPersistenceIdQuery](PersistenceTestKitReadJournal.Identifier)
@@ -221,6 +226,7 @@ import akka.stream.scaladsl.Sink
 
   override def clear(): Unit = {
     persistenceTestKit.clearByPersistenceId(persistenceId.id)
+    snapshotTestKit.clearByPersistenceId(persistenceId.id)
     restart()
   }
 
@@ -233,4 +239,12 @@ import akka.stream.scaladsl.Sink
     }
   }
 
+  override def initialize(stateOption: Option[State], events: Event*): Unit = {
+    clear()
+
+    stateOption.foreach(state => snapshotTestKit.persistForRecovery(persistenceId.id, (SnapshotMeta(0), state)))
+    persistenceTestKit.persistForRecovery(persistenceId.id, events)
+
+    restart()
+  }
 }

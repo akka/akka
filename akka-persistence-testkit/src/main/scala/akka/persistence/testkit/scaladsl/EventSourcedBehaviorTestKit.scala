@@ -226,4 +226,7 @@ object EventSourcedBehaviorTestKit {
    * populating the journal with events that are used for replay.
    */
   def persistenceTestKit: PersistenceTestKit
+  def snapshotTestKit: SnapshotTestKit
+
+  def initialize(stateOption: Option[State], events: Event*): Unit
 }
