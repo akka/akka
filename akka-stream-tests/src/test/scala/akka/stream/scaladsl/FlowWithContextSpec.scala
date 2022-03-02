@@ -66,5 +66,22 @@ class FlowWithContextSpec extends StreamSpec {
         .expectNext((Message("a", 2L), 2L))
         .expectError(boom)
     }
+
+    "keep the same order for data and context when using unsafeDataVia" in {
+      val data = List(("1", 1), ("2", 2), ("3", 3), ("4", 4))
+
+      val baseFlow = Flow[(String, Int)]
+        .asFlowWithContext[String, Int, Int](collapseContext = Tuple2.apply)(extractContext = _._2)
+        .map(_._1)
+        .unsafeDataVia(Flow.fromFunction[String, Int] { _.toInt })
+
+      SourceWithContext
+        .fromTuples(Source(data))
+        .via(baseFlow)
+        .runWith(TestSink.probe[(Int, Int)])
+        .request(4)
+        .expectNext((1, 1), (2, 2), (3, 3), (4, 4))
+        .expectComplete()
+    }
   }
 }
