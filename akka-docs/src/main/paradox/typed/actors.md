@@ -202,7 +202,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-protocol }
 
-Initially the client Actors only get access to an @apidoc[typed.ActorRef]@scala[`[GetSession]`]@java[`<GetSession>`]
+Initially the client Actors only get access to an @apidoc[typed.ActorRef[GetSession]]
 which allows them to make the first step. Once a client’s session has been
 established it gets a `SessionGranted` message that contains a `handle` to
 unlock the next protocol step, posting messages. The `PostMessage`
@@ -367,7 +367,7 @@ Java
 The state is managed through fields in the class, just like with a regular object oriented class.
 As the state is mutable, we never return a different behavior from the message logic, but can return
 the `AbstractBehavior` instance itself (`this`) as a behavior to use for processing the next message coming in.
-We could also return @apidoc[typed.*.Behaviors$) {scala="#same[T]:akka.actor.typed.Behavior[T]" java="#same()"} to achieve the same.
+We could also return @apidoc[Behaviors.same](typed.*.Behaviors$) {scala="#same[T]:akka.actor.typed.Behavior[T]" java="#same()"} to achieve the same.
 
 @java[In this sample we make separate statements for creating the behavior builder, but it also returns the builder
 itself from each step so a more fluent behavior definition style is also possible. What you should prefer depends on
