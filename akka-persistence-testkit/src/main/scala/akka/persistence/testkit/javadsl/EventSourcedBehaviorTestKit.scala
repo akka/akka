@@ -4,8 +4,11 @@
 
 package akka.persistence.testkit.javadsl
 
+import java.util.Optional
 import java.util.{ List => JList }
 import java.util.function.{ Function => JFunction }
+
+import scala.jdk.javaapi.OptionConverters._
 import scala.reflect.ClassTag
 import com.typesafe.config.Config
 import akka.actor.typed.ActorRef
@@ -205,6 +208,8 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
   import EventSourcedBehaviorTestKit._
 
   private val _persistenceTestKit = new PersistenceTestKit(delegate.persistenceTestKit)
+  private val _snapshotTestKit = delegate.snapshotTestKit.fold(Optional.empty[SnapshotTestKit]())(snapshotTestKit =>
+    Optional.of(new SnapshotTestKit(snapshotTestKit)))
 
   /**
    * Run one command through the behavior. The returned result contains emitted events and the state
@@ -240,10 +245,23 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
     delegate.clear()
 
   /**
-   * The underlying `PersistenceTestKit` for the in-memory journal and snapshot storage.
+   * Initializes behavior from provided state and/or events.
+   */
+  def initialize(stateOption: Optional[State], events: Event*): Unit =
+    delegate.initialize(toScala(stateOption), events: _*)
+
+  /**
+   * The underlying `PersistenceTestKit` for the in-memory journal.
    * Can be useful for advanced testing scenarios, such as simulating failures or
    * populating the journal with events that are used for replay.
    */
   def persistenceTestKit: PersistenceTestKit =
     _persistenceTestKit
+
+  /**
+   * The underlying `SnapshotTestKit` for snapshot storage. Present only if snapshots are enabled.
+   * Can be useful for advanced testing scenarios, such as simulating failures or
+   * populating the storage with snapshots that are used for replay.
+   */
+  def snapshotTestKit: Optional[SnapshotTestKit] = _snapshotTestKit
 }
