@@ -9,10 +9,9 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
-
 import scala.util.control.NonFatal
-
 import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Offset
 import akka.persistence.query.Sequence
@@ -20,7 +19,7 @@ import akka.persistence.query.TimeBasedUUID
 import akka.persistence.query.TimestampOffset
 import akka.persistence.query.internal.protobuf.QueryMessages
 import akka.persistence.query.typed.EventEnvelope
-import akka.remote.serialization.WrappedPayloadSupport
+import akka.remote.serialization.WrappedPayloadSupport.{ deserializePayload, payloadBuilder }
 import akka.serialization.BaseSerializer
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
@@ -35,7 +34,8 @@ import akka.serialization.Serializers
     extends SerializerWithStringManifest
     with BaseSerializer {
 
-  private lazy val payloadSupport = new WrappedPayloadSupport(system)
+  private val log = Logging(system, classOf[QuerySerializer])
+
   private lazy val serialization = SerializationExtension(system)
 
   private final val EventEnvelopeManifest = "a"
@@ -71,8 +71,8 @@ import akka.serialization.Serializers
         .setOffset(offset)
         .setOffsetManifest(offsetManifest)
 
-      env.eventOption.foreach(event => builder.setEvent(payloadSupport.payloadBuilder(event)))
-      env.eventMetadata.foreach(meta => builder.setMetadata(payloadSupport.payloadBuilder(meta)))
+      env.eventOption.foreach(event => builder.setEvent(payloadBuilder(event, serialization, log)))
+      env.eventMetadata.foreach(meta => builder.setMetadata(payloadBuilder(meta, serialization, log)))
 
       builder.build().toByteArray()
 
@@ -90,10 +90,10 @@ import akka.serialization.Serializers
       val offset = fromStorageRepresentation(env.getOffset, env.getOffsetManifest)
 
       val eventOption =
-        if (env.hasEvent) Option(payloadSupport.deserializePayload(env.getEvent))
+        if (env.hasEvent) Option(deserializePayload(env.getEvent, serialization))
         else None
       val metaOption =
-        if (env.hasMetadata) Option(payloadSupport.deserializePayload(env.getMetadata))
+        if (env.hasMetadata) Option(deserializePayload(env.getMetadata, serialization))
         else None
 
       new EventEnvelope(
