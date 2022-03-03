@@ -36,7 +36,7 @@ Akka itself uses Protocol Buffers to serialize internal messages (for example cl
 ### Configuration
 
 For Akka to know which `Serializer` to use for what, you need to edit your configuration: 
-in the `akka.actor.serializers`-section, you bind names to implementations of the @scala[@apidoc[akka.serialization.Serializer](Serializer)]@java[@apidoc[akka.serialization.JSerializer](JSerializer)]
+in the `akka.actor.serializers`-section, you bind names to implementations of the @apidoc[akka.serialization.Serializer](Serializer)
 you wish to use, like this:
 
 @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-serializers-config }
