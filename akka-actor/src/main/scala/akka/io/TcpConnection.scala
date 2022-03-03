@@ -110,8 +110,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** the peer sent EOF first, but we may still want to send */
   def peerSentEOF(info: ConnectionInfo): Receive =
     handleWriteMessages(info).orElse {
-      case cmd: CloseCommand => handleClose(info, Some(sender()), cmd.event)
-      case ResumeReading     => // ignore, no more data to read
+      case cmd: CloseCommand               => handleClose(info, Some(sender()), cmd.event)
+      case ResumeReading | ChannelReadable => // ignore, no more data to read
     }
 
   /** connection is closing but a write has to be finished first */
