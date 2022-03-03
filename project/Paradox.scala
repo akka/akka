@@ -39,6 +39,8 @@ object Paradox {
         "javadoc.com.fasterxml.jackson.annotation.link_style" -> "direct",
         "javadoc.com.fasterxml.jackson.databind.base_url" -> "https://javadoc.io/doc/com.fasterxml.jackson.core/jackson-databind/latest/",
         "javadoc.com.fasterxml.jackson.databind.link_style" -> "direct",
+        "javadoc.com.google.protobuf.base_url" -> "https://javadoc.io/doc/com.google.protobuf/protobuf-java/latest/",
+        "javadoc.com.google.protobuf.link_style" -> "direct",
         "scala.version" -> scalaVersion.value,
         "scala.binary.version" -> scalaBinaryVersion.value,
         "akka.version" -> version.value,
