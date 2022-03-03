@@ -23,7 +23,6 @@ import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResu
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResultWithReply
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.RestartResult
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.SerializationSettings
-import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.config
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.testkit.scaladsl.SnapshotTestKit
 import akka.persistence.typed.PersistenceId
@@ -99,7 +98,7 @@ import akka.stream.scaladsl.Sink
   persistenceTestKit.clearAll()
 
   override val snapshotTestKit: Option[SnapshotTestKit] =
-    if (!config.atKey("akka.persistence.snapshot-store.plugin").isEmpty)
+    if (system.settings.config.getString("akka.persistence.snapshot-store.plugin") != "")
       Some(SnapshotTestKit(system))
     else None
   snapshotTestKit.foreach(_.clearAll())
