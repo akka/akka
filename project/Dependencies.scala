@@ -95,7 +95,7 @@ object Dependencies {
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {
-      ("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value).cross(CrossVersion.for3Use2_13)
+      ("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value)
     } // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
