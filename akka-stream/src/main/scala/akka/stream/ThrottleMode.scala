@@ -24,12 +24,12 @@ object ThrottleMode {
   /**
    * Java API: Tells throttle to make pauses before emitting messages to meet throttle rate
    */
-  def shaping = Shaping
+  def shaping: ThrottleMode = Shaping
 
   /**
    * Java API: Makes throttle fail with exception when upstream is faster than throttle rate
    */
-  def enforcing = Enforcing
+  def enforcing: ThrottleMode = Enforcing
 }
 
 /**
