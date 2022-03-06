@@ -119,7 +119,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % Test
-      val gson = "com.google.code.gson" % "gson" % "2.8.9" % Test
+      val gson = "com.google.code.gson" % "gson" % "2.9.0" % Test
     }
 
     object TestDependencies {
