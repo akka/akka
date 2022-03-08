@@ -5,19 +5,18 @@
 package akka.cluster
 
 import java.util.concurrent.atomic.AtomicBoolean
-
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
 import akka.ConfigurationException
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.testkit.TestKit.awaitCond
 import akka.testkit.TestKit.shutdownActorSystem
 import akka.util.unused
+
+import scala.util.control.NonFatal
 
 class FailingDowningProvider(@unused system: ActorSystem) extends DowningProvider {
   override val downRemovalMargin: FiniteDuration = 20.seconds
@@ -76,9 +75,9 @@ class DowningProviderSpec extends AnyWordSpec with Matchers {
     }
 
     "stop the cluster if the downing provider throws exception in props method" in {
-      // race condition where the downing provider failure can happen fast enough
-      // that creating the actor system throws on construcing thread,
-      // or slow enough that we have time to try join the cluster before noticing
+      // race condition where the downing provider failure can be detected and trigger
+      // graceful shutdown fast enough that creating the actor system throws on constructing
+      // thread (or slow enough that we have time to try join the cluster before noticing)
       val maybeSystem = try {
         Some(
           ActorSystem(
@@ -87,7 +86,8 @@ class DowningProviderSpec extends AnyWordSpec with Matchers {
           akka.cluster.downing-provider-class="akka.cluster.FailingDowningProvider"
         """).withFallback(baseConf)))
       } catch {
-        case _: Throwable =>
+        case NonFatal(_) =>
+          // expected to sometimes happen
           None
       }
 
