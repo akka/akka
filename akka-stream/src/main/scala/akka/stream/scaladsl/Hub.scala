@@ -23,8 +23,6 @@ import akka.stream._
 import akka.stream.Attributes.LogLevels
 import akka.stream.stage._
 
-import scala.concurrent.duration._
-
 /**
  * A MergeHub is a special streaming hub that is able to collect streamed elements from a dynamic set of
  * producers. It consists of two parts, a [[Source]] and a [[Sink]]. The [[Source]] streams the element to a consumer from
@@ -393,6 +391,11 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
 object BroadcastHub {
 
   /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] val defaultBufferSize = 256
+
+  /**
    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
    * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
@@ -414,7 +417,7 @@ object BroadcastHub {
   def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](bufferSize))
 
   /**
-   * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
+   * Creates a [[Sink]] with default buffer size 256 that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
    * value. This [[Source]] can be materialized arbitrary many times and each materialization will receive the
    * broadcast elements from the original [[Sink]].
@@ -429,7 +432,7 @@ object BroadcastHub {
    * cancelled are simply removed from the dynamic set of consumers.
    *
    */
-  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(bufferSize = 256)
+  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(bufferSize = defaultBufferSize)
 
 }
 
@@ -1106,10 +1109,7 @@ object PartitionHub {
   // queue in Artery
   def createQueue(): PartitionQueue = new PartitionQueueImpl
 
-  private class PartitionSinkLogic(_shape: Shape) extends TimerGraphStageLogic(_shape) with InHandler {
-
-    private case object DemandTimeout
-    private val demandTimeoutInterval = 100.millis
+  private class PartitionSinkLogic(_shape: Shape) extends GraphStageLogic(_shape) with InHandler {
 
     // Half of buffer size, rounded up
     private val DemandThreshold = (bufferSize / 2) + (bufferSize % 2)
@@ -1151,10 +1151,8 @@ object PartitionHub {
     override def preStart(): Unit = {
       setKeepGoing(true)
       callbackPromise.success(getAsyncCallback[HubEvent](onEvent))
-      if (startAfterNrOfConsumers == 0) {
+      if (startAfterNrOfConsumers == 0)
         pull(in)
-        scheduleAtFixedRate(DemandTimeout, demandTimeoutInterval, demandTimeoutInterval)
-      }
     }
 
     override def onPush(): Unit = {
@@ -1206,20 +1204,6 @@ object PartitionHub {
         pull(in)
     }
 
-    override protected def onTimer(timerKey: Any): Unit = timerKey match {
-      case DemandTimeout =>
-        // this handles a corner case where buffer was full with element for other partitions
-        // when demand from one partition arrived, and other partitions has since consumed
-        // a subset of the elements in the buffer without requesting more - the demand from the
-        // first partition was dropped due to buffer full so nothing triggers a pull more elements
-        // in this scenario even though the buffer is no longer full - we know because the
-        // original consumer is in needWakeup
-        if (needWakeup.nonEmpty) tryPull()
-
-      case unknown =>
-        throw new IllegalArgumentException(s"Unknown timer event [$unknown]")
-    }
-
     private def onEvent(ev: HubEvent): Unit = {
       callbackCount += 1
       ev match {
@@ -1240,9 +1224,8 @@ object PartitionHub {
             val newConsumers = (consumerInfo.consumers :+ consumer).sortBy(_.id)
             consumerInfo = new ConsumerInfoImpl(newConsumers)
             queue.init(consumer.id)
-            if (newConsumers.size >= startAfterNrOfConsumers && !initialized) {
+            if (newConsumers.size >= startAfterNrOfConsumers) {
               initialized = true
-              scheduleAtFixedRate(DemandTimeout, demandTimeoutInterval, demandTimeoutInterval)
             }
 
             consumer.callback.invoke(Initialize)
