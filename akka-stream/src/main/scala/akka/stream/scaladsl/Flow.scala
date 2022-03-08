@@ -2921,18 +2921,18 @@ trait FlowOps[+Out, +Mat] {
    */
   def mergePreferred[U >: Out, M](
       that: Graph[SourceShape[U], M],
-      priority: Boolean,
+      @deprecatedName("priority", "2.6.19") preferred: Boolean,
       eagerComplete: Boolean = false): Repr[U] =
-    via(mergePreferredGraph(that, priority, eagerComplete))
+    via(mergePreferredGraph(that, preferred, eagerComplete))
 
   protected def mergePreferredGraph[U >: Out, M](
       that: Graph[SourceShape[U], M],
-      priority: Boolean,
+      preferred: Boolean,
       eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.createGraph(that) { implicit b => r =>
       val merge = b.add(MergePreferred[U](1, eagerComplete))
-      r ~> merge.in(if (priority) 0 else 1)
-      FlowShape(merge.in(if (priority) 1 else 0), merge.out)
+      r ~> merge.in(if (preferred) 0 else 1)
+      FlowShape(merge.in(if (preferred) 1 else 0), merge.out)
     }
 
   /**
