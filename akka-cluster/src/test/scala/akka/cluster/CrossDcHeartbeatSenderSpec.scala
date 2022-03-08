@@ -6,20 +6,25 @@ package akka.cluster
 
 import scala.collection.immutable.SortedSet
 
-import akka.actor.{ ActorSelection, Address, Props }
+import akka.actor.ActorSelection
+import akka.actor.Address
+import akka.actor.Props
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterHeartbeatSender.Heartbeat
+import akka.cluster.CrossDcHeartbeatSender.ReportStatus
 import akka.cluster.CrossDcHeartbeatSenderSpec.TestCrossDcHeartbeatSender
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
+import akka.testkit.TestProbe
 import akka.util.Version
 
 object CrossDcHeartbeatSenderSpec {
-  class TestCrossDcHeartbeatSender(probe: TestProbe) extends CrossDcHeartbeatSender {
+  class TestCrossDcHeartbeatSender(heartbeatProbe: TestProbe) extends CrossDcHeartbeatSender {
     // disable register for cluster events
     override def preStart(): Unit = {}
 
     override def heartbeatReceiver(address: Address): ActorSelection = {
-      context.actorSelection(probe.ref.path)
+      context.actorSelection(heartbeatProbe.ref.path)
     }
   }
 }
@@ -36,18 +41,25 @@ class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
   """) with ImplicitSender {
   "CrossDcHeartBeatSender" should {
     "increment heart beat sequence nr" in {
-      val probe = TestProbe()
+
+      val heartbeatProbe = TestProbe()
       Cluster(system).join(Cluster(system).selfMember.address)
       awaitAssert(Cluster(system).selfMember.status == MemberStatus.Up)
-      val underTest = system.actorOf(Props(new TestCrossDcHeartbeatSender(probe)))
+      val underTest = system.actorOf(Props(new TestCrossDcHeartbeatSender(heartbeatProbe)))
+
       underTest ! CurrentClusterState(
         members = SortedSet(
           Cluster(system).selfMember,
           Member(UniqueAddress(Address("akka", system.name), 2L), Set("dc-dc2"), Version.Zero)
             .copy(status = MemberStatus.Up)))
 
-      probe.expectMsgType[Heartbeat].sequenceNr shouldEqual 1
-      probe.expectMsgType[Heartbeat].sequenceNr shouldEqual 2
+      awaitAssert {
+        underTest ! ReportStatus()
+        expectMsgType[CrossDcHeartbeatSender.MonitoringActive]
+      }
+
+      heartbeatProbe.expectMsgType[Heartbeat].sequenceNr shouldEqual 1
+      heartbeatProbe.expectMsgType[Heartbeat].sequenceNr shouldEqual 2
     }
   }
 }
