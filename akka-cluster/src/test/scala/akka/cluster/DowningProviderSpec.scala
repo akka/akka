@@ -76,17 +76,28 @@ class DowningProviderSpec extends AnyWordSpec with Matchers {
     }
 
     "stop the cluster if the downing provider throws exception in props method" in {
-      val system = ActorSystem(
-        "auto-downing",
-        ConfigFactory.parseString("""
+      // race condition where the downing provider failure can happen fast enough
+      // that creating the actor system throws on construcing thread,
+      // or slow enough that we have time to try join the cluster before noticing
+      val maybeSystem = try {
+        Some(
+          ActorSystem(
+            "auto-downing",
+            ConfigFactory.parseString("""
           akka.cluster.downing-provider-class="akka.cluster.FailingDowningProvider"
-        """).withFallback(baseConf))
+        """).withFallback(baseConf)))
+      } catch {
+        case _: Throwable =>
+          None
+      }
 
-      val cluster = Cluster(system)
-      cluster.join(cluster.selfAddress)
+      maybeSystem.foreach { system =>
+        val cluster = Cluster(system)
+        cluster.join(cluster.selfAddress)
 
-      awaitCond(cluster.isTerminated, 3.seconds)
-      shutdownActorSystem(system)
+        awaitCond(cluster.isTerminated, 3.seconds)
+        shutdownActorSystem(system)
+      }
     }
 
   }
