@@ -57,7 +57,6 @@ jobs:
           -Dmultinode.XX:MetaspaceSize=128M \
           -Dmultinode.Xms256M \
           -Dmultinode.Xmx256M \
-          -Dmultinode.Xlog:gc \
           -Dmultinode.XX:+AlwaysActAsServerClassMachine \
           "+~ 3 ${{ matrix.command }}"
 

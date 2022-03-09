@@ -8,9 +8,11 @@ import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.RootActorPath
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -30,6 +32,8 @@ import akka.cluster.typed.Leave
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.LongRunningTest
 import org.scalatest.concurrent.ScalaFutures
+
+import akka.testkit.GHExcludeAeronTest
 
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(s"""
@@ -80,7 +84,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
   "The cluster receptionist" must {
 
-    "eventually replicate registrations to the other side" taggedAs (LongRunningTest) in {
+    "eventually replicate registrations to the other side".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-1", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -118,7 +122,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       }
     }
 
-    "handle registrations before joining" taggedAs (LongRunningTest) in {
+    "handle registrations before joining".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-2", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -148,11 +152,11 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       }
     }
 
-    "remove registrations when node dies" taggedAs (LongRunningTest) in {
+    "remove registrations when node dies".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       testNodeRemoval(down = true)
     }
 
-    "remove registrations when node leaves" taggedAs (LongRunningTest) in {
+    "remove registrations when node leaves".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       testNodeRemoval(down = false)
     }
 
@@ -215,7 +219,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       }
     }
 
-    "not remove registrations when self is shutdown" taggedAs (LongRunningTest) in {
+    "not remove registrations when self is shutdown".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-4", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -264,7 +268,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
     }
 
-    "work with services registered before node joins cluster" taggedAs (LongRunningTest) in {
+    "work with services registered before node joins cluster".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-5", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -322,7 +326,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       }
     }
 
-    "handle a new incarnation of the same node well" taggedAs (LongRunningTest) in {
+    "handle a new incarnation of the same node well".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-6", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -423,7 +427,9 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
     }
 
     // reproducer of issue #26284
-    "handle a new incarnation of the same node that is no longer part of same cluster" taggedAs (LongRunningTest) in {
+    "handle a new incarnation of the same node that is no longer part of same cluster".taggedAs(
+      LongRunningTest,
+      GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit(
         "ClusterReceptionistSpec-test-7",
         ConfigFactory.parseString("""
@@ -527,7 +533,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       }
     }
 
-    "not lose removals on concurrent updates to same key" taggedAs (LongRunningTest) in {
+    "not lose removals on concurrent updates to same key".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val config = ConfigFactory.parseString("""
           # disable delta propagation so we can have repeatable concurrent writes
           # without delta reaching between nodes already
@@ -598,7 +604,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       }
     }
 
-    "not conflict with the ClusterClient receptionist default name" taggedAs (LongRunningTest) in {
+    "not conflict with the ClusterClient receptionist default name".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit = ActorTestKit(s"ClusterReceptionistSpec-test-9", ClusterReceptionistSpec.config)
       try {
         testKit.system.systemActorOf(Behaviors.ignore, "receptionist")
@@ -607,7 +613,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       }
     }
 
-    "handle unregistration and re-registration of services" taggedAs (LongRunningTest) in {
+    "handle unregistration and re-registration of services".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-10", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -665,7 +671,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
     }
 
-    "handle unregistration per key not per actor" taggedAs (LongRunningTest) in {
+    "handle unregistration per key not per actor".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-11", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -717,7 +723,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
     }
 
-    "handle concurrent unregistration and registration on different nodes" taggedAs (LongRunningTest) in {
+    "handle concurrent unregistration and registration on different nodes".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       // this covers the fact that with ddata a removal can be lost
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-12", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
@@ -776,7 +782,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
     }
     // Fixme concurrent registration and unregistration
 
-    "notify subscribers when registering and joining simultaneously" taggedAs (LongRunningTest) in {
+    "notify subscribers when registering and joining simultaneously".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       // failing test reproducer for issue #28792
       // It's possible that the registry entry from the ddata update arrives before MemberJoined.
       val config = ConfigFactory.parseString("""
@@ -839,7 +845,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
       }
     }
 
-    "never use durable store" taggedAs (LongRunningTest) in {
+    "never use durable store".taggedAs(LongRunningTest, GHExcludeAeronTest) in {
       val testKit = ActorTestKit("ClusterReceptionistSpec-test-14", ClusterReceptionistSpec.config)
       val system = testKit.system
       try {
