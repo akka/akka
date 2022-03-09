@@ -1009,6 +1009,11 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
+    "default resetBackoffAfter to average of min and max backoff" in {
+      val strategy = SupervisorStrategy.restartWithBackoff(minBackoff = 100.millis, maxBackoff = 1.second, 0)
+      strategy.resetBackoffAfter should ===((100.millis + 1.second) / 2)
+    }
+
     "restart with exponential backoff when deferred factory throws" in new FailingDeferredTestSetup(
       failCount = 1,
       strategy = SupervisorStrategy.restartWithBackoff(minBackoff = 100.millis.dilated, maxBackoff = 1.second, 0)) {
