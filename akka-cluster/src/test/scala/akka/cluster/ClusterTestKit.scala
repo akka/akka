@@ -177,7 +177,7 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
 
   /**
    * Starts the given `size` number of nodes and forms a cluster. Shuffles the order
-   * of nodes randomly and restarts the tail using the update `v2Config` config.
+   * of nodes randomly and restarts the tail using the `upgradeConfig`.
    *
    * Note that the two versions of config are validated against each other and have to
    * be valid both ways: v1 => v2, v2 => v1.
