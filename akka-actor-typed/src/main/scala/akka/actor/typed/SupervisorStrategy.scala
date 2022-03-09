@@ -53,8 +53,9 @@ object SupervisorStrategy {
    *
    * During the back-off incoming messages are dropped.
    *
-   * If no new exception occurs within the `minBackoff` duration the exponentially
-   * increased back-off timeout is reset.
+   * If no new exception occurs within `(minBackoff + maxBackoff) / 2` the exponentially
+   * increased back-off timeout is reset. This can be overridden by explicitly setting
+   * `resetBackoffAfter` using `withResetBackoffAfter` on the returned strategy.
    *
    * The strategy is applied also if the actor behavior is deferred and throws an exception during
    * startup.
@@ -72,7 +73,7 @@ object SupervisorStrategy {
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double): BackoffSupervisorStrategy =
-    Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff)
+    Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = (minBackoff + maxBackoff) / 2)
 
   /**
    * Java API: It supports exponential back-off between the given `minBackoff` and
@@ -88,8 +89,9 @@ object SupervisorStrategy {
    *
    * During the back-off incoming messages are dropped.
    *
-   * If no new exception occurs within the `minBackoff` duration the exponentially
-   * increased back-off timeout is reset.
+   * If no new exception occurs within `(minBackoff + maxBackoff) / 2` the exponentially
+   * increased back-off timeout is reset. This can be overridden by explicitly setting
+   * `resetBackoffAfter` using `withResetBackoffAfter` on the returned strategy.
    *
    * The strategy is applied also if the actor behavior is deferred and throws an exception during
    * startup.
@@ -303,7 +305,7 @@ sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
   /**
    * Scala API: The back-off algorithm is reset if the actor does not crash within the
    * specified `resetBackoffAfter`. By default, the `resetBackoffAfter` has
-   * the same value as `minBackoff`.
+   * the value of `(minBackoff + maxBackoff) / 2`.
    */
   def withResetBackoffAfter(timeout: FiniteDuration): BackoffSupervisorStrategy
 
