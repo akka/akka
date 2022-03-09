@@ -91,8 +91,11 @@ class RememberEntitiesAndStartEntitySpec
 
       // trigger shard start by messaging other actor in it
       system.log.info("Starting shard again")
-      sharding ! EntityEnvelope(11, "give-me-shard")
-      val secondShardIncarnation = expectMsgType[ActorRef]
+      // race condition between this message and region getting the termination message, we may need to retry
+      val secondShardIncarnation = awaitAssert {
+        sharding ! EntityEnvelope(11, "give-me-shard")
+        expectMsgType[ActorRef]
+      }
 
       awaitAssert {
         secondShardIncarnation ! GetShardStats
