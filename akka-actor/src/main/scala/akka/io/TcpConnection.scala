@@ -200,9 +200,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** stopWith sets this state while waiting for the SelectionHandler to execute the `cancelAndClose` thunk */
   def unregistering: Receive = {
-    case Unregistered                                                               => context.stop(self) // postStop will notify interested parties
-    case ChannelReadable | ChannelWritable | ChannelAcceptable | ChannelConnectable => // ignore, we are going away soon anyway
-    case _: DeadLetterSuppression                                                   => // ignore
+    case Unregistered => context.stop(self) // postStop will notify interested parties
+    case _            =>
+    // Ignore everything else, we might end up here without user interaction, e.g. if the peer sends a RST packet
+    // In this case, we notify the user handler, which might have already concurrently sent us more commands
+    // that we can only drop at this point.
   }
 
   // AUXILIARIES and IMPLEMENTATION
