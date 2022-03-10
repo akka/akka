@@ -25,13 +25,19 @@ object Dependencies {
   val protobufJavaVersion = "3.16.1"
   val logbackVersion = "1.2.11"
 
-  val jacksonVersion = "2.11.4"
+  val jacksonVersion =  Def.setting {
+    if (scalaVersion.value.startsWith("3.")) {
+      "2.13.2"
+    } else {
+      "2.11.4"
+    }
+  }
 
   val scala212Version = "2.12.15"
   val scala213Version = "2.13.8"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
-  val scala3Version = "3.1.1-RC2"
+  val scala3Version = "3.1.1"
   val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
   val reactiveStreamsVersion = "1.0.3"
@@ -105,14 +111,30 @@ object Dependencies {
 
     val asnOne = ("com.hierynomus" % "asn-one" % "0.5.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
 
-    val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
-    val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
-    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion // ApacheV2
-    val jacksonJdk8 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonVersion // ApacheV2
-    val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion // ApacheV2
-    val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
-    val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
-    val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
+    val jacksonCore = Def.setting {
+      "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion.value
+    } // ApacheV2
+    val jacksonAnnotations = Def.setting {
+      "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion.value
+    } // ApacheV2
+    val jacksonDatabind = Def.setting {
+      "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion.value
+    } // ApacheV2
+    val jacksonJdk8 = Def.setting {
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonVersion.value
+    } // ApacheV2
+    val jacksonJsr310 = Def.setting {
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion.value
+    } // ApacheV2
+    val jacksonScala = Def.setting {
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion.value
+    } // ApacheV2
+    val jacksonParameterNames = Def.setting {
+      "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion.value
+    } // ApacheV2
+    val jacksonCbor = Def.setting {
+      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion.value
+    } // ApacheV2
     val lz4Java = "org.lz4" % "lz4-java" % "1.8.0" // ApacheV2
 
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
@@ -304,28 +326,17 @@ object Dependencies {
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative, TestDependencies.logback)
 
   val jackson = l ++= Seq(
-        jacksonCore,
-        jacksonAnnotations,
-        jacksonDatabind,
-        jacksonJdk8,
-        jacksonJsr310,
-        jacksonParameterNames,
-        jacksonCbor,
+        jacksonCore.value,
+        jacksonAnnotations.value,
+        jacksonDatabind.value,
+        jacksonJdk8.value,
+        jacksonJsr310.value,
+        jacksonParameterNames.value,
+        jacksonCbor.value,
+        jacksonScala.value,
         lz4Java,
         TestDependencies.junit,
-        TestDependencies.scalatest.value) ++
-      (
-        // jackson-module-scala is only available for Scala 3 from 2.13.0 onwards.
-        // since we don't depend on it ourselves, but provide it as a transitive
-        // dependency for convenience, we can leave it out for Scala 3 for now,
-        // and depend on 2.13.0-rc1 for our tests. Eventually we should consider
-        // whether to update all jackson artifacts for Scala 3.
-        if (scalaVersion.value.startsWith("3."))
-          Seq("com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0-rc1" % Test)
-        else
-          Seq(jacksonScala)
-      )
-
+        TestDependencies.scalatest.value)
   val osgi = l ++= Seq(
         osgiCore,
         osgiCompendium,
