@@ -7,6 +7,7 @@ package akka.persistence.snapshot.local
 import java.io._
 import java.net.{ URLDecoder, URLEncoder }
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -57,6 +58,9 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
         case Success(s) => s
         case Failure(e) => throw e // all attempts failed, fail the future
       }
+    }(streamDispatcher).recoverWith {
+      // retry if we listed an older snapshot that was deleted before loading
+      case _: NoSuchFileException => loadAsync(persistenceId, criteria)
     }(streamDispatcher)
   }
 
