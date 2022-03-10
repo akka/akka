@@ -52,14 +52,14 @@ class CircuitBreakerMTSpec extends AkkaSpec {
           }
     }
 
-    "allow many calls while in closed state with no errors" in {
+    "allow many calls while in closed state with no errors" taggedAs TimingTest in {
       val futures = testCallsWithBreaker(newBreaker)
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
       result.size should ===(numberOfTestCalls)
       result.toSet should ===(Set("succeed"))
     }
 
-    "transition to open state upon reaching failure limit and fail-fast" in {
+    "transition to open state upon reaching failure limit and fail-fast" taggedAs TimingTest in {
       val breaker = newBreaker
       openBreaker(breaker)
       val futures = testCallsWithBreaker(breaker)
@@ -68,7 +68,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       result.toSet should ===(Set("CBO"))
     }
 
-    "allow a single call through in half-open state" in {
+    "allow a single call through in half-open state" taggedAs TimingTest in {
       val breaker = newBreaker
       val halfOpenLatch = new TestLatch(1)
       breaker.onHalfOpen(halfOpenLatch.countDown())
@@ -84,7 +84,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       result.toSet should ===(Set("succeed", "CBO"))
     }
 
-    "recover and reset the breaker after the reset timeout" in {
+    "recover and reset the breaker after the reset timeout" taggedAs TimingTest in {
       val breaker = newBreaker
 
       val halfOpenLatch = new TestLatch(1)
