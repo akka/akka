@@ -6,13 +6,13 @@ package docs.stream.cookbook
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class RecipeSplitter extends AnyWordSpec with BeforeAndAfterAll with Matchers with ScalaFutures{
+class RecipeSplitter extends AnyWordSpec with BeforeAndAfterAll with Matchers with ScalaFutures {
 
   implicit val system = ActorSystem("Test")
 
