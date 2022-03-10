@@ -24,6 +24,7 @@ import akka.pattern.ask
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
+import akka.testkit.GHExcludeAeronTest
 import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import akka.testkit.TestKit
@@ -404,7 +405,7 @@ class RandomizedSplitBrainResolverIntegrationSpec
   "SplitBrainResolver with lease" must {
 
     for (scenario <- scenarios) {
-      scenario.toString taggedAs (LongRunningTest) in {
+      scenario.toString.taggedAs(LongRunningTest, GHExcludeAeronTest) in {
         DisposableSys(scenario).verify()
       }
     }
