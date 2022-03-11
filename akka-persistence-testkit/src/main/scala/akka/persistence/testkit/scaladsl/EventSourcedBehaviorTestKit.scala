@@ -237,5 +237,6 @@ object EventSourcedBehaviorTestKit {
   /**
    * Initializes behavior from provided state and/or events.
    */
-  def initialize(stateOption: Option[State], events: Event*): Unit
+  def initialize(state: State, events: Event*): Unit
+  def initialize(events: Event*): Unit
 }

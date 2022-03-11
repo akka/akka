@@ -8,7 +8,6 @@ import java.util.Optional
 import java.util.{ List => JList }
 import java.util.function.{ Function => JFunction }
 
-import scala.jdk.javaapi.OptionConverters._
 import scala.reflect.ClassTag
 import com.typesafe.config.Config
 import akka.actor.typed.ActorRef
@@ -18,6 +17,8 @@ import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.persistence.testkit.scaladsl
 import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.varargs
 
 /**
  * Testing of [[akka.persistence.typed.javadsl.EventSourcedBehavior]] implementations.
@@ -208,8 +209,10 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
   import EventSourcedBehaviorTestKit._
 
   private val _persistenceTestKit = new PersistenceTestKit(delegate.persistenceTestKit)
-  private val _snapshotTestKit = delegate.snapshotTestKit.fold(Optional.empty[SnapshotTestKit]())(snapshotTestKit =>
-    Optional.of(new SnapshotTestKit(snapshotTestKit)))
+  private val _snapshotTestKit = {
+    import scala.compat.java8.OptionConverters._
+    delegate.snapshotTestKit.map(new SnapshotTestKit(_)).asJava
+  }
 
   /**
    * Run one command through the behavior. The returned result contains emitted events and the state
@@ -247,8 +250,10 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
   /**
    * Initializes behavior from provided state and/or events.
    */
-  def initialize(stateOption: Optional[State], events: Event*): Unit =
-    delegate.initialize(toScala(stateOption), events: _*)
+  @varargs
+  def initialize(state: State, events: Event*): Unit = delegate.initialize(state, events: _*)
+  @varargs
+  def initialize(events: Event*): Unit = delegate.initialize(events: _*)
 
   /**
    * The underlying `PersistenceTestKit` for the in-memory journal.

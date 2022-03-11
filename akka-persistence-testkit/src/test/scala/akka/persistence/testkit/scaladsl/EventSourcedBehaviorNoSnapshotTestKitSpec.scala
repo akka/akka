@@ -20,13 +20,36 @@ class EventSourcedBehaviorNoSnapshotTestKitSpec
     with AnyWordSpecLike
     with LogCapturing {
 
-  "EventSourcedBehaviorTestKit" must {
-    "not provide SnapshotTestKit if snapshots are not enabled" in {
-      val eventSourcedTestKit = EventSourcedBehaviorTestKit[TestCounter.Command, TestCounter.Event, TestCounter.State](
-        system,
-        TestCounter(PersistenceId.ofUniqueId("test")))
+  private def createTestKit() = {
+    EventSourcedBehaviorTestKit[TestCounter.Command, TestCounter.Event, TestCounter.State](
+      system,
+      TestCounter(PersistenceId.ofUniqueId("test")))
+  }
 
-      eventSourcedTestKit.snapshotTestKit shouldBe empty
+  "EventSourcedBehaviorTestKit" when {
+    "snapshots are not enabled" must {
+      "not provide SnapshotTestKit" in {
+        val eventSourcedTestKit = createTestKit()
+
+        eventSourcedTestKit.snapshotTestKit shouldBe empty
+      }
+
+      "fail initializing from snapshot" in {
+        val eventSourcedTestKit = createTestKit()
+
+        val ex = intercept[IllegalArgumentException] {
+          eventSourcedTestKit.initialize(TestCounter.RealState(1, Vector(0)))
+        }
+        ex.getMessage shouldEqual "Cannot initialize from state when snapshots are not used."
+      }
+
+      "initialize from event" in {
+        val eventSourcedTestKit = createTestKit()
+        eventSourcedTestKit.initialize(TestCounter.Incremented(1))
+
+        val result = eventSourcedTestKit.runCommand[TestCounter.State](TestCounter.GetValue(_))
+        result.reply shouldEqual TestCounter.RealState(1, Vector(0))
+      }
     }
   }
 }

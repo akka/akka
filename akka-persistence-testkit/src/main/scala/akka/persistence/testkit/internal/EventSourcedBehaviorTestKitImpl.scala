@@ -242,14 +242,19 @@ import akka.stream.scaladsl.Sink
     }
   }
 
-  override def initialize(stateOption: Option[State], events: Event*): Unit = {
+  override def initialize(state: State, events: Event*): Unit = internalInitialize(Some(state), events: _*)
+
+  override def initialize(events: Event*): Unit = internalInitialize(None, events: _*)
+
+  private def internalInitialize(stateOption: Option[State], events: Event*) = {
     clear()
 
-    stateOption.foreach(
-      state =>
-        snapshotTestKit.fold(
-          throw new IllegalArgumentException("Cannot initialize from state when snapshots are not used."))(
-          _.persistForRecovery(persistenceId.id, (SnapshotMeta(0), state))))
+    stateOption.foreach { state =>
+      snapshotTestKit match {
+        case Some(kit) => kit.persistForRecovery(persistenceId.id, (SnapshotMeta(0), state))
+        case _         => throw new IllegalArgumentException("Cannot initialize from state when snapshots are not used.")
+      }
+    }
     persistenceTestKit.persistForRecovery(persistenceId.id, events)
 
     restart()
