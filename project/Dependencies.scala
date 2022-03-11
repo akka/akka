@@ -25,7 +25,7 @@ object Dependencies {
   val protobufJavaVersion = "3.16.1"
   val logbackVersion = "1.2.11"
 
-  val jacksonVersion =  Def.setting {
+  val jacksonVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
       "2.13.2"
     } else {
