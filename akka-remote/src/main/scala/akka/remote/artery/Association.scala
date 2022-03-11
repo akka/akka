@@ -958,9 +958,14 @@ private[remote] class Association(
 
     implicit val ec = materializer.executionContext
     streamCompleted.foreach { _ =>
-      // shutdown as expected
-      // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
-      materializing.countDown()
+      if (transport.isShutdown || isRemovedAfterQuarantined()) {
+        // shutdown as expected
+        // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+        materializing.countDown()
+      } else {
+        log.debug("{} to [{}] was completed. It will be restarted if used again.", streamName, remoteAddress)
+        lazyRestart()
+      }
     }
     streamCompleted.failed.foreach {
       case ArteryTransport.ShutdownSignal =>
@@ -1034,7 +1039,7 @@ private[remote] class Association(
         } else {
           log.error(
             cause,
-            s"{} to [{}] failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
+            s"{} to [{}] failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
             streamName,
             remoteAddress,
             advancedSettings.OutboundMaxRestarts,
