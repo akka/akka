@@ -22,27 +22,36 @@ private[akka] final case class AggregateWithBoundary[In, Agg, Out](
     extends GraphStage[FlowShape[In, Out]] {
 
   emitOnTimer.foreach {
-    case (_, interval) => require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
+    case (_, interval) => checkInterval(interval)
   }
 
   val in: Inlet[In] = Inlet[In](s"${this.getClass.getName}.in")
   val out: Outlet[Out] = Outlet[Out](s"${this.getClass.getName}.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
+  private def checkInterval(interval: FiniteDuration): Unit = {
+    require(interval.gteq(1.milli), s"timer(${interval.toCoarsest}) must not be smaller than 1ms")
+  }
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
       private[this] var aggregated: Agg = null.asInstanceOf[Agg]
+      private[this] var currentInterval: FiniteDuration = null.asInstanceOf[FiniteDuration]
 
       override def preStart(): Unit = {
         emitOnTimer.foreach {
-          case (_, interval) => scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", interval, interval)
+          case (_, interval) =>
+            scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", interval, interval)
+            currentInterval = interval
         }
       }
 
       override protected def onTimer(timerKey: Any): Unit = {
         emitOnTimer.foreach {
-          case (isReadyOnTimer, _) => if (aggregated != null && isReadyOnTimer(aggregated)) harvestAndEmit()
+          case (isReadyOnTimer, nextInterval) =>
+            if (aggregated != null && isReadyOnTimer(aggregated))
+              harvestAndEmit(nextInterval)
         }
       }
 
@@ -51,7 +60,7 @@ private[akka] final case class AggregateWithBoundary[In, Agg, Out](
         if (aggregated == null) aggregated = allocate()
         val (updated, result) = aggregate(aggregated, grab(in))
         aggregated = updated
-        if (result) harvestAndEmit()
+        if (result) harvestAndEmit(currentInterval)
         // the decision to pull entirely depend on isAvailable(out)=true, regardless of result of aggregate
         // 1. aggregate=true: isAvailable(out) will be false
         // 2. aggregate=false: if isAvailable(out)=false, this means timer has caused emit, cannot pull or it could emit indefinitely bypassing back pressure
@@ -70,8 +79,14 @@ private[akka] final case class AggregateWithBoundary[In, Agg, Out](
 
       setHandlers(in, out, this)
 
-      private def harvestAndEmit(): Unit = {
-        emit(out, harvest(aggregated))
+      private def harvestAndEmit(nextInterval: FiniteDuration): Unit = {
+        emit(out, harvest(aggregated), () => {
+          if (nextInterval != currentInterval) {
+            checkInterval(nextInterval)
+            scheduleWithFixedDelay(s"${this.getClass.getSimpleName}Timer", nextInterval, nextInterval)
+            currentInterval = nextInterval
+          }
+        })
         aggregated = null.asInstanceOf[Agg]
       }
 
