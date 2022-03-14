@@ -27,7 +27,6 @@ import akka.pattern.ask
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.testkit.GHExcludeAeronTest
 import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import akka.testkit.TestKit
@@ -458,7 +457,13 @@ class SplitBrainResolverIntegrationSpec
   "Cluster SplitBrainResolver" must {
 
     for (scenario <- scenarios) {
-      scenario.toString.taggedAs(LongRunningTest, GHExcludeAeronTest) in {
+      scenario.toString taggedAs LongRunningTest in {
+        // temporarily disabled for aeron-udp in multi-node: https://github.com/akka/akka/pull/30706/
+        val arteryConfig = system.settings.config.getConfig("akka.remote.artery")
+        if (arteryConfig.getInt("canonical.port") == 6000 &&
+            arteryConfig.getString("transport") == "aeron-udp") {
+          pending
+        }
         DisposableSys(scenario).verify()
       }
     }
