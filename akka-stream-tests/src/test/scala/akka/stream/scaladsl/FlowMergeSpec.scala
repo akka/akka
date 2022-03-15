@@ -166,7 +166,7 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val sourceC = Source(List(100, 200, 300, 400))
 
       Source
-        .mergePrioritizedN(Seq((sourceA, 9900), (sourceB, 99), (sourceC, 1)), eagerComplete = false)
+        .mergePrioritizedN(List((sourceA, 9900), (sourceB, 99), (sourceC, 1)), eagerComplete = false)
         .runWith(Sink.foreach(println))
       // prints e.g. 1, 100, 2, 3, 4, 10, 20, 30, 40, 200, 300, 400  since both sources have their first element ready and
       // the left sourceA has higher priority - if both sources have elements ready, sourceA has a 99% chance of being picked next

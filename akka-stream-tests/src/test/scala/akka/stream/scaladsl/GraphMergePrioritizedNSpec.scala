@@ -4,6 +4,7 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
 import akka.NotUsed
 import akka.stream.testkit.TestSubscriber.ManualProbe
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
@@ -19,13 +20,13 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
       val source2 = Source.fromIterator(() => (4 to 6).iterator)
       val source3 = Source.fromIterator(() => (7 to 9).iterator)
 
-      val sourcesAndPriorities = Seq((source1, 6), (source2, 3), (source3, 1));
+      val sourcesAndPriorities = List((source1, 6), (source2, 3), (source3, 1))
       val probe = TestSubscriber.manualProbe[Int]()
       threeSourceMerge(sourcesAndPriorities, probe).run()
 
       val subscription = probe.expectSubscription()
 
-      var collected = Seq.empty[Int]
+      var collected = Vector.empty[Int]
       for (_ <- 1 to 9) {
         subscription.request(1)
         collected :+= probe.expectNext()
@@ -41,7 +42,7 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
       val source2 = Source.fromIterator(() => Iterator.continually(2).take(elementCount))
       val source3 = Source.fromIterator(() => Iterator.continually(3).take(elementCount))
 
-      val sourcesAndPriorities = Seq((source1, 6), (source2, 3), (source3, 1));
+      val sourcesAndPriorities = List((source1, 6), (source2, 3), (source3, 1));
 
       val probe = TestSubscriber.manualProbe[Int]()
 
@@ -49,7 +50,7 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
 
       val subscription = probe.expectSubscription()
 
-      val builder = Seq.newBuilder[Int]
+      val builder = Vector.newBuilder[Int]
       for (_ <- 1 to elementCount) {
         subscription.request(1)
         builder += probe.expectNext()
@@ -71,7 +72,7 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
       val source2 = Source.fromIterator[Int](() => Iterator.empty)
       val source3 = Source.fromIterator[Int](() => Iterator.empty)
 
-      val sourcesAndPriorities = Seq((source1, 6), (source2, 3), (source3, 1));
+      val sourcesAndPriorities = List((source1, 6), (source2, 3), (source3, 1))
 
       val probe = TestSubscriber.manualProbe[Int]()
 
@@ -79,7 +80,7 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
 
       val subscription = probe.expectSubscription()
 
-      var collected = Seq.empty[Int]
+      var collected = Vector.empty[Int]
       for (_ <- 1 to elementCount) {
         subscription.request(1)
         collected :+= probe.expectNext()
@@ -100,7 +101,7 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
       val source2 = Source.fromIterator(() => Iterator.continually(2).take(elementCount))
       val source3 = Source.fromIterator[Int](() => Iterator.empty)
 
-      val sourcesAndPriorities = Seq((source1, 6), (source2, 3), (source3, 1));
+      val sourcesAndPriorities = List((source1, 6), (source2, 3), (source3, 1))
 
       val probe = TestSubscriber.manualProbe[Int]()
 
@@ -124,7 +125,9 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
     }
   }
 
-  private def threeSourceMerge[T](sourceAndPriorities: Seq[(Source[T, NotUsed], Int)], probe: ManualProbe[T]) = {
+  private def threeSourceMerge[T](
+      sourceAndPriorities: immutable.Seq[(Source[T, NotUsed], Int)],
+      probe: ManualProbe[T]) = {
 
     Source
       .mergePrioritizedN(sourceAndPriorities, eagerComplete = false)
