@@ -42,7 +42,7 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.3"
 
-  val sslConfigVersion = "0.6.1"
+  val sslConfigVersion = "0.4.3"
 
   val scalaTestVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
@@ -93,7 +93,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
-    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
+    val sslConfigCore = ("com.typesafe" %% "ssl-config-core" % sslConfigVersion).cross(CrossVersion.for3Use2_13) // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
