@@ -221,9 +221,22 @@ object EventSourcedBehaviorTestKit {
   def clear(): Unit
 
   /**
-   * The underlying `PersistenceTestKit` for the in-memory journal and snapshot storage.
+   * The underlying `PersistenceTestKit` for the in-memory journal.
    * Can be useful for advanced testing scenarios, such as simulating failures or
    * populating the journal with events that are used for replay.
    */
   def persistenceTestKit: PersistenceTestKit
+
+  /**
+   * The underlying `SnapshotTestKit` for snapshot storage. Present only if snapshots are enabled.
+   * Can be useful for advanced testing scenarios, such as simulating failures or
+   * populating the storage with snapshots that are used for replay.
+   */
+  def snapshotTestKit: Option[SnapshotTestKit]
+
+  /**
+   * Initializes behavior from provided state and/or events.
+   */
+  def initialize(state: State, events: Event*): Unit
+  def initialize(events: Event*): Unit
 }
