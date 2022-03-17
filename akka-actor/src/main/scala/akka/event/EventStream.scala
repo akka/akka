@@ -8,8 +8,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 
-import scala.annotation.nowarn
-
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.Logging.simpleName
 import akka.util.Subclassification
@@ -40,8 +38,6 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
 
   protected def classify(event: Any): Class[_] = event.getClass
 
-  // TODO consider avoiding the deprecated `isTerminated`?
-  @nowarn("msg=deprecated")
   protected def publish(event: Any, subscriber: ActorRef) = {
     if (sys == null && subscriber.isTerminated) unsubscribe(subscriber)
     else subscriber ! event
