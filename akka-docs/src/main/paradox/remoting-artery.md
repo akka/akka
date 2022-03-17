@@ -687,6 +687,7 @@ akka.remote.artery.large-message-destinations = [
    "/temp/session-ask-actor*"
 ]
 ```
+\*NOTE: Support for \* inside of an actor path (ie. /temp/session-ask-actor\*) is only available in 2.6.18+
 
 This means that all messages sent to the following actors will pass through the dedicated, large messages channel:
 
