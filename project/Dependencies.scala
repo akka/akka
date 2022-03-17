@@ -42,7 +42,7 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.3"
 
-  val sslConfigVersion = "0.6.0"
+  val sslConfigVersion = "0.6.1"
 
   val scalaTestVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
