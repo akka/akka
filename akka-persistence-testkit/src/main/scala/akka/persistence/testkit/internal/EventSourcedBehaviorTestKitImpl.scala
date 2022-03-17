@@ -255,7 +255,7 @@ import akka.stream.scaladsl.Sink
         case _         => throw new IllegalArgumentException("Cannot initialize from state when snapshots are not used.")
       }
     }
-    persistenceTestKit.persistForRecovery(persistenceId.id, events)
+    persistenceTestKit.persistForRecovery(persistenceId.id, collection.immutable.Seq.empty ++ events)
 
     restart()
   }
