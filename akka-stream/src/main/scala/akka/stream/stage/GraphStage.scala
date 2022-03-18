@@ -697,6 +697,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final def cancelStage(cause: Throwable): Unit =
     internalCancelStage(cause, attributes.mandatoryAttribute[Attributes.CancellationStrategy].strategy)
 
+  @tailrec
   private def internalCancelStage(cause: Throwable, strategy: Attributes.CancellationStrategy.Strategy): Unit = {
     import Attributes.CancellationStrategy._
     import SubscriptionWithCancelException._
