@@ -766,7 +766,11 @@ object Partition {
    *
    * @param outputPorts number of output ports
    * @param partitioner function deciding which output each element will be targeted
-   */ // FIXME BC add `eagerCancel: Boolean = false` parameter
+   * @param eagerCancel boolean deciding to cancel flow eagerly or not
+   */
+  def apply[T](outputPorts: Int, partitioner: T => Int, eagerCancel: Boolean): Partition[T] =
+    new Partition(outputPorts, partitioner, eagerCancel)
+
   def apply[T](outputPorts: Int, partitioner: T => Int): Partition[T] = new Partition(outputPorts, partitioner, false)
 }
 
