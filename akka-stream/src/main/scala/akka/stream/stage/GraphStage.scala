@@ -9,9 +9,7 @@ import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
-
 import scala.annotation.nowarn
-
 import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.annotation.InternalApi
@@ -24,6 +22,8 @@ import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, Su
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
 import akka.util.unused
+
+import scala.collection.concurrent.TrieMap
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.
@@ -1215,15 +1215,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
        * Add this promise to the owning logic, so it can be completed afterPostStop if it was never handled otherwise.
        * Returns whether the logic is still running.
        */
-      @tailrec
       def addToWaiting(): Boolean = {
         val previous = asyncCallbacksInProgress.get()
-        if (previous != null) { // not stopped
-          val updated = promise :: previous
-          if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) addToWaiting()
-          else true
-        } else // logic was already stopped
+        if (previous ne null) { // not stopped
+          previous.put(promise, NotUsed)
+          asyncCallbacksInProgress.get() ne null //logic may stop already in the meantime
+        } else {
+          // logic was already stopped
           false
+        }
       }
 
       if (addToWaiting()) {
@@ -1270,8 +1270,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private var callbacksWaitingForInterpreter: List[ConcurrentAsyncCallback[_]] = Nil
   // is used for two purposes: keep track of running callbacks and signal that the
   // stage has stopped to fail incoming async callback invocations by being set to null
-  private val asyncCallbacksInProgress = new AtomicReference[List[Promise[Done]]](Nil)
-
+  private val asyncCallbacksInProgress =
+    new AtomicReference[TrieMap[Promise[Done], NotUsed]](TrieMap.empty[Promise[Done], NotUsed])
   private var _stageActor: StageActor = _
   final def stageActor: StageActor = _stageActor match {
     case null => throw StageActorRefNotInitializedException()
@@ -1363,34 +1363,18 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // make sure any invokeWithFeedback after this fails fast
     // and fail current outstanding invokeWithFeedback promises
     val inProgress = asyncCallbacksInProgress.getAndSet(null)
-    if (inProgress.nonEmpty) {
+    if (inProgress ne null) {
       val exception = streamDetachedException
-      inProgress.foreach(_.tryFailure(exception))
+      for ((callback, _) <- inProgress) callback.tryFailure(exception)
     }
     cleanUpSubstreams(OptionVal.None)
   }
 
-  private[this] var asyncCleanupCounter = 0L
-
   /** Called from interpreter thread by GraphInterpreter.runAsyncInput */
-  private[stream] def onFeedbackDispatched(): Unit = {
-    asyncCleanupCounter += 1
-
-    // 256 seemed to be a sweet spot in SendQueueBenchmark.queue benchmarks
-    // It means that at most 255 completed promises are retained per logic that
-    // uses invokeWithFeedback callbacks.
-    //
-    // TODO: add periodical cleanup to get rid of those 255 promises as well
-    if (asyncCleanupCounter % 256 == 0) {
-      @tailrec def cleanup(): Unit = {
-        val previous = asyncCallbacksInProgress.get()
-        if (previous != null) {
-          val updated = previous.filterNot(_.isCompleted)
-          if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) cleanup()
-        }
-      }
-
-      cleanup()
+  private[stream] def onFeedbackDispatched(donePromise: Promise[Done]): Unit = {
+    val inProgress = asyncCallbacksInProgress.get
+    if (inProgress ne null) {
+      inProgress.remove(donePromise)
     }
   }
 
