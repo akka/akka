@@ -125,6 +125,12 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
   def asJava[JIn <: In]: javadsl.Sink[JIn, Mat @uncheckedVariance] = new javadsl.Sink(this)
+
+  /**
+   * Get all attributes from this `Graph` which have added previously.
+   */
+  override def getAttributes: Attributes = traversalBuilder.attributes
+  
 }
 
 object Sink {

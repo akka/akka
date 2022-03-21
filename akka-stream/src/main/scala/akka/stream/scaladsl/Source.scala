@@ -238,6 +238,11 @@ final class Source[+Out, +Mat](
   **/
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
+
+  /**
+   * Get all attributes from this `Graph` which have added previously.
+   */
+  override def getAttributes: Attributes = traversalBuilder.attributes
 }
 
 object Source {
