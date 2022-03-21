@@ -591,5 +591,5 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    * Get all attributes from this `Graph` which have added previously.
    */
   override def getAttributes: Attributes = delegate.getAttributes
-  
+
 }

@@ -130,7 +130,7 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
    * Get all attributes from this `Graph` which have added previously.
    */
   override def getAttributes: Attributes = traversalBuilder.attributes
-  
+
 }
 
 object Sink {

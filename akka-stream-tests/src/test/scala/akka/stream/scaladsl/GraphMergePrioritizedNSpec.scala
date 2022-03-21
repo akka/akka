@@ -134,7 +134,6 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
       .to(Sink.fromSubscriber(probe))
   }
 
-
   "get Priority from graph" in {
     val elementCount = 10
     case class MyPriority(priority: Int) extends Attribute
@@ -145,11 +144,13 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
 
     val defaultPriority = MyPriority(-1)
 
-    val source1: Source[Int, NotUsed] = Source.fromIterator(() => Iterator.continually(1).take(elementCount)).addAttributes(myAttributes1)
+    val source1: Source[Int, NotUsed] =
+      Source.fromIterator(() => Iterator.continually(1).take(elementCount)).addAttributes(myAttributes1)
     val source2 = Source.fromIterator[Int](() => Iterator.empty).addAttributes(myAttributes2)
     val source3: Source[Int, NotUsed] = Source.fromIterator[Int](() => Iterator.empty).addAttributes(myAttributes3)
 
-    val sourcesAndPriorities = Seq((source1, source1.getAttributes.get[MyPriority](defaultPriority).priority),
+    val sourcesAndPriorities = Seq(
+      (source1, source1.getAttributes.get[MyPriority](defaultPriority).priority),
       (source2, source2.getAttributes.get[MyPriority](defaultPriority).priority),
       (source3, source3.getAttributes.get[MyPriority](defaultPriority).priority));
 
