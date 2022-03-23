@@ -25,20 +25,21 @@ object LargeMessagesStreamSpec {
 }
 
 class LargeMessagesStreamSpec
-    extends ArteryMultiNodeSpec("""
+    extends ArteryMultiNodeSpec(
+      """
     akka {
-      remote.artery.large-message-destinations = [ "/user/large" , "/user/largeWildcard*" ]
+      remote.artery.large-message-destinations = [ "/user/large1", "/user/large2", "/user/large3" , "/user/largeWildcard*" ]
     }
   """.stripMargin) {
 
   import LargeMessagesStreamSpec._
 
+  private val systemA = localSystem
+  private val systemB = newRemoteSystem()
+
   "The large message support" should {
 
     "not affect regular communication" in {
-      val systemA = localSystem
-      val systemB = newRemoteSystem()
-
       val senderProbeA = TestProbe()(systemA)
       val senderProbeB = TestProbe()(systemB)
 
@@ -58,21 +59,18 @@ class LargeMessagesStreamSpec
     }
 
     "pass small regular messages over the large-message stream" in {
-      val systemA = localSystem
-      val systemB = newRemoteSystem()
-
       val senderProbeA = TestProbe()(systemA)
       val senderProbeB = TestProbe()(systemB)
 
       // start actor and make sure it is up and running
-      val large = systemB.actorOf(Props(new EchoSize), "large")
+      val large = systemB.actorOf(Props(new EchoSize), "large1")
       large.tell(Ping(), senderProbeB.ref)
       senderProbeB.expectMsg(Pong(0))
 
       // communicate with it from the other system
       val addressB = RARP(systemB).provider.getDefaultAddress
       val rootB = RootActorPath(addressB)
-      val largeRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "large"))
+      val largeRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "large1"))
       largeRemote.tell(Ping(), senderProbeA.ref)
       senderProbeA.expectMsg(Pong(0))
 
@@ -82,9 +80,6 @@ class LargeMessagesStreamSpec
     }
 
     "accept wildcard suffixes in actor path" in {
-      val systemA = localSystem
-      val systemB = newRemoteSystem()
-
       val senderProbeA = TestProbe()(systemA)
       val senderProbeB = TestProbe()(systemB)
 
@@ -105,25 +100,22 @@ class LargeMessagesStreamSpec
     }
 
     "allow for normal communication while simultaneously sending large messages" in {
-      val systemA = localSystem
-      val systemB = newRemoteSystem()
-
       val senderProbeB = TestProbe()(systemB)
 
       // setup two actors, one with the large flag and one regular
-      val large = systemB.actorOf(Props(new EchoSize), "large")
+      val large = systemB.actorOf(Props(new EchoSize), "large2")
       large.tell(Ping(), senderProbeB.ref)
       senderProbeB.expectMsg(Pong(0))
 
-      val regular = systemB.actorOf(Props(new EchoSize), "regular")
+      val regular = systemB.actorOf(Props(new EchoSize), "regular2")
       regular.tell(Ping(), senderProbeB.ref)
       senderProbeB.expectMsg(Pong(0))
 
       // both up and running, resolve remote refs
       val addressB = RARP(systemB).provider.getDefaultAddress
       val rootB = RootActorPath(addressB)
-      val largeRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "large"))
-      val regularRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "regular"))
+      val largeRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "large2"))
+      val regularRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "regular2"))
 
       // send a large message, as well as some regular ones
       val probeSmall = TestProbe()(systemA)
