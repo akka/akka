@@ -4577,9 +4577,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
         })
       .asJava
 
-  /**
-   * Get all attributes from this `Graph` which have added previously.
-   */
   override def getAttributes: Attributes = delegate.getAttributes
 
 }

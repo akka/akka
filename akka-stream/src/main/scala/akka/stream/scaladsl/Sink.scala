@@ -126,9 +126,6 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
    */
   def asJava[JIn <: In]: javadsl.Sink[JIn, Mat @uncheckedVariance] = new javadsl.Sink(this)
 
-  /**
-   * Get all attributes from this `Graph` which have added previously.
-   */
   override def getAttributes: Attributes = traversalBuilder.attributes
 
 }

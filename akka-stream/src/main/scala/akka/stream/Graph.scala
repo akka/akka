@@ -79,9 +79,6 @@ trait Graph[+S <: Shape, +M] {
    */
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
 
-  /**
-   * Get all attributes from this `Graph` which have added previously.
-   */
   def getAttributes: Attributes = traversalBuilder.attributes
 
 }

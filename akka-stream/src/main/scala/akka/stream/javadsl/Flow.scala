@@ -4009,9 +4009,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
         })
       .asJava
 
-  /**
-   * Get all attributes from this `Graph` which have added previously.
-   */
   override def getAttributes: Attributes = delegate.getAttributes
 
 }

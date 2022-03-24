@@ -775,9 +775,6 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.RunnableGraph[Mat] = javadsl.RunnableGraph.fromGraph(this)
 
-  /**
-   * Get all attributes from this `Graph` which have added previously.
-   */
   override def getAttributes: Attributes = traversalBuilder.attributes
 }
 
