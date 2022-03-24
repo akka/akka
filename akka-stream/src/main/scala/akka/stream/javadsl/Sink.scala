@@ -587,4 +587,6 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
   override def async(dispatcher: String, inputBufferSize: Int): javadsl.Sink[In, Mat] =
     new Sink(delegate.async(dispatcher, inputBufferSize))
 
+  override def getAttributes: Attributes = delegate.getAttributes
+
 }

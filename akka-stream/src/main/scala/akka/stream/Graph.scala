@@ -78,6 +78,9 @@ trait Graph[+S <: Shape, +M] {
    * less specific than attributes set directly on the individual graphs of the composite.
    */
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
+
+  def getAttributes: Attributes = traversalBuilder.attributes
+
 }
 
 object Graph {

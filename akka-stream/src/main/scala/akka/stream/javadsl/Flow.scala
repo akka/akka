@@ -4008,6 +4008,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
           case Pair(predicate, duration) => (agg => predicate.test(agg), duration.asScala)
         })
       .asJava
+
+  override def getAttributes: Attributes = delegate.getAttributes
+
 }
 
 object RunnableGraph {
