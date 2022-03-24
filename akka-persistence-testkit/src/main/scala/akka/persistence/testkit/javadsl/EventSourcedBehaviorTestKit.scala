@@ -190,9 +190,7 @@ object EventSourcedBehaviorTestKit {
     /**
      * `true` if there is no reply.
      */
-    def hasNoReply: Boolean =
-      try reply == null
-      catch { case _: AssertionError => false }
+    def hasNoReply: Boolean = delegate.hasNoReply
 
   }
 
