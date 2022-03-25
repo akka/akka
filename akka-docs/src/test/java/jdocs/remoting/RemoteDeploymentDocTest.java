@@ -61,7 +61,7 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
     Props props = Props.create(SampleActor.class).withDeploy(new Deploy(new RemoteScope(addr)));
     ActorRef ref = system.actorOf(props);
     // #deploy
-    assertEquals(ref.path().address(), addr);
+    assertEquals(addr, ref.path().address());
   }
 
   @Test
