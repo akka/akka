@@ -150,6 +150,7 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="dropwhile"></a>@ref[dropWhile](Source-or-Flow/dropWhile.md)|Drop elements as long as a predicate function return true for the element|
 |Source/Flow|<a name="filter"></a>@ref[filter](Source-or-Flow/filter.md)|Filter the incoming elements using a predicate.|
 |Source/Flow|<a name="filternot"></a>@ref[filterNot](Source-or-Flow/filterNot.md)|Filter the incoming elements using a predicate.|
+|Flow|<a name="flattenoptional"></a>@ref[flattenOptional](Flow/flattenOptional.md)|Collect the value of `Optional` from all the elements passing through this flow , empty `Optional` is filtered out.|
 |Source/Flow|<a name="fold"></a>@ref[fold](Source-or-Flow/fold.md)|Start with current value `zero` and then apply the current and next value to the given function. When upstream completes, the current value is emitted downstream.|
 |Source/Flow|<a name="foldasync"></a>@ref[foldAsync](Source-or-Flow/foldAsync.md)|Just like `fold` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.|
 |Source/Flow|<a name="frommaterializer"></a>@ref[fromMaterializer](Source-or-Flow/fromMaterializer.md)|Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`|
@@ -423,6 +424,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [flatMapConcat](Source-or-Flow/flatMapConcat.md)
 * [flatMapMerge](Source-or-Flow/flatMapMerge.md)
 * [flatMapPrefix](Source-or-Flow/flatMapPrefix.md)
+* [flattenOptional](Flow/flattenOptional.md)
 * [fold](Source-or-Flow/fold.md)
 * [fold](Sink/fold.md)
 * [foldAsync](Source-or-Flow/foldAsync.md)
