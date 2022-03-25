@@ -152,10 +152,10 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
     val source2 = Source.fromIterator[Int](() => Iterator.empty).addAttributes(myAttributes2)
     val source3: Source[Int, NotUsed] = Source.fromIterator[Int](() => Iterator.empty).addAttributes(myAttributes3)
 
-    val sourcesAndPriorities = Seq(
+    val sourcesAndPriorities = List(
       (source1, source1.getAttributes.get[MyPriority](defaultPriority).priority),
       (source2, source2.getAttributes.get[MyPriority](defaultPriority).priority),
-      (source3, source3.getAttributes.get[MyPriority](defaultPriority).priority));
+      (source3, source3.getAttributes.get[MyPriority](defaultPriority).priority))
 
     val probe = TestSubscriber.manualProbe[Int]()
 
@@ -163,7 +163,7 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
 
     val subscription = probe.expectSubscription()
 
-    var collected = Seq.empty[Int]
+    var collected = Vector.empty[Int]
     for (_ <- 1 to elementCount) {
       subscription.request(1)
       collected :+= probe.expectNext()
