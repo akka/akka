@@ -4,7 +4,6 @@
 
 package jdocs.remoting;
 
-import akka.actor.*;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import jdocs.AbstractJavaTest;
@@ -14,8 +13,16 @@ import org.junit.Test;
 import com.typesafe.config.ConfigFactory;
 
 // #import
+import akka.actor.ActorRef;
+import akka.actor.Address;
+import akka.actor.AddressFromURIString;
+import akka.actor.Deploy;
+import akka.actor.Props;
+import akka.actor.ActorSystem;
 import akka.remote.RemoteScope;
 // #import
+
+import akka.actor.AbstractActor;
 
 import static org.junit.Assert.assertEquals;
 
@@ -52,10 +59,8 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateDeployment() {
     // #make-address
-    Address addr = new Address("akka", "sys", "localhost", 1234);
-    addr =
-        AddressFromURIString.parse(
-            String.format("%s://%s@localhost:%d", "akka", "sys", 1234)); // the same
+    Address addr = new Address("akka", "sys", "host", 1234);
+    addr = AddressFromURIString.parse("akka://sys@host:1234"); // the same
     // #make-address
     // #deploy
     Props props = Props.create(SampleActor.class).withDeploy(new Deploy(new RemoteScope(addr)));
