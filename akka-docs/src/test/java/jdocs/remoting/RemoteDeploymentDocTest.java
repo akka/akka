@@ -23,6 +23,8 @@ import akka.remote.RemoteScope;
 
 import akka.actor.AbstractActor;
 
+import static org.junit.Assert.assertEquals;
+
 public class RemoteDeploymentDocTest extends AbstractJavaTest {
 
   public static class SampleActor extends AbstractActor {
@@ -57,7 +59,7 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
         system.actorOf(
             Props.create(SampleActor.class).withDeploy(new Deploy(new RemoteScope(addr))));
     // #deploy
-    assert ref.path().address().equals(addr);
+    assertEquals(ref.path().address(), addr);
   }
 
   @Test
