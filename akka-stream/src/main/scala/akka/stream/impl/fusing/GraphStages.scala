@@ -77,7 +77,7 @@ import akka.stream.stage._
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final class Detacher[T] extends SimpleLinearGraphStage[T] {
+  @InternalApi private[akka] object Detacher extends SimpleLinearGraphStage[Any] {
     override def initialAttributes = DefaultAttributes.detacher
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -114,8 +114,7 @@ import akka.stream.stage._
     override def toString = "Detacher"
   }
 
-  private val _detacher = new Detacher[Any]
-  def detacher[T]: GraphStage[FlowShape[T, T]] = _detacher.asInstanceOf[GraphStage[FlowShape[T, T]]]
+  def detacher[T]: GraphStage[FlowShape[T, T]] = Detacher.asInstanceOf[SimpleLinearGraphStage[T]]
 
   private object TerminationWatcher extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Done]] {
     val in = Inlet[Any]("terminationWatcher.in")
