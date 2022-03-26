@@ -37,14 +37,14 @@ To add Lombok to a Maven project, declare it as a simple dependency:
       String email;
     }
 
-The example does not demonstrate other useful Lombok features like `@Builder` or `@Wither` which will help
+The example does not demonstrate other useful Lombok features like `@Builder` or `@With` which will help
 you create builder and copy methods. Be aware that Lombok is not an immutability library but a
 code generation library which means some setups might not create immutable objects.
-For example, Lombok’s @Data is equivalent to Lombok’s @Value but will also synthesize mutable methods.
-Don’t use Lombok’s @Data when creating immutable classes.
+For example, Lombok’s `@Data` is equivalent to Lombok’s `@Value` but will also synthesize mutable methods.
+Don’t use Lombok’s `@Data` when creating immutable classes.
 
 Using Lombok for creating a message class for actors is quite simple. In following example, Message class
-just defines the member variable and Lombok annotation '@Value' takes care of creating methods like
+just defines the member variable and Lombok annotation `@Value` takes care of creating methods like
 getter, toString, hashCode, equals.
 
     public class MyActor extends AbstractActor {
