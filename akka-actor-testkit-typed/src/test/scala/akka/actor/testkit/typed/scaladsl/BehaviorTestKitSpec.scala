@@ -13,6 +13,7 @@ import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, Props, Terminated }
+import org.junit.Assert.assertEquals
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.event.Level
@@ -50,6 +51,7 @@ object BehaviorTestKitSpec {
         extends Command
     case class CancelScheduleCommand(key: Any) extends Command
     case class IsTimerActive(key: Any, replyTo: ActorRef[Boolean]) extends Command
+    case object StopSelf extends Command
 
     val init: Behavior[Command] = Behaviors.withTimers { timers =>
       Behaviors
@@ -138,6 +140,8 @@ object BehaviorTestKitSpec {
             case IsTimerActive(key, replyTo) =>
               replyTo ! timers.isTimerActive(key)
               Behaviors.same
+            case StopSelf =>
+              Behaviors.stopped
             case unexpected =>
               throw new RuntimeException(s"Unexpected command: $unexpected")
           }
@@ -394,6 +398,19 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       testkit.run(SpawnChild)
       val newChild = testkit.expectEffectType[Spawned[_]]
       child.childName shouldBe newChild.childName
+    }
+
+    "start and stop child and then stop testkit itself" in {
+      val testkit = BehaviorTestKit(Parent.init)
+      testkit.run(SpawnChild)
+      val child = testkit.expectEffectType[Spawned[String]]
+      testkit.run(StopChild(child.ref))
+      testkit.expectEffect(Stopped(child.childName))
+
+      val ok = testkit.stopSelf(StopSelf)
+      assertEquals(true, ok)
+      testkit.expectEffect(Stopped(testkit.ref.path.name))
+      assertEquals(false, testkit.hasEffects())
     }
   }
   "BehaviorTestKit's receptionist support" must {

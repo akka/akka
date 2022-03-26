@@ -172,6 +172,19 @@ private[akka] final class BehaviorTestKitImpl[T](
   override def clearLog(): Unit = context.clearLog()
 
   override def receptionistInbox(): TestInboxImpl[Receptionist.Command] = context.system.receptionistInbox
+
+  override def stopSelf(message: T): Boolean = {
+    try {
+      context.setCurrentActorThread()
+      currentUncanonical = Behavior.interpretMessage(current, context, message)
+      current = Behaviors.stopped
+      context.effectQueue.clear()
+      context.effectQueue.offer(Stopped(_path.name))
+    } finally {
+      context.clearCurrentActorThread()
+    }
+    !isAlive
+  }
 }
 
 private[akka] object BehaviorTestKitImpl {

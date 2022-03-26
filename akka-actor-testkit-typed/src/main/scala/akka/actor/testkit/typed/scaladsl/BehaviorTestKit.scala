@@ -155,4 +155,9 @@ trait BehaviorTestKit[T] {
    * The receptionist inbox contains messages sent to `system.receptionist`
    */
   def receptionistInbox(): TestInbox[Receptionist.Command]
+
+  /**
+   * Stop this testkit and return true if this testkit stop successfully.
+   */
+  def stopSelf(message: T): Boolean
 }
