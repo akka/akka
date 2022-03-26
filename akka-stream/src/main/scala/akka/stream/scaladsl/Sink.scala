@@ -302,6 +302,12 @@ object Sink {
   def ignore: Sink[Any, Future[Done]] = fromGraph(GraphStages.IgnoreSink)
 
   /**
+   * A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream.
+   * */
+  def never: Sink[Any, Future[Done]] = _never
+  private[this] val _never: Sink[Any, Future[Done]] = fromGraph(GraphStages.NeverSink)
+
+  /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
    * into a [[scala.concurrent.Future]] which will be completed with `Success` when reaching the
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
