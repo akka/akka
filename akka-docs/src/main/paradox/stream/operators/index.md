@@ -299,6 +299,7 @@ There is a number of fan-out operators for which currently no 'fluent' is API av
 | |<a name="unzip"></a>@ref[Unzip](Unzip.md)|Takes a stream of two element tuples and unzips the two elements ino two different downstreams.|
 | |<a name="unzipwith"></a>@ref[UnzipWith](UnzipWith.md)|Splits each element of input into multiple downstreams using a function|
 |Source/Flow|<a name="alsoto"></a>@ref[alsoTo](Source-or-Flow/alsoTo.md)|Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.|
+|Source/Flow|<a name="alsotoall"></a>@ref[alsoToAll](Source-or-Flow/alsoToAll.md)|Attaches the given @apidoc[Source]s to this @apidoc[Flow], meaning that elements that pass through this @apidoc[Flow] will also be sent to all those @apidoc[Sink]s.|
 |Source/Flow|<a name="divertto"></a>@ref[divertTo](Source-or-Flow/divertTo.md)|Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.|
 |Source/Flow|<a name="wiretap"></a>@ref[wireTap](Source-or-Flow/wireTap.md)|Attaches the given `Sink` to this `Flow` as a wire tap, meaning that elements that pass through will also be sent to the wire-tap `Sink`, without the latter affecting the mainline flow.|
 
@@ -374,6 +375,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRefWithBackpressure](ActorSink/actorRefWithBackpressure.md)
 * [aggregateWithBoundary](Source-or-Flow/aggregateWithBoundary.md)
 * [alsoTo](Source-or-Flow/alsoTo.md)
+* [alsoToAll](Source-or-Flow/alsoToAll.md)
 * [asFlowWithContext](Flow/asFlowWithContext.md)
 * [asInputStream](StreamConverters/asInputStream.md)
 * [asJavaStream](StreamConverters/asJavaStream.md)

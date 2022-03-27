@@ -1349,6 +1349,12 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseAlsoToAll() {
+    final Flow<Integer, Integer, NotUsed> f =
+        Flow.of(Integer.class).alsoToAll(Sink.ignore(), Sink.ignore());
+  }
+
+  @Test
   public void mustBeAbleToUseDivertTo() {
     final Flow<Integer, Integer, NotUsed> f =
         Flow.of(Integer.class).divertTo(Sink.ignore(), e -> true);

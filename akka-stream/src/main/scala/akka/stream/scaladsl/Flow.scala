@@ -3196,7 +3196,7 @@ trait FlowOps[+Out, +Mat] {
   def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed
 
   /**
-   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that pass
+   * Attaches the given [[Sink]] to this [[Source]], meaning that elements that pass
    * through will also be sent to the [[Sink]].
    *
    * It is similar to [[#wireTap]] but will backpressure instead of dropping elements when the given [[Sink]] is not ready.
@@ -3218,6 +3218,32 @@ trait FlowOps[+Out, +Mat] {
       bcast.out(1) ~> r
       FlowShape(bcast.in, bcast.out(0))
     }
+
+  /**
+   * Attaches the given [[Sink]]s to this [[Source]], meaning that elements that pass
+   * through will also be sent to the [[Sink]].
+   *
+   * It is similar to [[#wireTap]] but will backpressure instead of dropping elements when the given [[Sink]]s is not ready.
+   *
+   * '''Emits when''' element is available and demand exists both from the Sinks and the downstream.
+   *
+   * '''Backpressures when''' downstream or any of the [[Sink]]s backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream or any of the [[Sink]]s cancels
+   */
+  def alsoToAll(those: Graph[SinkShape[Out], _]*): Repr[Out] = those match {
+    case those if those.isEmpty => this.asInstanceOf[Repr[Out]]
+    case _ =>
+      via(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
+        val bcast = b.add(Broadcast[Out](those.size + 1, eagerCancel = true))
+        for ((that, idx) <- those.zipWithIndex)
+          bcast.out(idx + 1) ~> that
+        FlowShape(bcast.in, bcast.out(0))
+      })
+  }
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements will be sent to the [[Sink]]
