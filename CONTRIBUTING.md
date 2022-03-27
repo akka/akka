@@ -571,6 +571,8 @@ Documentation of Akka Streams operators is automatically enforced.
 If a method exists on Source / Sink / Flow, or any other class listed in `project/StreamOperatorsIndexGenerator.scala`,
 it must also have a corresponding documentation page under `akka-docs/src/main/paradox/streams/operators/...`.
 
+Akka Streams operators' consistency is enforced by `ConsistencySpec`, normally an operator should exist on both Source / SubSource, Flow / SubFlow, Sink / SubSink.
+
 The pages structure is well-defined and must be the same on all documentation pages. Please refer to any neighbouring
 docs pages in there to see the pattern in action. In general the page must consist of:
 
