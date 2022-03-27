@@ -1,0 +1,2 @@
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.BehaviorTestKit.stopSelf")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.BehaviorTestKitImpl.stopSelf")
