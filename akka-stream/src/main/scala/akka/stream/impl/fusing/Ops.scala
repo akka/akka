@@ -2201,8 +2201,12 @@ private[stream] object Collect {
  */
 @InternalApi
 @ccompatUsedUntil213
-private[akka] final class StatefulMapConcat[In, Out](val f: () => In => IterableOnce[Out])
+private[akka] final class StatefulMapConcat[In, Out](
+    val f: () => In => IterableOnce[Out],
+    val onComplete: () => IterableOnce[Out])
     extends GraphStage[FlowShape[In, Out]] {
+  def this(f: () => In => IterableOnce[Out]) = this(f, null)
+
   val in = Inlet[In]("StatefulMapConcat.in")
   val out = Outlet[Out]("StatefulMapConcat.out")
   override val shape = FlowShape(in, out)
@@ -2214,6 +2218,7 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
     var currentIterator: Iterator[Out] = _
     var plainFun = f()
     val contextPropagation = ContextPropagation()
+    private var willStop: Boolean = false
 
     def hasNext = if (currentIterator != null) currentIterator.hasNext else false
 
@@ -2226,7 +2231,17 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
         if (hasNext) {
           // suspend context for the next element
           contextPropagation.suspendContext()
-        } else if (isClosed(in)) completeStage()
+        } else if (isClosed(in)) {
+          if ((onComplete eq null) || willStop) {
+            completeStage()
+          } else {
+            try {
+              currentIterator = onComplete().iterator
+              contextPropagation.suspendContext()
+              willStop = true
+            } catch handleException
+          }
+        }
       } else if (!isClosed(in))
         pull(in)
       else completeStage()
