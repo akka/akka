@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 
 import akka.Done
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.DefaultTimeout
 import org.scalatest.time.{ Millis, Span }
 
@@ -440,7 +439,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
   "Source.futureSource" must {
 
-    "not cancel substream twice" in assertAllStagesStopped {
+    "not cancel substream twice" in {
       val result = Source
         .futureSource(akka.pattern.after(2.seconds)(Future.successful(Source(1 to 2))))
         .merge(Source(3 to 4))

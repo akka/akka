@@ -12,7 +12,6 @@ import akka.stream.{ OverflowStrategy, _ }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.annotation.nowarn
 
@@ -72,7 +71,7 @@ class ActorRefSourceSpec extends StreamSpec {
       for (n <- 200 to 299) sub.expectNext(n)
     }
 
-    "terminate when the stream is cancelled" in assertAllStagesStopped {
+    "terminate when the stream is cancelled" in {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
         .actorRef(PartialFunction.empty, PartialFunction.empty, 0, OverflowStrategy.fail)
@@ -84,7 +83,7 @@ class ActorRefSourceSpec extends StreamSpec {
       expectTerminated(ref)
     }
 
-    "not fail when 0 buffer space and demand is signalled" in assertAllStagesStopped {
+    "not fail when 0 buffer space and demand is signalled" in {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
         .actorRef(PartialFunction.empty, PartialFunction.empty, 0, OverflowStrategy.dropHead)
@@ -97,7 +96,7 @@ class ActorRefSourceSpec extends StreamSpec {
       expectTerminated(ref)
     }
 
-    "signal buffered elements and complete the stream after receiving Status.Success" in assertAllStagesStopped {
+    "signal buffered elements and complete the stream after receiving Status.Success" in {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
         .actorRef({ case "ok" => CompletionStrategy.draining }, PartialFunction.empty, 3, OverflowStrategy.fail)
@@ -113,7 +112,7 @@ class ActorRefSourceSpec extends StreamSpec {
       s.expectComplete()
     }
 
-    "signal buffered elements and complete the stream after receiving a Status.Success companion" in assertAllStagesStopped {
+    "signal buffered elements and complete the stream after receiving a Status.Success companion" in {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
         .actorRef({ case "ok" => CompletionStrategy.draining }, PartialFunction.empty, 3, OverflowStrategy.fail)
@@ -129,7 +128,7 @@ class ActorRefSourceSpec extends StreamSpec {
       s.expectComplete()
     }
 
-    "signal buffered elements and complete the stream after receiving a Status.Success with CompletionStrategy.Draining" in assertAllStagesStopped {
+    "signal buffered elements and complete the stream after receiving a Status.Success with CompletionStrategy.Draining" in {
       val (ref, s) = Source
         .actorRef({ case "ok" => CompletionStrategy.draining }, PartialFunction.empty, 100, OverflowStrategy.fail)
         .toMat(TestSink.probe[Int])(Keep.both)
@@ -146,7 +145,7 @@ class ActorRefSourceSpec extends StreamSpec {
       s.expectComplete()
     }
 
-    "not signal buffered elements but complete immediately the stream after receiving a Status.Success with CompletionStrategy.Immediately" in assertAllStagesStopped {
+    "not signal buffered elements but complete immediately the stream after receiving a Status.Success with CompletionStrategy.Immediately" in {
       val (ref, s) = Source
         .actorRef({ case "ok" => CompletionStrategy.immediately }, PartialFunction.empty, 100, OverflowStrategy.fail)
         .toMat(TestSink.probe[Int])(Keep.both)
@@ -170,7 +169,7 @@ class ActorRefSourceSpec extends StreamSpec {
       verifyNext(1)
     }
 
-    "not buffer elements after receiving Status.Success" in assertAllStagesStopped {
+    "not buffer elements after receiving Status.Success" in {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
         .actorRef({ case "ok" => CompletionStrategy.draining }, PartialFunction.empty, 3, OverflowStrategy.dropBuffer)
@@ -189,7 +188,7 @@ class ActorRefSourceSpec extends StreamSpec {
       s.expectComplete()
     }
 
-    "complete and materialize the stream after receiving completion message" in assertAllStagesStopped {
+    "complete and materialize the stream after receiving completion message" in {
       val (ref, done) = {
         Source
           .actorRef({ case "ok" => CompletionStrategy.draining }, PartialFunction.empty, 3, OverflowStrategy.dropBuffer)
@@ -200,7 +199,7 @@ class ActorRefSourceSpec extends StreamSpec {
       done.futureValue should be(Done)
     }
 
-    "fail the stream when receiving failure message" in assertAllStagesStopped {
+    "fail the stream when receiving failure message" in {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
         .actorRef(PartialFunction.empty, { case Status.Failure(exc) => exc }, 10, OverflowStrategy.fail)
@@ -212,7 +211,7 @@ class ActorRefSourceSpec extends StreamSpec {
       s.expectError(exc)
     }
 
-    "set actor name equal to stage name" in assertAllStagesStopped {
+    "set actor name equal to stage name" in {
       val s = TestSubscriber.manualProbe[Int]()
       val name = "SomeCustomName"
       val ref = Source

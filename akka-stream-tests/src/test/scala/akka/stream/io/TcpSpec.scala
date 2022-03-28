@@ -41,7 +41,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Tcp.IncomingConnection
 import akka.stream.scaladsl.Tcp.ServerBinding
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 import akka.testkit.SocketUtil.{ temporaryServerAddress, temporaryServerHostnameAndPort }
 import akka.testkit.TestKit
@@ -101,7 +100,7 @@ class TcpSpec extends StreamSpec("""
 
   "Outgoing TCP stream" must {
 
-    "work in the happy case" in assertAllStagesStopped {
+    "work in the happy case" in {
       val testData = ByteString(1, 2, 3, 4, 5)
 
       val server = new Server()
@@ -157,20 +156,20 @@ class TcpSpec extends StreamSpec("""
 
     }
 
-    "fail the materialized future when the connection fails" in assertAllStagesStopped {
+    "fail the materialized future when the connection fails" in {
       val tcpWriteProbe = new TcpWriteProbe()
       val future = Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .viaMat(Tcp(system).outgoingConnection(
-          InetSocketAddress.createUnresolved("example.com", 666),
-          connectTimeout = 1.second))(Keep.right)
+        .viaMat(Tcp(system)
+          .outgoingConnection(InetSocketAddress.createUnresolved("example.com", 666), connectTimeout = 1.second))(
+          Keep.right)
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
       future.failed.futureValue shouldBe a[StreamTcpException]
     }
 
-    "work when client closes write, then remote closes write" in assertAllStagesStopped {
+    "work when client closes write, then remote closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -204,7 +203,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "work when remote closes write, then client closes write" in assertAllStagesStopped {
+    "work when remote closes write, then client closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -236,7 +235,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "work when client closes read, then client closes write" in assertAllStagesStopped {
+    "work when client closes read, then client closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -272,7 +271,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "work when client closes write, then client closes read" in assertAllStagesStopped {
+    "work when client closes write, then client closes read" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -309,7 +308,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "work when client closes read, then server closes write, then client closes write" in assertAllStagesStopped {
+    "work when client closes read, then server closes write, then client closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -342,7 +341,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "shut everything down if client signals error" in assertAllStagesStopped {
+    "shut everything down if client signals error" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -373,7 +372,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "shut everything down if client signals error after remote has closed write" in assertAllStagesStopped {
+    "shut everything down if client signals error after remote has closed write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -405,7 +404,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "shut down both streams when connection is aborted remotely" in assertAllStagesStopped {
+    "shut down both streams when connection is aborted remotely" in {
       // Client gets a PeerClosed event and does not know that the write side is also closed
       val server = new Server()
 
@@ -469,7 +468,7 @@ class TcpSpec extends StreamSpec("""
       server.close()
     }
 
-    "properly half-close by default" in assertAllStagesStopped {
+    "properly half-close by default" in {
       val writeButDontRead: Flow[ByteString, ByteString, NotUsed] =
         Flow.fromSinkAndSource(Sink.cancelled, Source.single(ByteString("Early response")))
 
@@ -492,7 +491,7 @@ class TcpSpec extends StreamSpec("""
       binding.unbind()
     }
 
-    "properly full-close if requested" in assertAllStagesStopped {
+    "properly full-close if requested" in {
       val writeButIgnoreRead: Flow[ByteString, ByteString, NotUsed] =
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
@@ -701,7 +700,7 @@ class TcpSpec extends StreamSpec("""
       binding4.unbind().futureValue
     }
 
-    "not shut down connections after the connection stream cancelled" in assertAllStagesStopped {
+    "not shut down connections after the connection stream cancelled" in {
 
       // configure a few timeouts we do not want to hit
       val config = ConfigFactory.parseString("""
@@ -771,7 +770,7 @@ class TcpSpec extends StreamSpec("""
       }
     }
 
-    "handle single connection when connection flow is immediately cancelled" in assertAllStagesStopped {
+    "handle single connection when connection flow is immediately cancelled" in {
       implicit val ec: ExecutionContext = system.dispatcher
 
       val (bindingFuture, connection) = Tcp(system).bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
@@ -789,7 +788,7 @@ class TcpSpec extends StreamSpec("""
       binding.unbind()
     }
 
-    "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
+    "shut down properly even if some accepted connection Flows have not been subscribed to" in {
       val address = temporaryServerAddress()
       val firstClientConnected = Promise[Unit]()
       val secondClientIgnored = Promise[Unit]()

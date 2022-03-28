@@ -10,7 +10,6 @@ import akka.actor.Status
 import akka.stream.CompletionStrategy
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 
@@ -23,7 +22,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
 
   "An Source.actorRefWithBackpressure" must {
 
-    "emit received messages to the stream and ack" in assertAllStagesStopped {
+    "emit received messages to the stream and ack" in {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](
@@ -48,7 +47,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       s.expectComplete()
     }
 
-    "fail when consumer does not await ack" in assertAllStagesStopped {
+    "fail when consumer does not await ack" in {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](AckMsg, PartialFunction.empty, PartialFunction.empty)
@@ -76,7 +75,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       verifyNext(1)
     }
 
-    "complete after receiving Status.Success" in assertAllStagesStopped {
+    "complete after receiving Status.Success" in {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](
@@ -96,7 +95,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       s.expectComplete()
     }
 
-    "fail after receiving Status.Failure" in assertAllStagesStopped {
+    "fail after receiving Status.Failure" in {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](
@@ -116,7 +115,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       s.expectError(TE("test"))
     }
 
-    "not buffer elements after receiving Status.Success" in assertAllStagesStopped {
+    "not buffer elements after receiving Status.Success" in {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](

@@ -15,6 +15,9 @@ import akka.stream.impl.StreamSupervisor
 import akka.stream.snapshot.{ MaterializerState, StreamSnapshotImpl }
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.testkit.TestKitUtils
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.testkit.scaladsl.StreamTestKit.{ assertNoChildren, stopAllChildren }
+import akka.stream.Materializer
 
 abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
   def this(config: Config) =
@@ -54,7 +57,15 @@ abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
                 akka.stream.testkit.scaladsl.StreamTestKit.snapshotString(s.asInstanceOf[StreamSnapshotImpl])))
         }
         failed
-      case other => other
+      case other =>
+        Materializer(_system) match {
+          case impl: PhasedFusingActorMaterializer =>
+            stopAllChildren(impl.system, impl.supervisor)
+            val result = test.apply()
+            assertNoChildren(impl.system, impl.supervisor)
+            result
+          case _ => other
+        }
     }
   }
 }

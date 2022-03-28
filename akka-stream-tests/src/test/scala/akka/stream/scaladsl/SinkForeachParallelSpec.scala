@@ -16,7 +16,6 @@ import scala.annotation.nowarn
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 
@@ -24,7 +23,7 @@ import akka.testkit.TestProbe
 class SinkForeachParallelSpec extends StreamSpec {
 
   "A ForeachParallel" must {
-    "produce elements in the order they are ready" in assertAllStagesStopped {
+    "produce elements in the order they are ready" in {
       import system.dispatcher
 
       val probe = TestProbe()
@@ -74,7 +73,7 @@ class SinkForeachParallelSpec extends StreamSpec {
 
     }
 
-    "resume after function failure" in assertAllStagesStopped {
+    "resume after function failure" in {
       import system.dispatcher
 
       val probe = TestProbe()
@@ -97,7 +96,7 @@ class SinkForeachParallelSpec extends StreamSpec {
       Await.result(p, 5.seconds)
     }
 
-    "finish after function thrown exception" in assertAllStagesStopped {
+    "finish after function thrown exception" in {
       import system.dispatcher
 
       val probe = TestProbe()
@@ -129,7 +128,7 @@ class SinkForeachParallelSpec extends StreamSpec {
       a[RuntimeException] must be thrownBy Await.result(p, 3.seconds)
     }
 
-    "handle empty source" in assertAllStagesStopped {
+    "handle empty source" in {
       import system.dispatcher
 
       val p = Source(List.empty[Int]).runWith(Sink.foreachParallel(3)(a => ()))

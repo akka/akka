@@ -11,7 +11,6 @@ import akka.stream.BufferOverflowException
 import akka.stream.OverflowStrategy
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.annotation.nowarn
 
@@ -35,7 +34,7 @@ class FlowBufferSpec extends StreamSpec("""
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
-    "pass elements through a chain of backpressured buffers of different size" in assertAllStagesStopped {
+    "pass elements through a chain of backpressured buffers of different size" in {
       val future = Source(1 to 1000)
         .buffer(1, overflowStrategy = OverflowStrategy.backpressure)
         .buffer(10, overflowStrategy = OverflowStrategy.backpressure)
@@ -201,7 +200,7 @@ class FlowBufferSpec extends StreamSpec("""
       subscriber.cancel()
     }
 
-    "fail upstream if buffer is full and configured so" in assertAllStagesStopped {
+    "fail upstream if buffer is full and configured so" in {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 

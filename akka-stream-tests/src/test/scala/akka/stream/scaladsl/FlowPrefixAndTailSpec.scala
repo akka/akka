@@ -13,7 +13,6 @@ import scala.annotation.nowarn
 
 import akka.stream._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowPrefixAndTailSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -26,7 +25,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
 
     def newHeadSink = Sink.head[(immutable.Seq[Int], Source[Int, _])]
 
-    "work on empty input" in assertAllStagesStopped {
+    "work on empty input" in {
       val futureSink = newHeadSink
       val fut = Source.empty.prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
@@ -36,7 +35,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       tailSubscriber.expectSubscriptionAndComplete()
     }
 
-    "work on short input" in assertAllStagesStopped {
+    "work on short input" in {
       val futureSink = newHeadSink
       val fut = Source(List(1, 2, 3)).prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
@@ -46,7 +45,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       tailSubscriber.expectSubscriptionAndComplete()
     }
 
-    "work on longer inputs" in assertAllStagesStopped {
+    "work on longer inputs" in {
       val futureSink = newHeadSink
       val fut = Source(1 to 10).prefixAndTail(5).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
@@ -57,7 +56,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       Await.result(fut2, 3.seconds) should be(6 to 10)
     }
 
-    "handle zero take count" in assertAllStagesStopped {
+    "handle zero take count" in {
       val futureSink = newHeadSink
       val fut = Source(1 to 10).prefixAndTail(0).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
@@ -68,7 +67,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
-    "handle negative take count" in assertAllStagesStopped {
+    "handle negative take count" in {
       val futureSink = newHeadSink
       val fut = Source(1 to 10).prefixAndTail(-1).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
@@ -79,7 +78,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
-    "work if size of take is equal to stream size" in assertAllStagesStopped {
+    "work if size of take is equal to stream size" in {
       val futureSink = newHeadSink
       val fut = Source(1 to 10).prefixAndTail(10).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
@@ -90,7 +89,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       subscriber.expectSubscriptionAndComplete()
     }
 
-    "throw if tail is attempted to be materialized twice" in assertAllStagesStopped {
+    "throw if tail is attempted to be materialized twice" in {
       val futureSink = newHeadSink
       val fut = Source(1 to 3).prefixAndTail(1).runWith(futureSink)
       val (prefix, tail) = Await.result(fut, 3.seconds)
@@ -113,7 +112,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       subscriber1.requestNext(3).expectComplete()
     }
 
-    "signal error if substream has been not subscribed in time" in assertAllStagesStopped {
+    "signal error if substream has been not subscribed in time" in {
       val ms = 300
 
       @nowarn("msg=deprecated")
@@ -134,7 +133,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       subscriber.expectSubscriptionAndError().getMessage should ===(
         s"Substream Source(TailSource) has not been materialized in ${ms} milliseconds")
     }
-    "not fail the stream if substream has not been subscribed in time and configured subscription timeout is noop" in assertAllStagesStopped {
+    "not fail the stream if substream has not been subscribed in time and configured subscription timeout is noop" in {
       @nowarn("msg=deprecated")
       val tightTimeoutMaterializer =
         ActorMaterializer(
@@ -154,14 +153,14 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       subscriber.expectNext(2).expectComplete()
     }
 
-    "shut down main stage if substream is empty, even when not subscribed" in assertAllStagesStopped {
+    "shut down main stage if substream is empty, even when not subscribed" in {
       val futureSink = newHeadSink
       val fut = Source.single(1).prefixAndTail(1).runWith(futureSink)
       val (takes, _) = Await.result(fut, 3.seconds)
       takes should be(Seq(1))
     }
 
-    "handle onError when no substream open" in assertAllStagesStopped {
+    "handle onError when no substream open" in {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[(immutable.Seq[Int], Source[Int, _])]()
 
@@ -179,7 +178,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       subscriber.expectError(testException)
     }
 
-    "handle onError when substream is open" in assertAllStagesStopped {
+    "handle onError when substream is open" in {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[(immutable.Seq[Int], Source[Int, _])]()
 
@@ -206,7 +205,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
 
     }
 
-    "handle master stream cancellation" in assertAllStagesStopped {
+    "handle master stream cancellation" in {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[(immutable.Seq[Int], Source[Int, _])]()
 
@@ -224,7 +223,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       upstream.expectCancellation()
     }
 
-    "handle substream cancellation" in assertAllStagesStopped {
+    "handle substream cancellation" in {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[(immutable.Seq[Int], Source[Int, _])]()
 
@@ -250,7 +249,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
 
     }
 
-    "pass along early cancellation" in assertAllStagesStopped {
+    "pass along early cancellation" in {
       val up = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[(immutable.Seq[Int], Source[Int, _])]()
 

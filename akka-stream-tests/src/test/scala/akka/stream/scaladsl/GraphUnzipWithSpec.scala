@@ -16,7 +16,6 @@ import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 import akka.testkit.TestProbe
 import akka.util.unused
@@ -81,22 +80,22 @@ class GraphUnzipWithSpec extends StreamSpec("""
 
   "UnzipWith" must {
 
-    "work with immediately completed publisher" in assertAllStagesStopped {
+    "work with immediately completed publisher" in {
       val subscribers = setup(TestPublisher.empty[Int]())
       validateSubscriptionAndComplete(subscribers)
     }
 
-    "work with delayed completed publisher" in assertAllStagesStopped {
+    "work with delayed completed publisher" in {
       val subscribers = setup(TestPublisher.lazyEmpty)
       validateSubscriptionAndComplete(subscribers)
     }
 
-    "work with two immediately failed publishers" in assertAllStagesStopped {
+    "work with two immediately failed publishers" in {
       val subscribers = setup(TestPublisher.error(TestException))
       validateSubscriptionAndError(subscribers)
     }
 
-    "work with two delayed failed publishers" in assertAllStagesStopped {
+    "work with two delayed failed publishers" in {
       val subscribers = setup(TestPublisher.lazyError(TestException))
       validateSubscriptionAndError(subscribers)
     }

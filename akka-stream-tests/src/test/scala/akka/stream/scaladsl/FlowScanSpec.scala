@@ -15,7 +15,6 @@ import akka.stream.ActorAttributes
 import akka.stream.Supervision
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 
 class FlowScanSpec extends StreamSpec("""
@@ -27,17 +26,17 @@ class FlowScanSpec extends StreamSpec("""
     def scan(s: Source[Int, NotUsed], duration: Duration = 5.seconds): immutable.Seq[Int] =
       Await.result(s.scan(0)(_ + _).runFold(immutable.Seq.empty[Int])(_ :+ _), duration)
 
-    "Scan" in assertAllStagesStopped {
+    "Scan" in {
       val v = Vector.fill(random.nextInt(100, 1000))(random.nextInt())
       scan(Source(v)) should be(v.scan(0)(_ + _))
     }
 
-    "Scan empty failed" in assertAllStagesStopped {
+    "Scan empty failed" in {
       val e = new Exception("fail!")
       (intercept[Exception](scan(Source.failed[Int](e))) should be).theSameInstanceAs(e)
     }
 
-    "Scan empty" in assertAllStagesStopped {
+    "Scan empty" in {
       scan(Source.empty[Int]) should be(Vector.empty[Int].scan(0)(_ + _))
     }
 

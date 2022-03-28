@@ -22,7 +22,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.StreamConverters
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
@@ -56,7 +55,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   }
 
   "OutputStreamSource" must {
-    "read bytes from OutputStream" in assertAllStagesStopped {
+    "read bytes from OutputStream" in {
       val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run()
       val s = probe.expectSubscription()
 
@@ -68,7 +67,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     // https://github.com/akka/akka/issues/25983
-    "not truncate the stream on close" in assertAllStagesStopped {
+    "not truncate the stream on close" in {
       for (_ <- 1 to 10) {
         val (outputStream, result) =
           StreamConverters
@@ -81,7 +80,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
     }
 
-    "not block flushes when buffer is empty" in assertAllStagesStopped {
+    "not block flushes when buffer is empty" in {
       val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run()
       val s = probe.expectSubscription()
 
@@ -99,7 +98,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       probe.expectComplete()
     }
 
-    "block writes when buffer is full" in assertAllStagesStopped {
+    "block writes when buffer is full" in {
       val (outputStream, probe) = StreamConverters
         .asOutputStream()
         .toMat(TestSink.probe[ByteString])(Keep.both)
@@ -125,7 +124,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       probe.expectComplete()
     }
 
-    "throw error when write after stream is closed" in assertAllStagesStopped {
+    "throw error when write after stream is closed" in {
       val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run()
 
       probe.expectSubscription()
@@ -134,7 +133,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
     }
 
-    "throw IOException when writing to the stream after the subscriber has cancelled the reactive stream" in assertAllStagesStopped {
+    "throw IOException when writing to the stream after the subscriber has cancelled the reactive stream" in {
       val (outputStream, sink) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run()
 
       val s = sink.expectSubscription()
@@ -194,7 +193,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       assertNoBlockedThreads()
     }
 
-    "correctly complete the stage after close" in assertAllStagesStopped {
+    "correctly complete the stage after close" in {
       // actually this was a race, so it only happened in at least one of 20 runs
 
       val bufSize = 4

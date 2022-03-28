@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphBalanceSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -20,7 +19,7 @@ class GraphBalanceSpec extends StreamSpec("""
   "A balance" must {
     import GraphDSL.Implicits._
 
-    "balance between subscribers which signal demand" in assertAllStagesStopped {
+    "balance between subscribers which signal demand" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
@@ -79,7 +78,7 @@ class GraphBalanceSpec extends StreamSpec("""
       s2.expectComplete()
     }
 
-    "support waiting for demand from all non-cancelled downstream subscriptions" in assertAllStagesStopped {
+    "support waiting for demand from all non-cancelled downstream subscriptions" in {
       val s1 = TestSubscriber.manualProbe[Int]()
 
       val (p2, p3) = RunnableGraph
@@ -199,7 +198,7 @@ class GraphBalanceSpec extends StreamSpec("""
       p3.expectComplete()
     }
 
-    "produce to second even though first cancels" in assertAllStagesStopped {
+    "produce to second even though first cancels" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
@@ -223,7 +222,7 @@ class GraphBalanceSpec extends StreamSpec("""
       c2.expectComplete()
     }
 
-    "produce to first even though second cancels" in assertAllStagesStopped {
+    "produce to first even though second cancels" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
@@ -247,7 +246,7 @@ class GraphBalanceSpec extends StreamSpec("""
       c1.expectComplete()
     }
 
-    "cancel upstream when all downstreams cancel if eagerCancel is false" in assertAllStagesStopped {
+    "cancel upstream when all downstreams cancel if eagerCancel is false" in {
       val p1 = TestPublisher.manualProbe[Int]()
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
@@ -280,7 +279,7 @@ class GraphBalanceSpec extends StreamSpec("""
       bsub.expectCancellation()
     }
 
-    "cancel upstream when any downstream cancel if eagerCancel is true" in assertAllStagesStopped {
+    "cancel upstream when any downstream cancel if eagerCancel is true" in {
       val p1 = TestPublisher.manualProbe[Int]()
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
@@ -313,7 +312,7 @@ class GraphBalanceSpec extends StreamSpec("""
     }
 
     // Bug #20943
-    "not push output twice" in assertAllStagesStopped {
+    "not push output twice" in {
       val p1 = TestPublisher.manualProbe[Int]()
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
@@ -346,7 +345,7 @@ class GraphBalanceSpec extends StreamSpec("""
     }
 
     // Bug #25387
-    "not dequeue from empty outlet buffer" in assertAllStagesStopped {
+    "not dequeue from empty outlet buffer" in {
       val p1 = TestPublisher.manualProbe[Int]()
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()

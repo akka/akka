@@ -20,7 +20,6 @@ import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 
@@ -28,7 +27,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
   "A Flow with mapAsyncUnordered" must {
 
-    "produce future elements in the order they are ready" in assertAllStagesStopped {
+    "produce future elements in the order they are ready" in {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
@@ -53,7 +52,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "complete without requiring further demand (parallelism = 1)" in assertAllStagesStopped {
+    "complete without requiring further demand (parallelism = 1)" in {
       import system.dispatcher
       Source
         .single(1)
@@ -63,7 +62,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "complete without requiring further demand with already completed future (parallelism = 1)" in assertAllStagesStopped {
+    "complete without requiring further demand with already completed future (parallelism = 1)" in {
       Source
         .single(1)
         .mapAsyncUnordered(1)(v => Future.successful(v))
@@ -72,7 +71,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "complete without requiring further demand (parallelism = 2)" in assertAllStagesStopped {
+    "complete without requiring further demand (parallelism = 2)" in {
       import system.dispatcher
       val probe =
         Source(1 :: 2 :: Nil).mapAsyncUnordered(2)(v => Future { Thread.sleep(20); v }).runWith(TestSink.probe[Int])
@@ -81,7 +80,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       probe.expectComplete()
     }
 
-    "complete without requiring further demand with already completed future (parallelism = 2)" in assertAllStagesStopped {
+    "complete without requiring further demand with already completed future (parallelism = 2)" in {
       val probe = Source(1 :: 2 :: Nil).mapAsyncUnordered(2)(v => Future.successful(v)).runWith(TestSink.probe[Int])
 
       probe.request(2).expectNextN(2)
@@ -121,7 +120,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "signal future failure" in assertAllStagesStopped {
+    "signal future failure" in {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
@@ -142,7 +141,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       latch.countDown()
     }
 
-    "signal future failure asap" in assertAllStagesStopped {
+    "signal future failure asap" in {
       val latch = TestLatch(1)
       val done = Source(1 to 5)
         .map { n =>
@@ -164,7 +163,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       latch.countDown()
     }
 
-    "signal error from mapAsyncUnordered" in assertAllStagesStopped {
+    "signal error from mapAsyncUnordered" in {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
@@ -200,7 +199,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "resume after multiple failures" in assertAllStagesStopped {
+    "resume after multiple failures" in {
       val futures: List[Future[String]] = List(
         Future.failed(Utils.TE("failure1")),
         Future.failed(Utils.TE("failure2")),
@@ -217,7 +216,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         3.seconds) should ===("happy!")
     }
 
-    "finish after future failure" in assertAllStagesStopped {
+    "finish after future failure" in {
       import system.dispatcher
       Await.result(
         Source(1 to 3)
@@ -296,7 +295,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       result.futureValue should contain.only("1", "3")
     }
 
-    "handle cancel properly" in assertAllStagesStopped {
+    "handle cancel properly" in {
       val pub = TestPublisher.manualProbe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()
 
@@ -311,7 +310,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
     }
 
-    "not run more futures than configured" in assertAllStagesStopped {
+    "not run more futures than configured" in {
       val parallelism = 8
 
       val counter = new AtomicInteger

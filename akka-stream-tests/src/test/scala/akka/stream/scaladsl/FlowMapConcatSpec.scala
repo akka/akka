@@ -9,7 +9,6 @@ import scala.util.control.NoStackTrace
 import akka.stream.ActorAttributes
 import akka.stream.Supervision
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 
 class FlowMapConcatSpec extends StreamSpec("""
@@ -40,7 +39,7 @@ class FlowMapConcatSpec extends StreamSpec("""
       TestConfig.RandomTestRange.foreach(_ => runScript(script)(_.mapConcat(x => Iterator.fill(x)(x))))
     }
 
-    "map and concat grouping with slow downstream" in assertAllStagesStopped {
+    "map and concat grouping with slow downstream" in {
       val s = TestSubscriber.manualProbe[Int]()
       val input = (1 to 20).grouped(5).toList
       Source(input).mapConcat(identity).map(x => { Thread.sleep(10); x }).runWith(Sink.fromSubscriber(s))
@@ -50,7 +49,7 @@ class FlowMapConcatSpec extends StreamSpec("""
       s.expectComplete()
     }
 
-    "be able to resume" in assertAllStagesStopped {
+    "be able to resume" in {
       val ex = new Exception("TEST") with NoStackTrace
 
       Source(1 to 5)
@@ -62,7 +61,7 @@ class FlowMapConcatSpec extends StreamSpec("""
         .expectComplete()
     }
 
-    "be able to resume (iterator)" in assertAllStagesStopped {
+    "be able to resume (iterator)" in {
       val ex = new Exception("TEST") with NoStackTrace
 
       Source(1 to 5)

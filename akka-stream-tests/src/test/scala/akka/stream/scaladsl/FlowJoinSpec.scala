@@ -12,7 +12,6 @@ import akka.stream.FlowShape
 import akka.stream.OverflowStrategy
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowJoinSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -22,7 +21,7 @@ class FlowJoinSpec extends StreamSpec("""
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(200, Millis))
 
   "A Flow using join" must {
-    "allow for cycles" in assertAllStagesStopped {
+    "allow for cycles" in {
       val end = 47
       val (even, odd) = (0 to end).partition(_ % 2 == 0)
       val result = Set() ++ even ++ odd ++ odd.map(_ * 10)
@@ -54,7 +53,7 @@ class FlowJoinSpec extends StreamSpec("""
       sub.cancel()
     }
 
-    "allow for merge cycle" in assertAllStagesStopped {
+    "allow for merge cycle" in {
       val source = Source.single("lonely traveler")
 
       val flow1 = Flow.fromGraph(GraphDSL.createGraph(Sink.head[String]) { implicit b => sink =>
@@ -71,7 +70,7 @@ class FlowJoinSpec extends StreamSpec("""
       whenReady(flow1.join(Flow[String]).run())(_ shouldBe "lonely traveler")
     }
 
-    "allow for merge preferred cycle" in assertAllStagesStopped {
+    "allow for merge preferred cycle" in {
       val source = Source.single("lonely traveler")
 
       val flow1 = Flow.fromGraph(GraphDSL.createGraph(Sink.head[String]) { implicit b => sink =>
@@ -88,7 +87,7 @@ class FlowJoinSpec extends StreamSpec("""
       whenReady(flow1.join(Flow[String]).run())(_ shouldBe "lonely traveler")
     }
 
-    "allow for zip cycle" in assertAllStagesStopped {
+    "allow for zip cycle" in {
       val source = Source(immutable.Seq("traveler1", "traveler2"))
 
       val flow = Flow.fromGraph(GraphDSL.createGraph(TestSink.probe[(String, String)]) { implicit b => sink =>
@@ -118,7 +117,7 @@ class FlowJoinSpec extends StreamSpec("""
       probe.requestNext(("traveler2", "traveler1"))
     }
 
-    "allow for concat cycle" in assertAllStagesStopped {
+    "allow for concat cycle" in {
       val flow = Flow.fromGraph(GraphDSL.createGraph(TestSource.probe[String](system), Sink.head[String])(Keep.both) {
         implicit b => (source, sink) =>
           import GraphDSL.Implicits._
@@ -139,7 +138,7 @@ class FlowJoinSpec extends StreamSpec("""
       }
     }
 
-    "allow for interleave cycle" in assertAllStagesStopped {
+    "allow for interleave cycle" in {
       val source = Source.single("lonely traveler")
 
       val flow1 = Flow.fromGraph(GraphDSL.createGraph(Sink.head[String]) { implicit b => sink =>

@@ -8,18 +8,17 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 
 class FlowDetacherSpec extends StreamSpec {
 
   "A Detacher" must {
 
-    "pass through all elements" in assertAllStagesStopped {
+    "pass through all elements" in {
       Source(1 to 100).detach.runWith(Sink.seq).futureValue should ===(1 to 100)
     }
 
-    "pass through failure" in assertAllStagesStopped {
+    "pass through failure" in {
       val ex = new Exception("buh")
       val result = Source(1 to 100).map(x => if (x == 50) throw ex else x).detach.runWith(Sink.seq)
       intercept[Exception] {
@@ -28,7 +27,7 @@ class FlowDetacherSpec extends StreamSpec {
 
     }
 
-    "emit the last element when completed without demand" in assertAllStagesStopped {
+    "emit the last element when completed without demand" in {
       Source
         .single(42)
         .detach

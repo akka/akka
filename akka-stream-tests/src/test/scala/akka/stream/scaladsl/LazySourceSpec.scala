@@ -20,7 +20,6 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestProbe
 
@@ -31,12 +30,12 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   val myAttributes = Attributes(MyAttribute())
 
   "Source.lazySingle" must {
-    "work like a normal source, happy path" in assertAllStagesStopped {
+    "work like a normal source, happy path" in {
       val seq = Source.lazySingle(() => 1).runWith(Sink.seq)
       seq.futureValue should ===(Seq(1))
     }
 
-    "never construct the source when there was no demand" in assertAllStagesStopped {
+    "never construct the source when there was no demand" in {
       val constructed = new AtomicBoolean(false)
       Source
         .lazySingle { () =>
@@ -49,7 +48,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       constructed.get() should ===(false)
     }
 
-    "fail correctly when factory function fails" in assertAllStagesStopped {
+    "fail correctly when factory function fails" in {
       val failure = TE("couldn't create")
       val termination: Future[Done] =
         Source.lazySingle(() => throw failure).watchTermination()(Keep.right).toMat(Sink.ignore)(Keep.left).run()
@@ -60,20 +59,20 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   }
 
   "Source.lazyFuture" must {
-    "work like a normal source, happy path, already completed future" in assertAllStagesStopped {
+    "work like a normal source, happy path, already completed future" in {
       val seq = Source.lazyFuture(() => Future.successful(1)).runWith(Sink.seq)
 
       seq.futureValue should ===(Seq(1))
     }
 
-    "work like a normal source, happy path, completing future" in assertAllStagesStopped {
+    "work like a normal source, happy path, completing future" in {
       val promise = Promise[Int]()
       val seq = Source.lazyFuture(() => promise.future).runWith(Sink.seq)
       promise.success(1)
       seq.futureValue should ===(Seq(1))
     }
 
-    "never construct the source when there was no demand" in assertAllStagesStopped {
+    "never construct the source when there was no demand" in {
       val constructed = new AtomicBoolean(false)
       val termination = Source
         .lazyFuture { () =>
@@ -88,7 +87,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       constructed.get() should ===(false)
     }
 
-    "fail correctly when factory function fails" in assertAllStagesStopped {
+    "fail correctly when factory function fails" in {
       val failure = TE("couldn't create")
       val termination =
         Source.lazyFuture(() => throw failure).watchTermination()(Keep.right).toMat(Sink.ignore)(Keep.left).run()
@@ -96,7 +95,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       termination.failed.futureValue should ===(failure)
     }
 
-    "fail correctly when factory function returns a failed future" in assertAllStagesStopped {
+    "fail correctly when factory function returns a failed future" in {
       val failure = TE("couldn't create")
       val termination =
         Source
@@ -108,7 +107,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       termination.failed.futureValue should ===(failure)
     }
 
-    "fail correctly when factory function returns a future that fails" in assertAllStagesStopped {
+    "fail correctly when factory function returns a future that fails" in {
       val failure = TE("couldn't create")
       val promise = Promise[Int]()
       val termination =
@@ -119,13 +118,13 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   }
 
   "Source.lazySource" must {
-    "work like a normal source, happy path" in assertAllStagesStopped {
+    "work like a normal source, happy path" in {
       val result = Source.lazySource(() => Source(List(1, 2, 3))).runWith(Sink.seq)
 
       result.futureValue should ===(Seq(1, 2, 3))
     }
 
-    "never construct the source when there was no demand" in assertAllStagesStopped {
+    "never construct the source when there was no demand" in {
       val constructed = new AtomicBoolean(false)
       val (lazySourceMatVal, termination) = Source
         .lazySource { () =>
@@ -140,13 +139,13 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       lazySourceMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
-    "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
+    "fail the materialized value when downstream cancels without ever consuming any element" in {
       val lazyMatVal = Source.lazySource(() => Source(List(1, 2, 3))).toMat(Sink.cancelled)(Keep.left).run()
 
       lazyMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
-    "stop consuming when downstream has cancelled" in assertAllStagesStopped {
+    "stop consuming when downstream has cancelled" in {
       val outProbe = TestSubscriber.probe[Int]()
       val inProbe = TestPublisher.probe[Int]()
 
@@ -160,7 +159,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       inProbe.expectCancellation()
     }
 
-    "materialize when the source has been created" in assertAllStagesStopped {
+    "materialize when the source has been created" in {
       val probe = TestSubscriber.probe[Int]()
 
       val matF: Future[Done] = Source
@@ -178,7 +177,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       probe.cancel()
     }
 
-    "fail stage when upstream fails" in assertAllStagesStopped {
+    "fail stage when upstream fails" in {
       val outProbe = TestSubscriber.probe[Int]()
       val inProbe = TestPublisher.probe[Int]()
 
@@ -197,20 +196,20 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       outProbe.expectError() should ===(failure)
     }
 
-    "fail when lazy source is failed" in assertAllStagesStopped {
+    "fail when lazy source is failed" in {
       val failure = TE("OMG Who set that on fire!?!")
       val result = Source.lazySource(() => Source.failed(failure)).runWith(Sink.seq)
       result.failed.futureValue should ===(failure)
     }
 
-    "fail correctly when factory function fails" in assertAllStagesStopped {
+    "fail correctly when factory function fails" in {
       val failure = TE("couldn't create")
       val lazyMatVal = Source.lazySource(() => throw failure).toMat(Sink.ignore)(Keep.left).run()
 
       lazyMatVal.failed.futureValue should ===(failure)
     }
 
-    "fail correctly when materialization of inner source fails" in assertAllStagesStopped {
+    "fail correctly when materialization of inner source fails" in {
       val matFail = TE("fail!")
       object FailingInnerMat extends GraphStage[SourceShape[String]] {
         val out = Outlet[String]("out")
@@ -262,19 +261,19 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   }
 
   "Source.lazyFutureSource" must {
-    "work like a normal source, happy path" in assertAllStagesStopped {
+    "work like a normal source, happy path" in {
       val result = Source.lazyFutureSource(() => Future { Source(List(1, 2, 3)) }).runWith(Sink.seq)
 
       result.futureValue should ===(Seq(1, 2, 3))
     }
 
-    "work like a normal source, happy path, already completed future" in assertAllStagesStopped {
+    "work like a normal source, happy path, already completed future" in {
       val result = Source.lazyFutureSource(() => Future.successful { Source(List(1, 2, 3)) }).runWith(Sink.seq)
 
       result.futureValue should ===(Seq(1, 2, 3))
     }
 
-    "never construct the source when there was no demand" in assertAllStagesStopped {
+    "never construct the source when there was no demand" in {
       val constructed = new AtomicBoolean(false)
       val (lazyFutureSourceMatval, termination) = Source
         .lazyFutureSource { () =>
@@ -292,14 +291,14 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       lazyFutureSourceMatval.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
-    "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
+    "fail the materialized value when downstream cancels without ever consuming any element" in {
       val lazyMatVal: Future[NotUsed] =
         Source.lazyFutureSource(() => Future { Source(List(1, 2, 3)) }).toMat(Sink.cancelled)(Keep.left).run()
 
       lazyMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
-    "stop consuming when downstream has cancelled" in assertAllStagesStopped {
+    "stop consuming when downstream has cancelled" in {
       val outProbe = TestSubscriber.probe[Int]()
       val inProbe = TestPublisher.probe[Int]()
 
@@ -313,7 +312,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       inProbe.expectCancellation()
     }
 
-    "materialize when the source has been created" in assertAllStagesStopped {
+    "materialize when the source has been created" in {
       val probe = TestSubscriber.probe[Int]()
 
       val matF: Future[Done] = Source
@@ -333,7 +332,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       probe.cancel()
     }
 
-    "fail stage when upstream fails" in assertAllStagesStopped {
+    "fail stage when upstream fails" in {
       val outProbe = TestSubscriber.probe[Int]()
       val inProbe = TestPublisher.probe[Int]()
 
@@ -356,7 +355,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       outProbe.expectError() should ===(failure)
     }
 
-    "fail correctly when factory function fails" in assertAllStagesStopped {
+    "fail correctly when factory function fails" in {
       val failure = TE("couldn't create")
       val lazyMatVal: Future[NotUsed] =
         Source.lazyFutureSource[Int, NotUsed](() => throw failure).toMat(Sink.ignore)(Keep.left).run()
@@ -364,7 +363,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       lazyMatVal.failed.futureValue should ===(failure)
     }
 
-    "fail correctly when factory function returns a failed future" in assertAllStagesStopped {
+    "fail correctly when factory function returns a failed future" in {
       val failure = TE("couldn't create")
       val lazyMatVal: Future[NotUsed] =
         Source.lazyFutureSource[Int, NotUsed](() => Future.failed(failure)).toMat(Sink.ignore)(Keep.left).run()
@@ -372,7 +371,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       lazyMatVal.failed.futureValue should ===(failure)
     }
 
-    "fail correctly when factory function returns a future that fails" in assertAllStagesStopped {
+    "fail correctly when factory function returns a future that fails" in {
       val failure = TE("couldn't create")
       val promise = Promise[Source[Int, NotUsed]]()
       val lazyMatVal: Future[NotUsed] =
@@ -381,7 +380,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       lazyMatVal.failed.futureValue should ===(failure)
     }
 
-    "fail correctly when materialization of inner source fails" in assertAllStagesStopped {
+    "fail correctly when materialization of inner source fails" in {
       val matFail = TE("fail!")
       object FailingInnerMat extends GraphStage[SourceShape[String]] {
         val out = Outlet[String]("out")
