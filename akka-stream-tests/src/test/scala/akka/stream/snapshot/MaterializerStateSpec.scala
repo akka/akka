@@ -14,7 +14,7 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 import javax.net.ssl.SSLContext
 
-class MaterializerStateSpec extends StreamSpec {
+class MaterializerStateSpec extends StreamSpec(withFixture = false) {
 
   "The MaterializerSnapshotting" must {
 
