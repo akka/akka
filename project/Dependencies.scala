@@ -35,7 +35,7 @@ object Dependencies {
 
   val jacksonDatabindVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
-      "2.13.2.1"
+      "2.13.2.2"
     } else {
       jacksonCoreVersion.value
     }
