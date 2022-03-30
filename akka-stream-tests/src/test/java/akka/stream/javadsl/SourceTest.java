@@ -21,6 +21,8 @@ import akka.stream.stage.AbstractOutHandler;
 import akka.stream.stage.GraphStage;
 import akka.stream.stage.GraphStageLogic;
 import akka.stream.testkit.TestPublisher;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.TestKit;
@@ -775,6 +777,19 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(",");
     probe.expectMsgEquals("3");
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToUseInterleaveAll() {
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 7, 8));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(3, 4, 9));
+    Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(5, 6));
+    final TestSubscriber.Probe<Integer> sub =
+        sourceA
+            .interleaveAll(Arrays.asList(sourceB, sourceC), 2, false)
+            .runWith(TestSink.probe(system), system);
+    sub.expectSubscription().request(9);
+    sub.expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9).expectComplete();
   }
 
   @Test
