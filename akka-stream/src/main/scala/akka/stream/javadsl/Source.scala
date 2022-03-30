@@ -1211,7 +1211,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * For a concat operator that is detached, use [[#concat]]
    *
-   * If this [[Flow]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   * If this [[Source]] gets upstream error - no elements from the given [[Source]] will be pulled.
    *
    * '''Emits when''' element is available from current stream or from the given [[Source]] when current is completed
    *
@@ -1223,6 +1223,34 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def concatLazy[M](that: Graph[SourceShape[Out], M]): javadsl.Source[Out, Mat] =
     new Source(delegate.concatLazy(that))
+
+  /**
+   * Concatenate the given [[Source]]s to this one, meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced.
+   *
+   * Note that the [[Source]]s are materialized together with this Flow. If `lazy` materialization is what is needed
+   * the operator can be combined with for example `Source.lazySource` to defer materialization of `that` until the
+   * time when this source completes.
+   *
+   * The second source is then kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * For a concat operator that is detached, use [[#concat]]
+   *
+   * If this [[Source]] gets upstream error - no elements from the given [[Source]]s will be pulled.
+   *
+   * '''Emits when''' element is available from current stream or from the given [[Source]]s when current is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all the given [[Source]]s completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @varargs
+  @SafeVarargs
+  def concatAllLazy(those: Graph[SourceShape[Out], _]*): javadsl.Source[Out, Mat] =
+    new Source(delegate.concatAllLazy(those: _*))
 
   /**
    * Concatenate this [[Source]] with the given one, meaning that once current

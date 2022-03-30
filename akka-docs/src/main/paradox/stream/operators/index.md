@@ -268,6 +268,7 @@ the inputs in different ways.
 |--|--|--|
 | |<a name="mergesequence"></a>@ref[MergeSequence](MergeSequence.md)|Merge a linear sequence partitioned across multiple sources.|
 |Source/Flow|<a name="concat"></a>@ref[concat](Source-or-Flow/concat.md)|After completion of the original upstream the elements of the given source will be emitted.|
+|Source/Flow|<a name="concatalllazy"></a>@ref[concatAllLazy](Source-or-Flow/concatAllLazy.md)|After completion of the original upstream the elements of the given sources will be emitted sequentially.|
 |Source/Flow|<a name="concatlazy"></a>@ref[concatLazy](Source-or-Flow/concatLazy.md)|After completion of the original upstream the elements of the given source will be emitted.|
 |Source/Flow|<a name="interleave"></a>@ref[interleave](Source-or-Flow/interleave.md)|Emits a specifiable number of elements from the original source, then from the provided source and repeats.|
 |Source/Flow|<a name="merge"></a>@ref[merge](Source-or-Flow/merge.md)|Merge multiple sources.|
@@ -412,6 +413,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [completionStageSource](Source/completionStageSource.md)
 * [completionTimeout](Source-or-Flow/completionTimeout.md)
 * [concat](Source-or-Flow/concat.md)
+* [concatAllLazy](Source-or-Flow/concatAllLazy.md)
 * [concatLazy](Source-or-Flow/concatLazy.md)
 * [conflate](Source-or-Flow/conflate.md)
 * [conflateWithSeed](Source-or-Flow/conflateWithSeed.md)

@@ -21,6 +21,8 @@ import akka.stream.stage.AbstractOutHandler;
 import akka.stream.stage.GraphStage;
 import akka.stream.stage.GraphStageLogic;
 import akka.stream.testkit.TestPublisher;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.TestKit;
@@ -273,6 +275,17 @@ public class SourceTest extends StreamTest {
 
     List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
+  }
+
+  @Test
+  public void mustBeAbleToUseConcatAll() {
+    final Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
+    final Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));
+    final Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8, 9));
+    final TestSubscriber.Probe<Integer> sub =
+        sourceA.concatAllLazy(sourceB, sourceC).runWith(TestSink.probe(system), system);
+    sub.expectSubscription().request(9);
+    sub.expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9).expectComplete();
   }
 
   @Test

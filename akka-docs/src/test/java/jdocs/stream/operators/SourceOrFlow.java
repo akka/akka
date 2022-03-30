@@ -22,6 +22,7 @@ import akka.japi.function.Function2;
 // #prependLazy
 // #concat
 // #concatLazy
+// #concatAllLazy
 // #interleave
 // #merge
 // #merge-sorted
@@ -36,6 +37,7 @@ import java.util.*;
 // #interleave
 // #concat
 // #concatLazy
+// #concatAllLazy
 // #prepend
 // #prependLazy
 // #or-else
@@ -52,6 +54,7 @@ import akka.stream.Attributes;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 class SourceOrFlow {
   private static ActorSystem system = null;
@@ -147,13 +150,25 @@ class SourceOrFlow {
   }
 
   void concatLazyExample() {
-    // #concat
+    // #concatLazy
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
     sourceA.concatLazy(sourceB).runForeach(System.out::println, system);
     // prints 1, 2, 3, 4, 10, 20, 30, 40
 
-    // #concat
+    // #concatLazy
+  }
+  
+  void concatAllLazyExample() {
+    // #concatAllLazy
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));
+    Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8 , 9));
+    sourceA.concatAllLazy(sourceB, sourceC)
+        .fold(new StringJoiner(","), (joiner, input) -> joiner.add(String.valueOf(input)))
+        .runForeach(System.out::println, system);
+    //prints 1,2,3,4,5,6,7,8,9
+    // #concatAllLazy
   }
 
   void interleaveExample() {

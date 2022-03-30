@@ -1580,6 +1580,34 @@ class SubFlow[In, Out, Mat](
     new SubFlow(delegate.concatLazy(that))
 
   /**
+   * Concatenate the given [[Source]]s to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced.
+   *
+   * Note that the [[Source]]s are materialized together with this Flow. If `lazy` materialization is what is needed
+   * the operator can be combined with for example `Source.lazySource` to defer materialization of `that` until the
+   * time when this source completes.
+   *
+   * The second source is then kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * For a concat operator that is detached, use [[#concat]]
+   *
+   * If this [[Flow]] gets upstream error - no elements from the given [[Source]]s will be pulled.
+   *
+   * '''Emits when''' element is available from current stream or from the given [[Source]]s when current is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' given all those [[Source]]s completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @varargs
+  @SafeVarargs
+  def concatAllLazy(those: Graph[SourceShape[Out], _]*): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.concatAllLazy(those: _*))
+
+  /**
    * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
    * are generated from this Flow, the Source's elements will be produced until it
    * is exhausted, at which point Flow elements will start being produced.
