@@ -1667,6 +1667,28 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
   /**
+   * Merge the given [[Source]]s to the current one, taking elements as they arrive from input streams,
+   * picking randomly when several elements ready.
+   *
+   * '''Emits when''' one of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergeAll(
+      those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
+      eagerComplete: Boolean): javadsl.Source[Out, Mat] = {
+    val seq = if (those != null) Util.immutableSeq(those).collect {
+      case source: Source[Out @unchecked, _] => source.asScala
+      case other                             => other
+    } else immutable.Seq()
+    new Source(delegate.mergeAll(seq, eagerComplete))
+  }
+
+  /**
    * MergeLatest joins elements from N input streams into stream of lists of size N.
    * i-th element in list is the latest emitted element from i-th input stream.
    * MergeLatest emits list for each element emitted from some input stream,

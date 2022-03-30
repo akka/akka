@@ -4,6 +4,22 @@
 
 package akka.stream.javadsl
 
+import java.util.Optional
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+import java.util.function.BiFunction
+import java.util.stream.Collector
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.ExecutionContext
+import scala.util.Try
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+
 import akka._
 import akka.actor.ActorRef
 import akka.actor.ClassicActorSystemProvider
@@ -16,20 +32,6 @@ import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.javadsl
 import akka.stream.scaladsl
 import akka.stream.scaladsl.SinkToCompletionStage
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-
-import java.util.Optional
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
-import java.util.function.BiFunction
-import java.util.stream.Collector
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
-import scala.concurrent.ExecutionContext
-import scala.util.Try
 
 /** Java API */
 object Sink {

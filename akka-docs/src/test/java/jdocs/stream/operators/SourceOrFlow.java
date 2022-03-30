@@ -5,14 +5,16 @@
 package jdocs.stream.operators;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.event.LogMarker;
 import akka.japi.Pair;
+import akka.japi.function.Function2;
 import akka.japi.pf.PFBuilder;
+import akka.stream.Attributes;
 import akka.stream.javadsl.Flow;
 
-import akka.NotUsed;
-import akka.japi.function.Function2;
 
 // #zip
 // #zip-with
@@ -174,6 +176,17 @@ class SourceOrFlow {
     // merging is not deterministic, can for example print 1, 2, 3, 4, 10, 20, 30, 40
 
     // #merge
+  }
+  
+  void mergeAllExample() {
+    // #merge-all
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));
+    Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8, 9, 10));
+    sourceA.mergeAll(Arrays.asList(sourceB, sourceC), false)
+        .runForeach(System.out::println, system);
+    // merging is not deterministic, can for example print 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+    // #merge-all
   }
 
   void mergePreferredExample() {

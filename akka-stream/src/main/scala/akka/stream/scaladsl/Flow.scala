@@ -2962,6 +2962,31 @@ trait FlowOps[+Out, +Mat] {
     }
 
   /**
+   * Merge the given [[Source]]s to this [[Flow]], taking elements as they arrive from input streams,
+   * picking randomly when several elements ready.
+   *
+   * '''Emits when''' one of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergeAll[U >: Out](those: immutable.Seq[Graph[SourceShape[U], _]], eagerComplete: Boolean): Repr[U] =
+    those match {
+      case those if those.isEmpty => this.asInstanceOf[Repr[U]]
+      case _ =>
+        via(GraphDSL.create() { implicit b =>
+          import GraphDSL.Implicits._
+          val merge = b.add(Merge[U](those.size + 1, eagerComplete))
+          for ((that, idx) <- those.zipWithIndex)
+            that ~> merge.in(idx + 1)
+          FlowShape(merge.in(0), merge.out)
+        })
+    }
+
+  /**
    * MergeLatest joins elements from N input streams into stream of lists of size N.
    * i-th element in list is the latest emitted element from i-th input stream.
    * MergeLatest emits list for each element emitted from some input stream,

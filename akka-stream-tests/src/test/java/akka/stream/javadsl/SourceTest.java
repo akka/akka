@@ -10,6 +10,7 @@ import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Status;
 import akka.japi.Pair;
+import akka.japi.Util;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 // #imports
@@ -21,6 +22,8 @@ import akka.stream.stage.AbstractOutHandler;
 import akka.stream.stage.GraphStage;
 import akka.stream.stage.GraphStageLogic;
 import akka.stream.testkit.TestPublisher;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.TestKit;
@@ -1097,6 +1100,20 @@ public class SourceTest extends StreamTest {
             system);
 
     probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
+  }
+
+  @Test
+  public void mustBeAbleToUseMerge3() {
+    final Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
+    final Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));
+    final Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8, 9));
+    final TestSubscriber.Probe<Integer> sub =
+        sourceA
+            .mergeAll(Arrays.asList(sourceB, sourceC), false)
+            .runWith(TestSink.probe(system), system);
+    sub.expectSubscription().request(9);
+    sub.expectNextUnorderedN(Util.immutableSeq(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9)))
+        .expectComplete();
   }
 
   @Test
