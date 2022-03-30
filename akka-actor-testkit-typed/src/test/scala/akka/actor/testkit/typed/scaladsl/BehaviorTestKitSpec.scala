@@ -51,7 +51,6 @@ object BehaviorTestKitSpec {
         extends Command
     case class CancelScheduleCommand(key: Any) extends Command
     case class IsTimerActive(key: Any, replyTo: ActorRef[Boolean]) extends Command
-    case object StopSelf extends Command
 
     val init: Behavior[Command] = Behaviors.withTimers { timers =>
       Behaviors
@@ -140,8 +139,6 @@ object BehaviorTestKitSpec {
             case IsTimerActive(key, replyTo) =>
               replyTo ! timers.isTimerActive(key)
               Behaviors.same
-            case StopSelf =>
-              Behaviors.stopped
             case unexpected =>
               throw new RuntimeException(s"Unexpected command: $unexpected")
           }
@@ -407,9 +404,10 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       testkit.run(StopChild(child.ref))
       testkit.expectEffect(Stopped(child.childName))
 
-      val ok = testkit.stopSelf(StopSelf)
-      assertEquals(true, ok)
-      testkit.expectEffect(Stopped(testkit.ref.path.name))
+      // stop testkit
+      val check = testkit.stopSelf
+      // testkit has no effect
+      assertEquals(true, check)
       assertEquals(false, testkit.hasEffects())
     }
   }

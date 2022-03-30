@@ -20,6 +20,7 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.ccompat.JavaConverters._
+import akka.actor.typed.internal.Terminate
 
 /**
  * INTERNAL API
@@ -173,13 +174,15 @@ private[akka] final class BehaviorTestKitImpl[T](
 
   override def receptionistInbox(): TestInboxImpl[Receptionist.Command] = context.system.receptionistInbox
 
-  override def stopSelf(message: T): Boolean = {
+  override def stopSelf: Boolean = {
     try {
       context.setCurrentActorThread()
-      currentUncanonical = Behavior.interpretMessage(current, context, message)
+      val actorRef = selfInbox().ref.asInstanceOf[ActorRef[AnyRef]]
+      actorRef.tell(Terminate) // is ok?
+      currentUncanonical = Behaviors.stopped
       current = Behaviors.stopped
       context.effectQueue.clear()
-      context.effectQueue.offer(Stopped(_path.name))
+      clearLog()
     } finally {
       context.clearCurrentActorThread()
     }

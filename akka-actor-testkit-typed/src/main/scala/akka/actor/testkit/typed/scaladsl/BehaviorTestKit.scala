@@ -159,5 +159,5 @@ trait BehaviorTestKit[T] {
   /**
    * Stop this testkit and return true if this testkit stop successfully.
    */
-  def stopSelf(message: T): Boolean
+  def stopSelf: Boolean
 }
