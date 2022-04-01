@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.duration.FiniteDuration
-
 import akka.NotUsed
+import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.{ Attributes, Outlet, RestartSettings, SourceShape }
-import akka.stream.stage.{ GraphStage, OutHandler }
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * A RestartSource wraps a [[Source]] that gets restarted when it completes or fails.
@@ -203,9 +203,7 @@ private final class RestartWithBackoffSource[T](
       }
 
       override protected def backoff() = {
-        setHandler(out, new OutHandler {
-          override def onPull() = ()
-        })
+        setHandler(out, GraphStageLogic.EagerTerminateOutput)
       }
 
       backoff()

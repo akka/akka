@@ -272,9 +272,7 @@ private[stream] object ConnectionSourceStage {
     private var previousWriteBufferSize = 0
 
     // No reading until role have been decided
-    setHandler(bytesOut, new OutHandler {
-      override def onPull(): Unit = ()
-    })
+    setHandler(bytesOut, GraphStageLogic.EagerTerminateOutput)
 
     override def preStart(): Unit = {
       setKeepGoing(true)
