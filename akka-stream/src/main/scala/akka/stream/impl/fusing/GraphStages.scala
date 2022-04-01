@@ -448,6 +448,41 @@ import akka.stream.stage._
     }
   }
 
+  @InternalApi
+  private[akka] object NeverSink extends GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
+    private val in = Inlet[Any]("NeverSink.in")
+    val shape: SinkShape[Any] = SinkShape(in)
+
+    override def initialAttributes: Attributes = DefaultAttributes.neverSink
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val promise = Promise[Done]()
+      val logic = new GraphStageLogic(shape) with InHandler {
+
+        override def onPush(): Unit =
+          promise.tryFailure(new IllegalStateException("NeverSink should not receive any push."))
+
+        override def onUpstreamFinish(): Unit = {
+          super.onUpstreamFinish()
+          promise.trySuccess(Done)
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          super.onUpstreamFailure(ex)
+          promise.tryFailure(ex)
+        }
+
+        override def postStop(): Unit = {
+          if (!promise.isCompleted) promise.tryFailure(new AbruptStageTerminationException(this))
+        }
+
+        setHandler(in, this)
+      }
+
+      (logic, promise.future)
+    }
+  }
+
   /**
    * INTERNAL API.
    *

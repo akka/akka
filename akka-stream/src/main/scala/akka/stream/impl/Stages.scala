@@ -17,6 +17,7 @@ import akka.stream.Attributes._
     // reusable common attributes
     val IODispatcher = ActorAttributes.IODispatcher
     val inputBufferOne = inputBuffer(initial = 1, max = 1)
+    val inputBufferZero = inputBuffer(initial = 0, max = 0)
 
     // stage specific default attributes
     val fused = name("fused")
@@ -135,6 +136,7 @@ import akka.stream.Attributes._
     val publisherSink = name("publisherSink")
     val fanoutPublisherSink = name("fanoutPublisherSink")
     val ignoreSink = name("ignoreSink")
+    val neverSink = name("neverSink") and inputBufferZero
     val actorRefSink = name("actorRefSink")
     val actorRefWithBackpressureSink = name("actorRefWithBackpressureSink")
     val actorSubscriberSink = name("actorSubscriberSink")

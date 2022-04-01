@@ -86,6 +86,12 @@ object Sink {
     new Sink(scaladsl.Sink.ignore.toCompletionStage())
 
   /**
+   * A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream.
+   * */
+  def never[T]: Sink[T, CompletionStage[Done]] =
+    new Sink(scaladsl.Sink.never.toCompletionStage())
+
+  /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
    *
    * If `fanout` is `true`, the materialized `Publisher` will support multiple `Subscriber`s and
