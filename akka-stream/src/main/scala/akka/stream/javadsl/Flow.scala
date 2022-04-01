@@ -394,6 +394,23 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.mapMaterializedValue(f.apply _))
 
   /**
+   * Materializes this [[Flow]], immediately returning (1) its materialized value, and (2) a newly materialized [[Flow]].
+   */
+  def preMaterialize(
+      systemProvider: ClassicActorSystemProvider): akka.japi.Pair[Mat @uncheckedVariance, Flow[In, Out, NotUsed]] = {
+    preMaterialize(SystemMaterializer(systemProvider.classicSystem).materializer)
+  }
+
+  /**
+   * Materializes this [[Flow]], immediately returning (1) its materialized value, and (2) a newly materialized [[Flow]].
+   * The returned flow is partial materialized and do not support multiple times materialization.
+   */
+  def preMaterialize(materializer: Materializer): akka.japi.Pair[Mat @uncheckedVariance, Flow[In, Out, NotUsed]] = {
+    val (mat, flow) = delegate.preMaterialize()(materializer)
+    akka.japi.Pair(mat, flow.asJava)
+  }
+
+  /**
    * Transform this [[Flow]] by appending the given processing steps.
    * {{{
    *     +---------------------------------+
