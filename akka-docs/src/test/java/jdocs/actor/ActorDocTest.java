@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
@@ -585,6 +585,46 @@ public class ActorDocTest extends AbstractJavaTest {
     };
   }
 
+  static class ReceiveTimeoutWithCancelActor extends AbstractActor {
+    private ActorRef target = getContext().getSystem().deadLetters();
+
+    public ReceiveTimeoutWithCancelActor() {
+      getContext().setReceiveTimeout(Duration.ofSeconds(1));
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+          .matchEquals(
+              "Hello",
+              s -> {
+                target = getSender();
+                target.tell("Hello world", getSelf());
+                getContext().setReceiveTimeout(Duration.ofMillis(200));
+              })
+          .match(
+              ReceiveTimeout.class,
+              r -> {
+                getContext().cancelReceiveTimeout();
+                target.tell("timeout", getSelf());
+              })
+          .build();
+    }
+  }
+
+  @Test
+  public void cancel_receiveTimeout() {
+    final ActorRef myActor = system.actorOf(Props.create(ReceiveTimeoutWithCancelActor.class));
+    new TestKit(system) {
+      {
+        myActor.tell("Hello", getRef());
+        expectMsgEquals("Hello world");
+        expectMsgEquals("timeout");
+        expectNoMessage(Duration.ofMillis(400));
+      }
+    };
+  }
+
   public
   // #hot-swap-actor
   static class HotSwapActor extends AbstractActor {
@@ -801,14 +841,7 @@ public class ActorDocTest extends AbstractJavaTest {
         // using timeout from above
         CompletableFuture<Object> future2 = ask(actorB, "another request", t).toCompletableFuture();
 
-        CompletableFuture<Result> transformed =
-            CompletableFuture.allOf(future1, future2)
-                .thenApply(
-                    v -> {
-                      String x = (String) future1.join();
-                      String s = (String) future2.join();
-                      return new Result(x, s);
-                    });
+        CompletableFuture<Result> transformed = future1.thenCombine(future2, (x, s) -> new Result((String) x, (String) s));
 
         pipe(transformed, system.dispatcher()).to(actorC);
         // #ask-pipe

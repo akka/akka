@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.delivery
@@ -350,7 +350,7 @@ class ReliableDeliveryShardingSpec
         }))
 
       val shardingProducerSettings =
-        ShardingProducerController.Settings(system).withResendFirsUnconfirmedIdleTimeout(1500.millis)
+        ShardingProducerController.Settings(system).withResendFirstUnconfirmedIdleTimeout(1500.millis)
       val shardingProducerController =
         spawn(
           ShardingProducerController[TestConsumer.Job](producerId, region, None, shardingProducerSettings),
@@ -381,8 +381,19 @@ class ReliableDeliveryShardingSpec
       // msg-3 is redelivered
       delivery3b.message should ===(TestConsumer.Job("msg-3"))
       delivery3b.confirmTo ! ConsumerController.Confirmed
-      val delivery4 = consumerProbes(1).receiveMessage()
-      delivery4.message should ===(TestConsumer.Job("msg-4"))
+      val delivery3cor4 = consumerProbes(1).receiveMessage()
+      delivery3cor4.message match {
+        case TestConsumer.Job("msg-3") =>
+          // It is possible the ProducerController re-sends msg-3 again before it has processed its acknowledgement.
+          // If the ConsumerController restarts between sending the acknowledgement and receiving that re-sent msg-3,
+          // it will deliver msg-3 a second time. We then expect msg-4 next:
+          val delivery4 = consumerProbes(1).receiveMessage()
+          delivery4.message should ===(TestConsumer.Job("msg-4"))
+        case TestConsumer.Job("msg-4") =>
+        // OK!
+        case other =>
+          throw new MatchError(other)
+      }
 
       // redeliver also when no more messages are sent
       consumerProbes(1).stop()

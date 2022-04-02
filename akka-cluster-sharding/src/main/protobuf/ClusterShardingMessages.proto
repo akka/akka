@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 syntax = "proto2";
@@ -36,6 +36,16 @@ message ShardHomeAllocated {
 message ShardHome {
   required string shard = 1;
   required string region = 2;
+}
+
+// only used nested in ShardHomes
+message ShardHomesEntry {
+  required string region = 1;
+  repeated string shard = 2;
+}
+
+message ShardHomes {
+  repeated ShardHomesEntry homes = 1;
 }
 
 message EntityState {

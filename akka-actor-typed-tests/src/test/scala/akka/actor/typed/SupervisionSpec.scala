@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -1007,6 +1007,11 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
           spawn(behv)
         }
       }
+    }
+
+    "default resetBackoffAfter to average of min and max backoff" in {
+      val strategy = SupervisorStrategy.restartWithBackoff(minBackoff = 100.millis, maxBackoff = 1.second, 0)
+      strategy.resetBackoffAfter should ===((100.millis + 1.second) / 2)
     }
 
     "restart with exponential backoff when deferred factory throws" in new FailingDeferredTestSetup(

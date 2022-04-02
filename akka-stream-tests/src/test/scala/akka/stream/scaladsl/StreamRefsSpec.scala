@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -170,7 +170,7 @@ object StreamRefsSpec {
   def config(): Config = {
     ConfigFactory.parseString(s"""
     akka {
-      loglevel = INFO
+      loglevel = DEBUG
 
       actor {
         provider = remote
@@ -348,6 +348,7 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) {
       remoteProbe.expectMsg(Done)
     }
 
+    // FIXME https://github.com/akka/akka/issues/30844
     "pass cancellation upstream across remoting before elements has been emitted" in {
       val remoteProbe = TestProbe()(remoteSystem)
       remoteActor.tell("give-nothing-watch", remoteProbe.ref)

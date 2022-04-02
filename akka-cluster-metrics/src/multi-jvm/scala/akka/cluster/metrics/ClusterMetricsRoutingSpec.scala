@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
@@ -20,13 +20,14 @@ import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.routing.ClusterRouterPool
 import akka.cluster.routing.ClusterRouterPoolSettings
 import akka.pattern.ask
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.routing.ActorRefRoutee
 import akka.routing.FromConfig
 import akka.routing.GetRoutees
 import akka.routing.Routees
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.{ DefaultTimeout, GHExcludeTest, ImplicitSender, LongRunningTest }
+import akka.testkit.GHExcludeTest
+import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
 import akka.util.unused
 
 object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
@@ -121,8 +122,7 @@ class AdaptiveLoadBalancingRouterMultiJvmNode3 extends AdaptiveLoadBalancingRout
 
 @nowarn
 abstract class AdaptiveLoadBalancingRouterSpec
-    extends MultiNodeSpec(AdaptiveLoadBalancingRouterConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(AdaptiveLoadBalancingRouterConfig)
     with RedirectLogging
     with ImplicitSender
     with DefaultTimeout {
@@ -172,8 +172,7 @@ abstract class AdaptiveLoadBalancingRouterSpec
       enterBarrier("after-1")
     }
 
-    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
-    "use all nodes in the cluster when not overloaded" taggedAs (LongRunningTest, GHExcludeTest) in {
+    "use all nodes in the cluster when not overloaded" taggedAs LongRunningTest in {
       runOn(node1) {
         val router1 = startRouter("router1")
 

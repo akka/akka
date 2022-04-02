@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -134,6 +134,18 @@ class SourceWithContextSpec extends StreamSpec {
         .expectNext((Message("a", 1L), 1L))
         .expectNext((Message("a", 2L), 2L))
         .expectError(boom)
+    }
+
+    "keep the same order for data and context when using unsafeDataVia" in {
+      val data = List(("1", 1), ("2", 2), ("3", 3), ("4", 4))
+
+      SourceWithContext
+        .fromTuples(Source(data))
+        .unsafeDataVia(Flow.fromFunction[String, Int] { _.toInt })
+        .runWith(TestSink.probe[(Int, Int)])
+        .request(4)
+        .expectNext((1, 1), (2, 2), (3, 3), (4, 4))
+        .expectComplete()
     }
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics.protobuf
@@ -12,6 +12,8 @@ import akka.testkit.AkkaSpec
 
 class MessageSerializerSpec extends AkkaSpec("""
      akka.actor.provider = cluster
+     akka.remote.classic.netty.tcp.port = 0
+     akka.remote.artery.canonical.port = 0
   """) {
 
   val serializer = new MessageSerializer(system.asInstanceOf[ExtendedActorSystem])

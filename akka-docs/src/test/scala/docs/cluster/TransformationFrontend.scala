@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package scala.docs.cluster
@@ -56,7 +56,7 @@ object TransformationFrontend {
     val counter = new AtomicInteger
     import system.dispatcher
     system.scheduler.scheduleWithFixedDelay(2.seconds, 2.seconds) { () =>
-      implicit val timeout = Timeout(5 seconds)
+      implicit val timeout: Timeout = 5.seconds
       (frontend ? TransformationJob("hello-" + counter.incrementAndGet())).foreach { result =>
         println(result)
       }

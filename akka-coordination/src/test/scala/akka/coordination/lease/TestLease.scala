@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.coordination.lease
@@ -64,15 +64,15 @@ class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Le
   val log = Logging(system, classOf[TestLease])
   val probe = TestProbe()(system)
 
-  log.info("Creating lease {}", settings)
-
-  TestLeaseExt(system).setTestLease(settings.leaseName, this)
-
   val initialPromise = Promise[Boolean]()
 
   private val nextAcquireResult = new AtomicReference[Future[Boolean]](initialPromise.future)
   private val nextCheckLeaseResult = new AtomicReference[Boolean](false)
   private val currentCallBack = new AtomicReference[Option[Throwable] => Unit](_ => ())
+
+  log.info("Creating lease {}", settings)
+
+  TestLeaseExt(system).setTestLease(settings.leaseName, this)
 
   def setNextAcquireResult(next: Future[Boolean]): Unit =
     nextAcquireResult.set(next)

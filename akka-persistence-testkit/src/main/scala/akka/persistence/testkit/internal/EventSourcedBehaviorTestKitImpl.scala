@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit.internal
@@ -8,7 +8,6 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.SerializationTestKit
 import akka.actor.typed.ActorRef
@@ -17,6 +16,7 @@ import akka.actor.typed.Behavior
 import akka.annotation.InternalApi
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery
+import akka.persistence.testkit.SnapshotMeta
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResult
@@ -24,8 +24,10 @@ import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResu
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.RestartResult
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.SerializationSettings
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
+import akka.persistence.testkit.scaladsl.SnapshotTestKit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetStateReply
 import akka.stream.scaladsl.Sink
 
 /**
@@ -67,6 +69,8 @@ import akka.stream.scaladsl.Sink
             s"but was [${other.getClass.getName}]")
       }
     }
+
+    override def hasNoReply: Boolean = replyOption.isEmpty
   }
 
   final case class RestartResultImpl[State](state: State) extends RestartResult[State]
@@ -95,11 +99,17 @@ import akka.stream.scaladsl.Sink
   override val persistenceTestKit: PersistenceTestKit = PersistenceTestKit(system)
   persistenceTestKit.clearAll()
 
+  override val snapshotTestKit: Option[SnapshotTestKit] =
+    if (system.settings.config.getString("akka.persistence.snapshot-store.plugin") != "")
+      Some(SnapshotTestKit(system))
+    else None
+  snapshotTestKit.foreach(_.clearAll())
+
   private val queries =
     PersistenceQuery(system).readJournalFor[CurrentEventsByPersistenceIdQuery](PersistenceTestKitReadJournal.Identifier)
 
   private val probe = actorTestKit.createTestProbe[Any]()
-  private val stateProbe = actorTestKit.createTestProbe[State]()
+  private val stateProbe = actorTestKit.createTestProbe[GetStateReply[State]]()
   private var actor: ActorRef[Command] = actorTestKit.spawn(behavior)
   private def internalActor = actor.unsafeUpcast[Any]
   private val persistenceId: PersistenceId = {
@@ -175,7 +185,7 @@ import akka.stream.scaladsl.Sink
 
   override def getState(): State = {
     internalActor ! EventSourcedBehaviorImpl.GetState(stateProbe.ref)
-    stateProbe.receiveMessage()
+    stateProbe.receiveMessage().currentState
   }
 
   private def preCommandCheck(command: Command): Unit = {
@@ -212,7 +222,7 @@ import akka.stream.scaladsl.Sink
     internalActor ! EventSourcedBehaviorImpl.GetState(stateProbe.ref)
     try {
       val state = stateProbe.receiveMessage()
-      RestartResultImpl(state)
+      RestartResultImpl(state.currentState)
     } catch {
       case NonFatal(_) =>
         throw new IllegalStateException("Could not restart. Maybe exception from event handler. See logs.")
@@ -221,6 +231,7 @@ import akka.stream.scaladsl.Sink
 
   override def clear(): Unit = {
     persistenceTestKit.clearByPersistenceId(persistenceId.id)
+    snapshotTestKit.foreach(_.clearByPersistenceId(persistenceId.id))
     restart()
   }
 
@@ -233,4 +244,21 @@ import akka.stream.scaladsl.Sink
     }
   }
 
+  override def initialize(state: State, events: Event*): Unit = internalInitialize(Some(state), events: _*)
+
+  override def initialize(events: Event*): Unit = internalInitialize(None, events: _*)
+
+  private def internalInitialize(stateOption: Option[State], events: Event*) = {
+    clear()
+
+    stateOption.foreach { state =>
+      snapshotTestKit match {
+        case Some(kit) => kit.persistForRecovery(persistenceId.id, (SnapshotMeta(0), state))
+        case _         => throw new IllegalArgumentException("Cannot initialize from state when snapshots are not used.")
+      }
+    }
+    persistenceTestKit.persistForRecovery(persistenceId.id, collection.immutable.Seq.empty ++ events)
+
+    restart()
+  }
 }

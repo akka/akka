@@ -1,0 +1,37 @@
+name: Link Validator
+
+on:
+  schedule:
+    - cron:  '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  validate-links:
+    runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: create the Akka site
+        run: sbt -Dakka.genjavadoc.enabled=true "Javaunidoc/doc; Compile/unidoc; akka-docs/paradox"
+
+      - name: Install Coursier command line tool
+        run: curl -fLo cs https://git.io/coursier-cli-linux && chmod +x cs && ./cs
+
+      - name: Run Link Validator
+        run: ./cs launch net.runne::site-link-validator:0.2.2 -- scripts/link-validator.conf

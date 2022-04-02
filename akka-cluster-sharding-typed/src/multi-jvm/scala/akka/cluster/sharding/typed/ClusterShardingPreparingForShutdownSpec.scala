@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -21,7 +21,6 @@ import akka.cluster.typed.PrepareForFullClusterShutdown
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.GHExcludeTest
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -79,8 +78,7 @@ class ClusterShardingPreparingForShutdownSpec
       formCluster(first, second, third)
     }
 
-    // Excluded on GH Actions: https://github.com/akka/akka/issues/30486
-    "not rebalance but should still work preparing for shutdown" taggedAs GHExcludeTest in {
+    "not rebalance but should still work preparing for shutdown" in {
 
       val shardRegion: ActorRef[ShardingEnvelope[Command]] =
         sharding.init(Entity(typeKey)(_ => Pinger()))

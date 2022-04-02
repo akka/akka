@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -9,7 +9,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.actor.UnhandledMessage
@@ -49,7 +48,7 @@ import akka.persistence.typed.{
   SnapshotMetadata,
   SnapshotSelectionCriteria
 }
-import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState, GetStateReply }
 import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
@@ -384,7 +383,7 @@ private[akka] object Running {
 
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
     def onGetState(get: GetState[S]): Behavior[InternalProtocol] = {
-      get.replyTo ! state.state
+      get.replyTo ! GetStateReply(state.state)
       this
     }
 

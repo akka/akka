@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -328,7 +328,7 @@ final class Entity[M, E] private (
       settings: Optional[ClusterShardingSettings] = settings,
       allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategy,
       role: Optional[String] = role,
-      dataCenter: Optional[String] = role): Entity[M, E] = {
+      dataCenter: Optional[String] = dataCenter): Entity[M, E] = {
     new Entity(
       createBehavior,
       typeKey,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -35,10 +35,7 @@ class QuickRestartMultiJvmNode1 extends QuickRestartSpec
 class QuickRestartMultiJvmNode2 extends QuickRestartSpec
 class QuickRestartMultiJvmNode3 extends QuickRestartSpec
 
-abstract class QuickRestartSpec
-    extends MultiNodeSpec(QuickRestartMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with ImplicitSender {
+abstract class QuickRestartSpec extends MultiNodeClusterSpec(QuickRestartMultiJvmSpec) with ImplicitSender {
 
   import QuickRestartMultiJvmSpec._
 

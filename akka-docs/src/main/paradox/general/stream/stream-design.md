@@ -39,11 +39,11 @@ The process of materialization will often create specific objects that are usefu
 
 ## Interoperation with other Reactive Streams implementations
 
-Akka Streams fully implement the Reactive Streams specification and interoperate with all other conformant implementations. We chose to completely separate the Reactive Streams interfaces from the user-level API because we regard them to be an SPI that is not targeted at endusers. In order to obtain a `Publisher` or `Subscriber` from an Akka Stream topology, a corresponding `Sink.asPublisher` or `Source.asSubscriber` element must be used.
+Akka Streams fully implement the Reactive Streams specification and interoperate with all other conformant implementations. We chose to completely separate the Reactive Streams interfaces from the user-level API because we regard them to be an SPI that is not targeted at endusers. In order to obtain a [Publisher](https://javadoc.io/doc/org.reactivestreams/reactive-streams/latest/org/reactivestreams/Publisher.html) or [Subscriber](https://javadoc.io/doc/org.reactivestreams/reactive-streams/latest/org/reactivestreams/Subscriber.html) from an Akka Stream topology, a corresponding @apidoc[Sink.asPublisher](Sink$) {scala="#asPublisher[T](fanout:Boolean):akka.stream.scaladsl.Sink[T,org.reactivestreams.Publisher[T]]" java="#asPublisher(akka.stream.javadsl.AsPublisher)"} or @apidoc[Source.asSubscriber](Source$) {scala="#asSubscriber[T]:akka.stream.scaladsl.Source[T,org.reactivestreams.Subscriber[T]]" java="#asSubscriber()"} element must be used.
 
-All stream Processors produced by the default materialization of Akka Streams are restricted to having a single Subscriber, additional Subscribers will be rejected. The reason for this is that the stream topologies described using our DSL never require fan-out behavior from the Publisher sides of the elements, all fan-out is done using explicit elements like `Broadcast[T]`.
+All stream Processors produced by the default materialization of Akka Streams are restricted to having a single Subscriber, additional Subscribers will be rejected. The reason for this is that the stream topologies described using our DSL never require fan-out behavior from the Publisher sides of the elements, all fan-out is done using explicit elements like @apidoc[Broadcast[T]](stream.*.Broadcast).
 
-This means that `Sink.asPublisher(true)` (for enabling fan-out support) must be used where broadcast behavior is needed for interoperation with other Reactive Streams implementations.
+This means that @scala[@scaladoc[Sink.asPublisher(true)](akka.stream.scaladsl.Sink$#asPublisher[T](fanout:Boolean):akka.stream.scaladsl.Sink[T,org.reactivestreams.Publisher[T]])]@java[@javadoc[Sink.asPublisher(WITH_FANOUT)](akka.stream.javadsl.Sink#asPublisher(akka.stream.javadsl.AsPublisher))] (for enabling fan-out support) must be used where broadcast behavior is needed for interoperation with other Reactive Streams implementations.
 
 ### Rationale and benefits from Sink/Source/Flow not directly extending Reactive Streams interfaces
 
@@ -56,16 +56,16 @@ Though since those internal SPI types would end up surfacing to end users of the
 With this historical knowledge and context about the purpose of the standard – being an internal detail of interoperable libraries - we can with certainty say that it can't be really said that a direct _inheritance_ relationship with these types can be considered some form of advantage or meaningful differentiator between libraries.
 Rather, it could be seen that APIs which expose those SPI types to end-users are leaking internal implementation details accidentally. 
 
-The `Source`, `Sink` and `Flow` types which are part of Akka Streams have the purpose of providing the fluent DSL, as well as to be "factories" for running those streams.
-Their direct counterparts in Reactive Streams are, respectively, `Publisher`, `Subscriber` and `Processor`. 
+The @apidoc[Source], @apidoc[Sink] and @apidoc[Flow] types which are part of Akka Streams have the purpose of providing the fluent DSL, as well as to be "factories" for running those streams.
+Their direct counterparts in Reactive Streams are, respectively, [Publisher](https://javadoc.io/doc/org.reactivestreams/reactive-streams/latest/org/reactivestreams/Publisher.html), [Subscriber](https://javadoc.io/doc/org.reactivestreams/reactive-streams/latest/org/reactivestreams/Subscriber.html)` and [Processor](https://javadoc.io/doc/org.reactivestreams/reactive-streams/latest/org/reactivestreams/Processor.html). 
 In other words, Akka Streams operate on a lifted representation of the computing graph,
 which then is materialized and executed in accordance to Reactive Streams rules. This also allows Akka Streams to perform optimizations like fusing and dispatcher configuration during the materialization step.
 
-Another not obvious gain from hiding the Reactive Streams interfaces comes from the fact that `org.reactivestreams.Subscriber` (et al) have now been included in Java 9+, and thus become part of Java itself, so libraries should migrate to using the `java.util.concurrent.Flow.Subscriber` instead of `org.reactivestreams.Subscriber`.
+Another not obvious gain from hiding the Reactive Streams interfaces comes from the fact that `org.reactivestreams.Subscriber` (et al) have now been included in Java 9+, and thus become part of Java itself, so libraries should migrate to using the @javadoc[java.util.concurrent.Flow.Subscriber](java.util.concurrent.Flow.Subscriber) instead of `org.reactivestreams.Subscriber`.
 Libraries which selected to expose and directly extend the Reactive Streams types will now have a tougher time to adapt the JDK9+ types -- all their classes that extend Subscriber and friends will need to be copied or changed to extend the exact same interface,
 but from a different package. In Akka we simply expose the new type when asked to -- already supporting JDK9 types, from the day JDK9 was released.
 
-The other, and perhaps more important reason for hiding the Reactive Streams interfaces comes back to the first points of this explanation: the fact of Reactive Streams being an SPI, and as such is hard to "get right" in ad-hoc implementations. Thus Akka Streams discourages the use of the hard to implement pieces of the underlying infrastructure, and offers simpler, more type-safe, yet more powerful abstractions for users to work with: GraphStages and operators. It is of course still (and easily) possible to accept or obtain Reactive Streams (or JDK+ Flow) representations of the stream operators by using methods like `asPublisher` or `fromSubscriber`.
+The other, and perhaps more important reason for hiding the Reactive Streams interfaces comes back to the first points of this explanation: the fact of Reactive Streams being an SPI, and as such is hard to "get right" in ad-hoc implementations. Thus Akka Streams discourages the use of the hard to implement pieces of the underlying infrastructure, and offers simpler, more type-safe, yet more powerful abstractions for users to work with: @apidoc[GraphStage]s and operators. It is of course still (and easily) possible to accept or obtain Reactive Streams (or JDK+ Flow) representations of the stream operators by using methods like @apidoc[Sink.asPublisher](Sink$) {scala="#asPublisher[T](fanout:Boolean):akka.stream.scaladsl.Sink[T,org.reactivestreams.Publisher[T]]" java="#asPublisher(akka.stream.javadsl.AsPublisher)"} or @apidoc[fromSubscriber](Sink$) {scala="#fromSubscriber[T](subscriber:org.reactivestreams.Subscriber[T]):akka.stream.scaladsl.Sink[T,akka.NotUsed]" java="#fromSubscriber(org.reactivestreams.Subscriber)"}.
 
 ## What shall users of streaming libraries expect?
 
@@ -90,11 +90,11 @@ Exceptions from this need to be well-justified and carefully documented.
 
 Akka Streams must enable a library to express any stream processing utility in terms of immutable blueprints. The most common building blocks are
 
- * Source: something with exactly one output stream
- * Sink: something with exactly one input stream
- * Flow: something with exactly one input and one output stream
- * BidiFlow: something with exactly two input streams and two output streams that conceptually behave like two Flows of opposite direction
- * Graph: a packaged stream processing topology that exposes a certain set of input and output ports, characterized by an object of type `Shape`.
+ * @apidoc[Source]: something with exactly one output stream
+ * @apidoc[Sink]: something with exactly one input stream
+ * @apidoc[Flow]: something with exactly one input and one output stream
+ * @apidoc[BidiFlow]: something with exactly two input streams and two output streams that conceptually behave like two Flows of opposite direction
+ * @apidoc[Graph]: a packaged stream processing topology that exposes a certain set of input and output ports, characterized by an object of type @apidoc[Shape].
 
 @@@ note
 
@@ -104,7 +104,7 @@ A source that emits a stream of streams is still a normal Source, the kind of el
 
 ## The difference between Error and Failure
 
-The starting point for this discussion is the [definition given by the Reactive Manifesto](https://www.reactivemanifesto.org/glossary#Failure). Translated to streams this means that an error is accessible within the stream as a normal data element, while a failure means that the stream itself has failed and is collapsing. In concrete terms, on the Reactive Streams interface level data elements (including errors) are signaled via `onNext` while failures raise the `onError` signal.
+The starting point for this discussion is the [definition given by the Reactive Manifesto](https://www.reactivemanifesto.org/glossary#Failure). Translated to streams this means that an error is accessible within the stream as a normal data element, while a failure means that the stream itself has failed and is collapsing. In concrete terms, on the Reactive Streams interface level data elements (including errors) are signaled via [onNext](https://javadoc.io/doc/org.reactivestreams/reactive-streams/latest/org/reactivestreams/Subscriber.html#onNext\(T\)) while failures raise the [onError](https://javadoc.io/doc/org.reactivestreams/reactive-streams/latest/org/reactivestreams/Subscriber.html#onError\(java.lang.Throwable\)) signal.
 
 @@@ note
 

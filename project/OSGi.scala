@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -134,7 +134,7 @@ object OSGi {
     versionedImport(packageName, s"$epoch.$major", s"$epoch.${major.toInt + 1}")
   }
   def scalaJava8CompatImport(packageName: String = "scala.compat.java8.*") =
-    versionedImport(packageName, "0.8.0", "1.0.0")
+    versionedImport(packageName, "0.8.0", "2.0.0")
   def scalaParsingCombinatorImport(packageName: String = "scala.util.parsing.combinator.*") =
     versionedImport(packageName, "1.1.0", "1.2.0")
   def sslConfigCoreImport(packageName: String = "com.typesafe.sslconfig") =

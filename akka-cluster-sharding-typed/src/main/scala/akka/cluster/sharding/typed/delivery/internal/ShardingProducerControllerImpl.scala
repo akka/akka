@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.delivery.internal
@@ -142,7 +142,7 @@ import akka.util.Timeout
     def becomeActive(p: ActorRef[RequestNext[A]], s: DurableProducerQueue.State[A]): Behavior[InternalCommand] = {
       Behaviors.withTimers { timers =>
         timers.startTimerWithFixedDelay(CleanupUnused, settings.cleanupUnusedAfter / 2)
-        timers.startTimerWithFixedDelay(ResendFirstUnconfirmed, settings.resendFirsUnconfirmedIdleTimeout / 2)
+        timers.startTimerWithFixedDelay(ResendFirstUnconfirmed, settings.resendFirstUnconfirmedIdleTimeout / 2)
 
         // resend unconfirmed before other stashed messages
         Behaviors.withStash[InternalCommand](settings.bufferSize) { newStashBuffer =>
@@ -476,7 +476,7 @@ private class ShardingProducerControllerImpl[A: ClassTag](
       s.out.foreach {
         case (outKey: OutKey, outState) =>
           val idleDurationMillis = (now - outState.usedNanoTime) / 1000 / 1000
-          if (outState.unconfirmed.nonEmpty && idleDurationMillis >= settings.resendFirsUnconfirmedIdleTimeout.toMillis) {
+          if (outState.unconfirmed.nonEmpty && idleDurationMillis >= settings.resendFirstUnconfirmedIdleTimeout.toMillis) {
             context.log.debug(
               "Resend first unconfirmed for [{}], because it was idle for [{} ms]",
               outKey,

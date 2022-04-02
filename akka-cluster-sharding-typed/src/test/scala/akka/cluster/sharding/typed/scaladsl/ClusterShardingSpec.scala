@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.scaladsl
@@ -269,14 +269,14 @@ class ClusterShardingSpec
       val bobRef = sharding.entityRefFor(typeKeyWithEnvelopes, "bob")
       val aliceRef = sharding.entityRefFor(typeKeyWithEnvelopes, "alice")
 
-      val reply1 = bobRef ? WhoAreYou
-      val response = reply1.futureValue
+      val reply1 = bobRef.ask(WhoAreYou(_))
+      val response = reply1.futureValue.asInstanceOf[String]
       response should startWith("I'm bob")
       // typekey and entity id encoded in promise ref path
       response should include(s"${typeKeyWithEnvelopes.name}-bob")
 
-      val reply2 = aliceRef.ask(WhoAreYou)
-      reply2.futureValue should startWith("I'm alice")
+      val reply2 = aliceRef.ask(WhoAreYou(_))
+      reply2.futureValue.asInstanceOf[String] should startWith("I'm alice")
 
       bobRef ! StopPlz()
     }
@@ -287,7 +287,7 @@ class ClusterShardingSpec
       val p = TestProbe[TheReply]()
 
       spawn(Behaviors.setup[TheReply] { ctx =>
-        ctx.ask(peterRef, WhoAreYou) {
+        ctx.ask(peterRef, WhoAreYou.apply) {
           case Success(name) => TheReply(name)
           case Failure(ex)   => TheReply(ex.getMessage)
         }
@@ -326,7 +326,7 @@ class ClusterShardingSpec
 
       val ref = sharding.entityRefFor(ignorantKey, "sloppy")
 
-      val reply = ref.ask(WhoAreYou)(Timeout(10.millis))
+      val reply = ref.ask(WhoAreYou(_))(Timeout(10.millis))
       val exc = reply.failed.futureValue
       exc.getClass should ===(classOf[AskTimeoutException])
       exc.getMessage should startWith("Ask timed out on")

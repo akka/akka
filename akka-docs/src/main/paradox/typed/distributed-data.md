@@ -280,7 +280,7 @@ throws an exception, or if it fails to persist to @ref:[durable storage](#durabl
 
 #### Examples
 
-In a 7 node cluster this these consistency properties are achieved by writing to 4 nodes
+In a 7 node cluster these consistency properties are achieved by writing to 4 nodes
 and reading from 4 nodes, or writing to 5 nodes and reading from 3 nodes.
 
 By combining `WriteMajority` and `ReadMajority` levels a read always reflects the most recent write.

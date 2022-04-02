@@ -1,14 +1,12 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import scala.concurrent._
 import scala.concurrent.duration._
-
 import org.scalatest.time.Span
-
 import akka.Done
 import akka.actor.Status
 import akka.pattern.pipe
@@ -21,6 +19,8 @@ import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
+
+import scala.annotation.nowarn
 
 class QueueSourceSpec extends StreamSpec {
   implicit val ec: ExecutionContextExecutor = system.dispatcher
@@ -227,6 +227,7 @@ class QueueSourceSpec extends StreamSpec {
 
     "return false when element was not added to buffer" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
+      @nowarn("msg=deprecated")
       val queue = Source.queue(1, OverflowStrategy.dropNew).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
@@ -260,6 +261,7 @@ class QueueSourceSpec extends StreamSpec {
 
     "fail offer future when stream is completed" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
+      @nowarn("msg=deprecated")
       val queue = Source.queue(1, OverflowStrategy.dropNew).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
       queue.watchCompletion().pipeTo(testActor)

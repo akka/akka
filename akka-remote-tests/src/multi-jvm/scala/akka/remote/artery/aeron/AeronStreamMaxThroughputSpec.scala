@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -15,7 +15,6 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
 import io.aeron.CncFileDescriptor
-import io.aeron.driver.MediaDriver
 import org.agrona.IoUtil
 
 import akka.actor._
@@ -77,7 +76,7 @@ abstract class AeronStreamMaxThroughputSpec
 
   var plot = PlotResult()
 
-  val driver = MediaDriver.launchEmbedded()
+  val driver = startDriver()
 
   val pool = new EnvelopeBufferPool(1024 * 1024, 128)
 

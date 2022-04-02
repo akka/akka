@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -13,7 +13,6 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.Props
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
@@ -47,7 +46,7 @@ class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec
 class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec
 class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec
 
-abstract class SunnyWeatherSpec extends MultiNodeSpec(SunnyWeatherMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class SunnyWeatherSpec extends MultiNodeClusterSpec(SunnyWeatherMultiJvmSpec) {
 
   import ClusterEvent._
   import SunnyWeatherMultiJvmSpec._

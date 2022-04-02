@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -140,7 +140,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
   "ask" in {
     //#ask
-    implicit val askTimeout = Timeout(5.seconds)
+    implicit val askTimeout: Timeout = 5.seconds
     val words: Source[String, NotUsed] =
       Source(List("hello", "hi"))
 
@@ -384,7 +384,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val akkaTweets: Source[Tweet, NotUsed] = tweets.filter(_.hashtags.contains(akkaTag))
 
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = 3.seconds
     val saveTweets: RunnableGraph[NotUsed] =
       akkaTweets.mapAsync(4)(tweet => database ? Save(tweet)).to(Sink.ignore)
     //#save-tweets

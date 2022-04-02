@@ -1,7 +1,7 @@
 # Classic Event Bus
 
 Originally conceived as a way to send messages to groups of actors, the
-`EventBus` has been generalized into a set of @scala[composable traits] @java[abstract base classes]
+@scala[@scaladoc[EventBus](akka.event.EventBus)]@java[@javadoc[EventBus](akka.event.japi.EventBus)] has been generalized into a set of @scala[composable traits] @java[abstract base classes]
 implementing a simple interface:
 
 Scala
@@ -41,8 +41,8 @@ implementation of the existing ones on @extref[github](github:akka-actor/src/mai
 
 The simplest classification is just to extract an arbitrary classifier from
 each event and maintaining a set of subscribers for each possible classifier.
-This can be compared to tuning in on a radio station. The trait
-`LookupClassification` is still generic in that it abstracts over how to
+This can be compared to tuning in on a radio station. The @scala[trait
+@scaladoc[LookupClassification](akka.event.LookupClassification)]@java[abstract class @scaladoc[LookupEventBus](akka.event.japi.LookupEventBus)] is still generic in that it abstracts over how to
 compare subscribers and how exactly to classify them.
 
 The necessary methods to be implemented are illustrated with the following example:
@@ -126,9 +126,9 @@ subscriptions, independent of how many actually match.
 
 This classification was originally developed specifically for implementing
 @ref:[DeathWatch](actors.md#deathwatch): subscribers as well as classifiers are of
-type `ActorRef`.
+type @apidoc[actor.ActorRef].
 
-This classification requires an `ActorSystem` in order to perform book-keeping
+This classification requires an @apidoc[actor.ActorSystem] in order to perform book-keeping
 operations related to the subscribers being Actors, which can terminate without first
 unsubscribing from the EventBus. ManagedActorClassification maintains a system Actor which
 takes care of unsubscribing terminated actors automatically.
@@ -158,7 +158,7 @@ The event stream is the main event bus of each actor system: it is used for
 carrying @ref:[log messages](logging.md) and @ref:[Dead Letters](#dead-letters) and may be
 used by the user code for other purposes as well. It uses @ref:[Subchannel
 Classification](#subchannel-classification) which enables registering to related sets of channels (as is
-used for `RemotingLifecycleEvent`). The following example demonstrates
+used for @apidoc[RemotingLifecycleEvent]). The following example demonstrates
 how a simple subscription works. Given a simple actor:
 
 @@@ div { .group-scala }
@@ -190,7 +190,7 @@ Scala
 Java
 :  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
 
-Similarly to @ref:[Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
+Similarly to @ref:[Actor Classification](#actor-classification), @apidoc[event.EventStream] will automatically remove subscribers when they terminate.
 
 @@@ note
 
@@ -238,11 +238,11 @@ event class have been done)
 
 As described at @ref:[Stopping actors](actors.md#stopping-actors), messages queued when an actor
 terminates or sent after its death are re-routed to the dead letter mailbox,
-which by default will publish the messages wrapped in `DeadLetter`. This
+which by default will publish the messages wrapped in @apidoc[DeadLetter]. This
 wrapper holds the original sender, receiver and message of the envelope which
 was redirected.
 
-Some internal messages (marked with the `DeadLetterSuppression` trait) will not end up as
+Some internal messages (marked with the @apidoc[DeadLetterSuppression] @scala[trait]@java[interface]) will not end up as
 dead letters like normal messages. These are by design safe and expected to sometimes arrive at a terminated actor
 and since they are nothing to worry about, they are suppressed from the default dead letters logging mechanism.
 
@@ -266,5 +266,5 @@ Java
 ### Other Uses
 
 The event stream is always there and ready to be used, you can publish your own
-events (it accepts @scala[`AnyRef`]@java[`Object`]) and subscribe listeners to the corresponding JVM
+events (it accepts @scala[@scaladoc[AnyRef](scala.AnyRef)]@java[@javadoc[Object](java.lang.Object)]) and subscribe listeners to the corresponding JVM
 classes.

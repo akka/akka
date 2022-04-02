@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -46,10 +46,7 @@ object RestartNode2SpecMultiJvmSpec extends MultiNodeConfig {
 class RestartNode2SpecMultiJvmNode1 extends RestartNode2SpecSpec
 class RestartNode2SpecMultiJvmNode2 extends RestartNode2SpecSpec
 
-abstract class RestartNode2SpecSpec
-    extends MultiNodeSpec(RestartNode2SpecMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with ImplicitSender {
+abstract class RestartNode2SpecSpec extends MultiNodeClusterSpec(RestartNode2SpecMultiJvmSpec) with ImplicitSender {
 
   import RestartNode2SpecMultiJvmSpec._
 

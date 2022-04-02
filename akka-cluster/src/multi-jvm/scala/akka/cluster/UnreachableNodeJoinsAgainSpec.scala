@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -18,7 +18,6 @@ import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.RARP
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import akka.util.ccompat._
@@ -43,9 +42,7 @@ class UnreachableNodeJoinsAgainMultiJvmNode2 extends UnreachableNodeJoinsAgainSp
 class UnreachableNodeJoinsAgainMultiJvmNode3 extends UnreachableNodeJoinsAgainSpec
 class UnreachableNodeJoinsAgainMultiJvmNode4 extends UnreachableNodeJoinsAgainSpec
 
-abstract class UnreachableNodeJoinsAgainSpec
-    extends MultiNodeSpec(UnreachableNodeJoinsAgainMultiNodeConfig)
-    with MultiNodeClusterSpec {
+abstract class UnreachableNodeJoinsAgainSpec extends MultiNodeClusterSpec(UnreachableNodeJoinsAgainMultiNodeConfig) {
 
   import UnreachableNodeJoinsAgainMultiNodeConfig._
 

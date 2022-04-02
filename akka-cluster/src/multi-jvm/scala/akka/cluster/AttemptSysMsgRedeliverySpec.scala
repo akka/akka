@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -12,7 +12,7 @@ import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.PoisonPill
 import akka.actor.Props
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 
@@ -38,8 +38,7 @@ class AttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec
 class AttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec
 
 class AttemptSysMsgRedeliverySpec
-    extends MultiNodeSpec(AttemptSysMsgRedeliveryMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(AttemptSysMsgRedeliveryMultiJvmSpec)
     with ImplicitSender
     with DefaultTimeout {
   import AttemptSysMsgRedeliveryMultiJvmSpec._

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -11,7 +11,6 @@ import language.postfixOps
 
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 
@@ -31,7 +30,7 @@ class InitialHeartbeatMultiJvmNode1 extends InitialHeartbeatSpec
 class InitialHeartbeatMultiJvmNode2 extends InitialHeartbeatSpec
 class InitialHeartbeatMultiJvmNode3 extends InitialHeartbeatSpec
 
-abstract class InitialHeartbeatSpec extends MultiNodeSpec(InitialHeartbeatMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class InitialHeartbeatSpec extends MultiNodeClusterSpec(InitialHeartbeatMultiJvmSpec) {
 
   import InitialHeartbeatMultiJvmSpec._
 

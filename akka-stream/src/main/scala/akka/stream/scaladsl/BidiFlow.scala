@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -217,6 +217,8 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
    */
   override def async(dispatcher: String, inputBufferSize: Int): BidiFlow[I1, O1, I2, O2, Mat] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[BidiFlow[I1, O1, I2, O2, Mat]]
+
+  override def getAttributes: Attributes = traversalBuilder.attributes
 
 }
 

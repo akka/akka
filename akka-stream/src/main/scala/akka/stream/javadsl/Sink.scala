@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -84,6 +84,12 @@ object Sink {
    */
   def ignore[T](): Sink[T, CompletionStage[Done]] =
     new Sink(scaladsl.Sink.ignore.toCompletionStage())
+
+  /**
+   * A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream.
+   * */
+  def never[T]: Sink[T, CompletionStage[Done]] =
+    new Sink(scaladsl.Sink.never.toCompletionStage())
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
@@ -586,5 +592,7 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    */
   override def async(dispatcher: String, inputBufferSize: Int): javadsl.Sink[In, Mat] =
     new Sink(delegate.async(dispatcher, inputBufferSize))
+
+  override def getAttributes: Attributes = delegate.getAttributes
 
 }

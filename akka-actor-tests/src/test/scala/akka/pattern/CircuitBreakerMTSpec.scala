@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -14,16 +14,16 @@ import akka.testkit._
 class CircuitBreakerMTSpec extends AkkaSpec {
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   "A circuit breaker being called by many threads" must {
-    val callTimeout = 2.second.dilated
+    val callTimeout = 2.seconds.dilated
     val resetTimeout = 3.seconds.dilated
     val maxFailures = 5
-    val breaker = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
+    def newBreaker = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
     val numberOfTestCalls = 100
 
-    def openBreaker(): Unit = {
+    def openBreaker(breaker: CircuitBreaker): Unit = {
       // returns true if the breaker is open
       def failingCall(): Boolean =
-        Await.result(breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))).recover {
+        Await.result(breaker.withCircuitBreaker(Future.failed(new RuntimeException("FAIL"))).recover {
           case _: CircuitBreakerOpenException => true
           case _                              => false
         }, remainingOrDefault)
@@ -36,7 +36,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       awaitCond(failingCall())
     }
 
-    def testCallsWithBreaker(): immutable.IndexedSeq[Future[String]] = {
+    def testCallsWithBreaker(breaker: CircuitBreaker): immutable.IndexedSeq[Future[String]] = {
       val aFewActive = new TestLatch(5)
       for (_ <- 1 to numberOfTestCalls)
         yield breaker
@@ -52,41 +52,44 @@ class CircuitBreakerMTSpec extends AkkaSpec {
           }
     }
 
-    "allow many calls while in closed state with no errors" in {
-      val futures = testCallsWithBreaker()
+    "allow many calls while in closed state with no errors" taggedAs TimingTest in {
+      val futures = testCallsWithBreaker(newBreaker)
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
       result.size should ===(numberOfTestCalls)
       result.toSet should ===(Set("succeed"))
     }
 
-    "transition to open state upon reaching failure limit and fail-fast" in {
-      openBreaker()
-      val futures = testCallsWithBreaker()
+    "transition to open state upon reaching failure limit and fail-fast" taggedAs TimingTest in {
+      val breaker = newBreaker
+      openBreaker(breaker)
+      val futures = testCallsWithBreaker(breaker)
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
       result.size should ===(numberOfTestCalls)
       result.toSet should ===(Set("CBO"))
     }
 
-    "allow a single call through in half-open state" in {
+    "allow a single call through in half-open state" taggedAs TimingTest in {
+      val breaker = newBreaker
       val halfOpenLatch = new TestLatch(1)
       breaker.onHalfOpen(halfOpenLatch.countDown())
 
-      openBreaker()
+      openBreaker(breaker)
 
       // breaker should become half-open after a while
       Await.ready(halfOpenLatch, resetTimeout + 1.seconds.dilated)
 
-      val futures = testCallsWithBreaker()
+      val futures = testCallsWithBreaker(breaker)
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
       result.size should ===(numberOfTestCalls)
       result.toSet should ===(Set("succeed", "CBO"))
     }
 
-    // Excluded on GH Actions: https://github.com/akka/akka/issues/30476
-    "recover and reset the breaker after the reset timeout" taggedAs GHExcludeTest in {
+    "recover and reset the breaker after the reset timeout" taggedAs TimingTest in {
+      val breaker = newBreaker
+
       val halfOpenLatch = new TestLatch(1)
       breaker.onHalfOpen(halfOpenLatch.countDown())
-      openBreaker()
+      openBreaker(breaker)
 
       // breaker should become half-open after a while
       Await.ready(halfOpenLatch, resetTimeout + 1.seconds.dilated)
@@ -97,7 +100,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       breaker.withCircuitBreaker(Future("succeed"))
       Await.ready(closedLatch, 5.seconds.dilated)
 
-      val futures = testCallsWithBreaker()
+      val futures = testCallsWithBreaker(breaker)
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
       result.size should ===(numberOfTestCalls)
       result.toSet should ===(Set("succeed"))

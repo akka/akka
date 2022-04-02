@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sbr
@@ -12,7 +12,6 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 
 object IndirectlyConnected3NodeSpec extends MultiNodeConfig {
@@ -44,7 +43,7 @@ class IndirectlyConnected3NodeSpecMultiJvmNode1 extends IndirectlyConnected3Node
 class IndirectlyConnected3NodeSpecMultiJvmNode2 extends IndirectlyConnected3NodeSpec
 class IndirectlyConnected3NodeSpecMultiJvmNode3 extends IndirectlyConnected3NodeSpec
 
-class IndirectlyConnected3NodeSpec extends MultiNodeSpec(IndirectlyConnected3NodeSpec) with MultiNodeClusterSpec {
+class IndirectlyConnected3NodeSpec extends MultiNodeClusterSpec(IndirectlyConnected3NodeSpec) {
   import IndirectlyConnected3NodeSpec._
 
   "A 3-node cluster" should {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.routing
@@ -14,7 +14,6 @@ import akka.actor._
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.routing.GetRoutees
 import akka.routing.RoundRobinGroup
 import akka.routing.RoundRobinPool
@@ -59,8 +58,7 @@ class UseRoleIgnoredMultiJvmNode2 extends UseRoleIgnoredSpec
 class UseRoleIgnoredMultiJvmNode3 extends UseRoleIgnoredSpec
 
 abstract class UseRoleIgnoredSpec
-    extends MultiNodeSpec(UseRoleIgnoredMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(UseRoleIgnoredMultiJvmSpec)
     with ImplicitSender
     with DefaultTimeout {
   import akka.cluster.routing.UseRoleIgnoredMultiJvmSpec._

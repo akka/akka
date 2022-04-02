@@ -1,0 +1,2 @@
+# marked DoNotInherit, so fine to add methods
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ExtendedActorSystem.uid")

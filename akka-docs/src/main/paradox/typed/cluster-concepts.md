@@ -13,7 +13,7 @@ Akka Cluster provides a fault-tolerant decentralized peer-to-peer based
 single point of bottleneck. It does this using @ref:[gossip](#gossip) protocols and an automatic [failure detector](#failure-detector).
 
 Akka Cluster allows for building distributed applications, where one application or service spans multiple nodes
-(in practice multiple `ActorSystem`s). 
+(in practice multiple @apidoc[typed.ActorSystem]s). 
 
 ## Terms
 
@@ -31,7 +31,7 @@ and membership state transitions.
 ### Gossip
 
 The cluster membership used in Akka is based on Amazon's [Dynamo](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf) system and
-particularly the approach taken in Basho's' [Riak](https://riak.com/technology/architecture/) distributed database.
+particularly the approach taken in Basho's' [Riak](https://en.wikipedia.org/wiki/Riak) distributed database.
 Cluster membership is communicated using a [Gossip Protocol](https://en.wikipedia.org/wiki/Gossip_protocol), where the current
 state of the cluster is gossiped randomly through the cluster, with preference to
 members that have not seen the latest version.

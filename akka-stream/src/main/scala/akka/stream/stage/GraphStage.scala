@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.stage
@@ -533,12 +533,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private def cancel[T](connection: Connection, cause: Throwable): Unit =
     attributes.mandatoryAttribute[Attributes.CancellationStrategy].strategy match {
       case Attributes.CancellationStrategy.AfterDelay(delay, _) =>
-        // since the port is not actually cancelled, we install a handler to ignore upcoming elements
-        connection.inHandler = new InHandler {
-          // ignore pushs now, since the stage wanted it cancelled already
-          override def onPush(): Unit = ()
-          // do not ignore termination signals
-        }
+        // since the port is not actually cancelled, we install a handler to ignore upcoming
+        // ignore pushs now, since the stage wanted it cancelled already
+        // do not ignore termination signals
+        connection.inHandler = EagerTerminateInput
         val callback = getAsyncCallback[(Connection, Throwable)] {
           case (connection, cause) => doCancel(connection, cause)
         }

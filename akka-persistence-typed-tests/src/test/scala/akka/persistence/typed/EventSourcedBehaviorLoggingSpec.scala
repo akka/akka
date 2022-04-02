@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed
@@ -18,13 +18,16 @@ import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import akka.Done
+import akka.actor.typed.ActorRef
+
 object EventSourcedBehaviorLoggingSpec {
 
   object ChattyEventSourcingBehavior {
     sealed trait Command
 
-    case class Hello(msg: String) extends Command
-    case class Hellos(msg1: String, msg2: String) extends Command
+    case class Hello(msg: String, replyTo: ActorRef[Done]) extends Command
+    case class Hellos(msg1: String, msg2: String, replyTo: ActorRef[Done]) extends Command
 
     final case class Event(msg: String) extends CborSerializable
 
@@ -35,12 +38,12 @@ object EventSourcedBehaviorLoggingSpec {
           Set.empty,
           (_, command) =>
             command match {
-              case Hello(msg) =>
+              case Hello(msg, replyTo) =>
                 ctx.log.info("received message '{}'", msg)
-                Effect.persist(Event(msg))
+                Effect.persist(Event(msg)).thenReply(replyTo)(_ => Done)
 
-              case Hellos(msg1, msg2) =>
-                Effect.persist(Event(msg1), Event(msg2))
+              case Hellos(msg1, msg2, replyTo) =>
+                Effect.persist(Event(msg1), Event(msg2)).thenReply(replyTo)(_ => Done)
             },
           (state, event) => state + event)
       }
@@ -62,43 +65,51 @@ abstract class EventSourcedBehaviorLoggingSpec(config: Config)
     val chattyActor = spawn(ChattyEventSourcingBehavior(myId))
 
     "always log user message in context.log" in {
+      val doneProbe = createTestProbe[Done]()
       LoggingTestKit
         .info("received message 'Mary'")
         .withLoggerName("akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$")
         .expect {
-          chattyActor ! Hello("Mary")
+          chattyActor ! Hello("Mary", doneProbe.ref)
+          doneProbe.receiveMessage()
         }
     }
 
     s"log internal messages in '$loggerId' logger without logging user data (Persist)" in {
+      val doneProbe = createTestProbe[Done]()
       LoggingTestKit
         .debug(
           "Handled command [akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$Hello], " +
-          "resulting effect: [Persist(akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$Event)], side effects: [0]")
+          "resulting effect: [Persist(akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$Event)], side effects: [1]")
         .withLoggerName(loggerName)
         .expect {
-          chattyActor ! Hello("Joe")
+          chattyActor ! Hello("Joe", doneProbe.ref)
+          doneProbe.receiveMessage()
         }
     }
 
     s"log internal messages in '$loggerId' logger without logging user data (PersistAll)" in {
+      val doneProbe = createTestProbe[Done]()
       LoggingTestKit
         .debug("Handled command [akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$Hellos], " +
         "resulting effect: [PersistAll(akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$Event," +
-        "akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$Event)], side effects: [0]")
+        "akka.persistence.typed.EventSourcedBehaviorLoggingSpec$ChattyEventSourcingBehavior$Event)], side effects: [1]")
         .withLoggerName(loggerName)
         .expect {
-          chattyActor ! Hellos("Mary", "Joe")
+          chattyActor ! Hellos("Mary", "Joe", doneProbe.ref)
+          doneProbe.receiveMessage()
         }
     }
 
     s"log in '$loggerId' while preserving MDC source" in {
+      val doneProbe = createTestProbe[Done]()
       LoggingTestKit
         .debug("Handled command ")
         .withLoggerName(loggerName)
         .withMdc(Map("persistencePhase" -> "running-cmd", "persistenceId" -> "Chatty|chat-1"))
         .expect {
-          chattyActor ! Hello("Mary")
+          chattyActor ! Hello("Mary", doneProbe.ref)
+          doneProbe.receiveMessage()
         }
     }
   }

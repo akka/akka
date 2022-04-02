@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
 import akka.cluster.ClusterEvent._
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit.TestProbe
 
@@ -63,7 +63,7 @@ class MultiDcSplitBrainMultiJvmNode3 extends MultiDcSplitBrainSpec
 class MultiDcSplitBrainMultiJvmNode4 extends MultiDcSplitBrainSpec
 class MultiDcSplitBrainMultiJvmNode5 extends MultiDcSplitBrainSpec
 
-abstract class MultiDcSplitBrainSpec extends MultiNodeSpec(MultiDcSplitBrainMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class MultiDcSplitBrainSpec extends MultiNodeClusterSpec(MultiDcSplitBrainMultiJvmSpec) {
 
   import MultiDcSplitBrainMultiJvmSpec._
 

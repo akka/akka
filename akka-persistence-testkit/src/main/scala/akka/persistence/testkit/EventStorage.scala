@@ -1,18 +1,21 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit
 
+import akka.NotUsed
 import java.util.{ List => JList }
 
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
+
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
 import akka.persistence.journal.Tagged
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
+import akka.stream.scaladsl.Source
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -20,7 +23,6 @@ import akka.util.ccompat.JavaConverters._
  */
 @InternalApi
 private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, PersistentRepr] {
-
   import EventStorage._
 
   def addAny(key: String, elem: Any): Unit =
@@ -103,6 +105,17 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
     }
   }
 
+  def tryRead(processId: String, predicate: PersistentRepr => Boolean): immutable.Seq[PersistentRepr] = {
+    import EventStorage.persistentReprOrdering
+    val batch = readAll().filter(predicate).toVector.sorted
+
+    currentPolicy.tryProcess(processId, ReadEvents(batch)) match {
+      case ProcessingSuccess  => batch
+      case Reject(ex)         => throw ex
+      case StorageFailure(ex) => throw ex
+    }
+  }
+
   def tryReadSeqNumber(persistenceId: String): Long = {
     currentPolicy.tryProcess(persistenceId, ReadSeqNum) match {
       case ProcessingSuccess  => getHighestSeqNumber(persistenceId)
@@ -119,6 +132,19 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
     }
   }
 
+  def currentPersistenceIds(afterId: Option[String], limit: Long): Source[String, NotUsed] = {
+    afterId match {
+      case Some(id) =>
+        keys().sorted.dropWhile(_ != id) match {
+          case s if s.size < 2 => Source.empty
+          case s               => Source(s.tail).take(limit)
+        }
+      case None =>
+        Source(keys().sorted).take(limit)
+    }
+
+  }
+
   private def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
     val sn = getHighestSeqNumber(key) + 1
     elems.zipWithIndex.map(p => PersistentRepr(p._1, p._2 + sn, key))
@@ -128,6 +154,18 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
 
 object EventStorage {
   object JournalPolicies extends DefaultPolicies[JournalOperation]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] implicit val persistentReprOrdering: Ordering[PersistentRepr] =
+    Ordering.fromLessThan[PersistentRepr] { (a, b) =>
+      if (a eq b) false
+      else if (a.timestamp != b.timestamp) a.timestamp < b.timestamp
+      else if (a.persistenceId != b.persistenceId) a.persistenceId.compareTo(b.persistenceId) < 0
+      else if (a.sequenceNr != b.sequenceNr) a.sequenceNr < b.sequenceNr
+      else false
+    }
 }
 
 /**

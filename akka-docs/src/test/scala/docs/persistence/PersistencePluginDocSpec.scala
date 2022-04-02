@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.persistence
@@ -62,7 +62,7 @@ object PersistencePluginDocSpec {
 }
 
 class PersistencePluginDocSpec extends AnyWordSpec {
-  new AnyRef {
+  {
     val providerConfig =
       """
         //#journal-plugin-config
@@ -142,7 +142,7 @@ object SharedLeveldbPluginDocSpec {
 trait SharedLeveldbPluginDocSpec {
   val system: ActorSystem
 
-  new AnyRef {
+  {
     import akka.actor._
     //#shared-store-creation
     import akka.persistence.journal.leveldb.SharedLeveldbStore
@@ -181,7 +181,7 @@ class MySnapshotStore extends SnapshotStore {
 }
 
 object PersistenceTCKDoc {
-  new AnyRef {
+  object example1 {
     import akka.persistence.journal.JournalSpec
 
     //#journal-tck-scala
@@ -197,7 +197,7 @@ object PersistenceTCKDoc {
     }
     //#journal-tck-scala
   }
-  new AnyRef {
+  object example2 {
     import akka.persistence.snapshot.SnapshotStoreSpec
 
     //#snapshot-store-tck-scala
@@ -212,7 +212,7 @@ object PersistenceTCKDoc {
     }
     //#snapshot-store-tck-scala
   }
-  new AnyRef {
+  object example3 {
     import java.io.File
 
     import akka.persistence.journal.JournalSpec

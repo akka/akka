@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -20,7 +20,7 @@ import akka.stream.SubscriptionWithCancelException
     "can not subscribe the same subscriber multiple times (see reactive-streams specification, rules 1.10 and 2.12)"
 
   final val SupportsOnlyASingleSubscriber =
-    "only supports one subscriber (which is allowed, see reactive-streams specification, rule 1.12)"
+    "only supports one subscriber (which is allowed, see reactive-streams specification, rule 1.11)"
 
   final val NumberOfElementsInRequestMustBePositiveMsg =
     "The number of requested elements must be > 0 (see reactive-streams specification, rule 3.9)"

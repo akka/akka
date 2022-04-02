@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io
@@ -56,9 +56,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         }
       }
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {}
-      })
+      setHandler(out, GraphStageLogic.EagerTerminateOutput)
     }
 
     val logic = new OutputStreamSourceLogic
@@ -92,7 +90,9 @@ private[akka] class OutputStreamAdapter(
 
   @scala.throws(classOf[IOException])
   override def write(b: Array[Byte], off: Int, len: Int): Unit = {
-    sendData(ByteString.fromArray(b, off, len))
+    if (b.nonEmpty) {
+      sendData(ByteString.fromArray(b, off, len))
+    }
   }
 
   @scala.throws(classOf[IOException])

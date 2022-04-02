@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -90,7 +90,7 @@ abstract class MultiDcClusterShardingSpec
   "be able to ask via entity ref" in {
     implicit val timeout = Timeout(remainingOrDefault)
     val entityRef = ClusterSharding(typedSystem).entityRefFor(typeKey, entityId)
-    val response = entityRef ? Ping
+    val response = entityRef.ask(Ping.apply)
     response.futureValue shouldEqual Pong(cluster.selfMember.dataCenter)
     enterBarrier("ask")
   }

@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object DisallowJoinOfTwoClustersMultiJvmSpec extends MultiNodeConfig {
@@ -24,9 +23,7 @@ class DisallowJoinOfTwoClustersMultiJvmNode3 extends DisallowJoinOfTwoClustersSp
 class DisallowJoinOfTwoClustersMultiJvmNode4 extends DisallowJoinOfTwoClustersSpec
 class DisallowJoinOfTwoClustersMultiJvmNode5 extends DisallowJoinOfTwoClustersSpec
 
-abstract class DisallowJoinOfTwoClustersSpec
-    extends MultiNodeSpec(DisallowJoinOfTwoClustersMultiJvmSpec)
-    with MultiNodeClusterSpec {
+abstract class DisallowJoinOfTwoClustersSpec extends MultiNodeClusterSpec(DisallowJoinOfTwoClustersMultiJvmSpec) {
 
   import DisallowJoinOfTwoClustersMultiJvmSpec._
 

@@ -2,6 +2,8 @@ import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgn
 
 ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
 
+scalaVersion := Dependencies.allScalaVersions.head
+
 enablePlugins(
   UnidocRoot,
   UnidocWithPrValidation,
@@ -39,8 +41,6 @@ shellPrompt := { s =>
   Project.extract(s).currentProject.id + " > "
 }
 resolverSettings
-
-def isScala213: Boolean = System.getProperty("akka.build.scalaVersion", "").startsWith("2.13")
 
 // When this is updated the set of modules in ActorSystem.allModules should also be updated
 lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
@@ -115,7 +115,7 @@ lazy val actor = akkaModule("akka-actor")
   .enablePlugins(BoilerplatePlugin)
 
 lazy val actorTests = akkaModule("akka-actor-tests")
-  .dependsOn(testkit % "compile->compile;test->test")
+  .dependsOn(testkit % "compile->compile;test->test", actor)
   .settings(Dependencies.actorTests)
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin)
@@ -244,6 +244,8 @@ lazy val docs = akkaModule("akka-docs")
     Jdk9)
   .disablePlugins(MimaPlugin)
   .disablePlugins((if (ScalafixSupport.fixTestScope) Nil else Seq(ScalafixPlugin)): _*)
+  // TODO https://github.com/akka/akka/issues/30243
+  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
   .dependsOn(
@@ -270,7 +272,7 @@ lazy val osgi = akkaModule("akka-osgi")
   .settings(Dependencies.osgi)
   .settings(AutomaticModuleName.settings("akka.osgi"))
   .settings(OSGi.osgi)
-  .settings(Test / parallelExecution := false)
+  .settings(Test / parallelExecution := false, crossScalaVersions -= akka.Dependencies.scala3Version)
 
 lazy val persistence = akkaModule("akka-persistence")
   .dependsOn(actor, stream, testkit % "test->test")
@@ -281,10 +283,18 @@ lazy val persistence = akkaModule("akka-persistence")
   .settings(Test / fork := true)
 
 lazy val persistenceQuery = akkaModule("akka-persistence-query")
-  .dependsOn(stream, persistence % "compile->compile;test->test", streamTestkit % "test")
+  .dependsOn(
+    stream,
+    persistence % "compile->compile;test->test",
+    remote % "provided",
+    protobufV3,
+    streamTestkit % "test")
   .settings(Dependencies.persistenceQuery)
   .settings(AutomaticModuleName.settings("akka.persistence.query"))
   .settings(OSGi.persistenceQuery)
+  .settings(Protobuf.settings)
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(Test / fork := true)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
@@ -541,7 +551,7 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .settings(Dependencies.actorTestkitTyped)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
-  .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test")
+  .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test", actor)
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
@@ -576,17 +586,12 @@ lazy val serialversionRemoverPlugin =
     Compile / doc / sources := Nil,
     Compile / publishArtifact := false)
 
-lazy val serialversionRemoverPluginSettings = {
-  if (akka.Dependencies.getScalaVersion() == akka.Dependencies.scala3Version) {
-    Seq(
-      autoCompilerPlugins := true,
-      Compile / scalacOptions += (
-          "-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString
-        ))
-  } else {
-    Seq()
-  }
-}
+lazy val serialversionRemoverPluginSettings = Seq(
+  Compile / scalacOptions ++= (
+      if (scalaVersion.value.startsWith("3."))
+        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString)
+      else Nil
+    ))
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

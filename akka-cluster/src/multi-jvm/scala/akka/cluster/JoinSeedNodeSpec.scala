@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -10,7 +10,6 @@ import com.typesafe.config.ConfigFactory
 
 import akka.actor.Address
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.util.Version
 
@@ -35,7 +34,7 @@ class JoinSeedNodeMultiJvmNode3 extends JoinSeedNodeSpec
 class JoinSeedNodeMultiJvmNode4 extends JoinSeedNodeSpec
 class JoinSeedNodeMultiJvmNode5 extends JoinSeedNodeSpec
 
-abstract class JoinSeedNodeSpec extends MultiNodeSpec(JoinSeedNodeMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class JoinSeedNodeSpec extends MultiNodeClusterSpec(JoinSeedNodeMultiJvmSpec) {
 
   import JoinSeedNodeMultiJvmSpec._
 

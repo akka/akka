@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 // Protocol Buffers - Google's data interchange format
@@ -53,7 +53,7 @@ import java.util.Stack;
  * represented as a tree whose leaf nodes are each a {@link LiteralByteString}.
  *
  * <p>Most of the operation here is inspired by the now-famous paper <a
- * href="http://www.cs.ubc.ca/local/reading/proceedings/spe91-95/spe/vol25/issue12/spe986.pdf">
+ * href="https://www.cs.ubc.ca/local/reading/proceedings/spe91-95/spe/vol25/issue12/spe986.pdf">
  * BAP95 </a> Ropes: an Alternative to Strings hans-j. boehm, russ atkinson and
  * michael plass
  *

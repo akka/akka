@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -11,6 +11,7 @@ import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
+import akka.util.Timeout
 
 //#imports
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -110,7 +111,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       //#ask-actor
 
       //#ask
-      implicit val timeout: akka.util.Timeout = 1.second
+      implicit val timeout: Timeout = 1.second
 
       val askFlow: Flow[String, Reply, NotUsed] =
         ActorFlow.ask(ref)(Asking.apply)
@@ -132,7 +133,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       val dontReply = spawn(Behaviors.ignore[Asking])
 
       val c = TestSubscriber.manualProbe[Reply]()(system.toClassic)
-      implicit val timeout = akka.util.Timeout(10.millis)
+      implicit val timeout: Timeout = 10.millis
 
       Source(1 to 5)
         .map(_.toString + " nope")

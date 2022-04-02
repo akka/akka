@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -62,7 +62,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.cluster.Stress.nrOfNodes") match {
-      case null  => 13
+      case null  => 10
       case value => value.toInt.requiring(_ >= 10, "nrOfNodes should be >= 10")
     }
 
@@ -77,13 +77,13 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       nr-of-nodes-factor = 1
       # not scaled
       nr-of-seed-nodes = 3
-      nr-of-nodes-joining-to-seed-initially = 2
-      nr-of-nodes-joining-one-by-one-small = 2
-      nr-of-nodes-joining-one-by-one-large = 2
-      nr-of-nodes-joining-to-one = 2
+      nr-of-nodes-joining-to-seed-initially = 1
+      nr-of-nodes-joining-one-by-one-small = 1
+      nr-of-nodes-joining-one-by-one-large = 1
+      nr-of-nodes-joining-to-one = 1
       nr-of-nodes-leaving-one-by-one-small = 1
       nr-of-nodes-leaving-one-by-one-large = 1
-      nr-of-nodes-leaving = 2
+      nr-of-nodes-leaving = 1
       nr-of-nodes-shutdown-one-by-one-small = 1
       nr-of-nodes-shutdown-one-by-one-large = 1
       nr-of-nodes-partition = 2
@@ -175,7 +175,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   }
 
   implicit class FormattedDouble(val d: Double) extends AnyVal {
-    def form: String = d.formatted("%.2f")
+    def form: String = "%.2f".format(d)
   }
 
   final case class ClusterResult(address: Address, duration: Duration, clusterStats: GossipStats)
@@ -432,15 +432,8 @@ class StressMultiJvmNode7 extends StressSpec
 class StressMultiJvmNode8 extends StressSpec
 class StressMultiJvmNode9 extends StressSpec
 class StressMultiJvmNode10 extends StressSpec
-class StressMultiJvmNode11 extends StressSpec
-class StressMultiJvmNode12 extends StressSpec
-class StressMultiJvmNode13 extends StressSpec
 
-abstract class StressSpec
-    extends MultiNodeSpec(StressMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with BeforeAndAfterEach
-    with ImplicitSender {
+abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with BeforeAndAfterEach with ImplicitSender {
 
   import StressMultiJvmSpec._
 

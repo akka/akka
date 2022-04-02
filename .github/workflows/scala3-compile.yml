@@ -19,12 +19,12 @@ jobs:
           - akka-testkit/Test/compile akka-actor-tests/Test/compile
           - akka-actor-testkit-typed/Test/compile akka-actor-typed-tests/Test/compile
           - akka-bench-jmh/Test/compile
-          - akka-cluster/Test/compile akka-cluster-tools/Test/compile akka-cluster-typed/Test/compile akka-distributed-data/Test/compile akka-cluster-metrics/Test/compile akka-cluster-sharding/Test/compile akka-cluster-sharding-typed/compile
+          - akka-cluster/Test/compile akka-cluster-tools/Test/compile akka-cluster-typed/Test/compile akka-distributed-data/Test/compile akka-cluster-metrics/Test/compile akka-cluster-sharding/Test/compile akka-cluster-sharding-typed/Test/compile
           - akka-discovery/Test/compile akka-coordination/Test/compile
-          - akka-persistence/Test/compile akka-persistence-shared/Test/compile akka-persistence-query/Test/compile akka-persistence-typed/Test/compile akka-persistence-testkit/Test/compile
+          - akka-persistence/Test/compile akka-persistence-shared/Test/compile akka-persistence-query/Test/compile akka-persistence-typed/Test/compile akka-persistence-testkit/Test/compile akka-persistence-tck/Test/compile akka-persistence-typed-tests/Test/compile
           - akka-pki/Test/compile akka-slf4j/Test/compile
           - akka-serialization-jackson/Test/compile
-          - akka-stream/Test/compile akka-stream-testkit/Test/compile akka-stream-tests/Test/compile
+          - akka-stream/Test/compile akka-stream-testkit/Test/compile akka-stream-tests/Test/compile akka-stream-typed/Test/compile
           - akka-stream-tests-tck/Test/compile
           - akka-remote/Test/compile akka-remote-tests/Test/compile akka-protobuf/Test/compile akka-protobuf-v3/Test/compile
       fail-fast: true
@@ -45,5 +45,4 @@ jobs:
       - name: Compile on Scala 3
         run: |
           sbt -jvm-opts .jvmopts-ci \
-          -Dakka.build.scalaVersion=3.0 \
-          ${{ matrix.command }}
+          "+~ 3 ${{ matrix.command }}"

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
@@ -12,7 +12,6 @@ import com.typesafe.config.ConfigFactory
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 
 trait ClusterMetricsCommonConfig extends MultiNodeConfig {
   import ConfigFactory._
@@ -81,8 +80,7 @@ class ClusterMetricsEnabledMultiJvmNode4 extends ClusterMetricsEnabledSpec
 class ClusterMetricsEnabledMultiJvmNode5 extends ClusterMetricsEnabledSpec
 
 abstract class ClusterMetricsEnabledSpec
-    extends MultiNodeSpec(ClusterMetricsEnabledConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterMetricsEnabledConfig)
     with RedirectLogging {
   import ClusterMetricsEnabledConfig._
 
@@ -139,8 +137,7 @@ class ClusterMetricsDisabledMultiJvmNode4 extends ClusterMetricsDisabledSpec
 class ClusterMetricsDisabledMultiJvmNode5 extends ClusterMetricsDisabledSpec
 
 abstract class ClusterMetricsDisabledSpec
-    extends MultiNodeSpec(ClusterMetricsDisabledConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterMetricsDisabledConfig)
     with RedirectLogging {
 
   val metricsView = new ClusterMetricsView(cluster.system)

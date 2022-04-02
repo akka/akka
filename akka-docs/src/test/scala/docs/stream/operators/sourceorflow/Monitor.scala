@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.sourceorflow
@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 
 class Monitor {
 
-  implicit val system = ActorSystem("monitor-sample-sys2")
+  implicit val system: ActorSystem = ActorSystem("monitor-sample-sys2")
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   // #monitor

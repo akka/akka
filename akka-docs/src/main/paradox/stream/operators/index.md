@@ -75,6 +75,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="lazyfuturesink"></a>@ref[lazyFutureSink](Sink/lazyFutureSink.md)|Defers creation and materialization of a `Sink` until there is a first element.|
 |Sink|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Sink/lazyInitAsync.md)|Deprecated by @ref[`Sink.lazyFutureSink`](Sink/lazyFutureSink.md).|
 |Sink|<a name="lazysink"></a>@ref[lazySink](Sink/lazySink.md)|Defers creation and materialization of a `Sink` until there is a first element.|
+|Sink|<a name="never"></a>@ref[never](Sink/never.md)|Always backpressure never cancel and never consume any elements from the stream.|
 |Sink|<a name="oncomplete"></a>@ref[onComplete](Sink/onComplete.md)|Invoke a callback when the stream has completed or failed.|
 |Sink|<a name="prematerialize"></a>@ref[preMaterialize](Sink/preMaterialize.md)|Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink that can be consume elements 'into' the pre-materialized one.|
 |Sink|<a name="queue"></a>@ref[queue](Sink/queue.md)|Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.|
@@ -100,8 +101,8 @@ For example, following snippet will fall with timeout exception:
 ```scala
 ...
 .toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream =>
-        inputStream.read()  // this could block forever
-        ...
+  inputStream.read()  // this could block forever
+  ...
 }).run()
 ```
 
@@ -166,6 +167,7 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="logwithmarker"></a>@ref[logWithMarker](Source-or-Flow/logWithMarker.md)|Log elements flowing through the stream as well as completion and erroring.|
 |Source/Flow|<a name="map"></a>@ref[map](Source-or-Flow/map.md)|Transform each element in the stream by calling a mapping function with it and passing the returned value downstream.|
 |Source/Flow|<a name="mapconcat"></a>@ref[mapConcat](Source-or-Flow/mapConcat.md)|Transform each element into zero or more elements that are individually passed downstream.|
+|Source/Flow|<a name="prematerialize"></a>@ref[preMaterialize](Source-or-Flow/preMaterialize.md)|Materializes this Graph, immediately returning (1) its materialized value, and (2) a new pre-materialized Graph.|
 |Source/Flow|<a name="reduce"></a>@ref[reduce](Source-or-Flow/reduce.md)|Start with first element and then apply the current and next value to the given function, when upstream complete the current value is emitted downstream.|
 |Source/Flow|<a name="scan"></a>@ref[scan](Source-or-Flow/scan.md)|Emit its current value, which starts at `zero`, and then apply the current and next value to the given function, emitting the next current value.|
 |Source/Flow|<a name="scanasync"></a>@ref[scanAsync](Source-or-Flow/scanAsync.md)|Just like @ref[`scan`](Source-or-Flow/./scan.md) but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.|
@@ -215,6 +217,7 @@ These operators are aware of the backpressure provided by their downstreams and 
 
 | |Operator|Description|
 |--|--|--|
+|Source/Flow|<a name="aggregatewithboundary"></a>@ref[aggregateWithBoundary](Source-or-Flow/aggregateWithBoundary.md)|Aggregate and emit until custom boundary condition met.|
 |Source/Flow|<a name="batch"></a>@ref[batch](Source-or-Flow/batch.md)|Allow for a slower downstream by passing incoming elements and a summary into an aggregate function as long as there is backpressure and a maximum number of batched elements is not yet reached.|
 |Source/Flow|<a name="batchweighted"></a>@ref[batchWeighted](Source-or-Flow/batchWeighted.md)|Allow for a slower downstream by passing incoming elements and a summary into an aggregate function as long as there is backpressure and a maximum weight batched elements is not yet reached.|
 |Source/Flow|<a name="buffer"></a>@ref[buffer](Source-or-Flow/buffer.md)|Allow for a temporarily faster upstream events by buffering `size` elements.|
@@ -268,6 +271,7 @@ the inputs in different ways.
 |Source/Flow|<a name="mergelatest"></a>@ref[mergeLatest](Source-or-Flow/mergeLatest.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergepreferred"></a>@ref[mergePreferred](Source-or-Flow/mergePreferred.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergeprioritized"></a>@ref[mergePrioritized](Source-or-Flow/mergePrioritized.md)|Merge multiple sources.|
+|Source|<a name="mergeprioritizedn"></a>@ref[mergePrioritizedN](Source/mergePrioritizedN.md)|Merge multiple sources with priorities.|
 |Source/Flow|<a name="mergesorted"></a>@ref[mergeSorted](Source-or-Flow/mergeSorted.md)|Merge multiple sources.|
 |Source/Flow|<a name="orelse"></a>@ref[orElse](Source-or-Flow/orElse.md)|If the primary source completes without emitting any elements, the elements from the secondary source are emitted.|
 |Source/Flow|<a name="prepend"></a>@ref[prepend](Source-or-Flow/prepend.md)|Prepends the given source to the flow, consuming it until completion before the original source is consumed.|
@@ -325,6 +329,8 @@ Operators meant for inter-operating between Akka Streams and Actors:
 |Source/Flow|<a name="ask"></a>@ref[ask](Source-or-Flow/ask.md)|Use the "Ask Pattern" to send a request-reply message to the target `ref` actor (of the classic actors API).|
 |ActorFlow|<a name="ask"></a>@ref[ask](ActorFlow/ask.md)|Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API), and expect a reply that will be emitted downstream.|
 |ActorFlow|<a name="askwithstatus"></a>@ref[askWithStatus](ActorFlow/askWithStatus.md)|Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API),  and expect a reply of Type @scala[`StatusReply[T]`]@java[`StatusReply<T>`] where the T will be unwrapped and emitted downstream.|
+|PubSub|<a name="sink"></a>@ref[sink](PubSub/sink.md)|A sink that will publish emitted messages to a @apidoc[akka.actor.typed.pubsub.Topic$].|
+|PubSub|<a name="source"></a>@ref[source](PubSub/source.md)|A source that will subscribe to a @apidoc[akka.actor.typed.pubsub.Topic$] and stream messages published to the topic. |
 |Source/Flow|<a name="watch"></a>@ref[watch](Source-or-Flow/watch.md)|Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.|
 
 ## Compression operators
@@ -366,6 +372,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRefWithBackpressure](Sink/actorRefWithBackpressure.md)
 * [actorRefWithBackpressure](ActorSource/actorRefWithBackpressure.md)
 * [actorRefWithBackpressure](ActorSink/actorRefWithBackpressure.md)
+* [aggregateWithBoundary](Source-or-Flow/aggregateWithBoundary.md)
 * [alsoTo](Source-or-Flow/alsoTo.md)
 * [asFlowWithContext](Flow/asFlowWithContext.md)
 * [asInputStream](StreamConverters/asInputStream.md)
@@ -495,10 +502,12 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [mergeLatest](Source-or-Flow/mergeLatest.md)
 * [mergePreferred](Source-or-Flow/mergePreferred.md)
 * [mergePrioritized](Source-or-Flow/mergePrioritized.md)
+* [mergePrioritizedN](Source/mergePrioritizedN.md)
 * [MergeSequence](MergeSequence.md)
 * [mergeSorted](Source-or-Flow/mergeSorted.md)
 * [monitor](Source-or-Flow/monitor.md)
 * [never](Source/never.md)
+* [never](Sink/never.md)
 * [onComplete](Sink/onComplete.md)
 * [onFailuresWithBackoff](RestartSource/onFailuresWithBackoff.md)
 * [onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)
@@ -523,7 +532,9 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [setup](Source-or-Flow/setup.md)
 * [setup](Sink/setup.md)
 * [single](Source/single.md)
+* [sink](PubSub/sink.md)
 * [sliding](Source-or-Flow/sliding.md)
+* [source](PubSub/source.md)
 * [splitAfter](Source-or-Flow/splitAfter.md)
 * [splitWhen](Source-or-Flow/splitWhen.md)
 * [statefulMapConcat](Source-or-Flow/statefulMapConcat.md)

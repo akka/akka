@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.io
@@ -27,7 +27,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     {
       //#echo-server-simple-bind
       val binding: Future[ServerBinding] =
-        Tcp().bind("127.0.0.1", 8888).to(Sink.ignore).run()
+        Tcp(system).bind("127.0.0.1", 8888).to(Sink.ignore).run()
 
       binding.map { b =>
         b.unbind().onComplete {
@@ -42,7 +42,7 @@ class StreamTcpDocSpec extends AkkaSpec {
       import akka.stream.scaladsl.Framing
 
       val connections: Source[IncomingConnection, Future[ServerBinding]] =
-        Tcp().bind(host, port)
+        Tcp(system).bind(host, port)
       connections.runForeach { connection =>
         println(s"New connection from: ${connection.remoteAddress}")
 
@@ -61,7 +61,7 @@ class StreamTcpDocSpec extends AkkaSpec {
   "initial server banner echo server" in {
     val localhost = SocketUtil.temporaryServerAddress()
 
-    val connections = Tcp().bind(localhost.getHostString, localhost.getPort)
+    val connections = Tcp(system).bind(localhost.getHostString, localhost.getPort)
     val serverProbe = TestProbe()
 
     import akka.stream.scaladsl.Framing
@@ -111,12 +111,12 @@ class StreamTcpDocSpec extends AkkaSpec {
     {
       // just for docs, never actually used
       //#repl-client
-      val connection = Tcp().outgoingConnection("127.0.0.1", 8888)
+      val connection = Tcp(system).outgoingConnection("127.0.0.1", 8888)
       //#repl-client
     }
 
     {
-      val connection = Tcp().outgoingConnection(localhost)
+      val connection = Tcp(system).outgoingConnection(localhost)
       //#repl-client
 
       val replParser =

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.pubsub
@@ -10,7 +10,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.internal.pubsub.TopicImpl
 
 class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -29,9 +28,9 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         fruitTopic ! Topic.Subscribe(probe3.ref)
 
         // the subscriber registration of all 3 completed
-        val statsProbe = testKit.createTestProbe[TopicImpl.TopicStats]()
+        val statsProbe = testKit.createTestProbe[Topic.TopicStats]()
         statsProbe.awaitAssert {
-          fruitTopic ! TopicImpl.GetTopicStats(statsProbe.ref)
+          fruitTopic ! Topic.GetTopicStats(statsProbe.ref)
           val stats = statsProbe.receiveMessage()
           stats.localSubscriberCount should ===(3)
           stats.topicInstanceCount should ===(1)
@@ -64,13 +63,13 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         // the subscriber registration of all 3 completed
         val statsProbe = testKit.createTestProbe[Any]()
         statsProbe.awaitAssert {
-          fruitTopic2 ! TopicImpl.GetTopicStats(statsProbe.ref)
-          statsProbe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should ===(3)
+          fruitTopic2 ! Topic.GetTopicStats(statsProbe.ref)
+          statsProbe.expectMessageType[Topic.TopicStats].localSubscriberCount should ===(3)
         }
         // and the other topic knows about it
         statsProbe.awaitAssert {
-          fruitTopic1 ! TopicImpl.GetTopicStats(statsProbe.ref)
-          statsProbe.expectMessageType[TopicImpl.TopicStats].topicInstanceCount should ===(1)
+          fruitTopic1 ! Topic.GetTopicStats(statsProbe.ref)
+          statsProbe.expectMessageType[Topic.TopicStats].topicInstanceCount should ===(1)
         }
 
         fruitTopic1 ! Topic.Publish("apple")
@@ -98,14 +97,14 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         // the subscriber registration of all 3 completed
         val statsProbe = testKit.createTestProbe[Any]()
         statsProbe.awaitAssert {
-          fruitTopic ! TopicImpl.GetTopicStats(statsProbe.ref)
-          statsProbe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should ===(1)
+          fruitTopic ! Topic.GetTopicStats(statsProbe.ref)
+          statsProbe.expectMessageType[Topic.TopicStats].localSubscriberCount should ===(1)
         }
 
         // the other topic should not know about it
         statsProbe.awaitAssert {
-          veggieTopic ! TopicImpl.GetTopicStats(statsProbe.ref)
-          statsProbe.expectMessageType[TopicImpl.TopicStats].topicInstanceCount should ===(0)
+          veggieTopic ! Topic.GetTopicStats(statsProbe.ref)
+          statsProbe.expectMessageType[Topic.TopicStats].topicInstanceCount should ===(0)
         }
 
         veggieTopic ! Topic.Publish("carrot")
@@ -126,14 +125,14 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         // the subscriber registration of completed
         val statsProbe = testKit.createTestProbe[Any]()
         statsProbe.awaitAssert {
-          fruitTopic ! TopicImpl.GetTopicStats(statsProbe.ref)
-          statsProbe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should ===(1)
+          fruitTopic ! Topic.GetTopicStats(statsProbe.ref)
+          statsProbe.expectMessageType[Topic.TopicStats].localSubscriberCount should ===(1)
         }
 
         fruitTopic ! Topic.Unsubscribe(probe1.ref)
         statsProbe.awaitAssert {
-          fruitTopic ! TopicImpl.GetTopicStats(statsProbe.ref)
-          statsProbe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should ===(0)
+          fruitTopic ! Topic.GetTopicStats(statsProbe.ref)
+          statsProbe.expectMessageType[Topic.TopicStats].localSubscriberCount should ===(0)
         }
 
         fruitTopic ! Topic.Publish("orange")

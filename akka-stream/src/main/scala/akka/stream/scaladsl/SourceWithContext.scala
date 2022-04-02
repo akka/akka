@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -32,6 +32,21 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
 
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     new SourceWithContext(delegate.via(viaFlow))
+
+  override def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, Ctx] =
+    SourceWithContext.fromTuples(Source.fromGraph(GraphDSL.createGraph(delegate) { implicit b => d =>
+      import GraphDSL.Implicits._
+
+      val bcast = b.add(Broadcast[(Out, Ctx)](2))
+      val zipper = b.add(Zip[Out2, Ctx]())
+
+      d ~> bcast.in
+
+      bcast.out(0).map { case (dataOut, _) => dataOut }.via(viaFlow) ~> zipper.in0
+      bcast.out(1).map { case (_, ctxOut) => ctxOut } ~> zipper.in1
+
+      SourceShape(zipper.out)
+    }))
 
   override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(
       combine: (Mat, Mat2) => Mat3): SourceWithContext[Out2, Ctx2, Mat3] =

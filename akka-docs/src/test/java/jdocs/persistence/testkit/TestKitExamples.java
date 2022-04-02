@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence.testkit;
@@ -29,7 +29,7 @@ public class TestKitExamples {
     int count = 1;
 
     @Override
-    public ProcessingResult tryProcess(String persistenceId, JournalOperation processingUnit) {
+    public ProcessingResult tryProcess(String processId, JournalOperation processingUnit) {
       // check the type of operation and react with success or with reject or with failure.
       // if you return ProcessingSuccess the operation will be performed, otherwise not.
       if (count < 10) {
@@ -64,7 +64,7 @@ public class TestKitExamples {
     int count = 1;
 
     @Override
-    public ProcessingResult tryProcess(String persistenceId, SnapshotOperation processingUnit) {
+    public ProcessingResult tryProcess(String processId, SnapshotOperation processingUnit) {
       // check the type of operation and react with success or with failure.
       // if you return ProcessingSuccess the operation will be performed, otherwise not.
       if (count < 10) {

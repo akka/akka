@@ -21,8 +21,8 @@ via the SLF4J backend, such as Logback configuration.
 
 ## Introduction
 
-[SLF4J](http://www.slf4j.org/) is used for logging and Akka provides access to an `org.slf4j.Logger` for a specific
-actor via the `ActorContext`. You may also retrieve a `Logger` with the ordinary `org.slf4j.LoggerFactory`.
+[SLF4J](https://www.slf4j.org/) is used for logging and Akka provides access to an [org.slf4j.Logger](https://www.slf4j.org/api/org/slf4j/Logger.html) for a specific
+actor via the @apidoc[typed.*.ActorContext]. You may also retrieve a `Logger` with the ordinary [org.slf4j.LoggerFactory](https://www.slf4j.org/api/org/slf4j/LoggerFactory.html).
 
 To ensure that logging has minimal performance impact it's important that you configure an
 asynchronous appender for the SLF4J backend. Logging generally means IO and locks,
@@ -30,7 +30,7 @@ which can slow down the operations of your code if it was performed synchronousl
 
 ## How to log
 
-The `ActorContext` provides access to an `org.slf4j.Logger` for a specific actor.
+The @apidoc[typed.*.ActorContext] provides access to an [org.slf4j.Logger](https://www.slf4j.org/api/org/slf4j/Logger.html) for a specific actor.
 
 Scala
 :  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #context-log }
@@ -38,10 +38,10 @@ Scala
 Java
 :  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #context-log }
 
-The `Logger` via the `ActorContext` will automatically have a name that corresponds to the `Behavior` of the
-actor when the log is accessed the first time. The class name when using `AbstractBehavior` or the class @scala[or object]
+The `Logger` via the `ActorContext` will automatically have a name that corresponds to the @apidoc[Behavior] of the
+actor when the log is accessed the first time. The class name when using @apidoc[AbstractBehavior] or the class @scala[or object]
 name where the `Behavior` is defined when using the functional style. You can set a custom logger name
-with the `setLoggerName` of the `ActorContext`.
+with the @apidoc[setLoggerName](typed.*.ActorContext) {scala="#setLoggerName(name:String):Unit" java="#setLoggerName(java.lang.String)"} of the `ActorContext`.
 
 Scala
 :  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #logger-name }
@@ -53,8 +53,8 @@ The convention is to use logger names like fully qualified class names. The para
 can be a `String` or a `Class`, where the latter is convenience for the class name.
 
 When logging via the `ActorContext` the path of the actor will automatically be added as `akkaSource`
-Mapped Diagnostic Context (MDC) value. MDC is typically implemented with a `ThreadLocal` by the SLF4J backend.
-To reduce performance impact, this MDC value is set when you access the @scala[`log`]@java[`getLog`] method so
+Mapped Diagnostic Context (MDC) value. MDC is typically implemented with a @javadoc[ThreadLocal](java.lang.ThreadLocal) by the SLF4J backend.
+To reduce performance impact, this MDC value is set when you access the @scala[@scaladoc[log](akka.actor.typed.scaladsl.ActorContext#log:org.slf4j.Logger)]@java[@javadoc[getLog()](akka.actor.typed.javadsl.ActorContext#getLog())] method so
 you shouldn't cache the returned `Logger` in your own field. That is handled by `ActorContext` and retrieving
 the `Logger` repeatedly with the @scala[`log`]@java[`getLog`] method has low overhead.
 The MDC is cleared automatically after processing of current message has finished.
@@ -63,13 +63,13 @@ The MDC is cleared automatically after processing of current message has finishe
 
 The `Logger` is thread-safe but the @scala[`log`]@java[`getLog`] method in `ActorContext` is not
 thread-safe and should not be accessed from threads other than the ordinary actor message processing
-thread, such as @scala[`Future`]@java[`CompletionStage`] callbacks.
+thread, such as @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionStage](java.util.concurrent.CompletionStage)] callbacks.
 
 @@@
 
-It's also perfectly fine to use a `Logger` retrieved via `org.slf4j.LoggerFactory`, but then the logging
+It's also perfectly fine to use a [Logger](https://www.slf4j.org/api/org/slf4j/Logger.html) retrieved via [org.slf4j.LoggerFactory](https://www.slf4j.org/api/org/slf4j/LoggerFactory.html), but then the logging
 events will not include the `akkaSource` MDC value. This is the recommend way when logging outside
-of an actor, including logging from @scala[`Future`]@java[`CompletionStage`] callbacks.
+of an actor, including logging from @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionStage](java.util.concurrent.CompletionStage)] callbacks.
 
 Scala
 :  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #logger-factory }
@@ -117,8 +117,8 @@ Scala
 
 ### Behaviors.logMessages
 
-If you want very detailed logging of messages and signals you can decorate a `Behavior`
-with `Behaviors.logMessages`.
+If you want very detailed logging of messages and signals you can decorate a @apidoc[Behavior]
+with @apidoc[Behaviors.logMessages](Behaviors$) {scala="#logMessages[T](logOptions:akka.actor.typed.LogOptions,behavior:akka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#logMessages(akka.actor.typed.LogOptions,akka.actor.typed.Behavior)"}.
 
 Scala
 :  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #logMessages }
@@ -129,10 +129,10 @@ Java
 
 ## MDC
 
-[MDC](http://logback.qos.ch/manual/mdc.html) allows for adding additional context dependent attributes to log entries.
+[MDC](https://logback.qos.ch/manual/mdc.html) allows for adding additional context dependent attributes to log entries.
 Out of the box, Akka will place the path of the actor in the the MDC attribute `akkaSource`.
 
-One or more tags can also be added to the MDC using the `ActorTags` props. The tags will be rendered as a comma separated
+One or more tags can also be added to the MDC using the @apidoc[ActorTags$] props. The tags will be rendered as a comma separated
 list and be put in the MDC attribute `akkaTags`. This can be used to categorize log entries from a set of different actors
 to allow easier filtering of logs:
 
@@ -142,8 +142,8 @@ Scala
 Java
 :  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #tags }
 
-In addition to these two built in MDC attributes you can also decorate a `Behavior` with `Behaviors.withMdc` or 
-use the `org.slf4j.MDC` API directly.
+In addition to these two built in MDC attributes you can also decorate a @apidoc[Behavior] with @apidoc[Behaviors.withMdc](Behaviors$) {scala="#withMdc[T](staticMdc:Map[String,String],mdcForMessage:T=%3EMap[String,String])(behavior:akka.actor.typed.Behavior[T])(implicitevidence$4:scala.reflect.ClassTag[T]):akka.actor.typed.Behavior[T]" java="#withMdc(java.lang.Class,java.util.Map,akka.japi.function.Function,akka.actor.typed.Behavior)"} or 
+use the [org.slf4j.MDC](https://www.slf4j.org/api/org/slf4j/MDC.html) API directly.
 
 The `Behaviors.withMdc` decorator has two parts. A static `Map` of MDC attributes that are not changed,
 and a dynamic `Map` that can be constructed for each message.
@@ -154,11 +154,11 @@ Scala
 Java
 :  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #withMdc }
 
-If you use the MDC API directly, be aware that MDC is typically implemented with a `ThreadLocal` by the SLF4J backend.
-Akka clears the MDC if logging is performed via the @scala[`log`]@java[`getLog`] of the `ActorContext` and it is cleared
-automatically after processing of current message has finished, but only if you accessed @scala[`log`]@java[`getLog`].
+If you use the MDC API directly, be aware that MDC is typically implemented with a @javadoc[ThreadLocal](java.lang.ThreadLocal) by the SLF4J backend.
+Akka clears the MDC if logging is performed via the @scala[@scaladoc[log](akka.actor.typed.scaladsl.ActorContext#log:org.slf4j.Logger)]@java[@javadoc[getLog()](akka.actor.typed.javadsl.ActorContext#getLog())] of the `ActorContext` and it is cleared
+automatically after processing of current message has finished, but only if you accessed @scala[`log`]@java[`getLog()`].
 The entire MDC is cleared, including attributes that you add yourself to the MDC.
-MDC is not cleared automatically if you use a `Logger` via `LoggerFactory` or not touch @scala[`log`]@java[`getLog`]
+MDC is not cleared automatically if you use a [Logger](https://www.slf4j.org/api/org/slf4j/Logger.html) via [LoggerFactory](https://www.slf4j.org/api/org/slf4j/LoggerFactory.html) or not touch @scala[`log`]@java[`getLog()`]
 in the `ActorContext`.
 
 ## SLF4J backend
@@ -178,7 +178,7 @@ that are running actors and other tasks.
 ### Logback
 
 `akka-actor-typed` includes a dependency to the `slf4j-api`. In your runtime, you also need a SLF4J backend.
-We recommend [Logback](http://logback.qos.ch/):
+We recommend [Logback](https://logback.qos.ch/):
 
 @@dependency[sbt,Maven,Gradle] {
   group="ch.qos.logback"
@@ -189,9 +189,9 @@ We recommend [Logback](http://logback.qos.ch/):
 Logback has flexible configuration options and details can be found in the
 [Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
 
-One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender),
+One part that is important to highlight is the importance of configuring an [AsyncAppender](https://logback.qos.ch/manual/appenders.html#AsyncAppender),
 because it offloads rendering of logging events to a background thread, increasing performance. It doesn't block
-the threads of the `ActorSystem` while the underlying infrastructure writes the log messages to disk or other configured
+the threads of the @apidoc[typed.ActorSystem] while the underlying infrastructure writes the log messages to disk or other configured
 destination. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
 load is high.
 
@@ -199,7 +199,7 @@ A starting point for configuration of `logback.xml` for production:
 
 @@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
 
-Note that the `AsyncAppender` may drop log events if the queue becomes full, which may happen if the
+Note that the [AsyncAppender](https://logback.qos.ch/apidocs/ch/qos/logback/classic/AsyncAppender.html) may drop log events if the queue becomes full, which may happen if the
 logging backend can't keep up with the throughput of produced log events. Dropping log events is necessary
 if you want to gracefully degrade your application if only your logging backend or filesystem is experiencing
 issues. 
@@ -223,16 +223,16 @@ logging configuration in `src/test/resources/logback-test.xml`.
 
 #### MDC values
 
-When logging via the  @scala[`log`]@java[`getLog`] of the `ActorContext`, as described in
+When logging via the  @scala[@scaladoc[log](akka.actor.typed.scaladsl.ActorContext#log:org.slf4j.Logger)]@java[@javadoc[getLog()](akka.actor.typed.javadsl.ActorContext#getLog())] of the `ActorContext`, as described in
 @ref:[How to log](#how-to-log), Akka includes a few MDC properties:
 
 * `akkaSource`: the actor's path
 * `akkaAddress`: the full address of the ActorSystem, including hostname and port if Cluster is enabled
-* `akkaTags`: tags defined in the `Props` of the actor
+* `akkaTags`: tags defined in the @apidoc[typed.Props] of the actor
 * `sourceActorSystem`: the name of the ActorSystem
 
 These MDC properties can be included in the Logback output with for example `%X{akkaSource}` specifier within the
-[pattern layout configuration](http://logback.qos.ch/manual/layouts.html#mdc):
+[pattern layout configuration](https://logback.qos.ch/manual/layouts.html#mdc):
 
 ```
   <encoder>
@@ -258,7 +258,7 @@ through an event bus. Such log events are processed by an event handler actor, w
 SLF4J or directly to standard out.
 
 When `akka-actor-typed` and `akka-slf4j` are on the classpath this event handler actor will emit the events to SLF4J.
-The `akka.event.slf4j.Slf4jLogger` and `akka.event.slf4j.Slf4jLoggingFilter` are enabled automatically
+The @apidoc[akka.event.slf4j.Slf4jLogger](Slf4jLogger) and @apidoc[akka.event.slf4j.Slf4jLoggingFilter](Slf4jLoggingFilter) are enabled automatically
 without additional configuration. This can be disabled by `akka.use-slf4j=off` configuration property.
 
 In other words, you don't have to do anything for the Akka internal logging to end up in your configured

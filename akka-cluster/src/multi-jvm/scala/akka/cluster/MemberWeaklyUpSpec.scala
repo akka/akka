@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -11,7 +11,6 @@ import com.typesafe.config.ConfigFactory
 
 import akka.cluster.MemberStatus.WeaklyUp
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 
@@ -36,7 +35,7 @@ class MemberWeaklyUpMultiJvmNode3 extends MemberWeaklyUpSpec
 class MemberWeaklyUpMultiJvmNode4 extends MemberWeaklyUpSpec
 class MemberWeaklyUpMultiJvmNode5 extends MemberWeaklyUpSpec
 
-abstract class MemberWeaklyUpSpec extends MultiNodeSpec(MemberWeaklyUpSpec) with MultiNodeClusterSpec {
+abstract class MemberWeaklyUpSpec extends MultiNodeClusterSpec(MemberWeaklyUpSpec) {
 
   import MemberWeaklyUpSpec._
 

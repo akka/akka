@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sbr
@@ -12,7 +12,6 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 
 object IndirectlyConnected5NodeSpec extends MultiNodeConfig {
@@ -48,7 +47,7 @@ class IndirectlyConnected5NodeSpecMultiJvmNode3 extends IndirectlyConnected5Node
 class IndirectlyConnected5NodeSpecMultiJvmNode4 extends IndirectlyConnected5NodeSpec
 class IndirectlyConnected5NodeSpecMultiJvmNode5 extends IndirectlyConnected5NodeSpec
 
-class IndirectlyConnected5NodeSpec extends MultiNodeSpec(IndirectlyConnected5NodeSpec) with MultiNodeClusterSpec {
+class IndirectlyConnected5NodeSpec extends MultiNodeClusterSpec(IndirectlyConnected5NodeSpec) {
   import IndirectlyConnected5NodeSpec._
 
   "A 5-node cluster" should {

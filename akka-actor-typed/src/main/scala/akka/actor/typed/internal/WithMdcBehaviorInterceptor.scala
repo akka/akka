@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
@@ -54,7 +54,7 @@ import akka.annotation.InternalApi
           // eliminate that interceptor
           loop(i.nestedBehavior)
 
-        case i: InterceptorImpl[T, T] =>
+        case i: InterceptorImpl[T @unchecked, T @unchecked] =>
           val nested = i.nestedBehavior
           val inner = loop(nested)
           if (inner eq nested) i

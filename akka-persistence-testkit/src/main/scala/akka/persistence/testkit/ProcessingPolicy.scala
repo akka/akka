@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit
@@ -22,10 +22,11 @@ trait ProcessingPolicy[U] {
    * If you need this operation to succeed return [[ProcessingSuccess]],
    * otherwise you should return some of the [[ProcessingFailure]]'s.
    *
+   * @param processId persistenceId or other id of the processing operation
    * @param processingUnit details about current operation to be executed
    * @return needed result of processing the operation
    */
-  def tryProcess(persistenceId: String, processingUnit: U): ProcessingResult
+  def tryProcess(processId: String, processingUnit: U): ProcessingResult
 
 }
 

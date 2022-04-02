@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -195,7 +195,7 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
 
         def remoteEcho = system.actorSelection(RootActorPath(remoteAddress) / "user" / "echo")
 
-        val echoRef = remoteEcho.resolveOne(3.seconds).futureValue
+        val echoRef = remoteEcho.resolveOne(remainingOrDefault).futureValue
         val localProbe = new TestProbe(localSystem)
 
         echoRef.tell("ping", localProbe.ref)

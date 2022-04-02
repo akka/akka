@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.routing
@@ -18,7 +18,6 @@ import akka.actor.Terminated
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.routing.ActorRefRoutee
 import akka.routing.ActorSelectionRoutee
@@ -105,8 +104,7 @@ class ClusterRoundRobinMultiJvmNode3 extends ClusterRoundRobinSpec
 class ClusterRoundRobinMultiJvmNode4 extends ClusterRoundRobinSpec
 
 abstract class ClusterRoundRobinSpec
-    extends MultiNodeSpec(ClusterRoundRobinMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(ClusterRoundRobinMultiJvmSpec)
     with ImplicitSender
     with DefaultTimeout {
   import ClusterRoundRobinMultiJvmSpec._

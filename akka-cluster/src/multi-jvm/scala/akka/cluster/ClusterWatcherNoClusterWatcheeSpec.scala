@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -20,7 +20,6 @@ import akka.remote.RemoteWatcher.Heartbeat
 import akka.remote.RemoteWatcher.Stats
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 
@@ -90,8 +89,7 @@ private object ClusterWatcherNoClusterWatcheeSpec {
 }
 
 abstract class ClusterWatcherNoClusterWatcheeSpec(multiNodeConfig: ClusterWatcherNoClusterWatcheeConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(multiNodeConfig)
     with ImplicitSender
     with ScalaFutures {
 

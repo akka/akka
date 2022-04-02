@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -31,7 +31,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
     val resultSink = Sink.head[Int]
 
-    val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b => sink =>
+    val g = RunnableGraph.fromGraph(GraphDSL.createGraph(resultSink) { implicit b => sink =>
       import GraphDSL.Implicits._
 
       // importing the partial graph will return its shape (inlets & outlets)

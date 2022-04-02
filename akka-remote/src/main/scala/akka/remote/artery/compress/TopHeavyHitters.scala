@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
  *
  * Keeps a number of specific heavy hitters around in memory.
  *
- * See also Section 5.2 of http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
+ * See also Section 5.2 of https://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
  * for a discussion about the assumptions made and guarantees about the Heavy Hitters made in this model.
  * We assume the Cash Register model in which there are only additions, which simplifies HH detection significantly.
  *

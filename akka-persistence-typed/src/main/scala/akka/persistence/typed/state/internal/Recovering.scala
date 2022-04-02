@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.state.internal
@@ -7,18 +7,20 @@ package akka.persistence.typed.state.internal
 import scala.concurrent.duration._
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.Signal
 import akka.actor.typed.internal.PoisonPill
+import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence._
-import akka.persistence.typed.state.internal.DurableStateBehaviorImpl.GetState
-import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
 import akka.persistence.state.scaladsl.GetObjectResult
 import akka.persistence.typed.state.RecoveryCompleted
 import akka.persistence.typed.state.RecoveryFailed
+import akka.persistence.typed.state.internal.DurableStateBehaviorImpl.GetState
+import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
 import akka.util.PrettyDuration._
 import akka.util.unused
 
@@ -37,8 +39,14 @@ import akka.util.unused
 @InternalApi
 private[akka] object Recovering {
 
-  def apply[C, S](setup: BehaviorSetup[C, S], receivedPoisonPill: Boolean): Behavior[InternalProtocol] =
-    new Recovering(setup.setMdcPhase(PersistenceMdc.RecoveringState)).createBehavior(receivedPoisonPill)
+  def apply[C, S](setup: BehaviorSetup[C, S], receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+    Behaviors.setup { _ =>
+      // protect against store stalling forever because of store overloaded and such
+      setup.startRecoveryTimer()
+      val recoveryState = RecoveryState[S](0L, null.asInstanceOf[S], receivedPoisonPill, System.nanoTime())
+      new Recovering(setup.setMdcPhase(PersistenceMdc.RecoveringState), recoveryState)
+    }
+  }
 
   @InternalApi
   private[akka] final case class RecoveryState[State](
@@ -50,52 +58,46 @@ private[akka] object Recovering {
 }
 
 @InternalApi
-private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
-    extends DurableStateStoreInteractions[C, S]
+private[akka] class Recovering[C, S](
+    override val setup: BehaviorSetup[C, S],
+    var recoveryState: Recovering.RecoveryState[S])
+    extends AbstractBehavior[InternalProtocol](setup.context) // must be class for WithSeqNrAccessible
+    with DurableStateStoreInteractions[C, S]
     with StashManagement[C, S]
     with WithRevisionAccessible {
 
   import InternalProtocol._
   import Recovering.RecoveryState
 
-  // Needed for WithSeqNrAccessible
-  private var _currentRevision = 0L
-
   onRecoveryStart(setup.context)
+  internalGet(setup.context)
 
-  def createBehavior(receivedPoisonPillInPreviousPhase: Boolean): Behavior[InternalProtocol] = {
-    // protect against store stalling forever because of store overloaded and such
-    setup.startRecoveryTimer()
-
-    internalGet(setup.context)
-
-    def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
-      Behaviors
-        .receiveMessage[InternalProtocol] {
-          case success: GetSuccess[S @unchecked] => onGetSuccess(success.result, receivedPoisonPill)
-          case GetFailure(exc)                   => onGetFailure(exc)
-          case RecoveryTimeout                   => onRecoveryTimeout()
-          case cmd: IncomingCommand[C @unchecked] =>
-            if (receivedPoisonPill) {
-              if (setup.settings.logOnStashing)
-                setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
-              Behaviors.unhandled
-            } else
-              onCommand(cmd)
-          case get: GetState[S @unchecked] => stashInternal(get)
-          case RecoveryPermitGranted       => Behaviors.unhandled // should not happen, we already have the permit
-          case UpsertSuccess               => Behaviors.unhandled
-          case _: UpsertFailure            => Behaviors.unhandled
-        }
-        .receiveSignal(returnPermitOnStop.orElse {
-          case (_, PoisonPill) =>
-            stay(receivedPoisonPill = true)
-          case (_, signal) =>
-            if (setup.onSignal(setup.emptyState, signal, catchAndLog = true)) Behaviors.same
-            else Behaviors.unhandled
-        })
+  override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
+    msg match {
+      case success: GetSuccess[S @unchecked] => onGetSuccess(success.result)
+      case GetFailure(exc)                   => onGetFailure(exc)
+      case RecoveryTimeout                   => onRecoveryTimeout()
+      case cmd: IncomingCommand[C @unchecked] =>
+        if (recoveryState.receivedPoisonPill) {
+          if (setup.settings.logOnStashing)
+            setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+          Behaviors.unhandled
+        } else
+          onCommand(cmd)
+      case get: GetState[S @unchecked] => stashInternal(get)
+      case RecoveryPermitGranted       => Behaviors.unhandled // should not happen, we already have the permit
+      case UpsertSuccess               => Behaviors.unhandled
+      case _: UpsertFailure            => Behaviors.unhandled
     }
-    stay(receivedPoisonPillInPreviousPhase)
+  }
+
+  override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+    case PoisonPill =>
+      recoveryState = recoveryState.copy(receivedPoisonPill = true)
+      this
+    case signal =>
+      if (setup.onSignal(recoveryState.state, signal, catchAndLog = true)) this
+      else Behaviors.unhandled
   }
 
   /**
@@ -138,7 +140,7 @@ private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
     stashInternal(cmd)
   }
 
-  def onGetSuccess(result: GetObjectResult[S], receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+  def onGetSuccess(result: GetObjectResult[S]): Behavior[InternalProtocol] = {
     val state = result.value match {
       case Some(s) => setup.snapshotAdapter.fromJournal(s)
       case None    => setup.emptyState
@@ -148,13 +150,13 @@ private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
 
     setup.cancelRecoveryTimer()
 
-    onRecoveryCompleted(RecoveryState(result.revision, state, receivedPoisonPill, System.nanoTime()))
+    onRecoveryCompleted(RecoveryState(result.revision, state, recoveryState.receivedPoisonPill, System.nanoTime()))
 
   }
 
   private def onRecoveryCompleted(state: RecoveryState[S]): Behavior[InternalProtocol] =
     try {
-      _currentRevision = state.revision
+      recoveryState = state
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("recovery completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
@@ -185,6 +187,6 @@ private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
   }
 
   override def currentRevision: Long =
-    _currentRevision
+    recoveryState.revision
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -958,9 +958,14 @@ private[remote] class Association(
 
     implicit val ec = materializer.executionContext
     streamCompleted.foreach { _ =>
-      // shutdown as expected
-      // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
-      materializing.countDown()
+      if (transport.isShutdown || isRemovedAfterQuarantined()) {
+        // shutdown as expected
+        // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+        materializing.countDown()
+      } else {
+        log.debug("{} to [{}] was completed. It will be restarted if used again.", streamName, remoteAddress)
+        lazyRestart()
+      }
     }
     streamCompleted.failed.foreach {
       case ArteryTransport.ShutdownSignal =>
@@ -972,7 +977,12 @@ private[remote] class Association(
         // don't restart after shutdown, but log some details so we notice
         // for the TCP transport the ShutdownSignal is "converted" to StreamTcpException
         if (!cause.isInstanceOf[StreamTcpException])
-          log.error(cause, s"{} to [{}] failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
+          log.warning(
+            s"{} to [{}] failed after shutdown. {}: {}",
+            streamName,
+            remoteAddress,
+            cause.getClass.getName,
+            cause.getMessage)
         cancelAllTimers()
         // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
         materializing.countDown()
@@ -1029,7 +1039,7 @@ private[remote] class Association(
         } else {
           log.error(
             cause,
-            s"{} to [{}] failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
+            s"{} to [{}] failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
             streamName,
             remoteAddress,
             advancedSettings.OutboundMaxRestarts,

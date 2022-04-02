@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence;
@@ -23,6 +23,9 @@ public class LambdaPersistenceDocTest {
     public String persistenceId();
 
     // #persistence-id
+  }
+
+  public interface PersistenceActorRecoveryMethods {
     // #recovery-status
     public boolean recoveryRunning();
 

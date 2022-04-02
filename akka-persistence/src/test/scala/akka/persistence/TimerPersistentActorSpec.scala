@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -101,9 +101,11 @@ class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString
     }
 
     "reject wrong order of traits, PersistentActor with Timer" in {
-      val pa = system.actorOf(Props[WrongOrder]())
-      watch(pa)
-      expectTerminated(pa)
+      if (TraitOrder.canBeChecked) {
+        val pa = system.actorOf(Props[WrongOrder]())
+        watch(pa)
+        expectTerminated(pa)
+      }
     }
 
     "handle AutoReceivedMessage's automatically" in {

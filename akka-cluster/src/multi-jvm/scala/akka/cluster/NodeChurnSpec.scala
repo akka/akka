@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.event.Logging.Info
 import akka.remote.RARP
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.testkit.TestKit
 
@@ -51,12 +51,11 @@ class NodeChurnMultiJvmNode2 extends NodeChurnSpec
 class NodeChurnMultiJvmNode3 extends NodeChurnSpec
 
 abstract class NodeChurnSpec
-    extends MultiNodeSpec({
+    extends MultiNodeClusterSpec({
       // Aeron media driver must be started before ActorSystem
       SharedMediaDriverSupport.startMediaDriver(NodeChurnMultiJvmSpec)
       NodeChurnMultiJvmSpec
     })
-    with MultiNodeClusterSpec
     with ImplicitSender {
 
   import NodeChurnMultiJvmSpec._

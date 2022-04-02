@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -14,7 +14,7 @@ import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.annotation.InternalApi
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.util.ccompat._
 
@@ -66,9 +66,7 @@ class MultiDcHeartbeatTakingOverSpecMultiJvmNode3 extends MultiDcHeartbeatTaking
 class MultiDcHeartbeatTakingOverSpecMultiJvmNode4 extends MultiDcHeartbeatTakingOverSpec
 class MultiDcHeartbeatTakingOverSpecMultiJvmNode5 extends MultiDcHeartbeatTakingOverSpec
 
-abstract class MultiDcHeartbeatTakingOverSpec
-    extends MultiNodeSpec(MultiDcHeartbeatTakingOverSpecMultiJvmSpec)
-    with MultiNodeClusterSpec {
+abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeClusterSpec(MultiDcHeartbeatTakingOverSpecMultiJvmSpec) {
 
   "A 2-dc cluster" must {
 

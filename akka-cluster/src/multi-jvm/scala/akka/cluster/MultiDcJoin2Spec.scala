@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -12,7 +12,6 @@ import akka.actor.Address
 import akka.cluster.ClusterEvent.InitialStateAsEvents
 import akka.cluster.ClusterEvent.MemberUp
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 // Similar to MultiDcJoinSpec, but slightly different scenario
@@ -63,7 +62,7 @@ class MultiDcJoin2MultiJvmNode3 extends MultiDcJoin2Spec
 class MultiDcJoin2MultiJvmNode4 extends MultiDcJoin2Spec
 class MultiDcJoin2MultiJvmNode5 extends MultiDcJoin2Spec
 
-abstract class MultiDcJoin2Spec extends MultiNodeSpec(MultiDcJoin2MultiJvmSpec) with MultiNodeClusterSpec {
+abstract class MultiDcJoin2Spec extends MultiNodeClusterSpec(MultiDcJoin2MultiJvmSpec) {
   import MultiDcJoin2MultiJvmSpec._
 
   "Joining a multi-dc cluster, scenario 2" must {

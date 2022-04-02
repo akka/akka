@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -12,7 +12,6 @@ import language.implicitConversions
 import akka.actor.Address
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object TransitionMultiJvmSpec extends MultiNodeConfig {
@@ -34,10 +33,7 @@ class TransitionMultiJvmNode1 extends TransitionSpec
 class TransitionMultiJvmNode2 extends TransitionSpec
 class TransitionMultiJvmNode3 extends TransitionSpec
 
-abstract class TransitionSpec
-    extends MultiNodeSpec(TransitionMultiJvmSpec)
-    with MultiNodeClusterSpec
-    with ImplicitSender {
+abstract class TransitionSpec extends MultiNodeClusterSpec(TransitionMultiJvmSpec) with ImplicitSender {
 
   import TransitionMultiJvmSpec._
 

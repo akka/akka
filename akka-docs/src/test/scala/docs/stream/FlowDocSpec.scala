@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -41,7 +41,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     // connect the Source to the Sink, obtaining a RunnableGraph
     val runnable: RunnableGraph[Future[Int]] = source.toMat(sink)(Keep.right)
 
-    // materialize the flow and get the value of the FoldSink
+    // materialize the flow and get the value of the sink
     val sum: Future[Int] = runnable.run()
 
     //#materialization-in-steps
@@ -52,7 +52,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     val source = Source(1 to 10)
     val sink = Sink.fold[Int, Int](0)(_ + _)
 
-    // materialize the flow, getting the Sinks materialized value
+    // materialize the flow, getting the Sink's materialized value
     val sum: Future[Int] = source.runWith(sink)
     //#materialization-runWith
   }
@@ -64,7 +64,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     val runnable: RunnableGraph[Future[Int]] =
       Source(1 to 10).toMat(sink)(Keep.right)
 
-    // get the materialized value of the FoldSink
+    // get the materialized value of the sink
     val sum1: Future[Int] = runnable.run()
     val sum2: Future[Int] = runnable.run()
 
@@ -144,7 +144,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
   "various ways of transforming materialized values" in {
     import scala.concurrent.duration._
 
-    val throttler = Flow.fromGraph(GraphDSL.create(Source.tick(1.second, 1.second, "test")) {
+    val throttler = Flow.fromGraph(GraphDSL.createGraph(Source.tick(1.second, 1.second, "test")) {
       implicit builder => tickSource =>
         import GraphDSL.Implicits._
         val zip = builder.add(ZipWith[String, Int, Int](Keep.right))
@@ -207,7 +207,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
     // The result of r11 can be also achieved by using the Graph API
     val r12: RunnableGraph[(Promise[Option[Int]], Cancellable, Future[Int])] =
-      RunnableGraph.fromGraph(GraphDSL.create(source, flow, sink)((_, _, _)) { implicit builder => (src, f, dst) =>
+      RunnableGraph.fromGraph(GraphDSL.createGraph(source, flow, sink)((_, _, _)) { implicit builder => (src, f, dst) =>
         import GraphDSL.Implicits._
         src ~> f ~> dst
         ClosedShape

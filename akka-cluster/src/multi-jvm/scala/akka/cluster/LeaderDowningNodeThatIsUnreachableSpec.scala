@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -10,7 +10,6 @@ import com.typesafe.config.ConfigFactory
 import language.postfixOps
 
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 final case class LeaderDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet: Boolean)
@@ -48,8 +47,7 @@ class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4
 
 abstract class LeaderDowningNodeThatIsUnreachableSpec(
     multiNodeConfig: LeaderDowningNodeThatIsUnreachableMultiNodeConfig)
-    extends MultiNodeSpec(multiNodeConfig)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(multiNodeConfig) {
 
   def this(failureDetectorPuppet: Boolean) =
     this(LeaderDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet))

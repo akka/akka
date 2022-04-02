@@ -1,0 +1,7 @@
+# internal actor class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.util.WildcardTree.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.util.WildcardTree.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.this")

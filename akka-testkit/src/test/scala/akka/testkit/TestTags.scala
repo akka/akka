@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -11,3 +11,4 @@ object LongRunningTest extends Tag("long-running")
 object PerformanceTest extends Tag("performance")
 
 object GHExcludeTest extends Tag("gh-exclude")
+object GHExcludeAeronTest extends Tag("gh-exclude-aeron")

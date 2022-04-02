@@ -33,6 +33,21 @@ jobs:
           chmod 600 /tmp/id_rsa
           ssh-add /tmp/id_rsa
           # using Scala 2.13 here to avoid the infamous problem with missing AskSupport in classpath
-          sbt -Dakka.build.scalaVersion=2.13.0 -Dakka.genjavadoc.enabled=true publishRsync
+          sbt -Dakka.genjavadoc.enabled=true "+~ 2.13 publishRsync"
         env:
           SCP_SECRET: ${{ secrets.SCP_SECRET }}
+
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
+          to: akka.official@gmail.com
+          from: Akka CI (GHActions)
+          body: |
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}

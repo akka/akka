@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -26,18 +26,29 @@ object JdkOptions extends AutoPlugin {
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(s"=1.8"))
   val isJdk11orHigher: Boolean =
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=11"))
+  val isJdk17orHigher: Boolean =
+    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=17"))
+
+  val versionSpecificJavaOptions =
+    if (isJdk17orHigher) {
+      // for aeron
+      "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED" ::
+      // for LevelDB
+      "--add-opens=java.base/java.nio=ALL-UNNAMED" :: Nil
+    } else Nil
 
   def notOnJdk8[T](values: Seq[T]): Seq[T] = if (isJdk8) Seq.empty[T] else values
 
   def targetJdkScalacOptions(
       targetSystemJdk: Boolean,
       jdk8home: Option[File],
-      fullJavaHomes: Map[String, File]): Seq[String] =
+      fullJavaHomes: Map[String, File],
+      scalaVersion: String): Seq[String] =
     selectOptions(
       targetSystemJdk,
       jdk8home,
       fullJavaHomes,
-      Seq(if (Dependencies.getScalaVersion().startsWith("3.0")) "-Xtarget:8" else "-target:jvm-1.8"),
+      Seq(if (scalaVersion.startsWith("3.0")) "-Xtarget:8" else "-target:jvm-1.8"),
       // '-release 8' is not enough, for some reason we need the 8 rt.jar
       // explicitly. To test whether this has the desired effect, compile
       // akka-remote and check the invocation of 'ByteBuffer.clear()' in

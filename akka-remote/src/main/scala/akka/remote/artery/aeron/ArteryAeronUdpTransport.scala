@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -91,7 +91,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       } else {
         // create a random name but include the actor system name for easier debugging
         val uniquePart = UUID.randomUUID().toString
-        val randomName = s"${CommonContext.AERON_DIR_PROP_DEFAULT}-${system.name}-$uniquePart"
+        val randomName = s"${CommonContext.getAeronDirectoryName}${File.separator}${system.name}-$uniquePart"
         driverContext.aeronDirectoryName(randomName)
       }
       driverContext.clientLivenessTimeoutNs(settings.Advanced.Aeron.ClientLivenessTimeout.toNanos)

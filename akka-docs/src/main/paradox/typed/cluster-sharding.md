@@ -286,15 +286,238 @@ message if the entity needs to perform some asynchronous cleanup or interactions
 
 The stop message is only sent locally, from the shard to the entity so does not require an entity id to end up in the right actor. When using a custom `ShardingMessageExtractor` without envelopes, the extractor will still have to handle the stop message type to please the compiler, even though it will never actually be passed to the extractor.
 
-### Automatic Passivation
+## Automatic Passivation
 
-The entities are automatically passivated if they haven't received a message within the duration configured in
-`akka.cluster.sharding.passivate-idle-entity-after` 
-or by explicitly setting the `passivateIdleEntityAfter` flag on `ClusterShardingSettings` to a suitable
-time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
-to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
-Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
-It is disabled automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
+Entities are automatically passivated based on a passivation strategy. The default passivation strategy is to
+[passivate idle entities](#idle-entity-passivation) when they haven't received a message within a specified interval,
+and this is the current default strategy to maintain compatibility with earlier versions. It's recommended to switch to
+a [passivation strategy with an active entity limit](#active-entity-limits) and a pre-configured default strategy is
+provided. Active entity limits and idle entity timeouts can also be used together.
+
+@@@ note
+
+The automatic passivation strategies, except [passivate idle entities](#idle-entity-passivation)
+are marked as @ref:[may change](../common/may-change.md) in the sense of being the subject of final development.
+This means that the configuration or semantics can change without warning or deprecation period. The passivation
+strategies can be used in production, but we reserve the right to adjust the configuration after additional
+testing and feedback.
+
+@@@
+
+Automatic passivation can be disabled by setting `akka.cluster.sharding.passivation.strategy = none`. It is disabled
+automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
+
+@@@ note
+
+Only messages sent through Cluster Sharding are counted as entity activity for automatic passivation. Messages sent
+directly to the `ActorRef`, including messages that the actor sends to itself, are not counted as entity activity.
+
+@@@
+
+### Idle entity passivation
+
+Idle entities can be automatically passivated when they have not received a message for a specified length of time.
+This is currently the default strategy, for compatibility, and is enabled automatically with a timeout of 2 minutes.
+Specify a different idle timeout with configuration:
+
+@@snip [passivation idle timeout](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-idle-timeout type=conf }
+
+Or specify the idle timeout as a duration using the `withPassivationStrategy` method on `ClusterShardingSettings`.
+
+Idle entity timeouts can be enabled and configured for any passivation strategy.
+
+### Active entity limits
+
+Automatic passivation strategies can limit the number of active entities. Limit-based passivation strategies use a
+replacement policy to determine which active entities should be passivated when the active entity limit is exceeded.
+The configurable limit is for a whole shard region and is divided evenly among the active shards in each region.
+
+A recommended passivation strategy, which will become the new default passivation strategy in future versions of Akka
+Cluster Sharding, can be enabled with configuration:
+
+@@snip [passivation new default strategy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy type=conf }
+
+This default strategy uses a [composite passivation strategy](#composite-passivation-strategies) which combines
+recency-based and frequency-based tracking: the main area is configured with a [segmented least recently used
+policy](#segmented-least-recently-used-policy) with a frequency-biased [admission filter](#admission-filter), fronted
+by a recency-biased [admission window](#admission-window-policy) with [adaptive sizing](#admission-window-optimizer)
+enabled.
+
+The active entity limit for the default strategy can be configured:
+
+@@snip [passivation new default strategy configured](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy-configured type=conf }
+
+Or using the `withActiveEntityLimit` method on `ClusterShardingSettings.PassivationStrategySettings`.
+
+An [idle entity timeout](#idle-entity-passivation) can also be enabled and configured for this strategy:
+
+@@snip [passivation new default strategy with idle](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy-with-idle type=conf }
+
+Or using the `withIdleEntityPassivation` method on `ClusterShardingSettings.PassivationStrategySettings`.
+
+If the default strategy is not appropriate for particular workloads and access patterns, a [custom passivation
+strategy](#custom-passivation-strategies) can be created with configurable replacement policies, active entity limits,
+and idle entity timeouts.
+
+### Custom passivation strategies
+
+To configure a custom passivation strategy, create a configuration section for the strategy under
+`akka.cluster.sharding.passivation` and select this strategy using the `strategy` setting. The strategy needs a
+_replacement policy_ to be chosen, an _active entity limit_ to be set, and can optionally [passivate idle
+entities](#idle-entity-passivation). For example, a custom strategy can be configured to use the [least recently used
+policy](#least-recently-used-policy):
+
+@@snip [custom passivation strategy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #custom-passivation-strategy type=conf }
+
+The active entity limit and replacement policy can also be configured using the `withPassivationStrategy` method on
+`ClusterShardingSettings`, passing custom `ClusterShardingSettings.PassivationStrategySettings`.
+
+### Least recently used policy
+
+The **least recently used** policy passivates those entities that have the least recent activity when the number of
+active entities passes the specified limit.
+
+**When to use**: the least recently used policy should be used when access patterns are recency biased, where entities
+that were recently accessed are likely to be accessed again. See the [segmented least recently used
+policy](#segmented-least-recently-used-policy) for a variation that also distinguishes frequency of access.
+
+Configure a passivation strategy to use the least recently used policy:
+
+@@snip [LRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lru-policy type=conf }
+
+Or using the `withLeastRecentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
+
+#### Segmented least recently used policy
+
+A variation of the least recently used policy can be enabled that divides the active entity space into multiple
+segments to introduce frequency information into the passivation strategy. Higher-level segments contain entities that
+have been accessed more often. The first segment is for entities that have only been accessed once, the second segment
+for entities that have been accessed at least twice, and so on. When an entity is accessed again, it will be promoted
+to the most recent position of the next-level or highest-level segment. The higher-level segments are limited, where
+the total limit is either evenly divided among segments, or proportions of the segments can be configured. When a
+higher-level segment exceeds its limit, the least recently used active entity tracked in that segment will be demoted
+to the level below. Only the least recently used entities in the lowest level will be candidates for passivation. The
+higher levels are considered "protected", where entities will have additional opportunities to be accessed before being
+considered for passivation.
+
+**When to use**: the segmented least recently used policy can be used for workloads where some entities are more
+popular than others, to prioritize those entities that are accessed more frequently.
+
+To configure a segmented least recently used (SLRU) policy, with two levels and a protected segment limited to 80% of
+the total limit:
+
+@@snip [SLRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #slru-policy type=conf }
+
+Or to configure a 4-level segmented least recently used (S4LRU) policy, with 4 evenly divided levels:
+
+@@snip [S4LRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #s4lru-policy type=conf }
+
+Or using custom `ClusterShardingSettings.PassivationStrategySettings.LeastRecentlyUsedSettings`.
+
+### Most recently used policy
+
+The **most recently used** policy passivates those entities that have the most recent activity when the number of
+active entities passes the specified limit.
+
+**When to use**: the most recently used policy is most useful when the older an entity is, the more likely that entity
+will be accessed again; as seen in cyclic access patterns.
+
+Configure a passivation strategy to use the most recently used policy:
+
+@@snip [MRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #mru-policy type=conf }
+
+Or using the `withMostRecentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
+
+### Least frequently used policy
+
+The **least frequently used** policy passivates those entities that have the least frequent activity when the number of
+active entities passes the specified limit.
+
+**When to use**: the least frequently used policy should be used when access patterns are frequency biased, where some
+entities are much more popular than others and should be prioritized. See the [least frequently used with dynamic aging
+policy](#least-frequently-used-with-dynamic-aging-policy) for a variation that also handles shifts in popularity.
+
+Configure automatic passivation to use the least frequently used policy:
+
+@@snip [LFU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lfu-policy type=conf }
+
+Or using the `withLeastFrequentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
+
+#### Least frequently used with dynamic aging policy
+
+A variation of the least frequently used policy can be enabled that uses "dynamic aging" to adapt to shifts in the set
+of popular entities, which is useful for smaller active entity limits and when shifts in popularity are common. If
+entities were frequently accessed in the past but then become unpopular, they can still remain active for a long time
+given their high frequency counts. Dynamic aging effectively increases the frequencies for recently accessed entities
+so they can more easily become higher priority over entities that are no longer accessed.
+
+**When to use**: the least frequently used with dynamic aging policy can be used when workloads are frequency biased
+(there are some entities that are much more popular), but which entities are most popular changes over time. Shifts in
+popularity can have more impact on a least frequently used policy if the active entity limit is small.
+
+Configure dynamic aging with the least frequently used policy:
+
+@@snip [LFUDA policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lfuda-policy type=conf }
+
+Or using custom `ClusterShardingSettings.PassivationStrategySettings.LeastFrequentlyUsedSettings`.
+
+### Composite passivation strategies
+
+Passivation strategies can be combined using an admission window and admission filter. The admission window tracks
+newly activated entities. Entities are replaced in the admission window using one of the replacement policies, such as
+the least recently used replacement policy. When an entity is replaced in the window area it has an opportunity to
+enter the main entity tracking area, based on the admission filter. The admission filter determines whether an entity
+that has left the window area should be admitted into the main area, or otherwise be passivated. A frequency sketch is
+the default admission filter and estimates the access frequency of entities over the lifespan of the cluster sharding
+node, selecting the entity that is estimated to be accessed more frequently. Composite passivation strategies with an
+admission window and admission filter are implementing the _Window-TinyLFU_ caching algorithm.
+
+#### Admission window policy
+
+The admission window tracks newly activated entities. When an entity is replaced in the window area, it has an
+opportunity to enter the main entity tracking area, based on the [admission filter](#admission-filter). The admission
+window can be enabled by selecting a policy (while the regular replacement policy is for the main area):
+
+@@snip [admission window policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #admission-window-policy type=conf }
+
+The proportion of the active entity limit used for the admission window can be configured (the default is 1%):
+
+@@snip [admission window proportion](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #admission-window-proportion type=conf }
+
+The proportion for the admission window can also be adapted and optimized dynamically, by enabling an [admission window
+optimizer](#admission-window-optimizer).
+
+#### Admission window optimizer
+
+The proportion of the active entity limit used for the admission window can be adapted dynamically using an optimizer.
+The window area will usually retain entities that are accessed again in a short time (recency-biased), while the main
+area can track entities that are accessed more frequently over longer times (frequency-biased). If access patterns for
+entities are changeable, then the adaptive sizing of the window allows the passivation strategy to adapt between
+recency-biased and frequency-biased workloads.
+
+The optimizer currently available uses a simple hill-climbing algorithm, which searches for a window proportion that
+provides an optimal active rate (where entities are already active when accessed, the _cache hit rate_). Enable
+adaptive window sizing by configuring the `hill-climbing` window optimizer:
+
+@@snip [admission window optimizer](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #admission-window-optimizer type=conf }
+
+See the `reference.conf` for parameters that can be tuned for the hill climbing admission window optimizer.
+
+#### Admission filter
+
+An admission filter can be enabled, which determines whether an entity that has left the window area (or a newly
+activated entity if there is no admission window) should be admitted into the main entity tracking area, or otherwise
+be passivated. If no admission filter is configured, then entities will always be admitted into the main area.
+
+A frequency sketch is the default admission filter and estimates the access frequency of entities over the lifespan of
+the cluster sharding node, selecting the entity that is estimated to be accessed more frequently. The frequency sketch
+automatically ages entries, using the approach from the _TinyLFU_ cache admission algorithm. Enable an admission filter
+by configuring the `frequency-sketch` admission filter:
+
+@@snip [admission policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #admission-policy type=conf }
+
+See the `reference.conf` for parameters that can be tuned for the frequency sketch admission filter.
+
 
 ## Sharding State 
 
@@ -360,7 +583,7 @@ used for new projects and existing projects should migrate as soon as possible.
 Remembering entities automatically restarts entities after a rebalance or entity crash. 
 Without remembered entities restarts happen on the arrival of a message.
 
-Enabling remembered entities disables @ref:[Automatic Passivation](#passivation).
+Enabling remembered entities disables @ref:[Automatic Passivation](#automatic-passivation).
 
 The state of the entities themselves is not restored unless they have been made persistent,
 for example with @ref:[Event Sourcing](persistence.md).

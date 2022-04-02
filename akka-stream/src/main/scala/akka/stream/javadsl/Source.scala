@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -16,11 +16,11 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-
 import scala.annotation.nowarn
 import org.reactivestreams.{ Publisher, Subscriber }
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.{ function, JavaPartialFunction, Pair, Util }
@@ -879,6 +879,28 @@ object Source {
   def upcast[SuperOut, Out <: SuperOut, Mat](source: Source[Out, Mat]): Source[SuperOut, Mat] =
     source.asInstanceOf[Source[SuperOut, Mat]]
 
+  /**
+   * Merge multiple [[Source]]s. Prefer the sources depending on the 'priority' parameters.
+   * The provided sources and priorities must have the same size and order.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergePrioritizedN[T](
+      sourcesAndPriorities: java.util.List[Pair[Source[T, _ <: Any], java.lang.Integer]],
+      eagerComplete: Boolean): javadsl.Source[T, NotUsed] = {
+    val seq =
+      if (sourcesAndPriorities != null)
+        Util.immutableSeq(sourcesAndPriorities).map(pair => (pair.first.asScala, pair.second.intValue()))
+      else
+        immutable.Seq()
+    new Source(scaladsl.Source.mergePrioritizedN(seq, eagerComplete))
+  }
 }
 
 /**
@@ -4522,4 +4544,39 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    **/
   def asSourceWithContext[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Out, Ctx, Mat] =
     new scaladsl.SourceWithContext(this.asScala.map(x => (x, extractContext.apply(x)))).asJava
+
+  /**
+   * Aggregate input elements into an arbitrary data structure that can be completed and emitted downstream
+   * when custom condition is met which can be triggered by aggregate or timer.
+   * It can be thought of a more general [[groupedWeightedWithin]].
+   *
+   * '''Emits when''' the aggregation function decides the aggregate is complete or the timer function returns true
+   *
+   * '''Backpressures when''' downstream backpressures and the aggregate is complete
+   *
+   * '''Completes when''' upstream completes and the last aggregate has been emitted downstream
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param allocate    allocate the initial data structure for aggregated elements
+   * @param aggregate   update the aggregated elements, return true if ready to emit after update.
+   * @param harvest     this is invoked before emit within the current stage/operator
+   * @param emitOnTimer decide whether the current aggregated elements can be emitted, the custom function is invoked on every interval
+   */
+  @ApiMayChange
+  def aggregateWithBoundary[Agg, Emit](allocate: java.util.function.Supplier[Agg])(
+      aggregate: function.Function2[Agg, Out, Pair[Agg, Boolean]],
+      harvest: function.Function[Agg, Emit],
+      emitOnTimer: Pair[java.util.function.Predicate[Agg], java.time.Duration]): javadsl.Source[Emit, Mat] =
+    asScala
+      .aggregateWithBoundary(() => allocate.get())(
+        aggregate = (agg, out) => aggregate.apply(agg, out).toScala,
+        harvest = agg => harvest.apply(agg),
+        emitOnTimer = Option(emitOnTimer).map {
+          case Pair(predicate, duration) => (agg => predicate.test(agg), duration.asScala)
+        })
+      .asJava
+
+  override def getAttributes: Attributes = delegate.getAttributes
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor.typed
@@ -42,8 +42,8 @@ class CoordinatedActorShutdownSpec {
     val myActor = context.spawn(MyActor.behavior, "my-actor")
     //#coordinated-shutdown-addTask
     CoordinatedShutdown(context.system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
-      implicit val timeout = Timeout(5.seconds)
-      myActor.ask(MyActor.Stop)
+      implicit val timeout: Timeout = 5.seconds
+      myActor.ask(MyActor.Stop(_))
     }
     //#coordinated-shutdown-addTask
 

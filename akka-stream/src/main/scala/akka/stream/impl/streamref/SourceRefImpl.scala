@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.streamref
@@ -304,7 +304,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
           state match {
             case WaitingForCancelAck(partner, cause) =>
               verifyPartner(sender, partner)
-              log.debug(s"[$stageActorName] Got cancellation ack from remote, canceling", stageActorName)
+              log.debug(s"[{}] Got cancellation ack from remote, canceling", stageActorName)
               cancelStage(cause)
             case other =>
               throw new IllegalStateException(s"[$stageActorName] Got an Ack when in state $other")

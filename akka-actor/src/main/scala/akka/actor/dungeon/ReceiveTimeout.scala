@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
@@ -43,7 +43,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
         if (reschedule || (task eq emptyCancellable))
           rescheduleReceiveTimeout(f)
 
-      case _ => cancelReceiveTimeout()
+      case _ => cancelReceiveTimeoutTask()
     }
   }
 
@@ -60,12 +60,12 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
 
   protected def cancelReceiveTimeoutIfNeeded(message: Any): (Duration, Cancellable) = {
     if (hasTimeoutData && !message.isInstanceOf[NotInfluenceReceiveTimeout])
-      cancelReceiveTimeout()
+      cancelReceiveTimeoutTask()
 
     receiveTimeoutData
   }
 
-  override final def cancelReceiveTimeout(): Unit =
+  private def cancelReceiveTimeoutTask(): Unit =
     if (receiveTimeoutData._2 ne emptyCancellable) {
       receiveTimeoutData._2.cancel()
       receiveTimeoutData = (receiveTimeoutData._1, emptyCancellable)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -13,7 +13,6 @@ import sbtassembly.AssemblyPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import JdkOptions.autoImport._
-import scala.collection.breakOut
 
 object AkkaBuild {
 
@@ -28,9 +27,10 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
-  lazy val buildSettings = Def.settings(organization := "com.typesafe.akka", Dependencies.Versions)
+  lazy val buildSettings = Def.settings(organization := "com.typesafe.akka")
 
   lazy val rootSettings = Def.settings(
+    commands += switchVersion,
     UnidocRoot.akkaSettings,
     Protobuf.settings,
     GlobalScope / parallelExecution := System
@@ -90,8 +90,8 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = {
-    if (Dependencies.getScalaVersion().startsWith("3.")) {
+  final val DefaultScalacOptions = Def.setting {
+    if (scalaVersion.value.startsWith("3.")) {
       Seq(
         "-encoding",
         "UTF-8",
@@ -124,12 +124,17 @@ object AkkaBuild {
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
 
   lazy val defaultSettings: Seq[Setting[_]] = Def.settings(
+    Dependencies.Versions,
     resolverSettings,
     TestExtras.Filter.settings,
     // compile options
-    Compile / scalacOptions ++= DefaultScalacOptions,
+    Compile / scalacOptions ++= DefaultScalacOptions.value,
     Compile / scalacOptions ++=
-      JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
+      JdkOptions.targetJdkScalacOptions(
+        targetSystemJdk.value,
+        optionalDir(jdk8home.value),
+        fullJavaHomes.value,
+        scalaVersion.value),
     Compile / scalacOptions ++= (if (allWarnings) Seq("-deprecation") else Nil),
     Test / scalacOptions := (Test / scalacOptions).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
@@ -205,13 +210,17 @@ object AkkaBuild {
 
       defaults ++ CliOptions.runningOnCi
         .ifTrue(jvmGCLogOptions(JdkOptions.isJdk11orHigher, JdkOptions.isJdk8))
-        .getOrElse(Nil)
+        .getOrElse(Nil) ++
+      JdkOptions.versionSpecificJavaOptions
     },
-    // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
+    // all system properties passed to sbt prefixed with "akka." or "aeron." will be passed on to the forked jvms as is
     Test / javaOptions := {
       val base = (Test / javaOptions).value
+      val knownPrefix = Set("akka.", "aeron.")
       val akkaSysProps: Seq[String] =
-        sys.props.filter(_._1.startsWith("akka")).map { case (key, value) => s"-D$key=$value" }(breakOut)
+        sys.props.iterator.collect {
+          case (key, value) if knownPrefix.exists(pre => key.startsWith(pre)) => s"-D$key=$value"
+        }.toList
 
       base ++ akkaSysProps
     },
@@ -280,4 +289,30 @@ object AkkaBuild {
   }
 
   def majorMinor(version: String): Option[String] = """\d+\.\d+""".r.findFirstIn(version)
+
+  // So we can `sbt "+~ 3 clean compile"`
+  //
+  // The advantage over `++` is twofold:
+  // * `++` also requires the patch version, `+~` finds the first supported Scala version that matches the prefix (if any)
+  // * When subprojects need to be excluded, ++ needs to be specified for each command
+  //
+  // So the `++` equivalent of the above example is `sbt "++ 3.1.1-RC1 clean" "++ 3.1.1-RC1 compile"`
+  val switchVersion: Command = Command.args("+~", "<version> <args>")({ (initialState: State, args: Seq[String]) =>
+    {
+      val requestedVersionPrefix = args.head
+      val requestedVersion = Dependencies.allScalaVersions.filter(_.startsWith(requestedVersionPrefix)).head
+
+      def run(state: State, command: String): State = {
+        val parsed = s"++ $requestedVersion $command".foldLeft(Cross.switchVersion.parser(state))((p, i) => p.derive(i))
+        parsed.resultEmpty match {
+          case e: sbt.internal.util.complete.Parser.Failure =>
+            throw new IllegalStateException(e.errors.mkString(", "))
+          case sbt.internal.util.complete.Parser.Value(v) =>
+            v()
+        }
+      }
+      val commands = args.tail
+      commands.foldLeft(initialState)(run)
+    }
+  })
 }

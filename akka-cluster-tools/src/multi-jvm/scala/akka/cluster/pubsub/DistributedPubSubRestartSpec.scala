@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.pubsub
@@ -103,10 +103,11 @@ class DistributedPubSubRestartSpec
       expectMsg("msg1")
       enterBarrier("got-msg1")
 
-      runOn(second) {
-        mediator ! Internal.DeltaCount
-        val oldDeltaCount = expectMsgType[Long]
+      mediator ! Internal.DeltaCount
+      val oldDeltaCount = expectMsgType[Long]
+      enterBarrier("old-delta-count")
 
+      runOn(second) {
         enterBarrier("end")
 
         mediator ! Internal.DeltaCount
@@ -115,9 +116,6 @@ class DistributedPubSubRestartSpec
       }
 
       runOn(first) {
-        mediator ! Internal.DeltaCount
-        val oldDeltaCount = expectMsgType[Long]
-
         val thirdAddress = node(third).address
         testConductor.shutdown(third).await
 

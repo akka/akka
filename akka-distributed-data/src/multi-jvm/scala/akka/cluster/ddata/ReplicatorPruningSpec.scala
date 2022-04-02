@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -230,10 +230,22 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
             retrieved.value should be(expectedValue)
         }
       }
+      def checkValuePropagated(expectedValue: Int): Unit =
+        awaitAssert {
+          replicator ! Get(KeyA, ReadLocal)
+          expectMsgPF() {
+            case g @ GetSuccess(KeyA, _) =>
+              g.get(KeyA).value.toInt should be(expectedValue)
+          }
+        }
 
       runOn(first) {
         updateAfterPruning(expectedValue = 10)
       }
+      runOn(second) {
+        checkValuePropagated(10)
+      }
+
       enterBarrier("update-first-after-pruning")
 
       runOn(second) {
@@ -248,6 +260,10 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       runOn(first) {
         updateAfterPruning(expectedValue = 12)
       }
+      runOn(second) {
+        checkValuePropagated(12)
+      }
+
       enterBarrier("update-first-after-dissemination")
 
       runOn(second) {

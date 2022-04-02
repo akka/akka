@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -21,7 +21,7 @@ import akka.util.Helpers.ConfigOps
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
- * [http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf]
+ * [https://oneofus.la/have-emacs-will-hack/files/HDY04.pdf]
  *
  * The suspicion level of failure is given by a value called φ (phi).
  * The basic idea of the φ failure detector is to express the value of φ on a scale that

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -34,7 +34,7 @@ import akka.util.Timeout
  * more slowly than expected. In this case, sending the same work request (also known as a "backup request")
  * to another actor results in decreased response time - because it's less probable that multiple actors
  * are under heavy load simultaneously. This technique is explained in depth in Jeff Dean's presentation on
- * <a href="http://static.googleusercontent.com/media/research.google.com/en//people/jeff/Berkeley-Latency-Mar2012.pdf">
+ * <a href="https://static.googleusercontent.com/media/research.google.com/en//people/jeff/Berkeley-Latency-Mar2012.pdf">
  * Achieving Rapid Response Times in Large Online Services</a>.
  *
  * @param scheduler schedules sending messages to routees

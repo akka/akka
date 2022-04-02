@@ -297,7 +297,7 @@ Akka includes a shaded version of protobuf `3` that is used for internal communi
 run `protobufGenerate`. The generated files are put in each project's `src/main/java` and need to be committed.
 The generated files are automatically transformed to use the shaded version of protobuf.
 
-Generation depends on protoc `3.9.0` being on the path. See [protobuf project](https://github.com/protocolbuffers/protobuf#protocol-compiler-installation) for installation instructions, and
+Generation depends on protoc `3.11.4` being on the path. See [protobuf project](https://github.com/protocolbuffers/protobuf#protocol-compiler-installation) for installation instructions, and
 [Protobuf.scala](https://github.com/akka/akka/blob/main/project/Protobuf.scala) for details of how to override
 the settings for generation.
 
@@ -570,6 +570,8 @@ Scala has proven the most viable way to do it, as long as you keep the following
 Documentation of Akka Streams operators is automatically enforced.
 If a method exists on Source / Sink / Flow, or any other class listed in `project/StreamOperatorsIndexGenerator.scala`,
 it must also have a corresponding documentation page under `akka-docs/src/main/paradox/streams/operators/...`.
+
+Akka Streams operators' consistency is enforced by `ConsistencySpec`, normally an operator should exist on both Source / SubSource, Flow / SubFlow, Sink / SubSink.
 
 The pages structure is well-defined and must be the same on all documentation pages. Please refer to any neighbouring
 docs pages in there to see the pattern in action. In general the page must consist of:

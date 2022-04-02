@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -346,6 +346,8 @@ private[remote] final class ActorRefResolveCacheWithAddress(
 
   override protected def compute(k: String): InternalActorRef =
     provider.resolveActorRefWithLocalAddress(k, localAddress.address)
+
+  override protected def isKeyCacheable(k: String): Boolean = true
 }
 
 /**

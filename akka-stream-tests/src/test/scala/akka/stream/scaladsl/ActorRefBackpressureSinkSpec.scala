@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -120,6 +120,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(2)
       fw ! TriggerAckMessage
       expectMsg(3)
+      fw ! TriggerAckMessage
 
       expectMsg(completeMessage)
     }
@@ -144,6 +145,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(2)
       fw ! TriggerAckMessage
       expectMsg(3)
+      fw ! TriggerAckMessage
 
       expectMsg(completeMessage)
     }
@@ -229,6 +231,29 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       probe.expectMsg(failMessage)
     }
 
+    "signal completion after last message has been acked" in {
+      val probe = TestProbe()
+
+      val sink = Sink
+        .actorRefWithBackpressure[String](
+          probe.ref,
+          initMessage,
+          ackMessage,
+          completeMessage,
+          (_: Throwable) => failMessage)
+        .withAttributes(inputBuffer(1, 1))
+
+      Source.single("hello world").runWith(sink)
+
+      probe.expectMsg(initMessage)
+      probe.reply(ackMessage)
+
+      probe.expectMsg("hello world")
+      probe.expectNoMessage(100.millis)
+
+      probe.reply(ackMessage)
+      probe.expectMsg(completeMessage)
+    }
   }
 
 }

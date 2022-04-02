@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence.testkit;
@@ -56,7 +56,7 @@ public class PersistenceTestKitPolicySampleTest extends AbstractJavaTest {
 
   static class SampleEventStoragePolicy implements ProcessingPolicy<JournalOperation> {
     @Override
-    public ProcessingResult tryProcess(String persistenceId, JournalOperation processingUnit) {
+    public ProcessingResult tryProcess(String processId, JournalOperation processingUnit) {
       if (processingUnit instanceof WriteEvents) {
         return StorageFailure.create();
       } else {

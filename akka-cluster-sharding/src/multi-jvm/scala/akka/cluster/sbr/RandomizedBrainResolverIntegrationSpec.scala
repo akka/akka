@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sbr
@@ -98,8 +98,7 @@ class RandomizedSplitBrainResolverIntegrationSpecMultiJvmNode8 extends Randomize
 class RandomizedSplitBrainResolverIntegrationSpecMultiJvmNode9 extends RandomizedSplitBrainResolverIntegrationSpec
 
 class RandomizedSplitBrainResolverIntegrationSpec
-    extends MultiNodeSpec(RandomizedSplitBrainResolverIntegrationSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(RandomizedSplitBrainResolverIntegrationSpec)
     with ImplicitSender
     with BeforeAndAfterEach {
   import GlobalRegistry._

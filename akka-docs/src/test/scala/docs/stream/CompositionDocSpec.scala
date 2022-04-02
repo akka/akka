@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -200,7 +200,7 @@ class CompositionDocSpec extends AkkaSpec {
 
     // Materializes to Future[OutgoingConnection]                             (yellow)
     val flow3: Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-      Tcp().outgoingConnection("localhost", 8080)
+      Tcp(system).outgoingConnection("localhost", 8080)
 
     // Materializes to Future[OutgoingConnection]                             (yellow)
     val nestedFlow: Flow[Int, ByteString, Future[OutgoingConnection]] =

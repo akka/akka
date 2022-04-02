@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
@@ -240,10 +240,10 @@ private[akka] trait FaultHandling { this: ActorCell =>
     try if (a ne null) a.aroundPostStop()
     catch handleNonFatalOrInterruptedException { e =>
       publish(Error(e, self.path.toString, clazz(a), e.getMessage))
-    } finally try dispatcher.detach(this)
+    } finally try stopFunctionRefs()
+    finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(
       DeathWatchNotification(self, existenceConfirmed = true, addressTerminated = false))
-    finally try stopFunctionRefs()
     finally try tellWatchersWeDied()
     finally try unwatchWatchedActors(a) // stay here as we expect an emergency stop from handleInvokeFailure
     finally {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -123,4 +123,9 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
   }
 
   override def maxFrequency: Double = 42
+
+  /**
+   * The scheduler need to expose its internal time for testing.
+   */
+  def currentTimeMs: Long = currentTime.get()
 }

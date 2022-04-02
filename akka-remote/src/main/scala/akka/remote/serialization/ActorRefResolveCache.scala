@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -95,6 +95,7 @@ private[akka] abstract class AbstractActorRefResolveCache[R <: ActorRef: ClassTa
 
   override protected def hash(k: String): Int = Unsafe.fastHash(k)
 
+  override protected def isKeyCacheable(k: String): Boolean = true
   override protected def isCacheable(ref: R): Boolean =
     ref match {
       case _: EmptyLocalActorRef => false

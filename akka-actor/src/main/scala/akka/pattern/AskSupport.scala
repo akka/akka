@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -505,7 +505,7 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
  *
  * INTERNAL API
  */
-private[akka] final class PromiseActorRef private (
+private[akka] final class PromiseActorRef(
     val provider: ActorRefProvider,
     val result: Promise[Any],
     _mcn: String,

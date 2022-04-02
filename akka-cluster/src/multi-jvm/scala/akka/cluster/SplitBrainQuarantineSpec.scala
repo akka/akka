@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -9,7 +9,6 @@ import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.remote.artery.ArterySettings
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit.LongRunningTest
 import com.typesafe.config.ConfigFactory
@@ -42,7 +41,7 @@ class SplitBrainQuarantineMultiJvmNode2 extends SplitBrainQuarantineSpec
 class SplitBrainQuarantineMultiJvmNode3 extends SplitBrainQuarantineSpec
 class SplitBrainQuarantineMultiJvmNode4 extends SplitBrainQuarantineSpec
 
-abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuarantineSpec) with MultiNodeClusterSpec {
+abstract class SplitBrainQuarantineSpec extends MultiNodeClusterSpec(SplitBrainQuarantineSpec) {
   import SplitBrainQuarantineSpec._
 
   // reproduces the scenario where cluster is partitioned and each side (incorrectly) downs the other,

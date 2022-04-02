@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io
@@ -272,9 +272,7 @@ private[stream] object ConnectionSourceStage {
     private var previousWriteBufferSize = 0
 
     // No reading until role have been decided
-    setHandler(bytesOut, new OutHandler {
-      override def onPull(): Unit = ()
-    })
+    setHandler(bytesOut, GraphStageLogic.EagerTerminateOutput)
 
     override def preStart(): Unit = {
       setKeepGoing(true)

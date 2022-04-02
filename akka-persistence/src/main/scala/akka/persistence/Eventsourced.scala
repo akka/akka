@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -58,13 +58,7 @@ private[persistence] trait Eventsourced
   import JournalProtocol._
   import SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 
-  {
-    val interfaces = getClass.getInterfaces
-    val i = interfaces.indexOf(classOf[PersistentActor])
-    val j = interfaces.indexOf(classOf[akka.actor.Timers])
-    if (i != -1 && j != -1 && i < j)
-      throw new IllegalStateException("use Timers with PersistentActor, instead of PersistentActor with Timers")
-  }
+  TraitOrder.checkBefore(getClass, classOf[akka.actor.Timers], classOf[PersistentActor])
 
   private val extension = Persistence(context.system)
 

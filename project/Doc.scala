@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -35,7 +35,14 @@ object Scaladoc extends AutoPlugin {
         // -release caused build failures when generating javadoc:
         Compile / scalacOptions --= Seq("-release", "8"),
         autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
-    Seq(Compile / validateDiagrams := true) ++
+    Seq(
+      // Publishing scala3 docs is broken (https://github.com/akka/akka/issues/30788),
+      // for now we just skip it:
+      Compile / doc / sources := (
+          if (scalaVersion.value.startsWith("3.")) Seq()
+          else (Compile / doc / sources).value
+        ),
+      Compile / validateDiagrams := true) ++
     CliOptions.scaladocDiagramsEnabled.ifTrue(Compile / doc := {
       val docs = (Compile / doc).value
       if ((Compile / validateDiagrams).value)

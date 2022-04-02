@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.testkit.AkkaSpec
-import akka.testkit.GHExcludeTest
 import akka.testkit.ImplicitSender
 import akka.testkit.TestLatch
 import org.scalatest.BeforeAndAfterEach
@@ -110,17 +109,21 @@ class BalancingSpec extends AkkaSpec("""
       replies2.toSet should be((2 to poolSize).toSet)
       probe.expectNoMessage(500.millis)
     } finally {
+      val watchProbe = TestProbe()
       // careful cleanup since threads may be blocked
-      probe.watch(pool)
+      watchProbe.watch(pool)
       // make sure the latch and promise are not blocking actor threads
       startOthers.trySuccess(())
       latch.open()
       pool ! PoisonPill
-      probe.expectTerminated(pool)
+      watchProbe.expectTerminated(pool)
     }
   }
 
   "balancing pool" must {
+
+    // FIXME flaky, https://github.com/akka/akka/issues/30860
+    pending
 
     "deliver messages in a balancing fashion when defined programatically" in {
       val latch = TestLatch(poolSize)
@@ -131,7 +134,7 @@ class BalancingSpec extends AkkaSpec("""
       test(pool, startOthers, latch)
     }
 
-    "deliver messages in a balancing fashion when defined in config" taggedAs GHExcludeTest in {
+    "deliver messages in a balancing fashion when defined in config" in {
       val latch = TestLatch(poolSize)
       val startOthers = Promise[Unit]()
       val pool =
@@ -141,7 +144,7 @@ class BalancingSpec extends AkkaSpec("""
       test(pool, startOthers, latch)
     }
 
-    "deliver messages in a balancing fashion when overridden in config" taggedAs GHExcludeTest in {
+    "deliver messages in a balancing fashion when overridden in config" in {
       val latch = TestLatch(poolSize)
       val startOthers = Promise[Unit]()
       val pool =

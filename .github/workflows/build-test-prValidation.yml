@@ -56,10 +56,10 @@ jobs:
         run: |-
           sbt -jvm-opts .jvmopts-ci \
           -Dakka.mima.enabled=false \
-          -Dakka.ci-server=true \
           -Dakka.test.multi-in-test=false \
           -Dakka.test.timefactor=2 \
           -Dakka.actor.testkit.typed.timefactor=2 \
+          -Dakka.test.tags.exclude=gh-exclude,timing \
           -Dakka.cluster.assert=on \
           -Dsbt.override.build.repos=false \
           -Dakka.test.multi-node=false \

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -500,11 +500,13 @@ object ByteString {
       if (0 <= idx && idx < length) {
         var pos = 0
         var seen = 0
-        while (idx >= seen + bytestrings(pos).length) {
-          seen += bytestrings(pos).length
+        var frag = bytestrings(pos)
+        while (idx >= seen + frag.length) {
+          seen += frag.length
           pos += 1
+          frag = bytestrings(pos)
         }
-        bytestrings(pos)(idx - seen)
+        frag(idx - seen)
       } else throw new IndexOutOfBoundsException(idx.toString)
     }
 

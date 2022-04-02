@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query
@@ -34,4 +34,5 @@ class OffsetSpec extends AnyWordSpecLike with Matchers {
       Random.shuffle(sequenceBasedList).sorted shouldEqual sequenceBasedList
     }
   }
+
 }

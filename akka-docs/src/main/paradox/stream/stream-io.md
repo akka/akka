@@ -24,7 +24,7 @@ as the library does it transparently for you.
 
 ### Accepting connections: Echo Server
 
-In order to implement a simple EchoServer we `bind` to a given address, which returns a @scala[`Source[IncomingConnection, Future[ServerBinding]]`]@java[`Source<IncomingConnection, CompletionStage<ServerBinding>>`],
+In order to implement a simple EchoServer we `bind` to a given address, which returns a @scala[@apidoc[stream.*.Source]\[@apidoc[IncomingConnection](akka.stream.*.Tcp.IncomingConnection), @scaladoc[Future](scala.concurrent.Future)\[@apidoc[ServerBinding](akka.stream.*.Tcp.ServerBinding)\]]@java[@apidoc[stream.*.Source]<@apidoc[IncomingConnection](akka.stream.*.Tcp.IncomingConnection), @javadoc[CompletionStage](java.util.concurrent.CompletionStage)<@apidoc[ServerBinding](akka.stream.*.Tcp.ServerBinding)>>],
 which will emit an `IncomingConnection` element for each new connection that the Server should handle:
 
 Scala
@@ -35,10 +35,10 @@ Java
 
 ![tcp-stream-bind.png](../images/tcp-stream-bind.png)
 
-Next, we handle *each* incoming connection using a `Flow` which will be used as the operator
-to handle and emit `ByteString` s from and to the TCP Socket. Since one `ByteString` does not have to necessarily
-correspond to exactly one line of text (the client might be sending the line in chunks) we use the @scala[`Framing.delimiter`]@java[`delimiter`]
-helper Flow @java[from `akka.stream.javadsl.Framing`] to chunk the inputs up into actual lines of text. The last boolean
+Next, we handle *each* incoming connection using a @apidoc[stream.*.Flow] which will be used as the operator
+to handle and emit @apidoc[akka.util.ByteString] s from and to the TCP Socket. Since one `ByteString` does not have to necessarily
+correspond to exactly one line of text (the client might be sending the line in chunks) we use the @apidoc[Framing.delimiter](akka.stream.*.Framing$) {scala="#delimiter(delimiter:akka.util.ByteString,maximumFrameLength:Int,allowTruncation:Boolean):akka.stream.scaladsl.Flow[akka.util.ByteString,akka.util.ByteString,akka.NotUsed]" java="#delimiter(akka.util.ByteString,int,akka.stream.javadsl.FramingTruncation)"}
+helper Flow to chunk the inputs up into actual lines of text. The last boolean
 argument indicates that we require an explicit line ending even for the last message before the connection is closed.
 In this example we add exclamation marks to each incoming text message and push it through the flow:
 
@@ -54,9 +54,9 @@ Notice that while most building blocks in Akka Streams are reusable and freely s
 incoming connection Flow, since it directly corresponds to an existing, already accepted connection its handling can
 only ever be materialized *once*.
 
-Closing connections is possible by cancelling the *incoming connection* `Flow` from your server logic (e.g. by
-connecting its downstream to a @scala[`Sink.cancelled`]@java[`Sink.cancelled()`] and its upstream to a @scala[`Source.empty`]@java[`Source.empty()`]).
-It is also possible to shut down the server's socket by cancelling the `IncomingConnection` source `connections`.
+Closing connections is possible by cancelling the *incoming connection* @apidoc[stream.*.Flow] from your server logic (e.g. by
+connecting its downstream to a @apidoc[Sink.cancelled](akka.stream.*.Sink$) {scala="#cancelled[T]:akka.stream.scaladsl.Sink[T,akka.NotUsed]" java="#cancelled()"} and its upstream to a @apidoc[Source.empty](akka.stream.*.Source$) {scala="#empty[T]:akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#empty()"}.
+It is also possible to shut down the server's socket by cancelling the @apidoc[IncomingConnection](akka.stream.*.Tcp.IncomingConnection) source `connections`.
 
 We can then test the TCP server by sending data to the TCP Socket using `netcat`:
 
@@ -80,7 +80,7 @@ Java
 
 The `repl` flow we use to handle the server interaction first prints the servers response, then awaits on input from
 the command line (this blocking call is used here for the sake of simplicity) and converts it to a
-`ByteString` which is then sent over the wire to the server. Then we connect the TCP pipeline to this
+@apidoc[akka.util.ByteString] which is then sent over the wire to the server. Then we connect the TCP pipeline to this
 operator–at this point it will be materialized and start processing data once the server responds with
 an *initial message*.
 
@@ -117,8 +117,8 @@ Scala
 Java
 :   @@snip [StreamTcpDocTest.java](/akka-docs/src/test/java/jdocs/stream/io/StreamTcpDocTest.java) { #welcome-banner-chat-server }
 
-To emit the initial message we merge a `Source` with a single element, after the command processing but before the
-framing and transformation to `ByteString` s this way we do not have to repeat such logic.
+To emit the initial message we merge a @apidoc[akka.stream.*.Source] with a single element, after the command processing but before the
+framing and transformation to @apidoc[akka.util.ByteString] s this way we do not have to repeat such logic.
 
 In this example both client and server may need to close the stream based on a parsed command - `BYE` in the case
 of the server, and `q` in the case of the client. This is implemented by @scala[taking from the stream until `q` and
@@ -130,15 +130,11 @@ which completes the stream once it encounters such command].
 Streaming transport protocols like TCP only pass streams of bytes, and does not know what is a logical chunk of bytes from the
 application's point of view. Often when implementing network protocols you will want to introduce your own framing.
 This can be done in two ways:
-An end-of-frame marker, e.g. end line `\n`, can do framing via `Framing.delimiter`.
+An end-of-frame marker, e.g. end line `\n`, can do framing via @apidoc[Framing.delimiter](akka.stream.*.Framing$) {scala="#delimiter(delimiter:akka.util.ByteString,maximumFrameLength:Int,allowTruncation:Boolean):akka.stream.scaladsl.Flow[akka.util.ByteString,akka.util.ByteString,akka.NotUsed]" java="#delimiter(akka.util.ByteString,int,akka.stream.javadsl.FramingTruncation)"}.
 Or a length-field can be used to build a framing protocol.
-There is a bidi implementing this protocol provided by `Framing.simpleFramingProtocol`,
-see
-@scala[[ScalaDoc](https://doc.akka.io/api/akka/current/akka/stream/scaladsl/Framing$.html)]
-@java[[Javadoc](https://doc.akka.io/japi/akka/current/akka/stream/javadsl/Framing.html#simpleFramingProtocol-int-)]
-for more information.
+There is a bidi implementing this protocol provided by @apidoc[Framing.simpleFramingProtocol](akka.stream.*.Framing$) {scala="#simpleFramingProtocol(maximumMessageLength:Int):akka.stream.scaladsl.BidiFlow[akka.util.ByteString,akka.util.ByteString,akka.util.ByteString,akka.util.ByteString,akka.NotUsed]" java="#simpleFramingProtocol(int)"}.
 
-@scala[[JsonFraming](https://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]@java[[JsonFraming](https://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)] separates valid JSON objects from incoming `ByteString` objects:
+@scala[@scaladoc[JsonFraming](akka.stream.scaladsl.JsonFraming$#objectScanner(maximumObjectLength:Int):akka.stream.scaladsl.Flow[akka.util.ByteString,akka.util.ByteString,akka.NotUsed])]@java[@javadoc[JsonFraming](akka.stream.javadsl.JsonFraming#objectScanner(int))] separates valid JSON objects from incoming @apidoc[akka.util.ByteString] objects:
 
 Scala
 :  @@snip [JsonFramingSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/JsonFramingSpec.scala) { #using-json-framing }
@@ -165,7 +161,7 @@ The `SSLEngine` instance can then be used with the binding or outgoing connectio
 
 ## Streaming File IO
 
-Akka Streams provide simple Sources and Sinks that can work with `ByteString` instances to perform IO operations
+Akka Streams provide simple Sources and Sinks that can work with @apidoc[akka.util.ByteString] instances to perform IO operations
 on files.
 
 Streaming data from a file is as easy as creating a *FileIO.fromPath* given a target path, and an optional

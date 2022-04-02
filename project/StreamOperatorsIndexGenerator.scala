@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 import sbt._
@@ -74,7 +74,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
 
   // FIXME document these methods as well
   val pendingTestCases = Map(
-    "Source" -> (pendingSourceOrFlow ++ Seq("preMaterialize")),
+    "Source" -> (pendingSourceOrFlow),
     "Flow" -> (pendingSourceOrFlow ++ Seq(
       "lazyInit",
       "fromProcessorMat",
@@ -157,7 +157,9 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorFlow.scala",
         "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorFlow.scala",
         "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSink.scala",
-        "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSink.scala").flatMap { f =>
+        "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSink.scala",
+        "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/PubSub.scala",
+        "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/PubSub.scala").flatMap { f =>
         val slashesNr = f.count(_ == '/')
         val element = f.split("/")(slashesNr).split("\\.")(0)
         IO.read(new File(f))

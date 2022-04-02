@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.jackson
@@ -15,13 +15,13 @@ import org.scalatest.wordspec.AnyWordSpecLike
 object ReplicatedEventSourcingJacksonSpec {
   final case class WithLwwTime(lwwTime: LwwTime) extends JsonSerializable
   final case class WithOrSet(
-      @JsonDeserialize(using = classOf[AkkaSerializationDeserializer])
-      @JsonSerialize(using = classOf[AkkaSerializationSerializer])
+      @JsonDeserialize(`using` = classOf[AkkaSerializationDeserializer])
+      @JsonSerialize(`using` = classOf[AkkaSerializationSerializer])
       orSet: ORSet[String])
       extends JsonSerializable
   final case class WithCounter(
-      @JsonDeserialize(using = classOf[AkkaSerializationDeserializer])
-      @JsonSerialize(using = classOf[AkkaSerializationSerializer])
+      @JsonDeserialize(`using` = classOf[AkkaSerializationDeserializer])
+      @JsonSerialize(`using` = classOf[AkkaSerializationSerializer])
       counter: Counter)
       extends JsonSerializable
 

@@ -1,24 +1,28 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
-
-import java.util
-import java.util.concurrent.{ Executors, TimeoutException }
-
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-import scala.concurrent.duration._
-
-import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.ConfigurationException
 import akka.Done
 import akka.actor.CoordinatedShutdown.Phase
 import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.dispatch.ExecutionContexts
-import akka.testkit.{ AkkaSpec, EventFilter, TestKit, TestProbe }
-import akka.util.ccompat.JavaConverters._
+import akka.testkit.AkkaSpec
+import akka.testkit.EventFilter
+import akka.testkit.TestKit
+import akka.testkit.TestProbe
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeoutException
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
 class CoordinatedShutdownSpec
     extends AkkaSpec(ConfigFactory.parseString("""
@@ -573,9 +577,9 @@ class CoordinatedShutdownSpec
           akka.coordinated-shutdown.run-by-actor-system-terminate = off
         """)
 
-      override def withSystemRunning(newSystem: ActorSystem): Unit = {
+      override def withSystemRunning(newSystem: ActorSystem, coordinatedShutdown: CoordinatedShutdown): Unit = {
         val cancellable =
-          CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
+          coordinatedShutdown.addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(1) // one user, none from system
         cancellable.cancel()
       }
@@ -589,9 +593,9 @@ class CoordinatedShutdownSpec
           akka.coordinated-shutdown.run-by-actor-system-terminate = off
         """)
 
-      override def withSystemRunning(newSystem: ActorSystem): Unit = {
+      override def withSystemRunning(newSystem: ActorSystem, coordinatedShutdown: CoordinatedShutdown): Unit = {
         val cancellable =
-          CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
+          coordinatedShutdown.addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(2) // one user, one from system
 
         cancellable.cancel()
@@ -605,9 +609,9 @@ class CoordinatedShutdownSpec
           akka.coordinated-shutdown.terminate-actor-system = on
         """)
 
-      def withSystemRunning(newSystem: ActorSystem): Unit = {
+      def withSystemRunning(newSystem: ActorSystem, coordinatedShutdown: CoordinatedShutdown): Unit = {
         val cancellable =
-          CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
+          coordinatedShutdown.addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(2) // one user, one from actor system
         cancellable.cancel()
       }
@@ -620,9 +624,9 @@ class CoordinatedShutdownSpec
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
         """)
 
-      def withSystemRunning(newSystem: ActorSystem): Unit = {
+      def withSystemRunning(newSystem: ActorSystem, coordinatedShutdown: CoordinatedShutdown): Unit = {
         val cancellable =
-          CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
+          coordinatedShutdown.addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(1) // one user, none from actor system
         cancellable.cancel()
       }
@@ -635,7 +639,7 @@ class CoordinatedShutdownSpec
           akka.coordinated-shutdown.terminate-actor-system = on
         """)
 
-      def withSystemRunning(newSystem: ActorSystem): Unit = {
+      def withSystemRunning(newSystem: ActorSystem, coordinatedShutdown: CoordinatedShutdown): Unit = {
         TestKit.shutdownActorSystem(newSystem)
         CoordinatedShutdown(newSystem)
 
@@ -740,32 +744,50 @@ class CoordinatedShutdownSpec
 
   abstract class JvmHookTest {
 
-    private val initialHookCount = trixyTrixCountJvmHooks(systemName)
-    initialHookCount should ===(0)
-
     def systemName: String
     def systemConfig: Config
-    def withSystemRunning(system: ActorSystem): Unit
+    def withSystemRunning(system: ActorSystem, cs: CoordinatedShutdown): Unit
 
-    val newSystem = ActorSystem(systemName, systemConfig)
+    private val newSystem =
+      ActorSystem(systemName, systemConfig.withFallback(system.settings.config)).asInstanceOf[ExtendedActorSystem]
+    private var shutdownHooks = Set.empty[Thread]
+    private val mockRuntime = new JVMShutdownHooks {
+      override def addHook(t: Thread): Unit = synchronized {
+        // mimic validation in JDK ApplicationShutdownHooks
+        if (shutdownHooks == null)
+          throw new IllegalStateException("Shutdown in progress");
 
-    withSystemRunning(newSystem)
+        if (t.isAlive())
+          throw new IllegalArgumentException("Hook already running");
 
-    TestKit.shutdownActorSystem(newSystem)
+        if (shutdownHooks.contains(t))
+          throw new IllegalArgumentException("Hook previously registered");
 
-    trixyTrixCountJvmHooks(systemName) should ===(0)
+        shutdownHooks += t
+      }
 
-    protected def myHooksCount: Int = trixyTrixCountJvmHooks(systemName)
+      override def removeHook(t: Thread): Boolean = synchronized {
+        // mimic validation in JDK ApplicationShutdownHooks
+        if (t == null)
+          throw new NullPointerException();
 
-    private def trixyTrixCountJvmHooks(systemName: String): Int = {
-      val clazz = Class.forName("java.lang.ApplicationShutdownHooks")
-      val field = clazz.getDeclaredField("hooks")
-      field.setAccessible(true)
-      clazz.synchronized {
-        val hooks = field.get(null).asInstanceOf[util.IdentityHashMap[Thread, Thread]]
-        hooks.values().asScala.count(_.getName.startsWith(systemName))
+        if (shutdownHooks.contains(t)) {
+          shutdownHooks -= t
+          true
+        } else false
       }
     }
+    private val csConfig = newSystem.settings.config.getConfig("akka.coordinated-shutdown")
+    // pretend extension creation and start
+    private val cs = new CoordinatedShutdown(newSystem, CoordinatedShutdown.phasesFromConfig(csConfig), mockRuntime)
+    CoordinatedShutdown.init(newSystem, csConfig, cs)
+
+    withSystemRunning(newSystem, cs)
+
+    TestKit.shutdownActorSystem(newSystem)
+    shutdownHooks should have size (0)
+
+    protected def myHooksCount: Int = synchronized(shutdownHooks.size)
   }
 
 }

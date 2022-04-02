@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.delivery;
@@ -406,7 +406,7 @@ interface ShardingDocExample {
     Behaviors.setup(
         context -> {
           // #init
-          final DB db = theDatbaseImplementation();
+          final DB db = theDatabaseImplementation();
 
           ActorSystem<Void> system = context.getSystem();
 
@@ -424,7 +424,7 @@ interface ShardingDocExample {
                                       TodoList.create(entityContext.getEntityId(), db, start))));
 
           Address selfAddress = Cluster.get(system).selfMember().address();
-          String producerId = "todo-producer-" + selfAddress.host() + ":" + selfAddress.port();
+          String producerId = "todo-producer-" + selfAddress.hostPort();
 
           ActorRef<ShardingProducerController.Command<TodoList.Command>> producerController =
               context.spawn(
@@ -439,7 +439,7 @@ interface ShardingDocExample {
         });
   }
 
-  static DB theDatbaseImplementation() {
+  static DB theDatabaseImplementation() {
     return null;
   }
 }

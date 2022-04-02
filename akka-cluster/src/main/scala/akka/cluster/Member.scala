@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -26,7 +26,7 @@ class Member private[cluster] (
     private[cluster] val upNumber: Int, // INTERNAL API
     val status: MemberStatus,
     val roles: Set[String],
-    private[akka] val appVersion: Version) // INTERNAL API
+    val appVersion: Version)
     extends Serializable {
 
   lazy val dataCenter: DataCenter = roles

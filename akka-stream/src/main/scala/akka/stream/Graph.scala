@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -21,6 +21,7 @@ trait Graph[+S <: Shape, +M] {
    * Type-level accessor for the shape parameter of this graph.
    */
   type Shape = S @uncheckedVariance
+
   /**
    * The shape of a graph is all that is externally visible: its inlets and outlets.
    */
@@ -33,8 +34,17 @@ trait Graph[+S <: Shape, +M] {
    */
   private[stream] def traversalBuilder: TraversalBuilder
 
+  /**
+   * Replace the attributes of this [[Flow]] with the given ones. If this Flow is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
+   */
   def withAttributes(attr: Attributes): Graph[S, M]
 
+  /**
+   * Specifies the name of the Graph.
+   * If the name is null or empty the name is ignored, i.e. [[#none]] is returned.
+   */
   def named(name: String): Graph[S, M] = addAttributes(Attributes.name(name))
 
   /**
@@ -47,7 +57,7 @@ trait Graph[+S <: Shape, +M] {
    *
    * @param dispatcher Run the graph on this dispatcher
    */
-  def async(dispatcher: String) =
+  def async(dispatcher: String): Graph[S, M] =
     addAttributes(Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher))
 
   /**
@@ -56,7 +66,7 @@ trait Graph[+S <: Shape, +M] {
    * @param dispatcher Run the graph on this dispatcher
    * @param inputBufferSize Set the input buffer to this size for the graph
    */
-  def async(dispatcher: String, inputBufferSize: Int) =
+  def async(dispatcher: String, inputBufferSize: Int): Graph[S, M] =
     addAttributes(
       Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
       and Attributes.inputBuffer(inputBufferSize, inputBufferSize))
@@ -68,6 +78,9 @@ trait Graph[+S <: Shape, +M] {
    * less specific than attributes set directly on the individual graphs of the composite.
    */
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
+
+  def getAttributes: Attributes = traversalBuilder.attributes
+
 }
 
 object Graph {

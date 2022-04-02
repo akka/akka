@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -75,7 +75,7 @@ import akka.util.ByteString
         else
           throw new FramingException(
             "Stream didn't start with expected magic bytes, " +
-            s"got [${(magic ++ reader.remainingData).take(10).map(_.formatted("%02x")).mkString(" ")}] " +
+            s"got [${(magic ++ reader.remainingData).take(10).map("%02x".format(_)).mkString(" ")}] " +
             "Connection is rejected. Probably invalid accidental access.")
       }
     }

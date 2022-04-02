@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -9,7 +9,6 @@ import akka.actor.Deploy
 import akka.actor.Props
 import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
@@ -24,9 +23,7 @@ class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec
 class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec
 class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec
 
-abstract class NodeLeavingAndExitingSpec
-    extends MultiNodeSpec(NodeLeavingAndExitingMultiJvmSpec)
-    with MultiNodeClusterSpec {
+abstract class NodeLeavingAndExitingSpec extends MultiNodeClusterSpec(NodeLeavingAndExitingMultiJvmSpec) {
 
   import ClusterEvent._
   import NodeLeavingAndExitingMultiJvmSpec._

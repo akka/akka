@@ -4,6 +4,7 @@
 -Xms3G
 -Xmx3G
 -Xss2M
+-XX:+AlwaysActAsServerClassMachine
 -XX:ReservedCodeCacheSize=256m
 -XX:MaxGCPauseMillis=750
 -XX:-UseBiasedLocking
@@ -11,3 +12,4 @@
 -XX:MetaspaceSize=512M
 -XX:-ClassUnloadingWithConcurrentMark
 -Djava.security.egd=file:/dev/./urandom
+-Dakka.ci-server=true

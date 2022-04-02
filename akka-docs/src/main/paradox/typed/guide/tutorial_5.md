@@ -45,7 +45,7 @@ Java
 
 ## Implementing the query
 
-One approach for implementing the query involves adding code to the group device actor. However, in practice this can be very cumbersome and error prone. Remember that when we start a query, we need to take a snapshot of the devices present and start a timer so that we can enforce the deadline. In the meantime, _another query_ can arrive. For the second query we need to keep track of the exact same information but in isolation from the previous query. This would require us to maintain separate mappings between queries and device actors.
+One approach for implementing the query involves adding code to the device group actor. However, in practice this can be very cumbersome and error-prone. Remember that when we start a query, we need to take a snapshot of the devices present and start a timer so that we can enforce the deadline. In the meantime, _another query_ can arrive. For the second query we need to keep track of the exact same information but in isolation from the previous query. This would require us to maintain separate mappings between queries and device actors.
 
 Instead, we will implement a simpler, and superior approach. We will create an actor that represents a _single query_ and that performs the tasks needed to complete the query on behalf of the group actor. So far we have created actors that belonged to classical domain objects, but now, we will create an
 actor that represents a process or a task rather than an entity. We benefit by keeping our group device actor simple and being able to better test query capability in isolation.
@@ -79,7 +79,7 @@ Scala
 Java
 :   @@snip [DeviceGroupQuery.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/DeviceGroupQuery.java) { #query-outline }
 
-Note that we have to convert the `RespondTemperature` replies from the device actor to the message protocol that the `DeviceGroupQuery` actor understands, i.e. `DeviceGroupQueryMessage`. For this we use a `messageAdapter` that wraps the `RespondTemperature` in a `WrappedRespondTemperature`, which @scala[extends]@java[implements] `DeviceGroupQueryMessage`.
+Note that we have to convert the `RespondTemperature` replies from the device actor to the message protocol that the `DeviceGroupQuery` actor understands, i.e. `DeviceGroupQuery.Command`. For this we use a `messageAdapter` that wraps the `RespondTemperature` in a `WrappedRespondTemperature`, which @scala[extends]@java[implements] `DeviceGroupQuery.Command`.
 
 #### Tracking actor state
 
@@ -87,7 +87,7 @@ The query actor, apart from the pending timer, has one stateful aspect, tracking
 
 For our use case:
 
-1. We keep track state with:
+1. We keep track of the state with:
     * a `Map` of already received replies
     * a `Set` of actors that we still wait on
 2. We have three events to act on:

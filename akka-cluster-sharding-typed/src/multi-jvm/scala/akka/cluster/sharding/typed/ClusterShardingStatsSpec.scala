@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -76,30 +76,26 @@ abstract class ClusterShardingStatsSpec
       sharding.init(Entity(typeKey)(_ => Pinger()))
       enterBarrier("sharding started")
 
-      runOn(first) {
-        val pongProbe = TestProbe[Pong]()
+      val pongProbe = TestProbe[Pong]()
 
-        val entityRef1 = ClusterSharding(typedSystem).entityRefFor(typeKey, "ping-1")
-        entityRef1 ! Ping(1, pongProbe.ref)
-        pongProbe.receiveMessage()
+      val entityRef1 = ClusterSharding(typedSystem).entityRefFor(typeKey, "ping-1")
+      entityRef1 ! Ping(1, pongProbe.ref)
+      pongProbe.receiveMessage()
 
-        val entityRef2 = ClusterSharding(typedSystem).entityRefFor(typeKey, "ping-2")
-        entityRef2 ! Ping(2, pongProbe.ref)
-        pongProbe.receiveMessage()
-      }
+      val entityRef2 = ClusterSharding(typedSystem).entityRefFor(typeKey, "ping-2")
+      entityRef2 ! Ping(2, pongProbe.ref)
+      pongProbe.receiveMessage()
       enterBarrier("sharding-initialized")
 
-      runOn(first, second, third) {
-        val replyToProbe = TestProbe[ClusterShardingStats]()
-        sharding.shardState ! GetClusterShardingStats(typeKey, queryTimeout, replyToProbe.ref)
+      val statsProbe = TestProbe[ClusterShardingStats]()
+      sharding.shardState ! GetClusterShardingStats(typeKey, queryTimeout, statsProbe.ref)
 
-        val stats = replyToProbe.receiveMessage(queryTimeout)
-        stats.regions.size shouldEqual 3
-        stats.regions.values.flatMap(_.stats.values).sum shouldEqual 2
-        stats.regions.values.forall(_.failed.isEmpty) shouldBe true
-      }
+      val stats = statsProbe.receiveMessage(queryTimeout)
+      stats.regions.size shouldEqual 3 // 3 nodes
+      stats.regions.values.flatMap(_.stats.values).sum shouldEqual 2 // number of entities
+      stats.regions.values.forall(_.failed.isEmpty) shouldBe true
+
       enterBarrier("done")
-
     }
 
   }

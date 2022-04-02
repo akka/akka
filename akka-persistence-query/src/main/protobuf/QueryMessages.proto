@@ -1,0 +1,24 @@
+/*
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+syntax = "proto2";
+
+package akka.persistence.query;
+
+option java_package = "akka.persistence.query.internal.protobuf";
+option optimize_for = SPEED;
+import "ContainerFormats.proto";
+
+// for akka.persistence.query.typed.EventEnvelope
+message EventEnvelope {
+  required string persistence_id = 1;
+  required string entity_type = 2;
+  required int32 slice = 3;
+  required int64 sequence_nr = 4;
+  required int64 timestamp = 5;
+  required string offset = 6;
+  required string offset_manifest = 7;
+  optional Payload event = 8;
+  optional Payload metadata = 9;
+}

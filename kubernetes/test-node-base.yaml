@@ -14,15 +14,27 @@ spec:
       labels:
         host: test-nodeX
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - multi-node-test
+                topologyKey: kubernetes.io/hostname
       containers:
       - image: openjdk:11
         command: ["sleep", "infinity"]
         resources:
           requests:
-            memory: "2Gi"
-            cpu: "1"
+            memory: "3Gi"
+            cpu: "2800m"
           limits:
-            memory: "4Gi"
+            memory: "3Gi"
         lifecycle:
           postStart:
             exec:
@@ -33,8 +45,8 @@ spec:
         imagePullPolicy: Always
         name: multi-test-nodeX
         volumeMounts:
-          - mountPath: /dev/shm
-            name: dshm
+          - mountPath: /opt/volumes/media-driver
+            name: media-driver
         ports:
         - name: web
           containerPort: 80
@@ -59,9 +71,8 @@ spec:
           protocol: TCP
       volumes:
         # Needed for Aeron tests: https://github.com/real-logic/aeron/blob/master/README.md#troubleshooting
-        - name: dshm
-          emptyDir:
-            medium: Memory
+        - name: media-driver
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

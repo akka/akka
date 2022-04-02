@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sbr
@@ -82,8 +82,7 @@ class SplitBrainResolverIntegrationSpecMultiJvmNode8 extends SplitBrainResolverI
 class SplitBrainResolverIntegrationSpecMultiJvmNode9 extends SplitBrainResolverIntegrationSpec
 
 class SplitBrainResolverIntegrationSpec
-    extends MultiNodeSpec(SplitBrainResolverIntegrationSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(SplitBrainResolverIntegrationSpec)
     with ImplicitSender
     with BeforeAndAfterEach {
   import GlobalRegistry._

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -36,6 +36,8 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-cluster-sharding-typed",
     // references to deprecated PARSER fields in generated message formats?
     "akka-persistence-typed",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-persistence-query",
     "akka-docs")
 
   val looseProjects = Set(
@@ -65,41 +67,42 @@ object AkkaDisciplinePlugin extends AutoPlugin {
 
   val defaultScalaOptions = "-Wconf:cat=unused-nowarn:s,any:e"
 
-  lazy val nowarnSettings = {
-    Dependencies.getScalaVersion() match {
-      case three if three.startsWith("3.") =>
-        Seq(Compile / scalacOptions := Seq(), Compile / doc / scalacOptions := Seq())
-      case _ =>
-        Seq(
-          Compile / scalacOptions += defaultScalaOptions,
-          Test / scalacOptions += defaultScalaOptions,
-          Compile / doc / scalacOptions := Seq())
-    }
-  }
+  lazy val nowarnSettings = Seq(
+    Compile / scalacOptions ++= (
+        if (scalaVersion.value.startsWith("3.")) Nil
+        else Seq(defaultScalaOptions)
+      ),
+    Test / scalacOptions ++= (
+        if (scalaVersion.value.startsWith("3.")) Nil
+        else Seq(defaultScalaOptions)
+      ),
+    Compile / doc / scalacOptions := Seq())
 
   /**
    * We are a little less strict in docs
    */
-  val docs = {
-    Dependencies.getScalaVersion() match {
-      case _ =>
-        Seq(
-          Compile / scalacOptions -= defaultScalaOptions,
-          Compile / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
-          Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
-          Test / scalacOptions -= defaultScalaOptions,
-          Test / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
-          Compile / doc / scalacOptions := Seq())
-    }
-  }
+  val docs =
+    Seq(
+      Compile / scalacOptions -= defaultScalaOptions,
+      Compile / scalacOptions ++= (
+          if (scalaVersion.value.startsWith("3.")) Nil
+          else Seq("-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e")
+        ),
+      Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
+      Test / scalacOptions -= defaultScalaOptions,
+      Test / scalacOptions ++= (
+          if (scalaVersion.value.startsWith("3.")) Nil
+          else Seq("-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e")
+        ),
+      Compile / doc / scalacOptions := Seq())
 
   lazy val disciplineSettings =
     if (enabled) {
       nowarnSettings ++ Seq(
         Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
-        Test / scalacOptions --= testUndicipline,
+        Test / scalacOptions --= testUndiscipline,
         Compile / javacOptions ++= (
-            if (Dependencies.getScalaVersion().startsWith("3.")) {
+            if (scalaVersion.value.startsWith("3.")) {
               Seq()
             } else {
               if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
@@ -130,13 +133,14 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         // https://github.com/akka/akka/issues/26119
         Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings",
         // having discipline warnings in console is just an annoyance
-        Compile / console / scalacOptions --= disciplineScalacOptions.toSeq)
+        Compile / console / scalacOptions --= disciplineScalacOptions.toSeq,
+        Test / console / scalacOptions --= disciplineScalacOptions.toSeq)
     } else {
       // we still need these in opt-out since the annotations are present
       nowarnSettings ++ Seq(Compile / scalacOptions += "-deprecation")
     }
 
-  val testUndicipline = Seq("-Ywarn-dead-code" // '???' used in compile only specs
+  val testUndiscipline = Seq("-Ywarn-dead-code" // '???' used in compile only specs
   )
 
   /**

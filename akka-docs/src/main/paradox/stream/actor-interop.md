@@ -224,3 +224,20 @@ Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorR
 @@@ note
   See also: @ref[ActorSink.actorRefWithBackpressure operator reference docs](operators/ActorSink/actorRefWithBackpressure.md)
 @@@
+
+
+### Topic.source
+
+A source that will subscribe to a @apidoc[akka.actor.typed.pubsub.Topic$] and stream messages published to the topic.
+
+@@@ note
+See also: @ref[ActorSink.actorRefWithBackpressure operator reference docs](operators/PubSub/source.md)
+@@@
+
+### Topic.sink
+
+A sink that will publish emitted messages to a @apidoc[akka.actor.typed.pubsub.Topic$].
+
+@@@ note
+See also: @ref[ActorSink.actorRefWithBackpressure operator reference docs](operators/PubSub/sink.md)
+@@@

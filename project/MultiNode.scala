@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -51,7 +51,7 @@ object MultiNode extends AutoPlugin {
     // -Dmultinode.Djava.net.preferIPv4Stack=true -Dmultinode.Xmx512m -Dmultinode.XX:MaxPermSize=256M
     // -DMultiJvm.akka.cluster.Stress.nrOfNodes=15
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
-    val knownPrefix = Set("akka.", "MultiJvm.")
+    val knownPrefix = Set("akka.", "MultiJvm.", "aeron.")
     val akkaProperties = System.getProperties.stringPropertyNames.asScala.toList.collect {
       case MultinodeJvmArgs(a, b) =>
         val value = System.getProperty("multinode." + a + b)
@@ -60,7 +60,7 @@ object MultiNode extends AutoPlugin {
     }
 
     "-Xmx256m" :: akkaProperties ::: CliOptions.sbtLogNoFormat.ifTrue("-Dakka.test.nocolor=true").toList
-  }
+  } ++ JdkOptions.versionSpecificJavaOptions
 
   private val anyConfigsInThisProject = ScopeFilter(configurations = inAnyConfiguration)
 

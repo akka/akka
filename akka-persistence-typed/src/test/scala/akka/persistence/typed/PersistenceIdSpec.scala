@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed
@@ -46,6 +46,41 @@ class PersistenceIdSpec extends AnyWordSpec with Matchers with LogCapturing {
       intercept[IllegalArgumentException] {
         PersistenceId("SomeType", "A#B", "#")
       }
+    }
+
+    "be able to extract entityTypeHint" in {
+      PersistenceId.extractEntityType("SomeType|abc") should ===("SomeType")
+      PersistenceId.extractEntityType("abc") should ===("")
+      PersistenceId("SomeType", "abc").entityTypeHint should ===("SomeType")
+    }
+
+    "be able to extract entityTypeHint from ReplicationId" in {
+      val replicaId = ReplicationId("SomeType", "abc", ReplicaId("A"))
+      val pid = replicaId.persistenceId
+      pid.entityTypeHint should ===("SomeType")
+      PersistenceId.extractEntityType(pid.id) should ===("SomeType")
+    }
+
+    "be able to extract entityId" in {
+      PersistenceId.extractEntityId("SomeType|abc") should ===("abc")
+      PersistenceId.extractEntityId("abc") should ===("abc")
+      PersistenceId("SomeType", "abc").entityId should ===("abc")
+    }
+
+    "extract entityTypeHint and entityId via unapply" in {
+      PersistenceId("SomeType", "abc") match {
+        case PersistenceId(entityTypeHint, entityId) =>
+          entityTypeHint should ===("SomeType")
+          entityId should ===("abc")
+        case _ => fail()
+      }
+    }
+
+    "be able to extract entityId from ReplicationId" in {
+      val replicaId = ReplicationId("SomeType", "abc", ReplicaId("A"))
+      val pid = replicaId.persistenceId
+      pid.entityId should ===("abc")
+      PersistenceId.extractEntityId(pid.id) should ===("abc")
     }
   }
 

@@ -390,17 +390,6 @@ in the pattern match and return `Behaviors.unhandled`.
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-unhandled }
 
-One thing to be aware of is the exhaustiveness check is not enabled when there is a guard condition in any of the
-pattern match cases.
-
-Scala
-:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-guard }
-
-Therefore, for the purposes of exhaustivity checking, it is be better to not use guards and instead move the `if`s after the `=>`.
-
-Scala
-:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-without-guard }
-
 It's recommended to use the `sealed` trait and total functions with exhaustiveness check to detect mistakes
 of forgetting to handle some messages. Sometimes that can be inconvenient and then you can use a `PartialFunction`
 with `Behaviors.receivePartial` or `Behaviors.receiveMessagePartial`

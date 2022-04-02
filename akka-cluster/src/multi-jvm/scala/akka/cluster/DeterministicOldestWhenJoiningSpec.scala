@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -13,7 +13,6 @@ import akka.actor.Address
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberUp
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object DeterministicOldestWhenJoiningMultiJvmSpec extends MultiNodeConfig {
@@ -36,8 +35,7 @@ class DeterministicOldestWhenJoiningMultiJvmNode2 extends DeterministicOldestWhe
 class DeterministicOldestWhenJoiningMultiJvmNode3 extends DeterministicOldestWhenJoiningSpec
 
 abstract class DeterministicOldestWhenJoiningSpec
-    extends MultiNodeSpec(DeterministicOldestWhenJoiningMultiJvmSpec)
-    with MultiNodeClusterSpec {
+    extends MultiNodeClusterSpec(DeterministicOldestWhenJoiningMultiJvmSpec) {
 
   import DeterministicOldestWhenJoiningMultiJvmSpec._
 

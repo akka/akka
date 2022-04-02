@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 // Protocol Buffers - Google's data interchange format
@@ -373,7 +373,7 @@ public abstract class ByteString implements Iterable<Byte> {
    * Concatenate the given {@code ByteString} to this one. Short concatenations,
    * of total size smaller than {@link ByteString#CONCATENATE_BY_COPY_SIZE}, are
    * produced by copying the underlying bytes (as per Rope.java, <a
-   * href="http://www.cs.ubc.ca/local/reading/proceedings/spe91-95/spe/vol25/issue12/spe986.pdf">
+   * href="https://www.cs.ubc.ca/local/reading/proceedings/spe91-95/spe/vol25/issue12/spe986.pdf">
    * BAP95 </a>. In general, the concatenate involves no copying.
    *
    * @param other string to concatenate

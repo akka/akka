@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl;
@@ -1176,6 +1176,7 @@ public class FlowTest extends StreamTest {
                 }));
 
     final TestKit probe = new TestKit(system);
+    @SuppressWarnings("deprecation")
     Source<String, ActorRef> source =
         Source.actorRef(
             msg -> Optional.empty(), msg -> Optional.empty(), 1, OverflowStrategy.dropNew());

@@ -41,7 +41,7 @@ Scala
 Java
 :   @@snip [Throttle.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/Throttle.java) { #throttle-with-burst }
 
-The extra argument to set the `ThrottleMode` to `shapping` tells `throttle` to make pauses to avoid exceeding 
+The extra argument to set the `ThrottleMode` to `shaping` tells `throttle` to make pauses to avoid exceeding 
 the maximum rate. Alternatively we could set the throttling mode to cause a stream failure when upstream is faster
 than the throttle rate.   
 

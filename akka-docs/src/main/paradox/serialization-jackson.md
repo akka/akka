@@ -65,19 +65,19 @@ It reduces the need for some annotations.
 ## Security
 
 For security reasons it is disallowed to bind the Jackson serializers to
-open ended types that might be a target for [serialization gadgets](https://medium.com/@cowtowncoder/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
+open ended types that might be a target for [serialization gadgets](https://cowtowncoder.medium.com/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
 such as:
 
-* `java.lang.Object`
-* `java.io.Serializable`
-* `java.util.Comparable`.
+* @javadoc[java.lang.Object](java.lang.Object)
+* @javadoc[java.io.Serializable](java.io.Serializable)
+* @javadoc[java.lang.Comparable](java.lang.Comparable).
 
 The deny list of possible serialization gadget classes defined by Jackson databind are checked
 and disallowed for deserialization.
 
 @@@ warning
 
-Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
+Don't use @javadoc[@JsonTypeInfo(use = Id.CLASS)](com.fasterxml.jackson.annotation.JsonTypeInfo) or @javadoc[ObjectMapper.enableDefaultTyping](com.fasterxml.jackson.databind.ObjectMapper#enableDefaultTyping--) since that is a security risk
 when using @ref:[polymorphic types](#polymorphic-types).
 
 @@@
@@ -109,7 +109,7 @@ That is probably because the class has a constructor with a single parameter, li
 Java
 :  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-1 }
 
-That can be solved by adding `@JsonCreator` or `@JsonProperty` annotations:
+That can be solved by adding @javadoc[@JsonCreator](com.fasterxml.jackson.annotation.JsonCreator) or @javadoc[@JsonProperty](com.fasterxml.jackson.annotation.JsonProperty) annotations:
 
 Java
 :  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-2 }
@@ -128,8 +128,8 @@ The `ParameterNamesModule` is configured with `JsonCreator.Mode.PROPERTIES` as d
 ### Polymorphic types
 
 A polymorphic type is when a certain base type has multiple alternative implementations. When nested fields or
-collections are of polymorphic type the concrete implementations of the type must be listed with `@JsonTypeInfo`
-and `@JsonSubTypes` annotations.
+collections are of polymorphic type the concrete implementations of the type must be listed with @javadoc[@JsonTypeInfo](com.fasterxml.jackson.annotation.JsonTypeInfo)
+and @javadoc[@JsonSubTypes](com.fasterxml.jackson.annotation.JsonSubTypes) annotations.
 
 Example:
 
@@ -156,7 +156,7 @@ when deserializing.
 
 @@@ warning
 
-Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
+Don't use @javadoc[@JsonTypeInfo(use = Id.CLASS)](com.fasterxml.jackson.annotation.JsonTypeInfo) or @javadoc[ObjectMapper.enableDefaultTyping](com.fasterxml.jackson.databind.ObjectMapper#enableDefaultTyping--) since that is a security risk
 when using polymorphic types.
 
 @@@
@@ -166,8 +166,8 @@ when using polymorphic types.
 ### ADT with trait and case object
 
 It's common in Scala to use a sealed trait and case objects to represent enums. If the values are case classes
-the `@JsonSubTypes` annotation as described above works, but if the values are case objects it will not.
-The annotation requires a `Class` and there is no way to define that in an annotation for a `case object`.
+the @javadoc[@JsonSubTypes](com.fasterxml.jackson.annotation.JsonSubTypes) annotation as described above works, but if the values are case objects it will not.
+The annotation requires a @javadoc[Class](java.lang.Class) and there is no way to define that in an annotation for a `case object`.
 
 The easiest workaround is to define the case objects as case class without any field. 
 
@@ -176,11 +176,11 @@ Alternatively, you can define an intermediate trait for the case object and a cu
 Scala
 :  @@snip [SerializationDocSpec.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #polymorphism-case-object }
 
-The case object `Unicorn` can't be used in a `@JsonSubTypes` annotation, but its trait can. When serializing the case object we need to know which type tag to use, hence the `@JsonTypeName` annotation on the object. When deserializing, Jackson will only know about the trait variant therefore we need a custom deserializer that returns the case object. 
+The case object `Unicorn` can't be used in a @javadoc[@JsonSubTypes](com.fasterxml.jackson.annotation.JsonSubTypes) annotation, but its trait can. When serializing the case object we need to know which type tag to use, hence the @javadoc[@JsonTypeName](com.fasterxml.jackson.annotation.JsonTypeName) annotation on the object. When deserializing, Jackson will only know about the trait variant therefore we need a custom deserializer that returns the case object. 
 
 On the other hand, if the ADT only has case objects, you can solve it by implementing a custom serialization for the enums. Annotate the `trait` with
-`@JsonSerialize` and `@JsonDeserialize` and implement the serialization with `StdSerializer` and
-`StdDeserializer`.
+@javadoc[@JsonSerialize](com.fasterxml.jackson.databind.annotation.JsonSerialize) and @javadoc[@JsonDeserialize](com.fasterxml.jackson.databind.annotation.JsonDeserialize) and implement the serialization with @javadoc[StdSerializer](com.fasterxml.jackson.databind.ser.std.StdSerializer) and
+@javadoc[StdDeserializer](com.fasterxml.jackson.databind.deser.std.StdDeserializer).
 
 Scala
 :  @@snip [CustomAdtSerializer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/CustomAdtSerializer.scala) { #adt-trait-object }
@@ -246,7 +246,7 @@ Scala
 Java
 :  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2b/ItemAdded.java) { #add-mandatory }
 
-To add a new mandatory field we have to use a `JacksonMigration` class and set the default value in the migration code.
+To add a new mandatory field we have to use a @apidoc[JacksonMigration] class and set the default value in the migration code.
 
 This is how a migration class would look like for adding a `discount` field:
 
@@ -256,15 +256,15 @@ Scala
 Java
 :  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2b/ItemAddedMigration.java) { #add-mandatory }
 
-Override the `currentVersion` method to define the version number of the current (latest) version. The first version,
+Override the @scala[@scaladoc[currentVersion](akka.serialization.jackson.JacksonMigration#currentVersion:Int)]@java[@javadoc[currentVersion()](akka.serialization.jackson.JacksonMigration#currentVersion())] method to define the version number of the current (latest) version. The first version,
 when no migration was used, is always 1. Increase this version number whenever you perform a change that is not
 backwards compatible without migration code.
 
-Implement the transformation of the old JSON structure to the new JSON structure in the `transform` method.
-The [JsonNode](https://fasterxml.github.io/jackson-databind/javadoc/2.9/com/fasterxml/jackson/databind/JsonNode.html)
+Implement the transformation of the old JSON structure to the new JSON structure in the @apidoc[transform(fromVersion, jsonNode)](JacksonMigration) {scala="#transform(fromVersion:Int,json:com.fasterxml.jackson.databind.JsonNode):com.fasterxml.jackson.databind.JsonNode" java="#transform(int,com.fasterxml.jackson.databind.JsonNode)"} method.
+The @javadoc[JsonNode](com.fasterxml.jackson.databind.JsonNode)
 is mutable so you can add and remove fields, or change values. Note that you have to cast to specific sub-classes
-such as [ObjectNode](https://fasterxml.github.io/jackson-databind/javadoc/2.9/com/fasterxml/jackson/databind/node/ObjectNode.html)
-and [ArrayNode](https://fasterxml.github.io/jackson-databind/javadoc/2.9/com/fasterxml/jackson/databind/node/ArrayNode.html)
+such as @javadoc[ObjectNode](com.fasterxml.jackson.databind.node.ObjectNode)
+and @javadoc[ArrayNode](com.fasterxml.jackson.databind.node.ArrayNode)
 to get access to mutators.
 
 The migration class must be defined in configuration file:
@@ -355,7 +355,7 @@ Scala
 Java
 :  @@snip [OrderPlacedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/OrderPlacedMigration.java) { #rename-class }
 
-Note the override of the `transformClassName` method to define the new class name.
+Note the override of the @apidoc[transformClassName(fromVersion, className)](JacksonMigration) {scala="#transformClassName(fromVersion:Int,className:String):String" java="#transformClassName(int,java.lang.String)"} method to define the new class name.
 
 That type of migration must be configured with the old class name as key. The actual class can be removed.
 
@@ -464,7 +464,7 @@ the binding name (for example `jackson-cbor`).
 For types that already have an Akka Serializer defined that are embedded in types serialized with Jackson the @apidoc[AkkaSerializationSerializer] and
 @apidoc[AkkaSerializationDeserializer] can be used to Akka Serialization for individual fields. 
 
-The serializer/deserializer are not enabled automatically. The `@JsonSerialize` and `@JsonDeserialize` annotation needs to be added
+The serializer/deserializer are not enabled automatically. The @javadoc[@JsonSerialize](com.fasterxml.jackson.databind.annotation.JsonSerialize) and @javadoc[@JsonDeserialize](com.fasterxml.jackson.databind.annotation.JsonDeserialize) annotation needs to be added
 to the fields containing the types to be serialized with Akka Serialization.
 
 The type will be embedded as an object with the fields:
@@ -477,7 +477,7 @@ The type will be embedded as an object with the fields:
 
 ### Configuration per binding
 
-By default the configuration for the Jackson serializers and their `ObjectMapper`s is defined in
+By default the configuration for the Jackson serializers and their @javadoc[ObjectMapper](com.fasterxml.jackson.databind.ObjectMapper)s is defined in
 the `akka.serialization.jackson` section. It is possible to override that configuration in a more
 specific `akka.serialization.jackson.<binding name>` section.
 
@@ -526,7 +526,7 @@ Jackson are used aside from the the following that are changed in Akka's default
 
 ### Date/time format
 
-`WRITE_DATES_AS_TIMESTAMPS` and `WRITE_DURATIONS_AS_TIMESTAMPS` are by default disabled, which means that date/time fields are serialized in
+@javadoc[WRITE_DATES_AS_TIMESTAMPS](com.fasterxml.jackson.databind.SerializationFeature#WRITE_DATES_AS_TIMESTAMPS) and @javadoc[WRITE_DURATIONS_AS_TIMESTAMPS](com.fasterxml.jackson.databind.SerializationFeature#WRITE_DURATIONS_AS_TIMESTAMPS) are by default disabled, which means that date/time fields are serialized in
 ISO-8601 (rfc3339) `yyyy-MM-dd'T'HH:mm:ss.SSSZ` format instead of numeric arrays. This is better for
 interoperability but it is slower. If you don't need the ISO format for interoperability with external systems
 you can change the following configuration for better performance of date/time fields.

@@ -74,15 +74,15 @@ Java
 This small piece of code defines two message types, one for commanding the
 Actor to greet someone and one that the Actor will use to confirm that it has
 done so. The `Greet` type contains not only the information of whom to
-greet, it also holds an `ActorRef` that the sender of the message
+greet, it also holds an @apidoc[typed.ActorRef] that the sender of the message
 supplies so that the `HelloWorld` Actor can send back the confirmation
 message.
 
 The behavior of the Actor is defined as the `Greeter` with the help
-of the `receive` behavior factory. Processing the next message then results
+of the @apidoc[receive](typed.*.Behaviors$) {scala="#receive[T](onMessage:(akka.actor.typed.scaladsl.ActorContext[T],T)=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Receive[T]" java="#receive(akka.japi.function.Function2,akka.japi.function.Function2)"} behavior factory. Processing the next message then results
 in a new behavior that can potentially be different from this one. State is
 updated by returning a new behavior that holds the new immutable state. In this
-case we don't need to update any state, so we return @scala[`same`]@java[`this`], which means
+case we don't need to update any state, so we return @apidoc[same](typed.*.Behaviors$){scala="#same[T]:akka.actor.typed.Behavior[T]" java="#same()"}, which means
 the next behavior is "the same as the current one".
 
 The type of the messages handled by this behavior is declared to be of class
@@ -92,7 +92,7 @@ Typically, an actor handles more than one specific message type where all of the
 directly or indirectly @scala[`extend`]@java[`implement`] a common @scala[`trait`]@java[`interface`].
 
 On the last line we see the `HelloWorld` Actor send a message to another
-Actor, which is done using the @scala[`!` operator (pronounced “bang” or “tell”)]@java[`tell` method].
+Actor, which is done using the @scala[@scaladoc[!](akka.actor.typed.ActorRef#tell(msg:T):Unit) operator (pronounced “bang” or “tell”)]@java[@javadoc[tell](akka.actor.typed.ActorRef#tell(T)) method].
 It is an asynchronous operation that doesn't block the caller's thread.
 
 Since the `replyTo` address is declared to be of type @scala[`ActorRef[Greeted]`]@java[`ActorRef<Greeted>`], the
@@ -121,7 +121,7 @@ Java
 
 @scala[Note how this Actor manages the counter by changing the behavior for each `Greeted` reply
 rather than using any variables.]@java[Note how this Actor manages the counter with an instance variable.]
-No concurrency guards such as `synchronized` or `AtomicInteger` are needed since an actor instance processes one
+No concurrency guards such as `synchronized` or @javadoc[AtomicInteger](java.util.concurrent.atomic.AtomicInteger) are needed since an actor instance processes one
 message at a time.
 
 A third actor spawns the `Greeter` and the `HelloWorldBot` and starts the interaction between those.
@@ -143,7 +143,7 @@ Java
 We start an Actor system from the defined `HelloWorldMain` behavior and send two `SayHello` messages that
 will kick-off the interaction between two separate `HelloWorldBot` actors and the single `Greeter` actor.
 
-An application normally consists of a single `ActorSystem`, running many actors, per JVM. 
+An application normally consists of a single @apidoc[typed.ActorSystem], running many actors, per JVM. 
 
 The console output may look like this:
 
@@ -202,7 +202,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-protocol }
 
-Initially the client Actors only get access to an @scala[`ActorRef[GetSession]`]@java[`ActorRef<GetSession>`]
+Initially the client Actors only get access to an @apidoc[typed.ActorRef[GetSession]]
 which allows them to make the first step. Once a client’s session has been
 established it gets a `SessionGranted` message that contains a `handle` to
 unlock the next protocol step, posting messages. The `PostMessage`
@@ -227,7 +227,7 @@ The state is managed by changing behavior rather than using any variables.
 
 When a new `GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
-`ActorRef` that will be used to post messages. In this case we want to
+@apidoc[typed.ActorRef] that will be used to post messages. In this case we want to
 create a very simple Actor that repackages the `PostMessage`
 command into a `PublishSessionMessage` command which also includes the
 screen name.
@@ -248,7 +248,7 @@ screen name then we could change the protocol such that `PostMessage` is
 removed and all clients just get an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] to
 send to. In this case no session actor would be needed and we could use
 @scala[`context.self`]@java[`context.getSelf()`]. The type-checks work out in that case because
-@scala[`ActorRef[-T]`]@java[`ActorRef<T>`] is contravariant in its type parameter, meaning that we
+@scala[@apidoc[ActorRef[-T]](typed.ActorRef)]@java[@apidoc[ActorRef<T>](typed.ActorRef)] is contravariant in its type parameter, meaning that we
 can use a @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] wherever an
 @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] is needed—this makes sense because the
 former simply speaks more languages than the latter. The opposite would be
@@ -269,7 +269,7 @@ From this behavior we can create an Actor that will accept a chat room session,
 post a message, wait to see it published, and then terminate. The last step
 requires the ability to change behavior, we need to transition from the normal
 running behavior into the terminated state. This is why here we do not return
-`same`, as above, but another special value `stopped`.
+@apidoc[same](typed.*.Behaviors$){scala="#same[T]:akka.actor.typed.Behavior[T]" java="#same()"}, as above, but another special value @apidoc[stopped](typed.*.Behaviors$){scala="#stopped[T]:akka.actor.typed.Behavior[T]" java="#stopped()"}.
 
 @@@ div {.group-scala}
 
@@ -296,24 +296,24 @@ Java
 In good tradition we call the `Main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
-from the outside, so we declare it to be of type @scala[`NotUsed`]@java[`Void`]. Actors receive not
+from the outside, so we declare it to be of type @scala[@scaladoc[NotUsed](akka.NotUsed)]@java[@javadoc[Void](java.lang.Void)]. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
-particular one using the `receive` behavior decorator. The
-provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
+particular one using the @apidoc[receive](typed.*.Behaviors$) {scala="#receive[T](onMessage:(akka.actor.typed.scaladsl.ActorContext[T],T)=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Receive[T]" java="#receive(akka.japi.function.Function2)"} behavior decorator. The
+provided `onSignal` function will be invoked for signals (subclasses of @apidoc[typed.Signal])
 or the `onMessage` function for user messages.
 
-This particular `Main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
-Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.receive`
+This particular `Main` Actor is created using @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"}, which is like a factory for a behavior.
+Creation of the behavior instance is deferred until the actor is started, as opposed to @apidoc[Behaviors.receive](typed.*.Behaviors$) {scala="#receive[T](onMessage:(akka.actor.typed.scaladsl.ActorContext[T],T)=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Receive[T]" java="#receive(akka.japi.function.Function2)"}
 that creates the behavior instance immediately before the actor is running. The factory function in
-`setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
+`setup` is passed the @apidoc[typed.*.ActorContext] as parameter and that can for example be used for spawning child actors.
 This `Main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
-gabbler is finished we will receive the `Terminated` event due to having
-called `context.watch` for it. This allows us to shut down the Actor system: when
+gabbler is finished we will receive the @apidoc[typed.Terminated] event due to having
+called @apidoc[context.watch](typed.*.ActorContext) {scala="#watch[U](other:akka.actor.typed.ActorRef[U]):Unit" java="#watch(akka.actor.typed.ActorRef)"} for it. This allows us to shut down the Actor system: when
 the `Main` Actor terminates there is nothing more to do.
 
 Therefore after creating the Actor system with the `Main` Actor’s
-`Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
+@apidoc[typed.Behavior] we can let the `main` method return, the @apidoc[typed.ActorSystem] will continue running and 
 the JVM alive until the root actor stops.
 
 
@@ -332,8 +332,7 @@ is best for a specific actor. Considerations for the choice is provided in the
 #### AbstractBehavior API
 
 Defining a class based actor behavior starts with extending 
-@scala[`akka.actor.typed.scaladsl.AbstractBehavior[T]`]
-@java[`akka.actor.typed.javadsl.AbstractBehavior<T>`] where `T` is the type of messages
+@apidoc[akka.actor.typed.*.AbstractBehavior]@java[`<T>`]@scala[`[T]`] where `T` is the type of messages
 the behavior will accept.
 
 Let's repeat the chat room sample from @ref:[A more complex example above](#a-more-complex-example) but implemented
@@ -368,7 +367,7 @@ Java
 The state is managed through fields in the class, just like with a regular object oriented class.
 As the state is mutable, we never return a different behavior from the message logic, but can return
 the `AbstractBehavior` instance itself (`this`) as a behavior to use for processing the next message coming in.
-We could also return `Behavior.same` to achieve the same.
+We could also return @apidoc[Behaviors.same](typed.*.Behaviors$) {scala="#same[T]:akka.actor.typed.Behavior[T]" java="#same()"} to achieve the same.
 
 @java[In this sample we make separate statements for creating the behavior builder, but it also returns the builder
 itself from each step so a more fluent behavior definition style is also possible. What you should prefer depends on
@@ -380,14 +379,14 @@ with the functional style for different parts of the lifecycle of the same Actor
 
 When a new `GetSession` command comes in we add that client to the
 list of current sessions. Then we also need to create the session’s
-`ActorRef` that will be used to post messages. In this case we want to
+@apidoc[typed.ActorRef] that will be used to post messages. In this case we want to
 create a very simple Actor that repackages the `PostMessage`
 command into a `PublishSessionMessage` command which also includes the
 screen name.
 
 To implement the logic where we spawn a child for the session we need access 
-to the `ActorContext`. This is injected as a constructor parameter upon creation 
-of the behavior, note how we combine the `AbstractBehavior` with  `Behaviors.setup`
+to the @apidoc[typed.*.ActorContext]. This is injected as a constructor parameter upon creation 
+of the behavior, note how we combine the @apidoc[typed.*.AbstractBehavior] with  @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"}
 to do this in the @scala[`apply`]@java[`create`] factory method.
 
 The behavior that we declare here can handle both subtypes of `RoomCommand`.
@@ -405,7 +404,7 @@ If we did not care about securing the correspondence between a session and a
 screen name then we could change the protocol such that `PostMessage` is
 removed and all clients just get an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] to
 send to. In this case no session actor would be needed and we could use
-@scala[`context.self`]@java[`context.getSelf()`]. The type-checks work out in that case because
+@scala[@scaladoc[context.self](akka.actor.typed.scaladsl.ActorContext#self:akka.actor.typed.ActorRef[T])]@java[@javadoc[context.getSelf()](akka.actor.typed.javadsl.ActorContext#getSelf())]. The type-checks work out in that case because
 @scala[`ActorRef[-T]`]@java[`ActorRef<T>`] is contravariant in its type parameter, meaning that we
 can use a @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] wherever an
 @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] is needed—this makes sense because the
@@ -441,22 +440,22 @@ Java
 In good tradition we call the `Main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
-from the outside, so we declare it to be of type @scala[`NotUsed`]@java[`Void`]. Actors receive not
+from the outside, so we declare it to be of type @scala[@scaladoc[NotUsed](akka.NotUsed)]@java[@javadoc[Void](java.lang.Void)]. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
-particular one using the `receive` behavior decorator. The
-provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
+particular one using the @apidoc[receive](typed.*.Behaviors$) {scala="#receive[T](onMessage:(akka.actor.typed.scaladsl.ActorContext[T],T)=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Receive[T]" java="#receive(akka.japi.function.Function2)"} behavior decorator. The
+provided `onSignal` function will be invoked for signals (subclasses of @apidoc[typed.Signal])
 or the `onMessage` function for user messages.
 
-This particular `Main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
-Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.receive`
+This particular `Main` Actor is created using @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"}, which is like a factory for a behavior.
+Creation of the behavior instance is deferred until the actor is started, as opposed to @apidoc[Behaviors.receive](typed.*.Behaviors$) {scala="#receive[T](onMessage:(akka.actor.typed.scaladsl.ActorContext[T],T)=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.scaladsl.Behaviors.Receive[T]" java="#receive(akka.japi.function.Function2)"}
 that creates the behavior instance immediately before the actor is running. The factory function in
-`setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
+`setup` is passed the @apidoc[typed.*.ActorContext] as parameter and that can for example be used for spawning child actors.
 This `Main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
-gabbler is finished we will receive the `Terminated` event due to having
-called `context.watch` for it. This allows us to shut down the Actor system: when
+gabbler is finished we will receive the @apidoc[typed.Terminated] event due to having
+called @apidoc[context.watch](typed.*.ActorContext) {scala="#watch[U](other:akka.actor.typed.ActorRef[U]):Unit" java="#watch(akka.actor.typed.ActorRef)"} for it. This allows us to shut down the Actor system: when
 the `Main` Actor terminates there is nothing more to do.
 
 Therefore after creating the Actor system with the `Main` Actor’s
-`Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
+@apidoc[typed.Behavior] we can let the `main` method return, the @apidoc[typed.ActorSystem] will continue running and 
 the JVM alive until the root actor stops.

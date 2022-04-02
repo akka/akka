@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -44,6 +44,7 @@ class LruBoundedCacheBench {
       override protected def compute(k: String): String = k
       override protected def hash(k: String): Int = k.hashCode
       override protected def isCacheable(v: String): Boolean = true
+      override protected def isKeyCacheable(k: String): Boolean = true
     }
 
     // Loading

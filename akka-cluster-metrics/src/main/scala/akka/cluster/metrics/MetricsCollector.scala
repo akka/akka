@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
@@ -78,7 +78,7 @@ private[metrics] object MetricsCollector {
         create(collectorCustom).orElse(create(collectorSigar)).orElse(create(collectorJMX))
 
     collector.recover {
-      case e => throw new ConfigurationException(s"Could not create metrics collector: ${e}")
+      case e => throw new ConfigurationException(s"Could not create metrics collector: ${e.getMessage}", e)
     }.get
   }
 }

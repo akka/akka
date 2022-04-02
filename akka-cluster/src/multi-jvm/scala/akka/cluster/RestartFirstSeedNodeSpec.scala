@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -43,8 +43,7 @@ class RestartFirstSeedNodeMultiJvmNode2 extends RestartFirstSeedNodeSpec
 class RestartFirstSeedNodeMultiJvmNode3 extends RestartFirstSeedNodeSpec
 
 abstract class RestartFirstSeedNodeSpec
-    extends MultiNodeSpec(RestartFirstSeedNodeMultiJvmSpec)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterSpec(RestartFirstSeedNodeMultiJvmSpec)
     with ImplicitSender {
 
   import RestartFirstSeedNodeMultiJvmSpec._

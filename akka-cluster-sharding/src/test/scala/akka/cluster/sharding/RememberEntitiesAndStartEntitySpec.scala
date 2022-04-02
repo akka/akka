@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -17,10 +20,8 @@ import akka.cluster.sharding.ShardRegion.StartEntityAck
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.WithLogCapturing
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
-object PersistentStartEntitySpec {
+object RememberEntitiesAndStartEntitySpec {
   class EntityActor extends Actor {
     override def receive: Receive = {
       case "give-me-shard" => sender() ! context.parent
@@ -47,20 +48,21 @@ object PersistentStartEntitySpec {
       akka.actor.provider = cluster
       akka.remote.artery.canonical.port = 0
       akka.remote.classic.netty.tcp.port = 0
-      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.cluster.sharding.verbose-debug-logging = on
       akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
+      # no leaks between test runs thank you
+      akka.cluster.sharding.distributed-data.durable.keys = []
     """.stripMargin)
 }
 
-// this test covers remember entities + StartEntity for the deprecated persistent state store
-class PersistentStartEntitySpec
-    extends AkkaSpec(PersistentStartEntitySpec.config)
+// this test covers remember entities + StartEntity
+class RememberEntitiesAndStartEntitySpec
+    extends AkkaSpec(RememberEntitiesAndStartEntitySpec.config)
     with AnyWordSpecLike
     with ImplicitSender
     with WithLogCapturing {
 
-  import PersistentStartEntitySpec._
+  import RememberEntitiesAndStartEntitySpec._
 
   override def atStartup(): Unit = {
     // Form a one node cluster
@@ -69,15 +71,13 @@ class PersistentStartEntitySpec
     awaitAssert(cluster.readView.members.count(_.status == MemberStatus.Up) should ===(1))
   }
 
-  "Persistent Shard" must {
+  "Sharding" must {
 
     "remember entities started with StartEntity" in {
       val sharding = ClusterSharding(system).start(
         s"startEntity",
         Props[EntityActor](),
-        ClusterShardingSettings(system)
-          .withRememberEntities(true)
-          .withStateStoreMode(ClusterShardingSettings.StateStoreModePersistence),
+        ClusterShardingSettings(system).withRememberEntities(true),
         extractEntityId,
         extractShardId)
 
@@ -91,8 +91,11 @@ class PersistentStartEntitySpec
 
       // trigger shard start by messaging other actor in it
       system.log.info("Starting shard again")
-      sharding ! EntityEnvelope(11, "give-me-shard")
-      val secondShardIncarnation = expectMsgType[ActorRef]
+      // race condition between this message and region getting the termination message, we may need to retry
+      val secondShardIncarnation = awaitAssert {
+        sharding ! EntityEnvelope(11, "give-me-shard")
+        expectMsgType[ActorRef]
+      }
 
       awaitAssert {
         secondShardIncarnation ! GetShardStats

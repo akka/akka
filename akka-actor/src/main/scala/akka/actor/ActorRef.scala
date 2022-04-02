@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -849,7 +849,9 @@ private[akka] class VirtualPathContainer(
  */
 @InternalApi private[akka] object FunctionRef {
   def deadLetterMessageHandler(system: ActorSystem): (ActorRef, Any) => Unit = { (sender, msg) =>
-    system.deadLetters.tell(msg, sender)
+    // avoid infinite loop (StackOverflow) if FunctionRef is used for subscribing to DeadLetter from eventStream
+    if (!msg.isInstanceOf[DeadLetter])
+      system.deadLetters.tell(msg, sender)
   }
 }
 
@@ -971,11 +973,11 @@ private[akka] class VirtualPathContainer(
   }
 
   override def stop(): Unit = {
-    sendTerminated()
     // The messageHandler function may close over a large object graph (such as an Akka Stream)
     // so we replace the messageHandler function to make that available for garbage collection.
     // Doesn't matter if the change isn't visible immediately, volatile not needed.
     messageHandler = FunctionRef.deadLetterMessageHandler(system)
+    sendTerminated()
   }
 
   private def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {

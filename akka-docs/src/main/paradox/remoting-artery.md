@@ -272,6 +272,8 @@ That is also security best-practice because of its multiple
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
 
+In addition to what is described here, read the blog post about [Securing Akka cluster communication in Kubernetes](https://akka.io/blog/article/2021/10/27/akka-cluster-mtls).
+
 SSL can be used as the remote transport by using the `tls-tcp` transport:
 
 ```
@@ -376,6 +378,7 @@ When using SHA1PRNG on Linux it's recommended specify `-Djava.security.egd=file:
 to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
 
 @@@
+
 
 
 ### Untrusted Mode
@@ -681,8 +684,10 @@ akka.remote.artery.large-message-destinations = [
    "/user/largeMessagesGroup/*",
    "/user/anotherGroup/*/largeMesssages",
    "/user/thirdGroup/**",
+   "/temp/session-ask-actor*"
 ]
 ```
+\*NOTE: Support for \* inside of an actor path (ie. /temp/session-ask-actor\*) is only available in 2.6.18+
 
 This means that all messages sent to the following actors will pass through the dedicated, large messages channel:
 
@@ -693,6 +698,7 @@ This means that all messages sent to the following actors will pass through the 
  * `/user/anotherGroup/actor2/largeMessages`
  * `/user/thirdGroup/actor3/`
  * `/user/thirdGroup/actor4/actor5`
+ * `/temp/session-ask-actor$abc`
 
 Messages destined for actors not matching any of these patterns are sent using the default channel as before.
 
