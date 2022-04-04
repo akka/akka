@@ -15,7 +15,7 @@ To use Akka Streams, add the module to your project:
 
 ## Introduction
 
-Substreams are represented as @java[@javadoc[SubSource](akka.stream.javadsl.SubSource) or] @apidoc[akka.stream.*.SubFlow] instances, on which you can multiplex a single @apidoc[akka.stream.*.Source] or @apidoc[akka.stream.*.Flow]
+Substreams are represented as @java[@javadoc[SubSource](akka.stream.javadsl.SubSource) or] @apidoc[akka.stream.*.SubFlow] instances, on which you can multiplex a single @java[@apidoc[akka.stream.*.Source] or] @apidoc[akka.stream.*.Flow]
 into a stream of streams.
 
 SubFlows cannot contribute to the super-flow’s materialized value since they are materialized later,
