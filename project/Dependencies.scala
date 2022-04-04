@@ -375,6 +375,7 @@ object Dependencies {
 
   lazy val streamTests = l ++= Seq(
         TestDependencies.scalatest.value,
+        TestDependencies.scalatestJUnit.value,
         TestDependencies.scalatestScalaCheck.value,
         TestDependencies.junit,
         TestDependencies.commonsIo,

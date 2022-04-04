@@ -435,7 +435,7 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
 
 lazy val streamTests = akkaModule("akka-stream-tests")
   .configs(akka.Jdk9.TestJdk9)
-  .dependsOn(streamTestkit % "test->test", remote % "test->test", stream % "TestJdk9->CompileJdk9")
+  .dependsOn(streamTestkit % "test->test", stream % "TestJdk9->CompileJdk9")
   .settings(Dependencies.streamTests)
   .enablePlugins(NoPublish, Jdk9)
   .disablePlugins(MimaPlugin)
