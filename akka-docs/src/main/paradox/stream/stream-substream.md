@@ -15,7 +15,7 @@ To use Akka Streams, add the module to your project:
 
 ## Introduction
 
-Substreams are represented as `SubSource` or @apidoc[akka.stream.*.SubFlow] instances, on which you can multiplex a single @apidoc[akka.stream.*.Source] or @apidoc[akka.stream.*.Flow]
+Substreams are represented as @java[@javadoc[SubSource](akka.stream.javadsl.SubSource) or] @apidoc[akka.stream.*.SubFlow] instances, on which you can multiplex a single @apidoc[akka.stream.*.Source] or @apidoc[akka.stream.*.Flow]
 into a stream of streams.
 
 SubFlows cannot contribute to the super-flow’s materialized value since they are materialized later,
@@ -56,7 +56,7 @@ Java
 
 ![stream-substream-groupBy2.png](../../images/stream-substream-groupBy2.png)
 
-Also substreams, more precisely, @apidoc[akka.stream.*.SubFlow] and `SubSource` have methods that allow you to
+Also substreams, more precisely, @apidoc[akka.stream.*.SubFlow] @java[and @javadoc[SubSource](akka.stream.javadsl.SubSource)] have methods that allow you to
 merge or concat substreams into the main stream again.
 
 The @apidoc[mergeSubstreams](akka.stream.*.SubFlow) {scala="#mergeSubstreams:F[Out]" java="#mergeSubstreams()"} method merges an unbounded number of substreams back to the main stream.
