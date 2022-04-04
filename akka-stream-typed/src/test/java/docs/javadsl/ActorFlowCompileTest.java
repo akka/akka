@@ -83,5 +83,28 @@ public class ActorFlowCompileTest {
 
     Source.repeat("hello").via(askFlow).map(reply -> reply.msg).runWith(Sink.seq(), system);
     // #ask
+
+    // #askWithContext
+
+    // method reference notation
+    Flow<akka.japi.Pair<String, Long>, akka.japi.Pair<Reply, Long>, NotUsed> askFlowWithContext =
+        ActorFlow.askWithContext(actorRef, timeout, Asking::new);
+
+    // explicit creation of the sent message
+    Flow<akka.japi.Pair<String, Long>, akka.japi.Pair<Reply, Long>, NotUsed>
+        askFlowExplicitWithContext =
+            ActorFlow.askWithContext(actorRef, timeout, (msg, replyTo) -> new Asking(msg, replyTo));
+
+    Flow<akka.japi.Pair<String, Long>, akka.japi.Pair<String, Long>, NotUsed>
+        askFlowExplicitWithStatusAndContext =
+            ActorFlow.askWithStatusAndContext(
+                actorWithStatusRef, timeout, (msg, replyTo) -> new AskingWithStatus(msg, replyTo));
+
+    Source.repeat("hello")
+        .zipWithIndex()
+        .via(askFlowWithContext)
+        .map(pair -> pair.first().msg)
+        .runWith(Sink.seq(), system);
+    // #askWithContext
   }
 }

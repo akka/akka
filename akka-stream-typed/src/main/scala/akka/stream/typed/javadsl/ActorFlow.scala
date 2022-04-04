@@ -5,10 +5,10 @@
 package akka.stream.typed.javadsl
 
 import java.util.function.BiFunction
-
 import scala.concurrent.duration._
 import akka.NotUsed
 import akka.actor.typed.ActorRef
+import akka.japi.Pair
 import akka.pattern.StatusReply
 import akka.stream.javadsl.Flow
 import akka.util.JavaDurationConverters
@@ -134,4 +134,58 @@ object ActorFlow {
       .askWithStatus[I, Q, A](parallelism)(ref)((i, ref) => makeMessage(i, ref))(timeout.toMillis.millis)
       .asJava
 
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context.
+   */
+  def askWithContext[I, Q, A, Ctx](
+      ref: ActorRef[Q],
+      timeout: java.time.Duration,
+      makeMessage: BiFunction[I, ActorRef[A], Q]): Flow[Pair[I, Ctx], Pair[A, Ctx], NotUsed] =
+    akka.stream.scaladsl
+      .Flow[Pair[I, Ctx]]
+      .map(_.toScala)
+      .via(
+        akka.stream.typed.scaladsl.ActorFlow
+          .askWithContext[I, Q, A, Ctx](parallelism = 2)(ref)((i, ref) => makeMessage(i, ref))(
+            JavaDurationConverters.asFiniteDuration(timeout))
+          .map { case (a, ctx) => Pair(a, ctx) })
+      .asJava
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatusAndContext[I, Q, A, Ctx](
+      ref: ActorRef[Q],
+      timeout: java.time.Duration,
+      makeMessage: BiFunction[I, ActorRef[StatusReply[A]], Q]): Flow[Pair[I, Ctx], Pair[A, Ctx], NotUsed] =
+    akka.stream.scaladsl
+      .Flow[Pair[I, Ctx]]
+      .map(_.toScala)
+      .via(
+        akka.stream.typed.scaladsl.ActorFlow
+          .askWithStatusAndContext[I, Q, A, Ctx](parallelism = 2)(ref)((i, ref) => makeMessage(i, ref))(
+            JavaDurationConverters.asFiniteDuration(timeout))
+          .map { case (a, ctx) => Pair(a, ctx) })
+      .asJava
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context.
+   */
+  def askWithContext[I, Q, A, Ctx](
+      parallelism: Int,
+      ref: ActorRef[Q],
+      timeout: java.time.Duration,
+      makeMessage: BiFunction[I, ActorRef[A], Q]): Flow[Pair[I, Ctx], Pair[A, Ctx], NotUsed] = {
+    akka.stream.scaladsl
+      .Flow[Pair[I, Ctx]]
+      .map(_.toScala)
+      .via(
+        akka.stream.typed.scaladsl.ActorFlow
+          .askWithContext[I, Q, A, Ctx](parallelism)(ref)((i, ref) => makeMessage(i, ref))(
+            JavaDurationConverters.asFiniteDuration(timeout))
+          .map { case (a, ctx) => Pair(a, ctx) })
+      .asJava
+  }
 }
