@@ -32,14 +32,6 @@ abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
 
   def this() = this(ActorSystem(TestKitUtils.testNameFromCallStack(classOf[StreamSpec], "".r), AkkaSpec.testConf))
 
-  // FIXME: some `NoArgTest` cannot use withFixture, should set as `false`.
-  private var _assertChildren: Boolean = true
-
-  def this(assertChildren: Boolean) = {
-    this(ActorSystem(TestKitUtils.testNameFromCallStack(classOf[StreamSpec], "".r), AkkaSpec.testConf))
-    _assertChildren = assertChildren
-  }
-
   override def withFixture(test: NoArgTest) = {
     super.withFixture(test) match {
       case failed: Failed =>
@@ -65,7 +57,7 @@ abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
                 akka.stream.testkit.scaladsl.StreamTestKit.snapshotString(s.asInstanceOf[StreamSnapshotImpl])))
         }
         failed
-      case other if _assertChildren =>
+      case other =>
         Materializer(_system) match {
           case impl: PhasedFusingActorMaterializer =>
             stopAllChildren(impl.system, impl.supervisor)
@@ -74,8 +66,6 @@ abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
             result
           case _ => other
         }
-      case other => other
-
     }
   }
 }
