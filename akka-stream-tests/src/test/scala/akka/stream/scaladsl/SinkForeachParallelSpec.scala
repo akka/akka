@@ -7,11 +7,10 @@ package akka.stream.scaladsl
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
-import scala.annotation.nowarn
 
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._

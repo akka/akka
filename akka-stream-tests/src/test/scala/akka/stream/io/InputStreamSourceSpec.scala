@@ -7,9 +7,8 @@ package akka.stream.io
 import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
-import scala.util.Success
-
 import scala.annotation.nowarn
+import scala.util.Success
 
 import akka.Done
 import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }

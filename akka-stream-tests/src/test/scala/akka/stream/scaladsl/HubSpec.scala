@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
-import akka.Done
-
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
+
+import akka.Done
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
 import akka.stream.testkit.StreamSpec

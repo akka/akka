@@ -4,12 +4,11 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
-import scala.annotation.nowarn
 
 import akka.stream._
 import akka.stream.testkit._

@@ -8,10 +8,10 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{ Files, NoSuchFileException }
 import java.util.Random
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.google.common.jimfs.{ Configuration, Jimfs }
 
 import akka.actor.ActorSystem

@@ -6,10 +6,12 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
+
 import akka.Done
 import akka.stream._
 import akka.stream.ThrottleMode.{ Enforcing, Shaping }

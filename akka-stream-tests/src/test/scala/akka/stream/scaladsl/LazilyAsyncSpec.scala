@@ -6,9 +6,9 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
-import scala.annotation.nowarn
 import org.scalatest.concurrent.ScalaFutures
 
 import akka.Done

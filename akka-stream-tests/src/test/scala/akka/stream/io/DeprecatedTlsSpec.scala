@@ -10,13 +10,13 @@ import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
 import javax.net.ssl._
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
-import scala.annotation.nowarn
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import akka.NotUsed

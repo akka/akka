@@ -218,6 +218,8 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   override def async(dispatcher: String, inputBufferSize: Int): BidiFlow[I1, O1, I2, O2, Mat] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[BidiFlow[I1, O1, I2, O2, Mat]]
 
+  override def getAttributes: Attributes = traversalBuilder.attributes
+
 }
 
 object BidiFlow {

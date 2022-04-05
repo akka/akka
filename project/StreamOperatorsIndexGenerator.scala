@@ -74,7 +74,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
 
   // FIXME document these methods as well
   val pendingTestCases = Map(
-    "Source" -> (pendingSourceOrFlow ++ Seq("preMaterialize")),
+    "Source" -> (pendingSourceOrFlow),
     "Flow" -> (pendingSourceOrFlow ++ Seq(
       "lazyInit",
       "fromProcessorMat",

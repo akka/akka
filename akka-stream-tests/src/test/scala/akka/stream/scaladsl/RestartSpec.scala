@@ -6,16 +6,18 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
 import akka.Done
 import akka.NotUsed
 import akka.event.Logging
+import akka.stream.Attributes
 import akka.stream.Attributes.Name
+import akka.stream.RestartSettings
 import akka.stream.scaladsl.AttributesSpec.AttributesFlow
 import akka.stream.scaladsl.AttributesSpec.AttributesSink
 import akka.stream.scaladsl.AttributesSpec.AttributesSource
@@ -27,8 +29,6 @@ import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.Attributes
-import akka.stream.RestartSettings
 import akka.testkit.DefaultTimeout
 import akka.testkit.EventFilter
 import akka.testkit.TestDuration

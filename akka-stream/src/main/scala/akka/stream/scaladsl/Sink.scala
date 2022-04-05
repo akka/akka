@@ -125,6 +125,9 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
   def asJava[JIn <: In]: javadsl.Sink[JIn, Mat @uncheckedVariance] = new javadsl.Sink(this)
+
+  override def getAttributes: Attributes = traversalBuilder.attributes
+
 }
 
 object Sink {
@@ -297,6 +300,12 @@ object Sink {
    * A `Sink` that will consume the stream and discard the elements.
    */
   def ignore: Sink[Any, Future[Done]] = fromGraph(GraphStages.IgnoreSink)
+
+  /**
+   * A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream.
+   * */
+  def never: Sink[Any, Future[Done]] = _never
+  private[this] val _never: Sink[Any, Future[Done]] = fromGraph(GraphStages.NeverSink)
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized

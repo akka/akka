@@ -5,15 +5,17 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.TimeoutException
+
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.annotation.nowarn
+
 import akka.{ Done, NotUsed }
-import akka.stream.Attributes.Attribute
 import akka.stream._
+import akka.stream.Attributes.Attribute
 import akka.stream.scaladsl.AttributesSpec.AttributesSink
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic

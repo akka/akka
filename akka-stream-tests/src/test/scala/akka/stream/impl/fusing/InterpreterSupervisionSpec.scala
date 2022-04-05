@@ -5,6 +5,7 @@
 package akka.stream.impl.fusing
 
 import scala.util.control.NoStackTrace
+
 import akka.stream.Supervision
 import akka.stream.testkit.StreamSpec
 import akka.util.ConstantFun

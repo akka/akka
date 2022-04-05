@@ -4,8 +4,6 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.Attributes.Attribute
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.{ Done, NotUsed }
 import akka.stream.{
   AbruptStageTerminationException,
@@ -18,6 +16,8 @@ import akka.stream.{
   Outlet,
   SubscriptionWithCancelException
 }
+import akka.stream.Attributes.Attribute
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils.TE
 

@@ -4,10 +4,9 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
-
-import scala.annotation.nowarn
 
 import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }

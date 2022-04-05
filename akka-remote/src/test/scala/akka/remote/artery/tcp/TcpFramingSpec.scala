@@ -7,7 +7,6 @@ package tcp
 
 import scala.util.Random
 
-import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.scaladsl.Sink
@@ -62,8 +61,7 @@ class TcpFramingSpec extends AkkaSpec("""
     "reject invalid magic" in {
       val bytes = frameBytes(2)
       val fail = Source(List(bytes)).via(framingFlow).runWith(Sink.seq).failed.futureValue
-      fail shouldBe a[ParsingException]
-      fail.getCause shouldBe a[FramingException]
+      fail shouldBe a[FramingException]
     }
 
     "include streamId in each frame" in {

@@ -77,7 +77,7 @@ import akka.stream.stage._
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final class Detacher[T] extends SimpleLinearGraphStage[T] {
+  @InternalApi private[akka] object Detacher extends SimpleLinearGraphStage[Any] {
     override def initialAttributes = DefaultAttributes.detacher
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -114,8 +114,7 @@ import akka.stream.stage._
     override def toString = "Detacher"
   }
 
-  private val _detacher = new Detacher[Any]
-  def detacher[T]: GraphStage[FlowShape[T, T]] = _detacher.asInstanceOf[GraphStage[FlowShape[T, T]]]
+  def detacher[T]: GraphStage[FlowShape[T, T]] = Detacher.asInstanceOf[SimpleLinearGraphStage[T]]
 
   private object TerminationWatcher extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Done]] {
     val in = Inlet[Any]("terminationWatcher.in")
@@ -442,6 +441,41 @@ import akka.stream.stage._
 
         setHandler(in, this)
 
+      }
+
+      (logic, promise.future)
+    }
+  }
+
+  @InternalApi
+  private[akka] object NeverSink extends GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
+    private val in = Inlet[Any]("NeverSink.in")
+    val shape: SinkShape[Any] = SinkShape(in)
+
+    override def initialAttributes: Attributes = DefaultAttributes.neverSink
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val promise = Promise[Done]()
+      val logic = new GraphStageLogic(shape) with InHandler {
+
+        override def onPush(): Unit =
+          promise.tryFailure(new IllegalStateException("NeverSink should not receive any push."))
+
+        override def onUpstreamFinish(): Unit = {
+          super.onUpstreamFinish()
+          promise.trySuccess(Done)
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          super.onUpstreamFailure(ex)
+          promise.tryFailure(ex)
+        }
+
+        override def postStop(): Unit = {
+          if (!promise.isCompleted) promise.tryFailure(new AbruptStageTerminationException(this))
+        }
+
+        setHandler(in, this)
       }
 
       (logic, promise.future)

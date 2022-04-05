@@ -4,16 +4,16 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.Attributes.Attribute
-import akka.stream.scaladsl.AttributesSpec.AttributesFlow
-
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.annotation.nowarn
+
 import akka.{ Done, NotUsed }
 import akka.stream.{ AbruptStageTerminationException, Attributes, Materializer, NeverMaterializedException }
+import akka.stream.Attributes.Attribute
+import akka.stream.scaladsl.AttributesSpec.AttributesFlow
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.Utils._

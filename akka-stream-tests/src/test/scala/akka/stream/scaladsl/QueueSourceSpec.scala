@@ -4,9 +4,12 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.concurrent._
 import scala.concurrent.duration._
+
 import org.scalatest.time.Span
+
 import akka.Done
 import akka.actor.Status
 import akka.pattern.pipe
@@ -18,8 +21,6 @@ import akka.stream.testkit.TestSourceStage
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
-
-import scala.annotation.nowarn
 
 class QueueSourceSpec extends StreamSpec {
   implicit val ec: ExecutionContextExecutor = system.dispatcher

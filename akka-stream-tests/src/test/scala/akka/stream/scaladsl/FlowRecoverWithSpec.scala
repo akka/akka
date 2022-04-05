@@ -4,9 +4,8 @@
 
 package akka.stream.scaladsl
 
-import scala.util.control.NoStackTrace
-
 import scala.annotation.nowarn
+import scala.util.control.NoStackTrace
 
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }

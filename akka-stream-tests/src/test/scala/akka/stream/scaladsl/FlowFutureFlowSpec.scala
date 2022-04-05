@@ -4,13 +4,13 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.{ Future, Promise }
+
 import akka.NotUsed
-import akka.stream.SubscriptionWithCancelException.NonFailureCancellation
 import akka.stream.{ AbruptStageTerminationException, Attributes, Materializer, NeverMaterializedException }
+import akka.stream.SubscriptionWithCancelException.NonFailureCancellation
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
-
-import scala.concurrent.{ Future, Promise }
 
 class FlowFutureFlowSpec extends StreamSpec {
   def src10(i: Int = 0) = Source(i until (i + 10))

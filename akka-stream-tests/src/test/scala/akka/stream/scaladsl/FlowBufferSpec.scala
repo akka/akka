@@ -4,15 +4,15 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
 import akka.stream.BufferOverflowException
 import akka.stream.OverflowStrategy
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-
-import scala.annotation.nowarn
 
 @nowarn("msg=deprecated")
 class FlowBufferSpec extends StreamSpec("""

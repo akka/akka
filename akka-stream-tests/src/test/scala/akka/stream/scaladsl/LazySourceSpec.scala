@@ -5,14 +5,17 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicBoolean
+
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.Promise
+
 import org.scalatest.concurrent.ScalaFutures
+
 import akka.Done
 import akka.NotUsed
-import akka.stream.Attributes.Attribute
 import akka.stream._
+import akka.stream.Attributes.Attribute
 import akka.stream.scaladsl.AttributesSpec.AttributesSource
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic

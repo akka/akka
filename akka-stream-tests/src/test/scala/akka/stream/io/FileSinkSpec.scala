@@ -7,12 +7,12 @@ package akka.stream.io
 import java.nio.file._
 import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.Success
 
-import scala.annotation.nowarn
 import com.google.common.jimfs.{ Configuration, Jimfs }
 import org.scalatest.concurrent.ScalaFutures
 

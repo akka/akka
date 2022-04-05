@@ -6,9 +6,9 @@ package akka.stream.io
 
 import java.io.OutputStream
 
+import scala.annotation.nowarn
 import scala.util.Success
 
-import scala.annotation.nowarn
 import org.scalatest.concurrent.ScalaFutures
 
 import akka.Done

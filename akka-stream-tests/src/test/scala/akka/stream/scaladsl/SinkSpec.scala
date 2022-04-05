@@ -4,17 +4,17 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.ScalaFutures
 
 import akka.Done
 import akka.stream._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.testkit.DefaultTimeout
 
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
@@ -222,6 +222,35 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
       mat.shutdown()
 
+      matVal.failed.futureValue shouldBe a[AbruptStageTerminationException]
+    }
+  }
+
+  "The never sink" should {
+
+    "always backpressure" in {
+      val (source, doneFuture) = TestSource.probe[Int].toMat(Sink.never)(Keep.both).run()
+      source.ensureSubscription()
+      source.expectRequest()
+      source.sendComplete()
+      Await.result(doneFuture, 100.millis) should ===(Done)
+    }
+
+    "can failed with upstream failure" in {
+      val (source, doneFuture) = TestSource.probe[Int].toMat(Sink.never)(Keep.both).run()
+      source.ensureSubscription()
+      source.expectRequest()
+      source.sendError(new RuntimeException("Oops"))
+      a[RuntimeException] shouldBe thrownBy {
+        Await.result(doneFuture, 100.millis)
+      }
+    }
+
+    "fail its materialized value on abrupt materializer termination" in {
+      @nowarn("msg=deprecated")
+      val mat = ActorMaterializer()
+      val matVal = Source.single(1).runWith(Sink.never)(mat)
+      mat.shutdown()
       matVal.failed.futureValue shouldBe a[AbruptStageTerminationException]
     }
   }

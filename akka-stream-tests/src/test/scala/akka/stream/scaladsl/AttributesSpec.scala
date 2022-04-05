@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.{ CompletionStage, TimeUnit }
 
 import scala.annotation.nowarn
+
 import com.typesafe.config.ConfigFactory
 
 import akka.{ Done, NotUsed }

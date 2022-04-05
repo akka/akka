@@ -4,12 +4,13 @@
 
 package akka.stream.scaladsl
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpecLike
+
 import akka.actor.ActorSystem
 import akka.stream.Attributes
 import akka.stream.testkit.TestPublisher
 import akka.testkit.TestKit
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpecLike
 
 class SourceFromPublisherSpec
     extends TestKit(ActorSystem("source-from-publisher-spec"))
