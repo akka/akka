@@ -145,6 +145,9 @@ object Dependencies {
     val jacksonScala = Def.setting {
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonCoreVersion.value
     } // ApacheV2
+    val jacksonParameterNames = Def.setting {
+      "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonCoreVersion.value
+    } // ApacheV2
     val jacksonCbor = Def.setting {
       "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonCoreVersion.value
     } // ApacheV2
@@ -344,6 +347,7 @@ object Dependencies {
         jacksonDatabind.value,
         jacksonJdk8.value,
         jacksonJsr310.value,
+        jacksonParameterNames.value,
         jacksonCbor.value,
         jacksonScala.value,
         lz4Java,
