@@ -395,6 +395,7 @@ import akka.util.ByteString
 
   @tailrec
   private def doUnwrap(ignoreOutput: Boolean): Unit = {
+    val oldInPosition = transportInBuffer.position()
     val result = engine.unwrap(transportInBuffer, userOutBuffer)
     if (ignoreOutput) userOutBuffer.clear()
     lastHandshakeStatus = result.getHandshakeStatus
@@ -415,7 +416,7 @@ import akka.util.ByteString
             transportInChoppingBlock.putBack(transportInBuffer)
           case _ =>
             if (transportInBuffer.hasRemaining)
-              if (userOutBuffer.position() == 0)
+              if (userOutBuffer.position() == 0 && transportInBuffer.position() == oldInPosition)
                 throw new IllegalStateException("SSLEngine trying to loop NEED_UNWRAP without producing output")
               else
                 doUnwrap(ignoreOutput = false)
