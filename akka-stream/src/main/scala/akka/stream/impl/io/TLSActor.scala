@@ -380,7 +380,7 @@ import akka.util.ByteString
         // it doesn't make any progress any more.
         //
         // We guard against this JDK bug by checking for reasonable invariants after the call to engine.wrap
-        if (!(transportOutBuffer.position() > 0 || lastHandshakeStatus != NEED_WRAP))
+        if (transportOutBuffer.position() == 0 && lastHandshakeStatus == NEED_WRAP)
           throw new IllegalStateException("SSLEngine trying to loop NEED_WRAP without producing output")
 
         flushToTransport()
@@ -414,7 +414,11 @@ import akka.util.ByteString
             handshakeFinished()
             transportInChoppingBlock.putBack(transportInBuffer)
           case _ =>
-            if (transportInBuffer.hasRemaining) doUnwrap(ignoreOutput = false)
+            if (transportInBuffer.hasRemaining)
+              if (userOutBuffer.position() == 0)
+                throw new IllegalStateException("SSLEngine trying to loop NEED_UNWRAP without producing output")
+              else
+                doUnwrap(ignoreOutput = false)
             else flushToUser()
         }
       case CLOSED =>
