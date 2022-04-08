@@ -4,12 +4,12 @@
 
 package akka.actor.typed.javadsl
 
+import scala.annotation.tailrec
+
 import akka.actor.typed.{ Behavior, MessageAdaptionFailure, Signal }
 import akka.annotation.InternalApi
 import akka.japi.function.{ Creator, Function => JFunction, Predicate => JPredicate }
 import akka.util.OptionVal
-
-import scala.annotation.tailrec
 
 /**
  * Mutable builder used when implementing [[AbstractBehavior]].
@@ -30,7 +30,22 @@ final class ReceiveBuilder[T] private (
     val builtSignalHandlers =
       if (signalHandlers.isEmpty) defaultSignalHandlers[T]
       else (adapterExceptionSignalHandler[T] :: signalHandlers).reverse
-    new BuiltReceive[T](messageHandlers.reverse.toArray, builtSignalHandlers.toArray)
+    if (shouldUseMapBasedBehavior(messageHandlers)) {
+      val classifiedMessageHandlers: Map[Class[_ <: T], Array[Case[T, T]]] =
+        messageHandlers.reverse.groupBy(_.`type`.get).map { case (clazz, handlers) => (clazz, handlers.toArray) }.toMap
+      new BuiltClassifiedReceive[T](classifiedMessageHandlers, builtSignalHandlers.toArray)
+    } else {
+      new BuiltReceive[T](messageHandlers.reverse.toArray, builtSignalHandlers.toArray)
+    }
+  }
+
+  private def shouldUseMapBasedBehavior(handlers: List[ReceiveBuilder.Case[T, T]]): Boolean = {
+    if (handlers.forall(_.`type`.isDefined) && messageHandlers.size >= 5) {
+      val classes = handlers.map(_.`type`.get)
+      classes.forall(clazzX => classes.forall(clazzY => clazzX != clazzY && !clazzX.isAssignableFrom(clazzY)))
+    } else {
+      false
+    }
   }
 
   /**
@@ -138,7 +153,7 @@ final class ReceiveBuilder[T] private (
       `type`: OptionVal[Class[M]],
       test: OptionVal[JPredicate[M]],
       handler: JFunction[M, Behavior[T]]): ReceiveBuilder[T] = {
-    messageHandlers = Case[T, M](`type`, test, handler).asInstanceOf[Case[T, T]] +: messageHandlers
+    messageHandlers = Case[T, M](`type`, test, handler).asInstanceOf[Case[T, T]] :: messageHandlers
     this
   }
 
@@ -146,7 +161,7 @@ final class ReceiveBuilder[T] private (
       `type`: Class[M],
       test: OptionVal[JPredicate[M]],
       handler: JFunction[M, Behavior[T]]): ReceiveBuilder[T] = {
-    signalHandlers = Case[T, M](OptionVal.Some(`type`), test, handler).asInstanceOf[Case[T, Signal]] +: signalHandlers
+    signalHandlers = Case[T, M](OptionVal.Some(`type`), test, handler).asInstanceOf[Case[T, Signal]] :: signalHandlers
     this
   }
 }
@@ -200,11 +215,45 @@ private final class BuiltReceive[T](
   override def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers, 0)
 
   override def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers, 0)
+  @tailrec
+  protected final def receive[M](msg: M, handlers: Array[Case[T, M]], idx: Int): Behavior[T] = {
+    if (handlers.length == 0) {
+      Behaviors.unhandled[T]
+    } else {
+      val Case(cls, predicate, handler) = handlers(idx)
+      if ((cls.isEmpty || cls.get.isAssignableFrom(msg.getClass)) && (predicate.isEmpty || predicate.get.test(msg)))
+        handler(msg)
+      else if (idx == handlers.length - 1)
+        Behaviors.unhandled[T]
+      else
+        receive(msg, handlers, idx + 1)
+    }
+  }
+}
+
+/**
+ * Receive type for [[AbstractBehavior]]
+ *
+ * INTERNAL API
+ */
+@InternalApi
+private final class BuiltClassifiedReceive[T](
+    classifiedMessageHandlers: Map[Class[_ <: T], Array[ReceiveBuilder.Case[T, T]]],
+    signalHandlers: Array[ReceiveBuilder.Case[T, Signal]])
+    extends Receive[T] {
+  import ReceiveBuilder.Case
+
+  override def receiveMessage(msg: T): Behavior[T] = classifiedMessageHandlers.get(msg.getClass) match {
+    case Some(handlers) => receive(msg, handlers, 0)
+    case None           => Behaviors.unhandled[T]
+  }
+
+  override def receiveSignal(sig: Signal): Behavior[T] = receive(sig, signalHandlers, 0)
 
   @tailrec
   private def receive[M](msg: M, handlers: Array[Case[T, M]], idx: Int): Behavior[T] = {
     if (handlers.length == 0) {
-      Behaviors.unhandled[T]
+      Behaviors.empty[T]
     } else {
       val Case(cls, predicate, handler) = handlers(idx)
       if ((cls.isEmpty || cls.get.isAssignableFrom(msg.getClass)) && (predicate.isEmpty || predicate.get.test(msg)))

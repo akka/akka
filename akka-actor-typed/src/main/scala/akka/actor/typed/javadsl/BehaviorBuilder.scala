@@ -6,16 +6,10 @@ package akka.actor.typed.javadsl
 
 import scala.annotation.tailrec
 
-import BehaviorBuilder._
-
-import akka.actor.typed.Behavior
-import akka.actor.typed.ExtensibleBehavior
-import akka.actor.typed.Signal
-import akka.actor.typed.TypedActorContext
+import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal, TypedActorContext }
+import akka.actor.typed.javadsl.BehaviorBuilder._
 import akka.annotation.InternalApi
-import akka.japi.function.{ Function => JFunction }
-import akka.japi.function.{ Predicate => JPredicate }
-import akka.japi.function.Creator
+import akka.japi.function.{ Creator, Function => JFunction, Predicate => JPredicate }
 import akka.util.OptionVal
 
 /**
@@ -35,7 +29,22 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
    * Build a Behavior from the current state of the builder
    */
   def build(): Behavior[T] = {
-    new BuiltBehavior[T](messageHandlers.reverse.toArray, signalHandlers.reverse.toArray)
+    if (shouldUseMapBasedBehavior(messageHandlers)) {
+      val classifiedMessageHandlers: Map[Class[_ <: T], Array[Case[T, T]]] =
+        messageHandlers.reverse.groupBy(_.`type`.get).map { case (clazz, handlers) => (clazz, handlers.toArray) }.toMap
+      new BuiltClassifiedBehavior[T](classifiedMessageHandlers, signalHandlers.reverse.toArray)
+    } else {
+      new BuiltBehavior[T](messageHandlers.reverse.toArray, signalHandlers.reverse.toArray)
+    }
+  }
+
+  private def shouldUseMapBasedBehavior(handlers: List[Case[T, T]]): Boolean = {
+    if (handlers.forall(_.`type`.isDefined) && messageHandlers.size >= 5) {
+      val classes = handlers.map(_.`type`.get)
+      classes.forall(clazzX => classes.forall(clazzY => clazzX != clazzY && !clazzX.isAssignableFrom(clazzY)))
+    } else {
+      false
+    }
   }
 
   /**
@@ -141,7 +150,7 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
       test: OptionVal[M => Boolean],
       handler: JFunction[M, Behavior[T]]): BehaviorBuilder[T] = {
     val newCase = Case(clazz, test, handler)
-    new BehaviorBuilder[T](newCase.asInstanceOf[Case[T, T]] +: messageHandlers, signalHandlers)
+    new BehaviorBuilder[T](newCase.asInstanceOf[Case[T, T]] :: messageHandlers, signalHandlers)
   }
 
   private def withSignal[M <: Signal](
@@ -150,7 +159,7 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
       handler: JFunction[Signal, Behavior[T]]): BehaviorBuilder[T] = {
     new BehaviorBuilder[T](
       messageHandlers,
-      Case(OptionVal.Some(`type`), test, handler).asInstanceOf[Case[T, Signal]] +: signalHandlers)
+      Case(OptionVal.Some(`type`), test, handler).asInstanceOf[Case[T, Signal]] :: signalHandlers)
   }
 }
 
@@ -184,6 +193,41 @@ private final class BuiltBehavior[T](messageHandlers: Array[Case[T, T]], signalH
     extends ExtensibleBehavior[T] {
 
   override def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] = receive(msg, messageHandlers, 0)
+
+  override def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] = receive(msg, signalHandlers, 0)
+
+  @tailrec
+  private def receive[M](msg: M, handlers: Array[Case[T, M]], idx: Int): Behavior[T] = {
+    if (handlers.length == 0) {
+      Behaviors.unhandled[T]
+    } else {
+      val Case(cls, predicate, handler) = handlers(idx)
+      if ((cls.isEmpty || cls.get.isAssignableFrom(msg.getClass)) && (predicate.isEmpty || predicate.get.apply(msg)))
+        handler(msg)
+      else if (idx == handlers.length - 1)
+        Behaviors.unhandled[T]
+      else
+        receive(msg, handlers, idx + 1)
+    }
+  }
+}
+
+/**
+ * The concrete behavior
+ *
+ * INTERNAL API
+ */
+@InternalApi
+private final class BuiltClassifiedBehavior[T](
+    classifiedMessageBehaviors: Map[Class[_ <: T], Array[Case[T, T]]],
+    signalHandlers: Array[Case[T, Signal]])
+    extends ExtensibleBehavior[T] {
+
+  override def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] =
+    classifiedMessageBehaviors.get(msg.getClass) match {
+      case Some(handlers) => receive(msg, handlers, 0)
+      case None           => Behaviors.unhandled[T]
+    }
 
   override def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] = receive(msg, signalHandlers, 0)
 
