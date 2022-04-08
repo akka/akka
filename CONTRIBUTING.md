@@ -1,4 +1,4 @@
-# Welcome! Thank you for contributing to Akka!
+# Welcome! Thank you for interest in contributing to Akka!
 
 We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
 
