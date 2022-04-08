@@ -43,7 +43,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete))
 
       val time = (System.nanoTime() - tstamp) / (1000.0 * 1000.0 * 1000.0)
-      // Not a real benchmark, just for sanity check
+      // Not a real benchmark, just for ballpark check
       info(s"Chain finished in $time seconds ${(chainLength * repetition) / (time * 1000 * 1000)} million maps/s")
     }
 
@@ -73,7 +73,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
         Set(Cancel(SubscriptionWithCancelException.StageWasCompleted), OnComplete, OnNext(0 + chainLength)))
 
       val time = (System.nanoTime() - tstamp) / (1000.0 * 1000.0 * 1000.0)
-      // Not a real benchmark, just for sanity check
+      // Not a real benchmark, just for ballpark check
       info(s"Chain finished in $time seconds ${(chainLength * repetition) / (time * 1000 * 1000)} million maps/s")
     }
 
