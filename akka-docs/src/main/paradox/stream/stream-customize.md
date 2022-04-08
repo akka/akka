@@ -345,11 +345,11 @@ Java
 ### Using timers
 
 It is possible to use timers in `GraphStages` by using `TimerGraphStageLogic` as the base class for
-the returned logic. Timers can be scheduled by calling one of `scheduleOnce(key,delay)`, `schedulePeriodically(key,period)` or
-`schedulePeriodicallyWithInitialDelay(key,delay,period)` and passing an object as a key for that timer (can be any object, for example
-a `String`). The `onTimer(key)` method needs to be overridden and it will be called once the timer of `key`
-fires. It is possible to cancel a timer using `cancelTimer(key)` and check the status of a timer with
-`isTimerActive(key)`. Timers will be automatically cleaned up when the operator completes.
+the returned logic. Timers can be scheduled by calling one of `scheduleOnce(timerKey,delay)`, `scheduleAtFixedRate(timerKey,initialDelay,interval)` or
+`scheduleWithFixedDelay(timerKey,initialDelay,interval)` and passing an object as a key for that timer (can be any object, for example
+a `String`). The `onTimer(timerKey)` method needs to be overridden, and it will be called once the timer of `timerKey`
+fires. It is possible to cancel a timer using `cancelTimer(timerKey)` and check the status of a timer with
+`isTimerActive(timerKey)`. Timers will be automatically cleaned up when the operator completes.
 
 Timers can not be scheduled from the constructor of the logic, but it is possible to schedule them from the
 `preStart()` lifecycle hook.
