@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import scala.annotation.nowarn
+
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks

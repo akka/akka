@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.annotation.nowarn
+
 import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
 
 @nowarn // tests deprecated APIs
@@ -90,7 +90,7 @@ class BidiFlowSpec extends StreamSpec {
       Await.result(f, 1.second) should ===(42)
     }
 
-    "combine materialization values" in assertAllStagesStopped {
+    "combine materialization values" in {
       val left = Flow.fromGraph(GraphDSL.createGraph(Sink.head[Int]) { implicit b => sink =>
         val bcast = b.add(Broadcast[Int](2))
         val merge = b.add(Merge[Int](2))

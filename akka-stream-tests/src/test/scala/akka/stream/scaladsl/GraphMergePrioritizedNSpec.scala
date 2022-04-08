@@ -5,13 +5,13 @@
 package akka.stream.scaladsl
 
 import scala.collection.immutable
+import scala.concurrent.duration._
+
 import akka.NotUsed
-import akka.stream.testkit.TestSubscriber.ManualProbe
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.Attributes
 import akka.stream.Attributes.Attribute
-
-import scala.concurrent.duration._
+import akka.stream.testkit.{ StreamSpec, TestSubscriber }
+import akka.stream.testkit.TestSubscriber.ManualProbe
 
 class GraphMergePrioritizedNSpec extends StreamSpec {
 

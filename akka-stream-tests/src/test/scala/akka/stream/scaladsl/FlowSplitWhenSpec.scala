@@ -18,7 +18,6 @@ import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.impl.fusing.Split
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 
 class FlowSplitWhenSpec extends StreamSpec("""
@@ -68,7 +67,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
 
   "splitWhen" must {
 
-    "work in the happy case" in assertAllStagesStopped {
+    "work in the happy case" in {
       new SubstreamsSupport(elementCount = 4) {
         val s1 = StreamPuppet(getSubFlow().runWith(Sink.asPublisher(false)))
         masterSubscriber.expectNoMessage(100.millis)
@@ -95,7 +94,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       }
     }
 
-    "not emit substreams if the parent stream is empty" in assertAllStagesStopped {
+    "not emit substreams if the parent stream is empty" in {
 
       Await.result(
         Source
@@ -109,7 +108,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
 
     }
 
-    "work when first element is split-by" in assertAllStagesStopped {
+    "work when first element is split-by" in {
       new SubstreamsSupport(1, elementCount = 3) {
         val s1 = StreamPuppet(getSubFlow().runWith(Sink.asPublisher(false)))
 
@@ -124,7 +123,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       }
     }
 
-    "support cancelling substreams" in assertAllStagesStopped {
+    "support cancelling substreams" in {
       new SubstreamsSupport(splitWhen = 5, elementCount = 8) {
         val s1 = StreamPuppet(getSubFlow().runWith(Sink.asPublisher(false)))
         s1.cancel()
@@ -143,7 +142,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       }
     }
 
-    "support cancelling both master and substream" in assertAllStagesStopped {
+    "support cancelling both master and substream" in {
       val inputs = TestPublisher.probe[Int]()
 
       val substream = TestSubscriber.probe[Int]()
@@ -205,7 +204,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
 
     }
 
-    "support cancelling the master stream" in assertAllStagesStopped {
+    "support cancelling the master stream" in {
       new SubstreamsSupport(splitWhen = 5, elementCount = 8) {
         val s1 = StreamPuppet(getSubFlow().runWith(Sink.asPublisher(false)))
         masterSubscription.cancel()
@@ -219,7 +218,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       }
     }
 
-    "fail stream when splitWhen function throws" in assertAllStagesStopped {
+    "fail stream when splitWhen function throws" in {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source
@@ -253,7 +252,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       upstreamSubscription.expectCancellation()
     }
 
-    "work with single elem splits" in assertAllStagesStopped {
+    "work with single elem splits" in {
       Await.result(
         Source(1 to 100)
           .splitWhen(_ => true)
@@ -264,7 +263,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
         3.second) should ===(1 to 100)
     }
 
-    "fail substream if materialized twice" in assertAllStagesStopped {
+    "fail substream if materialized twice" in {
       import system.dispatcher
       val stream =
         Source(1 to 5)
@@ -286,7 +285,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       probe.cancel()
     }
 
-    "fail stream if substream not materialized in time" in assertAllStagesStopped {
+    "fail stream if substream not materialized in time" in {
       val testSource = Source.single(1).concat(Source.maybe).splitWhen(_ => true)
       val testStreamWithTightTimeout =
         testSource.lift
@@ -301,7 +300,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       }
     }
 
-    "resume stream when splitWhen function throws" in assertAllStagesStopped {
+    "resume stream when splitWhen function throws" in {
       info("Supervision is not supported fully by GraphStages yet")
       pending
 
@@ -351,7 +350,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       substreamPuppet2.expectComplete()
     }
 
-    "pass along early cancellation" in assertAllStagesStopped {
+    "pass along early cancellation" in {
       val up = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
 
@@ -364,7 +363,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       upsub.expectCancellation()
     }
 
-    "support eager cancellation of master stream on cancelling substreams" in assertAllStagesStopped {
+    "support eager cancellation of master stream on cancelling substreams" in {
       new SubstreamsSupport(splitWhen = 5, elementCount = 8, SubstreamCancelStrategy.propagate) {
         val s1 = StreamPuppet(getSubFlow().runWith(Sink.asPublisher(false)))
         s1.cancel()

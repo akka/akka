@@ -5,13 +5,13 @@
 package akka.stream.scaladsl
 
 import scala.annotation.nowarn
+
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import akka.pattern.pipe
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 @nowarn
 class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {
@@ -35,7 +35,7 @@ class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {
           af.futureValue should be(cf.futureValue)
       }
 
-    "behave just like collections sliding with step < window" in assertAllStagesStopped {
+    "behave just like collections sliding with step < window" in {
       check(for {
         len <- Gen.choose(0, 31)
         win <- Gen.choose(1, 61)
@@ -43,7 +43,7 @@ class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {
       } yield (len, win, step))
     }
 
-    "behave just like collections sliding with step == window" in assertAllStagesStopped {
+    "behave just like collections sliding with step == window" in {
       check(for {
         len <- Gen.choose(0, 31)
         win <- Gen.choose(1, 61)
@@ -51,7 +51,7 @@ class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {
       } yield (len, win, step))
     }
 
-    "behave just like collections sliding with step > window" in assertAllStagesStopped {
+    "behave just like collections sliding with step > window" in {
       check(for {
         len <- Gen.choose(0, 31)
         win <- Gen.choose(1, 61)
@@ -59,7 +59,7 @@ class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {
       } yield (len, win, step))
     }
 
-    "work with empty sources" in assertAllStagesStopped {
+    "work with empty sources" in {
       Source.empty.sliding(1).runForeach(testActor ! _).map(_ => "done").pipeTo(testActor)
       expectMsg("done")
     }

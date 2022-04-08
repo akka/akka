@@ -7,12 +7,12 @@ package akka.stream.io
 import java.nio.file._
 import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.Success
 
-import scala.annotation.nowarn
 import com.google.common.jimfs.{ Configuration, Jimfs }
 import org.scalatest.concurrent.ScalaFutures
 
@@ -23,7 +23,6 @@ import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.{ FileIO, Keep, Sink, Source }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
 
 @nowarn
@@ -47,7 +46,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
   val TestByteStrings = TestLines.map(ByteString(_))
 
   "FileSink" must {
-    "write lines to a file" in assertAllStagesStopped {
+    "write lines to a file" in {
       targetFile { f =>
         val completion = Source(TestByteStrings).runWith(FileIO.toPath(f))
 
@@ -57,7 +56,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }
     }
 
-    "create new file if not exists" in assertAllStagesStopped {
+    "create new file if not exists" in {
       targetFile({ f =>
         val completion = Source(TestByteStrings).runWith(FileIO.toPath(f))
 
@@ -67,7 +66,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }, create = false)
     }
 
-    "write into existing file without wiping existing data" in assertAllStagesStopped {
+    "write into existing file without wiping existing data" in {
       targetFile { f =>
         def write(lines: List[String]) =
           Source(lines)
@@ -86,7 +85,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }
     }
 
-    "by default replace the existing file" in assertAllStagesStopped {
+    "by default replace the existing file" in {
       targetFile { f =>
         def write(lines: List[String]) =
           Source(lines).map(ByteString(_)).runWith(FileIO.toPath(f))
@@ -103,7 +102,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }
     }
 
-    "allow appending to file" in assertAllStagesStopped {
+    "allow appending to file" in {
       targetFile { f =>
         def write(lines: List[String] = TestLines) =
           Source(lines).map(ByteString(_)).runWith(FileIO.toPath(f, Set(StandardOpenOption.APPEND)))
@@ -120,7 +119,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }
     }
 
-    "allow writing from specific position to the file" in assertAllStagesStopped {
+    "allow writing from specific position to the file" in {
       targetFile { f =>
         val TestLinesCommon = {
           val b = ListBuffer[String]()
@@ -158,7 +157,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }
     }
 
-    "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
+    "use dedicated blocking-io-dispatcher by default" in {
       targetFile { f =>
         val forever = Source.maybe.toMat(FileIO.toPath(f))(Keep.left).run()
         try {
@@ -179,7 +178,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }
     }
 
-    "allow overriding the dispatcher using Attributes" in assertAllStagesStopped {
+    "allow overriding the dispatcher using Attributes" in {
       targetFile { f =>
         val forever = Source.maybe
           .toMat(FileIO.toPath(f).addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))(Keep.left)
@@ -197,7 +196,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }
     }
 
-    "write single line to a file from lazy sink" in assertAllStagesStopped {
+    "write single line to a file from lazy sink" in {
       //LazySink must wait for result of initialization even if got upstreamComplete
       targetFile { f =>
         val completion = Source(List(TestByteStrings.head)).runWith(
@@ -214,7 +213,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       }
     }
 
-    "complete materialized future with an exception when upstream fails" in assertAllStagesStopped {
+    "complete materialized future with an exception when upstream fails" in {
       val te = TE("oh no")
       targetFile { f =>
         val completion = Source(TestByteStrings)

@@ -11,7 +11,6 @@ import akka.actor.Actor
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestActors
 
 object FlowWatchSpec {
@@ -35,7 +34,7 @@ class FlowWatchSpec extends StreamSpec {
 
     val dontReply = system.actorOf(TestActors.blackholeProps.withDispatcher("akka.test.stream-dispatcher"), "dontReply")
 
-    "pass through elements while actor is alive" in assertAllStagesStopped {
+    "pass through elements while actor is alive" in {
       val c = TestSubscriber.manualProbe[Int]()
       Source(1 to 3).watch(replyOnInts).runWith(Sink.fromSubscriber(c))
       val sub = c.expectSubscription()
@@ -48,7 +47,7 @@ class FlowWatchSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "signal failure when target actor is terminated" in assertAllStagesStopped {
+    "signal failure when target actor is terminated" in {
       val r = system.actorOf(Props(classOf[Replier]).withDispatcher("akka.test.stream-dispatcher"), "wanna-fail")
       val done = Source.maybe[Int].watch(r).runWith(Sink.ignore)
 
@@ -59,7 +58,7 @@ class FlowWatchSpec extends StreamSpec {
         "Actor watched by [Watch] has terminated! Was: Actor[akka://FlowWatchSpec/user/wanna-fail#")
     }
 
-    "should handle cancel properly" in assertAllStagesStopped {
+    "should handle cancel properly" in {
       val pub = TestPublisher.manualProbe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()
 

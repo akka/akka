@@ -4,18 +4,17 @@
 
 package akka.stream.scaladsl
 
-import akka.Done
-
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
+
+import akka.Done
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.EventFilter
@@ -25,7 +24,7 @@ class HubSpec extends StreamSpec {
 
   "MergeHub" must {
 
-    "work in the happy case" in assertAllStagesStopped {
+    "work in the happy case" in {
       val (sink, result) = MergeHub.source[Int](16).take(20).toMat(Sink.seq)(Keep.both).run()
       Source(1 to 10).runWith(sink)
       Source(11 to 20).runWith(sink)
@@ -33,7 +32,7 @@ class HubSpec extends StreamSpec {
       result.futureValue.sorted should ===(1 to 20)
     }
 
-    "notify new producers if consumer cancels before first producer" in assertAllStagesStopped {
+    "notify new producers if consumer cancels before first producer" in {
       val sink = Sink.cancelled[Int].runWith(MergeHub.source[Int](16))
       val upstream = TestPublisher.probe[Int]()
 
@@ -42,7 +41,7 @@ class HubSpec extends StreamSpec {
       upstream.expectCancellation()
     }
 
-    "notify existing producers if consumer cancels after a few elements" in assertAllStagesStopped {
+    "notify existing producers if consumer cancels after a few elements" in {
       val (sink, result) = MergeHub.source[Int](16).take(5).toMat(Sink.seq)(Keep.both).run()
       val upstream = TestPublisher.probe[Int]()
 
@@ -53,7 +52,7 @@ class HubSpec extends StreamSpec {
       result.futureValue.sorted should ===(1 to 5)
     }
 
-    "notify new producers if consumer cancels after a few elements" in assertAllStagesStopped {
+    "notify new producers if consumer cancels after a few elements" in {
       val (sink, result) = MergeHub.source[Int](16).take(5).toMat(Sink.seq)(Keep.both).run()
       val upstream1 = TestPublisher.probe[Int]()
       val upstream2 = TestPublisher.probe[Int]()
@@ -69,7 +68,7 @@ class HubSpec extends StreamSpec {
       upstream2.expectCancellation()
     }
 
-    "respect buffer size" in assertAllStagesStopped {
+    "respect buffer size" in {
       val downstream = TestSubscriber.manualProbe[Int]()
       val sink = Sink.fromSubscriber(downstream).runWith(MergeHub.source[Int](3))
 
@@ -122,7 +121,7 @@ class HubSpec extends StreamSpec {
       sub.cancel()
     }
 
-    "work with long streams" in assertAllStagesStopped {
+    "work with long streams" in {
       val (sink, result) = MergeHub.source[Int](16).take(20000).toMat(Sink.seq)(Keep.both).run()
       Source(1 to 10000).runWith(sink)
       Source(10001 to 20000).runWith(sink)
@@ -130,7 +129,7 @@ class HubSpec extends StreamSpec {
       result.futureValue.sorted should ===(1 to 20000)
     }
 
-    "work with long streams when buffer size is 1" in assertAllStagesStopped {
+    "work with long streams when buffer size is 1" in {
       val (sink, result) = MergeHub.source[Int](1).take(20000).toMat(Sink.seq)(Keep.both).run()
       Source(1 to 10000).runWith(sink)
       Source(10001 to 20000).runWith(sink)
@@ -138,7 +137,7 @@ class HubSpec extends StreamSpec {
       result.futureValue.sorted should ===(1 to 20000)
     }
 
-    "work with long streams when consumer is slower" in assertAllStagesStopped {
+    "work with long streams when consumer is slower" in {
       val (sink, result) =
         MergeHub
           .source[Int](16)
@@ -153,7 +152,7 @@ class HubSpec extends StreamSpec {
       result.futureValue.sorted should ===(1 to 2000)
     }
 
-    "work with long streams if one of the producers is slower" in assertAllStagesStopped {
+    "work with long streams if one of the producers is slower" in {
       val (sink, result) =
         MergeHub.source[Int](16).take(2000).toMat(Sink.seq)(Keep.both).run()
 
@@ -163,7 +162,7 @@ class HubSpec extends StreamSpec {
       result.futureValue.sorted should ===(1 to 2000)
     }
 
-    "work with different producers separated over time" in assertAllStagesStopped {
+    "work with different producers separated over time" in {
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
       val sink = MergeHub.source[Int](16).grouped(100).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
 
@@ -176,7 +175,7 @@ class HubSpec extends StreamSpec {
       downstream.cancel()
     }
 
-    "keep working even if one of the producers fail" in assertAllStagesStopped {
+    "keep working even if one of the producers fail" in {
       val (sink, result) = MergeHub.source[Int](16).take(10).toMat(Sink.seq)(Keep.both).run()
       EventFilter.error("Upstream producer failed with exception").intercept {
         Source.failed(TE("failing")).runWith(sink)
@@ -187,7 +186,7 @@ class HubSpec extends StreamSpec {
 
     }
 
-    "complete after draining control is invoked and all connected producers complete" in assertAllStagesStopped {
+    "complete after draining control is invoked and all connected producers complete" in {
       val downstream = TestSubscriber.probe[Int]()
       val (sink, draining) =
         MergeHub.sourceWithDraining[Int](16).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
@@ -224,7 +223,7 @@ class HubSpec extends StreamSpec {
       testResult.future.futureValue
     }
 
-    "immediately cancel new producers while draining" in assertAllStagesStopped {
+    "immediately cancel new producers while draining" in {
       val downstream = TestSubscriber.probe[Int]()
       val (sink, draining) =
         MergeHub.sourceWithDraining[Int](16).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
@@ -265,7 +264,7 @@ class HubSpec extends StreamSpec {
       testResult.future.futureValue
     }
 
-    "immediately complete if no producers are registered" in assertAllStagesStopped {
+    "immediately complete if no producers are registered" in {
       val downstream = TestSubscriber.probe[Int]()
       val (_, draining) =
         MergeHub.sourceWithDraining[Int](16).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
@@ -278,12 +277,12 @@ class HubSpec extends StreamSpec {
 
   "BroadcastHub" must {
 
-    "work in the happy case" in assertAllStagesStopped {
+    "work in the happy case" in {
       val source = Source(1 to 10).runWith(BroadcastHub.sink(8))
       source.runWith(Sink.seq).futureValue should ===(1 to 10)
     }
 
-    "send the same elements to consumers attaching around the same time" in assertAllStagesStopped {
+    "send the same elements to consumers attaching around the same time" in {
       val (firstElem, source) = Source.maybe[Int].concat(Source(2 to 10)).toMat(BroadcastHub.sink(8))(Keep.both).run()
 
       val f1 = source.runWith(Sink.seq)
@@ -296,7 +295,7 @@ class HubSpec extends StreamSpec {
       f2.futureValue should ===(1 to 10)
     }
 
-    "send the same prefix to consumers attaching around the same time if one cancels earlier" in assertAllStagesStopped {
+    "send the same prefix to consumers attaching around the same time if one cancels earlier" in {
       val (firstElem, source) = Source.maybe[Int].concat(Source(2 to 20)).toMat(BroadcastHub.sink(8))(Keep.both).run()
 
       val f1 = source.runWith(Sink.seq)
@@ -309,13 +308,13 @@ class HubSpec extends StreamSpec {
       f2.futureValue should ===(1 to 10)
     }
 
-    "ensure that subsequent consumers see subsequent elements without gap" in assertAllStagesStopped {
+    "ensure that subsequent consumers see subsequent elements without gap" in {
       val source = Source(1 to 20).runWith(BroadcastHub.sink(8))
       source.take(10).runWith(Sink.seq).futureValue should ===(1 to 10)
       source.take(10).runWith(Sink.seq).futureValue should ===(11 to 20)
     }
 
-    "send the same elements to consumers of different speed attaching around the same time" in assertAllStagesStopped {
+    "send the same elements to consumers of different speed attaching around the same time" in {
       val (firstElem, source) = Source.maybe[Int].concat(Source(2 to 10)).toMat(BroadcastHub.sink(8))(Keep.both).run()
 
       val f1 = source.throttle(1, 10.millis, 3, ThrottleMode.shaping).runWith(Sink.seq)
@@ -328,7 +327,7 @@ class HubSpec extends StreamSpec {
       f2.futureValue should ===(1 to 10)
     }
 
-    "send the same elements to consumers of attaching around the same time if the producer is slow" in assertAllStagesStopped {
+    "send the same elements to consumers of attaching around the same time if the producer is slow" in {
       val (firstElem, source) = Source
         .maybe[Int]
         .concat(Source(2 to 10))
@@ -346,7 +345,7 @@ class HubSpec extends StreamSpec {
       f2.futureValue should ===(1 to 10)
     }
 
-    "ensure that from two different speed consumers the slower controls the rate" in assertAllStagesStopped {
+    "ensure that from two different speed consumers the slower controls the rate" in {
       val (firstElem, source) = Source.maybe[Int].concat(Source(2 to 20)).toMat(BroadcastHub.sink(1))(Keep.both).run()
 
       val f1 = source.throttle(1, 10.millis, 1, ThrottleMode.shaping).runWith(Sink.seq)
@@ -361,7 +360,7 @@ class HubSpec extends StreamSpec {
 
     }
 
-    "send the same elements to consumers attaching around the same time with a buffer size of one" in assertAllStagesStopped {
+    "send the same elements to consumers attaching around the same time with a buffer size of one" in {
       val (firstElem, source) = Source.maybe[Int].concat(Source(2 to 10)).toMat(BroadcastHub.sink(1))(Keep.both).run()
 
       val f1 = source.runWith(Sink.seq)
@@ -374,7 +373,7 @@ class HubSpec extends StreamSpec {
       f2.futureValue should ===(1 to 10)
     }
 
-    "be able to implement a keep-dropping-if-unsubscribed policy with a simple Sink.ignore" in assertAllStagesStopped {
+    "be able to implement a keep-dropping-if-unsubscribed policy with a simple Sink.ignore" in {
       val killSwitch = KillSwitches.shared("test-switch")
       val source = Source.fromIterator(() => Iterator.from(0)).via(killSwitch.flow).runWith(BroadcastHub.sink(8))
 
@@ -399,7 +398,7 @@ class HubSpec extends StreamSpec {
       killSwitch.shutdown()
     }
 
-    "properly signal error to consumers" in assertAllStagesStopped {
+    "properly signal error to consumers" in {
       val upstream = TestPublisher.probe[Int]()
       val source = Source.fromPublisher(upstream).runWith(BroadcastHub.sink(8))
 
@@ -429,7 +428,7 @@ class HubSpec extends StreamSpec {
       downstream2.expectError(TE("Failed"))
     }
 
-    "properly signal completion to consumers arriving after producer finished" in assertAllStagesStopped {
+    "properly signal completion to consumers arriving after producer finished" in {
       val source = Source.empty[Int].runWith(BroadcastHub.sink(8))
       // Wait enough so the Hub gets the completion. This is racy, but this is fine because both
       // cases should work in the end
@@ -456,7 +455,7 @@ class HubSpec extends StreamSpec {
       sink2Probe.expectComplete()
     }
 
-    "properly signal error to consumers arriving after producer finished" in assertAllStagesStopped {
+    "properly signal error to consumers arriving after producer finished" in {
       val source = Source.failed(TE("Fail!")).runWith(BroadcastHub.sink(8))
       // Wait enough so the Hub gets the completion. This is racy, but this is fine because both
       // cases should work in the end
@@ -467,7 +466,7 @@ class HubSpec extends StreamSpec {
       }
     }
 
-    "handle cancelled Sink" in assertAllStagesStopped {
+    "handle cancelled Sink" in {
       val in = TestPublisher.probe[Int]()
       val hubSource = Source.fromPublisher(in).runWith(BroadcastHub.sink(4))
 
@@ -499,13 +498,13 @@ class HubSpec extends StreamSpec {
 
   "PartitionHub" must {
 
-    "work in the happy case with one stream" in assertAllStagesStopped {
+    "work in the happy case with one stream" in {
       val source =
         Source(1 to 10).runWith(PartitionHub.sink((_, _) => 0, startAfterNrOfConsumers = 0, bufferSize = 8))
       source.runWith(Sink.seq).futureValue should ===(1 to 10)
     }
 
-    "work in the happy case with two streams" in assertAllStagesStopped {
+    "work in the happy case with two streams" in {
       val source = Source(0 until 10)
         .runWith(PartitionHub.sink((size, elem) => elem % size, startAfterNrOfConsumers = 2, bufferSize = 8))
       val result1 = source.runWith(Sink.seq)
@@ -516,7 +515,7 @@ class HubSpec extends StreamSpec {
       result2.futureValue should ===(1 to 9 by 2)
     }
 
-    "be able to use as round-robin router" in assertAllStagesStopped {
+    "be able to use as round-robin router" in {
       val source = Source(0 until 10).runWith(PartitionHub.statefulSink(() => {
         var n = 0L
 
@@ -531,7 +530,7 @@ class HubSpec extends StreamSpec {
       result2.futureValue should ===(0 to 8 by 2)
     }
 
-    "be able to use as sticky session router" in assertAllStagesStopped {
+    "be able to use as sticky session router" in {
       val source = Source(List("usr-1", "usr-2", "usr-1", "usr-3")).runWith(PartitionHub.statefulSink(() => {
         var sessions = Map.empty[String, Long]
         var n = 0L
@@ -553,7 +552,7 @@ class HubSpec extends StreamSpec {
       result2.futureValue should ===(List("usr-1", "usr-1", "usr-3"))
     }
 
-    "be able to use as fastest consumer router" in assertAllStagesStopped {
+    "be able to use as fastest consumer router" in {
       val source = Source(0 until 1000).runWith(
         PartitionHub.statefulSink(
           () => (info, _) => info.consumerIds.toVector.minBy(id => info.queueSize(id)),
@@ -565,7 +564,7 @@ class HubSpec extends StreamSpec {
       result1.futureValue.size should be > (result2.futureValue.size)
     }
 
-    "route evenly" in assertAllStagesStopped {
+    "route evenly" in {
       val (testSource, hub) = TestSource
         .probe[Int]
         .toMat(PartitionHub.sink((size, elem) => elem % size, startAfterNrOfConsumers = 2, bufferSize = 8))(Keep.both)
@@ -601,7 +600,7 @@ class HubSpec extends StreamSpec {
       probe1.expectComplete()
     }
 
-    "route unevenly" in assertAllStagesStopped {
+    "route unevenly" in {
       val (testSource, hub) = TestSource
         .probe[Int]
         .toMat(PartitionHub.sink((_, elem) => (elem % 3) % 2, startAfterNrOfConsumers = 2, bufferSize = 8))(Keep.both)
@@ -634,7 +633,7 @@ class HubSpec extends StreamSpec {
       probe1.expectComplete()
     }
 
-    "backpressure" in assertAllStagesStopped {
+    "backpressure" in {
       val (testSource, hub) = TestSource
         .probe[Int]
         .toMat(PartitionHub.sink((_, _) => 0, startAfterNrOfConsumers = 2, bufferSize = 4))(Keep.both)
@@ -659,7 +658,7 @@ class HubSpec extends StreamSpec {
       probe1.expectComplete()
     }
 
-    "ensure that from two different speed consumers the slower controls the rate" in assertAllStagesStopped {
+    "ensure that from two different speed consumers the slower controls the rate" in {
       val (firstElem, source) = Source
         .maybe[Int]
         .concat(Source(1 until 20))
@@ -678,7 +677,7 @@ class HubSpec extends StreamSpec {
 
     }
 
-    "properly signal error to consumers" in assertAllStagesStopped {
+    "properly signal error to consumers" in {
       val upstream = TestPublisher.probe[Int]()
       val source = Source
         .fromPublisher(upstream)
@@ -717,7 +716,7 @@ class HubSpec extends StreamSpec {
       downstream2.expectError(TE("Failed"))
     }
 
-    "properly signal completion to consumers arriving after producer finished" in assertAllStagesStopped {
+    "properly signal completion to consumers arriving after producer finished" in {
       val source =
         Source.empty[Int].runWith(PartitionHub.sink((size, elem) => elem % size, startAfterNrOfConsumers = 0))
       // Wait enough so the Hub gets the completion. This is racy, but this is fine because both
@@ -746,7 +745,7 @@ class HubSpec extends StreamSpec {
       sink2Probe.expectComplete()
     }
 
-    "properly signal error to consumers arriving after producer finished" in assertAllStagesStopped {
+    "properly signal error to consumers arriving after producer finished" in {
       val source =
         Source.failed[Int](TE("Fail!")).runWith(PartitionHub.sink((_, _) => 0, startAfterNrOfConsumers = 0))
       // Wait enough so the Hub gets the failure. This is racy, but this is fine because both
@@ -758,7 +757,7 @@ class HubSpec extends StreamSpec {
       }
     }
 
-    "drop elements with negative index" in assertAllStagesStopped {
+    "drop elements with negative index" in {
       val source = Source(0 until 10).runWith(
         PartitionHub.sink(
           (size, elem) => if (elem == 3 || elem == 4) -1 else elem % size,

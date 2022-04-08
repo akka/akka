@@ -10,13 +10,13 @@ import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
 import javax.net.ssl._
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
-import scala.annotation.nowarn
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import akka.NotUsed
@@ -27,7 +27,6 @@ import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestDuration
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
@@ -368,7 +367,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       commPattern <- communicationPatterns
       scenario <- scenarios
     } {
-      s"work in mode ${commPattern.name} while sending ${scenario.name}" in assertAllStagesStopped {
+      s"work in mode ${commPattern.name} while sending ${scenario.name}" in {
         val onRHS = debug.via(scenario.flow)
         val output =
           Source(scenario.inputs)
@@ -402,7 +401,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       }
     }
 
-    "emit an error if the TLS handshake fails certificate checks" in assertAllStagesStopped {
+    "emit an error if the TLS handshake fails certificate checks" in {
       val getError = Flow[SslTlsInbound]
         .map[Either[SslTlsInbound, SSLException]](i => Left(i))
         .recover { case e: SSLException => Right(e) }
@@ -429,7 +428,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       clientErrText should include("unable to find valid certification path to requested target")
     }
 
-    "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {
+    "reliably cancel subscriptions when TransportIn fails early" in {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
         RunnableGraph
@@ -450,7 +449,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       pub.expectSubscription().expectCancellation()
     }
 
-    "reliably cancel subscriptions when UserIn fails early" in assertAllStagesStopped {
+    "reliably cancel subscriptions when UserIn fails early" in {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
         RunnableGraph
@@ -471,7 +470,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       pub.expectSubscription().expectCancellation()
     }
 
-    "complete if TLS connection is truncated" in assertAllStagesStopped {
+    "complete if TLS connection is truncated" in {
 
       val ks = KillSwitches.shared("ks")
 
@@ -504,7 +503,7 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       Await.result(f, 8.second).utf8String should be(scenario.output.utf8String)
     }
 
-    "verify hostname" in assertAllStagesStopped {
+    "verify hostname" in {
       def run(hostName: String): Future[akka.Done] = {
         val rhs = Flow[SslTlsInbound].map {
           case SessionTruncated   => SendBytes(ByteString.empty)

@@ -27,21 +27,20 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 import akka.testkit.TestLatch
 
 class ActorGraphInterpreterSpec extends StreamSpec {
   "ActorGraphInterpreter" must {
 
-    "be able to interpret a simple identity graph stage" in assertAllStagesStopped {
+    "be able to interpret a simple identity graph stage" in {
       val identity = GraphStages.identity[Int]
 
       Await.result(Source(1 to 100).via(identity).grouped(200).runWith(Sink.head), 3.seconds) should ===(1 to 100)
 
     }
 
-    "be able to reuse a simple identity graph stage" in assertAllStagesStopped {
+    "be able to reuse a simple identity graph stage" in {
       val identity = GraphStages.identity[Int]
 
       Await.result(
@@ -49,7 +48,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
         3.seconds) should ===(1 to 100)
     }
 
-    "be able to interpret a simple bidi stage" in assertAllStagesStopped {
+    "be able to interpret a simple bidi stage" in {
       val identityBidi = new GraphStage[BidiShape[Int, Int, Int, Int]] {
         val in1 = Inlet[Int]("in1")
         val in2 = Inlet[Int]("in2")
@@ -92,7 +91,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
     }
 
-    "be able to interpret and reuse a simple bidi stage" in assertAllStagesStopped {
+    "be able to interpret and reuse a simple bidi stage" in {
       val identityBidi = new GraphStage[BidiShape[Int, Int, Int, Int]] {
         val in1 = Inlet[Int]("in1")
         val in2 = Inlet[Int]("in2")
@@ -141,7 +140,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
     }
 
-    "be able to interpret and resuse a simple bidi stage" in assertAllStagesStopped {
+    "be able to interpret and resuse a simple bidi stage" in {
       val identityBidi = new GraphStage[BidiShape[Int, Int, Int, Int]] {
         val in1 = Inlet[Int]("in1")
         val in2 = Inlet[Int]("in2")
@@ -190,7 +189,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
     }
 
-    "be able to interpret a rotated identity bidi stage" in assertAllStagesStopped {
+    "be able to interpret a rotated identity bidi stage" in {
       // This is a "rotated" identity BidiStage, as it loops back upstream elements
       // to its upstream, and loops back downstream elementd to its downstream.
 
@@ -273,7 +272,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       }
     }
 
-    "be able to properly handle case where a stage fails before subscription happens" in assertAllStagesStopped {
+    "be able to properly handle case where a stage fails before subscription happens" in {
 
       val te = TE("Test failure in preStart")
 
@@ -346,7 +345,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
     }
 
-    "be able to handle Publisher spec violations without leaking" in assertAllStagesStopped {
+    "be able to handle Publisher spec violations without leaking" in {
       val filthyPublisher = new Publisher[Int] {
         override def subscribe(s: Subscriber[_ >: Int]): Unit = {
           s.onSubscribe(new Subscription {
@@ -375,7 +374,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       ise.getCause.getCause should (have.message("violating your spec"))
     }
 
-    "be able to handle Subscriber spec violations without leaking" in assertAllStagesStopped {
+    "be able to handle Subscriber spec violations without leaking" in {
       val filthySubscriber = new Subscriber[Int] {
         override def onSubscribe(s: Subscription): Unit = s.request(1)
         override def onError(t: Throwable): Unit = ()

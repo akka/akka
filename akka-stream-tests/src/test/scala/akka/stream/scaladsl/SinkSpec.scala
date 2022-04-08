@@ -4,17 +4,18 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.Done
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.testkit.DefaultTimeout
-import org.reactivestreams.Publisher
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.annotation.nowarn
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 

@@ -10,7 +10,6 @@ import scala.util.control.NoStackTrace
 
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowForeachSpec extends StreamSpec {
 
@@ -18,7 +17,7 @@ class FlowForeachSpec extends StreamSpec {
 
   "A runForeach" must {
 
-    "call the procedure for each element" in assertAllStagesStopped {
+    "call the procedure for each element" in {
       Source(1 to 3).runForeach(testActor ! _).foreach { _ =>
         testActor ! "done"
       }
@@ -28,14 +27,14 @@ class FlowForeachSpec extends StreamSpec {
       expectMsg("done")
     }
 
-    "complete the future for an empty stream" in assertAllStagesStopped {
+    "complete the future for an empty stream" in {
       Source.empty[String].runForeach(testActor ! _).foreach { _ =>
         testActor ! "done"
       }
       expectMsg("done")
     }
 
-    "yield the first error" in assertAllStagesStopped {
+    "yield the first error" in {
       val p = TestPublisher.manualProbe[Int]()
       Source.fromPublisher(p).runForeach(testActor ! _).failed.foreach { ex =>
         testActor ! ex
@@ -47,7 +46,7 @@ class FlowForeachSpec extends StreamSpec {
       expectMsg(rte)
     }
 
-    "complete future with failure when function throws" in assertAllStagesStopped {
+    "complete future with failure when function throws" in {
       val error = TE("Boom!")
       val future = Source.single(1).runForeach(_ => throw error)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)

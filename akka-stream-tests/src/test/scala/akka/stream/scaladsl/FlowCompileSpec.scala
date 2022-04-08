@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
-import scala.annotation.nowarn
 import org.reactivestreams.Publisher
 
 import akka.NotUsed

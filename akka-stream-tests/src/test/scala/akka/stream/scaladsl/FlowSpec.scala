@@ -17,7 +17,6 @@ import akka.stream._
 import akka.stream.impl._
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.testkit.TestDuration
 
@@ -224,7 +223,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
       c1.expectComplete()
     }
 
-    "be materializable several times with fanout publisher" in assertAllStagesStopped {
+    "be materializable several times with fanout publisher" in {
       val flow = Source(List(1, 2, 3)).map(_.toString)
       val p1 = flow.runWith(Sink.asPublisher(true))
       val p2 = flow.runWith(Sink.asPublisher(true))

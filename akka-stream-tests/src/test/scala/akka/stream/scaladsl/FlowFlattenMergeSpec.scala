@@ -19,7 +19,6 @@ import akka.stream.stage.OutHandler
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestLatch
 import akka.util.OptionVal
@@ -35,14 +34,14 @@ class FlowFlattenMergeSpec extends StreamSpec {
 
   "A FattenMerge" must {
 
-    "work in the nominal case" in assertAllStagesStopped {
+    "work in the nominal case" in {
       Source(List(src10(0), src10(10), src10(20), src10(30)))
         .flatMapMerge(4, identity)
         .runWith(toSet)
         .futureValue should ===((0 until 40).toSet)
     }
 
-    "not be held back by one slow stream" in assertAllStagesStopped {
+    "not be held back by one slow stream" in {
       Source(List(src10(0), src10(10), blocked, src10(20), src10(30)))
         .flatMapMerge(3, identity)
         .take(40)
@@ -50,7 +49,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
         .futureValue should ===((0 until 40).toSet)
     }
 
-    "respect breadth" in assertAllStagesStopped {
+    "respect breadth" in {
       val seq = Source(List(src10(0), src10(10), src10(20), blocked, blocked, src10(30)))
         .flatMapMerge(3, identity)
         .take(40)
@@ -61,35 +60,35 @@ class FlowFlattenMergeSpec extends StreamSpec {
       seq.drop(30).toSet should ===((30 until 40).toSet)
     }
 
-    "propagate early failure from main stream" in assertAllStagesStopped {
+    "propagate early failure from main stream" in {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
         Source.failed(ex).flatMapMerge(1, (i: Int) => Source.single(i)).runWith(Sink.head).futureValue
       }.cause.get should ===(ex)
     }
 
-    "propagate late failure from main stream" in assertAllStagesStopped {
+    "propagate late failure from main stream" in {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
         (Source(List(blocked, blocked)) ++ Source.failed(ex)).flatMapMerge(10, identity).runWith(Sink.head).futureValue
       }.cause.get should ===(ex)
     }
 
-    "propagate failure from map function" in assertAllStagesStopped {
+    "propagate failure from map function" in {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
         Source(1 to 3).flatMapMerge(10, i => if (i == 3) throw ex else blocked).runWith(Sink.head).futureValue
       }.cause.get should ===(ex)
     }
 
-    "bubble up substream exceptions" in assertAllStagesStopped {
+    "bubble up substream exceptions" in {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
         Source(List(blocked, blocked, Source.failed(ex))).flatMapMerge(10, identity).runWith(Sink.head).futureValue
       }.cause.get should ===(ex)
     }
 
-    "bubble up substream materialization exception" in assertAllStagesStopped {
+    "bubble up substream materialization exception" in {
       val matFail = TE("fail!")
       object FailingInnerMat extends GraphStage[SourceShape[String]] {
         val out = Outlet[String]("out")
@@ -107,7 +106,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
 
     }
 
-    "cancel substreams when failing from main stream" in assertAllStagesStopped {
+    "cancel substreams when failing from main stream" in {
       val p1, p2 = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
       val p = Promise[Source[Int, NotUsed]]()
@@ -121,7 +120,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       p2.expectCancellation()
     }
 
-    "cancel substreams when failing from substream" in assertAllStagesStopped {
+    "cancel substreams when failing from substream" in {
       val p1, p2 = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
       val p = Promise[Int]()
@@ -135,7 +134,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       p2.expectCancellation()
     }
 
-    "cancel substreams when failing map function" in assertAllStagesStopped {
+    "cancel substreams when failing map function" in {
       val p = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
       val latch = TestLatch()
@@ -154,7 +153,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       p.expectCancellation()
     }
 
-    "cancel substreams when being cancelled" in assertAllStagesStopped {
+    "cancel substreams when being cancelled" in {
       val p1, p2 = TestPublisher.probe[Int]()
       val sink = Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2)))
         .flatMapMerge(5, identity)
@@ -167,7 +166,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       p2.expectCancellation()
     }
 
-    "work with many concurrently queued events" in assertAllStagesStopped {
+    "work with many concurrently queued events" in {
       val p = Source((0 until 100).map(i => src10(10 * i))).flatMapMerge(Int.MaxValue, identity).runWith(TestSink.probe)
       p.within(1.second) {
         p.ensureSubscription()
@@ -191,7 +190,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
         }
     })
 
-    "propagate attributes to inner streams" in assertAllStagesStopped {
+    "propagate attributes to inner streams" in {
       val f = Source
         .single(attributesSource.addAttributes(Attributes.name("inner")))
         .flatMapMerge(1, identity)
@@ -204,11 +203,11 @@ class FlowFlattenMergeSpec extends StreamSpec {
       attributes.indexOf(Attributes.Name("inner")) < attributes.indexOf(Attributes.Name("outer")) should be(true)
     }
 
-    "work with optimized Source.single" in assertAllStagesStopped {
+    "work with optimized Source.single" in {
       Source(0 to 3).flatMapConcat(Source.single).runWith(toSeq).futureValue should ===(0 to 3)
     }
 
-    "work with optimized Source.single when slow demand" in assertAllStagesStopped {
+    "work with optimized Source.single when slow demand" in {
       val probe = Source(0 to 4).flatMapConcat(Source.single).runWith(TestSink.probe)
 
       probe.request(3)
@@ -223,7 +222,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       probe.expectComplete()
     }
 
-    "work with mix of Source.single and other sources when slow demand" in assertAllStagesStopped {
+    "work with mix of Source.single and other sources when slow demand" in {
       val sources: Source[Source[Int, NotUsed], NotUsed] = Source(
         List(
           Source.single(0),
@@ -266,7 +265,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       probe.expectComplete()
     }
 
-    "find Source.single via TraversalBuilder" in assertAllStagesStopped {
+    "find Source.single via TraversalBuilder" in {
       TraversalBuilder.getSingleSource(Source.single("a")).get.elem should ===("a")
       TraversalBuilder.getSingleSource(Source(List("a", "b"))) should be(OptionVal.None)
 

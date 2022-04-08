@@ -9,7 +9,6 @@ import scala.util.control.NoStackTrace
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
 
 object ActorRefSinkSpec {
@@ -27,7 +26,7 @@ class ActorRefSinkSpec extends StreamSpec {
 
   "A ActorRefSink" must {
 
-    "send the elements to the ActorRef" in assertAllStagesStopped {
+    "send the elements to the ActorRef" in {
       Source(List(1, 2, 3)).runWith(Sink.actorRef(testActor, onCompleteMessage = "done", _ => "failure"))
       expectMsg(1)
       expectMsg(2)
@@ -35,7 +34,7 @@ class ActorRefSinkSpec extends StreamSpec {
       expectMsg("done")
     }
 
-    "cancel stream when actor terminates" in assertAllStagesStopped {
+    "cancel stream when actor terminates" in {
       val fw = system.actorOf(Props(classOf[Fw], testActor).withDispatcher("akka.test.stream-dispatcher"))
       val publisher =
         TestSource
@@ -50,7 +49,7 @@ class ActorRefSinkSpec extends StreamSpec {
       publisher.expectCancellation()
     }
 
-    "sends error message if upstream fails" in assertAllStagesStopped {
+    "sends error message if upstream fails" in {
       val actorProbe = TestProbe()
       val probe = TestSource.probe[String].to(Sink.actorRef(actorProbe.ref, "complete", _ => "failure")).run()
       probe.sendError(te)

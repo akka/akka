@@ -19,7 +19,6 @@ import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.LongRunningTest
 
 class FlowFoldAsyncSpec extends StreamSpec {
@@ -42,32 +41,32 @@ class FlowFoldAsyncSpec extends StreamSpec {
       Future(a + b)
     }
 
-    "work when using Source.foldAsync" in assertAllStagesStopped {
+    "work when using Source.foldAsync" in {
       foldSource.runWith(Sink.head).futureValue(timeout) should ===(expected)
     }
 
-    "work when using Sink.foldAsync" in assertAllStagesStopped {
+    "work when using Sink.foldAsync" in {
       inputSource.runWith(foldSink).futureValue(timeout) should ===(expected)
     }
 
-    "work when using Flow.foldAsync" taggedAs LongRunningTest in assertAllStagesStopped {
+    "work when using Flow.foldAsync" taggedAs LongRunningTest in {
       val flowTimeout =
         Timeout((flowDelayMS * input.size).milliseconds + 3.seconds)
 
       inputSource.via(foldFlow).runWith(Sink.head).futureValue(flowTimeout) should ===(expected)
     }
 
-    "work when using Source.foldAsync + Flow.foldAsync + Sink.foldAsync" in assertAllStagesStopped {
+    "work when using Source.foldAsync + Flow.foldAsync + Sink.foldAsync" in {
       foldSource.via(foldFlow).runWith(foldSink).futureValue(timeout) should ===(expected)
     }
 
-    "propagate an error" in assertAllStagesStopped {
+    "propagate an error" in {
       val error = TE("Boom!")
       val future = inputSource.map(x => if (x > 50) throw error else x).runFoldAsync[NotUsed](NotUsed)(noneAsync)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
-    "complete future with failure when folding function throws" in assertAllStagesStopped {
+    "complete future with failure when folding function throws" in {
       val error = TE("Boom!")
       val future = inputSource.runFoldAsync(0) { (x, y) =>
         if (x > 50) Future.failed(error) else Future(x + y)
@@ -95,7 +94,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
       probe.expectComplete()
     }
 
-    "signal future failure" in assertAllStagesStopped {
+    "signal future failure" in {
       val probe = TestSubscriber.probe[Int]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
@@ -110,7 +109,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
       probe.expectError().getMessage should be("err1")
     }
 
-    "signal error from foldAsync" in assertAllStagesStopped {
+    "signal error from foldAsync" in {
       val probe = TestSubscriber.probe[Int]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
@@ -126,7 +125,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
       probe.expectError().getMessage should be("err2")
     }
 
-    "resume after future failure" in assertAllStagesStopped {
+    "resume after future failure" in {
       val probe = TestSubscriber.probe[(Int, Int)]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
@@ -147,7 +146,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
       probe.expectComplete()
     }
 
-    "restart after future failure" in assertAllStagesStopped {
+    "restart after future failure" in {
       val probe = TestSubscriber.probe[(Int, Int)]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
@@ -168,7 +167,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
       probe.expectComplete()
     }
 
-    "resume after multiple failures" in assertAllStagesStopped {
+    "resume after multiple failures" in {
       val futures: List[Future[String]] = List(
         Future.failed(Utils.TE("failure1")),
         Future.failed(Utils.TE("failure2")),
@@ -186,7 +185,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
         .futureValue(timeout) should ===("happy!")
     }
 
-    "finish after future failure" in assertAllStagesStopped {
+    "finish after future failure" in {
       Source(1 to 3)
         .foldAsync(1) { (_, n) =>
           Future {
@@ -281,7 +280,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "should handle cancel properly" in assertAllStagesStopped {
+    "should handle cancel properly" in {
       val pub = TestPublisher.manualProbe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()
 
@@ -300,14 +299,14 @@ class FlowFoldAsyncSpec extends StreamSpec {
       upstream.expectCancellation()
     }
 
-    "complete future and return zero given an empty stream" in assertAllStagesStopped {
+    "complete future and return zero given an empty stream" in {
       val futureValue =
         Source.fromIterator[Int](() => Iterator.empty).runFoldAsync(0)((acc, elem) => Future.successful(acc + elem))
 
       Await.result(futureValue, remainingOrDefault) should be(0)
     }
 
-    "complete future and return zero + item given a stream of one item" in assertAllStagesStopped {
+    "complete future and return zero + item given a stream of one item" in {
       val futureValue =
         Source.single(100).runFoldAsync(5)((acc, elem) => Future.successful(acc + elem))
 

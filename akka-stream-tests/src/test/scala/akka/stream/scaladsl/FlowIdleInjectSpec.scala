@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowIdleInjectSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -18,12 +17,12 @@ class FlowIdleInjectSpec extends StreamSpec("""
 
   "keepAlive" must {
 
-    "not emit additional elements if upstream is fast enough" in assertAllStagesStopped {
+    "not emit additional elements if upstream is fast enough" in {
       Await.result(Source(1 to 10).keepAlive(1.second, () => 0).grouped(1000).runWith(Sink.head), 3.seconds) should ===(
         1 to 10)
     }
 
-    "emit elements periodically after silent periods" in assertAllStagesStopped {
+    "emit elements periodically after silent periods" in {
       val sourceWithIdleGap = Source(1 to 5) ++ Source(6 to 10).initialDelay(2.second)
 
       Await.result(sourceWithIdleGap.keepAlive(0.6.seconds, () => 0).grouped(1000).runWith(Sink.head), 3.seconds) should ===(

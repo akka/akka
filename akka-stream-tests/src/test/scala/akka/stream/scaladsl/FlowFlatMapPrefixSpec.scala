@@ -4,8 +4,6 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.Attributes.Attribute
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.{ Done, NotUsed }
 import akka.stream.{
   AbruptStageTerminationException,
@@ -18,9 +16,10 @@ import akka.stream.{
   Outlet,
   SubscriptionWithCancelException
 }
+import akka.stream.Attributes.Attribute
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 // Debug loglevel to diagnose https://github.com/akka/akka/issues/30469
 class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
@@ -36,7 +35,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
 
     s"A PrefixAndDownstream with $att" must {
 
-      "work in the simple identity case" in assertAllStagesStopped {
+      "work in the simple identity case" in {
         src10()
           .flatMapPrefixMat(2) { _ =>
             Flow[Int]
@@ -46,7 +45,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
           .futureValue should ===(2 until 10)
       }
 
-      "expose mat value in the simple identity case" in assertAllStagesStopped {
+      "expose mat value in the simple identity case" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(2) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix)
@@ -59,7 +58,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should ===(2 until 10)
       }
 
-      "work when source is exactly the required prefix" in assertAllStagesStopped {
+      "work when source is exactly the required prefix" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(10) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix)
@@ -72,7 +71,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should be(empty)
       }
 
-      "work when source has less than the required prefix" in assertAllStagesStopped {
+      "work when source has less than the required prefix" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(20) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix)
@@ -85,7 +84,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should be(empty)
       }
 
-      "simple identity case when downstream completes before consuming the entire stream" in assertAllStagesStopped {
+      "simple identity case when downstream completes before consuming the entire stream" in {
         val (prefixF, suffixF) = Source(0 until 100)
           .flatMapPrefixMat(10) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix)
@@ -99,7 +98,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should ===(10 until 20)
       }
 
-      "propagate failure to create the downstream flow" in assertAllStagesStopped {
+      "propagate failure to create the downstream flow" in {
         val suffixF = Source(0 until 100)
           .flatMapPrefixMat(10) { prefix =>
             throw TE(s"I hate mondays! (${prefix.size})")
@@ -113,7 +112,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         ex.getCause should ===(TE("I hate mondays! (10)"))
       }
 
-      "propagate flow failures" in assertAllStagesStopped {
+      "propagate flow failures" in {
         val (prefixF, suffixF) = Source(0 until 100)
           .flatMapPrefixMat(10) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix).map {
@@ -129,7 +128,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         ex should ===(TE("don't like 15 either!"))
       }
 
-      "produce multiple elements per input" in assertAllStagesStopped {
+      "produce multiple elements per input" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(7) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix).mapConcat(n => List.fill(n - 6)(n))
@@ -142,7 +141,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should ===(7 :: 8 :: 8 :: 9 :: 9 :: 9 :: Nil)
       }
 
-      "succeed when upstream produces no elements" in assertAllStagesStopped {
+      "succeed when upstream produces no elements" in {
         val (prefixF, suffixF) = Source
           .empty[Int]
           .flatMapPrefixMat(7) { prefix =>
@@ -156,7 +155,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should be(empty)
       }
 
-      "apply materialized flow's semantics when upstream produces no elements" in assertAllStagesStopped {
+      "apply materialized flow's semantics when upstream produces no elements" in {
         val (prefixF, suffixF) = Source
           .empty[Int]
           .flatMapPrefixMat(7) { prefix =>
@@ -170,7 +169,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should ===(100 :: 101 :: Nil)
       }
 
-      "handles upstream completion" in assertAllStagesStopped {
+      "handles upstream completion" in {
         val publisher = TestPublisher.manualProbe[Int]()
         val subscriber = TestSubscriber.manualProbe[Int]()
 
@@ -202,7 +201,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
 
       }
 
-      "work when materialized flow produces no downstream elements" in assertAllStagesStopped {
+      "work when materialized flow produces no downstream elements" in {
         val (prefixF, suffixF) = Source(0 until 100)
           .flatMapPrefixMat(4) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix).filter(_ => false)
@@ -215,7 +214,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should be(empty)
       }
 
-      "work when materialized flow does not consume upstream" in assertAllStagesStopped {
+      "work when materialized flow does not consume upstream" in {
         val (prefixF, suffixF) = Source(0 until 100)
           .map { i =>
             i should be <= 4
@@ -233,7 +232,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should be(empty)
       }
 
-      "work when materialized flow cancels upstream but keep producing" in assertAllStagesStopped {
+      "work when materialized flow cancels upstream but keep producing" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(4) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix).take(0).concat(Source(11 to 12))
@@ -246,7 +245,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should ===(11 :: 12 :: Nil)
       }
 
-      "propagate materialization failure (when application of 'f' succeeds)" in assertAllStagesStopped {
+      "propagate materialization failure (when application of 'f' succeeds)" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(4) { prefix =>
             Flow[Int].mapMaterializedValue(_ => throw TE(s"boom-bada-bang (${prefix.size})"))
@@ -260,7 +259,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.failed.futureValue should ===(TE("boom-bada-bang (4)"))
       }
 
-      "succeed when materialized flow completes downstream but keep consuming elements" in assertAllStagesStopped {
+      "succeed when materialized flow completes downstream but keep consuming elements" in {
         val (prefixAndTailF, suffixF) = src10()
           .flatMapPrefixMat(4) { prefix =>
             Flow[Int]
@@ -279,7 +278,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffix.futureValue should ===(4 until 10)
       }
 
-      "propagate downstream cancellation via the materialized flow" in assertAllStagesStopped {
+      "propagate downstream cancellation via the materialized flow" in {
         val publisher = TestPublisher.manualProbe[Int]()
         val subscriber = TestSubscriber.manualProbe[Int]()
 
@@ -314,7 +313,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         srcWatchTermF.futureValue should ===(Done)
       }
 
-      "early downstream cancellation is later handed out to materialized flow" in assertAllStagesStopped {
+      "early downstream cancellation is later handed out to materialized flow" in {
         val publisher = TestPublisher.manualProbe[Int]()
         val subscriber = TestSubscriber.manualProbe[Int]()
 
@@ -360,7 +359,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         }
       }
 
-      "early downstream failure is deferred until prefix completion" in assertAllStagesStopped {
+      "early downstream failure is deferred until prefix completion" in {
         val publisher = TestPublisher.manualProbe[Int]()
         val subscriber = TestSubscriber.manualProbe[Int]()
 
@@ -405,7 +404,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         }
       }
 
-      "downstream failure is propagated via the materialized flow" in assertAllStagesStopped {
+      "downstream failure is propagated via the materialized flow" in {
         val publisher = TestPublisher.manualProbe[Int]()
         val subscriber = TestSubscriber.manualProbe[Int]()
 
@@ -446,7 +445,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         srcWatchTermF.failed.futureValue should ===(TE("3!?!?!?"))
       }
 
-      "complete mat value with failures on abrupt termination before materializing the flow" in assertAllStagesStopped {
+      "complete mat value with failures on abrupt termination before materializing the flow" in {
         val mat = Materializer(system)
         val publisher = TestPublisher.manualProbe[Int]()
 
@@ -476,7 +475,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         doneF.failed.futureValue should be(a[AbruptTerminationException])
       }
 
-      "respond to abrupt termination after flow materialization" in assertAllStagesStopped {
+      "respond to abrupt termination after flow materialization" in {
         val mat = Materializer(system)
         val countFF = src10()
           .flatMapPrefixMat(2) { prefix =>
@@ -498,7 +497,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         countF.failed.futureValue should be(a[AbruptStageTerminationException])
       }
 
-      "behave like via when n = 0" in assertAllStagesStopped {
+      "behave like via when n = 0" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(0) { prefix =>
             prefix should be(empty)
@@ -512,7 +511,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should ===(0 until 10)
       }
 
-      "behave like via when n = 0 and upstream produces no elements" in assertAllStagesStopped {
+      "behave like via when n = 0 and upstream produces no elements" in {
         val (prefixF, suffixF) = Source
           .empty[Int]
           .flatMapPrefixMat(0) { prefix =>
@@ -527,7 +526,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.futureValue should be(empty)
       }
 
-      "propagate errors during flow's creation when n = 0" in assertAllStagesStopped {
+      "propagate errors during flow's creation when n = 0" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(0) { prefix =>
             prefix should be(empty)
@@ -542,7 +541,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.failed.futureValue should ===(TE("not this time my friend!"))
       }
 
-      "propagate materialization failures when n = 0" in assertAllStagesStopped {
+      "propagate materialization failures when n = 0" in {
         val (prefixF, suffixF) = src10()
           .flatMapPrefixMat(0) { prefix =>
             prefix should be(empty)
@@ -557,7 +556,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         suffixF.failed.futureValue should ===(TE("Bang! no materialization this time"))
       }
 
-      "run a detached flow" in assertAllStagesStopped {
+      "run a detached flow" in {
         val publisher = TestPublisher.manualProbe[Int]()
         val subscriber = TestSubscriber.manualProbe[String]()
 
@@ -592,7 +591,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         subscriber.expectComplete()
       }
 
-      "complete newShells registration when all active interpreters are done" in assertAllStagesStopped {
+      "complete newShells registration when all active interpreters are done" in {
         @volatile var closeSink: () => Unit = null
 
         val (fNotUsed, qOut) = Source
@@ -620,7 +619,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         fNotUsed.futureValue should be(NotUsed)
       }
 
-      "complete when downstream cancels before pulling" in assertAllStagesStopped {
+      "complete when downstream cancels before pulling" in {
         val fSeq = Source
           .single(1)
           .flatMapPrefixMat(1) { prefix =>
@@ -637,7 +636,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         }
       }
 
-      "complete when downstream cancels before pulling, prefix=0" in assertAllStagesStopped {
+      "complete when downstream cancels before pulling, prefix=0" in {
         val fSeq = Source
           .single(1)
           .flatMapPrefixMat(0) { prefix =>
@@ -654,7 +653,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         }
       }
 
-      "complete when downstream cancels before pulling and upstream does not produce" in assertAllStagesStopped {
+      "complete when downstream cancels before pulling and upstream does not produce" in {
         val fSeq = Source(List.empty[Int])
           .flatMapPrefixMat(1) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix)
@@ -670,7 +669,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec("akka.loglevel = debug") {
         }
       }
 
-      "complete when downstream cancels before pulling and upstream does not produce, prefix=0" in assertAllStagesStopped {
+      "complete when downstream cancels before pulling and upstream does not produce, prefix=0" in {
         val fSeq = Source(List.empty[Int])
           .flatMapPrefixMat(0) { prefix =>
             Flow[Int].mapMaterializedValue(_ => prefix)

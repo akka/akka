@@ -12,7 +12,6 @@ import akka.stream.Attributes.inputBuffer
 import akka.stream.Materializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
 
 object ActorRefBackpressureSinkSpec {
@@ -58,7 +57,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
 
   "An ActorRefBackpressureSink" must {
 
-    "send the elements to the ActorRef" in assertAllStagesStopped {
+    "send the elements to the ActorRef" in {
       val fw = createActor(classOf[Fw])
       Source(List(1, 2, 3))
         .runWith(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
@@ -69,7 +68,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(completeMessage)
     }
 
-    "send the elements to the ActorRef2" in assertAllStagesStopped {
+    "send the elements to the ActorRef2" in {
       val fw = createActor(classOf[Fw])
       val probe = TestSource
         .probe[Int]
@@ -86,7 +85,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(completeMessage)
     }
 
-    "cancel stream when actor terminates" in assertAllStagesStopped {
+    "cancel stream when actor terminates" in {
       val fw = createActor(classOf[Fw])
       val publisher =
         TestSource
@@ -100,7 +99,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       publisher.expectCancellation()
     }
 
-    "send message only when backpressure received" in assertAllStagesStopped {
+    "send message only when backpressure received" in {
       val fw = createActor(classOf[Fw2])
       val publisher = TestSource
         .probe[Int]
@@ -125,7 +124,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(completeMessage)
     }
 
-    "send message only when backpressure received with any ack message" in assertAllStagesStopped {
+    "send message only when backpressure received with any ack message" in {
       val fw = createActor(classOf[Fw2])
       val publisher = TestSource
         .probe[Int]
@@ -150,7 +149,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(completeMessage)
     }
 
-    "keep on sending even after the buffer has been full" in assertAllStagesStopped {
+    "keep on sending even after the buffer has been full" in {
       val bufferSize = 16
       val streamElementCount = bufferSize + 4
       val fw = createActor(classOf[Fw2])
@@ -172,7 +171,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(completeMessage)
     }
 
-    "work with one element buffer" in assertAllStagesStopped {
+    "work with one element buffer" in {
       val fw = createActor(classOf[Fw2])
       val publisher =
         TestSource

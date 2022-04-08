@@ -4,15 +4,13 @@
 
 package akka.stream.scaladsl
 
-import scala.util.control.NoStackTrace
-
 import scala.annotation.nowarn
+import scala.util.control.NoStackTrace
 
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 
 @nowarn // tests deprecated APIs
@@ -25,7 +23,7 @@ class FlowRecoverWithSpec extends StreamSpec {
   val ex = new RuntimeException("ex") with NoStackTrace
 
   "A RecoverWith" must {
-    "recover when there is a handler" in assertAllStagesStopped {
+    "recover when there is a handler" in {
       Source(1 to 4)
         .map { a =>
           if (a == 3) throw ex else a
@@ -41,7 +39,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "cancel substream if parent is terminated when there is a handler" in assertAllStagesStopped {
+    "cancel substream if parent is terminated when there is a handler" in {
       Source(1 to 4)
         .map { a =>
           if (a == 3) throw ex else a
@@ -55,7 +53,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .cancel()
     }
 
-    "failed stream if handler is not for such exception type" in assertAllStagesStopped {
+    "failed stream if handler is not for such exception type" in {
       Source(1 to 3)
         .map { a =>
           if (a == 2) throw ex else a
@@ -68,7 +66,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectError(ex)
     }
 
-    "be able to recover with the same unmaterialized source if configured" in assertAllStagesStopped {
+    "be able to recover with the same unmaterialized source if configured" in {
       val src = Source(1 to 3).map { a =>
         if (a == 3) throw ex else a
       }
@@ -84,7 +82,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .cancel()
     }
 
-    "not influence stream when there is no exceptions" in assertAllStagesStopped {
+    "not influence stream when there is no exceptions" in {
       Source(1 to 3)
         .map(identity)
         .recoverWith { case _: Throwable => Source.single(0) }
@@ -94,7 +92,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "finish stream if it's empty" in assertAllStagesStopped {
+    "finish stream if it's empty" in {
       Source
         .empty[Int]
         .map(identity)
@@ -104,7 +102,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "switch the second time if alternative source throws exception" in assertAllStagesStopped {
+    "switch the second time if alternative source throws exception" in {
       Source(1 to 3)
         .map { a =>
           if (a == 3) throw new IndexOutOfBoundsException() else a
@@ -124,7 +122,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "terminate with exception if partial function fails to match after an alternative source failure" in assertAllStagesStopped {
+    "terminate with exception if partial function fails to match after an alternative source failure" in {
       Source(1 to 3)
         .map { a =>
           if (a == 3) throw new IndexOutOfBoundsException() else a
@@ -142,7 +140,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectError(ex)
     }
 
-    "terminate with exception after set number of retries" in assertAllStagesStopped {
+    "terminate with exception after set number of retries" in {
       Source(1 to 3)
         .map { a =>
           if (a == 3) throw new IndexOutOfBoundsException() else a
@@ -160,7 +158,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectError(ex)
     }
 
-    "not attempt recovering when attempts is zero" in assertAllStagesStopped {
+    "not attempt recovering when attempts is zero" in {
       Source(1 to 3)
         .map { a =>
           if (a == 3) throw ex else a
@@ -172,7 +170,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectError(ex)
     }
 
-    "recover infinitely when negative (-1) number of attempts given" in assertAllStagesStopped {
+    "recover infinitely when negative (-1) number of attempts given" in {
       val oneThenBoom = Source(1 to 2).map { a =>
         if (a == 2) throw ex else a
       }
@@ -185,7 +183,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .cancel()
     }
 
-    "recover infinitely when negative (smaller than -1) number of attempts given" in assertAllStagesStopped {
+    "recover infinitely when negative (smaller than -1) number of attempts given" in {
       val oneThenBoom = Source(1 to 2).map { a =>
         if (a == 2) throw ex else a
       }
@@ -198,7 +196,7 @@ class FlowRecoverWithSpec extends StreamSpec {
         .cancel()
     }
 
-    "fail correctly when materialization of recover source fails" in assertAllStagesStopped {
+    "fail correctly when materialization of recover source fails" in {
       val matFail = TE("fail!")
       object FailingInnerMat extends GraphStage[SourceShape[String]] {
         val out = Outlet[String]("out")

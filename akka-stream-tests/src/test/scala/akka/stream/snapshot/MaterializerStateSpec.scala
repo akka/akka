@@ -4,17 +4,17 @@
 
 package akka.stream.snapshot
 
-import scala.concurrent.Promise
 import java.net.InetSocketAddress
-
-import akka.stream.FlowShape
-import akka.stream.Materializer
-import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Partition, Sink, Source, Tcp }
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.TestSink
 import javax.net.ssl.SSLContext
 
-class MaterializerStateSpec extends StreamSpec {
+import scala.concurrent.Promise
+
+import akka.stream.{ FlowShape, Materializer }
+import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Partition, Sink, Source, Tcp }
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.AkkaSpec
+
+class MaterializerStateSpec extends AkkaSpec() {
 
   "The MaterializerSnapshotting" must {
 

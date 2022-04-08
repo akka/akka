@@ -23,7 +23,6 @@ import akka.stream.Supervision
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
@@ -32,7 +31,7 @@ class FlowMapAsyncSpec extends StreamSpec {
 
   "A Flow with mapAsync" must {
 
-    "produce future elements" in assertAllStagesStopped {
+    "produce future elements" in {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       Source(1 to 3).mapAsync(4)(n => Future(n)).runWith(Sink.fromSubscriber(c))
@@ -94,7 +93,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       c.expectNoMessage(200.millis)
     }
 
-    "signal future already failed" in assertAllStagesStopped {
+    "signal future already failed" in {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
@@ -115,7 +114,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       latch.countDown()
     }
 
-    "signal future failure" in assertAllStagesStopped {
+    "signal future failure" in {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
@@ -136,7 +135,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       latch.countDown()
     }
 
-    "signal future failure asap" in assertAllStagesStopped {
+    "signal future failure asap" in {
       val latch = TestLatch(1)
       val done = Source(1 to 5)
         .map { n =>
@@ -158,7 +157,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       latch.countDown()
     }
 
-    "a failure mid-stream MUST cause a failure ASAP (stopping strategy)" in assertAllStagesStopped {
+    "a failure mid-stream MUST cause a failure ASAP (stopping strategy)" in {
       import system.dispatcher
       val pa = Promise[String]()
       val pb = Promise[String]()
@@ -200,7 +199,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       }
     }
 
-    "a failure mid-stream must skip element with resume strategy" in assertAllStagesStopped {
+    "a failure mid-stream must skip element with resume strategy" in {
       val pa = Promise[String]()
       val pb = Promise[String]()
       val pc = Promise[String]()
@@ -227,7 +226,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       elements.futureValue should ===(List("a", "b", /* no c */ "d", "e", "f"))
     }
 
-    "signal error from mapAsync" in assertAllStagesStopped {
+    "signal error from mapAsync" in {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
@@ -248,7 +247,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       latch.countDown()
     }
 
-    "resume after future failure" in assertAllStagesStopped {
+    "resume after future failure" in {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       Source(1 to 5)
@@ -266,7 +265,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "resume after already failed future" in assertAllStagesStopped {
+    "resume after already failed future" in {
       val c = TestSubscriber.manualProbe[Int]()
       Source(1 to 5)
         .mapAsync(4)(n =>
@@ -281,7 +280,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "resume after multiple failures" in assertAllStagesStopped {
+    "resume after multiple failures" in {
       val futures: List[Future[String]] = List(
         Future.failed(Utils.TE("failure1")),
         Future.failed(Utils.TE("failure2")),
@@ -295,7 +294,7 @@ class FlowMapAsyncSpec extends StreamSpec {
         3.seconds) should ===("happy!")
     }
 
-    "complete without requiring further demand (parallelism = 1)" in assertAllStagesStopped {
+    "complete without requiring further demand (parallelism = 1)" in {
       import system.dispatcher
       Source
         .single(1)
@@ -306,7 +305,7 @@ class FlowMapAsyncSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "complete without requiring further demand with already completed future (parallelism = 1)" in assertAllStagesStopped {
+    "complete without requiring further demand with already completed future (parallelism = 1)" in {
       Source
         .single(1)
         .mapAsync(1)(v => Future.successful(v))
@@ -316,7 +315,7 @@ class FlowMapAsyncSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "complete without requiring further demand (parallelism = 2)" in assertAllStagesStopped {
+    "complete without requiring further demand (parallelism = 2)" in {
       import system.dispatcher
       val probe =
         Source(1 :: 2 :: Nil).mapAsync(2)(v => Future { Thread.sleep(20); v }).runWith(TestSink.probe[Int])
@@ -325,14 +324,14 @@ class FlowMapAsyncSpec extends StreamSpec {
       probe.expectComplete()
     }
 
-    "complete without requiring further demand with already completed future (parallelism = 2)" in assertAllStagesStopped {
+    "complete without requiring further demand with already completed future (parallelism = 2)" in {
       val probe = Source(1 :: 2 :: Nil).mapAsync(2)(v => Future.successful(v)).runWith(TestSink.probe[Int])
 
       probe.request(2).expectNextN(2)
       probe.expectComplete()
     }
 
-    "finish after future failure" in assertAllStagesStopped {
+    "finish after future failure" in {
       import system.dispatcher
       Await.result(
         Source(1 to 3)
@@ -413,7 +412,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       result.futureValue should ===(Seq("1", "3"))
     }
 
-    "should handle cancel properly" in assertAllStagesStopped {
+    "should handle cancel properly" in {
       val pub = TestPublisher.manualProbe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()
 
@@ -428,7 +427,7 @@ class FlowMapAsyncSpec extends StreamSpec {
 
     }
 
-    "not run more futures than configured" in assertAllStagesStopped {
+    "not run more futures than configured" in {
       val parallelism = 8
 
       val counter = new AtomicInteger

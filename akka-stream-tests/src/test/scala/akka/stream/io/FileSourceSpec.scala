@@ -8,10 +8,10 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{ Files, NoSuchFileException }
 import java.util.Random
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.google.common.jimfs.{ Configuration, Jimfs }
 
 import akka.actor.ActorSystem
@@ -23,7 +23,6 @@ import akka.stream.io.FileSourceSpec.Settings
 import akka.stream.scaladsl.{ FileIO, Keep, Sink }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
@@ -76,7 +75,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   }
 
   "FileSource" must {
-    "read contents from a file" in assertAllStagesStopped {
+    "read contents from a file" in {
       val chunkSize = 512
 
       val p = FileIO
@@ -126,7 +125,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       future.futureValue === createSuccessful(chunkSize)
     }
 
-    "read partial contents from a file" in assertAllStagesStopped {
+    "read partial contents from a file" in {
       val chunkSize = 512
       val startPosition = 1000
       val bufferAttributes = Attributes.inputBuffer(1, 2)
@@ -167,7 +166,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       future.futureValue === createSuccessful(chunkSize)
     }
 
-    "complete only when all contents of a file have been signalled" in assertAllStagesStopped {
+    "complete only when all contents of a file have been signalled" in {
       val chunkSize = 256
 
       val demandAllButOneChunks = TestText.length / chunkSize - 1
@@ -201,7 +200,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectComplete()
     }
 
-    "onError with failure and return a failed IOResult when trying to read from file which does not exist" in assertAllStagesStopped {
+    "onError with failure and return a failed IOResult when trying to read from file which does not exist" in {
       val (r, p) = FileIO.fromPath(notExistingFile).toMat(Sink.asPublisher(false))(Keep.both).run()
       val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
@@ -214,7 +213,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       r.futureValue.status.isFailure shouldBe true
     }
 
-    "onError with failure and return a failed IOResult when trying to read from a directory instead of a file" in assertAllStagesStopped {
+    "onError with failure and return a failed IOResult when trying to read from a directory instead of a file" in {
       val (r, p) = FileIO.fromPath(directoryInsteadOfFile).toMat(Sink.asPublisher(false))(Keep.both).run()
       val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
@@ -251,7 +250,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       matVal.failed.futureValue shouldBe a[IOOperationIncompleteException]
     }
 
-    "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
+    "use dedicated blocking-io-dispatcher by default" in {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
       try {
