@@ -15,7 +15,7 @@ To use Akka Streams, add the module to your project:
 
 ## Introduction
 
-Substreams are represented as `SubSource` or `SubFlow` instances, on which you can multiplex a single `Source` or `Flow`
+Substreams are represented as @java[@javadoc[SubSource](akka.stream.javadsl.SubSource) or] @apidoc[akka.stream.*.SubFlow] instances, on which you can multiplex a single @java[@apidoc[akka.stream.*.Source] or] @apidoc[akka.stream.*.Flow]
 into a stream of streams.
 
 SubFlows cannot contribute to the super-flow’s materialized value since they are materialized later,
@@ -27,7 +27,7 @@ operators that create substreams are listed on @ref[Nesting and flattening opera
 
 ### groupBy
 
-A typical operation that generates substreams is `groupBy`.
+A typical operation that generates substreams is @apidoc[groupBy](akka.stream.*.Source) {scala="#groupBy[K](maxSubstreams:Int,f:Out=%3EK,allowClosedSubstreamRecreation:Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#groupBy(int,akka.japi.function.Function,boolean)"}.
 
 Scala
 :   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy1 }
@@ -44,7 +44,7 @@ a new substream is opened and subsequently fed with all elements belonging to th
 If `allowClosedSubstreamRecreation` is set to `true` a substream belonging to a specific key
 will be recreated if it was closed before, otherwise elements belonging to that key will be dropped.
 
-If you add a `Sink` or `Flow` right after the `groupBy` operator,
+If you add a @apidoc[akka.stream.*.Sink] or @apidoc[akka.stream.*.Flow] right after the `groupBy` operator,
 all transformations are applied to all encountered substreams in the same fashion.
 So, if you add the following `Sink`, that is added to each of the substreams as in the below diagram.
 
@@ -56,10 +56,10 @@ Java
 
 ![stream-substream-groupBy2.png](../../images/stream-substream-groupBy2.png)
 
-Also substreams, more precisely, `SubFlow` and `SubSource` have methods that allow you to
+Also substreams, more precisely, @apidoc[akka.stream.*.SubFlow] @java[and @javadoc[SubSource](akka.stream.javadsl.SubSource)] have methods that allow you to
 merge or concat substreams into the main stream again.
 
-The `mergeSubstreams` method merges an unbounded number of substreams back to the main stream.
+The @apidoc[mergeSubstreams](akka.stream.*.SubFlow) {scala="#mergeSubstreams:F[Out]" java="#mergeSubstreams()"} method merges an unbounded number of substreams back to the main stream.
 
 Scala
 :   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy3 }
@@ -70,7 +70,7 @@ Java
 ![stream-substream-groupBy3.png](../../images/stream-substream-groupBy3.png)
 
 You can limit the number of active substreams running and being merged at a time,
-with either the `mergeSubstreamsWithParallelism` or `concatSubstreams` method.
+with either the @apidoc[mergeSubstreamsWithParallelism](akka.stream.*.SubFlow) {scala="#mergeSubstreamsWithParallelism(parallelism:Int):F[Out]" java="#mergeSubstreamsWithParallelism(int)"} or @apidoc[concatSubstreams](akka.stream.*.SubFlow) {scala="#concatSubstreams:F[Out]" java="#concatSubstreams()"} method.
 
 Scala
 :   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy4 }
@@ -89,9 +89,9 @@ and this leads to the stream being deadlocked.
 
 ### splitWhen and splitAfter
 
-`splitWhen` and `splitAfter` are two other operations which generate substreams.
+@apidoc[splitWhen](akka.stream.*.Source) {scala="#splitWhen(p:Out=%3EBoolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitWhen(akka.japi.function.Predicate)"} and @apidoc[splitAfter](akka.stream.*.Source) {scala="#splitAfter(p:Out=%3EBoolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitAfter(akka.japi.function.Predicate)"} are two other operations which generate substreams.
 
-The difference from `groupBy` is that, if the predicate for `splitWhen` and `splitAfter` returns true,
+The difference from @apidoc[groupBy](akka.stream.*.Source) {scala="#groupBy[K](maxSubstreams:Int,f:Out=%3EK,allowClosedSubstreamRecreation:Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#groupBy(int,akka.japi.function.Function,boolean)"} is that, if the predicate for `splitWhen` and `splitAfter` returns true,
 a new substream is generated, and the succeeding elements after split will flow into the new substream.
 
 `splitWhen` flows the element on which the predicate returned true to a new substream,
@@ -126,10 +126,10 @@ This prints out the following output.
 
 ### flatMapConcat
 
-`flatMapConcat` and `flatMapMerge` are substream operations different from `groupBy` and `splitWhen/After`.
+@apidoc[flatMapConcat](akka.stream.*.Source) {scala="#flatMapConcat[T,M](f:Out=%3Eakka.stream.Graph[akka.stream.SourceShape[T],M]):FlowOps.this.Repr[T]" java="#flatMapConcat(akka.japi.function.Function)"} and @apidoc[flatMapMerge](akka.stream.*.Source) {scala="#flatMapMerge[T,M](breadth:Int,f:Out=%3Eakka.stream.Graph[akka.stream.SourceShape[T],M]):FlowOps.this.Repr[T]" java="#flatMapMerge(int,akka.japi.function.Function)"} are substream operations different from @apidoc[groupBy](akka.stream.*.Source) {scala="#groupBy[K](maxSubstreams:Int,f:Out=%3EK,allowClosedSubstreamRecreation:Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#groupBy(int,akka.japi.function.Function,boolean)"} and `splitWhen/After`.
 
 `flatMapConcat` takes a function, which is `f` in the following diagram.
-The function `f` of `flatMapConcat` transforms each input element into a `Source` that is then flattened
+The function `f` of `flatMapConcat` transforms each input element into a @apidoc[akka.stream.*.Source] that is then flattened
 into the output stream by concatenation.
 
 Scala
@@ -140,7 +140,7 @@ Java
 
 ![stream-substream-flatMapConcat1.png](../../images/stream-substream-flatMapConcat1.png)
 
-Like the `concat` operation on `Flow`, it fully consumes one `Source` after the other.
+Like the `concat` operation on @apidoc[akka.stream.*.Flow], it fully consumes one @apidoc[akka.stream.*.Source] after the other.
 So, there is only one substream actively running at a given time.
 
 Then once the active substream is fully consumed, the next substream can start running.
