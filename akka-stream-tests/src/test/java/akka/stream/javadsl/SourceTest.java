@@ -14,28 +14,26 @@ import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 // #imports
 import akka.stream.*;
-
 // #imports
 import akka.stream.scaladsl.FlowSpec;
-import akka.util.ConstantFun;
-import akka.stream.stage.*;
-import akka.testkit.AkkaSpec;
+import akka.stream.stage.AbstractInHandler;
+import akka.stream.stage.AbstractOutHandler;
+import akka.stream.stage.GraphStage;
+import akka.stream.stage.GraphStageLogic;
 import akka.stream.testkit.TestPublisher;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.TestKit;
+import akka.util.ConstantFun;
 import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.util.Try;
-import akka.testkit.AkkaJUnitActorSystemResource;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -43,9 +41,10 @@ import java.util.stream.Stream;
 import static akka.NotUsed.notUsed;
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("serial")
 public class SourceTest extends StreamTest {
@@ -682,6 +681,56 @@ public class SourceTest extends StreamTest {
         .thenAccept(elem -> probe.getRef().tell(elem, ActorRef.noSender()));
 
     probe.expectMsgEquals("2334445555");
+  }
+
+  @Test
+  public void mustBeAbleToUseStatefulMap() throws Exception {
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
+    final CompletionStage<String> grouped =
+        Source.from(input)
+            .statefulMap(
+                () -> new ArrayList<Integer>(2),
+                (buffer, elem) -> {
+                  if (buffer.size() == 2) {
+                    final ArrayList<Integer> group = new ArrayList<>(buffer);
+                    buffer.clear();
+                    buffer.add(elem);
+                    return Pair.create(buffer, group);
+                  } else {
+                    buffer.add(elem);
+                    return Pair.create(buffer, Collections.emptyList());
+                  }
+                },
+                Optional::ofNullable)
+            .filterNot(List::isEmpty)
+            .map(String::valueOf)
+            .runFold("", (acc, elem) -> acc + elem, system);
+    Assert.assertEquals("[1, 2][3, 4][5]", grouped.toCompletableFuture().get(3, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void mustBeAbleToUseStatefulMapAsDistinctUntilChanged() throws Exception {
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 1, 1, 2, 3, 3, 3, 4, 5, 5, 5);
+    final CompletionStage<String> result =
+        Source.from(input)
+            .statefulMap(
+                Optional::<Integer>empty,
+                (buffer, elem) -> {
+                  if (buffer.isPresent()) {
+                    if (buffer.get().equals(elem)) {
+                      return Pair.create(buffer, Optional.<Integer>empty());
+                    } else {
+                      return Pair.create(Optional.of(elem), Optional.of(elem));
+                    }
+                  } else {
+                    return Pair.create(Optional.of(elem), Optional.of(elem));
+                  }
+                },
+                last -> Optional.empty())
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .runFold("", (acc, elem) -> acc + elem, system);
+    Assert.assertEquals("12345", result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test

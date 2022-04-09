@@ -10,15 +10,16 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.stream.Attributes.SourceLocation
 import akka.stream._
-import akka.stream.impl.SingleConcat
+import akka.stream.Attributes.SourceLocation
 import akka.stream.impl.{
   fusing,
   LinearTraversalBuilder,
@@ -29,11 +30,12 @@ import akka.stream.impl.{
   Timers,
   TraversalBuilder
 }
+import akka.stream.impl.SingleConcat
 import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
-import akka.util.OptionVal
 import akka.util.{ ConstantFun, Timeout }
+import akka.util.OptionVal
 import akka.util.ccompat._
 
 /**
@@ -800,6 +802,7 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
 @ccompatUsedUntil213
 trait FlowOps[+Out, +Mat] {
   import GraphDSL.Implicits._
+
   import akka.stream.impl.Stages._
 
   type Repr[+O] <: FlowOps[O, Mat] {
@@ -987,6 +990,39 @@ trait FlowOps[+Out, +Mat] {
    *
    */
   def mapConcat[T](f: Out => IterableOnce[T]): Repr[T] = statefulMapConcat(() => f)
+
+  /**
+   * Transform each stream element with the help of a state.
+   *
+   * The state creation function is invoked once when the stream is materialized and the returned state is passed to
+   * the mapping function for mapping the first element. The mapping function returns a mapped element to emit
+   * downstream and a state to pass to the next mapping function. The state can be the same for each mapping return,
+   * be a new immutable state but it is also safe to use a mutable state. The returned `T` MUST NOT be `null` as it is
+   * illegal as stream element - according to the Reactive Streams specification.
+   *
+   * For stateless variant see [[FlowOps.map]].
+   *
+   * The `onComplete` function is called only once when the upstream or downstream finished, You can do some clean-up here,
+   * and if the returned value is not empty, it will be emitted to the downstream if available, otherwise the value will be dropped.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the mapping function returns an element and downstream is ready to consume it
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @tparam S the type of the state
+   * @tparam T the type of the output elements
+   * @param create a function that creates the initial state
+   * @param f a function that transforms the upstream element and the state into a pair of next state and output element
+   * @param onComplete a function that transforms the ongoing state into an optional output element
+   */
+  def statefulMap[S, T](create: () => S)(f: (S, Out) => (S, T), onComplete: S => Option[T]): Repr[T] =
+    via(new StatefulMap[S, Out, T](create, f, onComplete))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
