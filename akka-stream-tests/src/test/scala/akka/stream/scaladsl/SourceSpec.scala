@@ -38,7 +38,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
       //#source-single
 
-      s.futureValue should ===(immutable.Seq(1))
+      s.futureValue should ===(immutable.Seq(2))
 
     }
 
