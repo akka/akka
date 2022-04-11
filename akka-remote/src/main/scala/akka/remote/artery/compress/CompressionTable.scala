@@ -33,7 +33,7 @@ private[remote] final class CompressionTable[T](
   def invert: DecompressionTable[T] =
     if (_dictionary.isEmpty) DecompressionTable.empty[T].copy(originUid = originUid, version = version)
     else {
-      // TODO: these are some expensive sanity checks, about the numbers being consecutive, without gaps
+      // TODO: these are some expensive checks, about the numbers being consecutive, without gaps
       // TODO: we can remove them, make them re-map (not needed I believe though)
       val expectedGaplessSum = Integer.valueOf((_dictionary.size * (_dictionary.size + 1)) / 2) /* Dirichlet */
       import akka.util.ccompat.JavaConverters._

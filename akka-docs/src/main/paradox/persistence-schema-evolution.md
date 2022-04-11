@@ -332,7 +332,7 @@ changes in the message format.
 ### Remove event class and ignore events
 
 **Situation:**
-While investigating app performance you notice that insane amounts of `CustomerBlinked` events are being stored
+While investigating app performance you notice that unreasonable amounts of `CustomerBlinked` events are being stored
 for every customer each time he/she blinks. Upon investigation, you decide that the event does not add any value
 and should be deleted. You still have to be able to replay from a journal which contains those old CustomerBlinked events though.
 
