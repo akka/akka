@@ -15,7 +15,7 @@ enablePlugins(
 disablePlugins(MimaPlugin)
 
 addCommandAlias("verifyCodeStyle", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
-addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbtAll")
+addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbt")
 
 addCommandAlias(
   name = "fixall",
