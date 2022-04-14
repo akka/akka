@@ -8,7 +8,6 @@ import java.util
 import java.util.Optional
 import java.util.concurrent.{ CompletableFuture, CompletionStage }
 import java.util.function.{ BiFunction, Supplier }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
@@ -26,7 +25,7 @@ import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.{ function, JavaPartialFunction, Pair, Util }
 import akka.japi.function.Creator
 import akka.stream._
-import akka.stream.impl.LinearTraversalBuilder
+import akka.stream.impl.{ LinearTraversalBuilder, UnfoldAsyncJava }
 import akka.util.{ unused, _ }
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
@@ -265,8 +264,7 @@ object Source {
    * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
    */
   def unfoldAsync[S, E](s: S, f: function.Function[S, CompletionStage[Optional[Pair[S, E]]]]): Source[E, NotUsed] =
-    new Source(scaladsl.Source.unfoldAsync(s)((s: S) =>
-      f.apply(s).toScala.map(_.asScala.map(_.toScala))(akka.dispatch.ExecutionContexts.parasitic)))
+    new Source(scaladsl.Source.fromGraph(new UnfoldAsyncJava[S, E](s, f)))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.

@@ -1200,4 +1200,39 @@ public class SourceTest extends StreamTest {
             .join();
     assertEquals(Done.getInstance(), completion);
   }
+
+  @Test
+  public void mustGenerateAFiniteFibonacciSequenceAsynchronously() {
+    final List<Integer> resultList =
+        Source.unfoldAsync(
+                Pair.create(0, 1),
+                (pair) -> {
+                  if (pair.first() > 10000000) {
+                    return CompletableFuture.completedFuture(Optional.empty());
+                  } else {
+                    return CompletableFuture.supplyAsync(
+                        () ->
+                            Optional.of(
+                                Pair.create(
+                                    Pair.create(pair.second(), pair.first() + pair.second()),
+                                    pair.first())),
+                        system.dispatcher());
+                  }
+                })
+            .runFold(
+                new ArrayList<Integer>(),
+                (list, next) -> {
+                  list.add(next);
+                  return list;
+                },
+                system)
+            .toCompletableFuture()
+            .join();
+    assertEquals(
+        Arrays.asList(
+            0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181,
+            6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040,
+            1346269, 2178309, 3524578, 5702887, 9227465),
+        resultList);
+  }
 }
