@@ -26,14 +26,14 @@ instead allow completely protocol-specific user-level APIs.
 ## Basic Architecture
 
 Each transport implementation will be made available as a separate Akka
-extension, offering an `ActorRef` representing the initial point of
+extension, offering an @apidoc[akka.actor.ActorRef] representing the initial point of
 contact for client code. This "manager" accepts requests for establishing a
 communications channel (e.g. connect or listen on a TCP socket). Each
 communications channel is represented by one dedicated actor, which is exposed
 to client code for all interaction with this channel over its entire lifetime.
 
 The central element of the implementation is the transport-specific “selector”
-actor; in the case of TCP this would wrap a `java.nio.channels.Selector`.
+actor; in the case of TCP this would wrap a @javadoc[java.nio.channels.Selector](java.nio.channels.Selector).
 The channel actors register their interest in readability or writability of
 their channel by sending corresponding messages to their assigned selector
 actor. However, the actual channel reading and writing is performed by the
@@ -84,7 +84,7 @@ actors to notice the demise of their user-level handler actors and terminate in
 an orderly fashion in that case as well; this naturally reduces the chances of
 leaking open channels.
 
-The choice of using `ActorRef` for exposing all functionality entails
+The choice of using @apidoc[akka.actor.ActorRef] for exposing all functionality entails
 that these references can be distributed or delegated freely and in general
 handled as the user sees fit, including the use of remoting and life-cycle
 monitoring (just to name two).
