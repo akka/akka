@@ -7,10 +7,12 @@ package akka.stream.scaladsl
 import akka.Done
 import akka.stream.testkit.Utils.TE
 import akka.testkit.DefaultTimeout
-import org.scalatest.time.{ Millis, Span }
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
 
 import scala.annotation.nowarn
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
+import scala.concurrent.Future
 //#imports
 import akka.stream._
 
@@ -138,6 +140,14 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val gotten = for (_ <- 0 to 2) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1, 2))
       out.expectComplete()
+    }
+
+    "combine many sources into one" in {
+      val sources = Vector.tabulate(5)(_ => Source.maybe[Int])
+      val (promises, sub) = Source.combine(sources)(Concat(_)).toMat(TestSink.probe[Int])(Keep.both).run()
+      for ((promise, idx) <- promises.zipWithIndex)
+        promise.success(Some(idx))
+      sub.request(5).expectNextN(0 to 4).expectComplete()
     }
 
     "combine from two inputs with simplified API" in {

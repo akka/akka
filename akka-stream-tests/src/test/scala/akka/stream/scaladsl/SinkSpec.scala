@@ -128,6 +128,34 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       }
     }
 
+    "combine many sinks to one" in {
+      val source = Source(List(0, 1, 2, 3, 4, 5))
+      implicit val ex = akka.dispatch.ExecutionContexts.parasitic
+      val sink = Sink
+        .combine(
+          List(
+            Sink.reduce[Int]((a, b) => a + b),
+            Sink.reduce[Int]((a, b) => a + b),
+            Sink.reduce[Int]((a, b) => a + b)))(Broadcast[Int](_))
+        .mapMaterializedValue(Future.reduceLeft(_)(_ + _))
+      val result = source.runWith(sink)
+      result.futureValue should be(45)
+    }
+
+    "combine two sinks with combineMat" in {
+      implicit val ex = akka.dispatch.ExecutionContexts.parasitic
+      Source(List(0, 1, 2, 3, 4, 5))
+        .toMat(Sink.combineMat(Sink.reduce[Int]((a, b) => a + b), Sink.reduce[Int]((a, b) => a + b))(Broadcast[Int](_))(
+          (f1, f2) => {
+            for {
+              r1 <- f1
+              r2 <- f2
+            } yield r1 + r2
+          }))(Keep.right)
+        .run()
+        .futureValue should be(30)
+    }
+
     "combine to two sinks with simplified API" in {
       val probes = Seq.fill(2)(TestSubscriber.manualProbe[Int]())
       val sink = Sink.combine(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)))(Broadcast[Int](_))
