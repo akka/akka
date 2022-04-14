@@ -4,18 +4,17 @@
 
 package akka.stream.impl
 
-import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.NonFatal
-
 import akka.Done
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts.parasitic
-import akka.stream._
 import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
-import scala.concurrent.ExecutionContext
+
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API
@@ -56,7 +55,9 @@ import scala.concurrent.ExecutionContext
         }
     }
 
-    private val readCallback = getAsyncCallback[Try[Option[T]]] {
+    private val readCallback = getAsyncCallback[Try[Option[T]]](handle).invoke _
+
+    private def handle(result: Try[Option[T]]): Unit = result match {
       case Success(data) =>
         data match {
           case Some(d) => push(out, d)
@@ -67,7 +68,7 @@ import scala.concurrent.ExecutionContext
                 close(resource).onComplete(getAsyncCallback[Try[Done]] {
                   case Success(Done) => completeStage()
                   case Failure(ex)   => failStage(ex)
-                }.invoke)
+                }.invoke)(parasitic)
                 state = None
 
               case None =>
@@ -76,7 +77,7 @@ import scala.concurrent.ExecutionContext
             }
         }
       case Failure(t) => errorHandler(t)
-    }.invoke _
+    }
 
     override def preStart(): Unit = createResource()
 
@@ -84,7 +85,11 @@ import scala.concurrent.ExecutionContext
       state match {
         case Some(resource) =>
           try {
-            readData(resource).onComplete(readCallback)(parasitic)
+            val future = readData(resource)
+            future.value match {
+              case Some(value) => handle(value)
+              case None        => future.onComplete(readCallback)(parasitic)
+            }
           } catch errorHandler
         case None =>
         // we got a pull but there is no open resource, we are either
@@ -104,7 +109,7 @@ import scala.concurrent.ExecutionContext
             case Success(Done) =>
               createResource()
             case Failure(ex) => failStage(ex)
-          }.invoke)
+          }.invoke)(parasitic)
           state = None
         case None =>
           createResource()
@@ -125,7 +130,7 @@ import scala.concurrent.ExecutionContext
             }
           case _ => // we don't care here
         }
-      }
+      }(parasitic)
     }
 
     setHandler(out, this)
