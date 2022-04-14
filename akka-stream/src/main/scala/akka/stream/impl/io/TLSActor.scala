@@ -380,7 +380,7 @@ import akka.util.ByteString
         // it doesn't make any progress any more.
         //
         // We guard against this JDK bug by checking for reasonable invariants after the call to engine.wrap
-        if (!(transportOutBuffer.position() > 0 || lastHandshakeStatus != NEED_WRAP))
+        if (transportOutBuffer.position() == 0 && lastHandshakeStatus == NEED_WRAP)
           throw new IllegalStateException("SSLEngine trying to loop NEED_WRAP without producing output")
 
         flushToTransport()
@@ -395,6 +395,7 @@ import akka.util.ByteString
 
   @tailrec
   private def doUnwrap(ignoreOutput: Boolean): Unit = {
+    val oldInPosition = transportInBuffer.position()
     val result = engine.unwrap(transportInBuffer, userOutBuffer)
     if (ignoreOutput) userOutBuffer.clear()
     lastHandshakeStatus = result.getHandshakeStatus
@@ -413,6 +414,11 @@ import akka.util.ByteString
             flushToUser()
             handshakeFinished()
             transportInChoppingBlock.putBack(transportInBuffer)
+          case NEED_UNWRAP
+              if transportInBuffer.hasRemaining &&
+              userOutBuffer.position() == 0 &&
+              transportInBuffer.position() == oldInPosition =>
+            throw new IllegalStateException("SSLEngine trying to loop NEED_UNWRAP without producing output")
           case _ =>
             if (transportInBuffer.hasRemaining) doUnwrap(ignoreOutput = false)
             else flushToUser()
