@@ -414,12 +414,13 @@ import akka.util.ByteString
             flushToUser()
             handshakeFinished()
             transportInChoppingBlock.putBack(transportInBuffer)
+          case NEED_UNWRAP
+              if transportInBuffer.hasRemaining &&
+              userOutBuffer.position() == 0 &&
+              transportInBuffer.position() == oldInPosition =>
+            throw new IllegalStateException("SSLEngine trying to loop NEED_UNWRAP without producing output")
           case _ =>
-            if (transportInBuffer.hasRemaining)
-              if (userOutBuffer.position() == 0 && transportInBuffer.position() == oldInPosition)
-                throw new IllegalStateException("SSLEngine trying to loop NEED_UNWRAP without producing output")
-              else
-                doUnwrap(ignoreOutput = false)
+            if (transportInBuffer.hasRemaining) doUnwrap(ignoreOutput = false)
             else flushToUser()
         }
       case CLOSED =>
