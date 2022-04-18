@@ -1,27 +1,30 @@
 /*
- * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReferenceArray
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.collection.immutable.Queue
-import scala.collection.mutable.LongMap
-import scala.concurrent.{ Future, Promise }
-import scala.util.{ Failure, Success, Try }
+
 import akka.NotUsed
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
 import akka.dispatch.AbstractNodeQueue
 import akka.stream._
-import akka.stream.Attributes.LogLevels
 import akka.stream.stage._
+
+import scala.annotation.tailrec
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReferenceArray
+
+import scala.collection.immutable
+import scala.collection.mutable.LongMap
+import scala.collection.immutable.Queue
+import akka.annotation.InternalApi
+import akka.annotation.DoNotInherit
+import akka.stream.Attributes.LogLevels
 
 /**
  * A MergeHub is a special streaming hub that is able to collect streamed elements from a dynamic set of
@@ -32,20 +35,6 @@ import akka.stream.stage._
  */
 object MergeHub {
   private val Cancel = -1
-
-  /**
-   * A DrainingControl object is created during the materialization of a MergeHub and allows to initiate the draining
-   * and eventual completion of the Hub from the outside.
-   */
-  sealed trait DrainingControl {
-
-    /**
-     * Set the operation mode of the linked MergeHub to draining. In this mode the Hub will cancel any new producer and
-     * will complete as soon as all the currently connected producers complete.
-     *
-     */
-    def drainAndComplete(): Unit
-  }
 
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
@@ -61,26 +50,7 @@ object MergeHub {
    * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
    */
   def source[T](perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] =
-    Source.fromGraph(new MergeHub[T](perProducerBufferSize, false)).mapMaterializedValue(_._1)
-
-  /**
-   * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
-   * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
-   * arbitrary many times and each of the materializations will feed the elements into the original [[Source]].
-   *
-   * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
-   * [[Sink]] for feeding that materialization.
-   *
-   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
-   * and any new producers using the [[Sink]] will be cancelled.
-   *
-   * The materialized [[DrainingControl]] can be used to drain the Hub: any new producers using the [[Sink]] will be cancelled
-   * and the Hub will be closed completing the [[Source]] as soon as all currently connected producers complete.
-   *
-   * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
-   */
-  def sourceWithDraining[T](perProducerBufferSize: Int): Source[T, (Sink[T, NotUsed], DrainingControl)] =
-    Source.fromGraph(new MergeHub[T](perProducerBufferSize, true))
+    Source.fromGraph(new MergeHub[T](perProducerBufferSize))
 
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
@@ -95,38 +65,14 @@ object MergeHub {
    */
   def source[T]: Source[T, Sink[T, NotUsed]] = source(perProducerBufferSize = 16)
 
-  /**
-   * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
-   * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
-   * arbitrary many times and each of the materializations will feed the elements into the original [[Source]].
-   *
-   * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
-   * [[Sink]] for feeding that materialization.
-   *
-   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
-   * and any new producers using the [[Sink]] will be cancelled.
-   *
-   * The materialized [[DrainingControl]] can be used to drain the Hub: any new producers using the [[Sink]] will be cancelled
-   * and the Hub will be closed completing the [[Source]] as soon as all currently connected producers complete.
-   */
-  def sourceWithDraining[T](): Source[T, (Sink[T, NotUsed], DrainingControl)] =
-    sourceWithDraining(perProducerBufferSize = 16)
-
   final class ProducerFailed(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi
-private[akka] final class MergeHubDrainingControlImpl(drainAction: () => Unit) extends MergeHub.DrainingControl {
-  override def drainAndComplete(): Unit = {
-    drainAction()
-  }
-}
-
-private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boolean = false)
-    extends GraphStageWithMaterializedValue[SourceShape[T], (Sink[T, NotUsed], MergeHub.DrainingControl)] {
+private[akka] class MergeHub[T](perProducerBufferSize: Int)
+    extends GraphStageWithMaterializedValue[SourceShape[T], Sink[T, NotUsed]] {
   require(perProducerBufferSize > 0, "Buffer size must be positive")
 
   val out: Outlet[T] = Outlet("MergeHub.out")
@@ -169,23 +115,12 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
     private val queue = new AbstractNodeQueue[Event] {}
     @volatile private[this] var needWakeup = false
     @volatile private[this] var shuttingDown = false
-    @volatile private[this] var draining = false
 
     private[this] val demands = scala.collection.mutable.LongMap.empty[InputState]
     private[this] val wakeupCallback = getAsyncCallback[NotUsed](
       (_) =>
         // We are only allowed to dequeue if we are not backpressured. See comment in tryProcessNext() for details.
         if (isAvailable(out)) tryProcessNext(firstAttempt = true))
-
-    private[MergeHub] val drainingCallback: Option[AsyncCallback[NotUsed]] = {
-      // Only create an async callback if the draining support is enabled in order to avoid book-keeping costs.
-      if (drainingEnabled) {
-        Some(getAsyncCallback[NotUsed] { _ =>
-          draining = true
-          tryCompleteOnDraining()
-        })
-      } else None
-    }
 
     setHandler(out, this)
 
@@ -200,14 +135,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
         true
       case Deregister(id) =>
         demands.remove(id)
-        if (drainingEnabled && draining) tryCompleteOnDraining()
         true
-    }
-
-    private def tryCompleteOnDraining(): Unit = {
-      if (demands.isEmpty && (queue.peek() eq null)) {
-        completeStage()
-      }
     }
 
     override def onPull(): Unit = tryProcessNext(firstAttempt = true)
@@ -230,16 +158,13 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
         // and have been enqueued just after it
         if (firstAttempt)
           tryProcessNext(firstAttempt = false)
-        else if (drainingEnabled && draining)
-          tryCompleteOnDraining()
       }
     }
 
     def isShuttingDown: Boolean = shuttingDown
-    def isDraining: Boolean = drainingEnabled && draining
 
     // External API
-    private[MergeHub] def enqueue(ev: Event): Unit = {
+    def enqueue(ev: Event): Unit = {
       queue.add(ev)
       /*
        * Simple volatile var is enough, there is no need for a CAS here. The first important thing to note
@@ -296,8 +221,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
     }
   }
 
-  override def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes): (GraphStageLogic, (Sink[T, NotUsed], MergeHub.DrainingControl)) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Sink[T, NotUsed]) = {
     val idCounter = new AtomicLong()
 
     val logic: MergedSourceLogic = new MergedSourceLogic(shape)
@@ -314,7 +238,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
           private[this] val id = idCounter.getAndIncrement()
 
           override def preStart(): Unit = {
-            if (!logic.isDraining && !logic.isShuttingDown) {
+            if (!logic.isShuttingDown) {
               logic.enqueue(Register(id, getAsyncCallback(onDemand)))
 
               // At this point, we could be in the unfortunate situation that:
@@ -371,13 +295,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
       case None    => Sink.fromGraph(sink)
     }
 
-    val drainingAction = logic.drainingCallback match {
-      case Some(cbk) => () => cbk.invoke(NotUsed)
-      case None      => () => throw new IllegalStateException("Draining control not enabled")
-    }
-    val drainingControl = new MergeHubDrainingControlImpl(drainingAction)
-
-    (logic, (sinkWithAttributes, drainingControl))
+    (logic, sinkWithAttributes)
   }
 }
 
@@ -410,14 +328,38 @@ object BroadcastHub {
    * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
    * cancelled are simply removed from the dynamic set of consumers.
    *
+   * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
+   *   This is only used initially when the operator is starting up, i.e. it is not honored when consumers have
+   *   been removed (canceled).
+   * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
+   *   is backpressured.
+   */
+  def sink[T](startAfterNrOfConsumers: Int, bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
+    Sink.fromGraph(new BroadcastHub[T](bufferSize, startAfterNrOfConsumers))
+
+  /**
+   * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
+   * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
+   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
+   * broadcast elements from the original [[Sink]].
+   *
+   * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
+   * [[Source]] for consuming the [[Sink]] of that materialization.
+   *
+   * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
+   * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
+   * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
+   * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
+   * cancelled are simply removed from the dynamic set of consumers.
+   *
    * @param bufferSize Buffer size used by the producer. Gives an upper bound on how "far" from each other two
    *                   concurrent consumers can be in terms of element. If this buffer is full, the producer
    *                   is backpressured. Must be a power of two and less than 4096.
    */
-  def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](bufferSize))
+  def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](0, bufferSize))
 
   /**
-   * Creates a [[Sink]] with default buffer size 256 that receives elements from its upstream producer and broadcasts them to a dynamic set
+   * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
    * value. This [[Source]] can be materialized arbitrary many times and each materialization will receive the
    * broadcast elements from the original [[Sink]].
@@ -432,14 +374,13 @@ object BroadcastHub {
    * cancelled are simply removed from the dynamic set of consumers.
    *
    */
-  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(bufferSize = defaultBufferSize)
-
+  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(startAfterNrOfConsumers = 0, bufferSize = 256)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class BroadcastHub[T](bufferSize: Int)
+private[akka] class BroadcastHub[T](bufferSize: Int, startAfterNrOfConsumers: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
   require(bufferSize > 0, "Buffer size must be positive")
   require(bufferSize < 4096, "Buffer size larger then 4095 is not allowed")
@@ -479,6 +420,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     private[this] val callbackPromise: Promise[AsyncCallback[HubEvent]] = Promise()
     private[this] val noRegistrationsState = Open(callbackPromise.future, Nil)
     val state = new AtomicReference[HubState](noRegistrationsState)
+
+    private var initialized = false
+    private var pending = Vector.empty[T]
 
     // Start from values that will almost immediately overflow. This has no effect on performance, any starting
     // number will do, however, this protects from regressions as these values *almost surely* overflow and fail
@@ -526,6 +470,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
             val startFrom = head
             activeConsumers += 1
             addConsumer(consumer, startFrom)
+
+            if (activeConsumers >= startAfterNrOfConsumers)
+              initialized = true
             // in case the consumer is already stopped we need to undo registration
             implicit val ec = materializer.executionContext
             consumer.callback.invokeWithFeedback(Initialize(startFrom)).failed.foreach {
@@ -533,6 +480,11 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
                 callbackPromise.future.foreach(callback =>
                   callback.invoke(UnRegister(consumer.id, startFrom, startFrom)))
               case _ => ()
+            }
+
+            if (initialized && pending.nonEmpty) {
+              pending.foreach(publish)
+              pending = Vector.empty[T]
             }
           }
 
@@ -551,13 +503,17 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
               head = finalOffset
               if (!hasBeenPulled(in)) pull(in)
             }
-          } else checkUnblock(previousOffset)
+          } else {
+            tryPull()
+            checkUnblock(previousOffset)
+          }
 
         case Advance(id, previousOffset) =>
           val newOffset = previousOffset + DemandThreshold
           // Move the consumer from its last known offset to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, newOffset)
+          tryPull()
           checkUnblock(previousOffset)
         case NeedWakeup(id, previousOffset, currentOffset) =>
           // Move the consumer from its last known offset to its new one. Check if we are unblocked.
@@ -565,7 +521,11 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
           addConsumer(consumer, currentOffset)
 
           // Also check if the consumer is now unblocked since we published an element since it went asleep.
-          if (currentOffset != tail) consumer.callback.invoke(Wakeup)
+          if (currentOffset != tail) {
+            consumer.callback.invoke(Wakeup)
+          } else {
+            tryPull()
+          }
           checkUnblock(previousOffset)
       }
     }
@@ -573,7 +533,12 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     // Producer API
     // We are full if the distance between the slowest (known) consumer and the fastest (known) consumer is
     // the buffer size. We must wait until the slowest either advances, or cancels.
-    private def isFull: Boolean = tail - head == bufferSize
+    private def isFull: Boolean = tail - head + pending.size >= bufferSize
+
+    private def tryPull(): Unit = {
+      if (initialized && !isClosed(in) && !hasBeenPulled(in) && !isFull)
+        pull(in)
+    }
 
     override def onUpstreamFailure(ex: Throwable): Unit = {
       val failMessage = HubCompleted(Some(ex))
@@ -683,12 +648,17 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     }
 
     private def publish(elem: T): Unit = {
-      val idx = tail & Mask
-      val wheelSlot = tail & WheelMask
-      queue(idx) = elem.asInstanceOf[AnyRef]
-      // Publish the new tail before calling the wakeup
-      tail = tail + 1
-      wakeupIdx(wheelSlot)
+      if (!initialized || activeConsumers == 0) {
+        // will be published when first consumers are registered
+        pending :+= elem
+      } else {
+        val idx = tail & Mask
+        val wheelSlot = tail & WheelMask
+        queue(idx) = elem.asInstanceOf[AnyRef]
+        // Publish the new tail before calling the wakeup
+        tail = tail + 1
+        wakeupIdx(wheelSlot)
+      }
     }
 
     // Consumer API
@@ -849,7 +819,7 @@ object PartitionHub {
    * cancelled are simply removed from the dynamic set of consumers.
    *
    * This `statefulSink` should be used when there is a need to keep mutable state in the partition function,
-   * e.g. for implementing round-robin or sticky session kind of routing. If state is not needed the [[#sink]] can
+   * e.g. for implemening round-robin or sticky session kind of routing. If state is not needed the [[#sink]] can
    * be more convenient to use.
    *
    * @param partitioner Function that decides where to route an element. It is a factory of a function to
@@ -1103,8 +1073,8 @@ object PartitionHub {
     startAfterNrOfConsumers: Int,
     bufferSize: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
-  import PartitionHub.ConsumerInfo
   import PartitionHub.Internal._
+  import PartitionHub.ConsumerInfo
 
   val in: Inlet[T] = Inlet("PartitionHub.in")
   override val shape: SinkShape[T] = SinkShape(in)

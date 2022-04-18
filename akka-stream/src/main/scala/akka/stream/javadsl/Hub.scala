@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
-import java.util.function.{ BiFunction, Supplier, ToLongBiFunction }
 import akka.NotUsed
+import java.util.function.{ BiFunction, Supplier, ToLongBiFunction }
+
 import akka.annotation.DoNotInherit
 import akka.util.unused
 
@@ -17,26 +18,6 @@ import akka.util.unused
  * materializations will feed its consumed elements to the original [[Source]].
  */
 object MergeHub {
-
-  /**
-   * A DrainingControl object is created during the materialization of a MergeHub and allows to initiate the draining
-   * and eventual completion of the Hub from the outside.
-   *
-   * Not for user extension
-   */
-  @DoNotInherit
-  sealed trait DrainingControl {
-
-    /**
-     * Set the operation mode of the linked MergeHub to draining. In this mode the Hub will cancel any new producer and
-     * will complete as soon as all the currently connected producers complete.
-     */
-    def drainAndComplete(): Unit
-  }
-
-  private final class DrainingControlImpl(c: akka.stream.scaladsl.MergeHub.DrainingControl) extends DrainingControl {
-    override def drainAndComplete(): Unit = c.drainAndComplete()
-  }
 
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
@@ -59,35 +40,6 @@ object MergeHub {
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
    * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
-   * arbitrarily many times and each of the materializations will feed the elements into the original [[Source]].
-   *
-   * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
-   * [[Sink]] for feeding that materialization.
-   *
-   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
-   * and any new producers using the [[Sink]] will be cancelled.
-   *
-   * The materialized [[DrainingControl]] can be used to drain the Hub: any new produces using the [[Sink]] will be cancelled
-   * and the Hub will be closed completing the [[Source]] as soon as all currently connected producers complete.
-   *
-   * @param clazz Type of elements this hub emits and consumes
-   * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
-   */
-  def withDraining[T](
-      @unused clazz: Class[T],
-      perProducerBufferSize: Int): Source[T, akka.japi.Pair[Sink[T, NotUsed], DrainingControl]] = {
-    akka.stream.scaladsl.MergeHub
-      .sourceWithDraining[T](perProducerBufferSize)
-      .mapMaterializedValue {
-        case (sink, draining) =>
-          akka.japi.Pair(sink.asJava[T], new DrainingControlImpl(draining): DrainingControl)
-      }
-      .asJava
-  }
-
-  /**
-   * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
-   * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
    * arbitrary many times and each of the materializations will feed the elements into the original [[Source]].
    *
    * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
@@ -99,25 +51,6 @@ object MergeHub {
    * @param clazz Type of elements this hub emits and consumes
    */
   def of[T](clazz: Class[T]): Source[T, Sink[T, NotUsed]] = of(clazz, 16)
-
-  /**
-   * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
-   * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
-   * arbitrarily many times and each of the materializations will feed the elements into the original [[Source]].
-   *
-   * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
-   * [[Sink]] for feeding that materialization.
-   *
-   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
-   * and any new producers using the [[Sink]] will be cancelled.
-   *
-   * The materialized [[DrainingControl]] can be used to drain the Hub: any new produces using the [[Sink]] will be cancelled
-   * and the Hub will be closed completing the [[Source]] as soon as all currently connected producers complete.
-   *
-   * @param clazz Type of elements this hub emits and consumes
-   */
-  def withDraining[T](clazz: Class[T]): Source[T, akka.japi.Pair[Sink[T, NotUsed], DrainingControl]] =
-    withDraining(clazz, 16)
 
 }
 
@@ -146,33 +79,20 @@ object BroadcastHub {
    * cancelled are simply removed from the dynamic set of consumers.
    *
    * @param clazz Type of elements this hub emits and consumes
+   * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
+   * This is only used initially when the operator is starting up, i.e. it is not honored when consumers have
+   * been removed (canceled).
    * @param bufferSize Buffer size used by the producer. Gives an upper bound on how "far" from each other two
    *                   concurrent consumers can be in terms of element. If the buffer is full, the producer
    *                   is backpressured. Must be a power of two and less than 4096.
    */
-  def of[T](@unused clazz: Class[T], bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
-    akka.stream.scaladsl.BroadcastHub.sink[T](bufferSize).mapMaterializedValue(_.asJava).asJava
+  def of[T](@unused clazz: Class[T], startAfterNrOfConsumers: Int, bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
+    akka.stream.scaladsl.BroadcastHub.sink[T](startAfterNrOfConsumers, bufferSize).mapMaterializedValue(_.asJava).asJava
   }
 
-  /**
-   * Creates a [[Sink]] with default buffer size 256 that receives elements from its upstream producer and broadcasts them to a dynamic set
-   * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
-   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
-   * broadcast elements from the original [[Sink]].
-   *
-   * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
-   * [[Source]] for consuming the [[Sink]] of that materialization.
-   *
-   * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
-   * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
-   * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
-   * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
-   * cancelled are simply removed from the dynamic set of consumers.
-   *
-   * @param clazz Type of elements this hub emits and consumes
-   */
-  def of[T](clazz: Class[T]): Sink[T, Source[T, NotUsed]] =
-    of(clazz, akka.stream.scaladsl.BroadcastHub.defaultBufferSize)
+  def of[T](clazz: Class[T], bufferSize: Int): Sink[T, Source[T, NotUsed]] = of(clazz, 0, bufferSize)
+
+  def of[T](clazz: Class[T]): Sink[T, Source[T, NotUsed]] = of(clazz, 0, 256)
 
 }
 
@@ -202,7 +122,7 @@ object PartitionHub {
    * cancelled are simply removed from the dynamic set of consumers.
    *
    * This `statefulSink` should be used when there is a need to keep mutable state in the partition function,
-   * e.g. for implementing round-robin or sticky session kind of routing. If state is not needed the [[#of]] can
+   * e.g. for implemening round-robin or sticky session kind of routing. If state is not needed the [[#of]] can
    * be more convenient to use.
    *
    * @param partitioner Function that decides where to route an element. It is a factory of a function to
@@ -232,35 +152,6 @@ object PartitionHub {
       .asJava
   }
 
-  /**
-   * Creates a [[Sink]] with default buffer size 256 that receives elements from its upstream producer and routes them to a dynamic set
-   * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
-   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
-   * elements from the original [[Sink]].
-   *
-   * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
-   * [[Source]] for consuming the [[Sink]] of that materialization.
-   *
-   * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
-   * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
-   * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
-   * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
-   * cancelled are simply removed from the dynamic set of consumers.
-   *
-   * This `statefulSink` should be used when there is a need to keep mutable state in the partition function,
-   * e.g. for implementing round-robin or sticky session kind of routing. If state is not needed the [[#of]] can
-   * be more convenient to use.
-   *
-   * @param partitioner Function that decides where to route an element. It is a factory of a function to
-   *   to be able to hold stateful variables that are unique for each materialization. The function
-   *   takes two parameters; the first is information about active consumers, including an array of consumer
-   *   identifiers and the second is the stream element. The function should return the selected consumer
-   *   identifier for the given element. The function will never be called when there are no active consumers,
-   *   i.e. there is always at least one element in the array of identifiers.
-   * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
-   *   This is only used initially when the operator is starting up, i.e. it is not honored when consumers have
-   *   been removed (canceled).
-   */
   def ofStateful[T](
       clazz: Class[T],
       partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
@@ -306,35 +197,6 @@ object PartitionHub {
       .mapMaterializedValue(_.asJava)
       .asJava
 
-  /**
-   * Creates a [[Sink]] with default buffer size 256 that receives elements from its upstream producer and routes them to a dynamic set
-   * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
-   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
-   * elements from the original [[Sink]].
-   *
-   * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
-   * [[Source]] for consuming the [[Sink]] of that materialization.
-   *
-   * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
-   * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
-   * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
-   * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
-   * cancelled are simply removed from the dynamic set of consumers.
-   *
-   * This `sink` should be used when the routing function is stateless, e.g. based on a hashed value of the
-   * elements. Otherwise the [[#ofStateful]] can be used to implement more advanced routing logic.
-   *
-   * @param partitioner Function that decides where to route an element. The function takes two parameters;
-   *   the first is the number of active consumers and the second is the stream element. The function should
-   *   return the index of the selected consumer for the given element, i.e. int greater than or equal to 0
-   *   and less than number of consumers. E.g. `(size, elem) -> Math.abs(elem.hashCode() % size)`. It's also
-   *   possible to use `-1` to drop the element.
-   * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
-   *   This is only used initially when the operator is starting up, i.e. it is not honored when consumers have
-   *   been removed (canceled).
-   * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
-   *   is backpressured.
-   */
   def of[T](
       clazz: Class[T],
       partitioner: BiFunction[Integer, T, Integer],
