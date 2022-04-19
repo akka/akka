@@ -390,8 +390,8 @@ One gotcha is that the timestamp is attributed in the event handler, not when ac
 The SLF4J logger selected for each log event is chosen based on the
 @scala[`Class[_]`] @java[`Class`] of the log source specified when creating the
 @apidoc[LoggingAdapter], unless that was given directly as a string in which
-case that string is used (i.e. @scala[`LoggerFactory.getLogger(c: Class[_])`] @java[`LoggerFactory.getLogger(Class c)`] is used in
-the first case and @scala[`LoggerFactory.getLogger(s: String)`] @java[`LoggerFactory.getLogger(String s)`] in the second).
+case that string is used (i.e. @scala[@javadoc[LoggerFactory.getLogger(c: Class[_ ])](org.slf4j.LoggerFactory#getLogger(java.lang.Class))] @java[@javadoc[LoggerFactory.getLogger(Class c)](org.slf4j.LoggerFactory#getLogger(java.lang.Class))] is used in
+the first case and @scala[@javadoc[LoggerFactory.getLogger(s: String)](org.slf4j.LoggerFactory#getLogger(java.lang.String))] @java[@javadoc[LoggerFactory.getLogger(String s)](org.slf4j.LoggerFactory#getLogger(java.lang.String))] in the second).
 
 @@@ note
 
