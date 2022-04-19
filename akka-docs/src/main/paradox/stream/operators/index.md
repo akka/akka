@@ -101,8 +101,8 @@ For example, following snippet will fall with timeout exception:
 ```scala
 ...
 .toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream =>
-  inputStream.read()  // this could block forever
-  ...
+        inputStream.read()  // this could block forever
+        ...
 }).run()
 ```
 
@@ -514,6 +514,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [orElse](Source-or-Flow/orElse.md)
 * [Partition](Partition.md)
 * [prefixAndTail](Source-or-Flow/prefixAndTail.md)
+* [preMaterialize](Source-or-Flow/preMaterialize.md)
 * [preMaterialize](Sink/preMaterialize.md)
 * [prepend](Source-or-Flow/prepend.md)
 * [prependLazy](Source-or-Flow/prependLazy.md)
