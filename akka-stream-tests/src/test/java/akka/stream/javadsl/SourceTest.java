@@ -1179,16 +1179,21 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
-  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletion() {
+  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletion() throws Exception {
     final Iterator<Integer> iterator = IntStream.range(1, 10).iterator();
     final Creator<Iterator<Integer>> input = () -> iterator;
     final Done completion =
-        Source.fromIterator(input).map(it -> it * 10).run(system).toCompletableFuture().join();
+        Source.fromIterator(input)
+            .map(it -> it * 10)
+            .run(system)
+            .toCompletableFuture()
+            .get(1, TimeUnit.SECONDS);
     assertEquals(Done.getInstance(), completion);
   }
 
   @Test
-  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletionWithMaterializer() {
+  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletionWithMaterializer()
+      throws Exception {
     final Materializer materializer = Materializer.createMaterializer(system);
     final Iterator<Integer> iterator = IntStream.range(1, 10).iterator();
     final Creator<Iterator<Integer>> input = () -> iterator;
@@ -1197,7 +1202,7 @@ public class SourceTest extends StreamTest {
             .map(it -> it * 10)
             .run(materializer)
             .toCompletableFuture()
-            .join();
+            .get(3, TimeUnit.SECONDS);
     assertEquals(Done.getInstance(), completion);
   }
 
@@ -1234,5 +1239,32 @@ public class SourceTest extends StreamTest {
             6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040,
             1346269, 2178309, 3524578, 5702887, 9227465),
         resultList);
+  }
+
+  @Test
+  public void flattenOptional() throws Exception {
+    // #flattenOptional
+    final CompletionStage<List<Integer>> resultList =
+        Source.range(1, 10)
+            .map(x -> Optional.of(x).filter(n -> n % 2 == 0))
+            .via(Flow.flattenOptional())
+            .runWith(Sink.seq(), system);
+    // #flattenOptional
+    Assert.assertEquals(
+        Arrays.asList(2, 4, 6, 8, 10), resultList.toCompletableFuture().get(3, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void flattenOptionalOptional() throws Exception {
+    final List<Integer> resultList =
+        Source.range(1, 10)
+            .map(x -> Optional.of(x).filter(n -> n % 2 == 0))
+            .map(Optional::ofNullable)
+            .via(Flow.flattenOptional())
+            .via(Flow.flattenOptional())
+            .runWith(Sink.seq(), system)
+            .toCompletableFuture()
+            .get(3, TimeUnit.SECONDS);
+    Assert.assertEquals(Arrays.asList(2, 4, 6, 8, 10), resultList);
   }
 }

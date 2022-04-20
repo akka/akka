@@ -371,6 +371,23 @@ object Flow {
   def upcast[In, SuperOut, Out <: SuperOut, M](flow: Flow[In, Out, M]): Flow[In, SuperOut, M] =
     flow.asInstanceOf[Flow[In, SuperOut, M]]
 
+  /**
+   * Collect the value of [[Optional]] from the elements passing through this flow, empty [[Optional]] is filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the current [[Optional]]'s value is present.
+   *
+   * '''Backpressures when''' the value of the current [[Optional]] is present and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   * * */
+  def flattenOptional[Out, In <: Optional[Out]](): Flow[In, Out, NotUsed] =
+    new Flow(scaladsl.Flow[In].collect {
+      case optional: Optional[Out @unchecked] if optional.isPresent => optional.get()
+    })
 }
 
 /**
