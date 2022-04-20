@@ -38,7 +38,9 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-persistence-typed",
     // references to deprecated PARSER fields in generated message formats?
     "akka-persistence-query",
-    "akka-docs")
+    "akka-docs",
+    // use varargs of `Graph` in alsoTo and etc operators
+    "akka-stream-tests")
 
   val looseProjects = Set(
     "akka-actor",

@@ -1147,6 +1147,12 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseAlsoToAll() {
+    final Source<Integer, NotUsed> f =
+        Source.<Integer>empty().alsoToAll(Sink.ignore(), Sink.ignore());
+  }
+
+  @Test
   public void mustBeAbleToUseDivertTo() {
     final Source<Integer, NotUsed> f = Source.<Integer>empty().divertTo(Sink.ignore(), e -> true);
     final Source<Integer, String> f2 =

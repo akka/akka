@@ -15,7 +15,6 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import scala.annotation.nowarn
 import org.reactivestreams.{ Publisher, Subscriber }
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
@@ -29,6 +28,8 @@ import akka.stream.impl.{ LinearTraversalBuilder, UnfoldAsyncJava }
 import akka.util.{ unused, _ }
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.{ nowarn, varargs }
 
 /** Java API */
 object Source {
@@ -1395,7 +1396,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.orElseMat(secondary)(combinerToScala(matF)))
 
   /**
-   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * Attaches the given [[Sink]] to this [[Source]], meaning that elements that passes
    * through will also be sent to the [[Sink]].
    *
    * It is similar to [[#wireTap]] but will backpressure instead of dropping elements when the given [[Sink]] is not ready.
@@ -1410,6 +1411,25 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def alsoTo(that: Graph[SinkShape[Out], _]): javadsl.Source[Out, Mat] =
     new Source(delegate.alsoTo(that))
+
+  /**
+   * Attaches the given [[Sink]]s to this [[Source]], meaning that elements that passes
+   * through will also be sent to all those [[Sink]]s.
+   *
+   * It is similar to [[#wireTap]] but will backpressure instead of dropping elements when the given [[Sink]]s is not ready.
+   *
+   * '''Emits when''' element is available and demand exists both from the Sinks and the downstream.
+   *
+   * '''Backpressures when''' downstream or any of the [[Sink]]s backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream or any of the [[Sink]]s cancels
+   */
+  @varargs
+  @SafeVarargs
+  def alsoToAll(those: Graph[SinkShape[Out], _]*): javadsl.Source[Out, Mat] =
+    new Source(delegate.alsoToAll(those: _*))
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes

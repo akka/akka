@@ -9,12 +9,11 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 import java.util.function.Supplier
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import scala.annotation.nowarn
+import scala.annotation.{ nowarn, varargs }
 import org.reactivestreams.Processor
 import akka.Done
 import akka.NotUsed
@@ -27,7 +26,7 @@ import akka.japi.Pair
 import akka.japi.Util
 import akka.japi.function
 import akka.japi.function.Creator
-import akka.stream._
+import akka.stream.{ javadsl, _ }
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
@@ -2622,6 +2621,25 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   def alsoTo(that: Graph[SinkShape[Out], _]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.alsoTo(that))
+
+  /**
+   * Attaches the given [[Sink]]s to this [[Flow]], meaning that elements that passes
+   * through will also be sent to all those [[Sink]]s.
+   *
+   * It is similar to [[#wireTap]] but will backpressure instead of dropping elements when the given [[Sink]]s is not ready.
+   *
+   * '''Emits when''' element is available and demand exists both from the Sinks and the downstream.
+   *
+   * '''Backpressures when''' downstream or any of the [[Sink]]s backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream or any of the [[Sink]]s cancels
+   */
+  @varargs
+  @SafeVarargs
+  def alsoToAll(those: Graph[SinkShape[Out], _]*): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.alsoToAll(those: _*))
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
