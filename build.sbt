@@ -23,6 +23,34 @@ addCommandAlias(
 
 addCommandAlias(name = "sortImports", value = ";scalafixEnable; scalafixAll SortImports; scalafmtAll")
 
+import sbtwelcome._
+
+logo :=
+  s"""
+     |_______ ______  ______
+     |___    |___  /_____  /________ _
+     |__  /| |__  //_/__  //_/_  __ `/
+     |_  ___ |_  ,<   _  ,<   / /_/ /
+     |/_/  |_|/_/|_|  /_/|_|  \\__,_/   ${version.value}
+     |
+     |""".stripMargin
+
+logoColor := scala.Console.BLUE
+
+usefulTasks := Seq(
+  UsefulTask("", "compile", "Compile the current project"),
+  UsefulTask("", "test", "Run all the tests "),
+  UsefulTask("", "testOnly *.AnySpec", "Only run a selected test"),
+  UsefulTask("", "verifyCodeStyle", "Verify code style"),
+  UsefulTask("", "applyCodeStyle", "Apply code style"),
+  UsefulTask("", "sortImports", "Sort the imports"),
+  UsefulTask("", "mimaReportBinaryIssues ", "Check binary issues"),
+  UsefulTask("", "validatePullRequest ", "Validate pull request"),
+  UsefulTask("", "akka-docs/paradox", "Build documentation"),
+  UsefulTask("", "akka-docs/paradoxBrowse", "Browse the generated documentation"),
+  UsefulTask("", "tips:", "prefix commands with `+` to run against cross Scala versions."),
+  UsefulTask("", "Contributing guide:", "https://github.com/akka/akka/blob/main/CONTRIBUTING.md"))
+
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.MultiJvm
