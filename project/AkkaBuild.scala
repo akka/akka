@@ -4,15 +4,18 @@
 
 package akka
 
-import java.io.{ FileInputStream, InputStreamReader }
-import java.util.Properties
+import akka.JdkOptions.autoImport._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
 import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
-import sbtassembly.AssemblyPlugin.autoImport._
-
+import sbt.Def
 import sbt.Keys._
 import sbt._
-import JdkOptions.autoImport._
+import sbtassembly.AssemblyPlugin.autoImport._
+import sbtwelcome.WelcomePlugin.autoImport._
+
+import java.io.FileInputStream
+import java.io.InputStreamReader
+import java.util.Properties
 
 object AkkaBuild {
 
@@ -258,6 +261,36 @@ object AkkaBuild {
         Attributed.blank(x)
       }
     })
+
+  lazy val welcomeSettings: Seq[Setting[_]] = Def.settings {
+    import sbtwelcome._
+    Seq(
+      logo := {
+        s"""
+           |_______ ______  ______
+           |___    |___  /_____  /________ _
+           |__  /| |__  //_/__  //_/_  __ `/
+           |_  ___ |_  ,<   _  ,<   / /_/ /
+           |/_/  |_|/_/|_|  /_/|_|  \\__,_/   ${version.value}
+           |
+           |""".stripMargin
+
+      },
+      logoColor := scala.Console.BLUE,
+      usefulTasks := Seq(
+          UsefulTask("", "compile", "Compile the current project"),
+          UsefulTask("", "test", "Run all the tests "),
+          UsefulTask("", "testOnly *.AnySpec", "Only run a selected test"),
+          UsefulTask("", "verifyCodeStyle", "Verify code style"),
+          UsefulTask("", "applyCodeStyle", "Apply code style"),
+          UsefulTask("", "sortImports", "Sort the imports"),
+          UsefulTask("", "mimaReportBinaryIssues ", "Check binary issues"),
+          UsefulTask("", "validatePullRequest ", "Validate pull request"),
+          UsefulTask("", "akka-docs/paradox", "Build documentation"),
+          UsefulTask("", "akka-docs/paradoxBrowse", "Browse the generated documentation"),
+          UsefulTask("", "tips:", "prefix commands with `+` to run against cross Scala versions."),
+          UsefulTask("", "Contributing guide:", "https://github.com/akka/akka/blob/main/CONTRIBUTING.md")))
+  }
 
   private def optionalDir(path: String): Option[File] =
     Option(path).filter(_.nonEmpty).map { path =>
