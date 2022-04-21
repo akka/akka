@@ -24,22 +24,23 @@ public class StatefulMapConcat {
                 () -> {
                   // variables we close over with lambdas must be final, so we use a container,
                   // a 1 element array, for the actual value.
-                  long[] counter = {0};
+                  final long[] index = {0L};
 
                   // we return the function that will be invoked for each element
                   return (element) -> {
-                    counter[0] += 1;
+                    final Pair<String, Long> zipped = new Pair<>(element, index[0]);
+                    index[0] += 1;
                     // we return an iterable with the single element
-                    return Arrays.asList(new Pair<String, Long>(element, counter[0]));
+                    return Collections.singletonList(zipped);
                   };
                 });
 
     letterAndIndex.runForeach(System.out::println, system);
     // prints
-    // Pair(a,1)
-    // Pair(b,2)
-    // Pair(c,3)
-    // Pair(d,4)
+    // Pair(a,0)
+    // Pair(b,1)
+    // Pair(c,2)
+    // Pair(d,3)
     // #zip-with-index
   }
 
