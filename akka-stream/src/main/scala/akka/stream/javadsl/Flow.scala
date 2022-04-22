@@ -721,6 +721,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
+   * Be aware that when the stream completes, the inflight state may be lost. use [[#statefulMap]] continues [[#mapConcat]]
+   * if the state can not be lost.
+   *
    * '''Emits when''' the mapping function returns an element or there are still remaining elements
    * from the previously calculated collection
    *
