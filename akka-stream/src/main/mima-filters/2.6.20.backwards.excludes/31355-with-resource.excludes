@@ -1,0 +1,2 @@
+# internal classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.StatefulMap.this")

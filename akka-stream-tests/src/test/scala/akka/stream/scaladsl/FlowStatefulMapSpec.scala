@@ -11,9 +11,12 @@ import akka.stream.ActorMaterializer
 import akka.stream.Supervision
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
+import akka.testkit.EventFilter
 
+import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.Promise
@@ -195,7 +198,7 @@ class FlowStatefulMapSpec extends StreamSpec {
         })
         .runWith(Sink.never)(mat)
       mat.shutdown()
-      matVal.failed.futureValue shouldBe a[AbruptStageTerminationException]
+      matVal.failed.futureValue shouldBe an[AbruptStageTerminationException]
       Await.result(promise.future, 3.seconds) shouldBe Done
     }
 
@@ -265,5 +268,43 @@ class FlowStatefulMapSpec extends StreamSpec {
         .expectNext("D")
         .expectComplete()
     }
+
+    "will not call onComplete twice if `f` fail" in {
+      val closedCounter = new AtomicInteger(0)
+      val probe = Source
+        .repeat(1)
+        .statefulMap(() => 23)( // the best resource there is
+          (_, _) => throw TE("failing read"),
+          _ => {
+            closedCounter.incrementAndGet()
+            None
+          })
+        .runWith(TestSink.probe[Int])
+
+      probe.request(1)
+      probe.expectError(TE("failing read"))
+      closedCounter.get() should ===(1)
+    }
+
+    "will not call onComplete twice if `f` and `onComplete` both fail" in {
+      val closedCounter = new AtomicInteger(0)
+      val probe = Source
+        .repeat(1)
+        .statefulMap(() => 23)((_, _) => throw TE("failing read"), _ => {
+          closedCounter.incrementAndGet()
+          if (closedCounter.get == 1) {
+            throw TE("boom")
+          }
+          None
+        })
+        .runWith(TestSink.probe[Int])
+
+      EventFilter[TE](occurrences = 1).intercept {
+        probe.request(1)
+        probe.expectError(TE("boom"))
+      }
+      closedCounter.get() should ===(1)
+    }
+
   }
 }
