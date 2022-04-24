@@ -2779,7 +2779,7 @@ trait FlowOps[+Out, +Mat] {
    *
    *   '''Backpressures when''' downstream backpressures
    *
-   *   '''Completes when''' any of the upstreams completes
+   *   '''Completes when''' any upstream completes if `eagerComplete` is enabled or wait for all upstreams to complete
    *
    *   '''Cancels when''' downstream cancels
    */
