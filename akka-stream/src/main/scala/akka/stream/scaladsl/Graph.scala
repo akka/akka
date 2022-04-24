@@ -1033,10 +1033,12 @@ final class Zip[A, B] extends ZipWith2[A, B, (A, B)](Tuple2.apply) {
 
 object ZipLatest {
 
+  def apply[A, B](): ZipLatest[A, B] = new ZipLatest()
+
   /**
    * Create a new `ZipLatest`.
    */
-  def apply[A, B](eagerComplete: Boolean = true): ZipLatest[A, B] = new ZipLatest(eagerComplete)
+  def apply[A, B](eagerComplete: Boolean): ZipLatest[A, B] = new ZipLatest(eagerComplete)
 }
 
 /**
@@ -1055,8 +1057,10 @@ object ZipLatest {
  *
  * '''Cancels when''' downstream cancels
  */
-final class ZipLatest[A, B](eagerComplete: Boolean = true)
-    extends ZipLatestWith2[A, B, (A, B)](Tuple2.apply, eagerComplete) {
+final class ZipLatest[A, B](eagerComplete: Boolean) extends ZipLatestWith2[A, B, (A, B)](Tuple2.apply, eagerComplete) {
+
+  def this() = this(true)
+
   override def toString = "ZipLatest"
 }
 

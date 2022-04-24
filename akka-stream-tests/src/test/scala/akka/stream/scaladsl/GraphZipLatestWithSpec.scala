@@ -26,14 +26,14 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
   }
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
-    setup(p1, p2, false)
+    setup(p1, p2, eagerComplete = false)
   }
 
   def setup(p1: Publisher[Int], p2: Publisher[Int], eagerComplete: Boolean) = {
     val subscriber = TestSubscriber.probe[Outputs]()
     Source
       .fromPublisher(p1)
-      .zipLatestWith(Source.fromPublisher(p2))(_ + _, eagerComplete)
+      .zipLatestWith(Source.fromPublisher(p2), eagerComplete)(_ + _)
       .runWith(Sink.fromSubscriber(subscriber))
     subscriber
   }
