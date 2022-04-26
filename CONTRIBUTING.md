@@ -461,6 +461,10 @@ not needed to use `sbt scalafmtAll` when editing with IntelliJ.
 
 PR validation includes checking that the Scala sources are formatted and will fail if they are not.
 
+Akka prefers flattened imports rather than grouped, which helps reduce merge conflicts. 
+If you are using IntelliJ IDEA, you can disable it by unchecking: `Preferences` -> `Code Style` -> `Scala` -> `Imports` -> `Merge imports with the same prefix into one statement`.
+
+
 It's recommended to run `sbt +sortImports` to keep the *import*s sorted.
 
 #### Java style
