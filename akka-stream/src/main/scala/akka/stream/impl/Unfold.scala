@@ -52,17 +52,25 @@ import scala.util.{ Failure, Success, Try }
       private[this] var asyncHandler: Try[Option[(S, E)]] => Unit = _
 
       override def preStart(): Unit = {
-        val ac = getAsyncCallback[Try[Option[(S, E)]]] {
-          case Success(Some((newS, elem))) =>
-            push(out, elem)
-            state = newS
-          case Success(None) => complete(out)
-          case Failure(ex)   => fail(out, ex)
-        }
-        asyncHandler = ac.invoke
+        asyncHandler = getAsyncCallback[Try[Option[(S, E)]]](handle).invoke
       }
 
-      def onPull(): Unit = f(state).onComplete(asyncHandler)(akka.dispatch.ExecutionContexts.parasitic)
+      private def handle(result: Try[Option[(S, E)]]): Unit = result match {
+        case Success(Some((newS, elem))) =>
+          push(out, elem)
+          state = newS
+        case Success(None) => complete(out)
+        case Failure(ex)   => fail(out, ex)
+      }
+
+      def onPull(): Unit = {
+        val future = f(state)
+        future.value match {
+          case Some(value) => handle(value)
+          case None =>
+            future.onComplete(asyncHandler)(akka.dispatch.ExecutionContexts.parasitic)
+        }
+      }
 
       setHandler(out, this)
     }
@@ -86,29 +94,39 @@ import scala.util.{ Failure, Success, Try }
       private[this] var asyncHandler: Try[Optional[Pair[S, E]]] => Unit = _
 
       override def preStart(): Unit = {
-        val ac = getAsyncCallback[Try[Optional[Pair[S, E]]]] {
-          case Success(maybeValue) =>
-            if (maybeValue.isPresent) {
-              val pair = maybeValue.get()
-              push(out, pair.second)
-              state = pair.first
-            } else {
-              complete(out)
-            }
-          case Failure(ex) => fail(out, ex)
-        }
-        asyncHandler = ac.invoke
+        asyncHandler = getAsyncCallback[Try[Optional[Pair[S, E]]]](handle).invoke
       }
 
-      def onPull(): Unit =
-        f(state).handle((r, ex) => {
-          if (ex != null) {
-            asyncHandler(Failure(ex))
-          } else {
-            asyncHandler(Success(r))
-          }
-          null
-        })
+      private def handle(result: Try[Optional[Pair[S, E]]]): Unit = result match {
+        case Success(maybeValue) => handle(maybeValue)
+        case Failure(ex)         => fail(out, ex)
+      }
+
+      private def handle(maybeValue: Optional[Pair[S, E]]): Unit = {
+        if (maybeValue.isPresent) {
+          val pair = maybeValue.get()
+          push(out, pair.second)
+          state = pair.first
+        } else {
+          complete(out)
+        }
+      }
+
+      def onPull(): Unit = {
+        val future = f.apply(state).toCompletableFuture
+        if (future.isDone && !future.isCompletedExceptionally) {
+          handle(future.getNow(null))
+        } else {
+          future.handle((r, ex) => {
+            if (ex != null) {
+              asyncHandler(Failure(ex))
+            } else {
+              asyncHandler(Success(r))
+            }
+            null
+          })
+        }
+      }
       setHandler(out, this)
     }
 }
