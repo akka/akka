@@ -4,8 +4,9 @@
 
 package akka.actor.typed.eventstream
 
-import scala.reflect.ClassTag
+import akka.actor.InvalidMessageException
 
+import scala.reflect.ClassTag
 import akka.actor.typed.ActorRef
 import akka.annotation.{ DoNotInherit, InternalApi }
 
@@ -22,7 +23,10 @@ object EventStream {
    * Publish an event of type E by sending this command to
    * the [[akka.actor.typed.ActorSystem.eventStream]].
    */
-  final case class Publish[E](event: E) extends Command
+  final case class Publish[E](event: E) extends Command {
+    if (event == null)
+      throw InvalidMessageException("[null] is not an allowed event")
+  }
 
   /**
    * Subscribe a typed actor to listen for types or subtypes of E

@@ -9,6 +9,7 @@ import scala.collection.immutable
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.InternalActorRef
+import akka.actor.InvalidMessageException
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.WrappedMessage
 import akka.japi.Util.immutableSeq
@@ -179,7 +180,10 @@ final case class Router(logic: RoutingLogic, routees: immutable.IndexedSeq[Route
  * envelope will be stripped off.
  */
 @SerialVersionUID(1L)
-final case class Broadcast(message: Any) extends RouterEnvelope
+final case class Broadcast(message: Any) extends RouterEnvelope {
+  if (message == null)
+    throw InvalidMessageException("[null] is not an allowed message")
+}
 
 /**
  * Only the contained message will be forwarded to the
