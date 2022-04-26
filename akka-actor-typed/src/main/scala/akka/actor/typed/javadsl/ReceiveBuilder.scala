@@ -4,15 +4,12 @@
 
 package akka.actor.typed.javadsl
 
-import scala.annotation.tailrec
-
-import akka.actor.typed.{ Behavior, Signal }
-import akka.actor.typed.MessageAdaptionFailure
+import akka.actor.typed.{ Behavior, MessageAdaptionFailure, Signal }
 import akka.annotation.InternalApi
-import akka.japi.function.{ Function => JFunction }
-import akka.japi.function.{ Predicate => JPredicate }
-import akka.japi.function.Creator
+import akka.japi.function.{ Creator, Function => JFunction, Predicate => JPredicate }
 import akka.util.OptionVal
+
+import scala.annotation.tailrec
 
 /**
  * Mutable builder used when implementing [[AbstractBehavior]].
@@ -33,8 +30,7 @@ final class ReceiveBuilder[T] private (
     val builtSignalHandlers =
       if (signalHandlers.isEmpty) defaultSignalHandlers[T]
       else (adapterExceptionSignalHandler[T] :: signalHandlers).reverse
-
-    new BuiltReceive[T](messageHandlers.reverse, builtSignalHandlers)
+    new BuiltReceive[T](messageHandlers.reverse.toArray, builtSignalHandlers.toArray)
   }
 
   /**
@@ -196,24 +192,27 @@ object ReceiveBuilder {
  */
 @InternalApi
 private final class BuiltReceive[T](
-    messageHandlers: List[ReceiveBuilder.Case[T, T]],
-    signalHandlers: List[ReceiveBuilder.Case[T, Signal]])
+    messageHandlers: Array[ReceiveBuilder.Case[T, T]],
+    signalHandlers: Array[ReceiveBuilder.Case[T, Signal]])
     extends Receive[T] {
   import ReceiveBuilder.Case
 
-  override def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers)
+  override def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers, 0)
 
-  override def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
+  override def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers, 0)
 
   @tailrec
-  private def receive[M](msg: M, handlers: List[Case[T, M]]): Behavior[T] =
-    handlers match {
-      case Case(cls, predicate, handler) :: tail =>
-        if ((cls.isEmpty || cls.get.isAssignableFrom(msg.getClass)) && (predicate.isEmpty || predicate.get.test(msg)))
-          handler(msg)
-        else receive[M](msg, tail)
-      case _ =>
-        Behaviors.unhandled
+  private def receive[M](msg: M, handlers: Array[Case[T, M]], idx: Int): Behavior[T] = {
+    if (handlers.length == 0) {
+      Behaviors.unhandled[T]
+    } else {
+      val Case(cls, predicate, handler) = handlers(idx)
+      if ((cls.isEmpty || cls.get.isAssignableFrom(msg.getClass)) && (predicate.isEmpty || predicate.get.test(msg)))
+        handler(msg)
+      else if (idx == handlers.length - 1)
+        Behaviors.unhandled[T]
+      else
+        receive(msg, handlers, idx + 1)
     }
-
+  }
 }

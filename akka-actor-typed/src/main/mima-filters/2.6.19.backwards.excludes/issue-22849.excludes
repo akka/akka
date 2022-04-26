@@ -1,0 +1,3 @@
+# #30445 performance improvements for typed javadsl message matchers
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.typed.javadsl.BuiltReceive.this")
+ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.typed.javadsl.BuiltBehavior.this")
