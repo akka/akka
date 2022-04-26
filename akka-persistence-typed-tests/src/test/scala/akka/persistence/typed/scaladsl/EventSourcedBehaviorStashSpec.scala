@@ -463,6 +463,37 @@ class EventSourcedBehaviorStashSpec
       stateProbe.expectMessage(State(9, active = true))
     }
 
+    "unstash messages after stashed GetState" in {
+      import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetState, GetStateReply }
+
+      val c = spawn(counter(nextPid()))
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
+      val getStateProbe = TestProbe[GetStateReply[State]]()
+      val latch = new CountDownLatch(1)
+      c ! Increment(s"inc-1", ackProbe.ref)
+      ackProbe.expectMessage(Ack(s"inc-1"))
+      // make sure all the following messages are already in the mailbox
+      c ! Slow("slow", latch, ackProbe.ref)
+      // this will persist an event
+      c ! Increment(s"inc-2", ackProbe.ref)
+      // while the next two messages are already in the mailbox, so they will be stashed in the persisting state
+      c.unsafeUpcast[Any] ! GetState(getStateProbe.ref)
+      c ! Increment(s"inc-3", ackProbe.ref)
+      c ! Increment(s"inc-4", ackProbe.ref)
+
+      latch.countDown()
+
+      ackProbe.expectMessage(Ack("slow"))
+      ackProbe.expectMessage(Ack(s"inc-2"))
+      getStateProbe.expectMessageType[GetStateReply[State]]
+      ackProbe.expectMessage(Ack(s"inc-3"))
+      ackProbe.expectMessage(Ack(s"inc-4"))
+
+      c ! GetValue(stateProbe.ref)
+      stateProbe.expectMessage(State(4, active = true))
+    }
+
     "preserve user stash when persist failed" in {
       val c = spawn(counter(PersistenceId.ofUniqueId("fail-fifth-b")))
       val ackProbe = TestProbe[Ack]()
