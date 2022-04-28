@@ -329,90 +329,94 @@ object MergePrioritized {
  */
 final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComplete: Boolean)
     extends GraphStage[UniformFanInShape[T, T]] {
-  private val inputPorts = priorities.size
-  require(inputPorts > 0, "A Merge must have one or more input ports")
+  require(priorities.nonEmpty, "A Merge must have one or more input ports")
   require(priorities.forall(_ > 0), "Priorities should be positive integers")
 
-  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i => Inlet[T]("MergePrioritized.in" + i))
+  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(priorities.size)(i => Inlet[T]("MergePrioritized.in" + i))
   val out: Outlet[T] = Outlet[T]("MergePrioritized.out")
   override def initialAttributes: Attributes = DefaultAttributes.mergePrioritized
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler {
-      private val allBuffers = Vector.tabulate(priorities.size)(i => FixedSizeBuffer[Inlet[T]](priorities(i)))
-      private var runningUpstreams = inputPorts
+      private var runningUpstreams = priorities.size
       private val randomGen = new SplittableRandom
 
       override def preStart(): Unit = in.foreach(tryPull)
 
-      in.zip(allBuffers).foreach {
-        case (inlet, buffer) =>
-          setHandler(
-            inlet,
-            new InHandler {
-              override def onPush(): Unit = {
-                if (isAvailable(out) && !hasPending) {
-                  push(out, grab(inlet))
-                  tryPull(inlet)
-                } else {
-                  buffer.enqueue(inlet)
-                }
+      in.foreach { inlet =>
+        setHandler(
+          inlet,
+          new InHandler {
+            override def onPush(): Unit = {
+              if (isAvailable(out) && !hasOtherInletAvailable(inlet)) {
+                push(out, grab(inlet))
+                tryPull(inlet)
               }
+            }
 
-              override def onUpstreamFinish(): Unit = {
-                if (eagerComplete) {
-                  in.foreach(cancel(_))
-                  runningUpstreams = 0
-                  if (!hasPending) completeStage()
-                } else {
-                  runningUpstreams -= 1
-                  if (upstreamsClosed && !hasPending) completeStage()
-                }
+            override def onUpstreamFinish(): Unit = {
+              if (eagerComplete) {
+                in.foreach(cancel(_))
+                runningUpstreams = 0
+                if (!hasPending) completeStage()
+              } else {
+                runningUpstreams -= 1
+                if (upstreamsClosed && !hasPending) completeStage()
               }
-            })
+            }
+          })
       }
 
       override def onPull(): Unit = {
-        if (hasPending) dequeueAndDispatch()
+        val in = select()
+        if (in ne null) {
+          push(out, grab(in))
+          if (upstreamsClosed && !hasPending)
+            completeStage()
+          else
+            tryPull(in)
+        }
       }
 
       setHandler(out, this)
 
-      private def hasPending: Boolean = allBuffers.exists(_.nonEmpty)
+      private def hasPending: Boolean = in.exists(inlet => isAvailable(inlet))
 
-      private def upstreamsClosed = runningUpstreams == 0
+      private def hasOtherInletAvailable(excludeInlet: Inlet[T]): Boolean =
+        in.exists(inlet => (inlet ne excludeInlet) && isAvailable(inlet))
 
-      private def dequeueAndDispatch(): Unit = {
-        val in = selectNextElement()
-        push(out, grab(in))
-        if (upstreamsClosed && !hasPending) completeStage() else tryPull(in)
-      }
+      private def upstreamsClosed: Boolean = runningUpstreams == 0
 
-      private def selectNextElement() = {
+      private def select(): Inlet[T] = {
         var tp = 0
         var ix = 0
 
-        while (ix < in.size) {
-          if (allBuffers(ix).nonEmpty) {
+        while (ix < in.length) {
+          if (isAvailable(in(ix))) {
             tp += priorities(ix)
           }
           ix += 1
         }
 
-        var r = randomGen.nextInt(tp)
-        var next: Inlet[T] = null
-        ix = 0
+        if (tp == 0) {
+          // no inlets are available
+          null.asInstanceOf[Inlet[T]]
+        } else {
+          var r = randomGen.nextInt(tp)
+          var next: Inlet[T] = null
+          ix = 0
 
-        while (ix < in.size && next == null) {
-          if (allBuffers(ix).nonEmpty) {
-            r -= priorities(ix)
-            if (r < 0) next = allBuffers(ix).dequeue()
+          while (ix < in.length && next == null) {
+            if (isAvailable(in(ix))) {
+              r -= priorities(ix)
+              if (r < 0) next = in(ix)
+            }
+            ix += 1
           }
-          ix += 1
-        }
 
-        next
+          next
+        }
       }
     }
 
