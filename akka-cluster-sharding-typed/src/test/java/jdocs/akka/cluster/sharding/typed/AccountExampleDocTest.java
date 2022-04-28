@@ -67,7 +67,7 @@ public class AccountExampleDocTest
   public void createWithUnHandle() {
     CommandResultWithReply<
             AccountEntity.Command, AccountEntity.Event, AccountEntity.Account, StatusReply<Done>>
-            result = eventSourcedTestKit.runCommand(AccountEntity.CreateAccount::new);
+        result = eventSourcedTestKit.runCommand(AccountEntity.CreateAccount::new);
     assertFalse(result.hasNoReply());
   }
 
