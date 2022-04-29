@@ -894,15 +894,11 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
 }
 
 object PartitionEither {
-  final case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
 
   /**
-   * Create a new `Partition` operator with the specified input type. This method sets `eagerCancel` to `false`.
-   * To specify a different value for the `eagerCancel` parameter, then instantiate Partition using the constructor.
+   * Create a new `PartitionEither` operator with the specified input types.
    *
-   * If `eagerCancel` is true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
-   *
-   * @param eagerCancel TODO
+   * @param eagerCancel if true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    */
   def apply[A, B](eagerCancel: Boolean = false): PartitionEither[A, B] =
     new PartitionEither(eagerCancel = eagerCancel)
