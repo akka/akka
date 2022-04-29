@@ -5,13 +5,11 @@
 package akka.stream.scaladsl
 
 import java.util.SplittableRandom
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.{ immutable, mutable }
+import scala.collection.{immutable, mutable}
 import scala.concurrent.Promise
-import scala.util.control.{ NoStackTrace, NonFatal }
-
+import scala.util.control.{NoStackTrace, NonFatal}
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream._
@@ -20,7 +18,7 @@ import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ConstantFun
 
 /**
@@ -893,6 +891,164 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
     }
 
   override def toString = s"Partition($outputPorts)"
+}
+
+object PartitionEither {
+  final case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
+
+  /**
+   * Create a new `Partition` operator with the specified input type. This method sets `eagerCancel` to `false`.
+   * To specify a different value for the `eagerCancel` parameter, then instantiate Partition using the constructor.
+   *
+   * If `eagerCancel` is true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
+   *
+   * @param eagerCancel TODO
+   */
+  def apply[A, B](eagerCancel: Boolean = false): PartitionEither[A, B] =
+    new PartitionEither(eagerCancel = eagerCancel)
+}
+
+/**
+ * Fan-out the stream to two streams, one for left, one for right, emitting an incoming upstream element to one
+ * downstream consumer according to the partitioner function applied to the element
+ *
+ * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+ *
+ * '''Emits when''' emits when an element is available from the input and the destined output has demand
+ *
+ * '''Backpressures when''' the destined output back-pressures
+ *
+ * '''Completes when''' upstream completes and no output is pending
+ *
+ * '''Cancels when''' all downstreams have cancelled (eagerCancel=false) or one downstream cancels (eagerCancel=true)
+ */
+final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need to think about variance?
+  extends GraphStage[FanOutShape2[Either[A, B], A, B]] {
+
+  val in: Inlet[Either[A, B]] = Inlet[Either[A, B]]("PartitionEither.in")
+  val outLeft: Outlet[A] = Outlet[A]("PartitionEither.outLeft")
+  val outRight: Outlet[B] = Outlet[B]("PartitionEither.outRight")
+  val out: Seq[Outlet[_]] = Seq(outLeft, outRight)
+
+  override val shape: FanOutShape2[Either[A, B], A, B] = new FanOutShape2(in, outLeft, outRight)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler {
+      private var outPendingElem: Either[A, B] = null
+      private var downstreamRunning = 2
+
+      def onPush(): Unit = {
+        val elem = grab(in)
+
+        elem match {
+          case Right(value) =>
+            if (!isClosed(outRight)) {
+              if (isAvailable(outRight)) {
+                push(outRight, value)
+                pullIfAnyOutIsAvailable() // @TODO think about making this less general since there's only two outs?
+              } else {
+                outPendingElem = elem
+              }
+            } else {
+              pullIfAnyOutIsAvailable()
+            }
+
+          case Left(value) =>
+            if (!isClosed(outLeft)) {
+              if (isAvailable(outLeft)) {
+                push(outLeft, value)
+                pullIfAnyOutIsAvailable()
+              } else {
+                outPendingElem = elem
+              }
+            } else {
+              pullIfAnyOutIsAvailable()
+            }
+        }
+      }
+
+      private def pullIfAnyOutIsAvailable(): Unit = {
+        if (out.exists(isAvailable(_)))
+          pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (outPendingElem == null) completeStage()
+      }
+
+      setHandler(in, this)
+
+      setHandler(outRight, new OutHandler {
+        override def onPull(): Unit = {
+          if (outPendingElem != null) {
+            outPendingElem match {
+              case Left(_) =>
+              case Right(elem) =>
+                push(outRight, elem)
+                outPendingElem = null
+                if (isClosed(in))
+                  completeStage()
+                else if (!hasBeenPulled(in))
+                  pull(in)
+            }
+          } else if (!hasBeenPulled(in))
+            pull(in)
+        }
+
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          if (eagerCancel) cancelStage(cause)
+          else {
+            downstreamRunning -= 1
+            if (downstreamRunning == 0)
+              cancelStage(cause)
+            else if (outPendingElem != null && outPendingElem.isRight) {
+              outPendingElem = null
+              if (isClosed(in))
+                cancelStage(cause)
+              else if (!hasBeenPulled(in))
+                pull(in)
+            }
+          }
+        }
+      })
+
+      setHandler(outLeft, new OutHandler {
+        override def onPull(): Unit = {
+          if (outPendingElem != null) {
+            outPendingElem match {
+              case Right(_) =>
+              case Left(elem) =>
+                push(outLeft, elem)
+                outPendingElem = null
+                if (isClosed(in))
+                  completeStage()
+                else if (!hasBeenPulled(in))
+                  pull(in)
+            }
+          } else if (!hasBeenPulled(in)) {
+            pull(in)
+          }
+        }
+
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          if (eagerCancel) cancelStage(cause)
+          else {
+            downstreamRunning -= 1
+            if (downstreamRunning == 0)
+              cancelStage(cause)
+            else if (outPendingElem != null && outPendingElem.isLeft) {
+              outPendingElem = null
+              if (isClosed(in))
+                cancelStage(cause)
+              else if (!hasBeenPulled(in))
+                pull(in)
+            }
+          }
+        }
+      })
+    }
+
+  override def toString = s"PartitionEither"
 }
 
 object Balance {
