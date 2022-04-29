@@ -1033,6 +1033,9 @@ final class Zip[A, B] extends ZipWith2[A, B, (A, B)](Tuple2.apply) {
 
 object ZipLatest {
 
+  /**
+   * Create a new `ZipLatest`.
+   */
   def apply[A, B](): ZipLatest[A, B] = new ZipLatest()
 
   /**
@@ -1109,7 +1112,7 @@ object ZipLatestWith extends ZipLatestWithApply
  *
  * '''Backpressures when''' any of the outputs backpressure
  *
- * '''Completes when''' any upstream completes if `eagerComplete` is enabled or wait for all upstreams to complete
+ * '''Completes when''' upstream completes
  *
  * '''Cancels when''' any downstream cancels
  */

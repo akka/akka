@@ -2779,7 +2779,7 @@ trait FlowOps[+Out, +Mat] {
    *
    *   '''Backpressures when''' downstream backpressures
    *
-   *   '''Completes when''' any upstream completes if `eagerComplete` is enabled or wait for all upstreams to complete
+   *   '''Completes when''' any of the upstreams completes
    *
    *   '''Cancels when''' downstream cancels
    */
@@ -2799,7 +2799,7 @@ trait FlowOps[+Out, +Mat] {
    *
    *   '''Backpressures when''' downstream backpressures
    *
-   *   '''Completes when''' any of the upstreams completes
+   *   '''Completes when''' any upstream completes if `eagerComplete` is enabled or wait for all upstreams to complete
    *
    *   '''Cancels when''' downstream cancels
    */
@@ -2807,7 +2807,6 @@ trait FlowOps[+Out, +Mat] {
       combine: (Out, Out2) => Out3): Repr[Out3] =
     via(zipLatestWithGraph(that, eagerComplete)(combine))
 
-  //TODO exclude this in mima ,this method is not used.
   protected def zipLatestWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M])(
       combine: (Out, Out2) => Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
     zipLatestWithGraph(that, eagerComplete = true)(combine)
