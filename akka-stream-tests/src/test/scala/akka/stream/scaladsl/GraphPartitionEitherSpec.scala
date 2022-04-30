@@ -4,14 +4,12 @@
 
 package akka.stream.scaladsl
 
-//import akka.stream.{ActorAttributes, ClosedShape, OverflowStrategy, Supervision}
-import akka.stream.ClosedShape
+import akka.stream.{ ClosedShape, OverflowStrategy }
 
-//import akka.stream.testkit.Utils.TE
 import akka.stream.testkit._
 
-//import scala.concurrent.Await
-//import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class GraphPartitionEitherSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -26,8 +24,8 @@ class GraphPartitionEitherSpec extends StreamSpec("""
         .fromGraph(GraphDSL.createGraph(Sink.seq[String], Sink.seq[Int])(Tuple2.apply) { implicit b => (sink1, sink2) =>
           val partition = b.add(PartitionEither[String, Int]())
           Source(List(Left("one"), Right(2), Left("three"), Right(4))) ~> partition.in
-          partition.out.left ~> sink1.in
-          partition.out.right ~> sink2.in
+          partition.out0 ~> sink1.in
+          partition.out1 ~> sink2.in
           ClosedShape
         })
         .run()
@@ -36,51 +34,41 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       s2.futureValue.toSet should ===(Set(2, 4))
     }
 
-    //              @TODO
-    // @TODO                    TODO
-    // @TODO the rest to follow TODO
-    // @TODO                    TODO
-    //              @TODO
-    /*
     "complete stage after upstream completes" in {
       val c1 = TestSubscriber.probe[String]()
-      val c2 = TestSubscriber.probe[String]()
+      val c2 = TestSubscriber.probe[Int]()
 
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val partition = b.add(Partition[String](2, {
-            case s if (s.length > 4) => 0
-            case _                   => 1
-          }))
-          Source(List("this", "is", "just", "another", "test")) ~> partition.in
-          partition.out(0) ~> Sink.fromSubscriber(c1)
-          partition.out(1) ~> Sink.fromSubscriber(c2)
+          val partition = b.add(PartitionEither[String, Int]())
+          Source(List(Left("forty"), Left("two"), Right(4), Right(2))) ~> partition.in
+          partition.out0 ~> Sink.fromSubscriber(c1)
+          partition.out1 ~> Sink.fromSubscriber(c2)
           ClosedShape
         })
         .run()
 
-      c1.request(1)
-      c2.request(4)
-      c1.expectNext("another")
-      c2.expectNext("this")
-      c2.expectNext("is")
-      c2.expectNext("just")
-      c2.expectNext("test")
+      c1.request(2)
+      c2.request(2)
+      c1.expectNext("forty")
+      c1.expectNext("two")
+      c2.expectNext(4)
+      c2.expectNext(2)
       c1.expectComplete()
       c2.expectComplete()
 
     }
 
     "remember first pull even though first element targeted another out" in {
-      val c1 = TestSubscriber.probe[Int]()
+      val c1 = TestSubscriber.probe[String]()
       val c2 = TestSubscriber.probe[Int]()
 
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val partition = b.add(Partition[Int](2, { case l if l < 6 => 0; case _ => 1 }))
-          Source(List(6, 3)) ~> partition.in
-          partition.out(0) ~> Sink.fromSubscriber(c1)
-          partition.out(1) ~> Sink.fromSubscriber(c2)
+          val partition = b.add(PartitionEither[String, Int]())
+          Source(List(Right(6), Left("three"))) ~> partition.in
+          partition.out0 ~> Sink.fromSubscriber(c1)
+          partition.out1 ~> Sink.fromSubscriber(c2)
           ClosedShape
         })
         .run()
@@ -89,22 +77,24 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       c1.expectNoMessage(1.seconds)
       c2.request(1)
       c2.expectNext(6)
-      c1.expectNext(3)
+      c1.expectNext("three")
       c1.expectComplete()
       c2.expectComplete()
     }
 
     "cancel upstream when all downstreams cancel if eagerCancel is false" in {
-      val p1 = TestPublisher.probe[Int]()
+      val p1 = TestPublisher.probe[Either[Int, Int]]()
       val c1 = TestSubscriber.probe[Int]()
       val c2 = TestSubscriber.probe[Int]()
 
+      def either(i: Int): Either[Int, Int] = Either.cond(i >= 6, i, i)
+
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val partition = b.add(new Partition[Int](2, { case l if l < 6 => 0; case _ => 1 }, false))
+          val partition = b.add(new PartitionEither[Int, Int](false))
           Source.fromPublisher(p1.getPublisher) ~> partition.in
-          partition.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c1)
-          partition.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)
+          partition.out0 ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c1)
+          partition.out1 ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)
           ClosedShape
         })
         .run()
@@ -114,30 +104,32 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       val sub2 = c2.expectSubscription()
       sub1.request(3)
       sub2.request(3)
-      p1Sub.sendNext(1)
-      p1Sub.sendNext(8)
+      p1Sub.sendNext(either(1))
+      p1Sub.sendNext(either(8))
       c1.expectNext(1)
       c2.expectNext(8)
-      p1Sub.sendNext(2)
+      p1Sub.sendNext(either(2))
       c1.expectNext(2)
       sub1.cancel()
-      p1Sub.sendNext(9)
+      p1Sub.sendNext(either(9))
       c2.expectNext(9)
       sub2.cancel()
       p1Sub.expectCancellation()
     }
 
     "cancel upstream when any downstream cancel if eagerCancel is true" in {
-      val p1 = TestPublisher.probe[Int]()
+      val p1 = TestPublisher.probe[Either[Int, Int]]()
       val c1 = TestSubscriber.probe[Int]()
       val c2 = TestSubscriber.probe[Int]()
 
+      def either(i: Int): Either[Int, Int] = Either.cond(i >= 6, i, i)
+
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val partition = b.add(new Partition[Int](2, { case l if l < 6 => 0; case _ => 1 }, true))
+          val partition = b.add(new PartitionEither[Int, Int](true))
           Source.fromPublisher(p1.getPublisher) ~> partition.in
-          partition.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c1)
-          partition.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)
+          partition.out0 ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c1)
+          partition.out1 ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)
           ClosedShape
         })
         .run()
@@ -147,8 +139,8 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       val sub2 = c2.expectSubscription()
       sub1.request(3)
       sub2.request(3)
-      p1Sub.sendNext(1)
-      p1Sub.sendNext(8)
+      p1Sub.sendNext(either(1))
+      p1Sub.sendNext(either(8))
       c1.expectNext(1)
       c2.expectNext(8)
       sub1.cancel()
@@ -159,15 +151,15 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       val c1 = TestSubscriber.probe[String]()
       val c2 = TestSubscriber.probe[String]()
 
+      def either(s: String): Either[String, String] =
+        Either.cond(s != "a" && s != "b", s, s)
+
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val partition = b.add(Partition[String](2, {
-            case s if s == "a" || s == "b" => 0
-            case _                         => 1
-          }))
-          Source(List("a", "b", "c", "d")) ~> partition.in
-          partition.out(0) ~> Sink.fromSubscriber(c1)
-          partition.out(1) ~> Sink.fromSubscriber(c2)
+          val partition = b.add(PartitionEither[String, String]())
+          Source(List("a", "b", "c", "d").map(either)) ~> partition.in
+          partition.out0 ~> Sink.fromSubscriber(c1)
+          partition.out1 ~> Sink.fromSubscriber(c2)
           ClosedShape
         })
         .run()
@@ -185,15 +177,15 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       val c1 = TestSubscriber.probe[String]()
       val c2 = TestSubscriber.probe[String]()
 
+      def either(s: String): Either[String, String] =
+        Either.cond(s != "a" && s != "b", s, s)
+
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val partition = b.add(Partition[String](2, {
-            case s if s == "a" || s == "b" => 0
-            case _                         => 1
-          }))
-          Source(List("a", "b", "c")) ~> partition.in
-          partition.out(0) ~> Sink.fromSubscriber(c1)
-          partition.out(1) ~> Sink.fromSubscriber(c2)
+          val partition = b.add(PartitionEither[String, String]())
+          Source(List("a", "b", "c").map(either)) ~> partition.in
+          partition.out0 ~> Sink.fromSubscriber(c1)
+          partition.out1 ~> Sink.fromSubscriber(c2)
           ClosedShape
         })
         .run()
@@ -213,12 +205,14 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       val s = Sink.seq[Int]
       val input = Set(5, 2, 9, 1, 1, 1, 10)
 
+      def either(l: Int): Either[Int, Int] = Either.cond(l >= 4, l, l)
+
       val g = RunnableGraph.fromGraph(GraphDSL.createGraph(s) { implicit b => sink =>
-        val partition = b.add(Partition[Int](2, { case l if l < 4 => 0; case _ => 1 }))
+        val partition = b.add(PartitionEither[Int, Int]())
         val merge = b.add(Merge[Int](2))
-        Source(input) ~> partition.in
-        partition.out(0) ~> merge.in(0)
-        partition.out(1) ~> merge.in(1)
+        Source(input).map(either) ~> partition.in
+        partition.out0 ~> merge.in(0)
+        partition.out1 ~> merge.in(1)
         merge.out ~> sink.in
 
         ClosedShape
@@ -235,12 +229,14 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       val c1 = TestSubscriber.probe[Int]()
       val c2 = TestSubscriber.probe[Int]()
 
+      def either(l: Int): Either[Int, Int] = Either.cond(l >= 6, l, l)
+
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val partition = b.add(Partition[Int](2, { case l if l < 6 => 0; case _ => 1 }))
-          Source(List(6)) ~> partition.in
-          partition.out(0) ~> Sink.fromSubscriber(c1)
-          partition.out(1) ~> Sink.fromSubscriber(c2)
+          val partition = b.add(PartitionEither[Int, Int]())
+          Source(List(6)).map(either) ~> partition.in
+          partition.out0 ~> Sink.fromSubscriber(c1)
+          partition.out1 ~> Sink.fromSubscriber(c2)
           ClosedShape
         })
         .run()
@@ -252,97 +248,5 @@ class GraphPartitionEitherSpec extends StreamSpec("""
       c1.expectComplete()
       c2.expectComplete()
     }
-
-    "must fail stage if partitioner outcome is out of bound" in {
-
-      val c1 = TestSubscriber.probe[Int]()
-
-      RunnableGraph
-        .fromGraph(GraphDSL.create() { implicit b =>
-          val partition = b.add(Partition[Int](2, { case l if l < 0 => -1; case _ => 0 }))
-          Source(List(-3)) ~> partition.in
-          partition.out(0) ~> Sink.fromSubscriber(c1)
-          partition.out(1) ~> Sink.ignore
-          ClosedShape
-        })
-        .run()
-
-      c1.request(1)
-      c1.expectError(
-        Partition.PartitionOutOfBoundsException(
-          "partitioner must return an index in the range [0,1]. returned: [-1] for input [java.lang.Integer]."))
-    }
-
-    "partition to three subscribers, with Resume supervision" in {
-
-      val (s1, s2, s3) = RunnableGraph
-        .fromGraph(GraphDSL.createGraph(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
-          implicit b => (sink1, sink2, sink3) =>
-            val partition = b.add(Partition[Int](3, {
-              case g if g > 3  => 0
-              case l if l < 3  => 1
-              case e if e == 3 => throw TE("Resume")
-            }))
-            Source(List(1, 2, 3, 4, 5)) ~> partition.in
-            partition.out(0) ~> sink1.in
-            partition.out(1) ~> sink2.in
-            partition.out(2) ~> sink3.in
-            ClosedShape
-        })
-        .withAttributes(ActorAttributes.supervisionStrategy(_ => Supervision.Resume))
-        .run()
-
-      s1.futureValue.toSet should ===(Set(4, 5))
-      s2.futureValue.toSet should ===(Set(1, 2))
-      s3.futureValue.toSet should ===(Set())
-    }
-
-    "partition to three subscribers, with Restart supervision" in {
-      val (s1, s2, s3) = RunnableGraph
-        .fromGraph(GraphDSL.createGraph(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
-          implicit b => (sink1, sink2, sink3) =>
-            val partition = b.add(Partition[Int](3, {
-              case g if g > 3  => 0
-              case l if l < 3  => 1
-              case e if e == 3 => throw TE("Restart")
-            }))
-            Source(List(1, 2, 3, 4, 5)) ~> partition.in
-            partition.out(0) ~> sink1.in
-            partition.out(1) ~> sink2.in
-            partition.out(2) ~> sink3.in
-            ClosedShape
-        })
-        .withAttributes(ActorAttributes.supervisionStrategy(_ => Supervision.Restart))
-        .run()
-
-      s1.futureValue.toSet should ===(Set(4, 5))
-      s2.futureValue.toSet should ===(Set(1, 2))
-      s3.futureValue.toSet should ===(Set())
-    }
-
-    "support supervision for PartitionOutOfBoundsException" in {
-
-      val (s1, s2, s3) = RunnableGraph
-        .fromGraph(GraphDSL.createGraph(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
-          implicit b => (sink1, sink2, sink3) =>
-            val partition = b.add(Partition[Int](3, {
-              case g if g > 3  => 0
-              case l if l < 3  => 1
-              case e if e == 3 => -1 // out of bounds
-            }))
-            Source(List(1, 2, 3, 4, 5)) ~> partition.in
-            partition.out(0) ~> sink1.in
-            partition.out(1) ~> sink2.in
-            partition.out(2) ~> sink3.in
-            ClosedShape
-        })
-        .withAttributes(ActorAttributes.supervisionStrategy(_ => Supervision.Resume))
-        .run()
-
-      s1.futureValue.toSet should ===(Set(4, 5))
-      s2.futureValue.toSet should ===(Set(1, 2))
-      s3.futureValue.toSet should ===(Set())
-    }
-   */
   }
 }
