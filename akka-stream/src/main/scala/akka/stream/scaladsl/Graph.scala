@@ -896,9 +896,12 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
 object PartitionEither {
   final class Outlets[A, B](val left: Outlet[A], val right: Outlet[B])
 
-  final class PartitionEitherShape[-I, +O0, +O1](_init: FanOutShape.Init[I @uncheckedVariance]) extends FanOutShape2[I, O0, O1](_init) {
-    override protected def construct(init: FanOutShape.Init[I @uncheckedVariance]): FanOutShape[I] = new PartitionEitherShape(init)
-    override def deepCopy(): PartitionEitherShape[I, O0, O1] = super.deepCopy().asInstanceOf[PartitionEitherShape[I, O0, O1]]
+  final class PartitionEitherShape[-I, +O0, +O1](_init: FanOutShape.Init[I @uncheckedVariance])
+      extends FanOutShape2[I, O0, O1](_init) {
+    override protected def construct(init: FanOutShape.Init[I @uncheckedVariance]): FanOutShape[I] =
+      new PartitionEitherShape(init)
+    override def deepCopy(): PartitionEitherShape[I, O0, O1] =
+      super.deepCopy().asInstanceOf[PartitionEitherShape[I, O0, O1]]
 
     val out: Outlets[O0 @uncheckedVariance, O1 @uncheckedVariance] = new Outlets(out0, out1)
   }
@@ -932,12 +935,11 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
 
   val in: Inlet[Either[A, B]] = Inlet[Either[A, B]]("PartitionEither.in")
 
-  val out: Outlets[A, B] = new Outlets(
-    left = Outlet[A]("PartitionEither.out.left"),
-    right = Outlet[B]("PartitionEither.out.right")
-  )
+  val out: Outlets[A, B] =
+    new Outlets(left = Outlet[A]("PartitionEither.out.left"), right = Outlet[B]("PartitionEither.out.right"))
 
-  override val shape: PartitionEitherShape[Either[A, B], A, B] = new PartitionEitherShape(FanOutShape.Ports(in, out.left :: out.right :: Nil))
+  override val shape: PartitionEitherShape[Either[A, B], A, B] = new PartitionEitherShape(
+    FanOutShape.Ports(in, out.left :: out.right :: Nil))
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler {
