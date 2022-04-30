@@ -894,7 +894,7 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
 }
 
 object PartitionEither {
-  case class Outlets[A, B](left: Outlet[A], right: Outlet[B])
+  final class Outlets[A, B](val left: Outlet[A], val right: Outlet[B])
 
   /**
    * Create a new `PartitionEither` operator with the specified input types.
@@ -925,7 +925,7 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
 
   val in: Inlet[Either[A, B]] = Inlet[Either[A, B]]("PartitionEither.in")
 
-  val out: Outlets[A, B] = Outlets(
+  val out: Outlets[A, B] = new Outlets(
     left = Outlet[A]("PartitionEither.out.left"),
     right = Outlet[B]("PartitionEither.out.right")
   )
