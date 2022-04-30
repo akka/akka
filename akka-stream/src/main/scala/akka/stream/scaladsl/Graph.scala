@@ -918,8 +918,7 @@ object PartitionEither {
  *
  * '''Cancels when''' all downstreams have cancelled (eagerCancel=false) or one downstream cancels (eagerCancel=true)
  */
-final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need to think about variance?
-    extends GraphStage[FanOutShape2[Either[A, B], A, B]] {
+final class PartitionEither[A, B](val eagerCancel: Boolean) extends GraphStage[FanOutShape2[Either[A, B], A, B]] {
   val in: Inlet[Either[A, B]] = Inlet[Either[A, B]]("PartitionEither.in")
   val out0: Outlet[A] = Outlet[A]("PartitionEither.out0")
   val out1: Outlet[B] = Outlet[B]("PartitionEither.out1")
