@@ -894,6 +894,7 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
 }
 
 object PartitionEither {
+  case class Outlets[A, B](left: Outlet[A], right: Outlet[B])
 
   /**
    * Create a new `PartitionEither` operator with the specified input types.
@@ -920,13 +921,16 @@ object PartitionEither {
  */
 final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need to think about variance?
     extends GraphStage[FanOutShape2[Either[A, B], A, B]] {
+  import PartitionEither._
 
   val in: Inlet[Either[A, B]] = Inlet[Either[A, B]]("PartitionEither.in")
-  val outLeft: Outlet[A] = Outlet[A]("PartitionEither.outLeft")
-  val outRight: Outlet[B] = Outlet[B]("PartitionEither.outRight")
-  val out: Seq[Outlet[_]] = Seq(outLeft, outRight)
 
-  override val shape: FanOutShape2[Either[A, B], A, B] = new FanOutShape2(in, outLeft, outRight)
+  val out: Outlets[A, B] = Outlets(
+    left = Outlet[A]("PartitionEither.out.left"),
+    right = Outlet[B]("PartitionEither.out.right")
+  )
+
+  override val shape: FanOutShape2[Either[A, B], A, B] = new FanOutShape2(in, out.left, out.right)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler {
@@ -937,11 +941,11 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
         val elem = grab(in)
 
         elem match {
-          case Right(value) =>
-            if (!isClosed(outRight)) {
-              if (isAvailable(outRight)) {
-                push(outRight, value)
-                pullIfAnyOutIsAvailable() // @TODO think about making this less general since there's only two outs?
+          case Left(value) =>
+            if (!isClosed(out.left)) {
+              if (isAvailable(out.left)) {
+                push(out.left, value)
+                pullIfAnyOutIsAvailable()
               } else {
                 outPendingElem = elem
               }
@@ -949,10 +953,10 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
               pullIfAnyOutIsAvailable()
             }
 
-          case Left(value) =>
-            if (!isClosed(outLeft)) {
-              if (isAvailable(outLeft)) {
-                push(outLeft, value)
+          case Right(value) =>
+            if (!isClosed(out.right)) {
+              if (isAvailable(out.right)) {
+                push(out.right, value)
                 pullIfAnyOutIsAvailable()
               } else {
                 outPendingElem = elem
@@ -964,7 +968,7 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
       }
 
       private def pullIfAnyOutIsAvailable(): Unit = {
-        if (out.exists(isAvailable(_)))
+        if (isAvailable(out.left) || isAvailable(out.right))
           pull(in)
       }
 
@@ -975,50 +979,14 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
       setHandler(in, this)
 
       setHandler(
-        outRight,
-        new OutHandler {
-          override def onPull(): Unit = {
-            if (outPendingElem != null) {
-              outPendingElem match {
-                case Left(_) =>
-                case Right(elem) =>
-                  push(outRight, elem)
-                  outPendingElem = null
-                  if (isClosed(in))
-                    completeStage()
-                  else if (!hasBeenPulled(in))
-                    pull(in)
-              }
-            } else if (!hasBeenPulled(in))
-              pull(in)
-          }
-
-          override def onDownstreamFinish(cause: Throwable): Unit = {
-            if (eagerCancel) cancelStage(cause)
-            else {
-              downstreamRunning -= 1
-              if (downstreamRunning == 0)
-                cancelStage(cause)
-              else if (outPendingElem != null && outPendingElem.isRight) {
-                outPendingElem = null
-                if (isClosed(in))
-                  cancelStage(cause)
-                else if (!hasBeenPulled(in))
-                  pull(in)
-              }
-            }
-          }
-        })
-
-      setHandler(
-        outLeft,
+        out.left,
         new OutHandler {
           override def onPull(): Unit = {
             if (outPendingElem != null) {
               outPendingElem match {
                 case Right(_) =>
                 case Left(elem) =>
-                  push(outLeft, elem)
+                  push(out.left, elem)
                   outPendingElem = null
                   if (isClosed(in))
                     completeStage()
@@ -1037,6 +1005,42 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
               if (downstreamRunning == 0)
                 cancelStage(cause)
               else if (outPendingElem != null && outPendingElem.isLeft) {
+                outPendingElem = null
+                if (isClosed(in))
+                  cancelStage(cause)
+                else if (!hasBeenPulled(in))
+                  pull(in)
+              }
+            }
+          }
+        })
+
+      setHandler(
+        out.right,
+        new OutHandler {
+          override def onPull(): Unit = {
+            if (outPendingElem != null) {
+              outPendingElem match {
+                case Left(_) =>
+                case Right(elem) =>
+                  push(out.right, elem)
+                  outPendingElem = null
+                  if (isClosed(in))
+                    completeStage()
+                  else if (!hasBeenPulled(in))
+                    pull(in)
+              }
+            } else if (!hasBeenPulled(in))
+              pull(in)
+          }
+
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            if (eagerCancel) cancelStage(cause)
+            else {
+              downstreamRunning -= 1
+              if (downstreamRunning == 0)
+                cancelStage(cause)
+              else if (outPendingElem != null && outPendingElem.isRight) {
                 outPendingElem = null
                 if (isClosed(in))
                   cancelStage(cause)
