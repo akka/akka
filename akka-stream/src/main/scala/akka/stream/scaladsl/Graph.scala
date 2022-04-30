@@ -894,17 +894,6 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
 }
 
 object PartitionEither {
-  final class Outlets[A, B](val left: Outlet[A], val right: Outlet[B])
-
-  final class PartitionEitherShape[-I, +O0, +O1](_init: FanOutShape.Init[I @uncheckedVariance])
-      extends FanOutShape2[I, O0, O1](_init) {
-    override protected def construct(init: FanOutShape.Init[I @uncheckedVariance]): FanOutShape[I] =
-      new PartitionEitherShape(init)
-    override def deepCopy(): PartitionEitherShape[I, O0, O1] =
-      super.deepCopy().asInstanceOf[PartitionEitherShape[I, O0, O1]]
-
-    val out: Outlets[O0 @uncheckedVariance, O1 @uncheckedVariance] = new Outlets(out0, out1)
-  }
 
   /**
    * Create a new `PartitionEither` operator with the specified input types.
@@ -916,8 +905,8 @@ object PartitionEither {
 }
 
 /**
- * Fan-out the stream to two streams, one for left, one for right, emitting an incoming upstream element to one
- * downstream consumer according to the partitioner function applied to the element
+ * Fan-out the stream to two streams, one for left (outlet0), one for right (outlet1), emitting an incoming upstream
+ * element to one downstream consumer according to the partitioner function applied to the element
  *
  * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
  *
@@ -930,16 +919,12 @@ object PartitionEither {
  * '''Cancels when''' all downstreams have cancelled (eagerCancel=false) or one downstream cancels (eagerCancel=true)
  */
 final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need to think about variance?
-    extends GraphStage[PartitionEither.PartitionEitherShape[Either[A, B], A, B]] {
-  import PartitionEither._
-
+    extends GraphStage[FanOutShape2[Either[A, B], A, B]] {
   val in: Inlet[Either[A, B]] = Inlet[Either[A, B]]("PartitionEither.in")
+  val out0: Outlet[A] = Outlet[A]("PartitionEither.out0")
+  val out1: Outlet[B] = Outlet[B]("PartitionEither.out1")
 
-  val out: Outlets[A, B] =
-    new Outlets(left = Outlet[A]("PartitionEither.out.left"), right = Outlet[B]("PartitionEither.out.right"))
-
-  override val shape: PartitionEitherShape[Either[A, B], A, B] = new PartitionEitherShape(
-    FanOutShape.Ports(in, out.left :: out.right :: Nil))
+  override val shape: FanOutShape2[Either[A, B], A, B] = new FanOutShape2(in, out0, out1)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler {
@@ -951,9 +936,9 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
 
         elem match {
           case Left(value) =>
-            if (!isClosed(out.left)) {
-              if (isAvailable(out.left)) {
-                push(out.left, value)
+            if (!isClosed(out0)) {
+              if (isAvailable(out0)) {
+                push(out0, value)
                 pullIfAnyOutIsAvailable()
               } else {
                 outPendingElem = elem
@@ -963,9 +948,9 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
             }
 
           case Right(value) =>
-            if (!isClosed(out.right)) {
-              if (isAvailable(out.right)) {
-                push(out.right, value)
+            if (!isClosed(out1)) {
+              if (isAvailable(out1)) {
+                push(out1, value)
                 pullIfAnyOutIsAvailable()
               } else {
                 outPendingElem = elem
@@ -977,7 +962,7 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
       }
 
       private def pullIfAnyOutIsAvailable(): Unit = {
-        if (isAvailable(out.left) || isAvailable(out.right))
+        if (isAvailable(out0) || isAvailable(out1))
           pull(in)
       }
 
@@ -988,14 +973,14 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
       setHandler(in, this)
 
       setHandler(
-        out.left,
+        out0,
         new OutHandler {
           override def onPull(): Unit = {
             if (outPendingElem != null) {
               outPendingElem match {
                 case Right(_) =>
                 case Left(elem) =>
-                  push(out.left, elem)
+                  push(out0, elem)
                   outPendingElem = null
                   if (isClosed(in))
                     completeStage()
@@ -1025,14 +1010,14 @@ final class PartitionEither[A, B](val eagerCancel: Boolean) // @TODO do i need t
         })
 
       setHandler(
-        out.right,
+        out1,
         new OutHandler {
           override def onPull(): Unit = {
             if (outPendingElem != null) {
               outPendingElem match {
                 case Left(_) =>
                 case Right(elem) =>
-                  push(out.right, elem)
+                  push(out1, elem)
                   outPendingElem = null
                   if (isClosed(in))
                     completeStage()

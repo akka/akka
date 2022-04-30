@@ -282,6 +282,48 @@ object Partition {
 
 }
 
+object PartitionEither {
+
+  /**
+   * Create a new `PartitionEither` operator with the specified input types, `eagerCancel` is `false`.
+   */
+  def create[A, B](): Graph[FanOutShape2[Either[A, B], A, B], NotUsed] =
+    new scaladsl.PartitionEither(eagerCancel = false)
+
+  /**
+   * Create a new `PartitionEither` operator with the specified input types.
+   *
+   * @param eagerCancel this operator cancels, when any (true) or all (false) of the downstreams cancel
+   */
+  def create[A, B](eagerCancel: Boolean): Graph[FanOutShape2[Either[A, B], A, B], NotUsed] =
+    new scaladsl.PartitionEither(eagerCancel)
+
+  /**
+   * Create a new `PartitionEither` operator with the specified input type, `eagerCancel` is `false`.
+   *
+   * @param clazzA a type hint for this method
+   * @param clazzB a type hint for this method
+   */
+  def create[A, B](
+      @unused clazzA: Class[A],
+      @unused clazzB: Class[B]): Graph[FanOutShape2[Either[A, B], A, B], NotUsed] =
+    new scaladsl.PartitionEither(eagerCancel = false)
+
+  /**
+   * Create a new `PartitionEither` operator with the specified input type.
+   *
+   * @param clazzA a type hint for this method
+   * @param clazzB a type hint for this method
+   * @param eagerCancel this operator cancels, when any (true) or all (false) of the downstreams cancel
+   */
+  def create[A, B](
+      @unused clazzA: Class[A],
+      @unused clazzB: Class[B],
+      eagerCancel: Boolean): Graph[FanOutShape2[Either[A, B], A, B], NotUsed] =
+    new scaladsl.PartitionEither(eagerCancel)
+
+}
+
 /**
  * Fan-out the stream to several streams. Each upstream element is emitted to the first available downstream consumer.
  * It will not shutdown until the subscriptions for at least
