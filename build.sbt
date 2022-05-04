@@ -590,9 +590,17 @@ lazy val serialversionRemoverPlugin =
 lazy val serialversionRemoverPluginSettings = Seq(
   Compile / scalacOptions ++= (
       if (scalaVersion.value.startsWith("3."))
-        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString)
+        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath)
       else Nil
     ))
+
+def fortifySettings(name: String) = Seq(
+  addCompilerPlugin("com.lightbend" %% "scala-fortify" % "1.0.21" cross CrossVersion.patch),
+  scalacOptions ++= Seq(
+    "-P:fortify:scaversion=21.1",
+    s"-P:fortify:build=$name"
+  )
+)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
@@ -600,6 +608,7 @@ def akkaModule(name: String): Project =
     .disablePlugins(WelcomePlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
+    .settings(fortifySettings(name))
     .enablePlugins(BootstrapGenjavadoc)
 
 /* Command aliases one can run locally against a module
