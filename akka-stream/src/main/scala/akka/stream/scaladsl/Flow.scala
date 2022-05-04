@@ -2784,12 +2784,37 @@ trait FlowOps[+Out, +Mat] {
    *   '''Cancels when''' downstream cancels
    */
   def zipLatestWith[Out2, Out3](that: Graph[SourceShape[Out2], _])(combine: (Out, Out2) => Out3): Repr[Out3] =
-    via(zipLatestWithGraph(that)(combine))
+    zipLatestWith(that, eagerComplete = true)(combine)
+
+  /**
+   * Combine the elements of multiple streams into a stream of combined elements using a combiner function,
+   * picking always the latest of the elements of each source.
+   *
+   * No element is emitted until at least one element from each Source becomes available. Whenever a new
+   * element appears, the zipping function is invoked with a tuple containing the new element
+   * and the other last seen elements.
+   *
+   *   '''Emits when''' all of the inputs have at least an element available, and then each time an element becomes
+   *   available on either of the inputs
+   *
+   *   '''Backpressures when''' downstream backpressures
+   *
+   *   '''Completes when''' any upstream completes if `eagerComplete` is enabled or wait for all upstreams to complete
+   *
+   *   '''Cancels when''' downstream cancels
+   */
+  def zipLatestWith[Out2, Out3](that: Graph[SourceShape[Out2], _], eagerComplete: Boolean)(
+      combine: (Out, Out2) => Out3): Repr[Out3] =
+    via(zipLatestWithGraph(that, eagerComplete)(combine))
 
   protected def zipLatestWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M])(
       combine: (Out, Out2) => Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
+    zipLatestWithGraph(that, eagerComplete = true)(combine)
+
+  protected def zipLatestWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M], eagerComplete: Boolean)(
+      combine: (Out, Out2) => Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
     GraphDSL.createGraph(that) { implicit b => r =>
-      val zip = b.add(ZipLatestWith[Out, Out2, Out3](combine))
+      val zip = b.add(ZipLatestWith[Out, Out2, Out3](combine, eagerComplete))
       r ~> zip.in1
       FlowShape(zip.in0, zip.out)
     }
@@ -3477,7 +3502,20 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def zipLatestWithMat[Out2, Out3, Mat2, Mat3](that: Graph[SourceShape[Out2], Mat2])(combine: (Out, Out2) => Out3)(
       matF: (Mat, Mat2) => Mat3): ReprMat[Out3, Mat3] =
-    viaMat(zipLatestWithGraph(that)(combine))(matF)
+    zipLatestWithMat(that, eagerComplete = true)(combine)(matF)
+
+  /**
+   * Put together the elements of current flow and the given [[Source]]
+   * into a stream of combined elements using a combiner function, picking always the latest of the elements of each source.
+   *
+   * @see [[#zipLatestWith]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def zipLatestWithMat[Out2, Out3, Mat2, Mat3](that: Graph[SourceShape[Out2], Mat2], eagerComplete: Boolean)(
+      combine: (Out, Out2) => Out3)(matF: (Mat, Mat2) => Mat3): ReprMat[Out3, Mat3] =
+    viaMat(zipLatestWithGraph(that, eagerComplete)(combine))(matF)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,

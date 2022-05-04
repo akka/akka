@@ -16,7 +16,18 @@ trait ZipLatestWithApply {
    * @param zipper zipping-function from the input values to the output value
    */
   def apply[[#A1#], O](zipper: ([#A1#]) => O): ZipLatestWith1[[#A1#], O] =
-    new ZipLatestWith1(zipper)
+    new ZipLatestWith1(zipper, true)
+  #
+
+  ]
+
+  [2..22#/**
+   * Create a new `ZipLatestWith` specialized for 1 inputs.
+   *
+   * @param zipper zipping-function from the input values to the output value
+   */
+  def apply[[#A1#], O](zipper: ([#A1#]) => O, eagerComplete: Boolean): ZipLatestWith1[[#A1#], O] =
+    new ZipLatestWith1(zipper, eagerComplete)
   #
 
   ]
@@ -24,16 +35,19 @@ trait ZipLatestWithApply {
 }
 
 [2..22#/** `ZipLatestWith` specialized for 1 inputs */
-class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[FanInShape1[[#A1#], O]] {
+class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O, val eagerComplete: Boolean) extends GraphStage[FanInShape1[[#A1#], O]] {
   override def initialAttributes = Attributes.name("ZipLatestWith1")
   override val shape: FanInShape1[[#A1#], O] = new FanInShape1[[#A1#], O]("ZipLatestWith1")
   def out: Outlet[O] = shape.out
   [#val in0: Inlet[A1] = shape.in0#
   ]
 
+  def this(zipper: ([#A1#]) => O) = this(zipper, eagerComplete = true)
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) { outer =>
+      private var upstreamsToWait: Int = 1
       // Without this field the completion signalling would take one extra pull
-      private var willShutDown = false
+      private def willShutDown: Boolean = upstreamsToWait == ##0
 
       private val contextPropagation = ContextPropagation()
       [#private val inlet0 = new ZipLatestInlet(in0)#
@@ -101,8 +115,10 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
          }
 
          override def onUpstreamFinish(): Unit = {
-           if (!hasValue || outer.staleTupleValues) completeStage()
-           else outer.willShutDown = true
+           if (!hasValue) completeStage()
+           else if (eagerComplete) outer.upstreamsToWait = ##0
+           else outer.upstreamsToWait = outer.upstreamsToWait - ##1
+           if (willShutDown && staleTupleValues) completeStage()
          }
        }
     }

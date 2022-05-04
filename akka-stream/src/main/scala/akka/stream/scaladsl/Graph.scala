@@ -1041,6 +1041,11 @@ object ZipLatest {
    * Create a new `ZipLatest`.
    */
   def apply[A, B](): ZipLatest[A, B] = new ZipLatest()
+
+  /**
+   * Create a new `ZipLatest`.
+   */
+  def apply[A, B](eagerComplete: Boolean): ZipLatest[A, B] = new ZipLatest(eagerComplete)
 }
 
 /**
@@ -1055,11 +1060,14 @@ object ZipLatest {
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' any upstream completes
+ * '''Completes when''' any upstream completes if `eagerComplete` is enabled or wait for all upstreams to complete
  *
  * '''Cancels when''' downstream cancels
  */
-final class ZipLatest[A, B] extends ZipLatestWith2[A, B, (A, B)](Tuple2.apply) {
+final class ZipLatest[A, B](eagerComplete: Boolean) extends ZipLatestWith2[A, B, (A, B)](Tuple2.apply, eagerComplete) {
+
+  def this() = this(true)
+
   override def toString = "ZipLatest"
 }
 
@@ -1078,7 +1086,11 @@ object ZipWith extends ZipWithApply
 
 /**
  * Combine the elements of multiple streams into a stream of combined elements using a combiner function,
- * picking always the latest of the elements of each source.
+ * picking always the latest of the elements of each source. The combined stream completes immediately if
+ * some upstreams have already completed while some upstreams did not emitted any value yet.
+ * If all upstreams produced some value and the optional parameter `eagerComplete` is true (default),
+ * the combined stream completes when any of the upstreams completes, otherwise, the combined stream
+ * will wait for all upstreams to complete.
  *
  * No element is emitted until at least one element from each Source becomes available. Whenever a new
  * element appears, the zipping function is invoked with a tuple containing the new element

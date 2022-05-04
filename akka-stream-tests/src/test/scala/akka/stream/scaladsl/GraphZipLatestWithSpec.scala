@@ -26,8 +26,15 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
   }
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
+    setup(p1, p2, eagerComplete = true)
+  }
+
+  def setup(p1: Publisher[Int], p2: Publisher[Int], eagerComplete: Boolean) = {
     val subscriber = TestSubscriber.probe[Outputs]()
-    Source.fromPublisher(p1).zipLatestWith(Source.fromPublisher(p2))(_ + _).runWith(Sink.fromSubscriber(subscriber))
+    Source
+      .fromPublisher(p1)
+      .zipLatestWith(Source.fromPublisher(p2), eagerComplete)(_ + _)
+      .runWith(Sink.fromSubscriber(subscriber))
     subscriber
   }
 
@@ -100,6 +107,72 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
         case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
       probe.expectNoMessage(200.millis)
+    }
+
+    "work in the non eager version" in {
+      val upstreamProbe = TestPublisher.manualProbe[Int]()
+      val upstreamProbe2 = TestPublisher.manualProbe[Int]()
+      val downstreamProbe = TestSubscriber.manualProbe[Outputs]()
+
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val zipLatest = b.add(ZipLatestWith((_: Int) + (_: Int), false))
+          Source.fromPublisher(upstreamProbe) ~> zipLatest.in0
+          Source.fromPublisher(upstreamProbe2) ~> zipLatest.in1
+          zipLatest.out ~> Sink.fromSubscriber(downstreamProbe)
+          ClosedShape
+        })
+        .run()
+
+      val upstreamSubscription = upstreamProbe.expectSubscription()
+      val upstreamSubscription2 = upstreamProbe2.expectSubscription()
+      val downstreamSubscription = downstreamProbe.expectSubscription()
+
+      upstreamSubscription.sendNext(10)
+      upstreamSubscription2.sendNext(1)
+      upstreamSubscription2.sendNext(2)
+
+      downstreamSubscription.request(2)
+      downstreamProbe.expectNext(11)
+      downstreamProbe.expectNext(12)
+      upstreamSubscription2.sendComplete()
+
+      upstreamSubscription.sendNext(20)
+      downstreamSubscription.request(1)
+      downstreamProbe.expectNext(22)
+
+      upstreamSubscription.sendNext(30)
+      downstreamSubscription.request(1)
+      downstreamProbe.expectNext(32)
+
+      upstreamSubscription.sendComplete()
+
+      downstreamProbe.expectComplete()
+    }
+
+    "work in the eager version" in {
+      val upstreamProbe = TestPublisher.manualProbe[Int]()
+      val downstreamProbe = TestSubscriber.manualProbe[Outputs]()
+
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val zipLatest = b.add(ZipLatestWith((_: Int) + (_: Int), true))
+          Source(1 to 2) ~> zipLatest.in0
+          Source.fromPublisher(upstreamProbe) ~> zipLatest.in1
+          zipLatest.out ~> Sink.fromSubscriber(downstreamProbe)
+          ClosedShape
+        })
+        .run()
+
+      val upstreamSubscription = upstreamProbe.expectSubscription()
+      val downstreamSubscription = downstreamProbe.expectSubscription()
+
+      upstreamSubscription.sendNext(10)
+      downstreamSubscription.request(2)
+      downstreamProbe.expectNext(11)
+      downstreamProbe.expectNext(12)
+
+      downstreamProbe.expectComplete()
     }
 
     commonTests()
