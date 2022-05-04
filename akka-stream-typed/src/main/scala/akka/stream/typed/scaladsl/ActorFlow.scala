@@ -8,6 +8,7 @@ import scala.annotation.implicitNotFound
 import scala.concurrent.Future
 import akka.NotUsed
 import akka.actor.typed.ActorRef
+import akka.dispatch.ExecutionContexts
 import akka.pattern.{ AskTimeoutException, StatusReply }
 import akka.stream._
 import akka.stream.scaladsl._
@@ -19,6 +20,36 @@ import akka.util.Timeout
 object ActorFlow {
 
   // TODO would be nice to provide Implicits to allow .ask() directly on Flow/Source
+
+  private def askImpl[I, Q, A, O](parallelism: Int)(ref: ActorRef[Q])(
+      makeMessage: (I, ActorRef[A]) => Q,
+      makeOut: (I, Future[A]) => Future[O])(implicit timeout: Timeout): Flow[I, O, NotUsed] = {
+    import akka.actor.typed.scaladsl.adapter._
+    val classicRef = ref.toClassic
+
+    val askFlow = Flow[I]
+      .watch(classicRef)
+      .mapAsync(parallelism) { el =>
+        val res = akka.pattern.extended.ask(classicRef, (replyTo: akka.actor.ActorRef) => makeMessage(el, replyTo))
+        // we need to cast manually (yet safely, by construction!) since otherwise we need a ClassTag,
+        // which in Scala is fine, but then we would force JavaDSL to create one, which is a hassle in the Akka Typed DSL,
+        // since one may say "but I already specified the type!", and that we have to go via the classic ask is an implementation detail
+        makeOut(el, res.asInstanceOf[Future[A]])
+      }
+      .mapError {
+        case ex: AskTimeoutException =>
+          // in Akka Typed we use the `TimeoutException` everywhere
+          new java.util.concurrent.TimeoutException(ex.getMessage)
+
+        // the purpose of this recovery is to change the name of the stage in that exception
+        // we do so in order to help users find which stage caused the failure -- "the ask stage"
+        case ex: WatchedActorTerminatedException =>
+          new WatchedActorTerminatedException("ask()", ex.ref)
+      }
+      .named("ask")
+
+    askFlow
+  }
 
   /**
    * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
@@ -99,33 +130,7 @@ object ActorFlow {
    */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
   def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
-      implicit timeout: Timeout): Flow[I, A, NotUsed] = {
-    import akka.actor.typed.scaladsl.adapter._
-    val classicRef = ref.toClassic
-
-    val askFlow = Flow[I]
-      .watch(classicRef)
-      .mapAsync(parallelism) { el =>
-        val res = akka.pattern.extended.ask(classicRef, (replyTo: akka.actor.ActorRef) => makeMessage(el, replyTo))
-        // we need to cast manually (yet safely, by construction!) since otherwise we need a ClassTag,
-        // which in Scala is fine, but then we would force JavaDSL to create one, which is a hassle in the Akka Typed DSL,
-        // since one may say "but I already specified the type!", and that we have to go via the classic ask is an implementation detail
-        res.asInstanceOf[Future[A]]
-      }
-      .mapError {
-        case ex: AskTimeoutException =>
-          // in Akka Typed we use the `TimeoutException` everywhere
-          new java.util.concurrent.TimeoutException(ex.getMessage)
-
-        // the purpose of this recovery is to change the name of the stage in that exception
-        // we do so in order to help users find which stage caused the failure -- "the ask stage"
-        case ex: WatchedActorTerminatedException =>
-          new WatchedActorTerminatedException("ask()", ex.ref)
-      }
-      .named("ask")
-
-    askFlow
-  }
+      implicit timeout: Timeout): Flow[I, A, NotUsed] = askImpl(parallelism)(ref)(makeMessage, (_, o: Future[A]) => o)
 
   /**
    * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
@@ -147,6 +152,50 @@ object ActorFlow {
       case StatusReply.Success(a) => a.asInstanceOf[A]
       case StatusReply.Error(err) => throw err
       case _                      => throw new RuntimeException() // compiler exhaustiveness check pleaser
+    }
+
+  }
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context.
+   */
+  @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
+  def askWithContext[I, Q, A, Ctx](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
+      implicit timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
+    askWithContext(parallelism = 2)(ref)(makeMessage)
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor without including the context.
+   */
+  @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
+  def askWithContext[I, Q, A, Ctx](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
+      implicit timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
+    askImpl[(I, Ctx), Q, A, (A, Ctx)](parallelism)(ref)(
+      (in, r) => makeMessage(in._1, r),
+      (in, o: Future[A]) => o.map(a => a -> in._2)(ExecutionContexts.parasitic))
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatusAndContext[I, Q, A, Ctx](ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
+      implicit timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] =
+    askWithStatusAndContext(2)(ref)(makeMessage)
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatusAndContext[I, Q, A, Ctx](parallelism: Int)(ref: ActorRef[Q])(
+      makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(implicit timeout: Timeout): Flow[(I, Ctx), (A, Ctx), NotUsed] = {
+    askImpl[(I, Ctx), Q, StatusReply[A], (StatusReply[A], Ctx)](parallelism)(ref)(
+      (in, r) => makeMessage(in._1, r),
+      (in, o: Future[StatusReply[A]]) => o.map(a => a -> in._2)(ExecutionContexts.parasitic)).map {
+      case (StatusReply.Success(a), ctx) => a.asInstanceOf[A] -> ctx
+      case (StatusReply.Error(err), _)   => throw err
+      case _                             => throw new RuntimeException() // compiler exhaustiveness check pleaser
     }
 
   }
