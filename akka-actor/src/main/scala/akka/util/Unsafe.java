@@ -33,21 +33,33 @@ public final class Unsafe {
             }
             if (found == null) throw new IllegalStateException("Can't find instance of sun.misc.Unsafe");
             else instance = found;
-            stringValueFieldOffset = instance.objectFieldOffset(String.class.getDeclaredField("value"));
+
+            long fo;
+            try {
+              fo = instance.objectFieldOffset(String.class.getDeclaredField("value"));
+            } catch (NoSuchFieldException nsfe) {
+              // The platform's implementation of String doesn't have a 'value' field, so we have to use algorithm 0
+              fo = -1;
+            }
+            stringValueFieldOffset = fo;
 
             isJavaVersion9Plus = isIsJavaVersion9Plus();
 
-            // Select optimization algorithm for `copyUSAciiBytesToStr`.
-            // For example algorithm 1 will fail with JDK 11 on ARM32 (Raspberry Pi),
-            // and therefore algorithm 0 is selected on that architecture.
-            String testStr = "abc";
-            if (isJavaVersion9Plus && testUSAsciiStrToBytesAlgorithm1(testStr))
+            if (fo > -1) {
+              // Select optimization algorithm for `copyUSAciiBytesToStr`.
+              // For example algorithm 1 will fail with JDK 11 on ARM32 (Raspberry Pi),
+              // and therefore algorithm 0 is selected on that architecture.
+              String testStr = "abc";
+              if (isJavaVersion9Plus && testUSAsciiStrToBytesAlgorithm1(testStr))
                 copyUSAsciiStrToBytesAlgorithm = 1;
-            else if (testUSAsciiStrToBytesAlgorithm2(testStr))
+            	else if (testUSAsciiStrToBytesAlgorithm2(testStr))
                 copyUSAsciiStrToBytesAlgorithm = 2;
-            else
+            	else
+                copyUSAsciiStrToBytesAlgorithm = 0;
+            } else
+              // We know so little about the platform's String implementation that we have
+              // no choice but to select algorithm 0
               copyUSAsciiStrToBytesAlgorithm = 0;
-
         } catch (Throwable t) {
             throw new ExceptionInInitializerError(t);
         }
