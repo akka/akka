@@ -1,4 +1,4 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
+import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Dependencies, Paradox, ScalafixIgnoreFilePlugin }
 
 ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
 
