@@ -12,16 +12,16 @@ import com.typesafe.sslconfig.util.LoggerFactory
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.stream.impl.AkkaSSLConfigExtensionIdApply
 import scala.annotation.nowarn
 
 @deprecated("Use Tcp and TLS with SSLEngine parameters instead. Setup the SSLEngine with needed parameters.", "2.6.0")
-object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with AkkaSSLConfigExtensionIdApply with ExtensionIdProvider {
+object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider {
 
   //////////////////// EXTENSION SETUP ///////////////////
 
   override def get(system: ActorSystem): AkkaSSLConfig = super.get(system)
   override def get(system: ClassicActorSystemProvider): AkkaSSLConfig = super.get(system)
+  def apply()(implicit system: ActorSystem): AkkaSSLConfig = super.apply(system)
 
   override def lookup = AkkaSSLConfig
 
