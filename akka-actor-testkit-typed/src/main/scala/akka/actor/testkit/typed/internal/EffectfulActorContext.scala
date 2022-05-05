@@ -15,6 +15,12 @@ import akka.annotation.InternalApi
 
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+import akka.actor.typed.RecipientRef
+import akka.util.Timeout
+import scala.util.Try
+import java.time.Duration
+import scala.util.control.NonFatal
+import akka.util.JavaDurationConverters._
 
 /**
  * INTERNAL API
@@ -26,6 +32,52 @@ import scala.reflect.ClassTag
     extends StubbedActorContext[T](system, path, currentBehaviorProvider) {
 
   private[akka] val effectQueue = new ConcurrentLinkedQueue[Effect]
+
+  override def ask[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)(
+      mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
+    // In the real implementation, this propagates as an immediately-failed future,
+    // but since an illegal timeout is the sort of thing that ideally would have been
+    // a type error, blowing up the test is the next-best thing
+    require(responseTimeout.duration.length > 0, s"Timeout length must be positive, question not sent to [$target]")
+
+    val responseClass = classTag.runtimeClass.asInstanceOf[Class[Res]]
+
+    commonAsk(responseClass, createRequest, target, responseTimeout.duration, mapResponse)
+  }
+
+  override def ask[Req, Res](
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: akka.japi.function.Function[ActorRef[Res], Req],
+      applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
+    require(responseTimeout.getNano > 0, s"Timeout length must be positive, question not sent to [$target]")
+
+    val scalaCreateRequest = createRequest(_)
+    val scalaMapResponse = { result: Try[Res] =>
+      result
+        .map(applyToResponse(_, null))
+        .recover {
+          case NonFatal(ex) => applyToResponse(null.asInstanceOf[Res], ex)
+        }
+        .get
+    }
+
+    commonAsk(resClass, scalaCreateRequest, target, responseTimeout.asScala, scalaMapResponse)
+  }
+
+  private def commonAsk[Req, Res](
+      responseClass: Class[Res],
+      createRequest: ActorRef[Res] => Req,
+      target: RecipientRef[Req],
+      responseTimeout: FiniteDuration,
+      mapResponse: Try[Res] => T): Unit = {
+    val replyTo = system.ignoreRef[Res]
+    val askMessage = createRequest(replyTo)
+    target ! askMessage
+
+    effectQueue.offer(AskInitiated(target, responseTimeout, responseClass)(replyTo, askMessage, self, mapResponse))
+  }
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val ref = super.spawnAnonymous(behavior, props)
