@@ -141,7 +141,7 @@ object BehaviorTestKitSpec {
               replyTo ! timers.isTimerActive(key)
               Behaviors.same
             case AskForCookiesFrom(distributor) =>
-              import CookieDistributor.{ GiveMeCookies, CookiesForYou }
+              import CookieDistributor.{ CookiesForYou, GiveMeCookies }
 
               implicit val timeout: Timeout = 10.seconds
               val randomNumerator = scala.util.Random.nextInt(13)
