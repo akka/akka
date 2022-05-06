@@ -141,12 +141,14 @@ object BehaviorTestKitSpec {
               replyTo ! timers.isTimerActive(key)
               Behaviors.same
             case AskForCookiesFrom(distributor) =>
+              import CookieDistributor.{ GiveMeCookies, CookiesForYou }
+
               implicit val timeout: Timeout = 10.seconds
               val randomNumerator = scala.util.Random.nextInt(13)
               val randomDenominator = 1 + scala.util.Random.nextInt(randomNumerator + 1)
               val nrCookies = randomNumerator / randomDenominator
 
-              context.ask(distributor, CookieDistributor.GiveMeCookies(nrCookies, _)) {
+              context.ask[GiveMeCookies, CookiesForYou](distributor, GiveMeCookies(nrCookies, _)) {
                 case scala.util.Success(cfy) => Log(s"Got ${cfy.nrCookies} cookies from distributor")
                 case scala.util.Failure(ex)  => Log(s"Failed to get cookies: ${ex.getMessage}")
               }
