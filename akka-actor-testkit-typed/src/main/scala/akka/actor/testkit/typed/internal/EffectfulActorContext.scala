@@ -54,7 +54,7 @@ import akka.util.JavaDurationConverters._
     require(responseTimeout.getNano > 0, s"Timeout length must be positive, question not sent to [$target]")
 
     val scalaCreateRequest = createRequest(_)
-    val scalaMapResponse = { result: Try[Res] =>
+    val scalaMapResponse = { (result: Try[Res]) =>
       result
         .map(applyToResponse(_, null))
         .recover {
