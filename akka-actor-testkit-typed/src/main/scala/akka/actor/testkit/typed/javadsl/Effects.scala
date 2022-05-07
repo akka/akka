@@ -26,7 +26,7 @@ object Effects {
       responseTimeout: Duration,
       responseClass: Class[Res],
       messageClass: Class[T]): AskInitiated[Req, Res, T] =
-    AskInitiated(target, responseTimeout.asScala, responseClass)(null, null.asInstanceOf[Req], null, null)
+    AskInitiated(target, responseTimeout.asScala, responseClass)(null.asInstanceOf[Req], null, null)
 
   /**
    * The behavior spawned a named child with the given behavior with no specific props

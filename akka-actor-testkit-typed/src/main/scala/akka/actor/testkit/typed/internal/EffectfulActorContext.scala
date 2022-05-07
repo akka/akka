@@ -76,7 +76,7 @@ import akka.util.JavaDurationConverters._
     val askMessage = createRequest(replyTo)
     target ! askMessage
 
-    effectQueue.offer(AskInitiated(target, responseTimeout, responseClass)(replyTo, askMessage, self, mapResponse))
+    effectQueue.offer(AskInitiated(target, responseTimeout, responseClass)(askMessage, self, mapResponse))
   }
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {

@@ -45,11 +45,7 @@ object Effect {
   final case class AskInitiated[Req, Res, T](
       target: RecipientRef[Req],
       responseTimeout: FiniteDuration,
-      responseClass: Class[Res])(
-      replyToRef: ActorRef[Res],
-      val askMessage: Req,
-      asker: ActorRef[T],
-      mapResponse: Try[Res] => T)
+      responseClass: Class[Res])(val askMessage: Req, asker: ActorRef[T], mapResponse: Try[Res] => T)
       extends Effect {
     def respondWith(response: Res): Unit = synchronized {
       if (sentResponse) {
