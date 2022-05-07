@@ -46,7 +46,7 @@ object Effect {
       target: RecipientRef[Req],
       responseTimeout: FiniteDuration,
       responseClass: Class[Res])(
-      val replyToRef: ActorRef[Res],
+      replyToRef: ActorRef[Res],
       val askMessage: Req,
       asker: ActorRef[T],
       mapResponse: Try[Res] => T)
