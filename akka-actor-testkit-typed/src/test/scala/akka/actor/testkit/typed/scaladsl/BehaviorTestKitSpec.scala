@@ -184,14 +184,6 @@ object BehaviorTestKitSpec {
     case class GiveMeCookies(nrCookies: Int, replyTo: ActorRef[CookiesForYou]) extends Command
 
     case class CookiesForYou(nrCookies: Int)
-
-    def apply(cookieInventory: Int): Behavior[Command] =
-      Behaviors.receiveMessage {
-        case GiveMeCookies(nrCookies, replyTo) =>
-          val cookiesGiven = nrCookies.min(cookieInventory)
-          replyTo ! CookiesForYou(cookiesGiven)
-          CookieDistributor(cookieInventory - cookiesGiven)
-      }
   }
 }
 
