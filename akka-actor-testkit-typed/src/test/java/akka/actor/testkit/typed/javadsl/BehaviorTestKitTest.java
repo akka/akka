@@ -119,6 +119,34 @@ public class BehaviorTestKitTest extends JUnitSuite {
     }
   }
 
+  public static class AskForCookiesFrom implements Command {
+    private final ActorRef<CookieDistributorCommand> distributor;
+
+    public AskForCookiesFrom(ActorRef<CookieDistributorCommand> distributor) {
+      this.distributor = distributor;
+    }
+  }
+
+  public interface CookieDistributorCommand {}
+
+  public static class GiveMeCookies implements CookieDistributorCommand {
+    public final int nrCookies;
+    public final ActorRef<CookiesForYou> replyTo;
+
+    public GiveMeCookies(int nrCookies, ActorRef<CookiesForYou> replyTo) {
+      this.nrCookies = nrCookies;
+      this.replyTo = replyTo;
+    }
+  }
+
+  public static class CookiesForYou {
+    public final int nrCookies;
+
+    public CookiesForYou(int nrCookies) {
+      this.nrCookies = nrCookies;
+    }
+  }
+
   public interface Action {}
 
   private static Behavior<Action> childInitial = Behaviors.ignore();
@@ -214,6 +242,24 @@ public class BehaviorTestKitTest extends JUnitSuite {
                     Log.class,
                     message -> {
                       context.getLog().info(message.what);
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    AskForCookiesFrom.class,
+                    message -> {
+                      context.ask(
+                          CookiesForYou.class,
+                          message.distributor,
+                          Duration.ofSeconds(10),
+                          (ActorRef<CookiesForYou> ref) -> new GiveMeCookies(6, ref),
+                          (response, throwable) -> {
+                            if (response != null) {
+                              return new Log(
+                                  "Got " + response.nrCookies + " cookies from distributor");
+                            } else {
+                              return new Log("Failed to get cookies: " + throwable.getMessage());
+                            }
+                          });
                       return Behaviors.same();
                     })
                 .build();
@@ -379,5 +425,22 @@ public class BehaviorTestKitTest extends JUnitSuite {
             false,
             () -> {});
     assertNotNull(timerScheduled);
+  }
+
+  @Test
+  public void reifyAskAsEffect() {
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
+    TestInbox<CookieDistributorCommand> cdInbox = TestInbox.create();
+
+    test.run(new AskForCookiesFrom(cdInbox.getRef()));
+
+    Effect expectedEffect =
+        Effects.askInitiated(
+            cdInbox.getRef(), Duration.ofSeconds(10), CookiesForYou.class, Command.class);
+    Effect.AskInitiated actualEffect = test.expectEffectClass(Effect.AskInitiated.class);
+
+    assertEquals(actualEffect, expectedEffect);
+
+    // Other functionality is tested in the scaladsl
   }
 }
