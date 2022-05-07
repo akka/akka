@@ -79,6 +79,11 @@ object Effect {
         s"Message of type [${askMessage.getClass.getName}]." +
         " A typical reason for `AskTimeoutException` is that the recipient actor didn't send a reply.")
 
+    /**
+     * Java API
+     */
+    def getResponseTimeout: java.time.Duration = responseTimeout.asJava
+
     private var sentResponse: Boolean = false
   }
 
