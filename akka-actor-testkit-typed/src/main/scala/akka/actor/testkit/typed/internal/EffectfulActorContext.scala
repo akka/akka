@@ -53,8 +53,7 @@ import akka.util.JavaDurationConverters._
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
     require(
       responseTimeout.getSeconds > 0 || responseTimeout.getNano > 0,
-      s"Timeout length must be positive, question not sent to [$target]"
-    )
+      s"Timeout length must be positive, question not sent to [$target]")
 
     val scalaCreateRequest = createRequest(_)
     val scalaMapResponse = { (result: Try[Res]) =>
