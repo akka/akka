@@ -28,7 +28,8 @@ import akka.util.JavaDurationConverters._
 @InternalApi private[akka] final class EffectfulActorContext[T](
     system: ActorSystemStub,
     path: ActorPath,
-    currentBehaviorProvider: () => Behavior[T])
+    currentBehaviorProvider: () => Behavior[T],
+    behaviorTestKit: BehaviorTestKitImpl[T])
     extends StubbedActorContext[T](system, path, currentBehaviorProvider) {
 
   private[akka] val effectQueue = new ConcurrentLinkedQueue[Effect]
@@ -78,7 +79,16 @@ import akka.util.JavaDurationConverters._
     val askMessage = createRequest(replyTo)
     target ! askMessage
 
-    effectQueue.offer(AskInitiated(target, responseTimeout, responseClass)(askMessage, self, mapResponse))
+    val responseForwarder = { (t: Try[Res]) =>
+      import akka.actor.typed.internal.AdaptMessage
+
+      // Yay erasure
+      val adaptedTestKit = behaviorTestKit.asInstanceOf[BehaviorTestKitImpl[AdaptMessage[Try[Res], T]]]
+
+      adaptedTestKit.run(AdaptMessage(t, mapResponse))
+    }
+
+    effectQueue.offer(AskInitiated(target, responseTimeout, responseClass)(askMessage, responseForwarder, mapResponse))
   }
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {

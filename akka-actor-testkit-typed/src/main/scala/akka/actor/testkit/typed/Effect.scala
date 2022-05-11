@@ -45,35 +45,15 @@ object Effect {
   final case class AskInitiated[Req, Res, T](
       target: RecipientRef[Req],
       responseTimeout: FiniteDuration,
-      responseClass: Class[Res])(val askMessage: Req, asker: ActorRef[T], mapResponse: Try[Res] => T)
+      responseClass: Class[Res])(val askMessage: Req, forwardResponse: Try[Res] => Unit, mapResponse: Try[Res] => T)
       extends Effect {
-    def respondWith(response: Res): Unit = synchronized {
-      if (sentResponse) {
-        throw new IllegalStateException("Can only complete the ask once")
-      }
+    def respondWith(response: Res): Unit = sendResponse(Success(response))
 
-      sentResponse = true
-
-      asker ! adaptResponse(response)
-    }
-
-    def timeout(): Unit = synchronized {
-      if (sentResponse) {
-        throw new IllegalStateException("Can only complete the ask once")
-      }
-
-      sentResponse = true
-
-      asker ! adaptTimeout
-    }
+    def timeout(): Unit = sendResponse(timeoutTry(timeoutMsg))
 
     def adaptResponse(response: Res): T = mapResponse(Success(response))
-    def adaptTimeout(msg: String): T = mapResponse(Failure(new TimeoutException(msg)))
-    def adaptTimeout: T =
-      adaptTimeout(
-        s"Ask timed out on [$target] after [${responseTimeout.toMillis} ms]. " +
-        s"Message of type [${askMessage.getClass.getName}]." +
-        " A typical reason for `AskTimeoutException` is that the recipient actor didn't send a reply.")
+    def adaptTimeout(msg: String): T = mapResponse(timeoutTry(msg))
+    def adaptTimeout: T = adaptTimeout(timeoutMsg)
 
     /**
      * Java API
@@ -81,6 +61,25 @@ object Effect {
     def getResponseTimeout: java.time.Duration = responseTimeout.asJava
 
     private var sentResponse: Boolean = false
+
+    private def timeoutTry(msg: String): Try[Res] = Failure(new TimeoutException(msg))
+
+    private def timeoutMsg: String =
+      s"Ask timed out on [$target] after [${responseTimeout.toMillis} ms]. " +
+      s"Message of type [${askMessage.getClass.getName}]." +
+      " A typical reason for `AskTimeoutException` is that the recipient actor didn't send a reply."
+
+    private def sendResponse(t: Try[Res]): Unit = synchronized {
+      if (sentResponse) {
+        throw new IllegalStateException("Can only complete the ask once")
+      }
+
+      sentResponse = true
+
+      if (forwardResponse != null) {
+        forwardResponse(t)
+      } else throw new IllegalStateException("Can only complete and ask from a BehaviorTestKit-emitted effect")
+    }
   }
 
   /**
