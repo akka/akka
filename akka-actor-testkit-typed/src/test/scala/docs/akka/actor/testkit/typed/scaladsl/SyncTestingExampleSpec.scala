@@ -184,7 +184,7 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
       effect.respondWith(Hello.Answer("I think I met you somewhere, sometime"))
       // (since we completed the ask, timing out is commented out)
       // effect.timeout()
-      
+
       // Completing/timing-out the ask is processed synchronously
       testKit.logEntries().size shouldBe 1
 
