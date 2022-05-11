@@ -178,12 +178,15 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
       // The particulars of the `context.ask` call are captured as an Effect
       val effect = testKit.expectEffectType[AskInitiated[Hello.Question, Hello.Answer, Hello.Command]]
 
+      testKit.clearLog()
+
       // The returned effect can be used to complete or time-out the ask at most once
       effect.respondWith(Hello.Answer("I think I met you somewhere, sometime"))
       // (since we completed the ask, timing out is commented out)
       // effect.timeout()
-
-      val adaptedResponse = testKit.selfInbox().receiveMessage()
+      
+      // Completing/timing-out the ask is processed synchronously
+      testKit.logEntries().size shouldBe 1
 
       // The message (including the synthesized "replyTo" address) can be inspected from the effect
       val sentQuestion = effect.askMessage
@@ -202,7 +205,6 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
       // pro-forma assertions to satisfy warn-unused while following the pattern in this spec of not
       // using ScalaTest matchers in code exposed through paradox
       question shouldNot be(null)
-      adaptedResponse shouldNot be(null)
       sentQuestion shouldNot be(null)
       response1 shouldNot be(null)
       response2 shouldNot be(null)

@@ -563,8 +563,13 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val cookiesGiven = scala.util.Random.nextInt(cookiesRequested + 1)
       effect.respondWith(CookiesForYou(cookiesGiven))
 
-      val answer = testKit.selfInbox().receiveMessage()
-      answer shouldBe Log(s"Got ${cookiesGiven} cookies from distributor")
+      testKit.selfInbox().hasMessages shouldBe false
+      val logEntries = testKit.logEntries()
+      testKit.clearLog()
+      logEntries.size shouldBe 1
+      logEntries.foreach { log =>
+        log.message shouldBe s"Got ${cookiesGiven} cookies from distributor"
+      }
     }
 
     "allow the ask to be manually timed out" in {
@@ -585,9 +590,13 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
 
       effect.timeout()
 
-      val answer = testKit.selfInbox().receiveMessage()
-      answer shouldBe a[Log]
-      answer.asInstanceOf[Log].what should startWith("Failed to get cookies: Ask timed out on [")
+      testKit.selfInbox().hasMessages shouldBe false
+      val logEntries = testKit.logEntries()
+      testKit.clearLog()
+      logEntries.size shouldBe 1
+      logEntries.foreach { log =>
+        log.message should startWith("Failed to get cookies: Ask timed out on [")
+      }
     }
 
     "not allow a completed ask to be completed or timed out again" in {
@@ -615,7 +624,12 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       }
 
       // Only the first response should have a log
-      testKit.selfInbox().receiveMessage() shouldBe Log("Got 0 cookies from distributor")
+      val logEntries = testKit.logEntries()
+      logEntries.size shouldBe 1
+      logEntries.head.message should startWith("Got 0 cookies from distributor")
+
+      testKit.hasEffects() shouldBe false
+      testKit.selfInbox().hasMessages shouldBe false
     }
 
     "not allow a timed-out ask to be completed or timed out again" in {
@@ -634,6 +648,11 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
 
       effect.timeout()
 
+      val logEntries = testKit.logEntries()
+      testKit.clearLog()
+      logEntries.size shouldBe 1
+      logEntries.head.message should startWith("Failed to get cookies: Ask timed out on [")
+
       an[IllegalStateException] shouldBe thrownBy {
         effect.respondWith(CookiesForYou(1))
       }
@@ -642,9 +661,9 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
         effect.timeout()
       }
 
-      // Only the first timeout should have a log
-      testKit.selfInbox().receiveMessage().asInstanceOf[Log].what should
-      startWith("Failed to get cookies: Ask timed out on [")
+      testKit.logEntries() shouldBe empty
+      testKit.hasEffects() shouldBe false
+      testKit.selfInbox().hasMessages shouldBe false
     }
   }
 }

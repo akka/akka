@@ -294,14 +294,16 @@ public class SyncTestingExampleTest extends JUnitSuite {
     Effect.AskInitiated<Hello.Question, Hello.Answer, Hello.Command> effect =
         test.expectEffectClass(Effect.AskInitiated.class);
 
+    test.clearLog();
+
     // The effect can be used to complete or time-out the ask at most once
     effect.respondWith(new Hello.Answer("I think I met you somewhere, sometime"));
     // commented out because we've completed the ask
     // effect.timeout();
 
-    Hello.Command adaptedResponse = test.selfInbox().receiveMessage();
-    assertEquals(
-        ((Hello.GotAnAnswer) adaptedResponse).answer, "I think I met you somewhere, sometime");
+    // Completing/timing-out the ask is processed synchronously
+    List<CapturedLogEvent> allLogEntries = test.getAllLogEntries();
+    assertEquals(allLogEntries.size(), 1);
 
     // The message, including the synthesized "replyTo", can be inspected from the effect
     assertEquals(question, effect.askMessage());
