@@ -52,9 +52,9 @@ public final class Unsafe {
               String testStr = "abc";
               if (isJavaVersion9Plus && testUSAsciiStrToBytesAlgorithm1(testStr))
                 copyUSAsciiStrToBytesAlgorithm = 1;
-            	else if (testUSAsciiStrToBytesAlgorithm2(testStr))
+              else if (testUSAsciiStrToBytesAlgorithm2(testStr))
                 copyUSAsciiStrToBytesAlgorithm = 2;
-            	else
+              else
                 copyUSAsciiStrToBytesAlgorithm = 0;
             } else
               // We know so little about the platform's String implementation that we have
