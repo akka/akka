@@ -34,12 +34,14 @@ public final class Unsafe {
             if (found == null) throw new IllegalStateException("Can't find instance of sun.misc.Unsafe");
             else instance = found;
 
+			long fo;
             try {
-              stringValueFieldOffset = instance.objectFieldOffset(String.class.getDeclaredField("value"));
+              fo = instance.objectFieldOffset(String.class.getDeclaredField("value"));
             } catch (NoSuchFieldException nsfe) {
               // The platform's implementation of String doesn't have a 'value' field, so we have to use algorithm 0
-              stringValueFieldOffset = -1;
+              fo = -1;
             }
+			stringValueFieldOffset = fo;
 
             isJavaVersion9Plus = isIsJavaVersion9Plus();
 
