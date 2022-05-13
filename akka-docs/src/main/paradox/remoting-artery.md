@@ -152,7 +152,7 @@ See @ref:[migrating from classic remoting](project/migration-guide-2.5.x-2.6.x.m
 
 ## Canonical address
 
-In order to remoting to work properly, where each system can send messages to any other system on the same network
+In order for remoting to work properly, where each system can send messages to any other system on the same network
 (for example a system forwards a message to a third system, and the third replies directly to the sender system)
 it is essential for every system to have a *unique, globally reachable* address and port. This address is part of the
 unique name of the system and will be used by other systems to open a connection to it and send messages. This means
