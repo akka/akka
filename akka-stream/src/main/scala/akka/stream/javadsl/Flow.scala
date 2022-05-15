@@ -2225,60 +2225,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   def groupBy[K](maxSubstreams: Int, f: function.Function[Out, K]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.groupBy(maxSubstreams, f.apply, false))
 
-  /**
-   * This operation applies the given predicate to all incoming elements and
-   * emits them to a stream of output streams, always beginning a new one with
-   * the current element if the given predicate returns true for it. This means
-   * that for the following series of predicate values, three substreams will
-   * be produced with lengths 1, 2, and 3:
-   *
-   * {{{
-   * false,             // element goes into first substream
-   * true, false,       // elements go into second substream
-   * true, false, false // elements go into third substream
-   * }}}
-   *
-   * In case the *first* element of the stream matches the predicate, the first
-   * substream emitted by splitWhen will start from that element. For example:
-   *
-   * {{{
-   * true, false, false // first substream starts from the split-by element
-   * true, false        // subsequent substreams operate the same way
-   * }}}
-   *
-   * The object returned from this method is not a normal [[Flow]],
-   * it is a [[SubFlow]]. This means that after this operator all transformations
-   * are applied to all encountered substreams in the same fashion. Substream mode
-   * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
-   * or by merging the substreams back together; see the `to` and `mergeBack` methods
-   * on [[SubFlow]] for more information.
-   *
-   * It is important to note that the substreams also propagate back-pressure as
-   * any other stream, which means that blocking one substream will block the `splitWhen`
-   * operator itself—and thereby all substreams—once all internal or
-   * explicit buffers are filled.
-   *
-   * If the split predicate `p` throws an exception and the supervision decision
-   * is [[akka.stream.Supervision#stop]] the stream and substreams will be completed
-   * with failure.
-   *
-   * If the split predicate `p` throws an exception and the supervision decision
-   * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
-   * the element is dropped and the stream and substreams continue.
-   *
-   * '''Emits when''' an element for which the provided predicate is true, opening and emitting
-   * a new substream for subsequent element
-   *
-   * '''Backpressures when''' there is an element pending for the next substream, but the previous
-   * is not fully consumed yet, or the substream backpressures
-   *
-   * '''Completes when''' upstream completes
-   *
-   * '''Cancels when''' downstream cancels and substreams cancel on `SubstreamCancelStrategy.drain()`, downstream
-   * cancels or any substream cancels on `SubstreamCancelStrategy.propagate()`
-   *
-   * See also [[Flow.splitAfter]].
-   */
+
   def splitWhen(p: function.Predicate[Out]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.splitWhen(p.test))
 
@@ -2289,6 +2236,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#splitWhen]]
    */
+  @deprecated(
+    "Use .withAttributes(ActorAttributes.supervisionStrategy(equivalentDecider)) rather than a SubstreamCancelStrategy",
+    since = "2.6.19")
   def splitWhen(substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[Out]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.splitWhen(substreamCancelStrategy)(p.test))
 
@@ -2347,6 +2297,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#splitAfter]]
    */
+  @deprecated(
+    "Use .withAttributes(ActorAttributes.supervisionStrategy(equivalentDecider)) rather than a SubstreamCancelStrategy",
+    since = "2.6.19")
   def splitAfter(substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[Out]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.splitAfter(substreamCancelStrategy)(p.test))
 

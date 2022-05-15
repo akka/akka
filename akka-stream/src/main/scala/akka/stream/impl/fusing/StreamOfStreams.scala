@@ -16,6 +16,7 @@ import akka.stream._
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes.SourceLocation
+import akka.stream.Supervision.Decider
 import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.ActorSubscriberMessage.OnError
@@ -457,24 +458,24 @@ import akka.util.ccompat.JavaConverters._
   /** Splits after the current element. The current element will be the last element in the current substream. */
   case object SplitAfter extends SplitDecision
 
-  def when[T](
-      p: T => Boolean,
-      substreamCancelStrategy: SubstreamCancelStrategy): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
-    new Split(Split.SplitBefore, p, substreamCancelStrategy)
+  def cancelStrategyToDecider(substreamCancelStrategy: SubstreamCancelStrategy): Decider =
+    substreamCancelStrategy match {
+      case SubstreamCancelStrategies.Propagate => Supervision.stoppingDecider
+      case SubstreamCancelStrategies.Drain     => Supervision.resumingDecider
+    }
 
-  def after[T](
-      p: T => Boolean,
-      substreamCancelStrategy: SubstreamCancelStrategy): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
-    new Split(Split.SplitAfter, p, substreamCancelStrategy)
+  def when[T](p: T => Boolean): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] = {
+    new Split(Split.SplitBefore, p)
+  }
+
+  def after[T](p: T => Boolean): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
+    new Split(Split.SplitAfter, p)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class Split[T](
-    val decision: Split.SplitDecision,
-    val p: T => Boolean,
-    val substreamCancelStrategy: SubstreamCancelStrategy)
+@InternalApi private[akka] final class Split[T](val decision: Split.SplitDecision, val p: T => Boolean)
     extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
 
   val in: Inlet[T] = Inlet("Split.in")
@@ -482,23 +483,27 @@ import akka.util.ccompat.JavaConverters._
 
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
 
-  private val propagateSubstreamCancel = substreamCancelStrategy match {
-    case SubstreamCancelStrategies.Propagate => true
-    case SubstreamCancelStrategies.Drain     => false
-  }
-
-  override protected def initialAttributes: Attributes = DefaultAttributes.split and SourceLocation.forLambda(p)
+  override def initialAttributes: Attributes = DefaultAttributes.split and SourceLocation.forLambda(p)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     import Split._
 
     private val SubscriptionTimer = "SubstreamSubscriptionTimer"
 
+    private val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
+
     private val timeout: FiniteDuration =
       inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
     private var substreamSource: SubSourceOutlet[T] = null
     private var substreamWaitingToBePushed = false
     private var substreamCancelled = false
+
+    def propagateSubstreamCancel(ex: Throwable): Boolean =
+      decider(ex) match {
+        case Supervision.Stop    => true
+        case Supervision.Resume  => false
+        case Supervision.Restart => false
+      }
 
     setHandler(
       out,
@@ -596,7 +601,7 @@ import akka.util.ccompat.JavaConverters._
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         substreamCancelled = true
-        if (isClosed(in) || propagateSubstreamCancel) {
+        if (isClosed(in) || propagateSubstreamCancel(cause)) {
           cancelStage(cause)
         } else {
           // Start draining

@@ -3698,6 +3698,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#splitWhen]]
    */
+  @deprecated(
+    "Use .withAttributes(ActorAttributes.supervisionStrategy(equivalentDecider)) rather than a SubstreamCancelStrategy",
+    since = "2.6.19")
   def splitWhen(substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[Out]): SubSource[Out, Mat] =
     new SubSource(delegate.splitWhen(substreamCancelStrategy)(p.test))
 
@@ -3755,6 +3758,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#splitAfter]]
    */
+  @deprecated(
+    "Use .withAttributes(ActorAttributes.supervisionStrategy(equivalentDecider)) rather than a SubstreamCancelStrategy",
+    since = "2.6.19")
   def splitAfter(substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[Out]): SubSource[Out, Mat] =
     new SubSource(delegate.splitAfter(substreamCancelStrategy)(p.test))
 

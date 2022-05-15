@@ -6,13 +6,11 @@ package akka.stream.scaladsl
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import org.reactivestreams.Publisher
-
 import akka.NotUsed
 import akka.stream._
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
-import akka.stream.Supervision.resumingDecider
+import akka.stream.Supervision.{ resumingDecider, Decider }
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
@@ -48,13 +46,14 @@ class FlowSplitAfterSpec extends StreamSpec("""
     def cancel(): Unit = subscription.cancel()
   }
 
-  class SubstreamsSupport(
-      splitAfter: Int = 3,
-      elementCount: Int = 6,
-      substreamCancelStrategy: SubstreamCancelStrategy = SubstreamCancelStrategy.drain) {
+  class SubstreamsSupport(splitAfter: Int = 3, elementCount: Int = 6, decider: Decider = Supervision.resumingDecider) {
 
     val source = Source(1 to elementCount)
-    val groupStream = source.splitAfter(substreamCancelStrategy)(_ == splitAfter).lift.runWith(Sink.asPublisher(false))
+    val groupStream = source
+      .splitAfter(_ == splitAfter)
+      .lift
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
+      .runWith(Sink.asPublisher(false))
     val masterSubscriber = TestSubscriber.manualProbe[Source[Int, _]]()
 
     groupStream.subscribe(masterSubscriber)
@@ -262,7 +261,7 @@ class FlowSplitAfterSpec extends StreamSpec("""
     }
 
     "support eager cancellation of master stream on cancelling substreams" in {
-      new SubstreamsSupport(splitAfter = 5, elementCount = 8, SubstreamCancelStrategy.propagate) {
+      new SubstreamsSupport(splitAfter = 5, elementCount = 8, Supervision.stoppingDecider) {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
         s1.cancel()
         masterSubscriber.expectComplete()

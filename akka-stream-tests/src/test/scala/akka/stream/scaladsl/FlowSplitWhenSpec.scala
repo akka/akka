@@ -7,13 +7,11 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import org.reactivestreams.Publisher
-
 import akka.Done
 import akka.NotUsed
 import akka.stream._
-import akka.stream.Supervision.resumingDecider
+import akka.stream.Supervision.Decider
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.impl.fusing.Split
 import akka.stream.testkit._
@@ -41,13 +39,14 @@ class FlowSplitWhenSpec extends StreamSpec("""
     def cancel(): Unit = subscription.cancel()
   }
 
-  class SubstreamsSupport(
-      splitWhen: Int = 3,
-      elementCount: Int = 6,
-      substreamCancelStrategy: SubstreamCancelStrategy = SubstreamCancelStrategy.drain) {
+  class SubstreamsSupport(splitWhen: Int = 3, elementCount: Int = 6, decider: Decider = Supervision.resumingDecider) {
 
     val source = Source(1 to elementCount)
-    val groupStream = source.splitWhen(substreamCancelStrategy)(_ == splitWhen).lift.runWith(Sink.asPublisher(false))
+    val groupStream = source
+      .splitWhen(_ == splitWhen)
+      .lift
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
+      .runWith(Sink.asPublisher(false))
     val masterSubscriber = TestSubscriber.manualProbe[Source[Int, _]]()
 
     groupStream.subscribe(masterSubscriber)
@@ -152,6 +151,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
         .fromPublisher(inputs)
         .splitWhen(_ == 2)
         .lift
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
         .map(_.runWith(Sink.fromSubscriber(substream)))
         .runWith(Sink.fromSubscriber(masterStream))
 
@@ -166,7 +166,13 @@ class FlowSplitWhenSpec extends StreamSpec("""
       inputs.expectCancellation()
 
       val inputs2 = TestPublisher.probe[Int]()
-      Source.fromPublisher(inputs2).splitWhen(_ == 2).lift.map(_.runWith(Sink.cancelled)).runWith(Sink.cancelled)
+      Source
+        .fromPublisher(inputs2)
+        .splitWhen(_ == 2)
+        .lift
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
+        .map(_.runWith(Sink.cancelled))
+        .runWith(Sink.cancelled)
 
       inputs2.expectCancellation()
 
@@ -174,7 +180,12 @@ class FlowSplitWhenSpec extends StreamSpec("""
 
       val masterStream3 = TestSubscriber.probe[Source[Int, Any]]()
 
-      Source.fromPublisher(inputs3).splitWhen(_ == 2).lift.runWith(Sink.fromSubscriber(masterStream3))
+      Source
+        .fromPublisher(inputs3)
+        .splitWhen(_ == 2)
+        .lift
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
+        .runWith(Sink.fromSubscriber(masterStream3))
 
       masterStream3.request(1)
       inputs3.sendNext(1)
@@ -257,6 +268,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
         Source(1 to 100)
           .splitWhen(_ => true)
           .lift
+          .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
           .mapAsync(1)(_.runWith(Sink.head)) // Please note that this line *also* implicitly asserts nonempty substreams
           .grouped(200)
           .runWith(Sink.head),
@@ -271,7 +283,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
         // `lift` doesn't cut here because it will prevent the behavior we'd like to see.
         // In fact, this test is somewhat useless, as a user cannot trigger double materialization using
         // the public splitWhen => SubFlow API.
-          .via(Split.when(_ => true, SubstreamCancelStrategy.drain))
+          .via(Split.when(_ => true))
           .map { source =>
             // run twice, but make sure we return the result of the materialization that ran second
             source.runWith(Sink.ignore).flatMap(_ => source.runWith(Sink.ignore))
@@ -310,7 +322,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
         .fromPublisher(publisherProbeProbe)
         .splitWhen(elem => if (elem == 3) throw exc else elem % 3 == 0)
         .lift
-        .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
         .runWith(Sink.asPublisher(false))
       val subscriber = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
       publisher.subscribe(subscriber)
@@ -364,7 +376,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
     }
 
     "support eager cancellation of master stream on cancelling substreams" in {
-      new SubstreamsSupport(splitWhen = 5, elementCount = 8, SubstreamCancelStrategy.propagate) {
+      new SubstreamsSupport(splitWhen = 5, elementCount = 8, Supervision.stoppingDecider) {
         val s1 = StreamPuppet(getSubFlow().runWith(Sink.asPublisher(false)))
         s1.cancel()
         masterSubscriber.expectComplete()
