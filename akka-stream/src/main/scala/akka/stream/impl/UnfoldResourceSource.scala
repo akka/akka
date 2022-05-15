@@ -16,7 +16,7 @@ import akka.stream.stage._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class UnfoldResourceSource[T, S](
+@InternalApi private[akka] final class UnfoldResourceSource[S, T](
     create: () => S,
     readData: (S) => Option[T],
     close: (S) => Unit)

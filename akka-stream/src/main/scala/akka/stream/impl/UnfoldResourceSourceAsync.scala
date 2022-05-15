@@ -19,7 +19,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class UnfoldResourceSourceAsync[T, S](
+@InternalApi private[akka] final class UnfoldResourceSourceAsync[S, T](
     create: () => Future[S],
     readData: (S) => Future[Option[T]],
     close: (S) => Future[Done])
