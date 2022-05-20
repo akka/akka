@@ -4,18 +4,17 @@
 
 package akka.pattern.internal
 
+import java.util.{ List => JList }
+
 import akka.actor.ExtendedActorSystem
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.util.ccompat.JavaConverters._
-
-import java.util
-import scala.collection.immutable
 
 /**
  * Service Provider Interface (SPI) for collecting metrics from Circuit Breaker.
  *
  * Implementations must include a single constructor with two arguments: Circuit Breaker id
- * and [[ExtendedActorSystem]]. To setup your implementation, add a setting on your `application.conf`:
+ * and [[ExtendedActorSystem]]. To setup your implementation, add a setting in your `application.conf`:
  *
  * {{{
  * akka.circuit-breaker.telemetry.implementations += com.example.MyMetrics
@@ -48,7 +47,8 @@ trait CircuitBreakerTelemetry {
 
   /**
    * Invoked for each call when the future is completed with exception, except for
-   * `TimeoutException` and [[CircuitBreakerOpenException]] that are handled by separate methods.
+   * [[scala.concurrent.TimeoutException]] and [[akka.pattern.CircuitBreakerOpenException]]
+   * that are handled by separate methods.
    *
    * @param elapsedNanos the elapsed duration of the call in nanoseconds
    */
@@ -83,7 +83,7 @@ trait CircuitBreakerTelemetry {
     if (!system.settings.config.hasPath(configPath)) {
       CircuitBreakerNoopTelemetry
     } else {
-      val telemetryFqcns: util.List[String] = system.settings.config.getStringList(configPath)
+      val telemetryFqcns: JList[String] = system.settings.config.getStringList(configPath)
 
       telemetryFqcns.size() match {
         case 0 =>
@@ -98,11 +98,10 @@ trait CircuitBreakerTelemetry {
   }
 
   def create(breakerId: String, system: ExtendedActorSystem, fqcn: String): CircuitBreakerTelemetry = {
-    val dynamicAccess = system.dynamicAccess
-    dynamicAccess
+    system.dynamicAccess
       .createInstanceFor[CircuitBreakerTelemetry](
         fqcn,
-        immutable.Seq((classOf[String], breakerId), (classOf[ExtendedActorSystem], system)))
+        List(classOf[String] -> breakerId, classOf[ExtendedActorSystem] -> system))
       .get
   }
 }
@@ -137,7 +136,7 @@ trait CircuitBreakerTelemetry {
     system: ExtendedActorSystem)
     extends CircuitBreakerTelemetry {
 
-  val telemetries = telemetryFqcns.map(fqcn => CircuitBreakerTelemetryProvider.create(breakerId, system, fqcn))
+  private val telemetries = telemetryFqcns.map(fqcn => CircuitBreakerTelemetryProvider.create(breakerId, system, fqcn))
 
   override def onOpen(): Unit = telemetries.foreach(_.onOpen())
 
