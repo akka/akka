@@ -4,8 +4,10 @@
 
 package akka.stream
 
-import java.util.concurrent.CompletionStage
+import akka.dispatch.ExecutionContexts
+import akka.japi.Pair
 
+import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters
 import scala.concurrent.Future
 
@@ -62,5 +64,16 @@ package object scaladsl {
   implicit class SinkToCompletionStage[In, T](val sink: Sink[In, Future[T]]) extends AnyVal {
     def toCompletionStage(): Sink[In, CompletionStage[T]] =
       sink.mapMaterializedValue(FutureConverters.toJava)
+  }
+  implicit class SinkWithContextToCompletionStage[In, Ctx, T](val sink: SinkWithContext[T, Ctx, Future[(In, Ctx)]])
+      extends AnyVal {
+    def toCompletionStage(): SinkWithContext[T, Ctx, CompletionStage[Pair[In, Ctx]]] = {
+      sink.mapMaterializedValue { future =>
+        FutureConverters.toJava(future.map {
+          case (u, ctx) =>
+            Pair(u, ctx)
+        }(ExecutionContexts.parasitic))
+      }
+    }
   }
 }

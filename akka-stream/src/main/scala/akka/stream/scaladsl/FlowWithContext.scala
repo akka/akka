@@ -39,12 +39,25 @@ object FlowWithContext {
  */
 final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In, CtxIn), (Out, CtxOut), Mat])
     extends GraphDelegate(delegate)
-    with FlowWithContextOps[Out, CtxOut, Mat] {
+    with FlowWithContextOpsMat[Out, CtxOut, Mat] {
+
+  override type Repr[+O, +C] =
+    FlowWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, O, C, Mat @uncheckedVariance]
   override type ReprMat[+O, +C, +M] =
     FlowWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, O, C, M @uncheckedVariance]
 
+  override type Closed = SinkWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, Mat @uncheckedVariance]
+  override type ClosedMat[+M] = SinkWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, M]
+
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     new FlowWithContext(delegate.via(viaFlow))
+
+  override def to[Mat2](sink: Graph[SinkShape[(Out, CtxOut)], Mat2]): SinkWithContext[In, CtxIn, Mat] =
+    toMat(sink)(Keep.left)
+
+  override def toMat[Mat2, Mat3](sink: Graph[SinkShape[(Out, CtxOut)], Mat2])(
+      combine: (Mat, Mat2) => Mat3): SinkWithContext[In, CtxIn, Mat3] =
+    new SinkWithContext(delegate.toMat(sink)(combine))
 
   override def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, CtxOut] =
     FlowWithContext.fromTuples(Flow.fromGraph(GraphDSL.createGraph(delegate) { implicit b => d =>

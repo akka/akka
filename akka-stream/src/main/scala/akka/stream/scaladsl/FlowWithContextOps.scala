@@ -24,10 +24,13 @@ import ccompat._
  */
 @ccompatUsedUntil213
 trait FlowWithContextOps[+Out, +Ctx, +Mat] {
-  type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
-    type ReprMat[+OO, +CC, +MatMat] = FlowWithContextOps.this.ReprMat[OO, CC, MatMat]
+
+  type Repr[+O, +C] <: FlowWithContextOps[O, C, Mat @uncheckedVariance] {
+    type Repr[+OO, +CC] = FlowWithContextOps.this.Repr[OO, CC]
+    type Closed = FlowWithContextOps.this.Closed
   }
-  type Repr[+O, +C] = ReprMat[O, C, Mat @uncheckedVariance]
+
+  type Closed
 
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
@@ -58,25 +61,6 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
    */
   @ApiMayChange def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, Ctx]
-
-  /**
-   * Transform this flow by the regular flow. The given flow must support manual context propagation by
-   * taking and producing tuples of (data, context).
-   *
-   *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
-   *  by the downstream elements, such as reordering. For more background on these requirements
-   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
-   *
-   * This can be used as an escape hatch for operations that are not (yet) provided with automatic
-   * context propagation here.
-   *
-   * The `combine` function is used to compose the materialized values of this flow and that
-   * flow into the materialized value of the resulting Flow.
-   *
-   * @see [[akka.stream.scaladsl.FlowOpsMat.viaMat]]
-   */
-  def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(
-      combine: (Mat, Mat2) => Mat3): ReprMat[Out2, Ctx2, Mat3]
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.map]].

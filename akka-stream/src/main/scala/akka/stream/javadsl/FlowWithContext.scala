@@ -64,6 +64,19 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
     FlowWithContext.fromPairs(under)
   }
 
+  def to[Mat2](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, CtxOut @uncheckedVariance]], Mat2])
+      : javadsl.SinkWithContext[In, CtxIn, Mat] = {
+    val under = asFlow().to(sink)
+    SinkWithContext.fromPairs(under)
+  }
+
+  def toMat[M, M2](
+      sink: Graph[SinkShape[Pair[Out @uncheckedVariance, CtxOut @uncheckedVariance]], M],
+      combine: function.Function2[Mat, M, M2]): javadsl.SinkWithContext[In, CtxIn, M2] = {
+    val under = asFlow().toMat(sink, combine)
+    SinkWithContext.fromPairs(under)
+  }
+
   /**
    * Transform this flow by the regular flow. The given flow works on the data portion of the stream and
    * ignores the context.

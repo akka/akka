@@ -27,8 +27,13 @@ object SourceWithContext {
  */
 final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Source[(Out, Ctx), Mat])
     extends GraphDelegate(delegate)
-    with FlowWithContextOps[Out, Ctx, Mat] {
+    with FlowWithContextOpsMat[Out, Ctx, Mat] {
+
+  override type Repr[+O, +C] = SourceWithContext[O, C, Mat @uncheckedVariance]
   override type ReprMat[+O, +C, +M] = SourceWithContext[O, C, M @uncheckedVariance]
+
+  override type Closed = RunnableGraph[Mat @uncheckedVariance]
+  override type ClosedMat[+M] = RunnableGraph[M]
 
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     new SourceWithContext(delegate.via(viaFlow))
@@ -72,14 +77,15 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
    * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */
-  def to[Mat2](sink: Graph[SinkShape[(Out, Ctx)], Mat2]): RunnableGraph[Mat] =
+  override def to[Mat2](sink: Graph[SinkShape[(Out, Ctx)], Mat2]): RunnableGraph[Mat] =
     delegate.toMat(sink)(Keep.left)
 
   /**
    * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */
-  def toMat[Mat2, Mat3](sink: Graph[SinkShape[(Out, Ctx)], Mat2])(combine: (Mat, Mat2) => Mat3): RunnableGraph[Mat3] =
+  override def toMat[Mat2, Mat3](sink: Graph[SinkShape[(Out, Ctx)], Mat2])(
+      combine: (Mat, Mat2) => Mat3): RunnableGraph[Mat3] =
     delegate.toMat(sink)(combine)
 
   /**
