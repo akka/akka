@@ -357,6 +357,7 @@ import akka.util.ByteString
     userOutBuffer.flip()
     if (userOutBuffer.hasRemaining) {
       val bs = ByteString(userOutBuffer)
+      if (tracing) log.debug(s"XXX ${bs.utf8String} XXX")
       outputBunch.enqueue(UserOut, SessionBytes(currentSession, bs))
     }
     userOutBuffer.clear()
