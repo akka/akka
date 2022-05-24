@@ -445,8 +445,8 @@ import akka.util.ByteString
   }
 
   private def handshakeFinished(): Unit = {
-    if (tracing) log.debug("handshake finished")
     val session = engine.getSession
+    if (tracing) log.debug(s"handshake finished, ciphersuite ${session.getCipherSuite}")
 
     verifySession(context.system, session) match {
       case Success(()) =>
