@@ -434,13 +434,13 @@ import akka.util.ByteString
   private def runDelegatedTasks(): Unit = {
     val task = engine.getDelegatedTask
     if (task != null) {
-      if (tracing) log.debug("running task")
+      if (tracing) log.debug(s"running task, cipher ${engine.getSession.getCipherSuite}")
       task.run()
       runDelegatedTasks()
     } else {
       val st = lastHandshakeStatus
       lastHandshakeStatus = engine.getHandshakeStatus
-      if (tracing && st != lastHandshakeStatus) log.debug(s"handshake status after tasks: $lastHandshakeStatus")
+      if (tracing && st != lastHandshakeStatus) log.debug(s"handshake status after tasks: $lastHandshakeStatus, cipher ${engine.getSession.getCipherSuite}")
     }
   }
 
