@@ -396,8 +396,9 @@ import akka.util.ByteString
 
   @tailrec
   private def doUnwrap(ignoreOutput: Boolean): Unit = {
-    log.debug(engine.getSession.getCipherSuite)
+    log.debug(s"before ${engine.getSession.isValid}")
     val result = engine.unwrap(transportInBuffer, userOutBuffer)
+    log.debug(s"after ${engine.getSession.isValid}")
     if (ignoreOutput) userOutBuffer.clear()
     lastHandshakeStatus = result.getHandshakeStatus
     if (tracing)
