@@ -590,17 +590,39 @@ lazy val serialversionRemoverPlugin =
 lazy val serialversionRemoverPluginSettings = Seq(
   Compile / scalacOptions ++= (
       if (scalaVersion.value.startsWith("3."))
-        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString)
+        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath)
       else Nil
     ))
 
-def akkaModule(name: String): Project =
-  Project(id = name, base = file(name))
+lazy val username = System.getenv("USER")
+lazy val fortifyLicense = new File(s"/Users/$username/.lightbend/fortify.license")
+
+lazy val doesFortifyLicenseExist: Boolean = {
+  import java.nio.file.Files
+  val exists = Files.exists(fortifyLicense.toPath)
+  println(s"doesCredentialExist: ($fortifyLicense) " + exists)
+  exists
+}
+
+def fortifySettings(name: String) =
+  Seq(
+    addCompilerPlugin(("com.lightbend" %% "scala-fortify" % "1.0.21").cross(CrossVersion.patch)),
+    scalacOptions ++= Seq("-P:fortify:scaversion=21.1", s"-P:fortify:build=$name"))
+
+def akkaModule(name: String): Project = {
+  val project = Project(id = name, base = file(name))
     .enablePlugins(ReproducibleBuildsPlugin)
     .disablePlugins(WelcomePlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
     .enablePlugins(BootstrapGenjavadoc)
+
+  if (doesFortifyLicenseExist) {
+    project.settings(fortifySettings(name))
+  } else {
+    project
+  }
+}
 
 /* Command aliases one can run locally against a module
   - where three or more tasks should be checked for faster turnaround
