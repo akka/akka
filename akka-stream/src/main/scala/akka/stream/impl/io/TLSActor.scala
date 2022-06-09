@@ -408,7 +408,6 @@ import akka.util.ByteString
       case OK =>
         result.getHandshakeStatus match {
           case NEED_WRAP =>
-            flushToUser()
             transportInChoppingBlock.putBack(transportInBuffer)
           case FINISHED =>
             flushToUser()
@@ -457,6 +456,7 @@ import akka.util.ByteString
       case Success(()) =>
         currentSession = session
         corkUser = false
+        flushToUser()
       case Failure(ex) =>
         fail(ex, closeTransport = true)
     }
