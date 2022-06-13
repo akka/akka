@@ -59,7 +59,7 @@ class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defau
       expectMsg("ping")
 
       EventFilter
-        .warning(pattern = """Failed to deserialize message from \[.*\] with serializer id \[4\]""", occurrences = 1)
+        .error(pattern = """Failed to deserialize message from \[.*\] with serializer id \[4\]""", occurrences = 1)
         .intercept {
           remoteRef ! "boom".getBytes("utf-8")
         }(systemB)
