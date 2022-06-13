@@ -58,7 +58,7 @@ See @ref:[Downing](cluster.md#downing).
 
 ## Basic example
 
-Sharding is accessed via the `ClusterSharding` extension
+Sharding is accessed via the @apidoc[typed.*.ClusterSharding] extension
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #sharding-extension }
@@ -66,7 +66,7 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #import #sharding-extension }
 
-It is common for sharding to be used with persistence however any `Behavior` can be used with sharding e.g. a basic counter:
+It is common for sharding to be used with persistence however any @apidoc[typed.Behavior] can be used with sharding e.g. a basic counter:
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter }
@@ -84,8 +84,8 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #init }
 
-Messages to a specific entity are then sent via an `EntityRef`.  The `entityId` and the name of the Entity's key can be retrieved from the `EntityRef`.
-It is also possible to wrap methods in a `ShardingEnvelope` or define extractor functions and send messages directly to the shard region.
+Messages to a specific entity are then sent via an @apidoc[typed.*.EntityRef].  The `entityId` and the name of the Entity's key can be retrieved from the `EntityRef`.
+It is also possible to wrap methods in a @apidoc[typed.ShardingEnvelope] or define extractor functions and send messages directly to the shard region.
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #send }
@@ -93,11 +93,11 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #send }
 
-Cluster sharding `init` should be called on every node for each entity type. Which nodes entity actors are created on
+Cluster sharding @apidoc[init](typed.*.ClusterSharding) {scala="#init[M,E](entity:akka.cluster.sharding.typed.scaladsl.Entity[M,E]):akka.actor.typed.ActorRef[E]" java="#init(akka.cluster.sharding.typed.javadsl.Entity)"} should be called on every node for each entity type. Which nodes entity actors are created on
 can be controlled with @ref:[roles](cluster.md#node-roles). `init` will create a `ShardRegion` or a proxy depending on whether the node's role matches
 the entity's role. 
 
-The behavior factory lambda passed to the init method is defined on each node and only used locally, this means it is safe to use it for injecting for example a node local `ActorRef` that each sharded actor should have access to or some object that is not possible to serialize.
+The behavior factory lambda passed to the init method is defined on each node and only used locally, this means it is safe to use it for injecting for example a node local @apidoc[typed.ActorRef] that each sharded actor should have access to or some object that is not possible to serialize.
 
 Specifying the role:
 
@@ -109,13 +109,13 @@ Java
 
 ### A note about EntityRef and serialization
 
-If including `EntityRef`s in messages or the `State`/`Event`s of an `EventSourcedBehavior`, those `EntityRef`s will need to be serialized.
+If including @apidoc[typed.*.EntityRef]'s in messages or the `State`/`Event`s of an @apidoc[typed.*.EventSourcedBehavior], those `EntityRef`s will need to be serialized.
 The @scala[`entityId`, `typeKey`, and (in multi-DC use-cases) `dataCenter` of an `EntityRef`]@java[`getEntityId`, `getTypeKey`, and (in multi-DC use-cases) `getDataCenter` methods of an `EntityRef`]
 provide exactly the information needed upon deserialization to regenerate an `EntityRef` equivalent to the one serialized, given an expected
 type of messages to send to the entity.
 
 At this time, serialization of `EntityRef`s requires a @ref:[custom serializer](../serialization.md#customization), as the specific
-`EntityTypeKey` (including the type of message which the desired entity type accepts) should not simply be encoded in the serialized
+@apidoc[EntityTypeKey](typed.*.EntityTypeKey) (including the type of message which the desired entity type accepts) should not simply be encoded in the serialized
 representation but looked up on the deserializing side.
 
 ## Persistence example
@@ -123,7 +123,7 @@ representation but looked up on the deserializing side.
 When using sharding, entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
 an actor after it has moved.
 
-Akka Persistence is based on the single-writer principle, for a particular `PersistenceId` only one persistent actor
+Akka Persistence is based on the single-writer principle, for a particular @apidoc[typed.PersistenceId] only one persistent actor
 instance should be active. If multiple instances were to persist events at the same time, the events would be
 interleaved and might not be interpreted correctly on replay. Cluster Sharding is typically used together with
 persistence to ensure that there is only one active entity for each `PersistenceId` (`entityId`).
@@ -144,8 +144,8 @@ Scala
 Java
 :  @@snip [HelloWorldPersistentEntityExample.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/HelloWorldPersistentEntityExample.java) { #persistent-entity-usage-import #persistent-entity-usage }
 
-Note how an unique @apidoc[akka.persistence.typed.PersistenceId] can be constructed from the `EntityTypeKey` and the `entityId`
-provided by the @apidoc[typed.*.EntityContext] in the factory function for the `Behavior`. This is a typical way
+Note how an unique @apidoc[akka.persistence.typed.PersistenceId] can be constructed from the @apidoc[typed.*.EntityTypeKey] and the `entityId`
+provided by the @apidoc[typed.*.EntityContext] in the factory function for the @apidoc[typed.Behavior]. This is a typical way
 of defining the `PersistenceId` but other formats are possible, as described in the
 @ref:[PersistenceId section](persistence.md#persistenceid).
 
@@ -211,7 +211,7 @@ explicit control over where shards are allocated via the @apidoc[ExternalShardAl
 
 This can be used, for example, to match up Kafka Partition consumption with shard locations. The video [How to co-locate Kafka Partitions with Akka Cluster Shards](https://akka.io/blog/news/2020/03/18/akka-sharding-kafka-video) explains a setup for it. Alpakka Kafka provides [an extension for Akka Cluster Sharding](https://doc.akka.io/docs/alpakka-kafka/current/cluster-sharding.html).
 
-To use it set it as the allocation strategy on your `Entity`:
+To use it set it as the allocation strategy on your @apidoc[typed.*.Entity]:
 
 Scala
 : @@snip [ExternalShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlySpec.scala) { #entity }
@@ -230,7 +230,7 @@ Java
 Any new or moved shard allocations will be moved on the next rebalance.
 
 The communication from the client to the shard allocation strategy is via @ref[Distributed Data](./distributed-data.md).
-It uses a single `LWWMap` that can support 10s of thousands of shards. Later versions could use multiple keys to 
+It uses a single @apidoc[akka.cluster.ddata.LWWMap] that can support 10s of thousands of shards. Later versions could use multiple keys to 
 support a greater number of shards.
 
 #### Example project for external allocation strategy
@@ -242,8 +242,8 @@ external sharding to co-locate Kafka partition consumption with shards.
 ### Custom shard allocation
 
 An optional custom shard allocation strategy can be passed into the optional parameter when initializing an entity type 
-or explicitly using the `withAllocationStrategy` function.
-See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrategy`]@java[`akka.cluster.sharding.AbstractShardAllocationStrategy`] for details of how to implement a custom `ShardAllocationStrategy`.
+or explicitly using the @apidoc[withAllocationStrategy](typed.*.Entity) {scala="#withAllocationStrategy(newAllocationStrategy:akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy):akka.cluster.sharding.typed.scaladsl.Entity[M,E]" java="#withAllocationStrategy(akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy)"} function.
+See the API documentation of @scala[@scaladoc[ShardAllocationStrategy](akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy)]@java[@javadoc[AbstractShardAllocationStrategy](akka.cluster.sharding.ShardCoordinator.AbstractShardAllocationStrategy)] for details of how to implement a custom `ShardAllocationStrategy`.
 
 ## How it works
 
@@ -254,11 +254,11 @@ See @ref:[Cluster Sharding concepts](cluster-sharding-concepts.md).
 
 If the state of the entities are persistent you may stop entities that are not used to
 reduce memory consumption. This is done by the application specific implementation of
-the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
+the entity actors for example by defining receive timeout (@apidoc[context.setReceiveTimeout](typed.*.ActorContext) {scala="#setReceiveTimeout(timeout:scala.concurrent.duration.FiniteDuration,msg:T):Unit" java="#setReceiveTimeout(java.time.Duration,T)"}).
 If a message is already enqueued to the entity when it stops itself the enqueued message
 in the mailbox will be dropped. To support graceful passivation without losing such
-messages the entity actor can send `ClusterSharding.Passivate` to the
-@scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
+messages the entity actor can send @apidoc[typed.*.ClusterSharding.Passivate] to the
+@apidoc[typed.ActorRef]@scala[[@scaladoc[ShardCommand](akka.cluster.sharding.typed.scaladsl.ClusterSharding.ShardCommand)]]@java[<@javadoc[ShardCommand](akka.cluster.sharding.typed.javadsl.ClusterSharding.ShardCommand)>] that was passed in to
 the factory method when creating the entity. The optional `stopMessage` message
 will be sent back to the entity, which is then supposed to stop itself, otherwise it will
 be stopped automatically. Incoming messages will be buffered by the `Shard` between reception
@@ -284,7 +284,7 @@ the entity when it's supposed to stop itself due to rebalance or passivation. If
 it will be stopped automatically without receiving a specific message. It can be useful to define a custom stop
 message if the entity needs to perform some asynchronous cleanup or interactions before stopping.
 
-The stop message is only sent locally, from the shard to the entity so does not require an entity id to end up in the right actor. When using a custom `ShardingMessageExtractor` without envelopes, the extractor will still have to handle the stop message type to please the compiler, even though it will never actually be passed to the extractor.
+The stop message is only sent locally, from the shard to the entity so does not require an entity id to end up in the right actor. When using a custom @apidoc[typed.ShardingMessageExtractor] without envelopes, the extractor will still have to handle the stop message type to please the compiler, even though it will never actually be passed to the extractor.
 
 ## Automatic Passivation
 
@@ -310,7 +310,7 @@ automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
 @@@ note
 
 Only messages sent through Cluster Sharding are counted as entity activity for automatic passivation. Messages sent
-directly to the `ActorRef`, including messages that the actor sends to itself, are not counted as entity activity.
+directly to the @apidoc[typed.ActorRef], including messages that the actor sends to itself, are not counted as entity activity.
 
 @@@
 
@@ -322,7 +322,7 @@ Specify a different idle timeout with configuration:
 
 @@snip [passivation idle timeout](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-idle-timeout type=conf }
 
-Or specify the idle timeout as a duration using the `withPassivationStrategy` method on `ClusterShardingSettings`.
+Or specify the idle timeout as a duration using the @apidoc[withPassivationStrategy](typed.ClusterShardingSettings) {scala="#withPassivationStrategy(settings:akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings):akka.cluster.sharding.typed.ClusterShardingSettings" java="#withPassivationStrategy(akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings)"} method on `ClusterShardingSettings`.
 
 Idle entity timeouts can be enabled and configured for any passivation strategy.
 
@@ -347,13 +347,13 @@ The active entity limit for the default strategy can be configured:
 
 @@snip [passivation new default strategy configured](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy-configured type=conf }
 
-Or using the `withActiveEntityLimit` method on `ClusterShardingSettings.PassivationStrategySettings`.
+Or using the @apidoc[withActiveEntityLimit](typed.ClusterShardingSettings.PassivationStrategySettings) {scala="#withActiveEntityLimit(limit:Int):akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings" java="#withActiveEntityLimit(int)"} method on `ClusterShardingSettings.PassivationStrategySettings`.
 
 An [idle entity timeout](#idle-entity-passivation) can also be enabled and configured for this strategy:
 
 @@snip [passivation new default strategy with idle](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #passivation-new-default-strategy-with-idle type=conf }
 
-Or using the `withIdleEntityPassivation` method on `ClusterShardingSettings.PassivationStrategySettings`.
+Or using the @apidoc[withIdleEntityPassivation](typed.ClusterShardingSettings.PassivationStrategySettings) {scala="#withIdleEntityPassivation(settings:akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings.IdleSettings):akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings" java="#withIdleEntityPassivation(akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings.IdleSettings)"} method on `ClusterShardingSettings.PassivationStrategySettings`.
 
 If the default strategy is not appropriate for particular workloads and access patterns, a [custom passivation
 strategy](#custom-passivation-strategies) can be created with configurable replacement policies, active entity limits,
@@ -385,7 +385,7 @@ Configure a passivation strategy to use the least recently used policy:
 
 @@snip [LRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lru-policy type=conf }
 
-Or using the `withLeastRecentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
+Or using the @apidoc[withLeastRecentlyUsedReplacement](typed.ClusterShardingSettings.PassivationStrategySettings) {scala="#withLeastRecentlyUsedReplacement():akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings" java="#withLeastRecentlyUsedReplacement()"} method on `ClusterShardingSettings.PassivationStrategySettings`.
 
 #### Segmented least recently used policy
 
@@ -426,7 +426,7 @@ Configure a passivation strategy to use the most recently used policy:
 
 @@snip [MRU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #mru-policy type=conf }
 
-Or using the `withMostRecentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
+Or using the @apidoc[withMostRecentlyUsedReplacement](typed.ClusterShardingSettings.PassivationStrategySettings) {scala="#withMostRecentlyUsedReplacement():akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings" java="#withMostRecentlyUsedReplacement()"} method on `ClusterShardingSettings.PassivationStrategySettings`.
 
 ### Least frequently used policy
 
@@ -441,7 +441,7 @@ Configure automatic passivation to use the least frequently used policy:
 
 @@snip [LFU policy](/akka-cluster-sharding/src/test/scala/akka/cluster/sharding/ClusterShardingSettingsSpec.scala) { #lfu-policy type=conf }
 
-Or using the `withLeastFrequentlyUsedReplacement` method on `ClusterShardingSettings.PassivationStrategySettings`.
+Or using the @apidoc[withLeastFrequentlyUsedReplacement](typed.ClusterShardingSettings.PassivationStrategySettings) {scala="#withLeastFrequentlyUsedReplacement():akka.cluster.sharding.typed.ClusterShardingSettings.PassivationStrategySettings" java="#withLeastFrequentlyUsedReplacement()"} method on `ClusterShardingSettings.PassivationStrategySettings`.
 
 #### Least frequently used with dynamic aging policy
 
@@ -548,10 +548,10 @@ akka.cluster.sharding.state-store-mode = ddata
 ```
 
 The state of the `ShardCoordinator` is replicated across the cluster but is not stored to disk.
-@ref:[Distributed Data](distributed-data.md) handles the `ShardCoordinator`'s state with `WriteMajorityPlus`/`ReadMajorityPlus` consistency.
+@ref:[Distributed Data](distributed-data.md) handles the `ShardCoordinator`'s state with @apidoc[WriteMajorityPlus](Replicator.WriteMajorityPlus) / @apidoc[ReadMajorityPlus](Replicator.ReadMajorityPlus) consistency.
 When all nodes in the cluster have been stopped, the state is no longer needed and dropped.
 
-Cluster Sharding uses its own Distributed Data `Replicator` per node. 
+Cluster Sharding uses its own Distributed Data @apidoc[ddata.Replicator] per node. 
 If using roles with sharding there is one `Replicator` per role, which enables a subset of
 all nodes for some entity types and another subset for other entity types. Each replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
@@ -589,7 +589,7 @@ The state of the entities themselves is not restored unless they have been made 
 for example with @ref:[Event Sourcing](persistence.md).
 
 To enable remember entities set `rememberEntities` flag to true in
-`ClusterShardingSettings` when starting a shard region (or its proxy) for a given `entity` type or configure
+@apidoc[typed.ClusterShardingSettings] when starting a shard region (or its proxy) for a given `entity` type or configure
 `akka.cluster.sharding.remember-entities = on`.
 
 Starting and stopping entities has an overhead but this is limited by batching operations to the
@@ -601,8 +601,8 @@ When `rememberEntities` is enabled, whenever a `Shard` is rebalanced onto anothe
 node or recovers after a crash, it will recreate all the entities which were previously
 running in that `Shard`. 
 
-To permanently stop entities send a `ClusterSharding.Passivate` to the
-@scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
+To permanently stop entities send a @apidoc[ClusterSharding.Passivate](typed.*.ClusterSharding.Passivate) to the
+@apidoc[typed.ActorRef]@scala[[@scaladoc[ShardCommand](akka.cluster.sharding.typed.scaladsl.ClusterSharding.ShardCommand)]]@java[<@javadoc[ShardCommand](akka.cluster.sharding.typed.javadsl.ClusterSharding.ShardCommand)>] that was passed in to
 the factory method when creating the entity.
 Otherwise, the entity will be automatically restarted after the entity restart backoff specified in the configuration.
 
@@ -783,7 +783,7 @@ The Cluster Sharding `ShardCoordinator` stores locations of the shards.
 This data is safely be removed when restarting the whole Akka Cluster.
 Note that this does not include application data.
 
-There is a utility program `akka.cluster.sharding.RemoveInternalClusterShardingData`
+There is a utility program @apidoc[akka.cluster.sharding.RemoveInternalClusterShardingData$]
 that removes this data.
 
 @@@ warning
@@ -819,8 +819,8 @@ different persistenceId.
 
 ## Configuration
 
-The `ClusterSharding` extension can be configured with the following properties. These configuration
-properties are read by the `ClusterShardingSettings` when created with an ActorSystem parameter.
+The @apidoc[typed.*.ClusterSharding] extension can be configured with the following properties. These configuration
+properties are read by the @apidoc[typed.ClusterShardingSettings] when created with an ActorSystem parameter.
 It is also possible to amend the `ClusterShardingSettings` or create it from another config section
 with the same layout as below. 
 
