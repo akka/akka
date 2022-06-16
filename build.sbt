@@ -1,4 +1,7 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
+import akka.{AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin}
+
+import scala.language.postfixOps
+import scala.sys.process._
 
 ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
 
@@ -594,34 +597,31 @@ lazy val serialversionRemoverPluginSettings = Seq(
       else Nil
     ))
 
-lazy val username = System.getenv("USER")
-lazy val fortifyLicense = new File(s"/Users/$username/.lightbend/fortify.license")
-
 lazy val doesFortifyLicenseExist: Boolean = {
   import java.nio.file.Files
-  val exists = Files.exists(fortifyLicense.toPath)
-  println(s"doesCredentialExist: ($fortifyLicense) " + exists)
-  exists
+  val username = System.getenv("USER")
+  val fortifyLicense = new File(s"/Users/$username/.lightbend/fortify.license")
+  Files.exists(fortifyLicense.toPath)
 }
 
-def fortifySettings(name: String) =
-  Seq(
-    addCompilerPlugin(("com.lightbend" %% "scala-fortify" % "1.0.21").cross(CrossVersion.patch)),
-    scalacOptions ++= Seq("-P:fortify:scaversion=21.1", s"-P:fortify:build=$name"))
+def fortifySettings(name: String) = {
+  if (doesFortifyLicenseExist) {
+    Seq(
+      addCompilerPlugin(("com.lightbend" %% "scala-fortify" % "1.0.21").cross(CrossVersion.patch)),
+      scalacOptions ++= Seq("-P:fortify:scaversion=21.1", s"-P:fortify:build=$name"))
+  } else {
+    Seq()
+  }
+}
 
 def akkaModule(name: String): Project = {
-  val project = Project(id = name, base = file(name))
+  Project(id = name, base = file(name))
     .enablePlugins(ReproducibleBuildsPlugin)
     .disablePlugins(WelcomePlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
+    .settings(fortifySettings(name))
     .enablePlugins(BootstrapGenjavadoc)
-
-  if (doesFortifyLicenseExist) {
-    project.settings(fortifySettings(name))
-  } else {
-    project
-  }
 }
 
 /* Command aliases one can run locally against a module
@@ -657,3 +657,16 @@ addCommandAlias(
     commandValue(clusterShardingTyped),
     commandValue(persistenceTyped),
     commandValue(streamTyped)).mkString)
+
+lazy val runSourceAnalyzer = taskKey[Unit]("Analyzing NST files emitted by Fortify  SCA")
+runSourceAnalyzer := {
+  val s = streams.value
+  val shell = Seq("bash", "-c")
+  val scan = shell :+ "./fortify-scan.sh"
+  if (doesFortifyLicenseExist) {
+    s.log.info("Analyzing NST files emitted by Fortify SCA.")
+    scan !
+  } else {
+    s.log.info("Fortify license not found so NST files creation was skipped.")
+  }
+}
