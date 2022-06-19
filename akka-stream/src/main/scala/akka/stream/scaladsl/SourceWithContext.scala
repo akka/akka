@@ -37,13 +37,13 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
     SourceWithContext.fromTuples(Source.fromGraph(GraphDSL.createGraph(delegate) { implicit b => d =>
       import GraphDSL.Implicits._
 
-      val bcast = b.add(Broadcast[(Out, Ctx)](2))
+      val unzip = b.add(Unzip[Out, Ctx]())
       val zipper = b.add(Zip[Out2, Ctx]())
 
-      d ~> bcast.in
+      d ~> unzip.in
 
-      bcast.out(0).map { case (dataOut, _) => dataOut }.via(viaFlow) ~> zipper.in0
-      bcast.out(1).map { case (_, ctxOut) => ctxOut } ~> zipper.in1
+      unzip.out0.via(viaFlow) ~> zipper.in0
+      unzip.out1 ~> zipper.in1
 
       SourceShape(zipper.out)
     }))
