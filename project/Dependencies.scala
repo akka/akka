@@ -24,6 +24,7 @@ object Dependencies {
   val nettyVersion = "3.10.6.Final"
   val protobufJavaVersion = "3.16.1"
   val logbackVersion = "1.2.11"
+  val scalaFortifyVersion = "1.0.21"
 
   val jacksonCoreVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
