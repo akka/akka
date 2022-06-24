@@ -5,8 +5,11 @@ projectName=$(basename -- "$(pwd)")
 scanFolder="fortify-scans/$projectName"
 logfile="$scanFolder/sourceanalyzer.log"
 
-if [ ! -d fortify-scans ]; then
+if [ ! -d "$scanFolder" ]; then
   git clone git@github.com:lightbend/fortify-scans.git
+  if [ ! -d "$scanFolder" ]; then
+    mkdir "$scanFolder"
+  fi
 fi
 
 echo Starting analysis of scans
@@ -28,6 +31,7 @@ for F in "$scanFolder"/*.fpr; do
 done
 
 echo Pushing scan results to repo
+git add .
 commitMsg="Scan performed on $(date +"%Y-%m-%d_%T")"
 git commit -m "$commitMsg"
 git push origin
