@@ -280,9 +280,9 @@ It must still be possible to deserialize the events that were stored with the ol
 
 ## External Akka Serializers
 
-* [Kryo serializer for Akka](https://github.com/altoo-ag/akka-kryo-serialization)
+* [Kryo serializer for Akka](https://github.com/altoo-ag/akka-kryo-serialization) (not suitable for serializing for Persistence)
 
-* [Twitter Chill Scala extensions for Kryo](https://github.com/twitter/chill)
+* [Twitter Chill Scala extensions for Kryo](https://github.com/twitter/chill) (not suitable for serializing for Persistence)
 
 ### Verification
 
