@@ -84,10 +84,10 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #structure }
 
-The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command`
+The first important thing to notice is the @apidoc[typed.Behavior] of a persistent actor is typed to the type of the `Command`
 because this is the type of message a persistent actor should receive. In Akka this is now enforced by the type system.
 
-The components that make up an `EventSourcedBehavior` are:
+The components that make up an @apidoc[typed.*.EventSourcedBehavior] are:
 
 * `persistenceId` is the stable unique identifier for the persistent actor.
 * `emptyState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
@@ -113,7 +113,7 @@ event journal and snapshot store.
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `EventSourcedBehavior` to ensure
 that there is only one active entity for each `PersistenceId` (`entityId`). There are techniques to ensure this 
 uniqueness, an example of which can be found in the 
-@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
+@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the @apidoc[typed.*.EntityContext].
 
 The `entityId` in Cluster Sharding is the business domain identifier of the entity. The `entityId` might not
 be unique enough to be used as the `PersistenceId` by itself. For example two different types of
@@ -133,13 +133,13 @@ you should use `""` as the separator.
 
 @@@
 
-A custom identifier can be created with `PersistenceId.ofUniqueId`.  
+A custom identifier can be created with @apidoc[PersistenceId.ofUniqueId](typed.PersistenceId$) {scala="#ofUniqueId(id:String):akka.persistence.typed.PersistenceId" java="#ofUniqueId(java.lang.String)"}.  
 
 ### Command handler
 
 The command handler is a function with 2 parameters, the current `State` and the incoming `Command`.
 
-A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
+A command handler returns an @scala[@scaladoc[Effect](akka.persistence.typed.scaladsl.Effect)]@java[@javadoc[Effect](akka.persistence.typed.javadsl.Effect)] directive that defines what event or events, if any, to persist. 
 Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory].
 
 The two most commonly used effects are: 
@@ -167,7 +167,7 @@ The same event handler is also used when the entity is started up to recover its
 
 The event handler must only update the state and never perform side effects, as those would also be
 executed during recovery of the persistent actor. Side effects should be performed in `thenRun` from the
-@ref:[command handler](#command-handler) after persisting the event or from the `RecoveryCompleted`
+@ref:[command handler](#command-handler) after persisting the event or from the @apidoc[typed.RecoveryCompleted]
 after @ref:[Recovery](#recovery).
 
 ### Completing the example
@@ -207,8 +207,8 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #event-handler }
 
-@scala[These are used to create an `EventSourcedBehavior`:]
-@java[These are defined in an `EventSourcedBehavior`:]
+@scala[These are used to create an @scaladoc[EventSourcedBehavior](akka.persistence.typed.scaladsl.EventSourcedBehavior):]
+@java[These are defined in an @javadoc[EventSourcedBehavior](akka.persistence.typed.javadsl.EventSourcedBehavior):]
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #behavior }
