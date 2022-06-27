@@ -31,10 +31,12 @@ for F in "$scanFolder"/*.fpr; do
 done
 
 echo Pushing scan results to repo
+cd fortify-scans || exit
 git add .
 commitMsg="Scan performed on $(date +"%Y-%m-%d_%T")"
 git commit -m "$commitMsg"
 git push origin
+cd ..
 echo Push complete
 
 echo Deleting NST and result files to clean up for next run
