@@ -600,8 +600,8 @@ lazy val serialversionRemoverPluginSettings = Seq(
 
 lazy val doesFortifyLicenseExist: Boolean = {
   import java.nio.file.Files
-  val username = System.getenv("USER")
-  val fortifyLicense = new File(s"/Users/$username/.lightbend/fortify.license")
+  val home = System.getProperty("user.home")
+  val fortifyLicense = new File(s"$home/.lightbend/fortify.license")
   Files.exists(fortifyLicense.toPath)
 }
 
@@ -659,11 +659,12 @@ addCommandAlias(
     commandValue(persistenceTyped),
     commandValue(streamTyped)).mkString)
 
+// Convenience task allowing all Fortify steps to be done in the sbt shell
 lazy val runSourceAnalyzer = taskKey[Unit]("Analyzing NST files emitted by Fortify  SCA")
 runSourceAnalyzer := {
   val s = streams.value
   val shell = Seq("bash", "-c")
-  val scan = shell :+ "./fortify-scan.sh"
+  val scan = shell :+ "./scripts/fortify-scan.sh"
   if (doesFortifyLicenseExist) {
     s.log.info("Analyzing NST files emitted by Fortify SCA.")
     scan !
