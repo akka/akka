@@ -16,7 +16,6 @@ import akka.stream.javadsl.Source;
 
 // #actor-ref-imports
 import akka.actor.ActorRef;
-import akka.actor.Status.Success;
 import akka.stream.OverflowStrategy;
 import akka.stream.CompletionStrategy;
 import akka.stream.javadsl.Sink;
@@ -99,7 +98,7 @@ public class SourceDocExamples {
     actorRef.tell("hello", ActorRef.noSender());
 
     // The stream completes successfully with the following message
-    actorRef.tell(new Success(CompletionStrategy.draining()), ActorRef.noSender());
+    actorRef.tell(Done.done(), ActorRef.noSender());
     // #actor-ref
   }
 

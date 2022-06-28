@@ -123,7 +123,7 @@ class JsonFramingSpec extends AkkaSpec {
         """.stripMargin,
         """{ "na""",
         """me": "jack""",
-        """"}]"""").map(ByteString(_))
+        """"}]""").map(ByteString(_))
 
       val result = Source.apply(input).via(JsonFraming.objectScanner(Int.MaxValue)).runFold(Seq.empty[String]) {
         case (acc, entry) => acc ++ Seq(entry.utf8String)
