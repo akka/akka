@@ -278,12 +278,6 @@ switch to the new serializer.
 As an optional third step the old serializer can be completely removed if it was not used for persistent events.
 It must still be possible to deserialize the events that were stored with the old serializer.
 
-## External Akka Serializers
-
-* [Kryo serializer for Akka](https://github.com/altoo-ag/akka-kryo-serialization)
-
-* [Twitter Chill Scala extensions for Kryo](https://github.com/twitter/chill)
-
 ### Verification
 
 Normally, messages sent between local actors (i.e. same JVM) do not undergo serialization. For testing, sometimes, it may be desirable to force serialization on all messages (both remote and local). If you want to do this in order to verify that your messages are serializable you can enable the following config option:
