@@ -8,12 +8,11 @@ import java.io.{ NotSerializableException, ObjectOutputStream }
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.annotation.{ switch, tailrec }
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
-
-import scala.annotation.nowarn
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.annotation.{ InternalApi, InternalStableApi }

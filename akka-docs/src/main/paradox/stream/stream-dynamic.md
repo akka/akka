@@ -18,12 +18,12 @@ To use Akka Streams, add the module to your project:
 <a id="kill-switch"></a>
 ## Controlling stream completion with KillSwitch
 
-A `KillSwitch` allows the completion of operators of `FlowShape` from the outside. It consists of a flow element that
+A @apidoc[akka.stream.KillSwitch] allows the completion of operators of @apidoc[akka.stream.FlowShape] from the outside. It consists of a flow element that
 can be linked to an operator of `FlowShape` needing completion control.
 The `KillSwitch` @scala[trait] @java[interface] allows to:
  
- * complete the stream(s) via `shutdown()`
- * fail the stream(s) via `abort(Throwable error)`
+ * complete the stream(s) via @apidoc[shutdown()](akka.stream.KillSwitch) {scala="#shutdown():Unit" java="#shutdown()"}
+ * fail the stream(s) via @apidoc[abort(Throwable error)](akka.stream.KillSwitch) {scala="#abort(ex:Throwable):Unit" java="#abort(java.lang.Throwable)"}
 
 
 Scala
@@ -40,7 +40,7 @@ A `KillSwitch` can control the completion of one or multiple streams, and theref
 <a id="unique-kill-switch"></a>
 ### UniqueKillSwitch
 
-`UniqueKillSwitch` allows to control the completion of **one** materialized `Graph` of `FlowShape`. Refer to the
+@apidoc[akka.stream.UniqueKillSwitch] allows to control the completion of **one** materialized @apidoc[akka.stream.Graph] of @apidoc[akka.stream.FlowShape]. Refer to the
 below for usage examples.
 
  * **Shutdown**
@@ -62,8 +62,8 @@ Java
 <a id="shared-kill-switch"></a>
 ### SharedKillSwitch
 
-A `SharedKillSwitch` allows to control the completion of an arbitrary number operators of `FlowShape`. It can be
-materialized multiple times via its `flow` method, and all materialized operators linked to it are controlled by the switch.
+A @apidoc[akka.stream.SharedKillSwitch] allows to control the completion of an arbitrary number operators of @apidoc[akka.stream.FlowShape]. It can be
+materialized multiple times via its @apidoc[flow](akka.stream.SharedKillSwitch) {scala="#flow[T]:akka.stream.Graph[akka.stream.FlowShape[T,T],akka.stream.SharedKillSwitch]" java="#flow()"} method, and all materialized operators linked to it are controlled by the switch.
 Refer to the below for usage examples.
 
  * **Shutdown**
@@ -84,7 +84,7 @@ Java
 
 @@@ note
 
-A `UniqueKillSwitch` is always a result of a materialization, whilst `SharedKillSwitch` needs to be constructed
+A @apidoc[akka.stream.UniqueKillSwitch] is always a result of a materialization, whilst @apidoc[akka.stream.SharedKillSwitch] needs to be constructed
 before any materialization takes place.
 
 @@@
@@ -94,16 +94,16 @@ before any materialization takes place.
 There are many cases when consumers or producers of a certain service (represented as a Sink, Source, or possibly Flow)
 are dynamic and not known in advance. The Graph DSL does not allow to represent this, all connections of the graph
 must be known in advance and must be connected upfront. To allow dynamic fan-in and fan-out streaming, the Hubs
-should be used. They provide means to construct `Sink` and `Source` pairs that are "attached" to each
+should be used. They provide means to construct @apidoc[akka.stream.*.Sink] and @apidoc[akka.stream.*.Source] pairs that are "attached" to each
 other, but one of them can be materialized multiple times to implement dynamic fan-in or fan-out.
 
 ### Using the MergeHub
 
-A `MergeHub` allows to implement a dynamic fan-in junction point in a graph where elements coming from
+A @apidoc[akka.stream.*.MergeHub$] allows to implement a dynamic fan-in junction point in a graph where elements coming from
 different producers are emitted in a First-Comes-First-Served fashion. If the consumer cannot keep up then *all* of the
-producers are backpressured. The hub itself comes as a `Source` to which the single consumer can be attached.
+producers are backpressured. The hub itself comes as a @apidoc[akka.stream.*.Source] to which the single consumer can be attached.
 It is not possible to attach any producers until this `Source` has been materialized (started). This is ensured
-by the fact that we only get the corresponding `Sink` as a materialized value. Usage might look like this:
+by the fact that we only get the corresponding @apidoc[akka.stream.*.Sink] as a materialized value. Usage might look like this:
 
 Scala
 :   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #merge-hub }
@@ -117,8 +117,8 @@ previously until it cancels.
 
 ### Using the BroadcastHub
 
-A `BroadcastHub` can be used to consume elements from a common producer by a dynamic set of consumers. The
-rate of the producer will be automatically adapted to the slowest consumer. In this case, the hub is a `Sink`
+A @apidoc[akka.stream.*.BroadcastHub$] can be used to consume elements from a common producer by a dynamic set of consumers. The
+rate of the producer will be automatically adapted to the slowest consumer. In this case, the hub is a @apidoc[akka.stream.*.Sink]
 to which the single producer must be attached first. Consumers can only be attached once the `Sink` has
 been materialized (i.e. the producer has been started). One example of using the `BroadcastHub`:
 
@@ -128,10 +128,10 @@ Scala
 Java
 :   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #broadcast-hub }
 
-The resulting `Source` can be materialized any number of times, each materialization effectively attaching
+The resulting @apidoc[akka.stream.*.Source] can be materialized any number of times, each materialization effectively attaching
 a new subscriber. If there are no subscribers attached to this hub then it will not drop any elements but instead
 backpressure the upstream producer until subscribers arrive. This behavior can be tweaked by using the operators
-`.buffer` for example with a drop strategy, or attaching a subscriber that drops all messages. If there
+@apidoc[.buffer](akka.stream.*.Source) {scala="#buffer(size:Int,overflowStrategy:akka.stream.OverflowStrategy):FlowOps.this.Repr[Out]" java="#buffer(int,akka.stream.OverflowStrategy)"} for example with a drop strategy, or attaching a subscriber that drops all messages. If there
 are no other subscribers, this will ensure that the producer is kept drained (dropping all elements) and once a new
 subscriber arrives it will adaptively slow down, ensuring no more messages are dropped.
 
@@ -139,11 +139,11 @@ subscriber arrives it will adaptively slow down, ensuring no more messages are d
 
 The features provided by the Hub implementations are limited by default. This is by design, as various combinations
 can be used to express additional features like unsubscribing producers or consumers externally. We show here
-an example that builds a `Flow` representing a publish-subscribe channel. The input of the `Flow` is
+an example that builds a @apidoc[akka.stream.*.Flow] representing a publish-subscribe channel. The input of the `Flow` is
 published to all subscribers while the output streams all the elements published.
 
-First, we connect a `MergeHub` and a `BroadcastHub` together to form a publish-subscribe channel. Once
-we materialize this small stream, we get back a pair of `Source` and `Sink` that together define
+First, we connect a @apidoc[akka.stream.*.MergeHub$] and a @apidoc[akka.stream.*.BroadcastHub$] together to form a publish-subscribe channel. Once
+we materialize this small stream, we get back a pair of @apidoc[akka.stream.*.Source] and @apidoc[akka.stream.*.Sink] that together define
 the publish and subscribe sides of our channel.
 
 Scala
@@ -152,7 +152,7 @@ Scala
 Java
 :   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #pub-sub-1 }
 
-We now use a few tricks to add more features. First of all, we attach a `Sink.ignore`
+We now use a few tricks to add more features. First of all, we attach a @apidoc[Sink.ignore](akka.stream.*.Sink$) {scala="#ignore:akka.stream.scaladsl.Sink[Any,scala.concurrent.Future[akka.Done]]" java="#ignore()"}
 at the broadcast side of the channel to keep it drained when there are no subscribers. If this behavior is not the
 desired one this line can be dropped.
 
@@ -162,9 +162,9 @@ Scala
 Java
 :   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #pub-sub-2 }
 
-We now wrap the `Sink` and `Source` in a `Flow` using `Flow.fromSinkAndSource`. This bundles
+We now wrap the @apidoc[akka.stream.*.Sink] and @apidoc[akka.stream.*.Source] in a @apidoc[akka.stream.*.Flow] using @apidoc[Flow.fromSinkAndSource](akka.stream.*.Flow$) {scala="#fromSinkAndSource[I,O](sink:akka.stream.Graph[akka.stream.SinkShape[I],_],source:akka.stream.Graph[akka.stream.SourceShape[O],_]):akka.stream.scaladsl.Flow[I,O,akka.NotUsed]" java="#fromSinkAndSource(akka.stream.Graph,akka.stream.Graph)"}. This bundles
 up the two sides of the channel into one and forces users of it to always define a publisher and subscriber side
-(even if the subscriber side is dropping). It also allows us to attach a `KillSwitch` as
+(even if the subscriber side is dropping). It also allows us to attach a @apidoc[akka.stream.KillSwitch] as
 a `BidiStage` which in turn makes it possible to close both the original `Sink` and `Source` at the
 same time.
 Finally, we add `backpressureTimeout` on the consumer side to ensure that subscribers that block the channel for more
@@ -190,10 +190,10 @@ Java
 
 **This is a @ref:[may change](../common/may-change.md) feature***
 
-A `PartitionHub` can be used to route elements from a common producer to a dynamic set of consumers.
+A @apidoc[akka.stream.*.PartitionHub$] can be used to route elements from a common producer to a dynamic set of consumers.
 The selection of consumer is done with a function. Each element can be routed to only one consumer. 
 
-The rate of the producer will be automatically adapted to the slowest consumer. In this case, the hub is a `Sink`
+The rate of the producer will be automatically adapted to the slowest consumer. In this case, the hub is a @apidoc[akka.stream.*.Sink]
 to which the single producer must be attached first. Consumers can only be attached once the `Sink` has
 been materialized (i.e. the producer has been started). One example of using the `PartitionHub`:
 
@@ -207,10 +207,10 @@ The `partitioner` function takes two parameters; the first is the number of acti
 is the stream element. The function should return the index of the selected consumer for the given element, 
 i.e. `int` greater than or equal to 0 and less than number of consumers.
 
-The resulting `Source` can be materialized any number of times, each materialization effectively attaching
+The resulting @apidoc[akka.stream.*.Source] can be materialized any number of times, each materialization effectively attaching
 a new consumer. If there are no consumers attached to this hub then it will not drop any elements but instead
 backpressure the upstream producer until consumers arrive. This behavior can be tweaked by using an operator,
-for example `.buffer` with a drop strategy, or attaching a consumer that drops all messages. If there
+for example @apidoc[.buffer](akka.stream.*.Source) {scala="#buffer(size:Int,overflowStrategy:akka.stream.OverflowStrategy):FlowOps.this.Repr[Out]" java="#buffer(int,akka.stream.OverflowStrategy)"} with a drop strategy, or attaching a consumer that drops all messages. If there
 are no other consumers, this will ensure that the producer is kept drained (dropping all elements) and once a new
 consumer arrives and messages are routed to the new consumer it will adaptively slow down, ensuring no more messages
 are dropped.
@@ -219,8 +219,8 @@ It is possible to define how many initial consumers that are required before it 
 to the attached consumers. While not enough consumers have been attached messages are buffered and when the
 buffer is full the upstream producer is backpressured. No messages are dropped.
 
-The above example illustrate a stateless partition function. For more advanced stateful routing the @java[`ofStateful`]
-@scala[`statefulSink`] can be used. Here is an example of a stateful round-robin function:
+The above example illustrate a stateless partition function. For more advanced stateful routing the @java[@javadoc[ofStateful](akka.stream.javadsl.PartitionHub$#ofStateful(java.lang.Class,java.util.function.Supplier,int))]
+@scala[@scaladoc[statefulSink](akka.stream.scaladsl.PartitionHub$#statefulSink[T](partitioner:()=%3E(akka.stream.scaladsl.PartitionHub.ConsumerInfo,T)=%3ELong,startAfterNrOfConsumers:Int,bufferSize:Int):akka.stream.scaladsl.Sink[T,akka.stream.scaladsl.Source[T,akka.NotUsed]])] can be used. Here is an example of a stateful round-robin function:
 
 Scala
 :   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #partition-hub-stateful }
@@ -241,7 +241,7 @@ consumer identifiers and the second is the stream element. The function should r
 identifier for the given element. The function will never be called when there are no active consumers, i.e. 
 there is always at least one element in the array of identifiers.
 
-Another interesting type of routing is to prefer routing to the fastest consumers. The `ConsumerInfo`
+Another interesting type of routing is to prefer routing to the fastest consumers. The @apidoc[ConsumerInfo](akka.stream.*.PartitionHub.ConsumerInfo)
 has an accessor `queueSize` that is approximate number of buffered elements for a consumer.
 Larger value than other consumers could be an indication of that the consumer is slow.
 Note that this is a moving target since the elements are consumed concurrently. Here is an example of

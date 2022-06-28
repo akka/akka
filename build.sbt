@@ -1,5 +1,5 @@
 import akka.Dependencies.{scalaFortifyVersion, allScalaVersions}
-import akka.{AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin}
+import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
 import scala.language.postfixOps
 import scala.sys.process._
@@ -615,7 +615,7 @@ def fortifySettings(name: String) = {
   }
 }
 
-def akkaModule(name: String): Project = {
+def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
     .enablePlugins(ReproducibleBuildsPlugin)
     .disablePlugins(WelcomePlugin)
@@ -623,7 +623,6 @@ def akkaModule(name: String): Project = {
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(fortifySettings(name))
     .enablePlugins(BootstrapGenjavadoc)
-}
 
 /* Command aliases one can run locally against a module
   - where three or more tasks should be checked for faster turnaround

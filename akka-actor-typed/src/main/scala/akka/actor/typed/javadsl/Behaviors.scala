@@ -383,7 +383,7 @@ object Behaviors {
     }
 
     val mdcForMessageFun: T => Map[String, String] =
-      if (mdcForMessage == null) Map.empty
+      if (mdcForMessage == null) _ => Map.empty
       else { message =>
         asScalaMap(mdcForMessage.apply(message))
       }

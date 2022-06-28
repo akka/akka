@@ -56,6 +56,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |--|--|--|
 |Sink|<a name="aspublisher"></a>@ref[asPublisher](Sink/asPublisher.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.|
 |Sink|<a name="cancelled"></a>@ref[cancelled](Sink/cancelled.md)|Immediately cancel the stream|
+|Sink|<a name="collect"></a>@ref[collect](Sink/collect.md)|Collect all input elements using a Java @javadoc[Collector](java.util.stream.Collector).|
 |Sink|<a name="collection"></a>@ref[collection](Sink/collection.md)|@scala[Collect all values emitted from the stream into a collection.]@java[Operator only available in the Scala API. The closest operator in the Java API is @ref[`Sink.seq`](Sink/seq.md)].|
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
 |Sink|<a name="completionstagesink"></a>@ref[completionStageSink](Sink/completionStageSink.md)|Streams the elements to the given future sink once it successfully completes. |
@@ -330,7 +331,9 @@ Operators meant for inter-operating between Akka Streams and Actors:
 |ActorSink|<a name="actorrefwithbackpressure"></a>@ref[actorRefWithBackpressure](ActorSink/actorRefWithBackpressure.md)|Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API with backpressure, to be able to signal demand when the actor is ready to receive more elements.|
 |Source/Flow|<a name="ask"></a>@ref[ask](Source-or-Flow/ask.md)|Use the "Ask Pattern" to send a request-reply message to the target `ref` actor (of the classic actors API).|
 |ActorFlow|<a name="ask"></a>@ref[ask](ActorFlow/ask.md)|Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API), and expect a reply that will be emitted downstream.|
+|ActorFlow|<a name="askwithcontext"></a>@ref[askWithContext](ActorFlow/askWithContext.md)|Use the "Ask Pattern" to send each stream element (without the context) as an `ask` to the target actor (of the new actors API), and expect a reply that will be emitted downstream.|
 |ActorFlow|<a name="askwithstatus"></a>@ref[askWithStatus](ActorFlow/askWithStatus.md)|Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API),  and expect a reply of Type @scala[`StatusReply[T]`]@java[`StatusReply<T>`] where the T will be unwrapped and emitted downstream.|
+|ActorFlow|<a name="askwithstatusandcontext"></a>@ref[askWithStatusAndContext](ActorFlow/askWithStatusAndContext.md)|Use the "Ask Pattern" to send each stream element (without the context) as an `ask` to the target actor (of the new actors API), and expect a reply of Type @scala[`StatusReply[T]`]@java[`StatusReply<T>`] where the T will be unwrapped and emitted downstream.|
 |PubSub|<a name="sink"></a>@ref[sink](PubSub/sink.md)|A sink that will publish emitted messages to a @apidoc[akka.actor.typed.pubsub.Topic$].|
 |PubSub|<a name="source"></a>@ref[source](PubSub/source.md)|A source that will subscribe to a @apidoc[akka.actor.typed.pubsub.Topic$] and stream messages published to the topic. |
 |Source/Flow|<a name="watch"></a>@ref[watch](Source-or-Flow/watch.md)|Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.|
@@ -382,7 +385,9 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [asJavaStream](StreamConverters/asJavaStream.md)
 * [ask](Source-or-Flow/ask.md)
 * [ask](ActorFlow/ask.md)
+* [askWithContext](ActorFlow/askWithContext.md)
 * [askWithStatus](ActorFlow/askWithStatus.md)
+* [askWithStatusAndContext](ActorFlow/askWithStatusAndContext.md)
 * [asOutputStream](StreamConverters/asOutputStream.md)
 * [asPublisher](Sink/asPublisher.md)
 * [asSourceWithContext](Source/asSourceWithContext.md)
@@ -395,6 +400,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [buffer](Source-or-Flow/buffer.md)
 * [cancelled](Sink/cancelled.md)
 * [collect](Source-or-Flow/collect.md)
+* [collect](Sink/collect.md)
 * [collection](Sink/collection.md)
 * [collectType](Source-or-Flow/collectType.md)
 * [combine](Source/combine.md)
