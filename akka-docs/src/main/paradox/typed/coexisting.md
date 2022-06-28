@@ -90,7 +90,7 @@ Java
 @java[To convert between typed and classic `ActorSystem`, `ActorContext` and `ActorRef` in both directions there are adapter methods in @javadoc[akka.actor.typed.javadsl.Adapter](akka.actor.typed.javadsl.Adapter).]
 Note the inline comments in the example above. 
 
-This method of using a top level classic actor is the suggested path for this type of co-existence. However, if you prefer to start with a typed top level actor then you can use the @scala[implicit `spawn` -method]@java[@javadoc[Adapter.spawn](akka.actor.typed.javadsl.Adapter#spawn(akka.actor.ActorSystem,akka.actor.typed.Behavior,java.lang.String,akka.actor.typed.Props))] directly from the typed system:
+This method of using a top level classic actor is the suggested path for this type of co-existence. However, if you prefer to start with a typed top level actor then you can use the @scala[implicit @scaladoc[spawn](akka.actor.typed.scaladsl.adapter.package$$ClassicActorSystemOps#spawn[T](behavior:akka.actor.typed.Behavior[T],name:String,props:akka.actor.typed.Props):akka.actor.typed.ActorRef[T]) -method]@java[@javadoc[Adapter.spawn](akka.actor.typed.javadsl.Adapter#spawn(akka.actor.ActorSystem,akka.actor.typed.Behavior,java.lang.String,akka.actor.typed.Props))] directly from the typed system:
 
 Scala
 :  @@snip [TypedWatchingClassicSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/TypedWatchingClassicSpec.scala) { #create }
