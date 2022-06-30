@@ -1,6 +1,5 @@
 #!/bin/sh
 alias echo='echo $(date +"%F %T")'
-now=$(date +"%s")
 projectName=$(basename -- "$(pwd)")
 scanFolder="fortify-scans/$projectName"
 logfile="$scanFolder/sourceanalyzer.log"
@@ -10,6 +9,7 @@ if [ ! -d "$scanFolder" ]; then
   if [ ! -d "$scanFolder" ]; then
     mkdir "$scanFolder"
   fi
+  rm "$logfile"
 fi
 
 echo Starting analysis of scans
