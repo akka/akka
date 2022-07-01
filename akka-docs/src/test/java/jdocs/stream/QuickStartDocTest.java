@@ -20,9 +20,9 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+// #other-imports
 
 import jdocs.AbstractJavaTest;
-// #other-imports
 
 import org.junit.*;
 
