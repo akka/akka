@@ -48,7 +48,7 @@ object Dependencies {
   val scala3Version = "3.1.2"
   val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
-  val reactiveStreamsVersion = "1.0.3"
+  val reactiveStreamsVersion = "1.0.4"
 
   val sslConfigVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
