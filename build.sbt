@@ -1,4 +1,4 @@
-import akka.Dependencies.{scalaFortifyVersion, allScalaVersions}
+import akka.Dependencies.{scalaFortifyVersion, fortifySCAVersion, allScalaVersions}
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
 import scala.language.postfixOps
@@ -609,7 +609,7 @@ def fortifySettings(name: String) = {
   if (doesFortifyLicenseExist) {
     Seq(addCompilerPlugin(
       ("com.lightbend" %% "scala-fortify" % scalaFortifyVersion).cross(CrossVersion.patch)),
-      scalacOptions ++= Seq("-P:fortify:scaversion=21.1", s"-P:fortify:build=$name"))
+      scalacOptions ++= Seq(s"-P:fortify:scaversion=$fortifySCAVersion", s"-P:fortify:build=$name"))
   } else {
     Seq()
   }
@@ -663,7 +663,7 @@ lazy val runSourceAnalyzer = taskKey[Unit]("Analyzing NST files emitted by Forti
 runSourceAnalyzer := {
   val s = streams.value
   val shell = Seq("bash", "-c")
-  val scan = shell :+ "./scripts/fortify-scan.sh"
+  val scan = shell :+ s"./scripts/fortify-scan.sh $fortifySCAVersion"
   if (doesFortifyLicenseExist) {
     s.log.info("Analyzing NST files emitted by Fortify SCA.")
     scan !

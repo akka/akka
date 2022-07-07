@@ -1,8 +1,20 @@
 #!/bin/sh
+
+scaVersion=$1
+if [ -z "$scaVersion" ]; then
+  scaVersion="22.1"
+fi
+
 alias echo='echo $(date +"%F %T")'
+logfile="$scanFolder/sourceanalyzer.log"
 projectName=$(basename -- "$(pwd)")
 scanFolder="fortify-scans/$projectName"
-logfile="$scanFolder/sourceanalyzer.log"
+nstFolder="$HOME/.fortify/sca${scaVersion}/build"
+
+if [ ! -d "$nstFolder" ]; then
+  echo "$nstFolder" not found
+  exit 2
+fi
 
 if [ ! -d "$scanFolder" ]; then
   git clone git@github.com:lightbend/fortify-scans.git
@@ -13,7 +25,7 @@ if [ ! -d "$scanFolder" ]; then
 fi
 
 echo Starting analysis of scans
-for D in ~/.fortify/sca21.1/build/*; do
+for D in "$nstFolder"/*; do
   if [ -d "${D}" ]; then
     d="$(basename -- "$D")"
     echo Starting "$d" >> "$logfile"
@@ -40,7 +52,7 @@ cd ..
 echo Push complete
 
 echo Deleting NST and result files to clean up for next run
-rm -rf ~/.fortify/sca21.1/build
+rm -rf "$nstFolder"
 rm -rf fortify-scans
 echo Cleanup complete
 
