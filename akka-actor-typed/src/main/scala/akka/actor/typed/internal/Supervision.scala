@@ -185,9 +185,12 @@ private object RestartSupervisor {
     }
   }
 
-  final case class ScheduledRestart(owner: RestartSupervisor[_, _ <: Throwable]) extends DeadLetterSuppression
+  final case class ScheduledRestart(owner: RestartSupervisor[_, _ <: Throwable])
+      extends Signal
+      with DeadLetterSuppression
   final case class ResetRestartCount(current: Int, owner: RestartSupervisor[_, _ <: Throwable])
-      extends DeadLetterSuppression
+      extends Signal
+      with DeadLetterSuppression
 }
 
 private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: RestartOrBackoff)
@@ -205,32 +208,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
   }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    restartingInProgress match {
-      case OptionVal.Some((stashBuffer, children)) =>
-        signal match {
-          case Terminated(ref) if strategy.stopChildren && children(ref) =>
-            val remainingChildren = children - ref
-            if (remainingChildren.isEmpty && gotScheduledRestart) {
-              restartCompleted(ctx)
-            } else {
-              restartingInProgress = OptionVal.Some((stashBuffer, remainingChildren))
-              Behaviors.same
-            }
-
-          case _ =>
-            if (stashBuffer.isFull)
-              dropped(ctx, signal)
-            else
-              stashBuffer.stash(signal)
-            Behaviors.same
-        }
-      case _ =>
-        super.aroundSignal(ctx, signal, target)
-    }
-  }
-
-  override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[T]): Behavior[T] = {
-    msg match {
+    signal match {
       case ScheduledRestart(owner) =>
         if (owner eq this) {
           restartingInProgress match {
@@ -247,7 +225,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
           }
         } else {
           // ScheduledRestart from nested Backoff strategy
-          target(ctx, msg.asInstanceOf[T])
+          super.aroundSignal(ctx, signal, target)
         }
 
       case ResetRestartCount(current, owner) =>
@@ -258,23 +236,48 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
           BehaviorImpl.same
         } else {
           // ResetRestartCount from nested Backoff strategy
-          target(ctx, msg.asInstanceOf[T])
+          super.aroundSignal(ctx, signal, target)
         }
 
-      case msg =>
-        val m = msg.asInstanceOf[T]
+      case _ =>
         restartingInProgress match {
-          case OptionVal.Some((stashBuffer, _)) =>
-            if (stashBuffer.isFull)
-              dropped(ctx, m)
-            else
-              stashBuffer.stash(m)
-            Behaviors.same
+          case OptionVal.Some((stashBuffer, children)) =>
+            signal match {
+              case Terminated(ref) if strategy.stopChildren && children(ref) =>
+                val remainingChildren = children - ref
+                if (remainingChildren.isEmpty && gotScheduledRestart) {
+                  restartCompleted(ctx)
+                } else {
+                  restartingInProgress = OptionVal.Some((stashBuffer, remainingChildren))
+                  Behaviors.same
+                }
+
+              case _ =>
+                if (stashBuffer.isFull)
+                  dropped(ctx, signal)
+                else
+                  stashBuffer.stash(signal)
+                Behaviors.same
+            }
           case _ =>
-            try {
-              target(ctx, m)
-            } catch handleReceiveException(ctx, target)
+            super.aroundSignal(ctx, signal, target)
         }
+    }
+  }
+
+  override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[T]): Behavior[T] = {
+    val m = msg.asInstanceOf[T]
+    restartingInProgress match {
+      case OptionVal.Some((stashBuffer, _)) =>
+        if (stashBuffer.isFull)
+          dropped(ctx, m)
+        else
+          stashBuffer.stash(m)
+        Behaviors.same
+      case _ =>
+        try {
+          target(ctx, m)
+        } catch handleReceiveException(ctx, target)
     }
   }
 
