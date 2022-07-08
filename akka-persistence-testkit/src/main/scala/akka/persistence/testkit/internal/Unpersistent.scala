@@ -247,7 +247,9 @@ object Unpersistent {
       @tailrec
       def applyEffects(curEffect: EffectImpl[State], sideEffects: immutable.Seq[SideEffect[State]]): Unit =
         curEffect match {
-          case CompositeEffect(eff: EffectImpl[State], se) => applyEffects(eff, se ++ sideEffects)
+          case CompositeEffect(eff: EffectImpl[_], se) =>
+            applyEffects(eff.asInstanceOf[EffectImpl[State]], se ++ sideEffects)
+
           case Persist(st) =>
             persistState(st)
             sideEffect(sideEffects)
