@@ -64,8 +64,8 @@ object Unpersistent {
   }
 
   def durableState[Command, State](
-    behavior: Behavior[Command],
-    fromState: Option[State]): (Behavior[Command], ConcurrentLinkedQueue[ChangePersisted[State, Nothing]]) = {
+      behavior: Behavior[Command],
+      fromState: Option[State]): (Behavior[Command], ConcurrentLinkedQueue[ChangePersisted[State, Nothing]]) = {
 
     var dsBehavior: DurableStateBehaviorImpl[Command, State] = null
     val changeQueue = new ConcurrentLinkedQueue[ChangePersisted[State, Nothing]]()
@@ -77,7 +77,7 @@ object Unpersistent {
           dsBehavior = ds.asInstanceOf[DurableStateBehaviorImpl[Command, State]]
 
         case deferred: DeferredBehavior[Command] => findDurableStateBehavior(deferred(context), context)
-        case _ => ()
+        case _                                   => ()
       }
 
     val retBehavior =
@@ -119,7 +119,8 @@ object Unpersistent {
     private var state: State = initialState
     private val stashedCommands = ListBuffer.empty[Command]
 
-    private def snapshotMetadata() = SnapshotMetadata(esBehavior.persistenceId.toString, offset, System.currentTimeMillis())
+    private def snapshotMetadata() =
+      SnapshotMetadata(esBehavior.persistenceId.toString, offset, System.currentTimeMillis())
     private def sendSignal(signal: EventSourcedSignal): Unit =
       signalHandler.applyOrElse(state -> signal, doNothing)
 
@@ -132,9 +133,9 @@ object Unpersistent {
 
       def snapshotRequested(evt: Event): Boolean = {
         val snapshotFromRetention = retention match {
-          case DisabledRetentionCriteria => false
+          case DisabledRetentionCriteria             => false
           case s: SnapshotCountRetentionCriteriaImpl => s.snapshotWhen(offset)
-          case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
+          case unexpected                            => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
         }
 
         snapshotFromRetention || snapshotWhen(state, evt, offset)
@@ -211,10 +212,11 @@ object Unpersistent {
   }
 
   private class WrappedDurableStateBehavior[Command, State](
-    context: ActorContext[Command],
-    dsBehavior: DurableStateBehaviorImpl[Command, State],
-    changeQueue: ConcurrentLinkedQueue[ChangePersisted[State, Nothing]],
-    initialState: State) extends AbstractBehavior[Command](context) {
+      context: ActorContext[Command],
+      dsBehavior: DurableStateBehaviorImpl[Command, State],
+      changeQueue: ConcurrentLinkedQueue[ChangePersisted[State, Nothing]],
+      initialState: State)
+      extends AbstractBehavior[Command](context) {
 
     import akka.persistence.typed.state.{ DurableStateSignal, RecoveryCompleted }
     import akka.persistence.typed.state.internal._
@@ -233,7 +235,7 @@ object Unpersistent {
     sendSignal(RecoveryCompleted)
 
     override def onMessage(cmd: Command): Behavior[Command] = {
-      var shouldUnstash= false
+      var shouldUnstash = false
       var shouldStop = false
 
       def persistState(st: State): Unit = {
@@ -265,9 +267,9 @@ object Unpersistent {
       def sideEffect(sideEffects: immutable.Seq[SideEffect[State]]): Unit =
         sideEffects.iterator.foreach { effect =>
           effect match {
-            case _: Stop.type => shouldStop = true
+            case _: Stop.type       => shouldStop = true
             case _: UnstashAll.type => shouldUnstash = true
-            case cb: Callback[_] => cb.sideEffect(state)
+            case cb: Callback[_]    => cb.sideEffect(state)
           }
         }
 
@@ -282,7 +284,7 @@ object Unpersistent {
           Behaviors.withStash(numStashed) { stash =>
             stashedCommands.foreach { sc =>
               stash.stash(sc)
-              ()  // explicit discard
+              () // explicit discard
             }
             stashedCommands.remove(0, numStashed)
             stash.unstashAll(thisWrappedBehavior)

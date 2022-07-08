@@ -41,16 +41,13 @@ object UnpersistentBehavior {
     fromEventSourced(behavior, null.asInstanceOf[State], 0)
 
   def fromDurableState[Command, State](
-    behavior: Behavior[Command],
-    fromState: State
-  ): UnpersistentBehavior[Command, Void, State] = {
+      behavior: Behavior[Command],
+      fromState: State): UnpersistentBehavior[Command, Void, State] = {
     val (b, q) = Unpersistent.durableState(behavior, Option(fromState))
     new UnpersistentBehavior(b, q.asInstanceOf[ConcurrentLinkedQueue[ChangePersisted[State, Void]]])
   }
 
-  def fromDurableState[Command, State](
-    behavior: Behavior[Command]
-  ): UnpersistentBehavior[Command, Void, State] =
+  def fromDurableState[Command, State](behavior: Behavior[Command]): UnpersistentBehavior[Command, Void, State] =
     fromDurableState(behavior, null.asInstanceOf[State])
 }
 

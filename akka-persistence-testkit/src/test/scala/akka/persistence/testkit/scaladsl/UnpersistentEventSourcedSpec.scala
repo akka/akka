@@ -23,7 +23,7 @@ object UnpersistentEventSourcedSpec {
     case class PersistDomainEventAfter(count: Int, replyTo: RecipientRef[Done]) extends Command
     case class NotifyAfter(count: Int, notifyTo: RecipientRef[Done], replyTo: RecipientRef[Boolean]) extends Command
     case object SnapshotNow extends Command
-    
+
     sealed trait Event
     case object DomainEvent extends Event
     case object SnapshotMade extends Event
@@ -32,10 +32,9 @@ object UnpersistentEventSourcedSpec {
     case class State(domainEvtCount: Int, notifyAfter: Map[Int, RecipientRef[Done]], nextNotifyAt: Int)
 
     def apply(
-      id: String,
-      recoveryDone: RecipientRef[Done],
-      snapshotMetaTo: RecipientRef[SnapshotMetadata]
-    ): Behavior[Command] =
+        id: String,
+        recoveryDone: RecipientRef[Done],
+        snapshotMetaTo: RecipientRef[SnapshotMetadata]): Behavior[Command] =
       Behaviors.setup { context =>
         context.setLoggerName(s"entity-$id")
 
@@ -43,32 +42,36 @@ object UnpersistentEventSourcedSpec {
           persistenceId = PersistenceId.ofUniqueId(id),
           emptyState = State(0, Map.empty, Int.MaxValue),
           commandHandler = applyCommand(_, _, context.log),
-          eventHandler = applyEvent(_, _)
-        ).receiveSignal {
-          case (state, RecoveryCompleted) =>
-            context.log.debug("Recovered state for id [{}] is [{}]", id, state)
-            recoveryDone ! Done
+          eventHandler = applyEvent(_, _))
+          .receiveSignal {
+            case (state, RecoveryCompleted) =>
+              context.log.debug("Recovered state for id [{}] is [{}]", id, state)
+              recoveryDone ! Done
 
-          case (_, SnapshotCompleted(meta)) =>
-            context.log.debug("Snapshot completed with metadata {}", meta)
-            snapshotMetaTo ! meta
-        }.snapshotWhen {
-          case (_, SnapshotMade, _) => true
-          case _ => false
-        }.withRetention(
-          RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2)
-        ).withTagger {
-          case DomainEvent => Set("domain")
-          case _ => Set.empty
-        }
+            case (_, SnapshotCompleted(meta)) =>
+              context.log.debug("Snapshot completed with metadata {}", meta)
+              snapshotMetaTo ! meta
+          }
+          .snapshotWhen {
+            case (_, SnapshotMade, _) => true
+            case _                    => false
+          }
+          .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2))
+          .withTagger {
+            case DomainEvent => Set("domain")
+            case _           => Set.empty
+          }
       }
 
     private def applyCommand(state: State, cmd: Command, log: Logger): Effect[Event, State] = {
       def persistDomainEvent[Reply](replyTo: RecipientRef[Reply], reply: Reply): Effect[Event, State] =
-        Effect.persist[Event, State](DomainEvent)
+        Effect
+          .persist[Event, State](DomainEvent)
           .thenRun { newState =>
             state.notifyAfter.keysIterator
-              .filter { at => (at <= newState.nextNotifyAt) && !(newState.notifyAfter.isDefinedAt(at)) }
+              .filter { at =>
+                (at <= newState.nextNotifyAt) && !(newState.notifyAfter.isDefinedAt(at))
+              }
               .foreach { at =>
                 state.notifyAfter(at) ! Done
               }
@@ -105,12 +108,12 @@ object UnpersistentEventSourcedSpec {
         case SnapshotNow => Effect.persist(SnapshotMade)
       }
     }
-    
+
     private[scaladsl] def applyEvent(state: State, evt: Event): State =
       evt match {
         case DomainEvent =>
           val nextDomainEvtCount = state.domainEvtCount + 1
-          
+
           if (nextDomainEvtCount < state.nextNotifyAt) state.copy(domainEvtCount = nextDomainEvtCount)
           else {
             import scala.collection.mutable
@@ -124,17 +127,13 @@ object UnpersistentEventSourcedSpec {
                   lowestNotifyAt = lowestNotifyAt.min(at)
                   inProgress += (at -> state.notifyAfter(at))
                 }
-                // else ()
+              // else ()
               }
 
               lowestNotifyAt -> inProgress.toMap
             }
 
-            state.copy(
-              domainEvtCount = nextDomainEvtCount,
-              notifyAfter = nextNotifyAfter,
-              nextNotifyAt = nextNNA
-            )
+            state.copy(domainEvtCount = nextDomainEvtCount, notifyAfter = nextNotifyAfter, nextNotifyAt = nextNNA)
           }
 
         case SnapshotMade => state
@@ -211,9 +210,7 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       replyTo.expectMessage(Done)
       assert(!snapshotMeta.hasMessages, "snapshot should not be made")
       drainChangesToList(changes) should contain theSameElementsInOrderAs
-        Seq(
-          EventPersisted(DomainEvent, 1, Set("domain"))
-        )
+      Seq(EventPersisted(DomainEvent, 1, Set("domain")))
       assert(!testkit.hasEffects(), "should have no effects")
       testkit.clearLog()
 
@@ -224,10 +221,7 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       snapshotMetaMsg.sequenceNr shouldBe 2
       // not checking the timestamp...
       drainChangesToList(changes) should contain theSameElementsInOrderAs
-        Seq(
-          EventPersisted(SnapshotMade, 2, Set.empty),
-          StatePersisted(State(1, Map.empty, Int.MaxValue), 2, Set.empty)
-        )
+      Seq(EventPersisted(SnapshotMade, 2, Set.empty), StatePersisted(State(1, Map.empty, Int.MaxValue), 2, Set.empty))
     }
 
     "allow a state and starting offset to be injected" in {
@@ -239,12 +233,8 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
 
       val notify3 = TestInbox[Done]()
       val initialState =
-        Seq(
-          ObserverAdded(3, notify3.ref),
-          SnapshotMade,
-          DomainEvent,
-          DomainEvent
-        ).foldLeft(State(0, Map.empty, Int.MaxValue))(applyEvent _)
+        Seq(ObserverAdded(3, notify3.ref), SnapshotMade, DomainEvent, DomainEvent)
+          .foldLeft(State(0, Map.empty, Int.MaxValue))(applyEvent _)
 
       val (unpersistent, changes) =
         UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> 41))
@@ -266,10 +256,9 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       snapshotMetaMsg.persistenceId shouldBe "PersistenceId(test-1)"
       snapshotMetaMsg.sequenceNr shouldBe 42
       drainChangesToList(changes) should contain theSameElementsInOrderAs
-        Seq(
-          EventPersisted(DomainEvent, 42, Set("domain")),
-          StatePersisted(State(3, Map.empty, Int.MaxValue), 42, Set.empty)
-        )
+      Seq(
+        EventPersisted(DomainEvent, 42, Set("domain")),
+        StatePersisted(State(3, Map.empty, Int.MaxValue), 42, Set.empty))
 
       notify3.expectMessage(Done)
       replyTo.expectMessage(Done)
@@ -295,7 +284,7 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       // unstashes
       testkit.run(pde)
       replyTo1.expectMessage(Done)
-  
+
       // unstash, but nothing in the stash
       testkit.run(pde)
       assert(!replyTo1.hasMessages, "should not send again")

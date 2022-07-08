@@ -29,15 +29,15 @@ object UnpersistentBehavior {
     Unpersistent.eventSourced(behavior, fromStateAndOffset)
 
   def fromDurableState[Command, State](
-    behavior: Behavior[Command],
-    fromState: Option[State] = None
-  ): BehaviorAndChanges[Command, Nothing, State] =
+      behavior: Behavior[Command],
+      fromState: Option[State] = None): BehaviorAndChanges[Command, Nothing, State] =
     Unpersistent.durableState(behavior, fromState)
 
   /** Builds a List with all elements from the queue.  This is intended to facilitate tests of an Event Sourced or
    *  Durable State behavior, so it's assumed that there are "not that many" elements in the queue.
    */
-  def drainChangesToList[State, Event](queue: ConcurrentLinkedQueue[ChangePersisted[State, Event]]): List[ChangePersisted[State, Event]] = {
+  def drainChangesToList[State, Event](
+      queue: ConcurrentLinkedQueue[ChangePersisted[State, Event]]): List[ChangePersisted[State, Event]] = {
     type T = ChangePersisted[State, Event]
 
     @annotation.tailrec

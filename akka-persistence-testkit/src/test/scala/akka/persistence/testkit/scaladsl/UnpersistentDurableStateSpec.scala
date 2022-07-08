@@ -65,26 +65,26 @@ object UnpersistentDurableStateSpec {
         DurableStateBehavior[Command, State](
           persistenceId = PersistenceId.ofUniqueId(id),
           emptyState = State(0, Map.empty, Int.MaxValue),
-          commandHandler = applyCommand(_, _, context.log)
-        ).receiveSignal {
-          case (state, RecoveryCompleted) =>
-            context.log.debug("Recovered state for id [{}] is [{}]", id, state)
-            recoveryDone ! Done
-        }.withTag("count")
+          commandHandler = applyCommand(_, _, context.log))
+          .receiveSignal {
+            case (state, RecoveryCompleted) =>
+              context.log.debug("Recovered state for id [{}] is [{}]", id, state)
+              recoveryDone ! Done
+          }
+          .withTag("count")
       }
 
     private def applyCommand(state: State, cmd: Command, log: Logger): Effect[State] = {
-      def persistAdd[Reply](
-        n: Int,
-        replyTo: RecipientRef[Reply],
-        reply: Reply
-      ): Effect[State] = {
+      def persistAdd[Reply](n: Int, replyTo: RecipientRef[Reply], reply: Reply): Effect[State] = {
         val newState = state.processAdd(n)
 
-        Effect.persist(newState)
+        Effect
+          .persist(newState)
           .thenRun { nextState => // should be the same as newState, but...
             state.notifyAfter.keysIterator
-              .filter { at => (at <= nextState.nextNotifyAt) && !(nextState.notifyAfter.isDefinedAt(at)) }
+              .filter { at =>
+                (at <= nextState.nextNotifyAt) && !(nextState.notifyAfter.isDefinedAt(at))
+              }
               .foreach { at =>
                 state.notifyAfter(at) ! Done
               }
@@ -182,9 +182,7 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
       testkit.run(Add(1, replyTo.ref))
       replyTo.expectMessage(Done)
       drainChangesToList(changes) should contain theSameElementsInOrderAs
-        Seq(
-          StatePersisted(State(1, Map.empty, Int.MaxValue), 1, Set("count"))
-        )
+      Seq(StatePersisted(State(1, Map.empty, Int.MaxValue), 1, Set("count")))
       assert(!testkit.hasEffects(), "should have no effects")
       testkit.clearLog()
     }
@@ -220,10 +218,9 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
       notify3.expectMessage(Done)
       assert(!testkit.hasEffects(), "should be no testkit effects")
       drainChangesToList(changes) should contain theSameElementsInOrderAs
-        Seq(
-          StatePersisted(State(4, Map.empty, Int.MaxValue), 1, Set("count")),
-          StatePersisted(State(6, Map.empty, Int.MaxValue), 2, Set("count"))
-        )
+      Seq(
+        StatePersisted(State(4, Map.empty, Int.MaxValue), 1, Set("count")),
+        StatePersisted(State(6, Map.empty, Int.MaxValue), 2, Set("count")))
     }
 
     "stash and unstash properly" in {
