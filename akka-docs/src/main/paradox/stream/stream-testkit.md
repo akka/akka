@@ -21,7 +21,7 @@ various code patterns and libraries. Here we will discuss testing these
 elements using:
 
  * simple sources, sinks and flows;
- * sources and sinks in combination with `TestProbe` from the `akka-testkit` module;
+ * sources and sinks in combination with @apidoc[akka.testkit.TestProbe] from the `akka-testkit` module;
  * sources and sinks specifically crafted for writing tests from the `akka-stream-testkit` module.
 
 It is important to keep your data processing pipeline as separate sources,
@@ -45,7 +45,7 @@ Java
 The same strategy can be applied for sources as well. In the next example we
 have a source that produces an infinite stream of elements. Such source can be
 tested by asserting that first arbitrary number of elements hold some
-condition. Here the `take` operator and `Sink.seq` are very useful.
+condition. Here the @apidoc[take](akka.stream.*.Source) {scala="#take(n:Long):FlowOps.this.Repr[Out]" java="#take(long)"} operator and @apidoc[Sink.seq](akka.stream.*.Sink$) {scala="#seq[T]:akka.stream.scaladsl.Sink[T,scala.concurrent.Future[Seq[T]]]" java="#seq()"} are very useful.
 
 Scala
 :   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #grouped-infinite }
@@ -66,11 +66,11 @@ Java
 ## TestKit
 
 Akka Stream offers integration with Actors out of the box. This support can be
-used for writing stream tests that use familiar `TestProbe` from the
+used for writing stream tests that use familiar @apidoc[akka.testkit.TestProbe] from the
 `akka-testkit` API.
 
 One of the more straightforward tests would be to materialize stream to a
-@scala[`Future`]@java[`CompletionStage`] and then use @scala[`pipe`]@java[`Patterns.pipe`] pattern to pipe the result of that future
+@scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionStage](java.util.concurrent.CompletionStage)] and then use @scala[@scaladoc[pipe](akka.pattern.PipeToSupport#pipe[T](future:scala.concurrent.Future[T])(implicitexecutionContext:scala.concurrent.ExecutionContext):PipeToSupport.this.PipeableFuture[T])]@java[@scaladoc[Patterns.pipe](akka.pattern.Patterns$#pipe[T](future:java.util.concurrent.CompletionStage[T],context:scala.concurrent.ExecutionContext):akka.pattern.PipeableCompletionStage[T])] pattern to pipe the result of that future
 to the probe.
 
 Scala
@@ -79,9 +79,9 @@ Scala
 Java
 :   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #pipeto-testprobe }
 
-Instead of materializing to a future, we can use a `Sink.actorRef` that
-sends all incoming elements to the given `ActorRef`. Now we can use
-assertion methods on `TestProbe` and expect elements one by one as they
+Instead of materializing to a future, we can use a @apidoc[Sink.actorRef](akka.stream.*.Sink$) {scala="#actorRef[T](ref:akka.actor.ActorRef,onCompleteMessage:Any,onFailureMessage:Throwable=%3EAny):akka.stream.scaladsl.Sink[T,akka.NotUsed]" java="#actorRef(akka.actor.ActorRef,java.lang.Object)"} that
+sends all incoming elements to the given @apidoc[akka.actor.ActorRef]. Now we can use
+assertion methods on @apidoc[akka.testkit.TestProbe] and expect elements one by one as they
 arrive. We can also assert stream completion by expecting for
 `onCompleteMessage` which was given to `Sink.actorRef`.
 
@@ -92,7 +92,7 @@ Java
 :   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #sink-actorref }
 
 Similarly to `Sink.actorRef` that provides control over received
-elements, we can use `Source.actorRef` and have full control over
+elements, we can use @apidoc[Source.actorRef](akka.stream.*.Source$) {scala="#actorRef[T](completionMatcher:PartialFunction[Any,akka.stream.CompletionStrategy],failureMatcher:PartialFunction[Any,Throwable],bufferSize:Int,overflowStrategy:akka.stream.OverflowStrategy):akka.stream.scaladsl.Source[T,akka.actor.ActorRef]" java="#actorRef(int,akka.stream.OverflowStrategy)"} and have full control over
 elements to be sent.
 
 Scala
@@ -106,12 +106,12 @@ Java
 You may have noticed various code patterns that emerge when testing stream
 pipelines. Akka Stream has a separate `akka-stream-testkit` module that
 provides tools specifically for writing stream tests. This module comes with
-two main components that are `TestSource` and `TestSink` which
+two main components that are @apidoc[akka.stream.testkit.*.TestSource$] and @apidoc[akka.stream.testkit.*.TestSink$] which
 provide sources and sinks that materialize to probes that allow fluent API.
 
 ### Using the TestKit
 
-A sink returned by `TestSink.probe` allows manual control over demand and
+A sink returned by @apidoc[TestSink.probe](akka.stream.testkit.*.TestSink$) {scala="#probe[T](implicitsystem:akka.actor.ActorSystem):akka.stream.scaladsl.Sink[T,akka.stream.testkit.TestSubscriber.Probe[T]]" java="#probe(akka.actor.ActorSystem)"} allows manual control over demand and
 assertions over elements coming downstream.
 
 Scala
@@ -120,7 +120,7 @@ Scala
 Java
 :   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #test-sink-probe }
 
-A source returned by `TestSource.probe` can be used for asserting demand or
+A source returned by @apidoc[TestSource.probe](akka.stream.testkit.*.TestSource$) {scala="#probe[T](implicitsystem:akka.actor.ActorSystem):akka.stream.scaladsl.Source[T,akka.stream.testkit.TestPublisher.Probe[T]]" java="#probe(akka.actor.ActorSystem)"} can be used for asserting demand or
 controlling when stream is completed or ended with an error.
 
 Scala
