@@ -18,7 +18,7 @@ when used in a clustered application:
 
 ## The Topic Actor
 
-Distributed publish subscribe is achieved by representing each pub sub topic with an actor, `akka.actor.typed.pubsub.Topic`. 
+Distributed publish subscribe is achieved by representing each pub sub topic with an actor, @apidoc[akka.actor.typed.pubsub.Topic](akka.actor.typed.pubsub.Topic$). 
 
 The topic actor needs to run on each node where subscribers will live or that wants to publish messages to the topic.
  
