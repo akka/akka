@@ -36,7 +36,7 @@ role of the “Dead Letter Office”.
 ## The General Rules
 
 These are the rules for message sends (i.e. the @scala[@scaladoc[tell](akka.actor.ActorRef#tell(msg:Any,sender:akka.actor.ActorRef):Unit) or @scaladoc[!](akka.actor.ActorRef#!(message:Any)(implicitsender:akka.actor.ActorRef):Unit)]@java[@javadoc[tell](akka.actor.ActorRef#tell(java.lang.Object,akka.actor.ActorRef))] method, which
-also underlies the `ask` pattern):
+also underlies the @scaladoc[ask](akka.pattern.AskSupport#ask(actorRef:akka.actor.ActorRef):akka.pattern.AskableActorRef) pattern):
 
 * **at-most-once delivery**, i.e. no guaranteed delivery
 * **message ordering per sender–receiver pair**
