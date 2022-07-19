@@ -659,11 +659,11 @@ addCommandAlias(
     commandValue(streamTyped)).mkString)
 
 // Convenience task allowing all Fortify steps to be done in the sbt shell
-lazy val runSourceAnalyzer = taskKey[Unit]("Analyzing NST files emitted by Fortify  SCA")
-runSourceAnalyzer := {
+lazy val analyzeSource = taskKey[Unit]("Analyzing NST files emitted by Fortify  SCA")
+analyzeSource := {
   val s = streams.value
   val shell = Seq("bash", "-c")
-  val scan = shell :+ s"./scripts/fortify-scan.sh $fortifySCAVersion"
+  val scan = shell :+ s"./scripts/runSourceAnalyzer.sh $fortifySCAVersion"
   if (doesFortifyLicenseExist) {
     s.log.info("Analyzing NST files emitted by Fortify SCA.")
     scan !
@@ -671,3 +671,5 @@ runSourceAnalyzer := {
     s.log.info("Fortify license not found so NST files creation was skipped.")
   }
 }
+
+addCommandAlias("runSourceAnalyzer", "; clean; compile; analyzeSource")
