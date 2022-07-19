@@ -1,4 +1,4 @@
-import akka.Dependencies.{scalaFortifyVersion, fortifySCAVersion, allScalaVersions}
+import akka.Dependencies.{ allScalaVersions, fortifySCAVersion, scalaFortifyVersion }
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
 import scala.language.postfixOps
@@ -607,8 +607,8 @@ lazy val doesFortifyLicenseExist: Boolean = {
 
 def fortifySettings(name: String) = {
   if (doesFortifyLicenseExist) {
-    Seq(addCompilerPlugin(
-      ("com.lightbend" %% "scala-fortify" % scalaFortifyVersion).cross(CrossVersion.patch)),
+    Seq(
+      addCompilerPlugin(("com.lightbend" %% "scala-fortify" % scalaFortifyVersion).cross(CrossVersion.patch)),
       scalacOptions ++= Seq(s"-P:fortify:scaversion=$fortifySCAVersion", s"-P:fortify:build=$name"))
   } else {
     Seq()
