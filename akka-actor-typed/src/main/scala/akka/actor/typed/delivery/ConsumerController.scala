@@ -114,7 +114,7 @@ object ConsumerController {
 
   /**
    * Register the `ConsumerController` to the given `producerController`. It will
-   * retry the registration until the `ProducerConsumer` has acknowledged by sending its
+   * retry the registration until the `ProducerController` has acknowledged by sending its
    * first message.
    *
    * Alternatively, this registration can be done on the producer side with the
