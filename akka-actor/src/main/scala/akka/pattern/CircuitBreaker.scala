@@ -97,14 +97,12 @@ object CircuitBreaker {
     apply(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala)
 
   /**
-   * Java API: Create or find a CircuitBreaker in registry.
-   *
-   * TODO: Needs to think about name, because `create` isn't a truth per 100%
+   * Java API: Lookup a CircuitBreaker in registry.
    *
    * @param id Circuit Breaker identifier
    * @param system [[ExtendedActorSystem]] that is storing this [[CircuitBreaker]]
    */
-  def create(id: String, system: ExtendedActorSystem): CircuitBreaker =
+  def lookup(id: String, system: ExtendedActorSystem): CircuitBreaker =
     apply(id)(system)
 
   protected def convertJavaFailureFnToScala[T](

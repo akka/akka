@@ -5,10 +5,15 @@
 package akka.pattern
 
 import java.util.concurrent.ConcurrentHashMap
-
 import scala.concurrent.duration.{ DurationLong, MILLISECONDS }
-
-import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.{
+  ActorSystem,
+  ClassicActorSystemProvider,
+  ExtendedActorSystem,
+  Extension,
+  ExtensionId,
+  ExtensionIdProvider
+}
 import akka.pattern.internal.CircuitBreakerTelemetryProvider
 import akka.util.ccompat.JavaConverters._
 
@@ -28,6 +33,18 @@ object CircuitBreakersRegistry extends ExtensionId[CircuitBreakersRegistry] with
    * Returns the canonical ExtensionId for this Extension
    */
   override def lookup: ExtensionId[_ <: Extension] = CircuitBreakersRegistry
+
+  /**
+   * Returns an instance of the extension identified by this ExtensionId instance.
+   * Java API
+   */
+  override def get(system: ActorSystem): CircuitBreakersRegistry = super.get(system)
+
+  /**
+   * Returns an instance of the extension identified by this ExtensionId instance.
+   * Java API
+   */
+  override def get(system: ClassicActorSystemProvider): CircuitBreakersRegistry = super.get(system)
 }
 
 /**
@@ -45,10 +62,12 @@ final class CircuitBreakersRegistry(system: ExtendedActorSystem) extends Extensi
       if (config.hasPath(id)) config.getConfig(id).withFallback(defaultBreakerConfig)
       else defaultBreakerConfig
 
-    // TODO: add configuration breakerConfig.getBoolean("enabled")
     val maxFailures = breakerConfig.getInt("max-failures")
     val callTimeout = breakerConfig.getDuration("call-timeout", MILLISECONDS).millis
     val resetTimeout = breakerConfig.getDuration("reset-timeout", MILLISECONDS).millis
+    val maxResetTimeout = breakerConfig.getDuration("max-reset-timeout", MILLISECONDS).millis
+    val exponentialBackoffFactor = breakerConfig.getDouble("exponential-backoff")
+    val randomFactor = breakerConfig.getDouble("random-factor")
 
     val allowExceptions: Set[String] = breakerConfig.getStringList("exception-allowlist").asScala.toSet
 
@@ -58,9 +77,9 @@ final class CircuitBreakersRegistry(system: ExtendedActorSystem) extends Extensi
       maxFailures,
       callTimeout,
       resetTimeout,
-      maxResetTimeout = 36500.days, // TODO: add configuration
-      exponentialBackoffFactor = 1.0, // TODO: add configuration
-      randomFactor = 0.0, // TODO: add configuration
+      maxResetTimeout,
+      exponentialBackoffFactor,
+      randomFactor,
       allowExceptions,
       telemetry)(system.dispatcher)
   }

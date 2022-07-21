@@ -110,21 +110,21 @@ trait CircuitBreakerTelemetry {
  * INTERNAL API
  */
 @InternalApi private[akka] object CircuitBreakerNoopTelemetry extends CircuitBreakerTelemetry {
-  override def onOpen(): Unit = {}
+  override def onOpen(): Unit = ()
 
-  override def onClose(): Unit = {}
+  override def onClose(): Unit = ()
 
-  override def onHalfOpen(): Unit = {}
+  override def onHalfOpen(): Unit = ()
 
-  override def onCallSuccess(elapsedNanos: Long): Unit = {}
+  override def onCallSuccess(elapsedNanos: Long): Unit = ()
 
-  override def onCallFailure(elapsedNanos: Long): Unit = {}
+  override def onCallFailure(elapsedNanos: Long): Unit = ()
 
-  override def onCallTimeoutFailure(elapsedNanos: Long): Unit = {}
+  override def onCallTimeoutFailure(elapsedNanos: Long): Unit = ()
 
-  override def onCallBreakerOpenFailure(): Unit = {}
+  override def onCallBreakerOpenFailure(): Unit = ()
 
-  override def stopped(): Unit = {}
+  override def stopped(): Unit = ()
 }
 
 /**
