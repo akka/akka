@@ -6,12 +6,13 @@ package akka.actor.typed
 package internal
 
 import scala.reflect.ClassTag
-
 import akka.actor.typed.{ TypedActorContext => AC }
 import akka.actor.typed.scaladsl.{ ActorContext => SAC }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
 import akka.util.OptionVal
+
+import scala.annotation.switch
 
 /**
  * INTERNAL API
@@ -170,5 +171,26 @@ private[akka] object BehaviorTags {
    */
   def intercept[O, I](interceptor: () => BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     InterceptorImpl(interceptor, behavior)
+
+  /**
+   * Interpret message and signal using given [[akka.actor.typed.Behavior]]
+   *
+   * execute message or signal using given behavior and switched to returned behavior
+   * note: [[BehaviorImpl.same]] will cause actor switching to the given behavior
+   * and [[BehaviorImpl.unhandled]] will trigger the [[akka.actor.typed.scaladsl.ActorContext.onUnhandled]]
+   * then switch to the given behavior.
+   */
+  def forward[T](behavior: Behavior[T], ctx: AC[T], msg: T): Behavior[T] = {
+    val started = Behavior.start(behavior, ctx)
+    val interpreted = msg match {
+      case signal: Signal => Behavior.interpretSignal(started, ctx, signal)
+      case message        => Behavior.interpretMessage(started, ctx, message)
+    }
+    (interpreted._tag: @switch) match {
+      case BehaviorTags.SameBehavior      => started
+      case BehaviorTags.UnhandledBehavior => ctx.asScala.onUnhandled(msg); started
+      case _                              => interpreted
+    }
+  }
 
 }
