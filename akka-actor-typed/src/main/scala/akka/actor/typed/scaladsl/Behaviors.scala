@@ -183,8 +183,9 @@ object Behaviors {
    * and [[Behaviors.unhandled]] will trigger the [[akka.actor.typed.scaladsl.ActorContext.onUnhandled]]
    * then switch to the given behavior.
    */
-  def forward[T](behavior: Behavior[T], ctx: ActorContext[T], msg: T): Behavior[T] =
+  def forward[T](behavior: Behavior[T], msg: T): Behavior[T] = setup { ctx =>
     BehaviorImpl.forward(behavior, ctx, msg)
+  }
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided

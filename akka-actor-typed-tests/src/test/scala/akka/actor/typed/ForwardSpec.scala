@@ -8,7 +8,7 @@ import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.{ FishingOutcomes, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
@@ -27,27 +27,27 @@ object ForwardSpec {
   final case class ResponseFrom(from: BehaviorTag, cmd: PingPongCommand) extends Event
   final case class ForwardTo(to: BehaviorTag) extends Event
 
-  def ping(monitor: ActorRef[Event])(implicit context: ActorContext[PingPongCommand]): Behavior[PingPongCommand] =
+  def ping(monitor: ActorRef[Event]): Behavior[PingPongCommand] =
     Behaviors.receiveMessagePartial[PingPongCommand] {
       case Ping =>
         monitor ! ResponseFrom(PingTag, Ping)
         Behaviors.same
       case msg @ Pong =>
         monitor ! ForwardTo(PongTag)
-        Behaviors.forward(pong(monitor), context, msg)
+        Behaviors.forward(pong(monitor), msg)
     }
 
-  def pong(monitor: ActorRef[Event])(implicit context: ActorContext[PingPongCommand]): Behavior[PingPongCommand] =
+  def pong(monitor: ActorRef[Event]): Behavior[PingPongCommand] =
     Behaviors.receiveMessage[PingPongCommand] {
       case msg @ Ping =>
         monitor ! ForwardTo(PingTag)
-        Behaviors.forward(ping(monitor), context, msg)
+        Behaviors.forward(ping(monitor), msg)
       case Pong =>
         monitor ! ResponseFrom(PongTag, Pong)
         Behaviors.same
       case msg @ UnPingable =>
         monitor ! ForwardTo(PingTag)
-        Behaviors.forward(ping(monitor), context, msg)
+        Behaviors.forward(ping(monitor), msg)
     }
 }
 
@@ -58,9 +58,7 @@ class ForwardSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
   "Forward behavior" must {
     "forward received message to other behavior and switch to it" in {
       val probe = TestProbe[Event]()
-      val behv = Behaviors.setup[PingPongCommand] { implicit context =>
-        ping(probe.ref)
-      }
+      val behv = ping(probe.ref)
       val ref = spawn(behv)
       ref ! Pong
       probe.expectMessage(ForwardTo(PongTag))
@@ -77,16 +75,15 @@ class ForwardSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       system.eventStream ! EventStream.Subscribe[UnhandledMessage](deadLetters.ref)
 
       val probe = TestProbe[Event]()
-      val behv = Behaviors.setup[PingPongCommand] { implicit context =>
-        pong(probe.ref)
-      }
+      val behv = pong(probe.ref)
+
       val ref = spawn(behv)
 
       ref ! UnPingable
       probe.expectMessage(ForwardTo(PingTag))
       deadLetters.fishForMessage(5.seconds) {
         case UnhandledMessage(UnPingable, _, _) => FishingOutcomes.complete
-        case _                              => FishingOutcomes.fail("unexpected message")
+        case _                                  => FishingOutcomes.fail("unexpected message")
       }
       ref ! Ping
       probe.expectMessage(ResponseFrom(PingTag, Ping))
