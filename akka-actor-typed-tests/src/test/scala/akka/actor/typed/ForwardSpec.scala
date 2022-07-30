@@ -6,12 +6,10 @@ package akka.actor.typed
 
 import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl.{ FishingOutcomes, ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{FishingOutcomes, LogCapturing, ScalaTestWithActorTestKit, TestProbe}
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration._
 
 object ForwardSpec {
   sealed trait PingPongCommand
@@ -51,7 +49,7 @@ object ForwardSpec {
     }
 }
 
-class ForwardSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
+class ForwardSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   import ForwardSpec._
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
@@ -81,7 +79,7 @@ class ForwardSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
       ref ! UnPingable
       probe.expectMessage(ForwardTo(PingTag))
-      deadLetters.fishForMessage(5.seconds) {
+      deadLetters.fishForMessage(deadLetters.remainingOrDefault) {
         case UnhandledMessage(UnPingable, _, _) => FishingOutcomes.complete
         case _                                  => FishingOutcomes.fail("unexpected message")
       }
