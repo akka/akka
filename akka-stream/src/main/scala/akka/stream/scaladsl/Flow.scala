@@ -1126,10 +1126,9 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#mapAsync]] and [[#mapAsyncUnordered]]
    *
    * @param parallelism at most this many futures will be incomplete at any time
-   * @param perPartition
-   * @param partitioner
-   * @param f
-   * @return
+   * @param perPartition at most this many futures will be incomplete for a given partition key at any time
+   * @param partitioner function to generate a partition key
+   * @param f function to generate a Future
    */
   def mapAsyncPartitioned[T, P](parallelism: Int, perPartition: Int)(partitioner: Out => P)(
       f: (Out, P) => Future[T]): Repr[T] =
