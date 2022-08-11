@@ -24,15 +24,13 @@ If `parallelism` is 1, this stage is equivalent to @ref[`mapAsyncUnordered`](map
 
 ## Examples
 
-Imagine you are consuming messages from a broker.  These messages represent business events produced by some other service(s) and each concerns a particular entity.  You may process messages for different entities simultaneously, but can only process one message for a given entity at a time:
+Imagine you are consuming messages from a broker.  This broker's semantics are such that acknowledging one message implies an acknowledgement of all messages delivered before that message; this in turn means that in order to ensure at-least-once processing of messages from the broker, they must be acknowledged in the order they were received.  These messages represent business events produced by some other service(s) and each concerns a particular entity.  You may process messages for different entities simultaneously, but can only process one message for a given entity at a time:
 
 Scala
 :   @@snip [MapAsyncs.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapAsyncs.scala) { #mapAsyncPartitioned }
 
 Java
 :   @@snip [MapAsyncs.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/MapAsyncs.java) { #mapAsyncPartitioned }
-
-Because the message broker uses a "cumulative ack" (similar to a Kafka offset commit) where acknowledging one message implies an acknowledgement of all messages delivered before that message, the emission order must correspond to the order in which the messages were consumed.
 
 We can see from the (annotated) logs the order of consumption, processing, and emission:
 
