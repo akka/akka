@@ -1,0 +1,7 @@
+# removed internal classes from type hierarchy
+ProblemFilters.exclude[MissingTypesProblem]("com.typesafe.sslconfig.akka.AkkaSSLConfig$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.scaladsl.Tcp$")
+
+# internal classes
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.AkkaSSLConfigExtensionIdApply")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.TcpImplicitExtensionIdApply")
