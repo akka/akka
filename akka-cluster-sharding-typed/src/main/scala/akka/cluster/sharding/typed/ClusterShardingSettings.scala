@@ -53,6 +53,7 @@ object ClusterShardingSettings {
       stateStoreMode = StateStoreMode.byName(classicSettings.stateStoreMode),
       rememberEntitiesStoreMode = RememberEntitiesStoreMode.byName(classicSettings.rememberEntitiesStore),
       new TuningParameters(classicSettings.tuningParameters),
+      classicSettings.coordinatorSingletonOverrideRole,
       new ClusterSingletonManagerSettings(
         classicSettings.coordinatorSingletonSettings.singletonName,
         classicSettings.coordinatorSingletonSettings.role,
@@ -98,6 +99,7 @@ object ClusterShardingSettings {
         coordinatorStateReadMajorityPlus = settings.tuningParameters.coordinatorStateReadMajorityPlus,
         leastShardAllocationAbsoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit,
         leastShardAllocationRelativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit),
+      coordinatorSingletonOverrideRole = settings.coordinatorSingletonOverrideRole,
       new ClassicClusterSingletonManagerSettings(
         settings.coordinatorSingletonSettings.singletonName,
         settings.coordinatorSingletonSettings.role,
@@ -821,6 +823,7 @@ final class ClusterShardingSettings(
     val stateStoreMode: ClusterShardingSettings.StateStoreMode,
     val rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
+    val coordinatorSingletonOverrideRole: Boolean,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings]) {
 
@@ -851,6 +854,7 @@ final class ClusterShardingSettings(
       stateStoreMode,
       rememberEntitiesStoreMode,
       tuningParameters,
+      true,
       coordinatorSingletonSettings,
       leaseSettings)
 
@@ -995,6 +999,7 @@ final class ClusterShardingSettings(
       stateStoreMode: ClusterShardingSettings.StateStoreMode = stateStoreMode,
       rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode = rememberEntitiesStoreMode,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
+      coordinatorSingletonOverrideRole: Boolean = coordinatorSingletonOverrideRole,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings = passivationStrategySettings,
       shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout,
@@ -1011,6 +1016,7 @@ final class ClusterShardingSettings(
       stateStoreMode,
       rememberEntitiesStoreMode,
       tuningParameters,
+      coordinatorSingletonOverrideRole,
       coordinatorSingletonSettings,
       leaseSettings)
 }

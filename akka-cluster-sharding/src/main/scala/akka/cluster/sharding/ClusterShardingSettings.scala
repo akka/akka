@@ -107,6 +107,7 @@ object ClusterShardingSettings {
       passivationStrategySettings = passivationStrategySettings,
       shardRegionQueryTimeout = config.getDuration("shard-region-query-timeout", MILLISECONDS).millis,
       tuningParameters,
+      config.getBoolean("coordinator-singleton-role-override"),
       coordinatorSingletonSettings,
       lease)
   }
@@ -1122,6 +1123,7 @@ final class ClusterShardingSettings(
     val passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings,
     val shardRegionQueryTimeout: FiniteDuration,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
+    val coordinatorSingletonOverrideRole: Boolean,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
@@ -1151,6 +1153,7 @@ final class ClusterShardingSettings(
       ClusterShardingSettings.PassivationStrategySettings.oldDefault(passivateIdleEntityAfter),
       shardRegionQueryTimeout,
       tuningParameters,
+      false,
       coordinatorSingletonSettings,
       leaseSettings)
 
@@ -1335,6 +1338,7 @@ final class ClusterShardingSettings(
       passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings = passivationStrategySettings,
       shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
+      coordinatorSingletonOverrideRole: Boolean = coordinatorSingletonOverrideRole,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       leaseSettings: Option[LeaseUsageSettings] = leaseSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
@@ -1347,6 +1351,7 @@ final class ClusterShardingSettings(
       passivationStrategySettings,
       shardRegionQueryTimeout,
       tuningParameters,
+      coordinatorSingletonOverrideRole,
       coordinatorSingletonSettings,
       leaseSettings)
 }

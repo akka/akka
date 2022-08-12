@@ -805,7 +805,13 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 .withFinalStopMessage(_ == ShardCoordinator.Internal.Terminate)
                 .props
                 .withDeploy(Deploy.local)
-            val singletonSettings = settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(role)
+
+            val singletonSettings = if (settings.coordinatorSingletonOverrideRole) {
+              settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(role)
+            } else {
+              settings.coordinatorSingletonSettings.withSingletonName("singleton")
+            }
+
             context.actorOf(
               ClusterSingletonManager
                 .props(singletonProps, terminationMessage = ShardCoordinator.Internal.Terminate, singletonSettings)

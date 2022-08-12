@@ -139,6 +139,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         StateStoreModeDData,
         RememberEntitiesStoreModeDData, // not used as remembered entities is off
         shardingBaseSettings.tuningParameters,
+        shardingBaseSettings.coordinatorSingletonOverrideRole,
         shardingBaseSettings.coordinatorSingletonSettings,
         shardingBaseSettings.leaseSettings)
     }
