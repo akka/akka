@@ -54,7 +54,7 @@ class ActorContextDelegateSpec extends ScalaTestWithActorTestKit with AnyWordSpe
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   "The Scala DSL ActorContext delegate" must {
-    "delegate message by given behavior and handle resulting behavior properly" in {
+    "delegate message by given behavior and handle resulting Behavior.same properly" in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.setup[PingPongCommand] { implicit context =>
         ping(probe.ref)
@@ -70,7 +70,7 @@ class ActorContextDelegateSpec extends ScalaTestWithActorTestKit with AnyWordSpe
       probe.expectMessage(ResponseFrom(PingTag, Ping))
     }
 
-    "send unhandled message to deadLetters and recover to original behavior when forwarding" in {
+    "publish unhandled message to eventStream as UnhandledMessage and switch to delegator behavior" in {
       val deadLetters = TestProbe[UnhandledMessage]("probeDeadLetters")
       system.eventStream ! EventStream.Subscribe[UnhandledMessage](deadLetters.ref)
 
