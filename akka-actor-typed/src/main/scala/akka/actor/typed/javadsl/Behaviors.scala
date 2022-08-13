@@ -210,18 +210,6 @@ object Behaviors {
     scaladsl.Behaviors.monitor(monitor, behavior)(ClassTag(interceptMessageClass))
 
   /**
-   * Interpret message and signal using given [[akka.actor.typed.Behavior]]
-   *
-   * execute message or signal using given behavior and switched to returned behavior
-   * note: [[Behaviors.same]] will cause actor switching to the given behavior
-   * and [[Behaviors.unhandled]] will trigger the [[akka.actor.typed.scaladsl.ActorContext.onUnhandled]]
-   * then switch to the given behavior.
-   */
-  def forward[T](behavior: Behavior[T], msg: T): Behavior[T] = setup { ctx =>
-    BehaviorImpl.forward(behavior, ctx, msg)
-  }
-
-  /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
    * [[akka.actor.typed.LogOptions]] default configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.

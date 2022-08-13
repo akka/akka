@@ -147,6 +147,16 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
   def spawn[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U]
 
   /**
+   * Delegate message and signal's execution by given [[akka.actor.typed.Behavior]]
+   * using [[Behavior.interpretMessage]] or [[Behavior.interpretSignal]]
+   *
+   * note: if given [[akka.actor.typed.Behavior]] resulting [[Behaviors.same]] that will cause context switching to the given behavior
+   * and if result is [[Behaviors.unhandled]] that will trigger the [[akka.actor.typed.scaladsl.ActorContext.onUnhandled]]
+   * then switching to the given behavior.
+   */
+  def delegate(delegator: Behavior[T], msg: T): Behavior[T]
+
+  /**
    * Force the child Actor under the given name to terminate after it finishes
    * processing its current message. Nothing happens if the ActorRef is a child that is already stopped.
    *

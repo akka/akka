@@ -2,61 +2,63 @@
  * Copyright (C) 2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed
+package akka.actor.typed.scaladsl
 
 import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl.{FishingOutcomes, LogCapturing, ScalaTestWithActorTestKit, TestProbe}
+import akka.actor.testkit.typed.scaladsl.{ FishingOutcomes, LogCapturing, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ ActorRef, Behavior }
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object ForwardSpec {
+object ActorContextDelegateSpec {
   sealed trait PingPongCommand
-  final case object Ping extends PingPongCommand
-  final case object Pong extends PingPongCommand
-  final case object UnPingable extends PingPongCommand
+  case object Ping extends PingPongCommand
+  case object Pong extends PingPongCommand
+  case object UnPingable extends PingPongCommand
 
   sealed trait BehaviorTag
-  final case object PingTag extends BehaviorTag
-  final case object PongTag extends BehaviorTag
+  case object PingTag extends BehaviorTag
+  case object PongTag extends BehaviorTag
 
   sealed trait Event
   final case class ResponseFrom(from: BehaviorTag, cmd: PingPongCommand) extends Event
   final case class ForwardTo(to: BehaviorTag) extends Event
 
-  def ping(monitor: ActorRef[Event]): Behavior[PingPongCommand] =
+  def ping(monitor: ActorRef[Event])(implicit context: ActorContext[PingPongCommand]): Behavior[PingPongCommand] =
     Behaviors.receiveMessagePartial[PingPongCommand] {
       case Ping =>
         monitor ! ResponseFrom(PingTag, Ping)
         Behaviors.same
       case msg @ Pong =>
         monitor ! ForwardTo(PongTag)
-        Behaviors.forward(pong(monitor), msg)
+        context.delegate(pong(monitor), msg)
     }
 
-  def pong(monitor: ActorRef[Event]): Behavior[PingPongCommand] =
+  def pong(monitor: ActorRef[Event])(implicit context: ActorContext[PingPongCommand]): Behavior[PingPongCommand] =
     Behaviors.receiveMessage[PingPongCommand] {
       case msg @ Ping =>
         monitor ! ForwardTo(PingTag)
-        Behaviors.forward(ping(monitor), msg)
+        context.delegate(ping(monitor), msg)
       case Pong =>
         monitor ! ResponseFrom(PongTag, Pong)
         Behaviors.same
       case msg @ UnPingable =>
         monitor ! ForwardTo(PingTag)
-        Behaviors.forward(ping(monitor), msg)
+        context.delegate(ping(monitor), msg)
     }
 }
 
-class ForwardSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
-  import ForwardSpec._
+class ActorContextDelegateSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
+  import ActorContextDelegateSpec._
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
-  "Forward behavior" must {
-    "forward received message to other behavior and switch to it" in {
+  "The Scala DSL ActorContext delegate" must {
+    "delegate message by given behavior and handle resulting behavior properly" in {
       val probe = TestProbe[Event]()
-      val behv = ping(probe.ref)
+      val behv = Behaviors.setup[PingPongCommand] { implicit context =>
+        ping(probe.ref)
+      }
       val ref = spawn(behv)
       ref ! Pong
       probe.expectMessage(ForwardTo(PongTag))
@@ -73,8 +75,9 @@ class ForwardSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Lo
       system.eventStream ! EventStream.Subscribe[UnhandledMessage](deadLetters.ref)
 
       val probe = TestProbe[Event]()
-      val behv = pong(probe.ref)
-
+      val behv = Behaviors.setup[PingPongCommand] { implicit context =>
+        pong(probe.ref)
+      }
       val ref = spawn(behv)
 
       ref ! UnPingable
