@@ -358,6 +358,29 @@ class RestartSpec
       val whatever = attributes.get[WhateverAttribute]
       whatever should contain(WhateverAttribute("other-thing"))
     }
+
+    "fail the stream when restartOn returns false" taggedAs TimingTest in {
+      val created = new AtomicInteger()
+      val settings = shortRestartSettings.withRestartOn {
+        case TE("failed") => false
+        case _ => true
+      }
+      val probe = RestartSource
+        .withBackoff(settings) { () =>
+          created.incrementAndGet()
+          Source(List("a", "b", "c")).map {
+            case "c" => throw TE("failed")
+            case other => other
+          }
+        }
+        .runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.request(1).expectError(TE("failed"))
+
+      created.get() shouldEqual 1
+    }
   }
 
   "A restart with backoff sink" should {

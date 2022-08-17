@@ -290,7 +290,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
        * Upstream in this context is the wrapped stage.
        */
       override def onUpstreamFailure(ex: Throwable) = {
-        if (finishing || maxRestartsReached()) {
+        if (finishing || maxRestartsReached() || !settings.restartOn(ex)) {
           fail(out, ex)
         } else {
           logIt(s"Restarting stream due to failure [${restartCount + 1}]: $ex", OptionVal.Some(ex))
