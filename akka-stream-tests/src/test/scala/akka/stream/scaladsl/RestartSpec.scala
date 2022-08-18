@@ -363,13 +363,13 @@ class RestartSpec
       val created = new AtomicInteger()
       val settings = shortRestartSettings.withRestartOn {
         case TE("failed") => false
-        case _ => true
+        case _            => true
       }
       val probe = RestartSource
         .withBackoff(settings) { () =>
           created.incrementAndGet()
           Source(List("a", "b", "c")).map {
-            case "c" => throw TE("failed")
+            case "c"   => throw TE("failed")
             case other => other
           }
         }
@@ -638,14 +638,14 @@ class RestartSpec
       val created = new AtomicInteger()
       val settings = shortRestartSettings.withRestartOn {
         case TE("failed") => false
-        case _ => true
+        case _            => true
       }
       val probe = RestartSink
         .withBackoff(settings) { () =>
           created.incrementAndGet()
           Sink.foreach[String] {
             case "c" => throw TE("failed")
-            case _ =>
+            case _   =>
           }
         }
         .runWith(TestSource.probe[String])
@@ -1005,13 +1005,13 @@ class RestartSpec
       val created = new AtomicInteger(0)
       val settings = shortRestartSettings.withRestartOn {
         case TE("failed") => false
-        case _ => true
+        case _            => true
       }
       val probe = Source(List("a", "b", "c", "d"))
         .via(RestartFlow.onFailuresWithBackoff(settings) { () =>
           created.incrementAndGet()
           Flow[String].map {
-            case "c" => throw TE("failed")
+            case "c"   => throw TE("failed")
             case other => other
           }
         })
