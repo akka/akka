@@ -366,7 +366,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
        * onlyOnFailures is thus racy so a delay to cancellation is added in the case of a flow.
        */
       override def onDownstreamFinish(cause: Throwable) = {
-        if (finishing || maxRestartsReached() || onlyOnFailures) {
+        if (finishing || maxRestartsReached() || onlyOnFailures || !settings.restartOn(cause)) {
           cancel(in, cause)
         } else {
           scheduleRestartTimer()
