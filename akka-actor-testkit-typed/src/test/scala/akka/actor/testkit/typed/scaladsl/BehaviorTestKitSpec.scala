@@ -4,22 +4,23 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.Done
-import akka.actor.Address
-import akka.actor.testkit.typed.Effect._
-import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
-import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior, Props, Terminated }
+import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.reflect.ClassTag
+
 import org.junit.Assert.assertEquals
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.event.Level
 
-import scala.concurrent.duration.{ FiniteDuration, _ }
-import scala.reflect.ClassTag
+import akka.Done
+import akka.actor.Address
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.Effect._
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
+import akka.actor.typed.{ ActorRef, Behavior, Props, Terminated }
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
+import akka.actor.typed.scaladsl.Behaviors
 
 object BehaviorTestKitSpec {
   object Parent {
@@ -405,9 +406,8 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       testkit.expectEffect(Stopped(child.childName))
 
       // stop testkit
-      val check = testkit.stopSelf
+      testkit.stopSelf()
       // testkit has no effect
-      assertEquals(true, check)
       assertEquals(false, testkit.hasEffects())
     }
   }

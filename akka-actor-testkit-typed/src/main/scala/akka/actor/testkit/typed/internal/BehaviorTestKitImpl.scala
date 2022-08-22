@@ -11,16 +11,16 @@ import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
+
 import akka.actor.ActorPath
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
-import akka.actor.typed.internal.AdaptWithRegisteredMessageAdapter
 import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, PostStop, Signal, TypedActorContext }
+import akka.actor.typed.internal.AdaptWithRegisteredMessageAdapter
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.ccompat.JavaConverters._
-import akka.actor.typed.internal.Terminate
 
 /**
  * INTERNAL API
@@ -174,11 +174,9 @@ private[akka] final class BehaviorTestKitImpl[T](
 
   override def receptionistInbox(): TestInboxImpl[Receptionist.Command] = context.system.receptionistInbox
 
-  override def stopSelf: Boolean = {
+  override def stopSelf(): Unit = {
     try {
       context.setCurrentActorThread()
-      val actorRef = selfInbox().ref.asInstanceOf[ActorRef[AnyRef]]
-      actorRef.tell(Terminate) // is ok?
       currentUncanonical = Behaviors.stopped
       current = Behaviors.stopped
       context.effectQueue.clear()
@@ -186,7 +184,6 @@ private[akka] final class BehaviorTestKitImpl[T](
     } finally {
       context.clearCurrentActorThread()
     }
-    !isAlive
   }
 }
 

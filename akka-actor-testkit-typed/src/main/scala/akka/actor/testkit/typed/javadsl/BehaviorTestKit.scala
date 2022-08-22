@@ -4,14 +4,15 @@
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.{ ActorRef, Behavior, Signal }
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import java.util.concurrent.ThreadLocalRandom
+
 import com.typesafe.config.Config
 
-import java.util.concurrent.ThreadLocalRandom
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 object BehaviorTestKit {
 
@@ -163,4 +164,6 @@ abstract class BehaviorTestKit[T] {
    * The receptionist inbox contains messages sent to `system.receptionist`
    */
   def receptionistInbox(): TestInbox[Receptionist.Command]
+
+  def stopSelf(): Unit
 }

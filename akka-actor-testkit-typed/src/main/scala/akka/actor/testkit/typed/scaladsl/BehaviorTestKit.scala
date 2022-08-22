@@ -4,16 +4,18 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
-import akka.annotation.{ ApiMayChange, DoNotInherit }
-import com.typesafe.config.Config
-
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.collection.immutable
 import scala.reflect.ClassTag
+
+import com.typesafe.config.Config
+
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
+import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 @ApiMayChange
 object BehaviorTestKit {
@@ -157,7 +159,7 @@ trait BehaviorTestKit[T] {
   def receptionistInbox(): TestInbox[Receptionist.Command]
 
   /**
-   * Stop this testkit and return true if this testkit stop successfully.
+   * Stop this testkit.
    */
-  def stopSelf: Boolean
+  def stopSelf(): Unit
 }
