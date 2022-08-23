@@ -82,7 +82,19 @@ object CircuitBreakerSpec {
   }
 }
 
-class CircuitBreakerSpec extends AkkaSpec {
+class CircuitBreakerSpec extends AkkaSpec("""
+    akka.circuit-breaker {
+      identified {
+        max-failures = 1
+        call-timeout = 100 ms
+        reset-timeout = 200 ms
+        exception-allowlist = [
+          "akka.pattern.CircuitBreakerSpec$AllowException"
+        ]
+      }
+    }
+    """) {
+
   import CircuitBreakerSpec._
   implicit def ec: ExecutionContextExecutor = system.dispatcher
 
