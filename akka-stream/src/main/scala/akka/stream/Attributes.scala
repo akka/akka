@@ -7,10 +7,13 @@ package akka.stream
 import java.net.URLEncoder
 import java.time.Duration
 import java.util.Optional
+
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
+import scala.util.control.NonFatal
+
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -20,8 +23,6 @@ import akka.stream.impl.TraversalBuilder
 import akka.util.{ ByteString, OptionVal }
 import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
-
-import scala.util.control.NonFatal
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
