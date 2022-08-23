@@ -1199,7 +1199,7 @@ trait LoggingAdapter {
   protected def notifyError(message: String): Unit
   protected def notifyError(cause: Throwable, message: String): Unit
   protected def notifyWarning(message: String): Unit
-  protected def notifyWarning(cause: Throwable, message: String): Unit
+  protected def notifyWarning(cause: Throwable, message: String): Unit = notifyWarning(message)
   protected def notifyInfo(message: String): Unit
   protected def notifyDebug(message: String): Unit
 
