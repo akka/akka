@@ -30,8 +30,6 @@ import akka.stream.typed.scaladsl.ActorSource
 import akka.stream.OverflowStrategy
 import scala.collection.immutable
 
-import akka.persistence.testkit.internal.CurrentTime
-
 object PersistenceTestKitDurableStateStore {
   val Identifier = "akka.persistence.testkit.state"
 }
