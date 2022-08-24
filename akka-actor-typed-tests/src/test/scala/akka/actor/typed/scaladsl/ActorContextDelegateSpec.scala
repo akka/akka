@@ -7,7 +7,6 @@ package akka.actor.typed.scaladsl
 import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.{ FishingOutcomes, LogCapturing, ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.{ ActorRef, Behavior }
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -71,8 +70,7 @@ class ActorContextDelegateSpec extends ScalaTestWithActorTestKit with AnyWordSpe
     }
 
     "publish unhandled message to eventStream as UnhandledMessage and switch to delegator behavior" in {
-      val deadLetters = TestProbe[UnhandledMessage]("probeDeadLetters")
-      system.eventStream ! EventStream.Subscribe[UnhandledMessage](deadLetters.ref)
+      val deadLetters = testKit.createUnhandledMessageProbe()
 
       val probe = TestProbe[Event]()
       val behv = Behaviors.setup[PingPongCommand] { implicit context =>
