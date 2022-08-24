@@ -23,7 +23,7 @@ object Dependencies {
   val agronaVersion = "1.15.1"
   val nettyVersion = "3.10.6.Final"
   val protobufJavaVersion = "3.16.1"
-  val logbackVersion = "1.2.11"
+  val logbackVersion = "1.2.19"
 
   val jacksonCoreVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
