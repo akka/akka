@@ -615,7 +615,7 @@ Not all journal implementations use rejections and treat these kind of problems 
 
 ## Stash
 
-When persisting events with `persist` or `persistAll` it is guaranteed that the @apidoc[typed.*.EventSourcedBehavior] will not receive
+When persisting events with @scala[@scaladoc[persist](akka.persistence.typed.scaladsl.Effect$#persist[Event,State](events:Seq[Event]):akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[persist](akka.persistence.typed.javadsl.EffectFactories#persist(java.util.List))] it is guaranteed that the @apidoc[typed.*.EventSourcedBehavior] will not receive
 further commands until after the events have been confirmed to be persisted and additional side effects have been run.
 Incoming messages are stashed automatically until the `persist` is completed.
 
