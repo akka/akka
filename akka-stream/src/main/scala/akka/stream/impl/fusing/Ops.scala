@@ -1718,19 +1718,6 @@ private[stream] object Collect {
     LogLevels(onElement = Logging.DebugLevel, onFinish = Logging.DebugLevel, onFailure = Logging.ErrorLevel)
 }
 
-/**
- * INTERNAL API
- */
-@InternalApi private[stream] object TimerKeys {
-
-  case object TakeWithinTimerKey
-
-  case object DropWithinTimerKey
-
-  case object GroupedWithinTimerKey
-
-}
-
 @InternalApi private[akka] object GroupedWeightedWithin {
   val groupedWeightedWithinTimer = "GroupedWeightedWithinTimer"
 }
@@ -2027,6 +2014,14 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
+@InternalApi
+private[akka] object TakeWithin {
+  val takeWithinTimer = "TakeWithinTimer"
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi private[akka] final class TakeWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -2039,7 +2034,7 @@ private[stream] object Collect {
 
       final override protected def onTimer(key: Any): Unit = completeStage()
 
-      override def preStart(): Unit = scheduleOnce("TakeWithinTimer", timeout)
+      override def preStart(): Unit = scheduleOnce(TakeWithin.takeWithinTimer, timeout)
     }
 
   override def toString = "TakeWithin"
