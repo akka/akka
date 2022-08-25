@@ -13,6 +13,7 @@ import scala.annotation.nowarn
  */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
+@FunctionalInterface
 trait Function[-T, +R] extends java.io.Serializable {
   @throws(classOf[Exception])
   def apply(param: T): R
@@ -25,6 +26,7 @@ trait Function[-T, +R] extends java.io.Serializable {
  */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
+@FunctionalInterface
 trait Function2[-T1, -T2, +R] extends java.io.Serializable {
   @throws(classOf[Exception])
   def apply(arg1: T1, arg2: T2): R
@@ -37,6 +39,7 @@ trait Function2[-T1, -T2, +R] extends java.io.Serializable {
  */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
+@FunctionalInterface
 trait Procedure[-T] extends java.io.Serializable {
   @throws(classOf[Exception])
   def apply(param: T): Unit
@@ -49,6 +52,7 @@ trait Procedure[-T] extends java.io.Serializable {
  */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
+@FunctionalInterface
 trait Effect extends java.io.Serializable {
 
   @throws(classOf[Exception])
@@ -62,6 +66,7 @@ trait Effect extends java.io.Serializable {
  */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
+@FunctionalInterface
 trait Predicate[-T] extends java.io.Serializable {
   def test(param: T): Boolean
 }
@@ -72,6 +77,7 @@ trait Predicate[-T] extends java.io.Serializable {
  */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
+@FunctionalInterface
 trait Creator[+T] extends Serializable {
 
   /**
