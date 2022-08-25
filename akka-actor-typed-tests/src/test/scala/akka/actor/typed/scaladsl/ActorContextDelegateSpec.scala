@@ -29,20 +29,20 @@ object ActorContextDelegateSpec {
       case Ping =>
         monitor ! ResponseFrom(PingTag, Ping)
         Behaviors.same
-      case msg @ Pong =>
+      case msg: Pong.type =>
         monitor ! ForwardTo(PongTag)
         context.delegate(pong(monitor), msg)
     }
 
   def pong(monitor: ActorRef[Event])(implicit context: ActorContext[PingPongCommand]): Behavior[PingPongCommand] =
     Behaviors.receiveMessage[PingPongCommand] {
-      case msg @ Ping =>
+      case msg: Ping.type =>
         monitor ! ForwardTo(PingTag)
         context.delegate(ping(monitor), msg)
       case Pong =>
         monitor ! ResponseFrom(PongTag, Pong)
         Behaviors.same
-      case msg @ UnPingable =>
+      case msg: UnPingable.type =>
         monitor ! ForwardTo(PingTag)
         context.delegate(ping(monitor), msg)
     }
