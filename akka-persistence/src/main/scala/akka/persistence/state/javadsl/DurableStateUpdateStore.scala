@@ -20,5 +20,5 @@ trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
    */
   def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): CompletionStage[Done]
 
-  def deleteObject(persistenceId: String): CompletionStage[Done]
+  def deleteObject(persistenceId: String, revision: Long): CompletionStage[Done]
 }
