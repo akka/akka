@@ -213,7 +213,8 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
 
         cookies.whenComplete(
             (cookiesReply, failure) -> {
-              if (cookiesReply != null) System.out.println("Yay, " + cookiesReply.count + " cookies!");
+              if (cookiesReply != null)
+                System.out.println("Yay, " + cookiesReply.count + " cookies!");
               else System.out.println("Boo! didn't get cookies in time. " + failure);
             });
         // #standalone-ask-with-status-fail-future
