@@ -61,11 +61,12 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
       cmd: Any,
       state: Running.RunningState[S]): Running.RunningState[S] = {
 
+    val newRunningState = state.nextRevision()
     val persistenceId = setup.persistenceId.id
 
     onDeleteInitiated(ctx, cmd)
 
-    ctx.pipeToSelf[Done](setup.durableStateStore.deleteObject(persistenceId)) {
+    ctx.pipeToSelf[Done](setup.durableStateStore.deleteObject(persistenceId, newRunningState.revision)) {
       case Success(_)     => InternalProtocol.DeleteSuccess
       case Failure(cause) => InternalProtocol.DeleteFailure(cause)
     }
