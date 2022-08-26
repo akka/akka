@@ -24,7 +24,7 @@ abstract sealed class LogOptions {
   def withEnabled(enabled: Boolean): LogOptions
 
   /**
-   * The [[akka.event.Logging.LogLevel]] to use when logging messages.
+   * The [[org.slf4j.event.Level]] to use when logging messages.
    */
   def withLevel(level: Level): LogOptions
 
@@ -60,7 +60,7 @@ object LogOptions {
     override def withEnabled(enabled: Boolean): LogOptions = this.copy(enabled = enabled)
 
     /**
-     * The [[akka.event.Logging.LogLevel]] to use when logging messages.
+     * The [[org.slf4j.event.Level]] to use when logging messages.
      */
     override def withLevel(level: Level): LogOptions = this.copy(level = level)
 
