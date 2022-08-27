@@ -61,7 +61,6 @@ public abstract class AbstractBoundedNodeQueue<T> {
         return Unsafe.instance.compareAndSwapObject(this, deqOffset, old, nju);
     }
 
-    @SuppressWarnings("unchecked")
     protected final Node<T> peekNode() {
         for(;;) {
           final Node<T> deq = getDeq();
