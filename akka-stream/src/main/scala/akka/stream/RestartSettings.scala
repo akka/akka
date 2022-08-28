@@ -46,7 +46,7 @@ final class RestartSettings private (
   def withMaxRestarts(count: Int, within: java.time.Duration): RestartSettings =
     copy(maxRestarts = count, maxRestartsWithin = within.asScala)
 
-  /** Decides whether the failure should restart the stream */
+  /** Decides whether the failure should restart the stream or make the surrounding stream fail */
   def withRestartOn(restartOn: java.util.function.Predicate[Throwable]): RestartSettings =
     copy(restartOn = restartOn.asScala)
 
