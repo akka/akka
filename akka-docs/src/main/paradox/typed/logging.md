@@ -68,7 +68,7 @@ thread, such as @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc
 @@@
 
 It's also perfectly fine to use a [Logger](https://www.slf4j.org/api/org/slf4j/Logger.html) retrieved via [org.slf4j.LoggerFactory](https://www.slf4j.org/api/org/slf4j/LoggerFactory.html), but then the logging
-events will not include the `akkaSource` MDC value. This is the recommend way when logging outside
+events will not include the `akkaSource` MDC value. This is the recommended way when logging outside
 of an actor, including logging from @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionStage](java.util.concurrent.CompletionStage)] callbacks.
 
 Scala
