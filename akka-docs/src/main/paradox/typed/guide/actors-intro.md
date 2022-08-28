@@ -86,7 +86,7 @@ error situations differently. There are two kinds of errors we need to consider:
    it is only the task itself that is erroneous.
    The service actor should reply to the sender with a message, presenting the error case. There is nothing special here, errors are part of the domain and hence become ordinary messages.
  * The second case is when a service itself encounters an internal fault. Akka enforces that all actors are organized
-   into a tree-like hierarchy, i.e. an actor that creates another actor becomes the parent of that new actor. This is very similar how operating systems organize processes into a tree. Just like with processes, when an actor fails,
+   into a tree-like hierarchy, i.e. an actor that creates another actor becomes the parent of that new actor. This is very similar to how operating systems organize processes into a tree. Just like with processes, when an actor fails,
    its parent actor can decide how to react to the failure. Also, if the parent actor is stopped,
    all of its children are recursively stopped, too. This service is called supervision and it is central to Akka.
 
@@ -94,6 +94,6 @@ A supervisor strategy is typically defined by the parent actor when it is starti
 to restart the child actor on certain types of failures or stop it completely on others. Children never go silently
 dead (with the notable exception of entering an infinite loop) instead they are either failing and the supervisor
 strategy can react to the fault, or they are stopped (in which case interested parties are notified).
-There is always a responsible entity for managing an actor: its parent. Restarts are not visible from the outside: collaborating actors can keep continuing sending messages while the target actor restarts.
+There is always a responsible entity for managing an actor: its parent. Restarts are not visible from the outside: collaborating actors can keep sending messages while the target actor restarts.
 
 Now, let's take a short tour of the functionality Akka provides.
