@@ -21,6 +21,7 @@ import akka.util.Collections.EmptyImmutableSeq
  *
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Function]].
  */
+@FunctionalInterface
 trait Function[T, R] {
   @throws(classOf[Exception])
   def apply(param: T): R
@@ -31,6 +32,7 @@ trait Function[T, R] {
  *
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Function2]].
  */
+@FunctionalInterface
 trait Function2[T1, T2, R] {
   @throws(classOf[Exception])
   def apply(arg1: T1, arg2: T2): R
@@ -41,6 +43,7 @@ trait Function2[T1, T2, R] {
  *
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Procedure]].
  */
+@FunctionalInterface
 trait Procedure[T] {
   @throws(classOf[Exception])
   def apply(param: T): Unit
@@ -51,6 +54,7 @@ trait Procedure[T] {
  *
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Effect]].
  */
+@FunctionalInterface
 trait Effect {
   @throws(classOf[Exception])
   def apply(): Unit
@@ -61,6 +65,7 @@ trait Effect {
  *
  * This class is kept for compatibility, but for future API's please prefer [[java.util.function.Predicate]].
  */
+@FunctionalInterface
 trait Predicate[T] {
   def test(param: T): Boolean
 }
@@ -86,6 +91,7 @@ object Pair {
  */
 @nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
+@FunctionalInterface
 trait Creator[T] extends Serializable {
 
   /**
