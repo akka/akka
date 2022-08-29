@@ -8,7 +8,7 @@ Let's take a closer look at the main functionality required by our use case. In 
 1. The component managing network connections accepts the connection.
 1. The sensor provides its group and device ID to register with the device manager component of our system.
 1. The device manager component handles registration by looking up or creating the actor responsible for keeping sensor state.
-1. The actor responds with an acknowledgement, exposing its `ActorRef`.
+1. The actor responds with an acknowledgement, exposing its @apidoc[typed.ActorRef].
 1. The networking component now uses the `ActorRef` for communication between the sensor and device actor without going through the device manager.
 
 Steps 1 and 2 take place outside the boundaries of our tutorial system. In this chapter, we will start addressing steps 3-6 and create a way for sensors to register with our system and to communicate with actors. But first, we have another architectural decision &#8212; how many levels of actors should we use to represent device groups and device sensors?
@@ -60,7 +60,7 @@ Looking at registration in more detail, we can outline the necessary functionali
     * If the manager already has an actor for the device group, it forwards the request to it.
     * Otherwise, it creates a new device group actor and then forwards the request.
 1. The `DeviceGroup` actor receives the request to register an actor for the given device:
-    * If the group already has an actor for the device it replies with the `ActorRef` of the existing device actor.
+    * If the group already has an actor for the device it replies with the @apidoc[typed.ActorRef] of the existing device actor.
     * Otherwise, the `DeviceGroup` actor first creates a device actor and replies with the `ActorRef` of the newly created device actor.
 1. The sensor will now have the `ActorRef` of the device actor to send messages directly to it.
 
@@ -85,7 +85,7 @@ A group actor has some work to do when it comes to registrations, including:
 
 ### Handling the registration request
 
-A device group actor must either reply to the request with the `ActorRef` of an existing child, or it should create one. To look up child actors by their device IDs we will use a `Map`.
+A device group actor must either reply to the request with the @apidoc[typed.ActorRef] of an existing child, or it should create one. To look up child actors by their device IDs we will use a `Map`.
 
 Add the following to your source file:
 
@@ -117,7 +117,7 @@ Java
 
 So far, we have implemented logic for registering device actors in the group. Devices come and go, however, so we will need a way to remove device actors from the @scala[`Map[String, ActorRef[DeviceMessage]]`]@java[`Map<String, ActorRef<DeviceMessage>>`]. We will assume that when a device is removed, its corresponding device actor is stopped. Supervision, as we discussed earlier, only handles error scenarios &#8212; not graceful stopping. So we need to notify the parent when one of the device actors is stopped.
 
-Akka provides a _Death Watch_ feature that allows an actor to _watch_ another actor and be notified if the other actor is stopped. Unlike supervision, watching is not limited to parent-child relationships, any actor can watch any other actor as long as it knows the `ActorRef`. After a watched actor stops, the watcher receives a `Terminated(actorRef)` signal which also contains the reference to the watched actor. The watcher can either handle this message explicitly or will fail with a `DeathPactException`. This latter is useful if the actor can no longer perform its own duties after the watched actor has been stopped. In our case, the group should still function after one device have been stopped, so we need to handle the `Terminated(actorRef)` signal.
+Akka provides a _Death Watch_ feature that allows an actor to _watch_ another actor and be notified if the other actor is stopped. Unlike supervision, watching is not limited to parent-child relationships, any actor can watch any other actor as long as it knows the @apidoc[typed.ActorRef]. After a watched actor stops, the watcher receives a @apidoc[Terminated(actorRef)](typed.Terminated) signal which also contains the reference to the watched actor. The watcher can either handle this message explicitly or will fail with a @apidoc[typed.DeathPactException]. This latter is useful if the actor can no longer perform its own duties after the watched actor has been stopped. In our case, the group should still function after one device have been stopped, so we need to handle the `Terminated(actorRef)` signal.
 
 Our device group actor needs to include functionality that:
 
@@ -169,7 +169,7 @@ Java
 :   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/Device.java) { #device-with-passivate }
 
 
-We add two more test cases now. In the first, we test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped.  The `TestProbe` has a `expectTerminated` method that we can easily use to assert that the device actor has been terminated.
+We add two more test cases now. In the first, we test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped.  The @apidoc[typed.*.TestProbe] has a `expectTerminated` method that we can easily use to assert that the device actor has been terminated.
 
 Scala
 :   @@snip [DeviceGroupSpec.scala](/akka-docs/src/test/scala/typed/tutorial_4/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
