@@ -12,7 +12,6 @@ import scala.util.control.NoStackTrace
 import akka.Done
 import akka.stream.Materializer
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
 
 class FlowOnCompleteSpec extends StreamSpec("""
@@ -21,7 +20,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
 
   "A Flow with onComplete" must {
 
-    "invoke callback on normal completion" in assertAllStagesStopped {
+    "invoke callback on normal completion" in {
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
@@ -33,7 +32,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
       onCompleteProbe.expectMsg(Success(Done))
     }
 
-    "yield the first error" in assertAllStagesStopped {
+    "yield the first error" in {
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
@@ -45,7 +44,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
       onCompleteProbe.expectNoMessage(100.millis)
     }
 
-    "invoke callback for an empty stream" in assertAllStagesStopped {
+    "invoke callback for an empty stream" in {
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
@@ -56,7 +55,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
       onCompleteProbe.expectNoMessage(100.millis)
     }
 
-    "invoke callback after transform and foreach steps " in assertAllStagesStopped {
+    "invoke callback after transform and foreach steps " in {
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       import system.dispatcher // for the Future.onComplete

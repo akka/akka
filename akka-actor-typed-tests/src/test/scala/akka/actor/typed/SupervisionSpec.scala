@@ -970,6 +970,42 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(State(0, Map.empty))
     }
 
+    // issue #31461
+    "handle reset backoff count for more than one nested restartWithBackoff" in {
+      val probe = TestProbe[Event]("evt")
+      val minBackoff = 20.millis
+      val strategy1 =
+        SupervisorStrategy.restartWithBackoff(minBackoff, 10.seconds, 0.0).withResetBackoffAfter(900.millis)
+
+      val strategy2 =
+        SupervisorStrategy.restartWithBackoff(minBackoff, 10.seconds, 0.0).withResetBackoffAfter(1100.millis)
+
+      val behv = supervise(supervise(targetBehavior(probe.ref)).onFailure[Exc1](strategy1)).onFailure[Exc3](strategy2)
+      val ref = spawn(behv)
+
+      ref ! IncrementState
+      ref ! Throw(new Exc1)
+      probe.expectMessage(ReceivedSignal(PreRestart))
+      ref ! GetState
+      probe.expectMessage(State(0, Map.empty))
+
+      ref ! IncrementState
+      ref ! Throw(new Exc3)
+      probe.expectMessage(ReceivedSignal(PreRestart))
+      ref ! GetState
+      probe.expectMessage(State(0, Map.empty))
+
+      // no matching owner for the scheduled ResetRestartCount so it will be passed through,
+      // but ok since it's a signal
+      probe.expectMessageType[ReceivedSignal].signal.getClass.getName should endWith("ResetRestartCount")
+      probe.expectNoMessage()
+
+      // still alive
+      ref ! IncrementState
+      ref ! GetState
+      probe.expectMessage(State(1, Map.empty))
+    }
+
     "create underlying deferred behavior immediately" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(setup[Command] { _ =>

@@ -15,6 +15,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ClusterShardingSettings.{ RememberEntitiesStoreModeDData, StateStoreModeDData }
@@ -98,18 +99,28 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
       implicit classTag: ClassTag[T]): Unit =
-    init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), None)(classTag)
+    init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), None, None)(classTag)
 
   override def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
       implicit classTag: ClassTag[T]): Unit =
-    init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), Some(stopMessage))(classTag)
+    init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), Some(stopMessage), None)(
+      classTag)
 
   def init[T](
       name: String,
       numberOfInstances: Int,
       behaviorFactory: Int => Behavior[T],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit = {
+      stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit =
+    init(name, numberOfInstances, behaviorFactory, settings, stopMessage, None)
+
+  def init[T](
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: Int => Behavior[T],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: Option[T],
+      shardAllocationStrategy: Option[ShardAllocationStrategy])(implicit classTag: ClassTag[T]): Unit = {
 
     val entityTypeKey = EntityTypeKey[T](s"sharded-daemon-process-$name")
 
@@ -154,7 +165,12 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         case None       => entity
       }
 
-      val shardingRef = ClusterSharding(system).init(entityWithStop)
+      val entityWithShardAllocationStrategy = shardAllocationStrategy match {
+        case Some(strategy) => entityWithStop.withAllocationStrategy(strategy)
+        case None           => entityWithStop
+      }
+
+      val shardingRef = ClusterSharding(system).init(entityWithShardAllocationStrategy)
 
       system.systemActorOf(
         KeepAlivePinger(settings, name, entityIds.toSet, shardingRef),
@@ -176,8 +192,13 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
       stopMessage: T): Unit =
-    init(name, numberOfInstances, n => behaviorFactory(n), ShardedDaemonProcessSettings(system), Some(stopMessage))(
-      ClassTag(messageClass))
+    init(
+      name,
+      numberOfInstances,
+      n => behaviorFactory(n),
+      ShardedDaemonProcessSettings(system),
+      Some(stopMessage),
+      None)(ClassTag(messageClass))
 
   def init[T](
       messageClass: Class[T],
@@ -186,5 +207,21 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T]): Unit =
-    init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala)(ClassTag(messageClass))
+    init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala, None)(ClassTag(messageClass))
+
+  def init[T](
+      messageClass: Class[T],
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: IntFunction[Behavior[T]],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: Optional[T],
+      shardAllocationStrategy: Optional[ShardAllocationStrategy]): Unit =
+    init(
+      name,
+      numberOfInstances,
+      n => behaviorFactory(n),
+      settings,
+      stopMessage.asScala,
+      shardAllocationStrategy.asScala)(ClassTag(messageClass))
 }

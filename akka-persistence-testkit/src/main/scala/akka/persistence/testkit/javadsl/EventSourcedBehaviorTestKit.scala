@@ -186,6 +186,12 @@ object EventSourcedBehaviorTestKit {
      */
     def replyOfType[R <: Reply](replyClass: Class[R]): R =
       delegate.replyOfType(ClassTag[R](replyClass))
+
+    /**
+     * `true` if there is no reply.
+     */
+    def hasNoReply: Boolean = delegate.hasNoReply
+
   }
 
   /**

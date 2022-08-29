@@ -9,6 +9,7 @@ import akka.pattern.StatusReply;
 import org.scalatestplus.junit.JUnitSuite;
 
 import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity;
+import static org.junit.Assert.*;
 
 // #test
 import java.math.BigDecimal;
@@ -23,8 +24,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 // #test
 
@@ -62,6 +61,14 @@ public class AccountExampleDocTest
     assertEquals(StatusReply.ack(), result.reply());
     assertEquals(AccountEntity.AccountCreated.INSTANCE, result.event());
     assertEquals(BigDecimal.ZERO, result.stateOfType(AccountEntity.OpenedAccount.class).balance);
+  }
+
+  @Test
+  public void createWithUnHandle() {
+    CommandResultWithReply<
+            AccountEntity.Command, AccountEntity.Event, AccountEntity.Account, StatusReply<Done>>
+        result = eventSourcedTestKit.runCommand(AccountEntity.CreateAccount::new);
+    assertFalse(result.hasNoReply());
   }
 
   @Test

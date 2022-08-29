@@ -69,6 +69,8 @@ import akka.stream.scaladsl.Sink
             s"but was [${other.getClass.getName}]")
       }
     }
+
+    override def hasNoReply: Boolean = replyOption.isEmpty
   }
 
   final case class RestartResultImpl[State](state: State) extends RestartResult[State]

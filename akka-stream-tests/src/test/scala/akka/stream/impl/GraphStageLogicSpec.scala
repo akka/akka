@@ -15,7 +15,6 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.stage.GraphStageLogic.{ EagerTerminateInput, EagerTerminateOutput }
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 
 class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with ScalaFutures {
@@ -135,15 +134,15 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
   "A GraphStageLogic" must {
 
-    "read N and emit N before completing" in assertAllStagesStopped {
+    "read N and emit N before completing" in {
       Source(1 to 10).via(ReadNEmitN(2)).runWith(TestSink.probe).request(10).expectNext(1, 2).expectComplete()
     }
 
-    "read N should not emit if upstream completes before N is sent" in assertAllStagesStopped {
+    "read N should not emit if upstream completes before N is sent" in {
       Source(1 to 5).via(ReadNEmitN(6)).runWith(TestSink.probe).request(10).expectComplete()
     }
 
-    "read N should not emit if upstream fails before N is sent" in assertAllStagesStopped {
+    "read N should not emit if upstream fails before N is sent" in {
       val error = new IllegalArgumentException("Don't argue like that!")
       Source(1 to 5)
         .map(x => if (x > 3) throw error else x)
@@ -153,7 +152,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
         .expectError(error)
     }
 
-    "read N should provide elements read if onComplete happens before N elements have been seen" in assertAllStagesStopped {
+    "read N should provide elements read if onComplete happens before N elements have been seen" in {
       Source(1 to 5)
         .via(ReadNEmitRestOnComplete(6))
         .runWith(TestSink.probe)
@@ -162,7 +161,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
         .expectComplete()
     }
 
-    "emit all things before completing" in assertAllStagesStopped {
+    "emit all things before completing" in {
 
       Source.empty
         .via(emit1234.named("testStage"))
@@ -176,13 +175,13 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
     }
 
-    "emit properly after empty iterable" in assertAllStagesStopped {
+    "emit properly after empty iterable" in {
 
       Source.fromGraph(emitEmptyIterable).runWith(Sink.seq).futureValue should ===(List(42))
 
     }
 
-    "invoke lifecycle hooks in the right order" in assertAllStagesStopped {
+    "invoke lifecycle hooks in the right order" in {
       val g = new GraphStage[FlowShape[Int, Int]] {
         val in = Inlet[Int]("in")
         val out = Outlet[Int]("out")

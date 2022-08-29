@@ -20,20 +20,19 @@ import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
 import akka.stream.Supervision.stoppingDecider
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 
 class SinkForeachAsyncSpec extends StreamSpec {
 
   "A foreachAsync" must {
-    "handle empty source" in assertAllStagesStopped {
+    "handle empty source" in {
       import system.dispatcher
       val p = Source(List.empty[Int]).runWith(Sink.foreachAsync(3)(_ => Future {}))
       Await.result(p, remainingOrDefault)
     }
 
-    "be able to run elements in parallel" in assertAllStagesStopped {
+    "be able to run elements in parallel" in {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(4))
 
       val probe = TestProbe()
@@ -63,7 +62,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
       assert(p.isCompleted)
     }
 
-    "back-pressure upstream elements when downstream is slow" in assertAllStagesStopped {
+    "back-pressure upstream elements when downstream is slow" in {
       import scala.concurrent.duration._
 
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
@@ -142,7 +141,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
     }
   }
 
-  "produce elements in the order they are ready" in assertAllStagesStopped {
+  "produce elements in the order they are ready" in {
     import system.dispatcher
 
     val probe = TestProbe()
@@ -196,7 +195,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
 
   }
 
-  "resume after failed future" in assertAllStagesStopped {
+  "resume after failed future" in {
     import system.dispatcher
 
     val probe = TestProbe()
@@ -221,7 +220,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
     Await.result(p, 5.seconds)
   }
 
-  "finish after failed future" in assertAllStagesStopped {
+  "finish after failed future" in {
     import system.dispatcher
 
     val probe = TestProbe()

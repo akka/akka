@@ -15,22 +15,23 @@ class StatefulMapConcat {
   def zipWithIndex(): Unit = {
     // #zip-with-index
     val letterAndIndex = Source("a" :: "b" :: "c" :: "d" :: Nil).statefulMapConcat { () =>
-      var counter = 0L
+      var index = 0L
 
       // we return the function that will be invoked for each element
       { element =>
-        counter += 1
+        val zipped = (element, index)
+        index += 1
         // we return an iterable with the single element
-        (element, counter) :: Nil
+        zipped :: Nil
       }
     }
 
     letterAndIndex.runForeach(println)
     // prints
-    // (a,1)
-    // (b,2)
-    // (c,3)
-    // (d,4)
+    // (a,0)
+    // (b,1)
+    // (c,2)
+    // (d,3)
     // #zip-with-index
   }
 

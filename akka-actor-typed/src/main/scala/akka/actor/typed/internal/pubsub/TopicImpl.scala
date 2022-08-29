@@ -7,6 +7,7 @@ package akka.actor.typed.internal.pubsub
 import scala.reflect.ClassTag
 
 import akka.actor.Dropped
+import akka.actor.InvalidMessageException
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.pubsub.Topic
@@ -27,7 +28,10 @@ private[akka] object TopicImpl {
   trait Command[T]
 
   // actual public messages but internal to ease bincomp evolution
-  final case class Publish[T](message: T) extends Topic.Command[T]
+  final case class Publish[T](message: T) extends Topic.Command[T] {
+    if (message == null)
+      throw InvalidMessageException("[null] is not an allowed message")
+  }
   final case class Subscribe[T](subscriber: ActorRef[T]) extends Topic.Command[T]
   final case class Unsubscribe[T](subscriber: ActorRef[T]) extends Topic.Command[T]
 

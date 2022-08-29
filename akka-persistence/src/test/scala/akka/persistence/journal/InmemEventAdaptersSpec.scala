@@ -57,7 +57,7 @@ class InmemEventAdaptersSpec extends AkkaSpec {
     "pick the most specific adapter available" in {
       val adapters = EventAdapters(extendedActorSystem, inmemConfig)
 
-      // sanity check; precise case, matching non-user classes
+      // precise case, matching non-user classes
       adapters.get(classOf[java.lang.String]).getClass should ===(classOf[ExampleEventAdapter])
 
       // pick adapter by implemented marker interface

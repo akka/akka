@@ -31,7 +31,7 @@ class EmptySourceBenchmark {
     Await.result(setup.run(), Duration.Inf)
 
   /*
-    (not serious benchmark, just sanity check: run on macbook 15, late 2013)
+    (not serious benchmark, just ballpark check: run on macbook 15, late 2013)
 
     While it was a PublisherSource:
      [info] EmptySourceBenchmark.empty  thrpt   10  11.219 ± 6.498  ops/ms

@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import akka.NotUsed
 import akka.pattern.StatusReply
+
 //#imports
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.typed.scaladsl.ActorFlow
@@ -75,6 +76,18 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       in.futureValue shouldEqual List.fill(3)(Reply("hello!!!"))
     }
 
+    "produce asked elements with context " in {
+      val in: Future[immutable.Seq[(Reply, Long)]] =
+        Source
+          .repeat("hello")
+          .zipWithIndex
+          .via(ActorFlow.askWithContext(replier)((el, replyTo: ActorRef[Reply]) => Asking(el, replyTo)))
+          .take(3)
+          .runWith(Sink.seq)
+
+      in.futureValue shouldEqual List.fill(3)(Reply("hello!!!")).zipWithIndex.map { case (r, i) => r -> i.toLong }
+    }
+
     "produced status success elements unwrap " in {
       val in: Future[immutable.Seq[String]] =
         Source
@@ -87,11 +100,39 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       in.futureValue shouldEqual List.fill(3)("hello!!!")
     }
 
+    "produced status success elements unwrap with context " in {
+      val in: Future[immutable.Seq[(String, Long)]] =
+        Source
+          .repeat("hello")
+          .zipWithIndex
+          .via(ActorFlow.askWithStatusAndContext(replierWithSuccess)((el, replyTo: ActorRef[StatusReply[String]]) =>
+            AskingWithStatus(el, replyTo)))
+          .take(3)
+          .runWith(Sink.seq)
+
+      in.futureValue shouldEqual List.fill(3)("hello!!!").zipWithIndex.map { case (r, i) => r -> i.toLong }
+    }
+
     "produce status error elements unwrap " in {
       val in: Future[immutable.Seq[String]] =
         Source
           .repeat("hello")
           .via(ActorFlow.askWithStatus(replierWithError)((el, replyTo: ActorRef[StatusReply[String]]) =>
+            AskingWithStatus(el, replyTo)))
+          .take(3)
+          .runWith(Sink.seq)
+
+      val v = in.failed.futureValue
+      v shouldBe a[StatusReply.ErrorMessage]
+      v.getMessage shouldEqual "error!!!hello"
+    }
+
+    "produce status error elements unwrap with context" in {
+      val in: Future[immutable.Seq[(String, Long)]] =
+        Source
+          .repeat("hello")
+          .zipWithIndex
+          .via(ActorFlow.askWithStatusAndContext(replierWithError)((el, replyTo: ActorRef[StatusReply[String]]) =>
             AskingWithStatus(el, replyTo)))
           .take(3)
           .runWith(Sink.seq)

@@ -138,12 +138,7 @@ import akka.dispatch.UnboundedMessageQueueSemantics
             }
 
             // once captured, optional verbose logging of event
-            e match {
-              case _: SeenChanged => // ignore
-              case event =>
-                if (cluster.settings.LogInfoVerbose)
-                  logInfo("event {}", event)
-            }
+            logInfoVerbose(e)
 
           case s: CurrentClusterState =>
             val oldState = _state.get()
@@ -220,6 +215,30 @@ import akka.dispatch.UnboundedMessageQueueSemantics
    * INTERNAL API
    */
   private[cluster] def latestStats: CurrentInternalStats = _state.get().latestStats
+
+  private def logInfoVerbose(event: ClusterDomainEvent): Unit = {
+    if (cluster.settings.LogInfoVerbose) {
+      event match {
+        case _: SeenChanged | _: CurrentInternalStats => // ignore
+        case _: UnreachableMember =>
+          val s = state
+          logInfo("event {}, {} unreachable members [{}]", event, s.unreachable.size, s.unreachable.mkString(", "))
+        case _: ReachableMember =>
+          val s = state
+          logInfo("event {}, {} unreachable members [{}]", event, s.unreachable.size, s.unreachable.mkString(", "))
+        case _: MemberUp =>
+          val s = state
+          logInfo("event {}, {} members [{}]", event, s.members.size, s.members.mkString(", "))
+        case _: MemberRemoved if !cluster.isTerminated =>
+          val s = state
+          logInfo("event {}, {} members [{}]", event, s.members.size, s.members.mkString(", "))
+        case MemberTombstonesChanged(tombstones) =>
+          logInfo("event MemberTombstonesChanged({})", tombstones.size)
+        case _ =>
+          logInfo("event {}", event)
+      }
+    }
+  }
 
   /**
    * Unsubscribe to cluster events.

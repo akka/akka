@@ -4,6 +4,9 @@
 
 package akka.stream.impl
 
+import scala.util.Failure
+import scala.util.Success
+
 import akka.Done
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
@@ -23,9 +26,6 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils.TE
-
-import scala.util.Failure
-import scala.util.Success
 
 class SubInletOutletSpec extends StreamSpec {
 

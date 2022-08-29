@@ -202,6 +202,8 @@ object DistributedPubSubMediator {
   @SerialVersionUID(1L) final case class Send(path: String, msg: Any, localAffinity: Boolean)
       extends DistributedPubSubMessage
       with WrappedMessage {
+    if (msg == null)
+      throw InvalidMessageException("[null] is not an allowed message")
 
     /**
      * Convenience constructor with `localAffinity` false
@@ -213,6 +215,9 @@ object DistributedPubSubMediator {
   @SerialVersionUID(1L) final case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false)
       extends DistributedPubSubMessage
       with WrappedMessage {
+    if (msg == null)
+      throw InvalidMessageException("[null] is not an allowed message")
+
     def this(path: String, msg: Any) = this(path, msg, allButSelf = false)
 
     override def message: Any = msg

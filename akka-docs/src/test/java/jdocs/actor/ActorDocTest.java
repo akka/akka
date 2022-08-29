@@ -841,14 +841,7 @@ public class ActorDocTest extends AbstractJavaTest {
         // using timeout from above
         CompletableFuture<Object> future2 = ask(actorB, "another request", t).toCompletableFuture();
 
-        CompletableFuture<Result> transformed =
-            CompletableFuture.allOf(future1, future2)
-                .thenApply(
-                    v -> {
-                      String x = (String) future1.join();
-                      String s = (String) future2.join();
-                      return new Result(x, s);
-                    });
+        CompletableFuture<Result> transformed = future1.thenCombine(future2, (x, s) -> new Result((String) x, (String) s));
 
         pipe(transformed, system.dispatcher()).to(actorC);
         // #ask-pipe

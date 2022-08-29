@@ -7,14 +7,13 @@ package akka.stream.scaladsl
 import scala.concurrent.duration._
 
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.DefaultTimeout
 
 class NeverSourceSpec extends StreamSpec with DefaultTimeout {
 
   "The Never Source" must {
 
-    "never completes" in assertAllStagesStopped {
+    "never completes" in {
       val neverSource = Source.never[Int]
       val pubSink = Sink.asPublisher[Int](false)
 

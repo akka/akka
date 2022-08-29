@@ -152,6 +152,34 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseStatefulMap() throws Exception {
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
+    final Source<Integer, NotUsed> source = Source.from(input);
+    final Flow<Integer, String, NotUsed> flow =
+        Flow.of(Integer.class)
+            .statefulMap(
+                () -> new ArrayList<Integer>(2),
+                (buffer, elem) -> {
+                  if (buffer.size() == 2) {
+                    final ArrayList<Integer> group = new ArrayList<>(buffer);
+                    buffer.clear();
+                    buffer.add(elem);
+                    return Pair.create(buffer, group);
+                  } else {
+                    buffer.add(elem);
+                    return Pair.create(buffer, Collections.emptyList());
+                  }
+                },
+                Optional::ofNullable)
+            .filterNot(List::isEmpty)
+            .map(String::valueOf);
+
+    final CompletionStage<String> grouped =
+        source.via(flow).runFold("", (acc, elem) -> acc + elem, system);
+    Assert.assertEquals("[1, 2][3, 4][5]", grouped.toCompletableFuture().get(3, TimeUnit.SECONDS));
+  }
+
+  @Test
   public void mustBeAbleToUseIntersperse() throws Exception {
     final TestKit probe = new TestKit(system);
     final Source<String, NotUsed> source = Source.from(Arrays.asList("0", "1", "2", "3"));
@@ -1346,6 +1374,12 @@ public class FlowTest extends StreamTest {
     final Flow<Integer, Integer, NotUsed> f = Flow.of(Integer.class).alsoTo(Sink.ignore());
     final Flow<Integer, Integer, String> f2 =
         Flow.of(Integer.class).alsoToMat(Sink.ignore(), (i, n) -> "foo");
+  }
+
+  @Test
+  public void mustBeAbleToUseAlsoToAll() {
+    final Flow<Integer, Integer, NotUsed> f =
+        Flow.of(Integer.class).alsoToAll(Sink.ignore(), Sink.ignore());
   }
 
   @Test

@@ -56,9 +56,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         }
       }
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {}
-      })
+      setHandler(out, GraphStageLogic.EagerTerminateOutput)
     }
 
     val logic = new OutputStreamSourceLogic

@@ -5,11 +5,13 @@
 package akka.stream.scaladsl
 
 import scala.collection.immutable
-import akka.NotUsed
-import akka.stream.testkit.TestSubscriber.ManualProbe
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-
 import scala.concurrent.duration._
+
+import akka.NotUsed
+import akka.stream.Attributes
+import akka.stream.Attributes.Attribute
+import akka.stream.testkit.{ StreamSpec, TestSubscriber }
+import akka.stream.testkit.TestSubscriber.ManualProbe
 
 class GraphMergePrioritizedNSpec extends StreamSpec {
 
@@ -133,5 +135,46 @@ class GraphMergePrioritizedNSpec extends StreamSpec {
       .mergePrioritizedN(sourceAndPriorities, eagerComplete = false)
       .initialDelay(50.millis)
       .to(Sink.fromSubscriber(probe))
+  }
+
+  "get Priority from graph" in {
+    val elementCount = 10
+    case class MyPriority(priority: Int) extends Attribute
+
+    val myAttributes1 = Attributes(MyPriority(6))
+    val myAttributes2 = Attributes(MyPriority(3))
+    val myAttributes3 = Attributes(MyPriority(1))
+
+    val defaultPriority = MyPriority(-1)
+
+    val source1: Source[Int, NotUsed] =
+      Source.fromIterator(() => Iterator.continually(1).take(elementCount)).addAttributes(myAttributes1)
+    val source2 = Source.fromIterator[Int](() => Iterator.empty).addAttributes(myAttributes2)
+    val source3: Source[Int, NotUsed] = Source.fromIterator[Int](() => Iterator.empty).addAttributes(myAttributes3)
+
+    val sourcesAndPriorities = List(
+      (source1, source1.getAttributes.get[MyPriority](defaultPriority).priority),
+      (source2, source2.getAttributes.get[MyPriority](defaultPriority).priority),
+      (source3, source3.getAttributes.get[MyPriority](defaultPriority).priority))
+
+    val probe = TestSubscriber.manualProbe[Int]()
+
+    threeSourceMerge(sourcesAndPriorities, probe).run()
+
+    val subscription = probe.expectSubscription()
+
+    var collected = Vector.empty[Int]
+    for (_ <- 1 to elementCount) {
+      subscription.request(1)
+      collected :+= probe.expectNext()
+    }
+
+    val ones = collected.count(_ == 1)
+    val twos = collected.count(_ == 2)
+    val threes = collected.count(_ == 3)
+
+    ones shouldEqual elementCount
+    twos shouldEqual 0
+    threes shouldEqual 0
   }
 }

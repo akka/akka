@@ -215,12 +215,8 @@ private final class RestartWithBackoffFlow[In, Out](
       }
 
       override protected def backoff() = {
-        setHandler(in, new InHandler {
-          override def onPush() = ()
-        })
-        setHandler(out, new OutHandler {
-          override def onPull() = ()
-        })
+        setHandler(in, GraphStageLogic.EagerTerminateInput)
+        setHandler(out, GraphStageLogic.EagerTerminateOutput)
 
         // We need to ensure that the other end of the sub flow is also completed, so that we don't
         // receive any callbacks from it.
@@ -462,9 +458,7 @@ object RestartWithBackoffFlow {
         override def onDownstreamFinish(cause: Throwable): Unit = {
           this.cause = OptionVal.Some(cause)
           scheduleOnce("CompleteState", delay)
-          setHandler(in, new InHandler {
-            def onPush(): Unit = {}
-          })
+          setHandler(in, GraphStageLogic.EagerTerminateInput)
         }
 
         override protected def onTimer(timerKey: Any): Unit = {

@@ -8,7 +8,6 @@ import scala.concurrent.Await
 
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class SubstreamSubscriptionTimeoutSpec extends StreamSpec("""
   akka.stream.materializer {
@@ -25,7 +24,7 @@ class SubstreamSubscriptionTimeoutSpec extends StreamSpec("""
 
   "groupBy and splitwhen" must {
 
-    "timeout and cancel substream publishers when no-one subscribes to them after some time (time them out)" in assertAllStagesStopped {
+    "timeout and cancel substream publishers when no-one subscribes to them after some time (time them out)" in {
       val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       val publisherProbe = TestPublisher.probe[Int]()
       Source.fromPublisher(publisherProbe).groupBy(3, _ % 3).lift(_ % 3).runWith(Sink.fromSubscriber(subscriber))
@@ -65,7 +64,7 @@ class SubstreamSubscriptionTimeoutSpec extends StreamSpec("""
       publisherProbe.sendComplete()
     }
 
-    "timeout and stop groupBy parent actor if none of the substreams are actually consumed" in assertAllStagesStopped {
+    "timeout and stop groupBy parent actor if none of the substreams are actually consumed" in {
       val publisherProbe = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       Source.fromPublisher(publisherProbe).groupBy(2, _ % 2).lift(_ % 2).runWith(Sink.fromSubscriber(subscriber))

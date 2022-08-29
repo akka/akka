@@ -16,7 +16,6 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestPublisher.Probe
 import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 
@@ -29,7 +28,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
   import GraphZipLatestSpec._
 
   "ZipLatest" must {
-    "only emit when at least one pair is available" in assertAllStagesStopped {
+    "only emit when at least one pair is available" in {
       val (probe, bools, ints) = testGraph[Boolean, Int]
 
       probe.request(1)
@@ -49,7 +48,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       probe.cancel()
     }
 
-    "emits as soon as one source is available" in assertAllStagesStopped {
+    "emits as soon as one source is available" in {
       val (probe, bools, ints) = testGraph[Boolean, Int]
 
       probe.request(3)
@@ -70,7 +69,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       probe.cancel()
     }
 
-    "does not emit the same pair upon two pulls with value types" in assertAllStagesStopped {
+    "does not emit the same pair upon two pulls with value types" in {
       val (probe, bools, ints) = testGraph[Boolean, Int]
 
       probe.request(1)
@@ -90,7 +89,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       probe.expectComplete()
     }
 
-    "does not emit the same pair upon two pulls with reference types" in assertAllStagesStopped {
+    "does not emit the same pair upon two pulls with reference types" in {
       val a = someString
       val b = Some(someInt)
       val (probe, as, bs) = testGraph[String, Option[Int]]
@@ -112,7 +111,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       probe.expectComplete()
     }
 
-    "does not de-duplicate instances based on value" in assertAllStagesStopped {
+    "does not de-duplicate instances based on value" in {
       /*
         S1 -> A1 A2 A3   --\
                             > -- ZipLatest
@@ -148,7 +147,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
     val first = (t: (Probe[Boolean], Probe[Int])) => t._1
     val second = (t: (Probe[Boolean], Probe[Int])) => t._2
 
-    "complete when either source completes" in assertAllStagesStopped {
+    "complete when either source completes" in {
       forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
         select((bools, ints)).sendComplete()
@@ -156,7 +155,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       }
     }
 
-    "complete when either source completes and requesting element" in assertAllStagesStopped {
+    "complete when either source completes and requesting element" in {
       forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
         select((bools, ints)).sendComplete()
@@ -165,7 +164,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       }
     }
 
-    "complete when either source completes with some pending element" in assertAllStagesStopped {
+    "complete when either source completes with some pending element" in {
       forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
 
@@ -190,7 +189,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       immediatelyCompleting.runWith(Sink.seq).futureValue should ===(Seq[(Int, Int)]())
     }
 
-    "complete when one source completes and the other continues pushing" in assertAllStagesStopped {
+    "complete when one source completes and the other continues pushing" in {
 
       val (probe, bools, ints) = testGraph[Boolean, Int]
 
@@ -208,7 +207,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       probe.expectComplete()
     }
 
-    "complete if no pending demand" in assertAllStagesStopped {
+    "complete if no pending demand" in {
       forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
 
@@ -227,7 +226,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       }
     }
 
-    "fail when either source has error" in assertAllStagesStopped {
+    "fail when either source has error" in {
       forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
         val error = new RuntimeException
@@ -237,7 +236,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       }
     }
 
-    "emit even if pair is the same" in assertAllStagesStopped {
+    "emit even if pair is the same" in {
       val (probe, bools, ints) = testGraph[Boolean, Int]
 
       probe.request(2)
@@ -260,7 +259,7 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       probe.expectComplete()
     }
 
-    "emit combined elements in proper order" in assertAllStagesStopped {
+    "emit combined elements in proper order" in {
       val (probe, firstDigits, secondDigits) = testGraph[Int, Int]
 
       // numbers up to 99 in tuples

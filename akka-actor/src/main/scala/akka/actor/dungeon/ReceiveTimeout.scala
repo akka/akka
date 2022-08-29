@@ -65,7 +65,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
     receiveTimeoutData
   }
 
-  private def cancelReceiveTimeoutTask(): Unit =
+  private[akka] def cancelReceiveTimeoutTask(): Unit =
     if (receiveTimeoutData._2 ne emptyCancellable) {
       receiveTimeoutData._2.cancel()
       receiveTimeoutData = (receiveTimeoutData._1, emptyCancellable)

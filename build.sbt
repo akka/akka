@@ -1,4 +1,4 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
+import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Dependencies, Paradox, ScalafixIgnoreFilePlugin }
 
 ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
 
@@ -15,7 +15,7 @@ enablePlugins(
 disablePlugins(MimaPlugin)
 
 addCommandAlias("verifyCodeStyle", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
-addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbtAll")
+addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbt")
 
 addCommandAlias(
   name = "fixall",
@@ -100,6 +100,7 @@ lazy val root = Project(id = "akka", base = file("."))
         docs,
         serialversionRemoverPlugin))
   .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
+  .settings(akka.AkkaBuild.welcomeSettings)
   .enablePlugins(CopyrightHeaderForBuild)
 
 lazy val actor = akkaModule("akka-actor")
@@ -596,6 +597,7 @@ lazy val serialversionRemoverPluginSettings = Seq(
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
     .enablePlugins(ReproducibleBuildsPlugin)
+    .disablePlugins(WelcomePlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
     .enablePlugins(BootstrapGenjavadoc)

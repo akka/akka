@@ -4,9 +4,10 @@
 
 package akka.stream.scaladsl
 
+import org.reactivestreams.Publisher
+
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import org.reactivestreams.Publisher
 
 class FlowMergeSpec extends BaseTwoStreamsSetup {
 

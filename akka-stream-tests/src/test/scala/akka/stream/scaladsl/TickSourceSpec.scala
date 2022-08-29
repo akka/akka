@@ -8,13 +8,12 @@ import scala.concurrent.duration._
 
 import akka.stream.ClosedShape
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TimingTest
 
 class TickSourceSpec extends StreamSpec {
 
   "A Flow based on tick publisher" must {
-    "produce ticks" taggedAs TimingTest in assertAllStagesStopped {
+    "produce ticks" taggedAs TimingTest in {
       val c = TestSubscriber.manualProbe[String]()
       Source.tick(1.second, 1.second, "tick").to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
@@ -82,7 +81,7 @@ class TickSourceSpec extends StreamSpec {
       sub.cancel()
     }
 
-    "be possible to cancel" taggedAs TimingTest in assertAllStagesStopped {
+    "be possible to cancel" taggedAs TimingTest in {
       val c = TestSubscriber.manualProbe[String]()
       val tickSource = Source.tick(1.second, 1.second, "tick")
       val cancellable = tickSource.to(Sink.fromSubscriber(c)).run()
@@ -98,7 +97,7 @@ class TickSourceSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "acknowledge cancellation only once" taggedAs TimingTest in assertAllStagesStopped {
+    "acknowledge cancellation only once" taggedAs TimingTest in {
       val c = TestSubscriber.manualProbe[String]()
       val cancellable = Source.tick(1.second, 500.millis, "tick").to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
@@ -109,7 +108,7 @@ class TickSourceSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "have isCancelled mirror the cancellation state" taggedAs TimingTest in assertAllStagesStopped {
+    "have isCancelled mirror the cancellation state" taggedAs TimingTest in {
       val c = TestSubscriber.manualProbe[String]()
       val cancellable = Source.tick(1.second, 500.millis, "tick").to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
@@ -121,7 +120,7 @@ class TickSourceSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "support being cancelled immediately after its materialization" in assertAllStagesStopped {
+    "support being cancelled immediately after its materialization" in {
       val c = TestSubscriber.manualProbe[String]()
       val cancellable = Source.tick(1.second, 500.millis, "tick").to(Sink.fromSubscriber(c)).run()
       cancellable.cancel() should be(true)

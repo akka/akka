@@ -356,7 +356,7 @@ Until sent messages have been confirmed the producer side keeps them in memory t
 resend them. If the JVM of the producer side crashes those unconfirmed messages are lost.
 To make sure the messages can be delivered also in that scenario a @apidoc[DurableProducerQueue$] can be used.
 Then the unconfirmed messages are stored in a durable way so that they can be redelivered when the producer
-is started again. An implementation of the `DurableProducerQueue` is provided by @apidoc[EventSourcedProducerQueue]
+is started again. An implementation of the `DurableProducerQueue` is provided by @apidoc[EventSourcedProducerQueue$]
 in `akka-persistence-typed`.
 
 Be aware of that a `DurableProducerQueue` will add a substantial performance overhead. 

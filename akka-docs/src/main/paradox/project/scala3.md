@@ -12,7 +12,7 @@ shown to be successful for Streams, HTTP and gRPC-heavy applications.
 
 Starting with Akka version 2.6.18 (and on current [development snapshots](https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/akka-actor_3/)),
 we are publishing experimental Scala 3 artifacts that can be used 'directly'
-(without `CrossVersion`) with Scala 3.1.1-RC1. The 2.6.17 artifacts can be used only with nightly builds of Scala 3 (i.e. `3.1.1-RC1-bin-20211007-c041327-NIGHTLY`).
+(without `CrossVersion`) with Scala 3.
 
 We encourage you to try out these artifacts and [report any findings](https://github.com/akka/akka/issues?q=is%3Aopen+is%3Aissue+label%3At%3Ascala-3).
 

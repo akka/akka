@@ -56,6 +56,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |--|--|--|
 |Sink|<a name="aspublisher"></a>@ref[asPublisher](Sink/asPublisher.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.|
 |Sink|<a name="cancelled"></a>@ref[cancelled](Sink/cancelled.md)|Immediately cancel the stream|
+|Sink|<a name="collect"></a>@ref[collect](Sink/collect.md)|Collect all input elements using a Java @javadoc[Collector](java.util.stream.Collector).|
 |Sink|<a name="collection"></a>@ref[collection](Sink/collection.md)|@scala[Collect all values emitted from the stream into a collection.]@java[Operator only available in the Scala API. The closest operator in the Java API is @ref[`Sink.seq`](Sink/seq.md)].|
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
 |Sink|<a name="completionstagesink"></a>@ref[completionStageSink](Sink/completionStageSink.md)|Streams the elements to the given future sink once it successfully completes. |
@@ -75,6 +76,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="lazyfuturesink"></a>@ref[lazyFutureSink](Sink/lazyFutureSink.md)|Defers creation and materialization of a `Sink` until there is a first element.|
 |Sink|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Sink/lazyInitAsync.md)|Deprecated by @ref[`Sink.lazyFutureSink`](Sink/lazyFutureSink.md).|
 |Sink|<a name="lazysink"></a>@ref[lazySink](Sink/lazySink.md)|Defers creation and materialization of a `Sink` until there is a first element.|
+|Sink|<a name="never"></a>@ref[never](Sink/never.md)|Always backpressure never cancel and never consume any elements from the stream.|
 |Sink|<a name="oncomplete"></a>@ref[onComplete](Sink/onComplete.md)|Invoke a callback when the stream has completed or failed.|
 |Sink|<a name="prematerialize"></a>@ref[preMaterialize](Sink/preMaterialize.md)|Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink that can be consume elements 'into' the pre-materialized one.|
 |Sink|<a name="queue"></a>@ref[queue](Sink/queue.md)|Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.|
@@ -149,6 +151,7 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="dropwhile"></a>@ref[dropWhile](Source-or-Flow/dropWhile.md)|Drop elements as long as a predicate function return true for the element|
 |Source/Flow|<a name="filter"></a>@ref[filter](Source-or-Flow/filter.md)|Filter the incoming elements using a predicate.|
 |Source/Flow|<a name="filternot"></a>@ref[filterNot](Source-or-Flow/filterNot.md)|Filter the incoming elements using a predicate.|
+|Flow|<a name="flattenoptional"></a>@ref[flattenOptional](Flow/flattenOptional.md)|Collect the value of `Optional` from all the elements passing through this flow , empty `Optional` is filtered out.|
 |Source/Flow|<a name="fold"></a>@ref[fold](Source-or-Flow/fold.md)|Start with current value `zero` and then apply the current and next value to the given function. When upstream completes, the current value is emitted downstream.|
 |Source/Flow|<a name="foldasync"></a>@ref[foldAsync](Source-or-Flow/foldAsync.md)|Just like `fold` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.|
 |Source/Flow|<a name="frommaterializer"></a>@ref[fromMaterializer](Source-or-Flow/fromMaterializer.md)|Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`|
@@ -166,11 +169,13 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="logwithmarker"></a>@ref[logWithMarker](Source-or-Flow/logWithMarker.md)|Log elements flowing through the stream as well as completion and erroring.|
 |Source/Flow|<a name="map"></a>@ref[map](Source-or-Flow/map.md)|Transform each element in the stream by calling a mapping function with it and passing the returned value downstream.|
 |Source/Flow|<a name="mapconcat"></a>@ref[mapConcat](Source-or-Flow/mapConcat.md)|Transform each element into zero or more elements that are individually passed downstream.|
+|Source/Flow|<a name="prematerialize"></a>@ref[preMaterialize](Source-or-Flow/preMaterialize.md)|Materializes this Graph, immediately returning (1) its materialized value, and (2) a new pre-materialized Graph.|
 |Source/Flow|<a name="reduce"></a>@ref[reduce](Source-or-Flow/reduce.md)|Start with first element and then apply the current and next value to the given function, when upstream complete the current value is emitted downstream.|
 |Source/Flow|<a name="scan"></a>@ref[scan](Source-or-Flow/scan.md)|Emit its current value, which starts at `zero`, and then apply the current and next value to the given function, emitting the next current value.|
 |Source/Flow|<a name="scanasync"></a>@ref[scanAsync](Source-or-Flow/scanAsync.md)|Just like @ref[`scan`](Source-or-Flow/./scan.md) but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.|
 |Source/Flow|<a name="setup"></a>@ref[setup](Source-or-Flow/setup.md)|Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`|
 |Source/Flow|<a name="sliding"></a>@ref[sliding](Source-or-Flow/sliding.md)|Provide a sliding window over the incoming stream and pass the windows as groups of elements downstream.|
+|Source/Flow|<a name="statefulmap"></a>@ref[statefulMap](Source-or-Flow/statefulMap.md)|Transform each stream element with the help of a state.|
 |Source/Flow|<a name="statefulmapconcat"></a>@ref[statefulMapConcat](Source-or-Flow/statefulMapConcat.md)|Transform each element into zero or more elements that are individually passed downstream.|
 |Source/Flow|<a name="take"></a>@ref[take](Source-or-Flow/take.md)|Pass `n` incoming elements downstream and then complete|
 |Source/Flow|<a name="takewhile"></a>@ref[takeWhile](Source-or-Flow/takeWhile.md)|Pass elements downstream as long as a predicate function returns true and then complete. |
@@ -297,6 +302,7 @@ There is a number of fan-out operators for which currently no 'fluent' is API av
 | |<a name="unzip"></a>@ref[Unzip](Unzip.md)|Takes a stream of two element tuples and unzips the two elements ino two different downstreams.|
 | |<a name="unzipwith"></a>@ref[UnzipWith](UnzipWith.md)|Splits each element of input into multiple downstreams using a function|
 |Source/Flow|<a name="alsoto"></a>@ref[alsoTo](Source-or-Flow/alsoTo.md)|Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.|
+|Source/Flow|<a name="alsotoall"></a>@ref[alsoToAll](Source-or-Flow/alsoToAll.md)|Attaches the given @apidoc[Source]s to this @apidoc[Flow], meaning that elements that pass through this @apidoc[Flow] will also be sent to all those @apidoc[Sink]s.|
 |Source/Flow|<a name="divertto"></a>@ref[divertTo](Source-or-Flow/divertTo.md)|Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.|
 |Source/Flow|<a name="wiretap"></a>@ref[wireTap](Source-or-Flow/wireTap.md)|Attaches the given `Sink` to this `Flow` as a wire tap, meaning that elements that pass through will also be sent to the wire-tap `Sink`, without the latter affecting the mainline flow.|
 
@@ -326,7 +332,9 @@ Operators meant for inter-operating between Akka Streams and Actors:
 |ActorSink|<a name="actorrefwithbackpressure"></a>@ref[actorRefWithBackpressure](ActorSink/actorRefWithBackpressure.md)|Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API with backpressure, to be able to signal demand when the actor is ready to receive more elements.|
 |Source/Flow|<a name="ask"></a>@ref[ask](Source-or-Flow/ask.md)|Use the "Ask Pattern" to send a request-reply message to the target `ref` actor (of the classic actors API).|
 |ActorFlow|<a name="ask"></a>@ref[ask](ActorFlow/ask.md)|Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API), and expect a reply that will be emitted downstream.|
+|ActorFlow|<a name="askwithcontext"></a>@ref[askWithContext](ActorFlow/askWithContext.md)|Use the "Ask Pattern" to send each stream element (without the context) as an `ask` to the target actor (of the new actors API), and expect a reply that will be emitted downstream.|
 |ActorFlow|<a name="askwithstatus"></a>@ref[askWithStatus](ActorFlow/askWithStatus.md)|Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API),  and expect a reply of Type @scala[`StatusReply[T]`]@java[`StatusReply<T>`] where the T will be unwrapped and emitted downstream.|
+|ActorFlow|<a name="askwithstatusandcontext"></a>@ref[askWithStatusAndContext](ActorFlow/askWithStatusAndContext.md)|Use the "Ask Pattern" to send each stream element (without the context) as an `ask` to the target actor (of the new actors API), and expect a reply of Type @scala[`StatusReply[T]`]@java[`StatusReply<T>`] where the T will be unwrapped and emitted downstream.|
 |PubSub|<a name="sink"></a>@ref[sink](PubSub/sink.md)|A sink that will publish emitted messages to a @apidoc[akka.actor.typed.pubsub.Topic$].|
 |PubSub|<a name="source"></a>@ref[source](PubSub/source.md)|A source that will subscribe to a @apidoc[akka.actor.typed.pubsub.Topic$] and stream messages published to the topic. |
 |Source/Flow|<a name="watch"></a>@ref[watch](Source-or-Flow/watch.md)|Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.|
@@ -372,12 +380,15 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRefWithBackpressure](ActorSink/actorRefWithBackpressure.md)
 * [aggregateWithBoundary](Source-or-Flow/aggregateWithBoundary.md)
 * [alsoTo](Source-or-Flow/alsoTo.md)
+* [alsoToAll](Source-or-Flow/alsoToAll.md)
 * [asFlowWithContext](Flow/asFlowWithContext.md)
 * [asInputStream](StreamConverters/asInputStream.md)
 * [asJavaStream](StreamConverters/asJavaStream.md)
 * [ask](Source-or-Flow/ask.md)
 * [ask](ActorFlow/ask.md)
+* [askWithContext](ActorFlow/askWithContext.md)
 * [askWithStatus](ActorFlow/askWithStatus.md)
+* [askWithStatusAndContext](ActorFlow/askWithStatusAndContext.md)
 * [asOutputStream](StreamConverters/asOutputStream.md)
 * [asPublisher](Sink/asPublisher.md)
 * [asSourceWithContext](Source/asSourceWithContext.md)
@@ -390,6 +401,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [buffer](Source-or-Flow/buffer.md)
 * [cancelled](Sink/cancelled.md)
 * [collect](Source-or-Flow/collect.md)
+* [collect](Sink/collect.md)
 * [collection](Sink/collection.md)
 * [collectType](Source-or-Flow/collectType.md)
 * [combine](Source/combine.md)
@@ -421,6 +433,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [flatMapConcat](Source-or-Flow/flatMapConcat.md)
 * [flatMapMerge](Source-or-Flow/flatMapMerge.md)
 * [flatMapPrefix](Source-or-Flow/flatMapPrefix.md)
+* [flattenOptional](Flow/flattenOptional.md)
 * [fold](Source-or-Flow/fold.md)
 * [fold](Sink/fold.md)
 * [foldAsync](Source-or-Flow/foldAsync.md)
@@ -505,12 +518,14 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [mergeSorted](Source-or-Flow/mergeSorted.md)
 * [monitor](Source-or-Flow/monitor.md)
 * [never](Source/never.md)
+* [never](Sink/never.md)
 * [onComplete](Sink/onComplete.md)
 * [onFailuresWithBackoff](RestartSource/onFailuresWithBackoff.md)
 * [onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)
 * [orElse](Source-or-Flow/orElse.md)
 * [Partition](Partition.md)
 * [prefixAndTail](Source-or-Flow/prefixAndTail.md)
+* [preMaterialize](Source-or-Flow/preMaterialize.md)
 * [preMaterialize](Sink/preMaterialize.md)
 * [prepend](Source-or-Flow/prepend.md)
 * [prependLazy](Source-or-Flow/prependLazy.md)
@@ -534,6 +549,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [source](PubSub/source.md)
 * [splitAfter](Source-or-Flow/splitAfter.md)
 * [splitWhen](Source-or-Flow/splitWhen.md)
+* [statefulMap](Source-or-Flow/statefulMap.md)
 * [statefulMapConcat](Source-or-Flow/statefulMapConcat.md)
 * [take](Source-or-Flow/take.md)
 * [takeLast](Sink/takeLast.md)

@@ -19,7 +19,6 @@ import akka.stream.OverflowStrategies.EmitEarly
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestDuration
 import akka.testkit.TimingTest
@@ -58,7 +57,7 @@ class FlowDelaySpec extends StreamSpec {
         .expectComplete()
     }
 
-    "deliver elements with delay for slow stream" in assertAllStagesStopped {
+    "deliver elements with delay for slow stream" in {
       val c = TestSubscriber.manualProbe[Int]()
       val p = TestPublisher.manualProbe[Int]()
 
@@ -76,7 +75,7 @@ class FlowDelaySpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "deliver delayed elements that arrive within the same timeout as preceding group of elements" taggedAs TimingTest in assertAllStagesStopped {
+    "deliver delayed elements that arrive within the same timeout as preceding group of elements" taggedAs TimingTest in {
       val c = TestSubscriber.manualProbe[Int]()
       val p = TestPublisher.manualProbe[Int]()
 
@@ -96,7 +95,7 @@ class FlowDelaySpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "drop tail for internal buffer if it's full in DropTail mode" in assertAllStagesStopped {
+    "drop tail for internal buffer if it's full in DropTail mode" in {
       Await.result(
         Source(1 to 20)
           .delay(1.seconds, DelayOverflowStrategy.dropTail)
@@ -106,7 +105,7 @@ class FlowDelaySpec extends StreamSpec {
         1200.millis) should ===((1 to 15).toList :+ 20)
     }
 
-    "drop head for internal buffer if it's full in DropHead mode" in assertAllStagesStopped {
+    "drop head for internal buffer if it's full in DropHead mode" in {
       Await.result(
         Source(1 to 20)
           .delay(1.seconds, DelayOverflowStrategy.dropHead)
@@ -116,7 +115,7 @@ class FlowDelaySpec extends StreamSpec {
         1200.millis) should ===(5 to 20)
     }
 
-    "clear all for internal buffer if it's full in DropBuffer mode" in assertAllStagesStopped {
+    "clear all for internal buffer if it's full in DropBuffer mode" in {
       Await.result(
         Source(1 to 20)
           .delay(1.seconds, DelayOverflowStrategy.dropBuffer)
@@ -126,7 +125,7 @@ class FlowDelaySpec extends StreamSpec {
         1200.millis) should ===(17 to 20)
     }
 
-    "pass elements with delay through normally in backpressured mode" in assertAllStagesStopped {
+    "pass elements with delay through normally in backpressured mode" in {
       Source(1 to 3)
         .delay(300.millis, DelayOverflowStrategy.backpressure)
         .withAttributes(inputBuffer(1, 1))
@@ -140,7 +139,7 @@ class FlowDelaySpec extends StreamSpec {
         .expectNext(200.millis, 3)
     }
 
-    "fail on overflow in Fail mode" in assertAllStagesStopped {
+    "fail on overflow in Fail mode" in {
       Source(1 to 20)
         .delay(300.millis, DelayOverflowStrategy.fail)
         .withAttributes(inputBuffer(16, 16))
@@ -150,7 +149,7 @@ class FlowDelaySpec extends StreamSpec {
 
     }
 
-    "emit early when buffer is full and in EmitEarly mode" in assertAllStagesStopped {
+    "emit early when buffer is full and in EmitEarly mode" in {
       val c = TestSubscriber.manualProbe[Int]()
       val p = TestPublisher.manualProbe[Int]()
 

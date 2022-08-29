@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 
 import akka.stream._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 
@@ -21,7 +20,7 @@ class GraphBroadcastSpec extends StreamSpec("""
   "A broadcast" must {
     import GraphDSL.Implicits._
 
-    "broadcast to other subscriber" in assertAllStagesStopped {
+    "broadcast to other subscriber" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
@@ -53,7 +52,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       c2.expectComplete()
     }
 
-    "work with one-way broadcast" in assertAllStagesStopped {
+    "work with one-way broadcast" in {
       val result = Source
         .fromGraph(GraphDSL.create() { implicit b =>
           val broadcast = b.add(Broadcast[Int](1))
@@ -68,7 +67,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       Await.result(result, 3.seconds) should ===(Seq(1, 2, 3))
     }
 
-    "work with n-way broadcast" in assertAllStagesStopped {
+    "work with n-way broadcast" in {
       val headSink = Sink.head[Seq[Int]]
 
       import system.dispatcher
@@ -90,7 +89,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       Await.result(result, 3.seconds) should be(List.fill(5)(List(1, 2, 3)))
     }
 
-    "work with 22-way broadcast" in assertAllStagesStopped {
+    "work with 22-way broadcast" in {
       type T = Seq[Int]
       type FT = Future[Seq[Int]]
       val headSink: Sink[T, FT] = Sink.head[T]
@@ -159,7 +158,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       Await.result(result, 3.seconds) should be(List.fill(22)(List(1, 2, 3)))
     }
 
-    "produce to other even though downstream cancels" in assertAllStagesStopped {
+    "produce to other even though downstream cancels" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
@@ -183,7 +182,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       c2.expectComplete()
     }
 
-    "produce to downstream even though other cancels" in assertAllStagesStopped {
+    "produce to downstream even though other cancels" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
@@ -207,7 +206,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       c1.expectComplete()
     }
 
-    "cancel upstream when downstreams cancel" in assertAllStagesStopped {
+    "cancel upstream when downstreams cancel" in {
       val p1 = TestPublisher.manualProbe[Int]()
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
@@ -239,7 +238,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       bsub.expectCancellation()
     }
 
-    "pass along early cancellation" in assertAllStagesStopped {
+    "pass along early cancellation" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
@@ -264,7 +263,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       upsub.expectCancellation()
     }
 
-    "alsoTo must broadcast" in assertAllStagesStopped {
+    "alsoTo must broadcast" in {
       val p, p2 = TestSink.probe[Int](system)
       val (ps1, ps2) = Source(1 to 6).alsoToMat(p)(Keep.right).toMat(p2)(Keep.both).run()
       ps1.request(6)
@@ -275,7 +274,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       ps2.expectComplete()
     }
 
-    "cancel if alsoTo side branch cancels" in assertAllStagesStopped {
+    "cancel if alsoTo side branch cancels" in {
       val in = TestSource.probe[Int](system)
       val outSide = TestSink.probe[Int](system)
       val (pIn, pSide) = in.alsoToMat(outSide)(Keep.both).toMat(Sink.ignore)(Keep.left).run()
@@ -284,7 +283,7 @@ class GraphBroadcastSpec extends StreamSpec("""
       pIn.expectCancellation()
     }
 
-    "cancel if alsoTo main branch cancels" in assertAllStagesStopped {
+    "cancel if alsoTo main branch cancels" in {
       val in = TestSource.probe[Int](system)
       val outMain = TestSink.probe[Int](system)
       val (pIn, pMain) = in.alsoToMat(Sink.ignore)(Keep.left).toMat(outMain)(Keep.both).run()

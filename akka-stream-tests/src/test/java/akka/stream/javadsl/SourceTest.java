@@ -14,28 +14,26 @@ import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 // #imports
 import akka.stream.*;
-
 // #imports
 import akka.stream.scaladsl.FlowSpec;
-import akka.util.ConstantFun;
-import akka.stream.stage.*;
-import akka.testkit.AkkaSpec;
+import akka.stream.stage.AbstractInHandler;
+import akka.stream.stage.AbstractOutHandler;
+import akka.stream.stage.GraphStage;
+import akka.stream.stage.GraphStageLogic;
 import akka.stream.testkit.TestPublisher;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.TestKit;
+import akka.util.ConstantFun;
 import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.util.Try;
-import akka.testkit.AkkaJUnitActorSystemResource;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -43,9 +41,10 @@ import java.util.stream.Stream;
 import static akka.NotUsed.notUsed;
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("serial")
 public class SourceTest extends StreamTest {
@@ -685,6 +684,56 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseStatefulMap() throws Exception {
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
+    final CompletionStage<String> grouped =
+        Source.from(input)
+            .statefulMap(
+                () -> new ArrayList<Integer>(2),
+                (buffer, elem) -> {
+                  if (buffer.size() == 2) {
+                    final ArrayList<Integer> group = new ArrayList<>(buffer);
+                    buffer.clear();
+                    buffer.add(elem);
+                    return Pair.create(buffer, group);
+                  } else {
+                    buffer.add(elem);
+                    return Pair.create(buffer, Collections.emptyList());
+                  }
+                },
+                Optional::ofNullable)
+            .filterNot(List::isEmpty)
+            .map(String::valueOf)
+            .runFold("", (acc, elem) -> acc + elem, system);
+    Assert.assertEquals("[1, 2][3, 4][5]", grouped.toCompletableFuture().get(3, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void mustBeAbleToUseStatefulMapAsDistinctUntilChanged() throws Exception {
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 1, 1, 2, 3, 3, 3, 4, 5, 5, 5);
+    final CompletionStage<String> result =
+        Source.from(input)
+            .statefulMap(
+                Optional::<Integer>empty,
+                (buffer, elem) -> {
+                  if (buffer.isPresent()) {
+                    if (buffer.get().equals(elem)) {
+                      return Pair.create(buffer, Optional.<Integer>empty());
+                    } else {
+                      return Pair.create(Optional.of(elem), Optional.of(elem));
+                    }
+                  } else {
+                    return Pair.create(Optional.of(elem), Optional.of(elem));
+                  }
+                },
+                last -> Optional.empty())
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .runFold("", (acc, elem) -> acc + elem, system);
+    Assert.assertEquals("12345", result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+  }
+
+  @Test
   public void mustBeAbleToUseIntersperse() throws Exception {
     final TestKit probe = new TestKit(system);
     final Source<String, NotUsed> source =
@@ -1147,6 +1196,12 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseAlsoToAll() {
+    final Source<Integer, NotUsed> f =
+        Source.<Integer>empty().alsoToAll(Sink.ignore(), Sink.ignore());
+  }
+
+  @Test
   public void mustBeAbleToUseDivertTo() {
     final Source<Integer, NotUsed> f = Source.<Integer>empty().divertTo(Sink.ignore(), e -> true);
     final Source<Integer, String> f2 =
@@ -1179,16 +1234,21 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
-  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletion() {
+  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletion() throws Exception {
     final Iterator<Integer> iterator = IntStream.range(1, 10).iterator();
     final Creator<Iterator<Integer>> input = () -> iterator;
     final Done completion =
-        Source.fromIterator(input).map(it -> it * 10).run(system).toCompletableFuture().join();
+        Source.fromIterator(input)
+            .map(it -> it * 10)
+            .run(system)
+            .toCompletableFuture()
+            .get(1, TimeUnit.SECONDS);
     assertEquals(Done.getInstance(), completion);
   }
 
   @Test
-  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletionWithMaterializer() {
+  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletionWithMaterializer()
+      throws Exception {
     final Materializer materializer = Materializer.createMaterializer(system);
     final Iterator<Integer> iterator = IntStream.range(1, 10).iterator();
     final Creator<Iterator<Integer>> input = () -> iterator;
@@ -1197,7 +1257,69 @@ public class SourceTest extends StreamTest {
             .map(it -> it * 10)
             .run(materializer)
             .toCompletableFuture()
-            .join();
+            .get(3, TimeUnit.SECONDS);
     assertEquals(Done.getInstance(), completion);
+  }
+
+  @Test
+  public void mustGenerateAFiniteFibonacciSequenceAsynchronously() {
+    final List<Integer> resultList =
+        Source.unfoldAsync(
+                Pair.create(0, 1),
+                (pair) -> {
+                  if (pair.first() > 10000000) {
+                    return CompletableFuture.completedFuture(Optional.empty());
+                  } else {
+                    return CompletableFuture.supplyAsync(
+                        () ->
+                            Optional.of(
+                                Pair.create(
+                                    Pair.create(pair.second(), pair.first() + pair.second()),
+                                    pair.first())),
+                        system.dispatcher());
+                  }
+                })
+            .runFold(
+                new ArrayList<Integer>(),
+                (list, next) -> {
+                  list.add(next);
+                  return list;
+                },
+                system)
+            .toCompletableFuture()
+            .join();
+    assertEquals(
+        Arrays.asList(
+            0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181,
+            6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040,
+            1346269, 2178309, 3524578, 5702887, 9227465),
+        resultList);
+  }
+
+  @Test
+  public void flattenOptional() throws Exception {
+    // #flattenOptional
+    final CompletionStage<List<Integer>> resultList =
+        Source.range(1, 10)
+            .map(x -> Optional.of(x).filter(n -> n % 2 == 0))
+            .via(Flow.flattenOptional())
+            .runWith(Sink.seq(), system);
+    // #flattenOptional
+    Assert.assertEquals(
+        Arrays.asList(2, 4, 6, 8, 10), resultList.toCompletableFuture().get(3, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void flattenOptionalOptional() throws Exception {
+    final List<Integer> resultList =
+        Source.range(1, 10)
+            .map(x -> Optional.of(x).filter(n -> n % 2 == 0))
+            .map(Optional::ofNullable)
+            .via(Flow.flattenOptional())
+            .via(Flow.flattenOptional())
+            .runWith(Sink.seq(), system)
+            .toCompletableFuture()
+            .get(3, TimeUnit.SECONDS);
+    Assert.assertEquals(Arrays.asList(2, 4, 6, 8, 10), resultList);
   }
 }

@@ -84,10 +84,10 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #structure }
 
-The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command`
+The first important thing to notice is the @apidoc[typed.Behavior] of a persistent actor is typed to the type of the `Command`
 because this is the type of message a persistent actor should receive. In Akka this is now enforced by the type system.
 
-The components that make up an `EventSourcedBehavior` are:
+The components that make up an @apidoc[typed.*.EventSourcedBehavior] are:
 
 * `persistenceId` is the stable unique identifier for the persistent actor.
 * `emptyState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
@@ -113,7 +113,7 @@ event journal and snapshot store.
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `EventSourcedBehavior` to ensure
 that there is only one active entity for each `PersistenceId` (`entityId`). There are techniques to ensure this 
 uniqueness, an example of which can be found in the 
-@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
+@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the @apidoc[typed.*.EntityContext].
 
 The `entityId` in Cluster Sharding is the business domain identifier of the entity. The `entityId` might not
 be unique enough to be used as the `PersistenceId` by itself. For example two different types of
@@ -133,13 +133,13 @@ you should use `""` as the separator.
 
 @@@
 
-A custom identifier can be created with `PersistenceId.ofUniqueId`.  
+A custom identifier can be created with @apidoc[PersistenceId.ofUniqueId](typed.PersistenceId$) {scala="#ofUniqueId(id:String):akka.persistence.typed.PersistenceId" java="#ofUniqueId(java.lang.String)"}.  
 
 ### Command handler
 
 The command handler is a function with 2 parameters, the current `State` and the incoming `Command`.
 
-A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
+A command handler returns an @scala[@scaladoc[Effect](akka.persistence.typed.scaladsl.Effect)]@java[@javadoc[Effect](akka.persistence.typed.javadsl.Effect)] directive that defines what event or events, if any, to persist. 
 Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory].
 
 The two most commonly used effects are: 
@@ -167,7 +167,7 @@ The same event handler is also used when the entity is started up to recover its
 
 The event handler must only update the state and never perform side effects, as those would also be
 executed during recovery of the persistent actor. Side effects should be performed in `thenRun` from the
-@ref:[command handler](#command-handler) after persisting the event or from the `RecoveryCompleted`
+@ref:[command handler](#command-handler) after persisting the event or from the @apidoc[typed.RecoveryCompleted]
 after @ref:[Recovery](#recovery).
 
 ### Completing the example
@@ -207,8 +207,8 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #event-handler }
 
-@scala[These are used to create an `EventSourcedBehavior`:]
-@java[These are defined in an `EventSourcedBehavior`:]
+@scala[These are used to create an @scaladoc[EventSourcedBehavior](akka.persistence.typed.scaladsl.EventSourcedBehavior):]
+@java[These are defined in an @javadoc[EventSourcedBehavior](akka.persistence.typed.javadsl.EventSourcedBehavior):]
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #behavior }
@@ -218,23 +218,23 @@ Java
 
 ## Effects and Side Effects
 
-A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
+A command handler returns an @apidoc[typed.(scaladsl|javadsl).Effect] directive that defines what event or events, if any, to persist. 
 Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory]
 and can be one of: 
 
-* `persist` will persist one single event or several events atomically, i.e. all events
+* @scala[@scaladoc[persist](akka.persistence.typed.scaladsl.Effect$#persist[Event,State](events:Seq[Event]):akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[persist](akka.persistence.typed.javadsl.EffectFactories#persist(java.util.List))] will persist one single event or several events atomically, i.e. all events
   are stored or none of them are stored if there is an error
-* `none` no events are to be persisted, for example a read-only command
-* `unhandled` the command is unhandled (not supported) in current state
-* `stop` stop this actor
-* `stash` the current command is stashed
-* `unstashAll` process the commands that were stashed with @scala[`Effect.stash`]@java[`Effect().stash`]
-* `reply` send a reply message to the given `ActorRef`
+* @scala[@scaladoc[none](akka.persistence.typed.scaladsl.Effect$#none[Event,State]:akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[none](akka.persistence.typed.javadsl.EffectFactories#none())] no events are to be persisted, for example a read-only command
+* @scala[@scaladoc[unhandled](akka.persistence.typed.scaladsl.Effect$#unhandled[Event,State]:akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[unhandled](akka.persistence.typed.javadsl.EffectFactories#unhandled())] the command is unhandled (not supported) in current state
+* @scala[@scaladoc[stop](akka.persistence.typed.scaladsl.Effect$#stop[Event,State]():akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[stop](akka.persistence.typed.javadsl.EffectFactories#stop())] stop this actor
+* @scala[@scaladoc[stash](akka.persistence.typed.scaladsl.Effect$#stash[Event,State]():akka.persistence.typed.scaladsl.ReplyEffect[Event,State])]@java[@javadoc[stash](akka.persistence.typed.javadsl.EffectFactories#stash())] the current command is stashed
+* @scala[@scaladoc[unstashAll](akka.persistence.typed.scaladsl.Effect$#unstashAll[Event,State]():akka.persistence.typed.scaladsl.Effect[Event,State])]@java[@javadoc[unstashAll](akka.persistence.typed.javadsl.EffectFactories#unstashAll())] process the commands that were stashed with @scala[`Effect.stash`]@java[`Effect().stash`]
+* @scala[@scaladoc[reply](akka.persistence.typed.scaladsl.Effect$#reply[ReplyMessage,Event,State](replyTo:akka.actor.typed.ActorRef[ReplyMessage])(replyWithMessage:ReplyMessage):akka.persistence.typed.scaladsl.ReplyEffect[Event,State])]@java[@javadoc[reply](akka.persistence.typed.javadsl.EffectFactories#reply(akka.actor.typed.ActorRef,ReplyMessage))] send a reply message to the given @apidoc[typed.ActorRef]
 
 Note that only one of those can be chosen per incoming command. It is not possible to both persist and say none/unhandled.
 
-In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
-chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
+In addition to returning the primary `Effect` for the command @apidoc[typed.*.EventSourcedBehavior]s can also 
+chain side effects that are to be performed after successful persist which is achieved with the @apidoc[thenRun](typed.(scaladsl|javadsl).EffectBuilder) {scala="#thenRun(callback:State=%3EUnit):akka.persistence.typed.scaladsl.EffectBuilder[Event,State]" java="#thenRun(akka.japi.function.Effect)"}
 function e.g. @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 In the example below the state is sent to the `subscriber` ActorRef. Note that the new state after applying 
@@ -246,9 +246,9 @@ All `thenRun` registered callbacks are executed sequentially after successful ex
 
 In addition to `thenRun` the following actions can also be performed after successful persist:
 
-* `thenStop` the actor will be stopped
-* `thenUnstashAll` process the commands that were stashed with @scala[`Effect.stash`]@java[`Effect().stash`]
-* `thenReply` send a reply message to the given `ActorRef`
+* @apidoc[thenStop](typed.(scaladsl|javadsl).EffectBuilder) {scala="#thenStop():akka.persistence.typed.scaladsl.EffectBuilder[Event,State]" java="#thenStop()"} the actor will be stopped
+* @apidoc[thenUnstashAll](typed.(scaladsl|javadsl).EffectBuilder) {scala="#thenUnstashAll():akka.persistence.typed.scaladsl.Effect[Event,State]" java="#thenUnstashAll()"} process the commands that were stashed with @scala[`Effect.stash`]@java[`Effect().stash`]
+* @apidoc[thenReply](typed.(scaladsl|javadsl).EffectBuilder) {scala="#thenReply[ReplyMessage](replyTo:akka.actor.typed.ActorRef[ReplyMessage])(replyWithMessage:State=%3EReplyMessage):akka.persistence.typed.scaladsl.ReplyEffect[Event,State]" java="#thenReply(akka.actor.typed.ActorRef,akka.japi.function.Function)"} send a reply message to the given @apidoc[typed.ActorRef]
 
 Example of effects:
 
@@ -258,7 +258,7 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #effects }
 
-Most of the time this will be done with the `thenRun` method on the `Effect` above. You can factor out
+Most of the time this will be done with the @apidoc[thenRun](typed.(scaladsl|javadsl).EffectBuilder) {scala="#thenRun(callback:State=%3EUnit):akka.persistence.typed.scaladsl.EffectBuilder[Event,State]" java="#thenRun(akka.japi.function.Effect)"} method on the `Effect` above. You can factor out
 common side effects into functions and reuse for several commands. For example:
 
 Scala
@@ -272,7 +272,7 @@ Java
 Any side effects are executed on an at-most-once basis and will not be executed if the persist fails.
 
 Side effects are not run when the actor is restarted or started again after being stopped.
-You may inspect the state when receiving the `RecoveryCompleted` signal and execute side effects that
+You may inspect the state when receiving the @apidoc[typed.RecoveryCompleted] signal and execute side effects that
 have not been acknowledged at that point. That may possibly result in executing side effects more than once.
 
 The side effects are executed sequentially, it is not possible to execute side effects in parallel, unless they
@@ -283,15 +283,15 @@ side effect is performed but the event is not stored if the persist fails.
 
 ### Atomic writes
 
-It is possible to store several events atomically by using the `persist` effect with a list of events.
+It is possible to store several events atomically by using the @scala[@scaladoc[persist](akka.persistence.typed.scaladsl.Effect$#persist[Event,State](events:Seq[Event]):akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[persist](akka.persistence.typed.javadsl.EffectFactories#persist(java.util.List))] effect with a list of events.
 That means that all events passed to that method are stored or none of them are stored if there is an error.
 
 The recovery of a persistent actor will therefore never be done partially with only a subset of events persisted by
-a single `persist` effect.
+a single @scala[@scaladoc[persist](akka.persistence.typed.scaladsl.Effect$#persist[Event,State](event:Event):akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[persist](akka.persistence.typed.javadsl.EffectFactories#persist(Event))] effect.
 
 Some journals may not support atomic writes of several events and they will then reject the `persist` with
-multiple events. This is signalled to an `EventSourcedBehavior` via an `EventRejectedException` (typically with a 
-`UnsupportedOperationException`) and can be handled with a @ref[supervisor](fault-tolerance.md).
+multiple events. This is signalled to an @apidoc[typed.*.EventSourcedBehavior] via an @apidoc[typed.EventRejectedException] (typically with a 
+@javadoc[UnsupportedOperationException](java.lang.UnsupportedOperationException)) and can be handled with a @ref[supervisor](fault-tolerance.md).
 
 ## Cluster Sharding and EventSourcedBehavior
 
@@ -300,7 +300,7 @@ cluster, addressing them by id. It makes it possible to have more persistent act
 would fit in the memory of one node. Cluster sharding improves the resilience of the cluster. If a node crashes, 
 the persistent actors are quickly started on a new node and can resume operations.
 
-The `EventSourcedBehavior` can then be run as with any plain actor as described in @ref:[actors documentation](actors.md),
+The @apidoc[typed.*.EventSourcedBehavior] can then be run as with any plain actor as described in @ref:[actors documentation](actors.md),
 but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
 with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
 If multiple instances were to persist events at the same time, the events would be interleaved and might not be
@@ -310,7 +310,7 @@ interpreted correctly on replay. Cluster Sharding ensures that there is only one
 ## Accessing the ActorContext
 
 If the @apidoc[EventSourcedBehavior] needs to use the @apidoc[typed.*.ActorContext], for example to spawn child actors, it can be obtained by
-wrapping construction with `Behaviors.setup`:
+wrapping construction with @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"}:
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #actor-context }
@@ -320,7 +320,7 @@ Java
 
 ## Changing Behavior
 
-After processing a message, actors are able to return the `Behavior` that is used
+After processing a message, actors are able to return the @apidoc[typed.Behavior] that is used
 for the next message.
 
 As you can see in the above examples this is not supported by persistent actors. Instead, the state is
@@ -355,7 +355,7 @@ Java
 :  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #commands }
 
 @java[The command handler to process each command is decided by the state class (or state predicate) that is
-given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
+given to the `forStateType` of the @javadoc[CommandHandlerBuilder](akka.persistence.typed.javadsl.CommandHandlerBuilder) and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
 Delegating to methods is a good practice because the one-line cases give a nice overview of the message dispatch.
@@ -375,7 +375,7 @@ Scala
 Java
 :  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #event-handler }
 
-And finally the behavior is created @scala[from the `EventSourcedBehavior.apply`]:
+And finally the behavior is created @scala[from the @scaladoc[EventSourcedBehavior.apply](akka.persistence.typed.scaladsl.EventSourcedBehavior$#apply[Command,Event,State](persistenceId:akka.persistence.typed.PersistenceId,emptyState:State,commandHandler:(State,Command)=%3Eakka.persistence.typed.scaladsl.Effect[Event,State],eventHandler:(State,Event)=%3EState):akka.persistence.typed.scaladsl.EventSourcedBehavior[Command,Event,State])]:
 
 Scala
 :  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #behavior }
@@ -395,14 +395,14 @@ The @ref:[Request-Response interaction pattern](interaction-patterns.md#request-
 persistent actors, because you typically want to know if the command was rejected due to validation errors and
 when accepted you want a confirmation when the events have been successfully stored.
 
-Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]. If the 
-command can either have a successful response or a validation error returned, the generic response type @scala[`StatusReply[ReplyType]]`]
-@java[`StatusReply<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
-a pre defined @scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`]
+Therefore you typically include a @apidoc[typed.ActorRef]@scala[`[ReplyMessageType]`]@java[`<ReplyMessageType>`]. If the 
+command can either have a successful response or a validation error returned, the generic response type @apidoc[pattern.StatusReply]@scala[`[ReplyType]`]
+@java[`<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
+a pre defined @scala[@scaladoc[StatusReply.Ack](akka.pattern.StatusReply$#Ack:akka.pattern.StatusReply[akka.Done])]@java[@javadoc[StatusReply.ack()](akka.pattern.StatusReply$#ack():akka.pattern.StatusReply[akka.Done])] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`]
 can be used.
 
-After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
-be sent to the `ActorRef`.
+After validation errors or after persisting events, using a @apidoc[thenRun](typed.(scaladsl|javadsl).EffectBuilder) {scala="#thenRun(callback:State=%3EUnit):akka.persistence.typed.scaladsl.EffectBuilder[Event,State]" java="#thenRun(akka.japi.function.Effect)"} side effect, the reply message can
+be sent to the @apidoc[typed.ActorRef].
 
 Scala
 :  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #reply-command }
@@ -419,9 +419,9 @@ Java
 
 
 Since this is such a common pattern there is a reply effect for this purpose. It has the nice property that
-it can be used to enforce that replies are not forgotten when implementing the `EventSourcedBehavior`.
-If it's defined with @scala[`EventSourcedBehavior.withEnforcedReplies`]@java[`EventSourcedBehaviorWithEnforcedReplies`]
-there will be compilation errors if the returned effect isn't a `ReplyEffect`, which can be
+it can be used to enforce that replies are not forgotten when implementing the @apidoc[typed.*.EventSourcedBehavior].
+If it's defined with @scala[@scaladoc[EventSourcedBehavior.withEnforcedReplies](akka.persistence.typed.scaladsl.EventSourcedBehavior$#withEnforcedReplies[Command,Event,State](persistenceId:akka.persistence.typed.PersistenceId,emptyState:State,commandHandler:(State,Command)=%3Eakka.persistence.typed.scaladsl.ReplyEffect[Event,State],eventHandler:(State,Event)=%3EState):akka.persistence.typed.scaladsl.EventSourcedBehavior[Command,Event,State])]@java[@javadoc[EventSourcedBehaviorWithEnforcedReplies](akka.persistence.typed.javadsl.EventSourcedBehaviorWithEnforcedReplies)]
+there will be compilation errors if the returned effect isn't a @apidoc[typed.(scaladsl|javadsl).ReplyEffect], which can be
 created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
 @scala[`Effect.thenReply`]@java[`Effect().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effect().thenNoReply`].
 
@@ -431,7 +431,7 @@ Scala
 Java
 :  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.java) { #withEnforcedReplies }
 
-The commands must have a field of @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`] that can then be used to send a reply.
+The commands must have a field of @apidoc[typed.ActorRef]@scala[`[ReplyMessageType]`]@java[`<ReplyMessageType>`] that can then be used to send a reply.
 
 Scala
 :  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.scala) { #reply-command }

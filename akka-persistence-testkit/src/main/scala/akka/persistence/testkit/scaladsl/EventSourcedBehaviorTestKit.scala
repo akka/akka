@@ -172,6 +172,12 @@ object EventSourcedBehaviorTestKit {
      * if the reply is of a different type.
      */
     def replyOfType[R <: Reply: ClassTag]: R
+
+    /**
+     * `true` if there is no reply.
+     */
+    def hasNoReply: Boolean
+
   }
 
   /**

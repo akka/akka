@@ -4,21 +4,19 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import scala.annotation.nowarn
-
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 @nowarn("msg=deprecated") // testing deprecated API
 class FlowFromFutureSpec extends StreamSpec {
 
   "A Flow based on a Future" must {
-    "produce one element from already successful Future" in assertAllStagesStopped {
+    "produce one element from already successful Future" in {
       val c = TestSubscriber.manualProbe[Int]()
       Source.fromFuture(Future.successful(1)).runWith(Sink.asPublisher(true)).subscribe(c)
       val sub = c.expectSubscription()
@@ -28,14 +26,14 @@ class FlowFromFutureSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "produce error from already failed Future" in assertAllStagesStopped {
+    "produce error from already failed Future" in {
       val ex = new RuntimeException("test") with NoStackTrace
       val c = TestSubscriber.manualProbe[Int]()
       Source.fromFuture(Future.failed[Int](ex)).runWith(Sink.asPublisher(false)).subscribe(c)
       c.expectSubscriptionAndError(ex)
     }
 
-    "produce one element when Future is completed" in assertAllStagesStopped {
+    "produce one element when Future is completed" in {
       val promise = Promise[Int]()
       val c = TestSubscriber.manualProbe[Int]()
       Source.fromFuture(promise.future).runWith(Sink.asPublisher(true)).subscribe(c)
@@ -60,7 +58,7 @@ class FlowFromFutureSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "produce elements with multiple subscribers" in assertAllStagesStopped {
+    "produce elements with multiple subscribers" in {
       val promise = Promise[Int]()
       val p = Source.fromFuture(promise.future).runWith(Sink.asPublisher(true))
       val c1 = TestSubscriber.manualProbe[Int]()

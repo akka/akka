@@ -38,9 +38,14 @@ In addition to that, you may enjoy following:
 
 Contributing
 ------------
-Contributions are *very* welcome!
+**Contributions are *very* welcome!**
 
-If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a pull request implementing it.
+If you see an issue that you'd like to see fixed, or want to shape out some ideas,
+the best way to make it happen is to help out by submitting a pull request implementing it.
+We welcome contributions from all, even you are not yet familiar with this project,
+We are happy to get you started, and will guide you through the process once you've submitted your PR.
+
+[![akka-dependency-badge]][akka-dependency-scaladex]
 
 Refer to the [CONTRIBUTING.md](https://github.com/akka/akka/blob/main/CONTRIBUTING.md) file for more details about the workflow,
 and general hints on how to prepare your pull request. You can also ask for clarifications or guidance in GitHub issues directly,

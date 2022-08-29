@@ -35,8 +35,8 @@ role of the “Dead Letter Office”.
 
 ## The General Rules
 
-These are the rules for message sends (i.e. the `tell` or `!` method, which
-also underlies the `ask` pattern):
+These are the rules for message sends (i.e. the @scala[@scaladoc[tell](akka.actor.ActorRef#tell(msg:Any,sender:akka.actor.ActorRef):Unit) or @scaladoc[!](akka.actor.ActorRef#!(message:Any)(implicitsender:akka.actor.ActorRef):Unit)]@java[@javadoc[tell](akka.actor.ActorRef#tell(java.lang.Object,akka.actor.ActorRef))] method, which
+also underlies the @scaladoc[ask](akka.pattern.AskSupport#ask(actorRef:akka.actor.ActorRef):akka.pattern.AskableActorRef) pattern):
 
 * **at-most-once delivery**, i.e. no guaranteed delivery
 * **message ordering per sender–receiver pair**
@@ -197,17 +197,17 @@ this you should only rely on @ref:[The General Rules](#the-general-rules).
 
 The Akka test suite relies on not losing messages in the local context (and for
 non-error condition tests also for remote deployment), meaning that we
-actually do apply the best effort to keep our tests stable. A local `tell`
+actually do apply the best effort to keep our tests stable. A local @apidoc[tell](akka.actor.ActorRef) {scala="#tell(msg:Any,sender:akka.actor.ActorRef):Unit"  java="#tell(java.lang.Object,akka.actor.ActorRef)"}
 operation can however fail for the same reasons as a normal method call can on
 the JVM:
 
-* `StackOverflowError`
-* `OutOfMemoryError`
-* other `VirtualMachineError`
+* @javadoc[StackOverflowError](java.lang.StackOverflowError)
+* @javadoc[OutOfMemoryError](java.lang.OutOfMemoryError)
+* other @javadoc[VirtualMachineError](java.lang.VirtualMachineError)
 
 In addition, local sends can fail in Akka-specific ways:
 
-* if the mailbox does not accept the message (e.g. full BoundedMailbox)
+* if the mailbox does not accept the message (e.g. full @apidoc[akka.dispatch.BoundedMailbox])
 * if the receiving actor fails while processing the message or is already
 terminated
 
@@ -338,7 +338,7 @@ guaranteed delivery.
 
 ### How do I Receive Dead Letters?
 
-An actor can subscribe to class `akka.actor.DeadLetter` on the event
+An actor can subscribe to class @apidoc[akka.actor.DeadLetter](akka.actor.DeadLetter) on the event
 stream, see @ref:[Event Stream](../event-bus.md#event-stream)
 for how to do that. The subscribed actor will then receive all dead
 letters published in the (local) system from that point onwards. Dead letters
@@ -356,6 +356,6 @@ that some messages which it sends to itself are lost. There is one which
 happens quite easily in complex shutdown scenarios that is usually benign:
 seeing instances of a graceful stop command for an actor being dropped means that two
 stop requests were given, but only one can succeed. In the
-same vein, you might see `akka.actor.Terminated` messages from children
+same vein, you might see @apidoc[akka.actor.Terminated](akka.actor.Terminated) messages from children
 while stopping a hierarchy of actors turning up in dead letters if the parent
 is still watching the child when the parent terminates.

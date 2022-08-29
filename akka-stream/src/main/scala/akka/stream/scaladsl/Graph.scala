@@ -329,90 +329,94 @@ object MergePrioritized {
  */
 final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComplete: Boolean)
     extends GraphStage[UniformFanInShape[T, T]] {
-  private val inputPorts = priorities.size
-  require(inputPorts > 0, "A Merge must have one or more input ports")
+  require(priorities.nonEmpty, "A Merge must have one or more input ports")
   require(priorities.forall(_ > 0), "Priorities should be positive integers")
 
-  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i => Inlet[T]("MergePrioritized.in" + i))
+  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(priorities.size)(i => Inlet[T]("MergePrioritized.in" + i))
   val out: Outlet[T] = Outlet[T]("MergePrioritized.out")
   override def initialAttributes: Attributes = DefaultAttributes.mergePrioritized
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler {
-      private val allBuffers = Vector.tabulate(priorities.size)(i => FixedSizeBuffer[Inlet[T]](priorities(i)))
-      private var runningUpstreams = inputPorts
+      private var runningUpstreams = priorities.size
       private val randomGen = new SplittableRandom
 
       override def preStart(): Unit = in.foreach(tryPull)
 
-      in.zip(allBuffers).foreach {
-        case (inlet, buffer) =>
-          setHandler(
-            inlet,
-            new InHandler {
-              override def onPush(): Unit = {
-                if (isAvailable(out) && !hasPending) {
-                  push(out, grab(inlet))
-                  tryPull(inlet)
-                } else {
-                  buffer.enqueue(inlet)
-                }
+      in.foreach { inlet =>
+        setHandler(
+          inlet,
+          new InHandler {
+            override def onPush(): Unit = {
+              if (isAvailable(out) && !hasOtherInletAvailable(inlet)) {
+                push(out, grab(inlet))
+                tryPull(inlet)
               }
+            }
 
-              override def onUpstreamFinish(): Unit = {
-                if (eagerComplete) {
-                  in.foreach(cancel(_))
-                  runningUpstreams = 0
-                  if (!hasPending) completeStage()
-                } else {
-                  runningUpstreams -= 1
-                  if (upstreamsClosed && !hasPending) completeStage()
-                }
+            override def onUpstreamFinish(): Unit = {
+              if (eagerComplete) {
+                in.foreach(cancel(_))
+                runningUpstreams = 0
+                if (!hasPending) completeStage()
+              } else {
+                runningUpstreams -= 1
+                if (upstreamsClosed && !hasPending) completeStage()
               }
-            })
+            }
+          })
       }
 
       override def onPull(): Unit = {
-        if (hasPending) dequeueAndDispatch()
+        val in = select()
+        if (in ne null) {
+          push(out, grab(in))
+          if (upstreamsClosed && !hasPending)
+            completeStage()
+          else
+            tryPull(in)
+        }
       }
 
       setHandler(out, this)
 
-      private def hasPending: Boolean = allBuffers.exists(_.nonEmpty)
+      private def hasPending: Boolean = in.exists(inlet => isAvailable(inlet))
 
-      private def upstreamsClosed = runningUpstreams == 0
+      private def hasOtherInletAvailable(excludeInlet: Inlet[T]): Boolean =
+        in.exists(inlet => (inlet ne excludeInlet) && isAvailable(inlet))
 
-      private def dequeueAndDispatch(): Unit = {
-        val in = selectNextElement()
-        push(out, grab(in))
-        if (upstreamsClosed && !hasPending) completeStage() else tryPull(in)
-      }
+      private def upstreamsClosed: Boolean = runningUpstreams == 0
 
-      private def selectNextElement() = {
+      private def select(): Inlet[T] = {
         var tp = 0
         var ix = 0
 
-        while (ix < in.size) {
-          if (allBuffers(ix).nonEmpty) {
+        while (ix < in.length) {
+          if (isAvailable(in(ix))) {
             tp += priorities(ix)
           }
           ix += 1
         }
 
-        var r = randomGen.nextInt(tp)
-        var next: Inlet[T] = null
-        ix = 0
+        if (tp == 0) {
+          // no inlets are available
+          null.asInstanceOf[Inlet[T]]
+        } else {
+          var r = randomGen.nextInt(tp)
+          var next: Inlet[T] = null
+          ix = 0
 
-        while (ix < in.size && next == null) {
-          if (allBuffers(ix).nonEmpty) {
-            r -= priorities(ix)
-            if (r < 0) next = allBuffers(ix).dequeue()
+          while (ix < in.length && next == null) {
+            if (isAvailable(in(ix))) {
+              r -= priorities(ix)
+              if (r < 0) next = in(ix)
+            }
+            ix += 1
           }
-          ix += 1
-        }
 
-        next
+          next
+        }
       }
     }
 
@@ -1037,6 +1041,11 @@ object ZipLatest {
    * Create a new `ZipLatest`.
    */
   def apply[A, B](): ZipLatest[A, B] = new ZipLatest()
+
+  /**
+   * Create a new `ZipLatest`.
+   */
+  def apply[A, B](eagerComplete: Boolean): ZipLatest[A, B] = new ZipLatest(eagerComplete)
 }
 
 /**
@@ -1051,11 +1060,14 @@ object ZipLatest {
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' any upstream completes
+ * '''Completes when''' any upstream completes if `eagerComplete` is enabled or wait for all upstreams to complete
  *
  * '''Cancels when''' downstream cancels
  */
-final class ZipLatest[A, B] extends ZipLatestWith2[A, B, (A, B)](Tuple2.apply) {
+final class ZipLatest[A, B](eagerComplete: Boolean) extends ZipLatestWith2[A, B, (A, B)](Tuple2.apply, eagerComplete) {
+
+  def this() = this(true)
+
   override def toString = "ZipLatest"
 }
 
@@ -1074,7 +1086,11 @@ object ZipWith extends ZipWithApply
 
 /**
  * Combine the elements of multiple streams into a stream of combined elements using a combiner function,
- * picking always the latest of the elements of each source.
+ * picking always the latest of the elements of each source. The combined stream completes immediately if
+ * some upstreams have already completed while some upstreams did not emitted any value yet.
+ * If all upstreams produced some value and the optional parameter `eagerComplete` is true (default),
+ * the combined stream completes when any of the upstreams completes, otherwise, the combined stream
+ * will wait for all upstreams to complete.
  *
  * No element is emitted until at least one element from each Source becomes available. Whenever a new
  * element appears, the zipping function is invoked with a tuple containing the new element

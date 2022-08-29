@@ -4,17 +4,17 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.impl.JsonObjectParser
-import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.scaladsl.JsonFraming.PartialObjectException
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.testkit.AkkaSpec
-import akka.util.ByteString
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream.impl.JsonObjectParser
+import akka.stream.scaladsl.Framing.FramingException
+import akka.stream.scaladsl.JsonFraming.PartialObjectException
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.AkkaSpec
+import akka.util.ByteString
 
 class JsonFramingSpec extends AkkaSpec {
 
@@ -123,7 +123,7 @@ class JsonFramingSpec extends AkkaSpec {
         """.stripMargin,
         """{ "na""",
         """me": "jack""",
-        """"}]"""").map(ByteString(_))
+        """"}]""").map(ByteString(_))
 
       val result = Source.apply(input).via(JsonFraming.objectScanner(Int.MaxValue)).runFold(Seq.empty[String]) {
         case (acc, entry) => acc ++ Seq(entry.utf8String)
