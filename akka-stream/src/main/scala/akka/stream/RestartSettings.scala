@@ -6,9 +6,9 @@ package akka.stream
 
 import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
-
 import akka.event.Logging
 import akka.event.Logging.LogLevel
+import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
 
 final class RestartSettings private (
@@ -84,7 +84,7 @@ object RestartSettings {
       maxRestarts = Int.MaxValue,
       maxRestartsWithin = minBackoff,
       logSettings = LogSettings.defaultSettings,
-      restartOn = _ => true)
+      restartOn = ConstantFun.anyToTrue)
 
   /** Java API */
   def create(minBackoff: java.time.Duration, maxBackoff: java.time.Duration, randomFactor: Double): RestartSettings =
@@ -95,7 +95,7 @@ object RestartSettings {
       maxRestarts = Int.MaxValue,
       maxRestartsWithin = minBackoff.asScala,
       logSettings = LogSettings.defaultSettings,
-      restartOn = _ => true)
+      restartOn = ConstantFun.anyToTrue)
 
   /** Java API */
   def createLogSettings(logLevel: LogLevel): LogSettings =
