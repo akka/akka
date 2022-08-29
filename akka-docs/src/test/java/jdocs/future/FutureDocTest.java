@@ -41,7 +41,6 @@ public class FutureDocTest extends AbstractJavaTest {
   private final ActorSystem<Void> system = toTyped(actorSystemResource.getSystem());
 
   @Test(expected = java.util.concurrent.CompletionException.class)
-  @SuppressWarnings("unchecked")
   public void useAfter() throws Exception {
     final ExecutionContext ec = system.executionContext();
     // #after
