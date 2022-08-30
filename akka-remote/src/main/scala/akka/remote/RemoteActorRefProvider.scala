@@ -268,18 +268,16 @@ private[akka] class RemoteActorRefProvider(
   }
 
   private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
-    // TODO change link to current once 2.6 is out
     checkClassOrThrow(
       system,
       "org.jboss.netty.channel.Channel",
       "Classic",
       "Netty",
-      "https://doc.akka.io/docs/akka/2.6/remoting.html")
+      "https://doc.akka.io/docs/akka/current/remoting.html")
   }
 
   private def checkAeronOnClassPath(system: ActorSystemImpl): Unit = {
-    // TODO change link to current once 2.6 is out
-    val arteryLink = "https://doc.akka.io/docs/akka/2.6/remoting-artery.html"
+    val arteryLink = "https://doc.akka.io/docs/akka/current/remoting-artery.html"
     // using classes that are used so will fail to compile if they get removed from Aeron
     checkClassOrThrow(system, "io.aeron.driver.MediaDriver", "Artery", "Aeron driver", arteryLink)
     checkClassOrThrow(system, "io.aeron.Aeron", "Artery", "Aeron client", arteryLink)
