@@ -40,7 +40,7 @@ See @ref:[Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use
 
 ## Cluster API Extension
 
-The following configuration enables the `Cluster` extension to be used.
+The following configuration enables the @apidoc[cluster.Cluster] extension to be used.
 It joins the cluster and an actor subscribes to cluster membership events and logs them.
 
 An actor that uses the cluster extension may look like this:
@@ -87,7 +87,7 @@ Java
 
 For more information see @ref[tuning joins](typed/cluster.md#tuning-joins)
 
-It's also possible to specifically join a single node as illustrated in below example, but `joinSeedNodes` should be
+It's also possible to specifically join a single node as illustrated in below example, but @apidoc[joinSeedNodes](cluster.Cluster) {scala="#joinSeedNodes(seedNodes:Seq[akka.actor.Address]):Unit" java="#joinSeedNodes(java.util.List)"} should be
 preferred since it has redundancy and retry mechanisms built-in.
 
 Scala
@@ -108,7 +108,7 @@ See @ref:[Downing](typed/cluster.md#downing) in the documentation of the new API
 ## Subscribe to Cluster Events
 
 You can subscribe to change notifications of the cluster membership by using
-@scala[`Cluster(system).subscribe`]@java[`Cluster.get(system).subscribe`].
+@scala[@scaladoc[Cluster(system).subscribe](akka.cluster.Cluster#subscribe(subscriber:akka.actor.ActorRef,to:Class[_]*):Unit)]@java[@javadoc[Cluster.get(system).subscribe](akka.cluster.Cluster#subscribe(akka.actor.ActorRef,akka.cluster.ClusterEvent.SubscriptionInitialStateMode,java.lang.Class...))].
 
 Scala
 :  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #subscribe }
@@ -116,13 +116,13 @@ Scala
 Java
 :  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #subscribe }
 
-A snapshot of the full state, `akka.cluster.ClusterEvent.CurrentClusterState`, is sent to the subscriber
+A snapshot of the full state, @apidoc[CurrentClusterState](ClusterEvent.CurrentClusterState), is sent to the subscriber
 as the first message, followed by events for incremental updates.
 
 Note that you may receive an empty `CurrentClusterState`, containing no members,
-followed by `MemberUp` events from other nodes which already joined,
+followed by @apidoc[MemberUp](ClusterEvent.MemberUp) events from other nodes which already joined,
 if you start the subscription before the initial join procedure has completed.
-This may for example happen when you start the subscription immediately after `cluster.join()` like below.
+This may for example happen when you start the subscription immediately after @apidoc[cluster.join()](cluster.Cluster) {scala="#join(address:akka.actor.Address):Unit" java="#join(akka.actor.Address)"} like below.
 This is expected behavior. When the node has been accepted in the cluster you will
 receive `MemberUp` for that node, and other nodes.
 
@@ -143,7 +143,7 @@ Java
 
 
 If you find it inconvenient to handle the `CurrentClusterState` you can use
-@scala[`ClusterEvent.InitialStateAsEvents`] @java[`ClusterEvent.initialStateAsEvents()`] as parameter to `subscribe`.
+@scala[@scaladoc[ClusterEvent.InitialStateAsEvents](akka.cluster.ClusterEvent$$InitialStateAsEvents$)] @java[@javadoc[ClusterEvent.initialStateAsEvents()](akka.cluster.ClusterEvent#initialStateAsEvents())] as parameter to @apidoc[subscribe](akka.cluster.Cluster) {scala="#subscribe(subscriber:akka.actor.ActorRef,to:Class[_]*):Unit" java="#subscribe(akka.actor.ActorRef,akka.cluster.ClusterEvent.SubscriptionInitialStateMode,java.lang.Class...)"}.
 That means that instead of receiving `CurrentClusterState` as the first message you will receive
 the events corresponding to the current state to mimic what you would have seen if you were
 listening to the events when they occurred in the past. Note that those initial events only correspond
@@ -198,7 +198,7 @@ Note that the `TransformationFrontend` actor watch the registered backend
 to be able to remove it from its list of available backend workers.
 Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects
 network failures and JVM crashes, in addition to graceful termination of watched
-actor. Death watch generates the `Terminated` message to the watching actor when the
+actor. Death watch generates the @apidoc[actor.Terminated] message to the watching actor when the
 unreachable cluster node has been downed and removed.
 
 ## Node Roles
@@ -232,7 +232,7 @@ akka.cluster.role {
 }
 ```
 
-You can start actors or trigger any functions using the `registerOnMemberUp` callback, which will
+You can start actors or trigger any functions using the @apidoc[registerOnMemberUp](cluster.Cluster) {scala="#registerOnMemberUp[T](code:=%3ET):Unit" java="#registerOnMemberUp(java.lang.Runnable)"} callback, which will
 be invoked when the current member status is changed to 'Up'. This can additionally be used with 
 `akka.cluster.min-nr-of-members` optional configuration to defer an action until the cluster has reached a certain size.
 
@@ -244,7 +244,7 @@ Java
 
 ## How To Cleanup when Member is Removed
 
-You can do some clean up in a `registerOnMemberRemoved` callback, which will
+You can do some clean up in a @apidoc[registerOnMemberRemoved](cluster.Cluster) {scala="#registerOnMemberRemoved[T](code:=%3ET):Unit" java="#registerOnMemberRemoved(java.lang.Runnable)"} callback, which will
 be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown.
 
 An alternative is to register tasks to the @ref:[Coordinated Shutdown](coordinated-shutdown.md).
@@ -252,7 +252,7 @@ An alternative is to register tasks to the @ref:[Coordinated Shutdown](coordinat
 @@@ note
 
 Register a OnMemberRemoved callback on a cluster that have been shutdown, the callback will be invoked immediately on
-the caller thread, otherwise it will be invoked later when the current member status changed to 'Removed'. You may
+the caller thread, otherwise it will be invoked later when the current member status changed to @scala[@scaladoc[Removed](akka.cluster.MemberStatus$$Removed$)]@java[@javadoc[Removed](akka.cluster.MemberStatus#removed())]. You may
 want to install some cleanup handling after the cluster was started up, but the cluster might already be shutting
 down when you installing, and depending on the race is not healthy.
 
@@ -318,8 +318,8 @@ unreachable from the rest of the cluster. Please see:
 Set up your project according to the instructions in @ref:[Multi Node Testing](multi-node-testing.md) and @ref:[Multi JVM Testing](multi-jvm-testing.md), i.e.
 add the `sbt-multi-jvm` plugin and the dependency to `akka-multi-node-testkit`.
 
-First, as described in @ref:[Multi Node Testing](multi-node-testing.md), we need some scaffolding to configure the `MultiNodeSpec`.
-Define the participating @ref:[roles](typed/cluster.md#node-roles) and their @ref:[configuration](#configuration) in an object extending `MultiNodeConfig`:
+First, as described in @ref:[Multi Node Testing](multi-node-testing.md), we need some scaffolding to configure the @scaladoc[MultiNodeSpec](akka.remote.testkit.MultiNodeSpec).
+Define the participating @ref:[roles](typed/cluster.md#node-roles) and their @ref:[configuration](#configuration) in an object extending @scaladoc[MultiNodeConfig](akka.remote.testkit.MultiNodeConfig):
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
 
@@ -343,7 +343,7 @@ That can be done like this:
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #startup-cluster }
 
-From the test you interact with the cluster using the `Cluster` extension, e.g. `join`.
+From the test you interact with the cluster using the `Cluster` extension, e.g. @scaladoc[join](akka.cluster.Cluster#join(address:akka.actor.Address):Unit).
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #join }
 
@@ -356,10 +356,10 @@ of code should only run for a specific role.
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #test-statsService }
 
 Once again we take advantage of the facilities in @ref:[testkit](testing.md) to verify expected behavior.
-Here using `testActor` as sender (via `ImplicitSender`) and verifying the reply with `expectMsgPF`.
+Here using `testActor` as sender (via @scaladoc[ImplicitSender](akka.testkit.ImplicitSender)) and verifying the reply with `expectMsgType`.
 
 In the above code you can see `node(third)`, which is useful facility to get the root actor reference of
-the actor system for a specific role. This can also be used to grab the `akka.actor.Address` of that node.
+the actor system for a specific role. This can also be used to grab the @scaladoc[akka.actor.Address](akka.actor.Address) of that node.
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #addresses }
 
