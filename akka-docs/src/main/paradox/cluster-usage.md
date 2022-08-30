@@ -350,13 +350,13 @@ From the test you interact with the cluster using the `Cluster` extension, e.g. 
 Notice how the *testActor* from @ref:[testkit](testing.md) is added as @ref:[subscriber](#cluster-subscriber)
 to cluster changes and then waiting for certain events, such as in this case all members becoming 'Up'.
 
-The above code was running for all roles (JVMs). `runOn` is a convenient utility to declare that a certain block
+The above code was running for all roles (JVMs). @scaladoc[runOn](akka.remote.testkit.MultiNodeSpec#runOn(nodes:akka.remote.testconductor.RoleName*)(thunk:=%3EUnit):Unit) is a convenient utility to declare that a certain block
 of code should only run for a specific role.
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #test-statsService }
 
 Once again we take advantage of the facilities in @ref:[testkit](testing.md) to verify expected behavior.
-Here using `testActor` as sender (via @scaladoc[ImplicitSender](akka.testkit.ImplicitSender)) and verifying the reply with `expectMsgType`.
+Here using `testActor` as sender (via @scaladoc[ImplicitSender](akka.testkit.ImplicitSender)) and verifying the reply with @scaladoc[expectMsgType](akka.testkit.TestKit#expectMsgType[T](max:scala.concurrent.duration.FiniteDuration)(implicitt:scala.reflect.ClassTag[T]):T).
 
 In the above code you can see `node(third)`, which is useful facility to get the root actor reference of
 the actor system for a specific role. This can also be used to grab the @scaladoc[akka.actor.Address](akka.actor.Address) of that node.
