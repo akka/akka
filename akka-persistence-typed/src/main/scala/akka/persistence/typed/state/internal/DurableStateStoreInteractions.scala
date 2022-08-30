@@ -61,7 +61,7 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
       cmd: Any,
       state: Running.RunningState[S]): Running.RunningState[S] = {
 
-    val newRunningState = state.nextRevision()
+    val newRunningState = state.nextRevision().copy(state = setup.emptyState)
     val persistenceId = setup.persistenceId.id
 
     onDeleteInitiated(ctx, cmd)
@@ -71,7 +71,7 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
       case Failure(cause) => InternalProtocol.DeleteFailure(cause)
     }
 
-    state.copy(state = setup.emptyState)
+    newRunningState
   }
 
   // FIXME These hook methods are for Telemetry. What more parameters are needed? persistenceId?
