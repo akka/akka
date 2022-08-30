@@ -5,20 +5,18 @@
 package akka.persistence.testkit.state.javadsl
 
 import java.util.Optional
-import java.util.concurrent.CompletionStage
-
+import java.util.concurrent.{CompletableFuture, CompletionStage}
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-
 import akka.japi.Pair
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.Offset
-import akka.persistence.query.javadsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }
+import akka.persistence.query.javadsl.{DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery}
 import akka.persistence.query.typed.javadsl.DurableStateStoreBySliceQuery
 import akka.persistence.state.javadsl.DurableStateUpdateStore
 import akka.persistence.state.javadsl.GetObjectResult
-import akka.persistence.testkit.state.scaladsl.{ PersistenceTestKitDurableStateStore => SStore }
+import akka.persistence.testkit.state.scaladsl.{PersistenceTestKitDurableStateStore => SStore}
 import akka.stream.javadsl.Source
 
 object PersistenceTestKitDurableStateStore {
@@ -36,6 +34,8 @@ class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
 
   def upsertObject(persistenceId: String, seqNr: Long, value: A, tag: String): CompletionStage[Done] =
     stateStore.upsertObject(persistenceId, seqNr, value, tag).toJava
+
+  def deleteObject(persistenceId: String): CompletionStage[Done] = CompletableFuture.completedFuture(Done)
 
   def deleteObject(persistenceId: String, revision: Long): CompletionStage[Done] =
     stateStore.deleteObject(persistenceId, revision).toJava
