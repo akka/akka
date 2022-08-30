@@ -5,8 +5,8 @@
 package akka.persistence.state.scaladsl
 
 import scala.concurrent.Future
-
 import akka.Done
+import scala.annotation.nowarn
 
 /**
  * API for updating durable state objects.
@@ -20,6 +20,9 @@ trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
    */
   def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): Future[Done]
 
-  def deleteObject(persistenceId: String, revision: Long): Future[Done]
+  @deprecated(message = "Use the deleteObject overload with revision instead.", since = "2.6.20")
+  def deleteObject(@nowarn persistenceId: String): Future[Done] = Future.successful(Done)
 
+  @nowarn
+  def deleteObject(persistenceId: String, @nowarn revision: Long): Future[Done] = deleteObject(persistenceId)
 }
