@@ -420,8 +420,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
                 stageActorName,
                 receiveBuffer.used)
             cause match {
-              case _: SubscriptionWithCancelException => completeStage()
-              case failure                            => failStage(failure)
+              case _: SubscriptionWithCancelException.NonFailureCancellation => completeStage()
+              case failure                                                   => failStage(failure)
             }
 
           case WaitingForCancelAck(_, _) =>
