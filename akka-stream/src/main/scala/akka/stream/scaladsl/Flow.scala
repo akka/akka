@@ -2938,6 +2938,41 @@ trait FlowOps[+Out, +Mat] {
     }
 
   /**
+   * Interleave is a deterministic merge of the given [[Source]]s with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that`
+   * source, then repeat process.
+   *
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave operator. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
+   *
+   * If it gets error from one of upstreams - stream completes with failure.
+   *
+   * '''Emits when''' element is available from the currently consumed upstream
+   *
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
+   *
+   * '''Completes when''' the [[Flow]] and given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def interleaveAll[U >: Out](
+      those: immutable.Seq[Graph[SourceShape[U], _]],
+      segmentSize: Int,
+      eagerClose: Boolean): Repr[U] = those match {
+    case those if those.isEmpty => this.asInstanceOf[Repr[U]]
+    case _ =>
+      via(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
+        val interleave = b.add(Interleave[U](those.size + 1, segmentSize, eagerClose))
+        for ((that, idx) <- those.zipWithIndex)
+          that ~> interleave.in(idx + 1)
+        FlowShape(interleave.in(0), interleave.out)
+      })
+  }
+
+  /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
@@ -3091,7 +3126,7 @@ trait FlowOps[+Out, +Mat] {
       that: Graph[SourceShape[U], Mat2],
       detached: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
     GraphDSL.createGraph(that) { implicit b => r =>
-      val merge = b.add(Concat[U](2, detached))
+      val merge = b.add(akka.stream.scaladsl.Concat[U](2, detached))
       r ~> merge.in(1)
       FlowShape(merge.in(0), merge.out)
     }

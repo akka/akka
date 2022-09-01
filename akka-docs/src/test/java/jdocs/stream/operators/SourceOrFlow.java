@@ -23,6 +23,7 @@ import akka.japi.function.Function2;
 // #concat
 // #concatLazy
 // #interleave
+// #interleaveAll
 // #merge
 // #merge-sorted
 import akka.stream.javadsl.Keep;
@@ -34,6 +35,7 @@ import java.util.*;
 // #merge-sorted
 // #merge
 // #interleave
+// #interleaveAll
 // #concat
 // #concatLazy
 // #prepend
@@ -165,7 +167,19 @@ class SourceOrFlow {
 
     // #interleave
   }
-
+  
+  void interleaveAllExample() {
+    // #interleaveAll
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 7, 8));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(3, 4, 9));
+    Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(5, 6));
+    sourceA.interleaveAll(Arrays.asList(sourceB, sourceC), 2, false)
+        .fold(new StringJoiner(","),(joiner, input) -> joiner.add(String.valueOf(input)))
+        .runForeach(System.out::println, system);
+    //prints 1,2,3,4,5,6,7,8,9
+    // #interleaveAll
+  }
+  
   void mergeExample() {
     // #merge
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));

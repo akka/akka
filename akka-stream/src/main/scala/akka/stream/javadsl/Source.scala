@@ -1610,6 +1610,37 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.interleaveMat(that, segmentSize, eagerClose)(combinerToScala(matF)))
 
   /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave operator. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
+   *
+   * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
+   *
+   * '''Emits when''' element is available from the currently consumed upstream
+   *
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
+   *
+   * '''Completes when''' the [[Flow]] and given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def interleaveAll(
+      those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
+      segmentSize: Int,
+      eagerClose: Boolean): javadsl.Source[Out, Mat] = {
+    val seq = if (those != null) Util.immutableSeq(those).collect {
+      case source: Source[Out @unchecked, _] => source.asScala
+      case other                             => other
+    } else immutable.Seq()
+    new Source(delegate.interleaveAll(seq, segmentSize, eagerClose))
+  }
+
+  /**
    * Merge the given [[Source]] to the current one, taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
