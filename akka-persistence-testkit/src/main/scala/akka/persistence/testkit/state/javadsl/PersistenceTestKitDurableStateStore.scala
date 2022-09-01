@@ -5,18 +5,18 @@
 package akka.persistence.testkit.state.javadsl
 
 import java.util.Optional
-import java.util.concurrent.{CompletableFuture, CompletionStage}
+import java.util.concurrent.{ CompletableFuture, CompletionStage }
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import akka.japi.Pair
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.Offset
-import akka.persistence.query.javadsl.{DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery}
+import akka.persistence.query.javadsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }
 import akka.persistence.query.typed.javadsl.DurableStateStoreBySliceQuery
 import akka.persistence.state.javadsl.DurableStateUpdateStore
 import akka.persistence.state.javadsl.GetObjectResult
-import akka.persistence.testkit.state.scaladsl.{PersistenceTestKitDurableStateStore => SStore}
+import akka.persistence.testkit.state.scaladsl.{ PersistenceTestKitDurableStateStore => SStore }
 import akka.stream.javadsl.Source
 
 object PersistenceTestKitDurableStateStore {
