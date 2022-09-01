@@ -9,6 +9,7 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 import java.util.function.Supplier
+
 import scala.annotation.{ nowarn, varargs }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
@@ -16,7 +17,9 @@ import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters.RichOptionalGeneric
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+
 import org.reactivestreams.Processor
+
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -33,8 +36,6 @@ import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.util.unused
-
-import scala.collection.immutable
 
 object Flow {
 
