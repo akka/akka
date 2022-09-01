@@ -290,7 +290,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
        * Upstream in this context is the wrapped stage.
        */
       override def onUpstreamFailure(ex: Throwable) = {
-        if (finishing || maxRestartsReached()) {
+        if (finishing || maxRestartsReached() || !settings.restartOn(ex)) {
           fail(out, ex)
         } else {
           logIt(s"Restarting stream due to failure [${restartCount + 1}]: $ex", OptionVal.Some(ex))
@@ -366,7 +366,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
        * onlyOnFailures is thus racy so a delay to cancellation is added in the case of a flow.
        */
       override def onDownstreamFinish(cause: Throwable) = {
-        if (finishing || maxRestartsReached() || onlyOnFailures) {
+        if (finishing || maxRestartsReached() || onlyOnFailures || !settings.restartOn(cause)) {
           cancel(in, cause)
         } else {
           scheduleRestartTimer()
