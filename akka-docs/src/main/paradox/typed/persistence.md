@@ -439,11 +439,11 @@ Scala
 Java
 :  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.java) { #reply-command }
 
-The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
+The @apidoc[typed.(scaladsl|javadsl).ReplyEffect] is created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
 @scala[`Effect.thenReply`]@java[`Effect().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effect().thenNoReply`].
 
 @java[Note that command handlers are defined with `newCommandHandlerWithReplyBuilder` when using
-`EventSourcedBehaviorWithEnforcedReplies`, as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
+@javadoc[EventSourcedBehaviorWithEnforcedReplies](akka.persistence.typed.javadsl.EventSourcedBehaviorWithEnforcedReplies), as opposed to `newCommandHandlerBuilder` when using @javadoc[EventSourcedBehavior](akka.persistence.typed.javadsl.EventSourcedBehavior).]
 
 Scala
 :  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
@@ -451,7 +451,7 @@ Scala
 Java
 :  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.java) { #reply }
 
-These effects will send the reply message even when @scala[`EventSourcedBehavior.withEnforcedReplies`]@java[`EventSourcedBehaviorWithEnforcedReplies`]
+These effects will send the reply message even when @scala[@scaladoc[EventSourcedBehavior.withEnforcedReplies](akka.persistence.typed.scaladsl.EventSourcedBehavior$#withEnforcedReplies[Command,Event,State](persistenceId:akka.persistence.typed.PersistenceId,emptyState:State,commandHandler:(State,Command)=%3Eakka.persistence.typed.scaladsl.ReplyEffect[Event,State],eventHandler:(State,Event)=%3EState):akka.persistence.typed.scaladsl.EventSourcedBehavior[Command,Event,State])]@java[@javadoc[EventSourcedBehaviorWithEnforcedReplies](akka.persistence.typed.javadsl.EventSourcedBehaviorWithEnforcedReplies)]
 is not used, but then there will be no compilation errors if the reply decision is left out.
 
 Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
@@ -472,7 +472,7 @@ recommendation if you don't have other preference.
 
 An event sourced actor is automatically recovered on start and on restart by replaying journaled events.
 New messages sent to the actor during recovery do not interfere with replayed events.
-They are stashed and received by the `EventSourcedBehavior` after the recovery phase completes.
+They are stashed and received by the @apidoc[typed.*.EventSourcedBehavior] after the recovery phase completes.
 
 The number of concurrent recoveries that can be in progress at the same time is limited
 to not overload the system and the backend data store. When exceeding the limit the actors will wait
@@ -485,7 +485,7 @@ akka.persistence.max-concurrent-recoveries = 50
 The @ref:[event handler](#event-handler) is used for updating the state when replaying the journaled events.
 
 It is strongly discouraged to perform side effects in the event handler, so side effects should be performed
-once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[in the `receiveSignal` handler] @java[by overriding `receiveSignal`]
+once recovery has completed as a reaction to the @apidoc[typed.RecoveryCompleted] signal @scala[in the @scaladoc[receiveSignal](akka.persistence.typed.scaladsl.EventSourcedBehavior#receiveSignal(signalHandler:PartialFunction[(State,akka.actor.typed.Signal),Unit]):akka.persistence.typed.scaladsl.EventSourcedBehavior[Command,Event,State]) handler] @java[by overriding @javadoc[receiveSignal](akka.persistence.typed.javadsl.SignalHandlerBuilder#onSignal(java.lang.Class,java.util.function.BiConsumer))]
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
@@ -558,7 +558,7 @@ Java
 
 ## Event adapters
 
-Event adapters can be programmatically added to your `EventSourcedBehavior`s that can convert from your `Event` type
+Event adapters can be programmatically added to your @apidoc[typed.*.EventSourcedBehavior]s that can convert from your `Event` type
 to another type that is then passed to the journal.
 
 Defining an event adapter is done by extending an EventAdapter:
@@ -579,8 +579,8 @@ Java
 
 ## Wrapping EventSourcedBehavior
 
-When creating an `EventSourcedBehavior`, it is possible to wrap `EventSourcedBehavior` in
-other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
+When creating an @apidoc[typed.*.EventSourcedBehavior], it is possible to wrap `EventSourcedBehavior` in
+other behaviors such as @apidoc[Behaviors.setup](typed.*.Behaviors$) {scala="#setup[T](factory:akka.actor.typed.scaladsl.ActorContext[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#setup(akka.japi.function.Function)"} in order to access the @apidoc[typed.*.ActorContext] object. For instance
 to access the actor logging upon taking snapshots for debug purpose.
 
 Scala
@@ -592,8 +592,8 @@ Java
 
 ## Journal failures
 
-By default an `EventSourcedBehavior` will stop if an exception is thrown from the journal. It is possible to override this with
-any `BackoffSupervisorStrategy`. It is not possible to use the normal supervision wrapping for this as it isn't valid to
+By default an @apidoc[typed.*.EventSourcedBehavior] will stop if an exception is thrown from the journal. It is possible to override this with
+any @apidoc[typed.BackoffSupervisorStrategy]. It is not possible to use the normal supervision wrapping for this as it isn't valid to
 `resume` a behavior on a journal failure as it is not known if the event was persisted.
 
 Scala
@@ -602,20 +602,20 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #supervision }
 
-If there is a problem with recovering the state of the actor from the journal, a `RecoveryFailed` signal is
-emitted to the @scala[`receiveSignal` handler] @java[`receiveSignal` method] and the actor will be stopped
+If there is a problem with recovering the state of the actor from the journal, a @apidoc[typed.RecoveryFailed] signal is
+emitted to the @scala[@scaladoc[receiveSignal](akka.persistence.typed.scaladsl.EventSourcedBehavior#receiveSignal(signalHandler:PartialFunction[(State,akka.actor.typed.Signal),Unit]):akka.persistence.typed.scaladsl.EventSourcedBehavior[Command,Event,State]) handler] @java[@javadoc[receiveSignal](akka.persistence.typed.javadsl.SignalHandlerBuilder#onSignal(java.lang.Class,java.util.function.BiConsumer)) method] and the actor will be stopped
 (or restarted with backoff).
 
 ### Journal rejections
 
 Journals can reject events. The difference from a failure is that the journal must decide to reject an event before
 trying to persist it e.g. because of a serialization exception. If an event is rejected it definitely won't be in the journal. 
-This is signalled to an `EventSourcedBehavior` via an `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md).
+This is signalled to an @apidoc[typed.*.EventSourcedBehavior] via an @apidoc[typed.EventRejectedException] and can be handled with a @ref[supervisor](fault-tolerance.md).
 Not all journal implementations use rejections and treat these kind of problems also as journal failures. 
 
 ## Stash
 
-When persisting events with `persist` or `persistAll` it is guaranteed that the `EventSourcedBehavior` will not receive
+When persisting events with @scala[@scaladoc[persist](akka.persistence.typed.scaladsl.Effect$#persist[Event,State](events:Seq[Event]):akka.persistence.typed.scaladsl.EffectBuilder[Event,State])]@java[@javadoc[persist](akka.persistence.typed.javadsl.EffectFactories#persist(java.util.List))] it is guaranteed that the @apidoc[typed.*.EventSourcedBehavior] will not receive
 further commands until after the events have been confirmed to be persisted and additional side effects have been run.
 Incoming messages are stashed automatically until the `persist` is completed.
 
@@ -624,8 +624,8 @@ when recovery has been completed.
 
 The stashing described above is handled automatically, but there is also a possibility to stash commands when
 they are received to defer processing of them until later. One example could be waiting for some external condition
-or interaction to complete before processing additional commands. That is accomplished by returning a `stash` effect
-and later use `thenUnstashAll`.
+or interaction to complete before processing additional commands. That is accomplished by returning a @scala[@scaladoc[stash](akka.persistence.typed.scaladsl.Effect$#stash[Event,State]():akka.persistence.typed.scaladsl.ReplyEffect[Event,State])]@java[@javadoc[stash](akka.persistence.typed.javadsl.EffectFactories#stash())] effect
+and later use @apidoc[thenUnstashAll](typed.(scaladsl|javadsl).EffectBuilder) {scala="#thenUnstashAll():akka.persistence.typed.scaladsl.Effect[Event,State]" java="#thenUnstashAll()"}.
 
 Let's use an example of a task manager to illustrate how the stashing effects can be used. It handles three commands;
 `StartTask`, `NextStep` and `EndTask`. Those commands are associated with a given `taskId` and the manager processes
@@ -654,7 +654,7 @@ processed.
 * Stashed commands are preserved and processed later in case of a failure while storing events but only if an `onPersistFailure` backoff supervisor strategy is defined.
 
 It's allowed to stash messages while unstashing. Those newly added commands will not be processed by the
-`unstashAll` effect that was in progress and have to be unstashed by another `unstashAll`.
+@scala[@scaladoc[unstashAll](akka.persistence.typed.scaladsl.Effect$#unstashAll[Event,State]():akka.persistence.typed.scaladsl.Effect[Event,State])]@java[@javadoc[unstashAll](akka.persistence.typed.javadsl.EffectFactories#unstashAll())] effect that was in progress and have to be unstashed by another `unstashAll`.
 
 ## Scaling out
 
@@ -663,7 +663,7 @@ where resilience is important so that if a node crashes the persistent actors ar
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a 
 cluster and address them by id.
 
-Akka Persistence is based on the single-writer principle. For a particular `PersistenceId` only one `EventSourcedBehavior`
+Akka Persistence is based on the single-writer principle. For a particular @apidoc[typed.PersistenceId] only one @apidoc[typed.*.EventSourcedBehavior]
 instance should be active at one time. If multiple instances were to persist events at the same time, the events would
 be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
 active entity (`EventSourcedBehavior`) for each id within a data center.
