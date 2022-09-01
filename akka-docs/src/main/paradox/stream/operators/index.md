@@ -273,6 +273,7 @@ the inputs in different ways.
 |Source/Flow|<a name="interleave"></a>@ref[interleave](Source-or-Flow/interleave.md)|Emits a specifiable number of elements from the original source, then from the provided source and repeats.|
 |Source/Flow|<a name="interleaveall"></a>@ref[interleaveAll](Source-or-Flow/interleaveAll.md)|Emits a specifiable number of elements from the original source, then from the provided sources and repeats.|
 |Source/Flow|<a name="merge"></a>@ref[merge](Source-or-Flow/merge.md)|Merge multiple sources.|
+|Source/Flow|<a name="mergeall"></a>@ref[mergeAll](Source-or-Flow/mergeAll.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergelatest"></a>@ref[mergeLatest](Source-or-Flow/mergeLatest.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergepreferred"></a>@ref[mergePreferred](Source-or-Flow/mergePreferred.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergeprioritized"></a>@ref[mergePrioritized](Source-or-Flow/mergePrioritized.md)|Merge multiple sources.|
@@ -514,6 +515,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [mapError](Source-or-Flow/mapError.md)
 * [maybe](Source/maybe.md)
 * [merge](Source-or-Flow/merge.md)
+* [mergeAll](Source-or-Flow/mergeAll.md)
 * [mergeLatest](Source-or-Flow/mergeLatest.md)
 * [mergePreferred](Source-or-Flow/mergePreferred.md)
 * [mergePrioritized](Source-or-Flow/mergePrioritized.md)
