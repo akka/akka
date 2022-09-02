@@ -11,12 +11,15 @@ import scala.concurrent.Future
 import akka.{ Done, NotUsed }
 import akka.actor.ExtendedActorSystem
 import akka.persistence.Persistence
-import akka.persistence.query.DurableStateChange
+import akka.persistence.query.{
+  DeletedDurableState,
+  DurableStateChange,
+  NoOffset,
+  Offset,
+  Sequence,
+  UpdatedDurableState
+}
 import akka.persistence.query.scaladsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }
-import akka.persistence.query.UpdatedDurableState
-import akka.persistence.query.Offset
-import akka.persistence.query.NoOffset
-import akka.persistence.query.Sequence
 import akka.persistence.query.typed.scaladsl.DurableStateStoreBySliceQuery
 import akka.persistence.state.scaladsl.{ DurableStateUpdateStore, GetObjectResult }
 import akka.persistence.typed.PersistenceId
@@ -26,8 +29,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorSource
 import akka.stream.OverflowStrategy
 import scala.collection.immutable
-
-import akka.persistence.testkit.internal.CurrentTime
 
 object PersistenceTestKitDurableStateStore {
   val Identifier = "akka.persistence.testkit.state"
@@ -54,22 +55,29 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
 
   override def getObject(persistenceId: String): Future[GetObjectResult[A]] = this.synchronized {
     Future.successful(store.get(persistenceId) match {
-      case Some(record) => GetObjectResult(Some(record.value), record.revision)
-      case None         => GetObjectResult(None, 0)
+      case Some(Record(_, _, revision, Some(value), _, _)) => GetObjectResult(Some(value), revision)
+      case Some(Record(_, _, revision, None, _, _))        => GetObjectResult(None, revision)
+      case None                                            => GetObjectResult(None, 0)
     })
   }
 
   override def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): Future[Done] =
     this.synchronized {
       val globalOffset = lastGlobalOffset.incrementAndGet()
-      val record = Record(globalOffset, persistenceId, revision, value, tag)
+      val record = Record(globalOffset, persistenceId, revision, Some(value), tag)
       store = store + (persistenceId -> record)
       publisher ! record
       Future.successful(Done)
     }
 
-  override def deleteObject(persistenceId: String): Future[Done] = this.synchronized {
-    store = store - persistenceId
+  override def deleteObject(persistenceId: String): Future[Done] = Future.successful(Done)
+
+  override def deleteObject(persistenceId: String, revision: Long): Future[Done] = this.synchronized {
+    store = store.get(persistenceId) match {
+      case Some(record) => store + (persistenceId -> record.copy(value = None, revision = revision))
+      case None         => store
+    }
+
     Future.successful(Done)
   }
 
@@ -191,9 +199,15 @@ private final case class Record[A](
     globalOffset: Long,
     persistenceId: String,
     revision: Long,
-    value: A,
+    value: Option[A],
     tag: String,
-    timestamp: Long = CurrentTime.now()) {
-  def toDurableStateChange: DurableStateChange[A] =
-    new UpdatedDurableState(persistenceId, revision, value, Sequence(globalOffset), timestamp)
+    timestamp: Long = System.currentTimeMillis) {
+  def toDurableStateChange: DurableStateChange[A] = {
+    value match {
+      case Some(v) =>
+        new UpdatedDurableState(persistenceId, revision, v, Sequence(globalOffset), timestamp)
+      case None =>
+        new DeletedDurableState(persistenceId, revision, Sequence(globalOffset), timestamp)
+    }
+  }
 }
