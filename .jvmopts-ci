@@ -12,3 +12,4 @@
 -XX:MetaspaceSize=512M
 -XX:-ClassUnloadingWithConcurrentMark
 -Djava.security.egd=file:/dev/./urandom
+-Dakka.ci-server=true

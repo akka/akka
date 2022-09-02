@@ -58,7 +58,7 @@ object ConsumerController {
    * Initial message from the consumer actor. The `deliverTo` is typically constructed
    * as a message adapter to map the [[Delivery]] to the protocol of the consumer actor.
    *
-   * If the producer is restarted it should send a new `Start` message to the
+   * If the consumer is restarted it should send a new `Start` message to the
    * `ConsumerController`.
    */
   final case class Start[A](deliverTo: ActorRef[Delivery[A]]) extends Command[A]
@@ -114,7 +114,7 @@ object ConsumerController {
 
   /**
    * Register the `ConsumerController` to the given `producerController`. It will
-   * retry the registration until the `ProducerConsumer` has acknowledged by sending its
+   * retry the registration until the `ProducerController` has acknowledged by sending its
    * first message.
    *
    * Alternatively, this registration can be done on the producer side with the

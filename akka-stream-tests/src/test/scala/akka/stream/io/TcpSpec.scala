@@ -8,6 +8,7 @@ import java.net._
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
@@ -15,7 +16,6 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration
@@ -41,7 +41,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Tcp.IncomingConnection
 import akka.stream.scaladsl.Tcp.ServerBinding
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 import akka.testkit.SocketUtil.{ temporaryServerAddress, temporaryServerHostnameAndPort }
 import akka.testkit.TestKit
@@ -101,7 +100,7 @@ class TcpSpec extends StreamSpec("""
 
   "Outgoing TCP stream" must {
 
-    "work in the happy case" in assertAllStagesStopped {
+    "work in the happy case" in {
       val testData = ByteString(1, 2, 3, 4, 5)
 
       val server = new Server()
@@ -110,7 +109,7 @@ class TcpSpec extends StreamSpec("""
       val tcpWriteProbe = new TcpWriteProbe()
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -128,7 +127,7 @@ class TcpSpec extends StreamSpec("""
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Source(testInput).via(Tcp(system).outgoingConnection(server.address)).to(Sink.ignore).run()
+      Source(testInput).via(Tcp().outgoingConnection(server.address)).to(Sink.ignore).run()
 
       val serverConnection = server.waitAccept()
       serverConnection.read(256)
@@ -144,7 +143,7 @@ class TcpSpec extends StreamSpec("""
       val resultFuture =
         Source
           .fromPublisher(idle.publisherProbe)
-          .via(Tcp(system).outgoingConnection(server.address))
+          .via(Tcp().outgoingConnection(server.address))
           .runFold(ByteString.empty)((acc, in) => acc ++ in)
       val serverConnection = server.waitAccept()
 
@@ -157,20 +156,20 @@ class TcpSpec extends StreamSpec("""
 
     }
 
-    "fail the materialized future when the connection fails" in assertAllStagesStopped {
+    "fail the materialized future when the connection fails" in {
       val tcpWriteProbe = new TcpWriteProbe()
       val future = Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .viaMat(Tcp(system).outgoingConnection(
-          InetSocketAddress.createUnresolved("example.com", 666),
-          connectTimeout = 1.second))(Keep.right)
+        .viaMat(
+          Tcp().outgoingConnection(InetSocketAddress.createUnresolved("example.com", 666), connectTimeout = 1.second))(
+          Keep.right)
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
       future.failed.futureValue shouldBe a[StreamTcpException]
     }
 
-    "work when client closes write, then remote closes write" in assertAllStagesStopped {
+    "work when client closes write, then remote closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -178,7 +177,7 @@ class TcpSpec extends StreamSpec("""
       val tcpReadProbe = new TcpReadProbe()
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -204,7 +203,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "work when remote closes write, then client closes write" in assertAllStagesStopped {
+    "work when remote closes write, then client closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -212,7 +211,7 @@ class TcpSpec extends StreamSpec("""
       val tcpReadProbe = new TcpReadProbe()
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -236,7 +235,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "work when client closes read, then client closes write" in assertAllStagesStopped {
+    "work when client closes read, then client closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -244,7 +243,7 @@ class TcpSpec extends StreamSpec("""
       val tcpReadProbe = new TcpReadProbe()
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -272,7 +271,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "work when client closes write, then client closes read" in assertAllStagesStopped {
+    "work when client closes write, then client closes read" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -280,7 +279,7 @@ class TcpSpec extends StreamSpec("""
       val tcpReadProbe = new TcpReadProbe()
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -309,7 +308,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "work when client closes read, then server closes write, then client closes write" in assertAllStagesStopped {
+    "work when client closes read, then server closes write, then client closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -317,7 +316,7 @@ class TcpSpec extends StreamSpec("""
       val tcpReadProbe = new TcpReadProbe()
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -342,7 +341,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "shut everything down if client signals error" in assertAllStagesStopped {
+    "shut everything down if client signals error" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -351,7 +350,7 @@ class TcpSpec extends StreamSpec("""
 
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -373,7 +372,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "shut everything down if client signals error after remote has closed write" in assertAllStagesStopped {
+    "shut everything down if client signals error after remote has closed write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -382,7 +381,7 @@ class TcpSpec extends StreamSpec("""
 
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -405,7 +404,7 @@ class TcpSpec extends StreamSpec("""
       serverConnection.expectTerminated()
     }
 
-    "shut down both streams when connection is aborted remotely" in assertAllStagesStopped {
+    "shut down both streams when connection is aborted remotely" in {
       // Client gets a PeerClosed event and does not know that the write side is also closed
       val server = new Server()
 
@@ -414,7 +413,7 @@ class TcpSpec extends StreamSpec("""
 
       Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .via(Tcp(system).outgoingConnection(server.address))
+        .via(Tcp().outgoingConnection(server.address))
         .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe))
         .run()
       val serverConnection = server.waitAccept()
@@ -435,7 +434,7 @@ class TcpSpec extends StreamSpec("""
       val tcpWriteProbe1 = new TcpWriteProbe()
       val tcpReadProbe2 = new TcpReadProbe()
       val tcpWriteProbe2 = new TcpWriteProbe()
-      val outgoingConnection = Tcp(system).outgoingConnection(server.address)
+      val outgoingConnection = Tcp().outgoingConnection(server.address)
 
       val conn1F =
         Source
@@ -469,12 +468,12 @@ class TcpSpec extends StreamSpec("""
       server.close()
     }
 
-    "properly half-close by default" in assertAllStagesStopped {
+    "properly half-close by default" in {
       val writeButDontRead: Flow[ByteString, ByteString, NotUsed] =
         Flow.fromSinkAndSource(Sink.cancelled, Source.single(ByteString("Early response")))
 
       val binding =
-        Tcp(system)
+        Tcp()
           .bind("127.0.0.1", 0, halfClose = true)
           .toMat(Sink.foreach { conn =>
             conn.flow.join(writeButDontRead).run()
@@ -483,7 +482,7 @@ class TcpSpec extends StreamSpec("""
           .futureValue
 
       val result = Source.empty
-        .via(Tcp(system).outgoingConnection(binding.localAddress))
+        .via(Tcp().outgoingConnection(binding.localAddress))
         .toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.right)
         .run()
 
@@ -492,12 +491,12 @@ class TcpSpec extends StreamSpec("""
       binding.unbind()
     }
 
-    "properly full-close if requested" in assertAllStagesStopped {
+    "properly full-close if requested" in {
       val writeButIgnoreRead: Flow[ByteString, ByteString, NotUsed] =
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
       val binding =
-        Tcp(system)
+        Tcp()
           .bind("127.0.0.1", 0, halfClose = false)
           .toMat(Sink.foreach { conn =>
             conn.flow.join(writeButIgnoreRead).run()
@@ -507,7 +506,7 @@ class TcpSpec extends StreamSpec("""
 
       val (promise, result) = Source
         .maybe[ByteString]
-        .via(Tcp(system).outgoingConnection(binding.localAddress))
+        .via(Tcp().outgoingConnection(binding.localAddress))
         .toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.both)
         .run()
 
@@ -521,7 +520,7 @@ class TcpSpec extends StreamSpec("""
       val serverAddress = temporaryServerAddress()
 
       val binding =
-        Tcp(system)
+        Tcp()
           .bind(serverAddress.getHostString, serverAddress.getPort, halfClose = false)
           .toMat(Sink.foreach { conn =>
             conn.flow.join(Flow[ByteString]).run()
@@ -530,7 +529,7 @@ class TcpSpec extends StreamSpec("""
           .futureValue
 
       val result = Source(immutable.Iterable.fill(1000)(ByteString(0)))
-        .via(Tcp(system).outgoingConnection(serverAddress, halfClose = true))
+        .via(Tcp().outgoingConnection(serverAddress, halfClose = true))
         .runFold(0)(_ + _.size)
 
       result.futureValue should ===(1000)
@@ -621,7 +620,7 @@ class TcpSpec extends StreamSpec("""
     "be able to implement echo" in {
       val serverAddress = temporaryServerAddress()
       val (bindingFuture, echoServerFinish) =
-        Tcp(system).bind(serverAddress.getHostString, serverAddress.getPort).toMat(echoHandler)(Keep.both).run()
+        Tcp().bind(serverAddress.getHostString, serverAddress.getPort).toMat(echoHandler)(Keep.both).run()
 
       // make sure that the server has bound to the socket
       val binding = bindingFuture.futureValue
@@ -629,9 +628,7 @@ class TcpSpec extends StreamSpec("""
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
       val resultFuture =
-        Source(testInput)
-          .via(Tcp(system).outgoingConnection(serverAddress))
-          .runFold(ByteString.empty)((acc, in) => acc ++ in)
+        Source(testInput).via(Tcp().outgoingConnection(serverAddress)).runFold(ByteString.empty)((acc, in) => acc ++ in)
 
       binding.whenUnbound.value should be(None)
       resultFuture.futureValue should be(expectedOutput)
@@ -643,13 +640,13 @@ class TcpSpec extends StreamSpec("""
     "work with a chain of echoes" in {
       val serverAddress = temporaryServerAddress()
       val (bindingFuture, echoServerFinish) =
-        Tcp(system).bind(serverAddress.getHostString, serverAddress.getPort).toMat(echoHandler)(Keep.both).run()
+        Tcp().bind(serverAddress.getHostString, serverAddress.getPort).toMat(echoHandler)(Keep.both).run()
 
       // make sure that the server has bound to the socket
       val binding = bindingFuture.futureValue
       binding.whenUnbound.value should be(None)
 
-      val echoConnection = Tcp(system).outgoingConnection(serverAddress)
+      val echoConnection = Tcp().outgoingConnection(serverAddress)
 
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
@@ -671,7 +668,7 @@ class TcpSpec extends StreamSpec("""
     "bind and unbind correctly" in EventFilter[BindException](occurrences = 2).intercept {
       val address = temporaryServerAddress()
       val probe1 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
-      val bind = Tcp(system).bind(address.getHostString, address.getPort)
+      val bind = Tcp().bind(address.getHostString, address.getPort)
       // Bind succeeded, we have a local address
       val binding1 = bind.to(Sink.fromSubscriber(probe1)).run().futureValue
 
@@ -701,7 +698,7 @@ class TcpSpec extends StreamSpec("""
       binding4.unbind().futureValue
     }
 
-    "not shut down connections after the connection stream cancelled" in assertAllStagesStopped {
+    "not shut down connections after the connection stream cancelled" in {
 
       // configure a few timeouts we do not want to hit
       val config = ConfigFactory.parseString("""
@@ -771,10 +768,10 @@ class TcpSpec extends StreamSpec("""
       }
     }
 
-    "handle single connection when connection flow is immediately cancelled" in assertAllStagesStopped {
+    "handle single connection when connection flow is immediately cancelled" in {
       implicit val ec: ExecutionContext = system.dispatcher
 
-      val (bindingFuture, connection) = Tcp(system).bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
+      val (bindingFuture, connection) = Tcp().bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
 
       connection.map { c =>
         c.handleWith(Flow[ByteString])
@@ -783,13 +780,13 @@ class TcpSpec extends StreamSpec("""
       val binding = bindingFuture.futureValue
 
       val expected = ByteString("test")
-      val msg = Source.single(expected).via(Tcp(system).outgoingConnection(binding.localAddress)).runWith(Sink.head)
+      val msg = Source.single(expected).via(Tcp().outgoingConnection(binding.localAddress)).runWith(Sink.head)
       msg.futureValue shouldBe expected
 
       binding.unbind()
     }
 
-    "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
+    "shut down properly even if some accepted connection Flows have not been subscribed to" in {
       val address = temporaryServerAddress()
       val firstClientConnected = Promise[Unit]()
       val secondClientIgnored = Promise[Unit]()
@@ -819,13 +816,13 @@ class TcpSpec extends StreamSpec("""
           .to(Sink.ignore)
 
       val serverBound =
-        Tcp(system).bind(address.getHostString, address.getPort).toMat(accept2ConnectionSink)(Keep.left).run()
+        Tcp().bind(address.getHostString, address.getPort).toMat(accept2ConnectionSink)(Keep.left).run()
 
       // make sure server has started
       serverBound.futureValue
 
       val firstProbe = TestPublisher.probe[ByteString]()
-      val firstResult = Source.fromPublisher(firstProbe).via(Tcp(system).outgoingConnection(address)).runWith(Sink.seq)
+      val firstResult = Source.fromPublisher(firstProbe).via(Tcp().outgoingConnection(address)).runWith(Sink.seq)
 
       // create the first connection and wait until the flow is running server side
       firstClientConnected.future.futureValue(Timeout(5.seconds))
@@ -833,7 +830,7 @@ class TcpSpec extends StreamSpec("""
       firstProbe.sendNext(ByteString(23))
 
       // then connect the second one, which will be ignored
-      val rejected = Source(List(ByteString(67))).via(Tcp(system).outgoingConnection(address)).runWith(Sink.seq)
+      val rejected = Source(List(ByteString(67))).via(Tcp().outgoingConnection(address)).runWith(Sink.seq)
       secondClientIgnored.future.futureValue
 
       // first connection should be fine
@@ -850,12 +847,12 @@ class TcpSpec extends StreamSpec("""
       try {
         val address = temporaryServerAddress()
 
-        val bindingFuture = Tcp(system).bindAndHandle(Flow[ByteString], address.getHostString, address.getPort)
+        val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostString, address.getPort)
 
         // Ensure server is running
         bindingFuture.futureValue
         // and is possible to communicate with
-        Source.single(ByteString(0)).via(Tcp(system).outgoingConnection(address)).runWith(Sink.ignore).futureValue
+        Source.single(ByteString(0)).via(Tcp().outgoingConnection(address)).runWith(Sink.ignore).futureValue
 
         sys2.terminate().futureValue
 
@@ -866,7 +863,7 @@ class TcpSpec extends StreamSpec("""
 
     "show host and port in bind exception message" in EventFilter[BindException](occurrences = 1).intercept {
       val (host, port) = temporaryServerHostnameAndPort()
-      val bind = Tcp(system).bind(host, port)
+      val bind = Tcp().bind(host, port)
 
       val probe1 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       val binding1 = bind.to(Sink.fromSubscriber(probe1)).run().futureValue
@@ -891,7 +888,7 @@ class TcpSpec extends StreamSpec("""
       // cert is valid until 2025, so if this tests starts failing after that you need to create a new one
       val address = temporaryServerAddress()
 
-      Tcp(system)
+      Tcp()
         .bindAndHandleWithTls(
           // just echo characters until we reach '\n', then complete stream
           // also - byte is our framing
@@ -903,7 +900,7 @@ class TcpSpec extends StreamSpec("""
       system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
 
       val connectionFlow =
-        Tcp(system).outgoingConnectionWithTls(address, () => createSSLEngine(TLSRole.client))
+        Tcp().outgoingConnectionWithTls(address, () => createSSLEngine(TLSRole.client))
 
       val chars = "hello\n".toList.map(_.toString)
       val (connectionF, result) =
@@ -977,7 +974,7 @@ class TcpSpec extends StreamSpec("""
       val (sslContext, firstSession) = initSslMess()
       val address = temporaryServerAddress()
 
-      Tcp(system)
+      Tcp()
         .bindAndHandleTls(
           // just echo characters until we reach '\n', then complete stream
           // also - byte is our framing
@@ -990,7 +987,7 @@ class TcpSpec extends StreamSpec("""
       system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
 
       val connectionFlow =
-        Tcp(system).outgoingTlsConnection(address.getHostName, address.getPort, sslContext, firstSession)
+        Tcp().outgoingTlsConnection(address.getHostName, address.getPort, sslContext, firstSession)
 
       val chars = "hello\n".toList.map(_.toString)
       val (connectionF, result) =

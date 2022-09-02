@@ -11,7 +11,6 @@ import akka.Done
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 
@@ -19,20 +18,20 @@ class FlowWatchTerminationSpec extends StreamSpec {
 
   "A WatchTermination" must {
 
-    "complete future when stream is completed" in assertAllStagesStopped {
+    "complete future when stream is completed" in {
       val (future, p) = Source(1 to 4).watchTermination()(Keep.right).toMat(TestSink.probe[Int])(Keep.both).run()
       p.request(4).expectNext(1, 2, 3, 4)
       future.futureValue should ===(Done)
       p.expectComplete()
     }
 
-    "complete future when stream is cancelled from downstream" in assertAllStagesStopped {
+    "complete future when stream is cancelled from downstream" in {
       val (future, p) = Source(1 to 4).watchTermination()(Keep.right).toMat(TestSink.probe[Int])(Keep.both).run()
       p.request(3).expectNext(1, 2, 3).cancel()
       future.futureValue should ===(Done)
     }
 
-    "fail future when stream is failed" in assertAllStagesStopped {
+    "fail future when stream is failed" in {
       val ex = new RuntimeException("Stream failed.") with NoStackTrace
       val (p, future) = TestSource.probe[Int].watchTermination()(Keep.both).to(Sink.ignore).run()
       p.sendNext(1)
@@ -40,13 +39,13 @@ class FlowWatchTerminationSpec extends StreamSpec {
       whenReady(future.failed) { _ shouldBe (ex) }
     }
 
-    "complete the future for an empty stream" in assertAllStagesStopped {
+    "complete the future for an empty stream" in {
       val (future, p) = Source.empty[Int].watchTermination()(Keep.right).toMat(TestSink.probe[Int])(Keep.both).run()
       p.request(1)
       future.futureValue should ===(Done)
     }
 
-    "complete future for graph" in assertAllStagesStopped {
+    "complete future for graph" in {
       implicit val ec = system.dispatcher
 
       val ((sourceProbe, future), sinkProbe) = TestSource

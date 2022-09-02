@@ -19,10 +19,10 @@ Use of Akka relieves you from creating the infrastructure for an actor system an
 
 ## The Akka actor hierarchy
 
-An actor in Akka always belongs to a parent. You create an actor by calling  `ActorContext.spawn()`. The creator actor becomes the
+An actor in Akka always belongs to a parent. You create an actor by calling  @apidoc[ActorContext.spawn()](akka.actor.typed.*.ActorContext) {scala="#spawn[U](behavior:akka.actor.typed.Behavior[U],name:String,props:akka.actor.typed.Props):akka.actor.typed.ActorRef[U]" java="#spawn(akka.actor.typed.Behavior,java.lang.String,akka.actor.typed.Props)"}. The creator actor becomes the
 _parent_ of the newly created _child_ actor. You might ask then, who is the parent of the _first_ actor you create?
 
-As illustrated below, all actors have a common parent, the user guardian, which is defined and created when you start the `ActorSystem`.
+As illustrated below, all actors have a common parent, the user guardian, which is defined and created when you start the @apidoc[akka.actor.typed.ActorSystem].
 As we covered in the @scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)]@java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java/)], creation of an actor returns a reference that is a valid URL. So, for example, if we create an actor named `someActor` from the user guardian with `context.spawn(someBehavior, "someActor")`, its reference will include the path `/user/someActor`.
 
 ![actor tree diagram](diagrams/actor_top_tree.png)
@@ -33,7 +33,7 @@ In fact, before your first actor is started, Akka has already created two actors
  - `/system` the _system guardian_. Akka or other libraries built on top of Akka may create actors in the _system_ namespace.
  - `/user` the _user guardian_. This is the top level actor that you provide to start all other actors in your application.
  
-The easiest way to see the actor hierarchy in action is to print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](https://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](https://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-java)].
+The easiest way to see the actor hierarchy in action is to print @apidoc[akka.actor.typed.ActorRef] instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](https://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](https://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-java)].
 
 In your Hello World project, navigate to the `com.example` package and create @scala[a new Scala file called `ActorHierarchyExperiments.scala` here. Copy and paste the code from the snippet below to this new source file]@java[a Java file for each of the classes in the snippet below and copy the respective contents]. Save your @scala[file and run `sbt "runMain com.example.ActorHierarchyExperiments"`]@java[files and run `com.example.ActorHierarchyExperiments` from your build tool or IDE] to observe the output.
 
@@ -66,9 +66,9 @@ An important role of the hierarchy is to safely manage actor lifecycles. Let's c
 Actors pop into existence when created, then later, at user requests, they are stopped. Whenever an actor is stopped, all of its children are _recursively stopped_ too.
 This behavior greatly simplifies resource cleanup and helps avoid resource leaks such as those caused by open sockets and files. In fact, a commonly overlooked difficulty when dealing with low-level multi-threaded code is the lifecycle management of various concurrent resources.
 
-To stop an actor, the recommended pattern is to return `Behaviors.stopped()` inside the actor to stop itself, usually as a response to some user defined stop message or when the actor is done with its job. Stopping a child actor is technically possible by calling `context.stop(childRef)` from the parent, but it's not possible to stop arbitrary (non-child) actors this way.
+To stop an actor, the recommended pattern is to return @apidoc[Behaviors.stopped](typed.*.Behaviors$) {scala="#stopped[T]:akka.actor.typed.Behavior[T]" java="#stopped()"} inside the actor to stop itself, usually as a response to some user defined stop message or when the actor is done with its job. Stopping a child actor is technically possible by calling @apidoc[context.stop(childRef)](akka.actor.typed.*.ActorContext) {scala="#stop[U](child:akka.actor.typed.ActorRef[U]):Unit" java="#stop(akka.actor.typed.ActorRef)"} from the parent, but it's not possible to stop arbitrary (non-child) actors this way.
 
-The Akka actor API exposes some lifecycle signals, for example `PostStop` is sent just after the actor has been stopped. No messages are processed after this point.
+The Akka actor API exposes some lifecycle signals, for example @apidoc[akka.actor.typed.PostStop] is sent just after the actor has been stopped. No messages are processed after this point.
 
 Let's use the `PostStop` lifecycle signal in a simple experiment to observe the behavior when we stop an actor. First, add the following 2 actor classes to your project:
 
@@ -95,12 +95,12 @@ second stopped
 first stopped
 ```
 
-When we stopped actor `first`, it stopped its child actor, `second`, before stopping itself. This ordering is strict, _all_ `PostStop` signals of the children are processed before the `PostStop` signal of the parent
+When we stopped actor `first`, it stopped its child actor, `second`, before stopping itself. This ordering is strict, _all_ @apidoc[akka.actor.typed.PostStop] signals of the children are processed before the `PostStop` signal of the parent
 is processed.
 
 ### Failure handling
 
-Parents and children are connected throughout their lifecycles. Whenever an actor fails (throws an exception or an unhandled exception bubbles out from @scala[`onMessage`]@java[`Receive`]) the failure information is propagated
+Parents and children are connected throughout their lifecycles. Whenever an actor fails (throws an exception or an unhandled exception bubbles out from @scala[@scaladoc[onMessage](akka.actor.typed.scaladsl.AbstractBehavior#onMessage(msg:T):akka.actor.typed.Behavior[T])]@java[@javadoc[Receive](akka.actor.typed.javadsl.Receive)]) the failure information is propagated
 to the supervision strategy, which then decides how to handle the exception caused by the actor. The supervision strategy is typically defined by the parent actor when it spawns a child actor. In this way, parents act as supervisors for their children. The default _supervisor strategy_ is to stop the child. If you don't define the strategy all failures result in a stop.
 
 Let's observe a restart supervision strategy in a simple experiment. Add the following classes to your project, just as you did with the previous ones:
@@ -140,7 +140,7 @@ java.lang.Exception: I failed!
 	at akka.actor.typed.Behavior$.interpretMessage(Behavior.scala:369)
 ```
 
-We see that after failure the supervised actor is stopped and immediately restarted. We also see a log entry reporting the exception that was handled, in this case, our test exception. In this example we also used the `PreRestart` signal which is processed before restarts.
+We see that after failure the supervised actor is stopped and immediately restarted. We also see a log entry reporting the exception that was handled, in this case, our test exception. In this example we also used the @apidoc[akka.actor.typed.PreRestart] signal which is processed before restarts.
 
 For the impatient, we also recommend looking into the @ref:[fault tolerance reference page](../fault-tolerance.md) for more in-depth
 details.

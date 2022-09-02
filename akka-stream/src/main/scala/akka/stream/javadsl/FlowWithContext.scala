@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
+import akka.annotation.ApiMayChange
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
@@ -62,6 +63,23 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
     val under = asFlow().via(viaFlow)
     FlowWithContext.fromPairs(under)
   }
+
+  /**
+   * Transform this flow by the regular flow. The given flow works on the data portion of the stream and
+   * ignores the context.
+   *
+   * The given flow *must* not re-order, drop or emit multiple elements for one incoming
+   * element, the sequence of incoming contexts is re-combined with the outgoing
+   * elements of the stream. If a flow not fulfilling this requirement is used the stream
+   * will not fail but continue running in a corrupt state and re-combine incorrect pairs
+   * of elements and contexts or deadlock.
+   *
+   * For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
+   */
+  @ApiMayChange def unsafeDataVia[Out2, Mat2](
+      viaFlow: Graph[FlowShape[Out @uncheckedVariance, Out2], Mat2]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
+    viaScala(_.unsafeDataVia(viaFlow))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.withAttributes]].

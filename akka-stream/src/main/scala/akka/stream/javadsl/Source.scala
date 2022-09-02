@@ -9,15 +9,17 @@ import java.util.Optional
 import java.util.concurrent.{ CompletableFuture, CompletionStage }
 import java.util.function.{ BiFunction, Supplier }
 
+import scala.annotation.{ nowarn, varargs }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import scala.compat.java8.OptionConverters.RichOptionalGeneric
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import scala.annotation.nowarn
+
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
 import akka.annotation.ApiMayChange
@@ -26,7 +28,7 @@ import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.{ function, JavaPartialFunction, Pair, Util }
 import akka.japi.function.Creator
 import akka.stream._
-import akka.stream.impl.LinearTraversalBuilder
+import akka.stream.impl.{ LinearTraversalBuilder, UnfoldAsyncJava }
 import akka.util.{ unused, _ }
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
@@ -265,8 +267,7 @@ object Source {
    * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
    */
   def unfoldAsync[S, E](s: S, f: function.Function[S, CompletionStage[Optional[Pair[S, E]]]]): Source[E, NotUsed] =
-    new Source(scaladsl.Source.unfoldAsync(s)((s: S) =>
-      f.apply(s).toScala.map(_.asScala.map(_.toScala))(akka.dispatch.ExecutionContexts.parasitic)))
+    new Source(scaladsl.Source.fromGraph(new UnfoldAsyncJava[S, E](s, f)))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
@@ -879,6 +880,28 @@ object Source {
   def upcast[SuperOut, Out <: SuperOut, Mat](source: Source[Out, Mat]): Source[SuperOut, Mat] =
     source.asInstanceOf[Source[SuperOut, Mat]]
 
+  /**
+   * Merge multiple [[Source]]s. Prefer the sources depending on the 'priority' parameters.
+   * The provided sources and priorities must have the same size and order.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergePrioritizedN[T](
+      sourcesAndPriorities: java.util.List[Pair[Source[T, _ <: Any], java.lang.Integer]],
+      eagerComplete: Boolean): javadsl.Source[T, NotUsed] = {
+    val seq =
+      if (sourcesAndPriorities != null)
+        Util.immutableSeq(sourcesAndPriorities).map(pair => (pair.first.asScala, pair.second.intValue()))
+      else
+        immutable.Seq()
+    new Source(scaladsl.Source.mergePrioritizedN(seq, eagerComplete))
+  }
 }
 
 /**
@@ -1188,7 +1211,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * For a concat operator that is detached, use [[#concat]]
    *
-   * If this [[Flow]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   * If this [[Source]] gets upstream error - no elements from the given [[Source]] will be pulled.
    *
    * '''Emits when''' element is available from current stream or from the given [[Source]] when current is completed
    *
@@ -1200,6 +1223,34 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def concatLazy[M](that: Graph[SourceShape[Out], M]): javadsl.Source[Out, Mat] =
     new Source(delegate.concatLazy(that))
+
+  /**
+   * Concatenate the given [[Source]]s to this one, meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced.
+   *
+   * Note that the [[Source]]s are materialized together with this Flow. If `lazy` materialization is what is needed
+   * the operator can be combined with for example `Source.lazySource` to defer materialization of `that` until the
+   * time when this source completes.
+   *
+   * The second source is then kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * For a concat operator that is detached, use [[#concat]]
+   *
+   * If this [[Source]] gets upstream error - no elements from the given [[Source]]s will be pulled.
+   *
+   * '''Emits when''' element is available from current stream or from the given [[Source]]s when current is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all the given [[Source]]s completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @varargs
+  @SafeVarargs
+  def concatAllLazy(those: Graph[SourceShape[Out], _]*): javadsl.Source[Out, Mat] =
+    new Source(delegate.concatAllLazy(those: _*))
 
   /**
    * Concatenate this [[Source]] with the given one, meaning that once current
@@ -1375,7 +1426,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.orElseMat(secondary)(combinerToScala(matF)))
 
   /**
-   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * Attaches the given [[Sink]] to this [[Source]], meaning that elements that passes
    * through will also be sent to the [[Sink]].
    *
    * It is similar to [[#wireTap]] but will backpressure instead of dropping elements when the given [[Sink]] is not ready.
@@ -1390,6 +1441,25 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def alsoTo(that: Graph[SinkShape[Out], _]): javadsl.Source[Out, Mat] =
     new Source(delegate.alsoTo(that))
+
+  /**
+   * Attaches the given [[Sink]]s to this [[Source]], meaning that elements that passes
+   * through will also be sent to all those [[Sink]]s.
+   *
+   * It is similar to [[#wireTap]] but will backpressure instead of dropping elements when the given [[Sink]]s is not ready.
+   *
+   * '''Emits when''' element is available and demand exists both from the Sinks and the downstream.
+   *
+   * '''Backpressures when''' downstream or any of the [[Sink]]s backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream or any of the [[Sink]]s cancels
+   */
+  @varargs
+  @SafeVarargs
+  def alsoToAll(those: Graph[SinkShape[Out], _]*): javadsl.Source[Out, Mat] =
+    new Source(delegate.alsoToAll(those: _*))
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
@@ -1568,6 +1638,37 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.interleaveMat(that, segmentSize, eagerClose)(combinerToScala(matF)))
 
   /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave operator. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
+   *
+   * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
+   *
+   * '''Emits when''' element is available from the currently consumed upstream
+   *
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
+   *
+   * '''Completes when''' the [[Flow]] and given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def interleaveAll(
+      those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
+      segmentSize: Int,
+      eagerClose: Boolean): javadsl.Source[Out, Mat] = {
+    val seq = if (those != null) Util.immutableSeq(those).collect {
+      case source: Source[Out @unchecked, _] => source.asScala
+      case other                             => other
+    } else immutable.Seq()
+    new Source(delegate.interleaveAll(seq, segmentSize, eagerClose))
+  }
+
+  /**
    * Merge the given [[Source]] to the current one, taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
@@ -1623,6 +1724,28 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       matF: function.Function2[Mat, M, M2],
       eagerComplete: Boolean): javadsl.Source[Out, M2] =
     new Source(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
+
+  /**
+   * Merge the given [[Source]]s to the current one, taking elements as they arrive from input streams,
+   * picking randomly when several elements ready.
+   *
+   * '''Emits when''' one of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergeAll(
+      those: java.util.List[_ <: Graph[SourceShape[Out], _ <: Any]],
+      eagerComplete: Boolean): javadsl.Source[Out, Mat] = {
+    val seq = if (those != null) Util.immutableSeq(those).collect {
+      case source: Source[Out @unchecked, _] => source.asScala
+      case other                             => other
+    } else immutable.Seq()
+    new Source(delegate.mergeAll(seq, eagerComplete))
+  }
 
   /**
    * MergeLatest joins elements from N input streams into stream of lists of size N.
@@ -1897,6 +2020,29 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.zipLatestWith[Out2, Out3](that)(combinerToScala(combine)))
 
   /**
+   * Combine the elements of multiple streams into a stream of combined elements using a combiner function,
+   * picking always the latest of the elements of each source.
+   *
+   * No element is emitted until at least one element from each Source becomes available. Whenever a new
+   * element appears, the zipping function is invoked with a tuple containing the new element
+   * and the other last seen elements.
+   *
+   *   '''Emits when''' all of the inputs have at least an element available, and then each time an element becomes
+   *   available on either of the inputs
+   *
+   *   '''Backpressures when''' downstream backpressures
+   *
+   *   '''Completes when''' any upstream completes if `eagerComplete` is enabled or wait for all upstreams to complete
+   *
+   *   '''Cancels when''' downstream cancels
+   */
+  def zipLatestWith[Out2, Out3](
+      that: Graph[SourceShape[Out2], _],
+      eagerComplete: Boolean,
+      combine: function.Function2[Out, Out2, Out3]): javadsl.Source[Out3, Mat] =
+    new Source(delegate.zipLatestWith[Out2, Out3](that, eagerComplete)(combinerToScala(combine)))
+
+  /**
    * Put together the elements of current [[Source]] and the given one
    * into a stream of combined elements using a combiner function,
    * picking always the latest of the elements of each source.
@@ -1911,6 +2057,25 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       combine: function.Function2[Out, Out2, Out3],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out3, M2] =
     new Source(delegate.zipLatestWithMat[Out2, Out3, M, M2](that)(combinerToScala(combine))(combinerToScala(matF)))
+
+  /**
+   * Put together the elements of current [[Source]] and the given one
+   * into a stream of combined elements using a combiner function,
+   * picking always the latest of the elements of each source.
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   *
+   * @see [[#zipLatestWith]].
+   */
+  def zipLatestWithMat[Out2, Out3, M, M2](
+      that: Graph[SourceShape[Out2], M],
+      eagerComplete: Boolean,
+      combine: function.Function2[Out, Out2, Out3],
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out3, M2] =
+    new Source(
+      delegate.zipLatestWithMat[Out2, Out3, M, M2](that, eagerComplete)(combinerToScala(combine))(
+        combinerToScala(matF)))
 
   /**
    * Combine the elements of current [[Source]] into a stream of tuples consisting
@@ -2220,6 +2385,45 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def mapConcat[T](f: function.Function[Out, _ <: java.lang.Iterable[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
+
+  /**
+   * Transform each stream element with the help of a state.
+   *
+   * The state creation function is invoked once when the stream is materialized and the returned state is passed to
+   * the mapping function for mapping the first element. The mapping function returns a mapped element to emit
+   * downstream and a state to pass to the next mapping function. The state can be the same for each mapping return,
+   * be a new immutable state but it is also safe to use a mutable state. The returned `T` MUST NOT be `null` as it is
+   * illegal as stream element - according to the Reactive Streams specification.
+   *
+   * For stateless variant see [[map]].
+   *
+   * The `onComplete` function is called only once when the upstream or downstream finished, You can do some clean-up here,
+   * and if the returned value is not empty, it will be emitted to the downstream if available, otherwise the value will be dropped.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the mapping function returns an element and downstream is ready to consume it
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @tparam S the type of the state
+   * @tparam T the type of the output elements
+   * @param create a function that creates the initial state
+   * @param f a function that transforms the upstream element and the state into a pair of next state and output element
+   * @param onComplete a function that transforms the ongoing state into an optional output element
+   */
+  def statefulMap[S, T](
+      create: function.Creator[S],
+      f: function.Function2[S, Out, Pair[S, T]],
+      onComplete: function.Function[S, Optional[T]]): javadsl.Source[T, Mat] =
+    new Source(
+      delegate.statefulMap(() => create.create())(
+        (s: S, out: Out) => f.apply(s, out).toScala,
+        (s: S) => onComplete.apply(s).asScala))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -2625,7 +2829,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    *
-   * See also [[FlowOps.scan]]
+   * See also [[FlowOps#scan]]
    */
   def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.scanAsync(zero) { (out, in) =>
@@ -4554,4 +4758,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
           case Pair(predicate, duration) => (agg => predicate.test(agg), duration.asScala)
         })
       .asJava
+
+  override def getAttributes: Attributes = delegate.getAttributes
+
 }

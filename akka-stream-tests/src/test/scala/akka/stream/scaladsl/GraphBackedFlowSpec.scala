@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import scala.annotation.nowarn
+
 import org.reactivestreams.Subscriber
 
 import akka.stream._

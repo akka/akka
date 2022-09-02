@@ -29,7 +29,6 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import akka.testkit.GHExcludeTest
 
 object ReliableDeliveryShardingSpec {
   val config = ConfigFactory.parseString("""
@@ -336,8 +335,7 @@ class ReliableDeliveryShardingSpec
       testKit.stop(shardingProducerController)
     }
 
-    // FIXME issue https://github.com/akka/akka/issues/30567
-    "deliver unconfirmed if ShardingConsumerController is terminated" taggedAs GHExcludeTest in {
+    "deliver unconfirmed if ShardingConsumerController is terminated" in {
       // for example if ShardingConsumerController is rebalanced, but no more messages are sent to the entity
       nextId()
 
@@ -375,22 +373,48 @@ class ReliableDeliveryShardingSpec
       delivery3.message should ===(TestConsumer.Job("msg-3"))
       // msg-3 not Confirmed
 
-      consumerProbes(0).stop()
-      Thread.sleep(1000) // let it terminate
+      {
+        consumerProbes(0).stop()
+        Thread.sleep(1000) // let it terminate
 
-      producerProbe.receiveMessage().sendNextTo ! ShardingEnvelope("entity-1", TestConsumer.Job("msg-4"))
-      val delivery3b = consumerProbes(1).receiveMessage()
-      // msg-3 is redelivered
-      delivery3b.message should ===(TestConsumer.Job("msg-3"))
-      delivery3b.confirmTo ! ConsumerController.Confirmed
-      val delivery4 = consumerProbes(1).receiveMessage()
-      delivery4.message should ===(TestConsumer.Job("msg-4"))
+        producerProbe.receiveMessage().sendNextTo ! ShardingEnvelope("entity-1", TestConsumer.Job("msg-4"))
+        val delivery3b = consumerProbes(1).receiveMessage()
+        // msg-3 is redelivered
+        delivery3b.message should ===(TestConsumer.Job("msg-3"))
+        delivery3b.confirmTo ! ConsumerController.Confirmed
+        val delivery3cor4 = consumerProbes(1).receiveMessage()
+        delivery3cor4.message match {
+          case TestConsumer.Job("msg-3") =>
+            // It is possible the ProducerController re-sends msg-3 again before it has processed its acknowledgement.
+            // If the ConsumerController restarts between sending the acknowledgement and receiving that re-sent msg-3,
+            // it will deliver msg-3 a second time. We then expect msg-4 next:
+            val delivery4 = consumerProbes(1).receiveMessage()
+            delivery4.message should ===(TestConsumer.Job("msg-4"))
+          case TestConsumer.Job("msg-4") =>
+          // OK!
+          case other =>
+            throw new MatchError(other)
+        }
+      }
 
       // redeliver also when no more messages are sent
-      consumerProbes(1).stop()
+      {
+        consumerProbes(1).stop()
 
-      val delivery4b = consumerProbes(2).receiveMessage()
-      delivery4b.message should ===(TestConsumer.Job("msg-4"))
+        val delivery3cor4 = consumerProbes(2).receiveMessage()
+        delivery3cor4.message match {
+          case TestConsumer.Job("msg-3") =>
+            // It is possible the ProducerController re-sends msg-3 again before it has processed its acknowledgement.
+            // If the ConsumerController restarts between sending the acknowledgement and receiving that re-sent msg-3,
+            // it will deliver msg-3 a second time. We then expect msg-4 next:
+            val delivery4 = consumerProbes(2).receiveMessage()
+            delivery4.message should ===(TestConsumer.Job("msg-4"))
+          case TestConsumer.Job("msg-4") =>
+          // OK!
+          case other =>
+            throw new MatchError(other)
+        }
+      }
 
       consumerProbes(2).stop()
       testKit.stop(shardingProducerController)

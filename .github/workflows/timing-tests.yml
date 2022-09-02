@@ -3,6 +3,7 @@ name: Timing sensitive tests
 on:
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
 
@@ -34,10 +35,10 @@ jobs:
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.tags.only=timing \
             -Dakka.log.timestamps=true \
+            -Dakka.test.multi-in-test=false \
             -Dmultinode.XX:MetaspaceSize=128M \
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx256M \
-            -Dmultinode.Xlog:gc \
             -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             clean test
 

@@ -354,6 +354,30 @@ class EventSourcedBehaviorTestKitSpec
       eventSourcedTestKit.clear()
       eventSourcedTestKit.runCommand(TestCounter.Increment).state should ===(TestCounter.RealState(1, Vector(0)))
     }
+
+    "initialize from snapshot" in {
+      val eventSourcedTestKit = createTestKit()
+      eventSourcedTestKit.initialize(TestCounter.RealState(1, Vector(0)))
+
+      val result = eventSourcedTestKit.runCommand[TestCounter.State](TestCounter.GetValue(_))
+      result.reply shouldEqual TestCounter.RealState(1, Vector(0))
+    }
+
+    "initialize from event" in {
+      val eventSourcedTestKit = createTestKit()
+      eventSourcedTestKit.initialize(TestCounter.Incremented(1))
+
+      val result = eventSourcedTestKit.runCommand[TestCounter.State](TestCounter.GetValue(_))
+      result.reply shouldEqual TestCounter.RealState(1, Vector(0))
+    }
+
+    "initialize from snapshot and event" in {
+      val eventSourcedTestKit = createTestKit()
+      eventSourcedTestKit.initialize(TestCounter.RealState(1, Vector(0)), TestCounter.Incremented(1))
+
+      val result = eventSourcedTestKit.runCommand[TestCounter.State](TestCounter.GetValue(_))
+      result.reply shouldEqual TestCounter.RealState(2, Vector(0, 1))
+    }
   }
 
 }

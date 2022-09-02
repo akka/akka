@@ -8,7 +8,6 @@ import scala.util.control.NoStackTrace
 
 import akka.NotUsed
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ConstantFun
 
 class FlowConcatAllSpec extends StreamSpec("""
@@ -20,7 +19,7 @@ class FlowConcatAllSpec extends StreamSpec("""
 
     val testException = new Exception("test") with NoStackTrace
 
-    "work in the happy case" in assertAllStagesStopped {
+    "work in the happy case" in {
       val s1 = Source(1 to 2)
       val s2 = Source(List.empty[Int])
       val s3 = Source(List(3))
@@ -56,7 +55,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       subscriber.expectComplete()
     }
 
-    "on onError on master stream cancel the current open substream and signal error" in assertAllStagesStopped {
+    "on onError on master stream cancel the current open substream and signal error" in {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source
@@ -80,7 +79,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       subUpstream.expectCancellation()
     }
 
-    "on onError on master stream cancel the currently opening substream and signal error" in assertAllStagesStopped {
+    "on onError on master stream cancel the currently opening substream and signal error" in {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source
@@ -107,7 +106,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       subUpstream.expectCancellation()
     }
 
-    "on onError on opening substream, cancel the master stream and signal error " in assertAllStagesStopped {
+    "on onError on opening substream, cancel the master stream and signal error " in {
       val publisher = TestPublisher.manualProbe[Source[Int, _]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source.fromPublisher(publisher).flatMapConcat(_ => throw testException).to(Sink.fromSubscriber(subscriber)).run()
@@ -124,7 +123,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       upstream.expectCancellation()
     }
 
-    "on onError on open substream, cancel the master stream and signal error " in assertAllStagesStopped {
+    "on onError on open substream, cancel the master stream and signal error " in {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source
@@ -148,7 +147,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       upstream.expectCancellation()
     }
 
-    "on cancellation cancel the current open substream and the master stream" in assertAllStagesStopped {
+    "on cancellation cancel the current open substream and the master stream" in {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source
@@ -173,7 +172,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       upstream.expectCancellation()
     }
 
-    "on cancellation cancel the currently opening substream and the master stream" in assertAllStagesStopped {
+    "on cancellation cancel the currently opening substream and the master stream" in {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source
@@ -200,7 +199,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       upstream.expectCancellation()
     }
 
-    "pass along early cancellation" in assertAllStagesStopped {
+    "pass along early cancellation" in {
       val up = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val down = TestSubscriber.manualProbe[Int]()
 

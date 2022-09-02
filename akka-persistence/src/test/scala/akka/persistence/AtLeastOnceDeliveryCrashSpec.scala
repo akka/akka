@@ -29,7 +29,8 @@ object AtLeastOnceDeliveryCrashSpec {
   object CrashingActor {
     case object Message
     case object CrashMessage
-    case class SendingMessage(deliveryId: Long, recovering: Boolean)
+    case object ConfirmCrashMessage
+    case class SendingMessage(deliveryId: Long)
   }
 
   class CrashingActor(testProbe: ActorRef) extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
@@ -49,12 +50,13 @@ object AtLeastOnceDeliveryCrashSpec {
       case Message => persist(Message)(_ => send())
       case CrashMessage =>
         persist(CrashMessage) { _ =>
+          testProbe ! ConfirmCrashMessage
         }
     }
 
     def send() = {
       deliver(testProbe.path) { id =>
-        SendingMessage(id, false)
+        SendingMessage(id)
       }
     }
   }
@@ -75,6 +77,8 @@ class AtLeastOnceDeliveryCrashSpec
       testProbe.expectMsgType[CrashingActor.SendingMessage]
 
       superVisor ! CrashingActor.CrashMessage
+      testProbe.expectMsgType[CrashingActor.ConfirmCrashMessage.type]
+
       val deathProbe = TestProbe()
       deathProbe.watch(superVisor)
       system.stop(superVisor)

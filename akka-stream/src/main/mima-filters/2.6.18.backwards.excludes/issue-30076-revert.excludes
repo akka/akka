@@ -1,6 +1,4 @@
-# disable compatibility check for @InternalApi and @InternalStableApi.
-# Added extra parameter to PhaseIsland#takePublisher, so corresponding all subclasses are failing with
-# backward compatibility check. Disabling compatibility check.
+# internal api changes reverted
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.*takePublisher")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.IslandTracking.wireOut")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.PhaseIsland.takePublisher")

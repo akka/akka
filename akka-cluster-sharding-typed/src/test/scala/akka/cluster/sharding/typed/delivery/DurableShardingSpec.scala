@@ -6,6 +6,8 @@ package akka.cluster.sharding.typed.delivery
 
 import java.util.UUID
 
+import scala.concurrent.duration._
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -81,7 +83,6 @@ class DurableShardingSpec
     }
 
     "load initial state and resend unconfirmed" in {
-      pending // FIXME issue #30489, this could be a real problem
       nextId()
       val typeKey = EntityTypeKey[SequencedMessage[TestConsumer.Job]](s"TestConsumer-$idCount")
       val consumerProbe = createTestProbe[TestConsumer.JobDelivery]()
@@ -174,7 +175,8 @@ class DurableShardingSpec
       journalOperations.expectMessageType[InmemJournal.Write].event.getClass should ===(
         classOf[DurableProducerQueue.MessageSent[_]])
 
-      val delivery5 = consumerProbe.receiveMessage()
+      // issue #30489: the consumer controller may have stopped after msg-5, so allow for resend on timeout (10-15s)
+      val delivery5 = consumerProbe.receiveMessage(20.seconds)
       delivery5.msg should ===(TestConsumer.Job("msg-5"))
       delivery5.seqNr should ===(3)
       delivery5.confirmTo ! ConsumerController.Confirmed

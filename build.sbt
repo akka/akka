@@ -1,4 +1,4 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
+import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Dependencies, Paradox, ScalafixIgnoreFilePlugin }
 
 ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
 
@@ -15,7 +15,7 @@ enablePlugins(
 disablePlugins(MimaPlugin)
 
 addCommandAlias("verifyCodeStyle", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
-addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbtAll")
+addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbt")
 
 addCommandAlias(
   name = "fixall",
@@ -100,6 +100,7 @@ lazy val root = Project(id = "akka", base = file("."))
         docs,
         serialversionRemoverPlugin))
   .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
+  .settings(akka.AkkaBuild.welcomeSettings)
   .enablePlugins(CopyrightHeaderForBuild)
 
 lazy val actor = akkaModule("akka-actor")
@@ -115,7 +116,7 @@ lazy val actor = akkaModule("akka-actor")
   .enablePlugins(BoilerplatePlugin)
 
 lazy val actorTests = akkaModule("akka-actor-tests")
-  .dependsOn(testkit % "compile->compile;test->test")
+  .dependsOn(testkit % "compile->compile;test->test", actor)
   .settings(Dependencies.actorTests)
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin)
@@ -551,7 +552,7 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .settings(Dependencies.actorTestkitTyped)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
-  .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test")
+  .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test", actor)
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
@@ -596,6 +597,7 @@ lazy val serialversionRemoverPluginSettings = Seq(
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
     .enablePlugins(ReproducibleBuildsPlugin)
+    .disablePlugins(WelcomePlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
     .enablePlugins(BootstrapGenjavadoc)

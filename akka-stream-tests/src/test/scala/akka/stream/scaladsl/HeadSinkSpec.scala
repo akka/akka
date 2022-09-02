@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import akka.stream.AbruptTerminationException
 import akka.stream.Materializer
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class HeadSinkSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -30,7 +29,7 @@ class HeadSinkSpec extends StreamSpec("""
       result.futureValue shouldEqual 1
     }
 
-    "yield the first value" in assertAllStagesStopped {
+    "yield the first value" in {
       val p = TestPublisher.manualProbe[Int]()
       val f: Future[Int] = Source.fromPublisher(p).map(identity).runWith(Sink.head)
       val proc = p.expectSubscription()
@@ -54,14 +53,14 @@ class HeadSinkSpec extends StreamSpec("""
       proc.expectCancellation()
     }
 
-    "yield the first error" in assertAllStagesStopped {
+    "yield the first error" in {
       val ex = new RuntimeException("ex")
       (intercept[RuntimeException] {
         Await.result(Source.failed[Int](ex).runWith(Sink.head), 1.second)
       } should be).theSameInstanceAs(ex)
     }
 
-    "yield NoSuchElementException for empty stream" in assertAllStagesStopped {
+    "yield NoSuchElementException for empty stream" in {
       intercept[NoSuchElementException] {
         Await.result(Source.empty[Int].runWith(Sink.head), 1.second)
       }.getMessage should be("head of empty stream")
@@ -70,7 +69,7 @@ class HeadSinkSpec extends StreamSpec("""
   }
   "A Flow with Sink.headOption" must {
 
-    "yield the first value" in assertAllStagesStopped {
+    "yield the first value" in {
       val p = TestPublisher.manualProbe[Int]()
       val f: Future[Option[Int]] = Source.fromPublisher(p).map(identity).runWith(Sink.headOption)
       val proc = p.expectSubscription()
@@ -80,14 +79,14 @@ class HeadSinkSpec extends StreamSpec("""
       proc.expectCancellation()
     }
 
-    "yield the first error" in assertAllStagesStopped {
+    "yield the first error" in {
       val ex = new RuntimeException("ex")
       (intercept[RuntimeException] {
         Await.result(Source.failed[Int](ex).runWith(Sink.head), 1.second)
       } should be).theSameInstanceAs(ex)
     }
 
-    "yield None for empty stream" in assertAllStagesStopped {
+    "yield None for empty stream" in {
       Await.result(Source.empty[Int].runWith(Sink.headOption), 1.second) should be(None)
     }
 

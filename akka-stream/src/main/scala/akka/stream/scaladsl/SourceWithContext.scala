@@ -33,6 +33,21 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     new SourceWithContext(delegate.via(viaFlow))
 
+  override def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, Ctx] =
+    SourceWithContext.fromTuples(Source.fromGraph(GraphDSL.createGraph(delegate) { implicit b => d =>
+      import GraphDSL.Implicits._
+
+      val unzip = b.add(Unzip[Out, Ctx]())
+      val zipper = b.add(Zip[Out2, Ctx]())
+
+      d ~> unzip.in
+
+      unzip.out0.via(viaFlow) ~> zipper.in0
+      unzip.out1 ~> zipper.in1
+
+      SourceShape(zipper.out)
+    }))
+
   override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(
       combine: (Mat, Mat2) => Mat3): SourceWithContext[Out2, Ctx2, Mat3] =
     new SourceWithContext(delegate.viaMat(flow)(combine))

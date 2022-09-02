@@ -79,6 +79,16 @@ public class SinkTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseCollectorOnSink() throws Exception {
+    // #collect-to-list
+    final List<Integer> list = Arrays.asList(1, 2, 3);
+    CompletionStage<List<Integer>> result =
+        Source.from(list).runWith(Sink.collect(Collectors.toList()), system);
+    // #collect-to-list
+    assertEquals(list, result.toCompletableFuture().get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
   public void mustBeAbleToCombine() throws Exception {
     final TestKit probe1 = new TestKit(system);
     final TestKit probe2 = new TestKit(system);

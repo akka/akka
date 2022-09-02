@@ -45,7 +45,7 @@ The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unles
 Make sure that you add the repository to the sbt resolvers:
 
 ```
-resolvers += Resolver.sonatypeRepo("snapshots")
+resolvers ++= Resolver.sonatypeOssRepos("snapshots")
 ```
 
 Define the library dependencies with the complete version. For example:

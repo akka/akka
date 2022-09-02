@@ -4,8 +4,10 @@
 
 package akka.persistence.testkit.javadsl
 
+import java.util.Optional
 import java.util.{ List => JList }
 import java.util.function.{ Function => JFunction }
+
 import scala.reflect.ClassTag
 import com.typesafe.config.Config
 import akka.actor.typed.ActorRef
@@ -15,6 +17,8 @@ import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.persistence.testkit.scaladsl
 import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.varargs
 
 /**
  * Testing of [[akka.persistence.typed.javadsl.EventSourcedBehavior]] implementations.
@@ -182,6 +186,12 @@ object EventSourcedBehaviorTestKit {
      */
     def replyOfType[R <: Reply](replyClass: Class[R]): R =
       delegate.replyOfType(ClassTag[R](replyClass))
+
+    /**
+     * `true` if there is no reply.
+     */
+    def hasNoReply: Boolean = delegate.hasNoReply
+
   }
 
   /**
@@ -205,6 +215,10 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
   import EventSourcedBehaviorTestKit._
 
   private val _persistenceTestKit = new PersistenceTestKit(delegate.persistenceTestKit)
+  private val _snapshotTestKit = {
+    import scala.compat.java8.OptionConverters._
+    delegate.snapshotTestKit.map(new SnapshotTestKit(_)).asJava
+  }
 
   /**
    * Run one command through the behavior. The returned result contains emitted events and the state
@@ -240,10 +254,25 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
     delegate.clear()
 
   /**
-   * The underlying `PersistenceTestKit` for the in-memory journal and snapshot storage.
+   * Initializes behavior from provided state and/or events.
+   */
+  @varargs
+  def initialize(state: State, events: Event*): Unit = delegate.initialize(state, events: _*)
+  @varargs
+  def initialize(events: Event*): Unit = delegate.initialize(events: _*)
+
+  /**
+   * The underlying `PersistenceTestKit` for the in-memory journal.
    * Can be useful for advanced testing scenarios, such as simulating failures or
    * populating the journal with events that are used for replay.
    */
   def persistenceTestKit: PersistenceTestKit =
     _persistenceTestKit
+
+  /**
+   * The underlying `SnapshotTestKit` for snapshot storage. Present only if snapshots are enabled.
+   * Can be useful for advanced testing scenarios, such as simulating failures or
+   * populating the storage with snapshots that are used for replay.
+   */
+  def snapshotTestKit: Optional[SnapshotTestKit] = _snapshotTestKit
 }

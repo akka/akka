@@ -13,7 +13,6 @@ import akka.stream.ActorAttributes._
 import akka.stream.Attributes
 import akka.stream.Supervision._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 
@@ -48,7 +47,7 @@ class FlowFilterSpec extends StreamSpec("""
       probe.expectComplete()
     }
 
-    "continue if error" in assertAllStagesStopped {
+    "continue if error" in {
       val TE = new Exception("TEST") with NoStackTrace {
         override def toString = "TE"
       }
@@ -62,7 +61,7 @@ class FlowFilterSpec extends StreamSpec("""
         .expectComplete()
     }
 
-    "filter out elements without demand" in assertAllStagesStopped {
+    "filter out elements without demand" in {
       val (inProbe, outProbe) =
         TestSource
           .probe[Int]
@@ -85,7 +84,7 @@ class FlowFilterSpec extends StreamSpec("""
       outProbe.requestNext(1002)
       outProbe.expectComplete()
     }
-    "complete without demand if remaining elements are filtered out" in assertAllStagesStopped {
+    "complete without demand if remaining elements are filtered out" in {
       Source(1 to 1000).filter(_ > 1000).runWith(TestSink.probe[Int]).ensureSubscription().expectComplete()
     }
   }

@@ -23,7 +23,7 @@ private[akka] case class CacheStatistics(entries: Int, maxProbeDistance: Int, av
  * to kick out entires that are considered old. The implementation tries to keep the map close to full, only evicting
  * old entries when needed.
  */
-private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag](
+private[akka] abstract class LruBoundedCache[K <: AnyRef: ClassTag, V <: AnyRef: ClassTag](
     capacity: Int,
     evictAgeThreshold: Int) {
   require(capacity > 0, "Capacity must be larger than zero")

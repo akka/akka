@@ -11,3 +11,4 @@ object LongRunningTest extends Tag("long-running")
 object PerformanceTest extends Tag("performance")
 
 object GHExcludeTest extends Tag("gh-exclude")
+object GHExcludeAeronTest extends Tag("gh-exclude-aeron")

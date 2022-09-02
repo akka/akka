@@ -9,8 +9,8 @@ import scala.util.{ Failure => ScalaFailure }
 import scala.util.{ Success => ScalaSuccess }
 import scala.util.Try
 import scala.util.control.NoStackTrace
-
 import akka.Done
+import akka.actor.InvalidMessageException
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 
@@ -25,6 +25,8 @@ import akka.dispatch.ExecutionContexts
  * @tparam T the type of value a successful reply would have
  */
 final class StatusReply[+T] private (private val status: Try[T]) {
+  if (status == null)
+    throw InvalidMessageException("[null] is not an allowed status")
 
   /**
    * Java API: in the case of a successful reply returns the value, if the reply was not successful the exception

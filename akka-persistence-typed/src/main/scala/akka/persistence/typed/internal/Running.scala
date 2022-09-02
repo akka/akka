@@ -384,7 +384,7 @@ private[akka] object Running {
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
     def onGetState(get: GetState[S]): Behavior[InternalProtocol] = {
       get.replyTo ! GetStateReply(state.state)
-      this
+      tryUnstashOne(this)
     }
 
     def onGetSeenSequenceNr(get: GetSeenSequenceNr): Behavior[InternalProtocol] = {

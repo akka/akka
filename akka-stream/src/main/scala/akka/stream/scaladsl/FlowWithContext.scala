@@ -46,6 +46,21 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     new FlowWithContext(delegate.via(viaFlow))
 
+  override def unsafeDataVia[Out2, Mat2](viaFlow: Graph[FlowShape[Out, Out2], Mat2]): Repr[Out2, CtxOut] =
+    FlowWithContext.fromTuples(Flow.fromGraph(GraphDSL.createGraph(delegate) { implicit b => d =>
+      import GraphDSL.Implicits._
+
+      val unzip = b.add(Unzip[Out, CtxOut]())
+      val zipper = b.add(Zip[Out2, CtxOut]())
+
+      d ~> unzip.in
+
+      unzip.out0.via(viaFlow) ~> zipper.in0
+      unzip.out1 ~> zipper.in1
+
+      FlowShape(d.in, zipper.out)
+    }))
+
   override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2])(
       combine: (Mat, Mat2) => Mat3): FlowWithContext[In, CtxIn, Out2, Ctx2, Mat3] =
     new FlowWithContext(delegate.viaMat(flow)(combine))

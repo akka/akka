@@ -8,22 +8,21 @@ import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 
 class FlowDropWhileSpec extends StreamSpec {
 
   "A DropWhile" must {
 
-    "drop while predicate is true" in assertAllStagesStopped {
+    "drop while predicate is true" in {
       Source(1 to 4).dropWhile(_ < 3).runWith(TestSink.probe[Int]).request(2).expectNext(3, 4).expectComplete()
     }
 
-    "complete the future for an empty stream" in assertAllStagesStopped {
+    "complete the future for an empty stream" in {
       Source.empty[Int].dropWhile(_ < 2).runWith(TestSink.probe[Int]).request(1).expectComplete()
     }
 
-    "continue if error" in assertAllStagesStopped {
+    "continue if error" in {
       Source(1 to 4)
         .dropWhile(a => if (a < 3) true else throw TE(""))
         .withAttributes(supervisionStrategy(resumingDecider))
@@ -32,7 +31,7 @@ class FlowDropWhileSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "restart with strategy" in assertAllStagesStopped {
+    "restart with strategy" in {
       Source(1 to 4)
         .dropWhile {
           case 1 | 3 => true

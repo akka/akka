@@ -86,7 +86,7 @@ class ActorPathSpec extends AnyWordSpec with Matchers {
         RootActorPath(Address("akka", "mysys"), "/user/boom/*") // illegally pass in a path where name is expected
       }.getMessage should include("is a path separator")
 
-      // sanity check that creating such path still works
+      // check that creating such path still works
       ActorPath.fromString("akka://mysys/user/boom/*")
     }
 

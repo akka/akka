@@ -199,11 +199,13 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       else tags.asScala.toSet
     }
 
+    val commandHandlerInstance = commandHandler()
+    val eventHandlerInstance = eventHandler()
     val behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
       emptyState,
-      (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
-      eventHandler()(_, _),
+      (state, cmd) => commandHandlerInstance(state, cmd).asInstanceOf[EffectImpl[Event, State]],
+      eventHandlerInstance(_, _),
       getClass)
       .snapshotWhen(snapshotWhen)
       .withRetention(retentionCriteria.asScala)

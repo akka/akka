@@ -9,11 +9,10 @@ import java.time.Duration
 import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
-import scala.annotation.nowarn
+import scala.annotation.{ nowarn, switch }
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import akka.actor.Address
@@ -203,6 +202,18 @@ import scala.util.Success
   override def spawnAnonymous[U](behavior: akka.actor.typed.Behavior[U]): akka.actor.typed.ActorRef[U] =
     spawnAnonymous(behavior, Props.empty)
 
+  def delegate(delegator: Behavior[T], msg: T): Behavior[T] = {
+    val started = Behavior.start(delegator, this)
+    val interpreted = msg match {
+      case signal: Signal => Behavior.interpretSignal(started, this, signal)
+      case message        => Behavior.interpretMessage(started, this, message)
+    }
+    (interpreted._tag: @switch) match {
+      case BehaviorTags.SameBehavior      => started
+      case BehaviorTags.UnhandledBehavior => this.onUnhandled(msg); started
+      case _                              => interpreted
+    }
+  }
   // Scala API impl
   override def ask[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)(
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {

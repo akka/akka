@@ -61,7 +61,7 @@ First, we need to design the lifecycle of our query actor. This consists of iden
 
 #### Scheduling the query timeout
 Since we need a way to indicate how long we are willing to wait for responses, it is time to introduce a new Akka feature that we have
-not used yet, the built-in scheduler facility. Using `Behaviors.withTimers` and `startSingleTimer` to schedule a message that will be sent after a given delay.
+not used yet, the built-in scheduler facility. Using @apidoc[Behaviors.withTimers](typed.*.Behaviors$) {scala="#withTimers[T](factory:akka.actor.typed.scaladsl.TimerScheduler[T]=%3eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#withTimers(akka.japi.function.Function)"} and @apidoc[startSingleTimer](typed.*.TimerScheduler) {scala="#startSingleTimer(key:Any,msg:T,delay:scala.concurrent.duration.FiniteDuration):Unit" java="#startSingleTimer(java.lang.Object,T,java.time.Duration)"} to schedule a message that will be sent after a given delay.
 
 
 We need to create a message that represents the query timeout. We create a simple message `CollectionTimeout` without any parameters for this purpose.
@@ -148,7 +148,7 @@ Java
 Now let's verify the correctness of the query actor implementation. There are various scenarios we need to test individually to make
 sure everything works as expected. To be able to do this, we need to simulate the device actors somehow to exercise
 various normal or failure scenarios. Thankfully we took the list of collaborators (actually a `Map`) as a parameter
-to the query actor, so we can pass in `TestProbe` references. In our first test, we try out the case when
+to the query actor, so we can pass in @apidoc[typed.*.TestProbe] references. In our first test, we try out the case when
 there are two devices and both report a temperature:
 
 Scala
@@ -175,7 +175,7 @@ Java
 :   @@snip [DeviceGroupQueryTest.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/DeviceGroupQueryTest.java) { #query-test-stopped }
 
 If you remember, there is another case related to device actors stopping. It is possible that we get a normal reply
-from a device actor, but then receive a `Terminated` for the same actor later. In this case, we would like to keep
+from a device actor, but then receive a @apidoc[typed.Terminated] for the same actor later. In this case, we would like to keep
 the first reply and not mark the device as `DeviceNotAvailable`. We should test this, too:
 
 Scala

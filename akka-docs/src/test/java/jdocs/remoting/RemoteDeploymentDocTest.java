@@ -5,6 +5,7 @@
 package jdocs.remoting;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaSpec;
 import jdocs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -23,6 +24,8 @@ import akka.remote.RemoteScope;
 
 import akka.actor.AbstractActor;
 
+import static org.junit.Assert.assertEquals;
+
 public class RemoteDeploymentDocTest extends AbstractJavaTest {
 
   public static class SampleActor extends AbstractActor {
@@ -34,7 +37,14 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-      new AkkaJUnitActorSystemResource("RemoteDeploymentDocTest");
+      new AkkaJUnitActorSystemResource(
+          "RemoteDeploymentDocTest",
+          ConfigFactory.parseString(
+                  "   akka.actor.provider = remote\n"
+                      + "    akka.remote.classic.netty.tcp.port = 0\n"
+                      + "    akka.remote.artery.canonical.port = 0\n"
+                      + "    akka.remote.use-unsafe-remote-features-outside-cluster = on")
+              .withFallback(AkkaSpec.testConf()));
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -53,11 +63,10 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
     addr = AddressFromURIString.parse("akka://sys@host:1234"); // the same
     // #make-address
     // #deploy
-    ActorRef ref =
-        system.actorOf(
-            Props.create(SampleActor.class).withDeploy(new Deploy(new RemoteScope(addr))));
+    Props props = Props.create(SampleActor.class).withDeploy(new Deploy(new RemoteScope(addr)));
+    ActorRef ref = system.actorOf(props);
     // #deploy
-    assert ref.path().address().equals(addr);
+    assertEquals(addr, ref.path().address());
   }
 
   @Test

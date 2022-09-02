@@ -10,6 +10,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
 import akka.actor.ClassicActorSystemProvider
+import akka.annotation.ApiMayChange
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Pair
 import akka.japi.Util
@@ -57,6 +58,23 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
       viaFlow: Graph[FlowShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance], Pair[Out2, Ctx2]], Mat2])
       : SourceWithContext[Out2, Ctx2, Mat] =
     viaScala(_.via(akka.stream.scaladsl.Flow[(Out, Ctx)].map { case (o, c) => Pair(o, c) }.via(viaFlow).map(_.toScala)))
+
+  /**
+   * Transform this flow by the regular flow. The given flow works on the data portion of the stream and
+   * ignores the context.
+   *
+   * The given flow *must* not re-order, drop or emit multiple elements for one incoming
+   * element, the sequence of incoming contexts is re-combined with the outgoing
+   * elements of the stream. If a flow not fulfilling this requirement is used the stream
+   * will not fail but continue running in a corrupt state and re-combine incorrect pairs
+   * of elements and contexts or deadlock.
+   *
+   * For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
+   */
+  @ApiMayChange def unsafeDataVia[Out2, Mat2](
+      viaFlow: Graph[FlowShape[Out @uncheckedVariance, Out2], Mat2]): SourceWithContext[Out2, Ctx, Mat] =
+    viaScala(_.unsafeDataVia(viaFlow))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.withAttributes]].

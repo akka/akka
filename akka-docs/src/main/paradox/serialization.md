@@ -36,13 +36,13 @@ Akka itself uses Protocol Buffers to serialize internal messages (for example cl
 ### Configuration
 
 For Akka to know which `Serializer` to use for what, you need to edit your configuration: 
-in the "akka.actor.serializers"-section, you bind names to implementations of the `akka.serialization.Serializer`
+in the `akka.actor.serializers`-section, you bind names to implementations of the @apidoc[akka.serialization.Serializer](Serializer)
 you wish to use, like this:
 
 @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-serializers-config }
 
 After you've bound names to different implementations of `Serializer` you need to wire which classes
-should be serialized using which `Serializer`, this is done in the "akka.actor.serialization-bindings"-section:
+should be serialized using which `Serializer`, this is done in the `akka.actor.serialization-bindings`-section:
 
 @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialization-bindings-config }
 
@@ -63,7 +63,7 @@ you would need to reference it as `Wrapper$Message` instead of `Wrapper.Message`
 @@@
 
 Akka provides serializers for several primitive types and [protobuf](https://github.com/protocolbuffers/protobuf)
-`com.google.protobuf.GeneratedMessage` (protobuf2) and `com.google.protobuf.GeneratedMessageV3` (protobuf3) by default (the latter only if
+@javadoc[com.google.protobuf.GeneratedMessage](com.google.protobuf.GeneratedMessage) (protobuf2) and @javadoc[com.google.protobuf.GeneratedMessageV3](com.google.protobuf.GeneratedMessageV3) (protobuf3) by default (the latter only if
 depending on the akka-remote module), so normally you don't need to add
 configuration for that if you send raw protobuf messages as actor messages.
 
@@ -94,7 +94,7 @@ It is important to use the serializer identifier in this way to support rolling 
 consisting of the bytes, the serializer id, and the manifest should always be transferred or stored together so that
 they can be deserialized with different `serialization-bindings` configuration.
 
-The `SerializationExtension` is a Classic `Extension` but it can be used with an `akka.actor.typed.ActorSystem` like this:
+The @apidoc[SerializationExtension$] is a Classic @apidoc[akka.actor.Extension], but it can be used with an @apidoc[akka.actor.typed.ActorSystem](typed.ActorSystem) like this:
 
 Scala
 :  @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #programmatic-typed }
@@ -108,7 +108,7 @@ The first code snippet on this page contains a configuration file that reference
 
 ### Creating new Serializers
 
-A custom `Serializer` has to inherit from @scala[`akka.serialization.Serializer`]@java[`akka.serialization.JSerializer`] and can be defined like the following:
+A custom `Serializer` has to inherit from @scala[@apidoc[akka.serialization.Serializer](Serializer)]@java[@apidoc[akka.serialization.JSerializer](JSerializer)] and can be defined like the following:
 
 Scala
 :  @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #imports }
@@ -125,12 +125,12 @@ Java
 
 The `identifier` must be unique. The identifier is used when selecting which serializer to use for deserialization.
 If you have accidentally configured several serializers with the same identifier that will be detected and prevent
-the `ActorSystem` from being started. It can be a hardcoded value because it must remain the same value to support
+the @apidoc[actor.ActorSystem] from being started. It can be a hardcoded value because it must remain the same value to support
 rolling updates. 
 
 @@@ div { .group-scala }
 
-If you prefer to define the identifier in cofiguration that is supported by the `BaseSerializer` trait, which
+If you prefer to define the identifier in cofiguration that is supported by the @apidoc[akka.serialization.BaseSerializer] trait, which
 implements the `def identifier` by reading it from configuration based on the serializer's class name:
 
 Scala
@@ -139,14 +139,14 @@ Scala
 @@@
 
 The manifest is a type hint so that the same serializer can be used for different
-classes. The manifest parameter in @scala[`fromBinary`]@java[`fromBinaryJava`] is the class of the object that
-was serialized. In `fromBinary` you can match on the class and deserialize the
+classes. The manifest parameter in @scala[@scaladoc[fromBinary](akka.serialization.Serializer#fromBinary(bytes:Array[Byte],manifest:Option[Class[_]]):AnyRef)]@java[@javadoc[fromBinaryJava](akka.serialization.JSerializer#fromBinaryJava(byte%5B%5D,java.lang.Class))] is the class of the object that
+was serialized. In @scala[`fromBinary`]@java[`fromBinaryJava`] you can match on the class and deserialize the
 bytes to different objects.
 
 Then you only need to fill in the blanks, bind it to a name in your configuration and
 list which classes should be deserialized with it.
 
-The serializers are initialized eagerly by the `SerializationExtension` when the `ActorSystem` is started and
+The serializers are initialized eagerly by the @apidoc[SerializationExtension$] when the @apidoc[actor.ActorSystem] is started and
 therefore a serializer itself must not access the `SerializationExtension` from its constructor. Instead, it
 should access the `SerializationExtension` lazily.
 
@@ -154,13 +154,13 @@ should access the `SerializationExtension` lazily.
 ### Serializer with String Manifest
 
 The `Serializer` illustrated above supports a class based manifest (type hint).
-For serialization of data that need to evolve over time the `SerializerWithStringManifest`
-is recommended instead of `Serializer` because the manifest (type hint) is a `String`
-instead of a `Class`. That means that the class can be moved/removed and the serializer
+For serialization of data that need to evolve over time the @apidoc[SerializerWithStringManifest]
+is recommended instead of `Serializer` because the manifest (type hint) is a @javadoc[String](java.lang.String)
+instead of a @javadoc[Class](java.lang.Class). That means that the class can be moved/removed and the serializer
 can still deserialize old data by matching  on the `String`. This is especially useful
 for @ref:[Persistence](persistence.md).
 
-The manifest string can also encode a version number that can be used in `fromBinary` to
+The manifest string can also encode a version number that can be used in @scala[@scaladoc[fromBinary](akka.serialization.Serializer#fromBinary(bytes:Array[Byte],manifest:Option[Class[_]]):AnyRef)]@java[@javadoc[fromBinaryJava](akka.serialization.JSerializer#fromBinaryJava(byte%5B%5D,java.lang.Class))] to
 deserialize in different ways to migrate old data to new domain objects.
 
 If the data was originally serialized with `Serializer` and in a later version of the
@@ -178,7 +178,7 @@ Java
 You must also bind it to a name in your configuration and then list which classes
 should be serialized by it.
 
-It's recommended to throw `IllegalArgumentException` or `java.io.NotSerializableException` in
+It's recommended to throw @javadoc[IllegalArgumentException](java.lang.IllegalArgumentException) or @javadoc[NotSerializableException](java.io.NotSerializableException) in
 `fromBinary` if the manifest is unknown. This makes it possible to introduce new message types and
 send them to nodes that don't know about them. This is typically needed when performing
 rolling updates, i.e. running a cluster with mixed versions for a while.
@@ -203,7 +203,7 @@ Scala
 Java
 :  @@snip [PingSerializerExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/PingSerializerExampleTest.java) { #serializer }
 
-Serialization of Classic `ActorRef` is described in @ref:[Classic Serialization](serialization-classic.md#serializing-actorrefs).
+Serialization of Classic @apidoc[akka.actor.ActorRef] is described in @ref:[Classic Serialization](serialization-classic.md#serializing-actorrefs).
 Classic and Typed actor references have the same serialization format so they can be interchanged.
 
 ### Deep serialization of Actors
@@ -256,14 +256,14 @@ and this could lead to very surprising errors.
 ## Rolling updates
 
 A serialized remote message (or persistent event) consists of serializer-id, the manifest, and the binary payload.
-When deserializing it is only looking at the serializer-id to pick which `Serializer` to use for `fromBinary`.
+When deserializing it is only looking at the serializer-id to pick which @scala[`Serializer`]@java[`JSerializer`] to use for @scala[@scaladoc[fromBinary](akka.serialization.Serializer#fromBinary(bytes:Array[Byte],manifest:Option[Class[_]]):AnyRef)]@java[@javadoc[fromBinaryJava](akka.serialization.JSerializer#fromBinaryJava(byte%5B%5D,java.lang.Class))].
 The message class (the bindings) is not used for deserialization. The manifest is only used within the
-`Serializer` to decide how to deserialize the payload, so one `Serializer` can handle many classes.
+@scala[`Serializer`]@java[`JSerializer`] to decide how to deserialize the payload, so one @scala[`Serializer`]@java[`JSerializer`] can handle many classes.
 
 That means that it is possible to change serialization for a message by performing two rolling update steps to
 switch to the new serializer.
 
-1. Add the `Serializer` class and define it in `akka.actor.serializers` config section, but not in
+1. Add the @scala[`Serializer`]@java[`JSerializer`] class and define it in `akka.actor.serializers` config section, but not in
   `akka.actor.serialization-bindings`. Perform a rolling update for this change. This means that the
   serializer class exists on all nodes and is registered, but it is still not used for serializing any
   messages. That is important because during the rolling update the old nodes still don't know about
@@ -278,12 +278,6 @@ switch to the new serializer.
 As an optional third step the old serializer can be completely removed if it was not used for persistent events.
 It must still be possible to deserialize the events that were stored with the old serializer.
 
-## External Akka Serializers
-
-* [Kryo serializer for Akka](https://github.com/altoo-ag/akka-kryo-serialization)
-
-* [Twitter Chill Scala extensions for Kryo](https://github.com/twitter/chill)
-
 ### Verification
 
 Normally, messages sent between local actors (i.e. same JVM) do not undergo serialization. For testing, sometimes, it may be desirable to force serialization on all messages (both remote and local). If you want to do this in order to verify that your messages are serializable you can enable the following config option:
@@ -291,10 +285,10 @@ Normally, messages sent between local actors (i.e. same JVM) do not undergo seri
 @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-messages-config }
 
 Certain messages can be excluded from verification by extending the marker @scala[trait]@java[interface]
-`akka.actor.NoSerializationVerificationNeeded` or define a class name prefix in configuration
+@apidoc[akka.actor.NoSerializationVerificationNeeded](NoSerializationVerificationNeeded) or define a class name prefix in configuration
 `akka.actor.no-serialization-verification-needed-class-prefix`.
 
-If you want to verify that your `Props` are serializable you can enable the following config option:
+If you want to verify that your @apidoc[akka.actor.Props] are serializable you can enable the following config option:
 
 @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-creators-config }
 

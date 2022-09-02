@@ -7,16 +7,14 @@ package akka.stream.io
 import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
-import scala.util.Success
-
 import scala.annotation.nowarn
+import scala.util.Success
 
 import akka.Done
 import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
@@ -31,14 +29,14 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   "InputStream Source" must {
 
-    "read bytes from InputStream" in assertAllStagesStopped {
+    "read bytes from InputStream" in {
       val f =
         StreamConverters.fromInputStream(() => inputStreamFor(Array('a', 'b', 'c').map(_.toByte))).runWith(Sink.head)
 
       f.futureValue should ===(ByteString("abc"))
     }
 
-    "record number of bytes read" in assertAllStagesStopped {
+    "record number of bytes read" in {
       StreamConverters
         .fromInputStream(() => inputStreamFor(Array(1, 2, 3)))
         .toMat(Sink.ignore)(Keep.left)
@@ -46,7 +44,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .futureValue shouldEqual IOResult(3, Success(Done))
     }
 
-    "return fail if close fails" in assertAllStagesStopped {
+    "return fail if close fails" in {
       val fail = new RuntimeException("oh dear")
       StreamConverters
         .fromInputStream(() =>
@@ -74,7 +72,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .getCause shouldEqual fail
     }
 
-    "handle failure on read" in assertAllStagesStopped {
+    "handle failure on read" in {
       val fail = new RuntimeException("oh dear indeed")
       StreamConverters
         .fromInputStream(() => () => throw fail)
@@ -109,7 +107,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       f.failed.futureValue shouldBe an[AbruptStageTerminationException]
     }
 
-    "emit as soon as read" in assertAllStagesStopped {
+    "emit as soon as read" in {
       val latch = new CountDownLatch(1)
       val probe = StreamConverters
         .fromInputStream(

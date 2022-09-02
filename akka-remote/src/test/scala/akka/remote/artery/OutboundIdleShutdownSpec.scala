@@ -195,7 +195,7 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
 
         def remoteEcho = system.actorSelection(RootActorPath(remoteAddress) / "user" / "echo")
 
-        val echoRef = remoteEcho.resolveOne(3.seconds).futureValue
+        val echoRef = remoteEcho.resolveOne(remainingOrDefault).futureValue
         val localProbe = new TestProbe(localSystem)
 
         echoRef.tell("ping", localProbe.ref)

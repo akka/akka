@@ -4,17 +4,18 @@
 
 package akka.stream.scaladsl
 
-import akka.actor.ActorSystem
-import akka.stream.OverflowStrategy
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.testkit.{ AkkaSpec, ExplicitlyTriggeredScheduler }
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import com.typesafe.config.{ ConfigFactory, ConfigValueFactory }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.actor.ActorSystem
+import akka.stream.OverflowStrategy
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.testkit.{ AkkaSpec, ExplicitlyTriggeredScheduler }
 
 class AggregateWithBoundarySpec extends StreamSpec {
 

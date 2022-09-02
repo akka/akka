@@ -80,7 +80,7 @@ import akka.util.ByteString
 
             DontRecurse
           case NonFatal(ex) =>
-            failStage(new ParsingException(s"Parsing failed in step $current", ex))
+            failStage(ex)
 
             DontRecurse
         }
@@ -177,6 +177,7 @@ import akka.util.ByteString
       throw new IllegalStateException("no initial parser installed: you must use startWith(...)")
   }
 
+  @deprecated("Deprecated for internal usage. Will not be emitted any more.", "2.6.20")
   class ParsingException(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 
   val NeedMoreData = new Exception with NoStackTrace

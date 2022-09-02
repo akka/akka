@@ -391,6 +391,11 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
 object BroadcastHub {
 
   /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] val defaultBufferSize = 256
+
+  /**
    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
    * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
@@ -412,7 +417,7 @@ object BroadcastHub {
   def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](bufferSize))
 
   /**
-   * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
+   * Creates a [[Sink]] with default buffer size 256 that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
    * value. This [[Source]] can be materialized arbitrary many times and each materialization will receive the
    * broadcast elements from the original [[Sink]].
@@ -427,7 +432,7 @@ object BroadcastHub {
    * cancelled are simply removed from the dynamic set of consumers.
    *
    */
-  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(bufferSize = 256)
+  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(bufferSize = defaultBufferSize)
 
 }
 

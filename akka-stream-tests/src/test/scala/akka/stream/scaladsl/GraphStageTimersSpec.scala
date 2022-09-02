@@ -16,7 +16,6 @@ import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestDuration
 
 object GraphStageTimersSpec {
@@ -178,7 +177,7 @@ class GraphStageTimersSpec extends StreamSpec {
       }
     }
 
-    "produce scheduled ticks as expected" in assertAllStagesStopped {
+    "produce scheduled ticks as expected" in {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
@@ -195,7 +194,7 @@ class GraphStageTimersSpec extends StreamSpec {
       downstream.expectComplete()
     }
 
-    "propagate error if onTimer throws an exception" in assertAllStagesStopped {
+    "propagate error if onTimer throws an exception" in {
       val exception = TE("Expected exception to the rule")
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()

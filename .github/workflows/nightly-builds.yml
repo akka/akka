@@ -94,6 +94,7 @@ jobs:
         uses: coursier/cache-action@v6.2
 
       - name: sbt ${{ matrix.command }}
+        # note that this is not running any multi-jvm tests because multi-in-test=false
         run: |-
           sbt -jvm-opts .jvmopts-ci \
           -Djava.security.egd=file:/dev/./urandom \
@@ -101,14 +102,24 @@ jobs:
           -Dakka.test.timefactor=2 \
           -Dakka.actor.testkit.typed.timefactor=2 \
           -Dakka.test.tags.exclude=gh-exclude,timing \
+          -Dakka.test.multi-in-test=false \
           -Dakka.cluster.assert=on \
-          -Dakka.test.names.exclude=akka.cluster.Stress \
-          -Dmultinode.XX:MetaspaceSize=128M \
-          -Dmultinode.Xms256M \
-          -Dmultinode.Xmx256M \
-          -Dmultinode.Xlog:gc \
-          -Dmultinode.XX:+AlwaysActAsServerClassMachine \
           clean ${{ matrix.command }}
+
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
+          to: akka.official@gmail.com
+          from: Akka CI (GHActions)
+          body: |
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
 
   jdk-nightly-build:
     name: JDK ${{ matrix.jdkVersion }} / Scala ${{ matrix.scalaVersion }}
@@ -124,11 +135,11 @@ jobs:
         jdkVersion: ["adopt@1.8.0", "adopt@1.11", "openjdk@1.17.0"]
         include:
           - jdkVersion: adopt@1.8.0
-            extraOpts: "-Dmultinode.XX:+PrintGCDetails -Dmultinode.XX:+PrintGCTimeStamps"
+            extraOpts: ""
           - jdkVersion: adopt@1.11
-            extraOpts: "-Dmultinode.Xlog:gc"
+            extraOpts: ""
           - jdkVersion: openjdk@1.17.0
-            extraopts: "-Dmultinode.Xlog:gc"
+            extraopts: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -144,7 +155,7 @@ jobs:
         uses: coursier/cache-action@v6.2
 
       - name: Compile and Test
-        # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
+        # note that this is not running any multi-jvm tests because multi-in-test=false
         run: |-
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.cluster.assert=on \
@@ -153,10 +164,6 @@ jobs:
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.tags.exclude=gh-exclude,timing \
             -Dakka.test.multi-in-test=false \
-            -Dmultinode.XX:MetaspaceSize=128M \
-            -Dmultinode.Xms256M \
-            -Dmultinode.Xmx256M \
-            -Dmultinode.XX:+AlwaysActAsServerClassMachine \
             ${{ matrix.extraOpts }} \
             clean "+~ ${{ matrix.scalaVersion }} test" checkTestsHaveRun
 
@@ -195,6 +202,61 @@ jobs:
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
             "+~ ${{ matrix.scalaVersion }} publishLocal publishM2"
+
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
+          to: akka.official@gmail.com
+          from: Akka CI (GHActions)
+          body: |
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+
+  akka-artery-aeron-tests:
+    name: Akka Artery Aeron Tests
+    runs-on: ubuntu-20.04
+    if: github.repository == 'akka/akka'
+    strategy:
+      fail-fast: false
+      matrix:
+        command:
+          - akka-remote/test akka-remote-tests/test
+          - akka-cluster/test akka-cluster-typed/test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: sbt ${{ matrix.command }}
+        # note that this is not running any multi-jvm tests because multi-in-test=false
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Djava.security.egd=file:/dev/./urandom \
+          -Dakka.remote.artery.transport=aeron-udp \
+          -Dakka.test.timefactor=2 \
+          -Dakka.actor.testkit.typed.timefactor=2 \
+          -Dakka.test.tags.exclude=gh-exclude,gh-exclude-aeron,timing \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.cluster.assert=on \
+          -Daeron.dir=/opt/volumes/media-driver \
+          -Daeron.term.buffer.length=33554432 \
+          clean ${{ matrix.command }}
 
       - name: Email on failure
         if: ${{ failure() }}

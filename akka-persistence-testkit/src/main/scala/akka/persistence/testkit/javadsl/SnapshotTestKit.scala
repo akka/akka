@@ -20,9 +20,9 @@ import akka.util.ccompat.JavaConverters._
  * Class for testing persisted snapshots in persistent actors.
  */
 @ApiMayChange
-class SnapshotTestKit(system: ActorSystem) {
+class SnapshotTestKit(scalaTestkit: ScalaTestKit) {
 
-  private val scalaTestkit = new ScalaTestKit(system)
+  def this(system: ActorSystem) = this(new ScalaTestKit(system))
 
   /**
    * Check that nothing has been saved in the storage.

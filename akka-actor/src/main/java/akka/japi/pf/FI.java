@@ -22,6 +22,7 @@ public final class FI {
    * @param <I> the input type, that this Apply will be applied to
    * @param <R> the return type, that the results of the application will have
    */
+  @FunctionalInterface
   public interface Apply<I, R> {
     /**
      * The application to perform.
@@ -42,6 +43,7 @@ public final class FI {
    * @param <I2> the second input type, that this Apply will be applied to
    * @param <R> the return type, that the results of the application will have
    */
+  @FunctionalInterface
   public interface Apply2<I1, I2, R> {
     /**
      * The application to perform.
@@ -61,6 +63,7 @@ public final class FI {
    *
    * @param <T> the type that the predicate will operate on.
    */
+  @FunctionalInterface
   public interface TypedPredicate<T> {
     /**
      * The predicate to evaluate.
@@ -77,6 +80,7 @@ public final class FI {
    * @param <T> the type that the predicate will operate on.
    * @param <U> the type that the predicate will operate on.
    */
+  @FunctionalInterface
   public interface TypedPredicate2<T, U> {
     /**
      * The predicate to evaluate.
@@ -96,6 +100,7 @@ public final class FI {
    *
    * @param <I> the input type, that this Apply will be applied to
    */
+  @FunctionalInterface
   public interface UnitApply<I> {
     /**
      * The application to perform.
@@ -111,6 +116,7 @@ public final class FI {
    * @param <I1> the first input type, that this Apply will be applied to
    * @param <I2> the second input type, that this Apply will be applied to
    */
+  @FunctionalInterface
   public interface UnitApply2<I1, I2> {
     /**
      * The application to perform.
@@ -128,6 +134,7 @@ public final class FI {
    * @param <I2> the second input type, that this Apply will be applied to
    * @param <I3> the third input type, that this Apply will be applied to
    */
+  @FunctionalInterface
   public interface UnitApply3<I1, I2, I3> {
     /**
      * The application to perform.
@@ -147,6 +154,7 @@ public final class FI {
    * @param <I3> the third input type, that this Apply will be applied to
    * @param <I4> the fourth input type, that this Apply will be applied to
    */
+  @FunctionalInterface
   public interface UnitApply4<I1, I2, I3, I4> {
     /**
      * The application to perform.
@@ -165,6 +173,7 @@ public final class FI {
    * <p>This class is kept for compatibility, but for future API's please prefer {@link
    * akka.japi.function.Effect}.
    */
+  @FunctionalInterface
   public interface UnitApplyVoid {
     /** The application to perform. */
     void apply() throws Exception;
@@ -177,6 +186,7 @@ public final class FI {
    * <p>This class is kept for compatibility, but for future API's please prefer {@link
    * java.util.function.Predicate} or {@link akka.japi.function.Predicate}.
    */
+  @FunctionalInterface
   interface Predicate {
     /**
      * The predicate to evaluate.

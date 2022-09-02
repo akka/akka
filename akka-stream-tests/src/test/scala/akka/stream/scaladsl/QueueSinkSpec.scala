@@ -16,7 +16,6 @@ import akka.stream.Attributes.inputBuffer
 import akka.stream.Materializer
 import akka.stream.StreamDetachedException
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
 
 class QueueSinkSpec extends StreamSpec {
@@ -28,7 +27,7 @@ class QueueSinkSpec extends StreamSpec {
 
   "An QueueSinkSpec" must {
 
-    "send the elements as result of future" in assertAllStagesStopped {
+    "send the elements as result of future" in {
       val expected = List(Some(1), Some(2), Some(3), None)
       val queue = Source(expected.flatten).runWith(Sink.queue())
       expected.foreach { v =>
@@ -37,8 +36,7 @@ class QueueSinkSpec extends StreamSpec {
       }
     }
 
-    "allow to have only one future waiting for result in each point of time with default maxConcurrentOffers" in
-    assertAllStagesStopped {
+    "allow to have only one future waiting for result in each point of time with default maxConcurrentOffers" in {
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue())
       val sub = probe.expectSubscription()
@@ -54,8 +52,7 @@ class QueueSinkSpec extends StreamSpec {
       queue.pull()
     }
 
-    "allow to have `n` futures waiting for result in each point of time with `n` maxConcurrentOffers" in
-    assertAllStagesStopped {
+    "allow to have `n` futures waiting for result in each point of time with `n` maxConcurrentOffers" in {
       val n = 2
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
@@ -77,7 +74,7 @@ class QueueSinkSpec extends StreamSpec {
       queue.pull()
     }
 
-    "fail all futures on abrupt termination" in assertAllStagesStopped {
+    "fail all futures on abrupt termination" in {
       val n = 2
       val mat = Materializer(system)
       val queue = TestSource.probe.runWith(Sink.queue(n))(mat)
@@ -93,7 +90,7 @@ class QueueSinkSpec extends StreamSpec {
       assert(fail2.isInstanceOf[AbruptTerminationException] || fail2.isInstanceOf[StreamDetachedException])
     }
 
-    "complete all futures with None on upstream complete" in assertAllStagesStopped {
+    "complete all futures with None on upstream complete" in {
       val n = 2
       val probe = TestPublisher.probe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
@@ -104,7 +101,7 @@ class QueueSinkSpec extends StreamSpec {
       future2.futureValue shouldBe None
     }
 
-    "fail all futures on upstream fail" in assertAllStagesStopped {
+    "fail all futures on upstream fail" in {
       val n = 2
       val probe = TestPublisher.probe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
@@ -116,7 +113,7 @@ class QueueSinkSpec extends StreamSpec {
       future2.failed.futureValue shouldBe ex
     }
 
-    "wait for next element from upstream" in assertAllStagesStopped {
+    "wait for next element from upstream" in {
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue())
       val sub = probe.expectSubscription()
@@ -130,7 +127,7 @@ class QueueSinkSpec extends StreamSpec {
       queue.pull()
     }
 
-    "fail future immediately if stream already canceled" in assertAllStagesStopped {
+    "fail future immediately if stream already canceled" in {
       val queue = Source.empty[Int].runWith(Sink.queue())
       // race here because no way to observe that queue sink saw termination
       awaitAssert({
@@ -138,7 +135,7 @@ class QueueSinkSpec extends StreamSpec {
       })
     }
 
-    "timeout future when stream cannot provide data" in assertAllStagesStopped {
+    "timeout future when stream cannot provide data" in {
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue())
       val sub = probe.expectSubscription()
@@ -152,7 +149,7 @@ class QueueSinkSpec extends StreamSpec {
       queue.pull()
     }
 
-    "fail pull future when stream is completed" in assertAllStagesStopped {
+    "fail pull future when stream is completed" in {
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue())
       val sub = probe.expectSubscription()
@@ -167,7 +164,7 @@ class QueueSinkSpec extends StreamSpec {
       queue.pull().failed.futureValue shouldBe an[StreamDetachedException]
     }
 
-    "keep on sending even after the buffer has been full" in assertAllStagesStopped {
+    "keep on sending even after the buffer has been full" in {
       val bufferSize = 16
       val streamElementCount = bufferSize + 4
       val sink = Sink.queue[Int]().withAttributes(inputBuffer(bufferSize, bufferSize))
@@ -186,18 +183,18 @@ class QueueSinkSpec extends StreamSpec {
 
     }
 
-    "cancel upstream on cancel" in assertAllStagesStopped {
+    "cancel upstream on cancel" in {
       val queue = Source.repeat(1).runWith(Sink.queue())
       queue.pull()
       queue.cancel()
     }
 
-    "be able to cancel upstream right away" in assertAllStagesStopped {
+    "be able to cancel upstream right away" in {
       val queue = Source.repeat(1).runWith(Sink.queue())
       queue.cancel()
     }
 
-    "work with one element buffer" in assertAllStagesStopped {
+    "work with one element buffer" in {
       val sink = Sink.queue[Int]().withAttributes(inputBuffer(1, 1))
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(sink)
@@ -222,7 +219,7 @@ class QueueSinkSpec extends StreamSpec {
       }
     }
 
-    "materialize to a queue which is seamlessly translatable between scala and java DSL" in assertAllStagesStopped {
+    "materialize to a queue which is seamlessly translatable between scala and java DSL" in {
       val expected = List(Some(1), Some(2), Some(3), None)
       val javadslQueue = Source(expected.flatten).runWith(Sink.queue()).asJava
       val scaladslQueue = akka.stream.javadsl.SinkQueueWithCancel.asScala(javadslQueue)

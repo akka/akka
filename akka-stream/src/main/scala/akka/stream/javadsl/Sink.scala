@@ -8,6 +8,7 @@ import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
+import java.util.stream.Collector
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
@@ -16,15 +17,20 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-import org.reactivestreams.{ Publisher, Subscriber }
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
 
 import akka._
-import akka.actor.{ ActorRef, ClassicActorSystemProvider, Status }
+import akka.actor.ActorRef
+import akka.actor.ClassicActorSystemProvider
+import akka.actor.Status
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
 import akka.japi.function.Creator
-import akka.stream.{ javadsl, scaladsl, _ }
+import akka.stream._
 import akka.stream.impl.LinearTraversalBuilder
+import akka.stream.javadsl
+import akka.stream.scaladsl
 import akka.stream.scaladsl.SinkToCompletionStage
 
 /** Java API */
@@ -51,6 +57,16 @@ object Sink {
       zero: U,
       f: function.Function2[U, In, CompletionStage[U]]): javadsl.Sink[In, CompletionStage[U]] =
     new Sink(scaladsl.Sink.foldAsync[U, In](zero)(f(_, _).toScala).toCompletionStage())
+
+  /**
+   * Creates a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java ``Collector``
+   * transformation and reduction operations. This allows usage of Java streams transformations for reactive streams.
+   * The ``Collector`` will trigger demand downstream. Elements emitted through the stream will be accumulated into a mutable
+   * result container, optionally transformed into a final representation after all input elements have been processed.
+   * The ``Collector`` can also do reduction at the end. Reduction processing is performed sequentially.
+   */
+  def collect[U, In](collector: Collector[In, _ <: Any, U]): Sink[In, CompletionStage[U]] =
+    StreamConverters.javaCollector(() => collector)
 
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
@@ -84,6 +100,12 @@ object Sink {
    */
   def ignore[T](): Sink[T, CompletionStage[Done]] =
     new Sink(scaladsl.Sink.ignore.toCompletionStage())
+
+  /**
+   * A [[Sink]] that will always backpressure never cancel and never consume any elements from the stream.
+   * */
+  def never[T]: Sink[T, CompletionStage[Done]] =
+    new Sink(scaladsl.Sink.never.toCompletionStage())
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
@@ -586,5 +608,7 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    */
   override def async(dispatcher: String, inputBufferSize: Int): javadsl.Sink[In, Mat] =
     new Sink(delegate.async(dispatcher, inputBufferSize))
+
+  override def getAttributes: Attributes = delegate.getAttributes
 
 }

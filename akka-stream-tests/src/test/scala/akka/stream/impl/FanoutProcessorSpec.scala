@@ -9,7 +9,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestProbe
 
 class FanoutProcessorSpec extends StreamSpec {
@@ -17,7 +16,7 @@ class FanoutProcessorSpec extends StreamSpec {
   "The FanoutProcessor" must {
 
     // #25634
-    "not leak running actors on failed upstream without subscription" in assertAllStagesStopped {
+    "not leak running actors on failed upstream without subscription" in {
       val probe = TestProbe()
       val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
@@ -27,7 +26,7 @@ class FanoutProcessorSpec extends StreamSpec {
     }
 
     // #25634
-    "not leak running actors on failed upstream with one subscription" in assertAllStagesStopped {
+    "not leak running actors on failed upstream with one subscription" in {
       val probe = TestProbe()
       val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
@@ -39,7 +38,7 @@ class FanoutProcessorSpec extends StreamSpec {
     }
 
     // #25634
-    "not leak running actors on failed upstream with multiple subscriptions" in assertAllStagesStopped {
+    "not leak running actors on failed upstream with multiple subscriptions" in {
       val probe = TestProbe()
       val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
@@ -51,7 +50,7 @@ class FanoutProcessorSpec extends StreamSpec {
       probe.expectTerminated(publisherRef)
     }
 
-    "not leak running actors on completed upstream no subscriptions" in assertAllStagesStopped {
+    "not leak running actors on completed upstream no subscriptions" in {
       val probe = TestProbe()
       val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
@@ -61,7 +60,7 @@ class FanoutProcessorSpec extends StreamSpec {
       probe.expectTerminated(publisherRef)
     }
 
-    "not leak running actors on completed upstream with one subscription" in assertAllStagesStopped {
+    "not leak running actors on completed upstream with one subscription" in {
       val probe = TestProbe()
       val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
@@ -75,7 +74,7 @@ class FanoutProcessorSpec extends StreamSpec {
       completed.futureValue
     }
 
-    "not leak running actors on completed upstream with multiple subscriptions" in assertAllStagesStopped {
+    "not leak running actors on completed upstream with multiple subscriptions" in {
       val probe = TestProbe()
       val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
@@ -90,7 +89,7 @@ class FanoutProcessorSpec extends StreamSpec {
       completed2.futureValue
     }
 
-    "not leak running actors on failed downstream" in assertAllStagesStopped {
+    "not leak running actors on failed downstream" in {
       val probe = TestProbe()
       val (_, publisher) = Source.repeat(1).toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl

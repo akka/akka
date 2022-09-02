@@ -5,17 +5,18 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.{ CompletionStage, TimeUnit }
-
 import scala.annotation.nowarn
-import com.typesafe.config.ConfigFactory
 
+import com.typesafe.config.ConfigFactory
 import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
+import akka.stream.ActorAttributes.Dispatcher
 import akka.stream._
 import akka.stream.Attributes._
 import akka.stream.javadsl
 import akka.stream.stage._
+import akka.stream.snapshot.MaterializerState
 import akka.stream.testkit._
 import akka.testkit.TestKit
 
@@ -354,6 +355,28 @@ class AttributesSpec
 
       dispatcher should startWith("AttributesSpec-my-dispatcher")
     }
+
+    // We reverted fix #30076 for this since it had too many side effects, we need something specifically for fromPublisher()
+    "get input buffer size from surrounding .addAttributes for Source.fromPublisher" in pendingUntilFixed {
+      val materializer = Materializer(system) // for isolation
+      try {
+        val pub = TestPublisher.probe()
+        Source.fromPublisher(pub).withAttributes(Attributes.inputBuffer(1, 1)).run()(materializer)
+
+        val streamSnapshot = awaitAssert {
+          val snapshot = MaterializerState.streamSnapshots(materializer).futureValue
+          snapshot should have size (1) // just the one island in this case
+          snapshot.head
+        }
+
+        val logics = streamSnapshot.activeInterpreters.head.logics
+        val inputBoundary = logics.find(_.label.startsWith("BatchingActorInputBoundary")).get
+        inputBoundary.label should include("fill=0/1,") // dodgy but see no other way to inspect from snapshot
+
+      } finally {
+        materializer.shutdown()
+      }
+    }
   }
 
   "attributes on a Flow" must {
@@ -401,6 +424,117 @@ class AttributesSpec
       firstName shouldBe Some(Name("replaced-again"))
       val firstWhatever = attributes.getFirst[WhateverAttribute]
       firstWhatever shouldBe Some(WhateverAttribute("replaced"))
+    }
+
+    "get input buffer size from surrounding .addAttributes (closest)" in {
+      val materializer = Materializer(system) // for isolation
+      try {
+        val (sourcePromise, complete) = Source.maybe
+          .viaMat(
+            Flow[Int]
+              .map { n =>
+                // something else than identity so it's not optimized away
+                n
+              }
+              .async(Dispatchers.DefaultBlockingDispatcherId)
+              .addAttributes(Attributes.inputBuffer(1, 1)))(Keep.left)
+          .toMat(Sink.ignore)(Keep.both)
+          .run()(materializer)
+
+        val snapshot = awaitAssert {
+          val snapshot = MaterializerState.streamSnapshots(materializer).futureValue
+          snapshot should have size (2) // two stream "islands", one on blocking dispatcher and one on default
+          snapshot
+        }
+
+        val islandByDispatcher =
+          snapshot.groupBy(_.activeInterpreters.head.logics.head.attributes.mandatoryAttribute[Dispatcher])
+
+        val logicsOnBlocking =
+          islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
+        val blockingInputBoundary = logicsOnBlocking.find(_.label.startsWith("BatchingActorInputBoundary")).get
+        blockingInputBoundary.label should include("fill=0/1,") // dodgy but see no other way to inspect from snapshot
+
+        sourcePromise.success(None)
+        complete.futureValue // block until stream completes
+      } finally {
+        materializer.shutdown()
+      }
+    }
+
+    "get input buffer size from surrounding .addAttributes (wrapping)" in {
+      val materializer = Materializer(system) // for isolation
+      try {
+        val (sourcePromise, complete) = Source.maybe
+          .viaMat(Flow[Int]
+            .map { n =>
+              // something else than identity so it's not optimized away
+              n
+            }
+            .async(Dispatchers.DefaultBlockingDispatcherId))(Keep.left)
+          .addAttributes(Attributes.inputBuffer(1, 1))
+          .toMat(Sink.ignore)(Keep.both)
+          .run()(SystemMaterializer(system).materializer)
+
+        val snapshot = awaitAssert {
+          val snapshot = MaterializerState.streamSnapshots(system).futureValue
+          snapshot should have size (2) // two stream "islands", one on blocking dispatcher and one on default
+          snapshot
+        }
+
+        val islandByDispatcher =
+          snapshot.groupBy(_.activeInterpreters.head.logics.head.attributes.mandatoryAttribute[Dispatcher])
+
+        val logicsOnBlocking =
+          islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
+        val blockingInputBoundary = logicsOnBlocking.find(_.label.startsWith("BatchingActorInputBoundary")).get
+        blockingInputBoundary.label should include("fill=0/1,") // dodgy but see no other way to inspect from snapshot
+
+        sourcePromise.success(None)
+        complete.futureValue // block until stream completes
+      } finally {
+        materializer.shutdown()
+      }
+    }
+
+    "get input buffer size from async(dispatcher, inputBufferSize)" in {
+      val materializer = Materializer(system) // for isolation
+      try {
+        val (sourcePromise, complete) = Source.maybe
+          .viaMat(Flow[Int]
+            .map { n =>
+              // something else than identity so it's not optimized away
+              n
+            }
+            .async(Dispatchers.DefaultBlockingDispatcherId, 1))(Keep.left)
+          .toMat(Sink.ignore)(Keep.both)
+          .run()(SystemMaterializer(system).materializer)
+
+        val snapshot = awaitAssert {
+          val snapshot = MaterializerState.streamSnapshots(system).futureValue
+          snapshot should have size (2) // two stream "islands", one on blocking dispatcher and one on default
+          snapshot
+        }
+
+        val islandByDispatcher =
+          snapshot.groupBy(_.activeInterpreters.head.logics.head.attributes.mandatoryAttribute[Dispatcher])
+
+        val logicsOnBlocking =
+          islandByDispatcher(Dispatcher(Dispatchers.DefaultBlockingDispatcherId)).head.activeInterpreters.head.logics
+        val blockingInputBoundary = logicsOnBlocking.find(_.label.startsWith("BatchingActorInputBoundary")).get
+        blockingInputBoundary.label should include("fill=0/1,") // dodgy but see no other way to inspect from snapshot
+
+        println(blockingInputBoundary)
+        /* snapshot.foreach(streamSnapshot =>
+          println("RUNNING:\n\t" +
+            streamSnapshot.activeInterpreters.head.logics.map(l => l.label -> l.attributes).mkString("\n\t"))
+        ) */
+
+        sourcePromise.success(None)
+        complete.futureValue // block until stream completes
+      } finally {
+        materializer.shutdown()
+      }
     }
 
   }

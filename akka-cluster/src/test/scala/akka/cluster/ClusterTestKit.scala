@@ -99,7 +99,7 @@ trait ClusterTestKit extends TestKitBase {
       actorSystems.contains(actorSystem)
 
     /** Shuts down all registered [[ActorSystem]]s */
-    def shutdownAll(): Unit = actorSystems.foreach(sys => shutdown(sys))
+    def shutdownAll(): Unit = actorSystems.foreach(sys => shutdown(sys, 10.seconds, verifySystemShutdown = true))
 
     /**
      * Force the passed [[ActorSystem]] to quit the cluster and shutdown.
@@ -130,7 +130,7 @@ trait ClusterTestKit extends TestKitBase {
         }
       }
 
-      shutdown(actorSystem)
+      shutdown(actorSystem, 10.seconds, verifySystemShutdown = true)
 
       // remove from internal list
       actorSystems = actorSystems.filterNot(_ == actorSystem)
@@ -177,7 +177,7 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
 
   /**
    * Starts the given `size` number of nodes and forms a cluster. Shuffles the order
-   * of nodes randomly and restarts the tail using the update `v2Config` config.
+   * of nodes randomly and restarts the tail using the `upgradeConfig`.
    *
    * Note that the two versions of config are validated against each other and have to
    * be valid both ways: v1 => v2, v2 => v1.

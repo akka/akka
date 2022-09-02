@@ -1,4 +1,4 @@
-# Welcome! Thank you for contributing to Akka!
+# Welcome! Thank you for interest in contributing to Akka!
 
 We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
 
@@ -461,6 +461,10 @@ not needed to use `sbt scalafmtAll` when editing with IntelliJ.
 
 PR validation includes checking that the Scala sources are formatted and will fail if they are not.
 
+Akka prefers flattened imports rather than grouped, which helps reduce merge conflicts. 
+If you are using IntelliJ IDEA, you can disable it by unchecking: `Preferences` -> `Code Style` -> `Scala` -> `Imports` -> `Merge imports with the same prefix into one statement`.
+
+
 It's recommended to run `sbt +sortImports` to keep the *import*s sorted.
 
 #### Java style
@@ -570,6 +574,8 @@ Scala has proven the most viable way to do it, as long as you keep the following
 Documentation of Akka Streams operators is automatically enforced.
 If a method exists on Source / Sink / Flow, or any other class listed in `project/StreamOperatorsIndexGenerator.scala`,
 it must also have a corresponding documentation page under `akka-docs/src/main/paradox/streams/operators/...`.
+
+Akka Streams operators' consistency is enforced by `ConsistencySpec`, normally an operator should exist on both Source / SubSource, Flow / SubFlow, Sink / SubSink.
 
 The pages structure is well-defined and must be the same on all documentation pages. Please refer to any neighbouring
 docs pages in there to see the pattern in action. In general the page must consist of:

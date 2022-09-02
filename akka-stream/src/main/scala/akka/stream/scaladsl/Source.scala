@@ -231,26 +231,15 @@ final class Source[+Out, +Mat](
   @deprecated("Use `Source.combine` on companion object instead", "2.5.5")
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(
       strategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
-    Source.fromGraph(GraphDSL.create() { implicit b =>
-      import GraphDSL.Implicits._
-      val c = b.add(strategy(rest.size + 2))
-      first ~> c.in(0)
-      second ~> c.in(1)
-
-      @tailrec def combineRest(idx: Int, i: Iterator[Source[T, _]]): SourceShape[U] =
-        if (i.hasNext) {
-          i.next() ~> c.in(idx)
-          combineRest(idx + 1, i)
-        } else SourceShape(c.out)
-
-      combineRest(2, rest.iterator)
-    })
+    Source.combine(first, second, rest: _*)(strategy)
 
   /**
    * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
   **/
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
+
+  override def getAttributes: Attributes = traversalBuilder.attributes
 }
 
 object Source {
@@ -974,4 +963,27 @@ object Source {
       close: (S) => Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
 
+  /**
+   * Merge multiple [[Source]]s. Prefer the sources depending on the 'priority' parameters.
+   * The provided sources and priorities must have the same size and order.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergePrioritizedN[T](
+      sourcesAndPriorities: immutable.Seq[(Source[T, _], Int)],
+      eagerComplete: Boolean): Source[T, NotUsed] = {
+    sourcesAndPriorities match {
+      case immutable.Seq()            => Source.empty
+      case immutable.Seq((source, _)) => source.mapMaterializedValue(_ => NotUsed)
+      case sourcesAndPriorities =>
+        val (sources, priorities) = sourcesAndPriorities.unzip
+        combine(sources.head, sources(1), sources.drop(2): _*)(_ => MergePrioritized(priorities, eagerComplete))
+    }
+  }
 }

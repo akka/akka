@@ -8,12 +8,11 @@ import java.io.{ NotSerializableException, ObjectOutputStream }
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.annotation.{ switch, tailrec }
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
-
-import scala.annotation.nowarn
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.annotation.{ InternalApi, InternalStableApi }
@@ -661,9 +660,22 @@ private[akka] class ActorCell(
                or is missing an appropriate, reachable no-args constructor.
               """,
               i.getCause)
-          case x => throw ActorInitializationException(self, "exception during creation", x)
+          case x =>
+            val rootCauseMessage = Option(rootCauseOf(x).getMessage).getOrElse("No message available")
+            throw ActorInitializationException(
+              self,
+              s"exception during creation, root cause message: [$rootCauseMessage]",
+              x)
         }
     }
+  }
+
+  @tailrec
+  private def rootCauseOf(throwable: Throwable): Throwable = {
+    if (throwable.getCause != null && throwable.getCause != throwable)
+      rootCauseOf(throwable.getCause)
+    else
+      throwable
   }
 
   private def supervise(child: ActorRef, async: Boolean): Unit =

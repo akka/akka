@@ -63,12 +63,16 @@ import akka.dispatch.UnboundedMessageQueueSemantics
 
         // make sure that final state has member status Removed
         override def postStop(): Unit = {
+          selfRemoved() // make sure it ends as Removed even though MemberRemoved message didn't make it
+        }
+
+        private def selfRemoved(): Unit = {
           val oldState = _state.get()
-          val selfRemoved = oldState.selfMember.copy(MemberStatus.Removed)
+          // keepig latestStats, but otherwise clear everything
           val newState = oldState.copy(
-            clusterState =
-              oldState.clusterState.copy(members = oldState.clusterState.members - selfRemoved + selfRemoved),
-            selfMember = selfRemoved)
+            clusterState = CurrentClusterState(),
+            reachability = Reachability.empty,
+            selfMember = oldState.selfMember.copy(MemberStatus.Removed))
           _state.set(newState)
         }
 
@@ -81,14 +85,14 @@ import akka.dispatch.UnboundedMessageQueueSemantics
                 _state.set(oldState.copy(clusterState = oldClusterState.copy(seenBy = seenBy)))
               case ReachabilityChanged(reachability) =>
                 _state.set(oldState.copy(reachability = reachability))
+              case MemberRemoved(member, _) if member.address == selfAddress =>
+                selfRemoved()
               case MemberRemoved(member, _) =>
-                val newSelfMember = if (member.address == selfAddress) member else oldState.selfMember
                 _state.set(
                   oldState.copy(
                     clusterState = oldClusterState.copy(
                       members = oldClusterState.members - member,
-                      unreachable = oldClusterState.unreachable - member),
-                    selfMember = newSelfMember))
+                      unreachable = oldClusterState.unreachable - member)))
               case UnreachableMember(member) =>
                 // replace current member with new member (might have different status, only address is used in equals)
                 _state.set(
@@ -134,12 +138,7 @@ import akka.dispatch.UnboundedMessageQueueSemantics
             }
 
             // once captured, optional verbose logging of event
-            e match {
-              case _: SeenChanged => // ignore
-              case event =>
-                if (cluster.settings.LogInfoVerbose)
-                  logInfo("event {}", event)
-            }
+            logInfoVerbose(e)
 
           case s: CurrentClusterState =>
             val oldState = _state.get()
@@ -216,6 +215,30 @@ import akka.dispatch.UnboundedMessageQueueSemantics
    * INTERNAL API
    */
   private[cluster] def latestStats: CurrentInternalStats = _state.get().latestStats
+
+  private def logInfoVerbose(event: ClusterDomainEvent): Unit = {
+    if (cluster.settings.LogInfoVerbose) {
+      event match {
+        case _: SeenChanged | _: CurrentInternalStats => // ignore
+        case _: UnreachableMember =>
+          val s = state
+          logInfo("event {}, {} unreachable members [{}]", event, s.unreachable.size, s.unreachable.mkString(", "))
+        case _: ReachableMember =>
+          val s = state
+          logInfo("event {}, {} unreachable members [{}]", event, s.unreachable.size, s.unreachable.mkString(", "))
+        case _: MemberUp =>
+          val s = state
+          logInfo("event {}, {} members [{}]", event, s.members.size, s.members.mkString(", "))
+        case _: MemberRemoved if !cluster.isTerminated =>
+          val s = state
+          logInfo("event {}, {} members [{}]", event, s.members.size, s.members.mkString(", "))
+        case MemberTombstonesChanged(tombstones) =>
+          logInfo("event MemberTombstonesChanged({})", tombstones.size)
+        case _ =>
+          logInfo("event {}", event)
+      }
+    }
+  }
 
   /**
    * Unsubscribe to cluster events.

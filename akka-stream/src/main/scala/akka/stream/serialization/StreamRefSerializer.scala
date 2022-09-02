@@ -91,7 +91,10 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
       d: StreamRefsProtocol.RemoteStreamFailure): StreamRefMessages.RemoteStreamFailure = {
     StreamRefMessages.RemoteStreamFailure
       .newBuilder()
-      .setCause(UnsafeByteOperations.unsafeWrap(d.msg.getBytes(StandardCharsets.UTF_8)))
+      .setCause {
+        val msg = Option(d.msg).getOrElse(d.getClass.getName)
+        UnsafeByteOperations.unsafeWrap(msg.getBytes(StandardCharsets.UTF_8))
+      }
       .build()
   }
 

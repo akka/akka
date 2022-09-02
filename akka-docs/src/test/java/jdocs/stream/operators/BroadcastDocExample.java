@@ -23,9 +23,9 @@ import java.util.concurrent.CompletionStage;
 
 public class BroadcastDocExample {
 
-  private final ActorSystem system = ActorSystem.create("PartitionDocExample");
+  private final ActorSystem system = ActorSystem.create("BroadcastDocExample");
 
-  void partitionExample() {
+  void broadcastExample() {
 
     // #broadcast
 
@@ -62,27 +62,18 @@ public class BroadcastDocExample {
     // #broadcast-async
     RunnableGraph.fromGraph(
         GraphDSL.create3(
-            countSink,
-            minSink,
-            maxSink,
+            countSink.async(),
+            minSink.async(),
+            maxSink.async(),
             Tuple3::create,
             (builder, countS, minS, maxS) -> {
               final UniformFanOutShape<Integer, Integer> broadcast =
                   builder.add(Broadcast.create(3));
               builder.from(builder.add(source)).viaFanOut(broadcast);
 
-              builder
-                  .from(broadcast.out(0))
-                  .via(builder.add(Flow.of(Integer.class).async()))
-                  .to(countS);
-              builder
-                  .from(broadcast.out(1))
-                  .via(builder.add(Flow.of(Integer.class).async()))
-                  .to(minS);
-              builder
-                  .from(broadcast.out(2))
-                  .via(builder.add(Flow.of(Integer.class).async()))
-                  .to(maxS);
+              builder.from(broadcast.out(0)).to(countS);
+              builder.from(broadcast.out(1)).to(minS);
+              builder.from(broadcast.out(2)).to(maxS);
               return ClosedShape.getInstance();
             }));
     // #broadcast-async

@@ -26,7 +26,6 @@ import akka.stream.impl.SinkModule
 import akka.stream.impl.fusing.GroupBy
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestLatch
@@ -90,7 +89,7 @@ class FlowGroupBySpec extends StreamSpec("""
   }
 
   "groupBy" must {
-    "work in the happy case" in assertAllStagesStopped {
+    "work in the happy case" in {
       new SubstreamsSupport(groupCount = 2) {
         val s1 = StreamPuppet(getSubFlow(1).runWith(Sink.asPublisher(false)))
         masterSubscriber.expectNoMessage(100.millis)
@@ -128,7 +127,7 @@ class FlowGroupBySpec extends StreamSpec("""
       }
     }
 
-    "work in normal user scenario" in assertAllStagesStopped {
+    "work in normal user scenario" in {
       Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
         .groupBy(3, _.substring(0, 1))
         .grouped(10)
@@ -139,7 +138,7 @@ class FlowGroupBySpec extends StreamSpec("""
         .sortBy(_.head) should ===(List(List("Aaa", "Abb"), List("Bcc"), List("Cdd", "Cee")))
     }
 
-    "fail when key function return null" in assertAllStagesStopped {
+    "fail when key function return null" in {
       val down = Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
         .groupBy(3, e => if (e.startsWith("A")) null else e.substring(0, 1))
         .grouped(10)
@@ -151,7 +150,7 @@ class FlowGroupBySpec extends StreamSpec("""
       ex.isInstanceOf[IllegalArgumentException] should be(true)
     }
 
-    "accept cancellation of substreams" in assertAllStagesStopped {
+    "accept cancellation of substreams" in {
       new SubstreamsSupport(groupCount = 2, maxSubstreams = 3) {
         StreamPuppet(getSubFlow(1).runWith(Sink.asPublisher(false))).cancel()
 
@@ -170,7 +169,7 @@ class FlowGroupBySpec extends StreamSpec("""
       }
     }
 
-    "accept cancellation of master stream when not consumed anything" in assertAllStagesStopped {
+    "accept cancellation of master stream when not consumed anything" in {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val publisher =
         Source.fromPublisher(publisherProbeProbe).groupBy(2, _ % 2).lift(_ % 2).runWith(Sink.asPublisher(false))
@@ -183,7 +182,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upstreamSubscription.expectCancellation()
     }
 
-    "work with empty input stream" in assertAllStagesStopped {
+    "work with empty input stream" in {
       val publisher = Source(List.empty[Int]).groupBy(2, _ % 2).lift(_ % 2).runWith(Sink.asPublisher(false))
       val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
@@ -191,7 +190,7 @@ class FlowGroupBySpec extends StreamSpec("""
       subscriber.expectSubscriptionAndComplete()
     }
 
-    "abort on onError from upstream" in assertAllStagesStopped {
+    "abort on onError from upstream" in {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val publisher =
         Source.fromPublisher(publisherProbeProbe).groupBy(2, _ % 2).lift(_ % 2).runWith(Sink.asPublisher(false))
@@ -209,7 +208,7 @@ class FlowGroupBySpec extends StreamSpec("""
       subscriber.expectError(e)
     }
 
-    "abort on onError from upstream when substreams are running" in assertAllStagesStopped {
+    "abort on onError from upstream when substreams are running" in {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val publisher =
         Source.fromPublisher(publisherProbeProbe).groupBy(2, _ % 2).lift(_ % 2).runWith(Sink.asPublisher(false))
@@ -237,7 +236,7 @@ class FlowGroupBySpec extends StreamSpec("""
 
     }
 
-    "fail stream when groupBy function throws" in assertAllStagesStopped {
+    "fail stream when groupBy function throws" in {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source
@@ -268,7 +267,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upstreamSubscription.expectCancellation()
     }
 
-    "resume stream when groupBy function throws" in assertAllStagesStopped {
+    "resume stream when groupBy function throws" in {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source
@@ -312,7 +311,7 @@ class FlowGroupBySpec extends StreamSpec("""
       substreamPuppet2.expectComplete()
     }
 
-    "pass along early cancellation" in assertAllStagesStopped {
+    "pass along early cancellation" in {
       val up = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[(Int, Source[Int, NotUsed])]()
 
@@ -325,7 +324,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upsub.expectCancellation()
     }
 
-    "fail when exceeding maxSubstreams" in assertAllStagesStopped {
+    "fail when exceeding maxSubstreams" in {
       val (up, down) =
         Flow[Int].groupBy(1, _ % 2).prefixAndTail(0).mergeSubstreams.runWith(TestSource.probe[Int], TestSink.probe)
 
@@ -345,7 +344,7 @@ class FlowGroupBySpec extends StreamSpec("""
       up.expectCancellation()
     }
 
-    "resume when exceeding maxSubstreams" in assertAllStagesStopped {
+    "resume when exceeding maxSubstreams" in {
       val (up, down) = Flow[Int]
         .groupBy(0, identity)
         .mergeSubstreams
@@ -360,7 +359,7 @@ class FlowGroupBySpec extends StreamSpec("""
       down.expectComplete()
     }
 
-    "emit subscribe before completed" in assertAllStagesStopped {
+    "emit subscribe before completed" in {
       val futureGroupSource =
         Source.single(0).groupBy(1, _ => "all").prefixAndTail(0).map(_._2).concatSubstreams.runWith(Sink.head)
       val pub: Publisher[Int] = Await.result(futureGroupSource, 3.seconds).runWith(Sink.asPublisher(false))
@@ -373,7 +372,7 @@ class FlowGroupBySpec extends StreamSpec("""
 
     }
 
-    "work under fuzzing stress test" in assertAllStagesStopped {
+    "work under fuzzing stress test" in {
       val publisherProbe = TestPublisher.manualProbe[ByteString]()
       val subscriber = TestSubscriber.manualProbe[ByteString]()
 
@@ -401,7 +400,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upstreamSubscription.sendComplete()
     }
 
-    "work if pull is exercised from both substream and main stream (#20829)" in assertAllStagesStopped {
+    "work if pull is exercised from both substream and main stream (#20829)" in {
       val upstream = TestPublisher.probe[Int]()
       val downstreamMaster = TestSubscriber.probe[Source[Int, NotUsed]]()
 
@@ -432,7 +431,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upstream.sendComplete()
     }
 
-    "work if pull is exercised from multiple substreams while downstream is backpressuring (#24353)" in assertAllStagesStopped {
+    "work if pull is exercised from multiple substreams while downstream is backpressuring (#24353)" in {
       val upstream = TestPublisher.probe[Int]()
       val downstreamMaster = TestSubscriber.probe[Source[Int, NotUsed]]()
 
@@ -485,7 +484,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upstream.sendComplete()
     }
 
-    "allow to recreate an already closed substream (#24758)" in assertAllStagesStopped {
+    "allow to recreate an already closed substream (#24758)" in {
       val (up, down) = Flow[Int]
         .groupBy(2, identity, true)
         .take(1) // close the substream after 1 element
@@ -513,7 +512,7 @@ class FlowGroupBySpec extends StreamSpec("""
       down.expectComplete()
     }
 
-    "cancel if downstream has cancelled & all substreams cancel" in assertAllStagesStopped {
+    "cancel if downstream has cancelled & all substreams cancel" in {
       val upstream = TestPublisher.probe[Int]()
       val downstreamMaster = TestSubscriber.probe[Source[Int, NotUsed]]()
 
@@ -553,7 +552,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upstream.expectCancellation()
     }
 
-    "work with random demand" in assertAllStagesStopped {
+    "work with random demand" in {
       val probes = IndexedSeq.fill(100)(Promise[TestSubscriber.Probe[ByteString]]())
 
       final class ProbeSink(val attributes: Attributes, shape: SinkShape[ByteString])(implicit system: ActorSystem)
@@ -653,7 +652,7 @@ class FlowGroupBySpec extends StreamSpec("""
       }
     }
 
-    "not block all substreams when one is blocked but has a buffer in front" in assertAllStagesStopped {
+    "not block all substreams when one is blocked but has a buffer in front" in {
       case class Elem(id: Int, substream: Int, f: () => Any)
       val queue = Source
         .queue[Elem](3)

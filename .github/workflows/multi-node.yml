@@ -2,7 +2,8 @@ name: Multi node test
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 2 * * 1,3,5'
+  workflow_dispatch:
 
 concurrency:
   # Only run once for latest commit per ref and cancel other (previous) runs.
@@ -93,12 +94,10 @@ jobs:
         run: |
           gcloud container clusters delete "akka-multi-node-${GITHUB_RUN_ID}" --quiet
 
-  akka-artery-aeron-cluster-tests:
-    name: Artery Aeron UDP Cluster
+  run-multi-node-aeron-tests:
+    name: Multi Node Test with Artery Aeron UDP transport
     runs-on: ubuntu-20.04
-    # FIXME disabled due to https://github.com/akka/akka/issues/31010
-    #if: github.repository == 'akka/akka'
-    if: ${{ false }}
+    if: github.repository == 'akka/akka'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -132,17 +131,16 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-      - name: Artery Aeron UDP Cluster test
+      - name: Multi node test with Artery Aeron UDP
         run: |
           cat multi-node-test.hosts
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
-            -Dakka.test.tags.exclude=gh-exclude,timing \
             -Dakka.cluster.assert=on \
             -Dakka.remote.artery.transport=aeron-udp \
             -Dsbt.override.build.repos=false \
-            -Dakka.test.tags.exclude=gh-exclude,timing \
+            -Dakka.test.tags.exclude=gh-exclude,gh-exclude-aeron,timing \
             -Dakka.test.multi-node=true \
             -Dakka.test.multi-node.targetDirName=${PWD}/target/${{ github.run_id }} \
             -Dakka.test.multi-node.java=${JAVA_HOME}/bin/java \
@@ -155,15 +153,7 @@ jobs:
             -Dmultinode.Daeron.dir=/opt/volumes/media-driver \
             -Daeron.term.buffer.length=33554432 \
             -Dmultinode.Daeron.term.buffer.length=33554432 \
-            akka-cluster/test \
-            akka-distributed-data/test \
-            akka-cluster-tools/test \
-            akka-cluster-metrics/test \
-            akka-cluster-sharding/test \
-            akka-cluster-typed/test \
-            akka-cluster-sharding-typed/test \
-            akka-remote/test \
-            akka-remote-tests/test
+            multiNodeTest
 
       - name: Email on failure
         if: ${{ failure() }}
@@ -175,11 +165,11 @@ jobs:
           secure: true
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
-          subject: Artery Aeron UDP Cluster (Akka)
+          subject: Multi node test with Aeron (Akka)
           to: akka.official@gmail.com
           from: Akka CI (GHActions)
           body: |
-            Artery Aeron UDP Cluster of ${{github.repository}} failed!
+            Multi node test of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
       
       - name: Cleanup the environment

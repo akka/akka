@@ -304,7 +304,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
           state match {
             case WaitingForCancelAck(partner, cause) =>
               verifyPartner(sender, partner)
-              log.debug(s"[$stageActorName] Got cancellation ack from remote, canceling", stageActorName)
+              log.debug(s"[{}] Got cancellation ack from remote, canceling", stageActorName)
               cancelStage(cause)
             case other =>
               throw new IllegalStateException(s"[$stageActorName] Got an Ack when in state $other")
@@ -420,8 +420,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
                 stageActorName,
                 receiveBuffer.used)
             cause match {
-              case _: SubscriptionWithCancelException => completeStage()
-              case failure                            => failStage(failure)
+              case _: SubscriptionWithCancelException.NonFailureCancellation => completeStage()
+              case failure                                                   => failStage(failure)
             }
 
           case WaitingForCancelAck(_, _) =>

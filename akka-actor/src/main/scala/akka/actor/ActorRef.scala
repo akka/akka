@@ -116,7 +116,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   /**
    * Comparison takes path and the unique id of the actor cell into account.
    */
-  final def compareTo(other: ActorRef) = {
+  final def compareTo(other: ActorRef): Int = {
     val x = this.path.compareTo(other.path)
     if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
     else x
@@ -151,7 +151,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
+  def forward(message: Any)(implicit context: ActorContext): Unit = tell(message, context.sender())
 
   /**
    * INTERNAL API
@@ -849,7 +849,9 @@ private[akka] class VirtualPathContainer(
  */
 @InternalApi private[akka] object FunctionRef {
   def deadLetterMessageHandler(system: ActorSystem): (ActorRef, Any) => Unit = { (sender, msg) =>
-    system.deadLetters.tell(msg, sender)
+    // avoid infinite loop (StackOverflow) if FunctionRef is used for subscribing to DeadLetter from eventStream
+    if (!msg.isInstanceOf[DeadLetter])
+      system.deadLetters.tell(msg, sender)
   }
 }
 
@@ -971,11 +973,11 @@ private[akka] class VirtualPathContainer(
   }
 
   override def stop(): Unit = {
-    sendTerminated()
     // The messageHandler function may close over a large object graph (such as an Akka Stream)
     // so we replace the messageHandler function to make that available for garbage collection.
     // Doesn't matter if the change isn't visible immediately, volatile not needed.
     messageHandler = FunctionRef.deadLetterMessageHandler(system)
+    sendTerminated()
   }
 
   private def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {

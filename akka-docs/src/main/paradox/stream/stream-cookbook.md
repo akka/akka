@@ -18,7 +18,9 @@ To use Akka Streams, add the module to your project:
 This is a collection of patterns to demonstrate various usage of the Akka Streams API by solving small targeted
 problems in the format of "recipes". The purpose of this page is to give inspiration and ideas how to approach
 various small tasks involving streams. The recipes in this page can be used directly as-is, but they are most powerful as
-starting points: customization of the code snippets is warmly encouraged.
+starting points: customization of the code snippets is warmly encouraged. The recipes can be extended or can provide a 
+basis for the implementation of other [patterns](https://doc.akka.io/docs/alpakka/current/patterns.html) involving
+[Alpakka](https://doc.akka.io/docs/alpakka/current).
 
 This part also serves as supplementary material for the main body of documentation. It is a good idea to have this page
 open while reading the manual and look for examples demonstrating various streaming concepts
@@ -158,6 +160,43 @@ Scala
 
 Java
 :   @@snip [RecipeDecompress.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeDecompress.java) { #decompress-gzip }
+
+### Implementing a Splitter
+
+**Situation:** Given a stream of messages, where each message is a composition of different elements, we want to split 
+the message into a series of individual sub-messages, each of which may be processed in a different way.
+
+The [Splitter](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) is an integration 
+pattern as described in [Enterprise Integration Patterns](https://www.enterpriseintegrationpatterns.com). Let's say 
+that we have a stream containing strings. Each string contains a few numbers separated by "-". We want to create out 
+of this a stream that only contains the numbers.
+
+Scala
+: @@snip [RecipeSplitter.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeSplitter.scala) { #Simple-Split }
+
+Java
+: @@snip [RecipeSplitter.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeSplitter.java) { #Simple-Split }
+
+### Implementing a Splitter and Aggregator
+
+**Situation:** Given a message, we want to split the message and aggregate its sub-messages into a new message
+
+Sometimes it's very useful to split a message and aggregate its sub-messages into a new message. This involves a 
+combination of [Splitter](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) 
+and [Aggregator](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Aggregator.html)
+
+Let's say that now we want to create a new stream containing the sums of the numbers in each original string.
+
+
+Scala
+: @@snip [RecipeSplitter.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeSplitter.scala) { #Aggregate-Split }
+
+Java
+: @@snip [RecipeSplitter.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeSplitter.java) { #Aggregate-Split }
+
+While in real life this solution is overkill for such a simple problem (you can just do everything in a map), 
+more complex scenarios, involving in particular I/O, will benefit from the fact that you can parallelize sub-streams 
+and get back-pressure for "free".
 
 ### Implementing reduce-by-key
 

@@ -6,9 +6,9 @@ package akka.stream.io
 
 import java.io.OutputStream
 
+import scala.annotation.nowarn
 import scala.util.Success
 
-import scala.annotation.nowarn
 import org.scalatest.concurrent.ScalaFutures
 
 import akka.Done
@@ -16,7 +16,6 @@ import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOOperationIn
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
 import akka.util.ByteString
 
@@ -27,7 +26,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with Scala
   implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "OutputStreamSink" must {
-    "write bytes to void OutputStream" in assertAllStagesStopped {
+    "write bytes to void OutputStream" in {
       val p = TestProbe()
       val data = List(ByteString("a"), ByteString("c"), ByteString("c"))
 
@@ -44,7 +43,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with Scala
       completion.futureValue.status shouldEqual Success(Done)
     }
 
-    "auto flush when enabled" in assertAllStagesStopped {
+    "auto flush when enabled" in {
       val p = TestProbe()
       val data = List(ByteString("a"), ByteString("c"))
       Source(data).runWith(
@@ -62,7 +61,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with Scala
       p.expectMsg("flush")
     }
 
-    "close underlying stream when error received" in assertAllStagesStopped {
+    "close underlying stream when error received" in {
       val p = TestProbe()
       Source
         .failed(TE("Boom!"))
@@ -75,7 +74,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with Scala
       p.expectMsg("closed")
     }
 
-    "complete materialized value with the error for upstream" in assertAllStagesStopped {
+    "complete materialized value with the error for upstream" in {
       val completion = Source
         .failed(TE("Boom!"))
         .runWith(StreamConverters.fromOutputStream(() =>
@@ -130,7 +129,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with Scala
       completion.failed.futureValue shouldBe an[IOOperationIncompleteException]
     }
 
-    "close underlying stream when completion received" in assertAllStagesStopped {
+    "close underlying stream when completion received" in {
       val p = TestProbe()
       Source.empty.runWith(StreamConverters.fromOutputStream(() =>
         new OutputStream {

@@ -7,10 +7,13 @@ package akka.stream
 import java.net.URLEncoder
 import java.time.Duration
 import java.util.Optional
+
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
+import scala.util.control.NonFatal
+
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -20,8 +23,6 @@ import akka.stream.impl.TraversalBuilder
 import akka.util.{ ByteString, OptionVal }
 import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
-
-import scala.util.control.NonFatal
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -381,11 +382,40 @@ object Attributes {
     case object CompleteStage extends Strategy
 
     /**
+     * Java API
+     *
+     * Strategy that treats `cancelStage` the same as `completeStage`, i.e. all inlets are cancelled (propagating the
+     * cancellation cause) and all outlets are regularly completed.
+     *
+     * This used to be the default behavior before Akka 2.6.
+     *
+     * This behavior can be problematic in stacks of BidiFlows where different layers of the stack are both connected
+     * through inputs and outputs. In this case, an error in a doubly connected component triggers both a cancellation
+     * going upstream and an error going downstream. Since the stack might be connected to those components with inlets and
+     * outlets, a race starts whether the cancellation or the error arrives first. If the error arrives first, that's usually
+     * good because then the error can be propagated both on inlets and outlets. However, if the cancellation arrives first,
+     * the previous default behavior to complete the stage will lead other outputs to be completed regularly. The error
+     * which arrive late at the other hand will just be ignored (that connection will have been cancelled already and also
+     * the paths through which the error could propagates are already shut down).
+     */
+    @ApiMayChange
+    def completeStage: Strategy = CompleteStage
+
+    /**
      * Strategy that treats `cancelStage` the same as `failStage`, i.e. all inlets are cancelled (propagating the
      * cancellation cause) and all outlets are failed propagating the cause from cancellation.
      */
     @ApiMayChange
     case object FailStage extends Strategy
+
+    /**
+     * Java API
+     *
+     * Strategy that treats `cancelStage` the same as `failStage`, i.e. all inlets are cancelled (propagating the
+     * cancellation cause) and all outlets are failed propagating the cause from cancellation.
+     */
+    @ApiMayChange
+    def failStage: Strategy = FailStage
 
     /**
      * Strategy that treats `cancelStage` in different ways depending on the cause that was given to the cancellation.
@@ -401,6 +431,21 @@ object Attributes {
     case object PropagateFailure extends Strategy
 
     /**
+     * Java API
+     *
+     * Strategy that treats `cancelStage` in different ways depending on the cause that was given to the cancellation.
+     *
+     * If the cause was a regular, active cancellation (`SubscriptionWithCancelException.NoMoreElementsNeeded`), the stage
+     * receiving this cancellation is completed regularly.
+     *
+     * If another cause was given, this is treated as an error and the behavior is the same as with `failStage`.
+     *
+     * This is a good default strategy.
+     */
+    @ApiMayChange
+    def propagateFailure: Strategy = PropagateFailure
+
+    /**
      * Strategy that allows to delay any action when `cancelStage` is invoked.
      *
      * The idea of this strategy is to delay any action on cancellation because it is expected that the stage is completed
@@ -412,6 +457,21 @@ object Attributes {
      */
     @ApiMayChange
     final case class AfterDelay(delay: FiniteDuration, strategy: Strategy) extends Strategy
+
+    /**
+     * Java API
+     *
+     * Strategy that allows to delay any action when `cancelStage` is invoked.
+     *
+     * The idea of this strategy is to delay any action on cancellation because it is expected that the stage is completed
+     * through another path in the meantime. The downside is that a stage and a stream may live longer than expected if no
+     * such signal is received and cancellation is invoked later on. In streams with many stages that all apply this strategy,
+     * this strategy might significantly delay the propagation of a cancellation signal because each upstream stage might impose
+     * such a delay. During this time, the stream will be mostly "silent", i.e. it cannot make progress because of backpressure,
+     * but you might still be able observe a long delay at the ultimate source.
+     */
+    @ApiMayChange
+    def afterDelay(delay: java.time.Duration, strategy: Strategy): Strategy = AfterDelay(delay.asScala, strategy)
   }
 
   /**
@@ -502,7 +562,8 @@ object Attributes {
      * nested flow materialization.
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
-    val EagerCancellation = new NestedMaterializationCancellationPolicy(false) {
+    val EagerCancellation
+        : NestedMaterializationCancellationPolicy = new NestedMaterializationCancellationPolicy(false) {
       override def toString: String = "EagerCancellation"
     }
 
@@ -512,7 +573,7 @@ object Attributes {
      * nested flow materialization. Once the nested flow is materialized it will be cancelled immediately.
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
-    val PropagateToNested = new NestedMaterializationCancellationPolicy(true) {
+    val PropagateToNested: NestedMaterializationCancellationPolicy = new NestedMaterializationCancellationPolicy(true) {
       override def toString: String = "PropagateToNested"
     }
 
@@ -520,7 +581,7 @@ object Attributes {
      * Default [[NestedMaterializationCancellationPolicy]],
      * please see [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.EagerCancellation()]] for details.
      */
-    val Default = EagerCancellation
+    val Default: NestedMaterializationCancellationPolicy = EagerCancellation
   }
 
   /**

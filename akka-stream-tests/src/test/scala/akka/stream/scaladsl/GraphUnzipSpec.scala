@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 import akka.stream.ClosedShape
 import akka.stream.OverflowStrategy
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphUnzipSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -18,7 +17,7 @@ class GraphUnzipSpec extends StreamSpec("""
   "A unzip" must {
     import GraphDSL.Implicits._
 
-    "unzip to two subscribers" in assertAllStagesStopped {
+    "unzip to two subscribers" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[String]()
 
@@ -180,7 +179,7 @@ class GraphUnzipSpec extends StreamSpec("""
       p1Sub.expectCancellation()
     }
 
-    "work with zip" in assertAllStagesStopped {
+    "work with zip" in {
       val c1 = TestSubscriber.manualProbe[(Int, String)]()
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>

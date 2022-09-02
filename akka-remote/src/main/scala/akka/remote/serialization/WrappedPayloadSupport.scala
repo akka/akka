@@ -5,13 +5,14 @@
 package akka.remote.serialization
 
 import akka.actor.ExtendedActorSystem
-import akka.event.Logging
+import akka.event.{ Logging, LoggingAdapter }
 import akka.protobufv3.internal.ByteString
 import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats
 import akka.serialization.ByteBufferSerializer
 import akka.serialization.{ SerializationExtension, Serializers }
 import akka.serialization.DisabledJavaSerializer
+import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 
 import java.nio.ByteOrder
@@ -30,7 +31,25 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
    * If `input` is a `Throwable` and can't be serialized because Java serialization is disabled it
    * will fallback to `ThrowableNotSerializableException`.
    */
-  def payloadBuilder(input: Any): ContainerFormats.Payload.Builder = {
+  def payloadBuilder(input: Any): ContainerFormats.Payload.Builder =
+    WrappedPayloadSupport.payloadBuilder(input, serialization, log)
+
+  def deserializePayload(payload: ContainerFormats.Payload): Any =
+    WrappedPayloadSupport.deserializePayload(payload, serialization)
+}
+
+private[akka] object WrappedPayloadSupport {
+
+  /**
+   * Serialize the `input` along with its `manifest` and `serializerId`.
+   *
+   * If `input` is a `Throwable` and can't be serialized because Java serialization is disabled it
+   * will fallback to `ThrowableNotSerializableException`.
+   */
+  def payloadBuilder(
+      input: Any,
+      serialization: Serialization,
+      log: LoggingAdapter): ContainerFormats.Payload.Builder = {
     val payload = input.asInstanceOf[AnyRef]
     val builder = ContainerFormats.Payload.newBuilder()
     val serializer = serialization.findSerializerFor(payload)
@@ -62,7 +81,7 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
     builder
   }
 
-  def deserializePayload(payload: ContainerFormats.Payload): Any = {
+  def deserializePayload(payload: ContainerFormats.Payload, serialization: Serialization): Any = {
     val manifest = if (payload.hasMessageManifest) payload.getMessageManifest.toStringUtf8 else ""
     serialization.serializerByIdentity(payload.getSerializerId) match {
       case serializer: ByteBufferSerializer =>
