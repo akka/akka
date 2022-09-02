@@ -30,6 +30,7 @@ object DurableStatePersistentBehaviorCompileOnly {
     final case object Increment extends Command[Nothing]
     final case class IncrementBy(value: Int) extends Command[Nothing]
     final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
+    final case object Delete extends Command[Nothing]
     //#command
 
     //#state
@@ -44,6 +45,7 @@ object DurableStatePersistentBehaviorCompileOnly {
         case Increment         => Effect.persist(state.copy(value = state.value + 1))
         case IncrementBy(by)   => Effect.persist(state.copy(value = state.value + by))
         case GetValue(replyTo) => Effect.reply(replyTo)(state)
+        case Delete            => Effect.delete[State]()
       }
     //#command-handler
 

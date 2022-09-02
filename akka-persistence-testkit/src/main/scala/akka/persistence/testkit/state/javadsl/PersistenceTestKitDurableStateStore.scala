@@ -5,11 +5,9 @@
 package akka.persistence.testkit.state.javadsl
 
 import java.util.Optional
-import java.util.concurrent.CompletionStage
-
+import java.util.concurrent.{ CompletableFuture, CompletionStage }
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-
 import akka.japi.Pair
 import akka.{ Done, NotUsed }
 import akka.persistence.query.DurableStateChange
@@ -37,8 +35,10 @@ class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
   def upsertObject(persistenceId: String, seqNr: Long, value: A, tag: String): CompletionStage[Done] =
     stateStore.upsertObject(persistenceId, seqNr, value, tag).toJava
 
-  def deleteObject(persistenceId: String): CompletionStage[Done] =
-    stateStore.deleteObject(persistenceId).toJava
+  def deleteObject(persistenceId: String): CompletionStage[Done] = CompletableFuture.completedFuture(Done)
+
+  def deleteObject(persistenceId: String, revision: Long): CompletionStage[Done] =
+    stateStore.deleteObject(persistenceId, revision).toJava
 
   def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
     stateStore.changes(tag, offset).asJava
