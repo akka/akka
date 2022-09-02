@@ -5,37 +5,43 @@
 package akka.stream.scaladsl
 
 import scala.annotation.implicitNotFound
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import org.reactivestreams.Processor
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
-import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.annotation.ApiMayChange
+import akka.annotation.DoNotInherit
+import akka.event.LogMarker
+import akka.event.LoggingAdapter
+import akka.event.MarkerLoggingAdapter
 import akka.stream._
 import akka.stream.Attributes.SourceLocation
-import akka.stream.impl.{
-  fusing,
-  LinearTraversalBuilder,
-  ProcessorModule,
-  SetupFlowStage,
-  SubFlowImpl,
-  Throttle,
-  Timers,
-  TraversalBuilder
-}
+import akka.stream.impl.LinearTraversalBuilder
+import akka.stream.impl.ProcessorModule
+import akka.stream.impl.SetupFlowStage
 import akka.stream.impl.SingleConcat
+import akka.stream.impl.SubFlowImpl
+import akka.stream.impl.Throttle
+import akka.stream.impl.Timers
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing
 import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
-import akka.util.{ ConstantFun, Timeout }
+import akka.util.ConstantFun
 import akka.util.OptionVal
+import akka.util.Timeout
 import akka.util.ccompat._
 
 /**
@@ -3052,20 +3058,24 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
    */
+  @nowarn
   def mergePreferred[U >: Out, M](
       that: Graph[SourceShape[U], M],
-      priority: Boolean,
+      @deprecatedName(Symbol("priority"))
+      preferred: Boolean,
       eagerComplete: Boolean = false): Repr[U] =
-    via(mergePreferredGraph(that, priority, eagerComplete))
+    via(mergePreferredGraph(that, preferred, eagerComplete))
 
+  @nowarn
   protected def mergePreferredGraph[U >: Out, M](
       that: Graph[SourceShape[U], M],
-      priority: Boolean,
+      @deprecatedName(Symbol("priority"))
+      preferred: Boolean,
       eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.createGraph(that) { implicit b => r =>
       val merge = b.add(MergePreferred[U](1, eagerComplete))
-      r ~> merge.in(if (priority) 0 else 1)
-      FlowShape(merge.in(if (priority) 1 else 0), merge.out)
+      r ~> merge.in(if (preferred) 0 else 1)
+      FlowShape(merge.in(if (preferred) 1 else 0), merge.out)
     }
 
   /**
