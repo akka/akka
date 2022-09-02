@@ -31,7 +31,6 @@ object DurableStateBehaviorReplySpec {
   final case class IncrementReplyLater(replyTo: ActorRef[Done]) extends Command[Done]
   final case class ReplyNow(replyTo: ActorRef[Done]) extends Command[Done]
   final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
-  final case class DeleteWithConfirmation(replyTo: ActorRef[Done]) extends Command[Done]
   case object Increment extends Command[Nothing]
   case class IncrementBy(by: Int) extends Command[Nothing]
 
@@ -61,9 +60,6 @@ object DurableStateBehaviorReplySpec {
 
           case GetValue(replyTo) =>
             Effect.reply(replyTo)(state)
-
-          case DeleteWithConfirmation(replyTo) =>
-            Effect.delete[State]().thenReply(replyTo)(_ => Done)
 
           case _ => ???
 
@@ -111,21 +107,6 @@ class DurableStateBehaviorReplySpec
       val queryProbe = TestProbe[State]()
       c ! GetValue(queryProbe.ref)
       queryProbe.expectMessage(State(1))
-    }
-
-    "delete state thenReply" in {
-      val c = spawn(counter(nextPid()))
-      val updateProbe = TestProbe[Done]()
-      c ! IncrementWithConfirmation(updateProbe.ref)
-      updateProbe.expectMessage(Done)
-
-      val deleteProbe = TestProbe[Done]()
-      c ! DeleteWithConfirmation(deleteProbe.ref)
-      deleteProbe.expectMessage(Done)
-
-      val queryProbe = TestProbe[State]()
-      c ! GetValue(queryProbe.ref)
-      queryProbe.expectMessage(State(0))
     }
   }
 }

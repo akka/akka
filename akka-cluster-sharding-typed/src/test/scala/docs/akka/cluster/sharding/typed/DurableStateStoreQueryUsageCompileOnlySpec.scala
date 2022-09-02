@@ -5,9 +5,10 @@
 package docs.akka.cluster.sharding.typed
 
 import scala.annotation.nowarn
+
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.persistence.query.{ DeletedDurableState, Offset }
+import akka.persistence.query.Offset
 import akka.stream.scaladsl.Source
 
 @nowarn
@@ -23,8 +24,7 @@ object DurableStateStoreQueryUsageCompileOnlySpec {
       DurableStateStoreRegistry(system).durableStateStoreFor[DurableStateStoreQuery[Record]](pluginId)
     val source: Source[DurableStateChange[Record], NotUsed] = durableStateStoreQuery.changes("tag", offset)
     source.map {
-      case UpdatedDurableState(persistenceId, revision, value, offset, timestamp) => Some(value)
-      case _: DeletedDurableState[_]                                              => None
+      case UpdatedDurableState(persistenceId, revision, value, offset, timestamp) => value
     }
     //#get-durable-state-store-query-example
   }

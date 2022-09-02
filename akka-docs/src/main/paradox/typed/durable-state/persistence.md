@@ -152,7 +152,6 @@ and can be one of:
 * `persist` will persist the latest state. If it's a new persistence id, the record will be inserted. In case of an existing
 persistence id, the record will be updated only if the revision number of the incoming record is 1 more than the already
 existing record. Otherwise `persist` will fail.
-* `delete` will delete the state by setting it to the empty state and the revision number will be incremented by 1.
 * `none` no state to be persisted, for example a read-only command
 * `unhandled` the command is unhandled (not supported) in current state
 * `stop` stop this actor

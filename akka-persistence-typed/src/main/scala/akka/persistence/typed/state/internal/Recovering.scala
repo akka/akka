@@ -88,8 +88,6 @@ private[akka] class Recovering[C, S](
       case RecoveryPermitGranted       => Behaviors.unhandled // should not happen, we already have the permit
       case UpsertSuccess               => Behaviors.unhandled
       case _: UpsertFailure            => Behaviors.unhandled
-      case DeleteSuccess               => Behaviors.unhandled
-      case _: DeleteFailure            => Behaviors.unhandled
     }
   }
 

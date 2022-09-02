@@ -25,12 +25,7 @@ object Effect {
    */
   def persist[State](state: State): EffectBuilder[State] = Persist(state)
 
-  /**
-   * Delete the persisted state.
-   *
-   * Side effects can be chained with `thenRun`
-   */
-  def delete[State](): EffectBuilder[State] = Delete()
+  // FIXME add delete effect
 
   /**
    * Do not persist anything

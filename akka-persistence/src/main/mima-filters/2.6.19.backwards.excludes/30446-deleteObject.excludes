@@ -1,3 +1,0 @@
-# #30446 Addition of deleteObject overloaded method
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.state.javadsl.DurableStateUpdateStore.deleteObject")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.state.scaladsl.DurableStateUpdateStore.deleteObject")

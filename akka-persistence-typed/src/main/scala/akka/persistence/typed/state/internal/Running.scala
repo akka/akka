@@ -141,10 +141,6 @@ private[akka] object Running {
         case _: PersistNothing.type =>
           (applySideEffects(sideEffects, state), true)
 
-        case _: Delete[_] =>
-          val nextState = internalDelete(setup.context, msg, state)
-          (applySideEffects(sideEffects, nextState), true)
-
         case _: Unhandled.type =>
           import akka.actor.typed.scaladsl.adapter._
           setup.context.system.toClassic.eventStream
@@ -198,8 +194,6 @@ private[akka] object Running {
         case RecoveryPermitGranted             => Behaviors.unhandled
         case _: GetSuccess[_]                  => Behaviors.unhandled
         case _: GetFailure                     => Behaviors.unhandled
-        case DeleteSuccess                     => Behaviors.unhandled
-        case DeleteFailure(_)                  => Behaviors.unhandled
       }
     }
 
