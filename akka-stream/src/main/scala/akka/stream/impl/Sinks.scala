@@ -593,30 +593,26 @@ import akka.util.ccompat._
         // The stage must not be shut down automatically; it is completed when maybeCompleteStage decides
         setKeepGoing(true)
 
-        setHandler(
-          in,
-          new InHandler {
-            override def onPush(): Unit = {
-              subOutlet.push(grab(in))
+        val handler = new InHandler with OutHandler {
+          override def onPush(): Unit = {
+            subOutlet.push(grab(in))
+          }
+          override def onUpstreamFinish(): Unit = {
+            if (firstElementPushed) {
+              subOutlet.complete()
+              maybeCompleteStage()
             }
-            override def onUpstreamFinish(): Unit = {
-              if (firstElementPushed) {
-                subOutlet.complete()
-                maybeCompleteStage()
-              }
-            }
-            override def onUpstreamFailure(ex: Throwable): Unit = {
-              // propagate exception irrespective if the cached element has been pushed or not
-              subOutlet.fail(ex)
-              // #25410 if we fail the stage here directly, the SubSource may not have been started yet,
-              // which can happen if upstream fails immediately after emitting a first value.
-              // The SubSource won't be started until the stream shuts down, which means downstream won't see the failure,
-              // scheduling it lets the interpreter first start the substream
-              getAsyncCallback[Throwable](failStage).invoke(ex)
-            }
-          })
+          }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            // propagate exception irrespective if the cached element has been pushed or not
+            subOutlet.fail(ex)
+            // #25410 if we fail the stage here directly, the SubSource may not have been started yet,
+            // which can happen if upstream fails immediately after emitting a first value.
+            // The SubSource won't be started until the stream shuts down, which means downstream won't see the failure,
+            // scheduling it lets the interpreter first start the substream
+            getAsyncCallback[Throwable](failStage).invoke(ex)
+          }
 
-        subOutlet.setHandler(new OutHandler {
           override def onPull(): Unit = {
             if (firstElementPushed) {
               pull(in)
@@ -637,7 +633,9 @@ import akka.util.ccompat._
             if (!isClosed(in)) cancel(in, cause)
             maybeCompleteStage()
           }
-        })
+        }
+        setHandler(in, handler)
+        subOutlet.setHandler(handler)
 
         matVal
       }
