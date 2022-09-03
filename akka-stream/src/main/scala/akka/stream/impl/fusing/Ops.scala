@@ -2145,50 +2145,45 @@ private[akka] object TakeWithin {
     val pf: PartialFunction[Throwable, Graph[SourceShape[T], M]])
     extends SimpleLinearGraphStage[T] {
 
-  override def initialAttributes = DefaultAttributes.recoverWith
+  override def initialAttributes: Attributes = DefaultAttributes.recoverWith
 
-  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
-    var attempt = 0
-
-    setHandler(in, new InHandler {
+  override def createLogic(attr: Attributes) =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      var attempt = 0
       override def onPush(): Unit = push(out, grab(in))
-
-      override def onUpstreamFailure(ex: Throwable) = onFailure(ex)
-    })
-
-    setHandler(out, new OutHandler {
+      override def onUpstreamFailure(ex: Throwable): Unit = onFailure(ex)
       override def onPull(): Unit = pull(in)
-    })
+      def onFailure(ex: Throwable): Unit =
+        if ((maximumRetries < 0 || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
+          switchTo(pf(ex))
+          attempt += 1
+        } else
+          failStage(ex)
 
-    def onFailure(ex: Throwable) =
-      if ((maximumRetries < 0 || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
-        switchTo(pf(ex))
-        attempt += 1
-      } else
-        failStage(ex)
+      def switchTo(source: Graph[SourceShape[T], M]): Unit = {
+        val sinkIn = new SubSinkInlet[T]("RecoverWithSink")
 
-    def switchTo(source: Graph[SourceShape[T], M]): Unit = {
-      val sinkIn = new SubSinkInlet[T]("RecoverWithSink")
+        sinkIn.setHandler(new InHandler {
+          override def onPush(): Unit = push(out, sinkIn.grab())
 
-      sinkIn.setHandler(new InHandler {
-        override def onPush(): Unit = push(out, sinkIn.grab())
+          override def onUpstreamFinish(): Unit = completeStage()
 
-        override def onUpstreamFinish(): Unit = completeStage()
+          override def onUpstreamFailure(ex: Throwable): Unit = onFailure(ex)
+        })
 
-        override def onUpstreamFailure(ex: Throwable) = onFailure(ex)
-      })
+        val outHandler = new OutHandler {
+          override def onPull(): Unit = sinkIn.pull()
 
-      val outHandler = new OutHandler {
-        override def onPull(): Unit = sinkIn.pull()
+          override def onDownstreamFinish(cause: Throwable): Unit = sinkIn.cancel(cause)
+        }
 
-        override def onDownstreamFinish(cause: Throwable): Unit = sinkIn.cancel(cause)
+        Source.fromGraph(source).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+        setHandler(out, outHandler)
+        if (isAvailable(out)) sinkIn.pull()
       }
 
-      Source.fromGraph(source).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
-      setHandler(out, outHandler)
-      if (isAvailable(out)) sinkIn.pull()
+      setHandlers(in, out, this)
     }
-  }
 
   override def toString: String = "RecoverWith"
 }
