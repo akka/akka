@@ -55,7 +55,7 @@ import akka.util.ByteString
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes, eagerMaterialzer: Materializer) = {
     val bindingPromise = Promise[ServerBinding]()
 
-    val logic = new TimerGraphStageLogic(shape) with StageLogging {
+    val logic = new TimerGraphStageLogic(shape) with OutHandler with StageLogging {
       implicit def self: ActorRef = stageActor.ref
 
       val connectionFlowsAwaitingInitialization = new AtomicLong()
@@ -117,33 +117,29 @@ import akka.util.ByteString
         }
       }
 
-      setHandler(
-        out,
-        new OutHandler {
-          override def onPull(): Unit = {
-            // Ignore if still binding
-            if (listener ne null) listener ! ResumeAccepting(1)
-          }
+      override def onPull(): Unit = {
+        // Ignore if still binding
+        if (listener ne null) listener ! ResumeAccepting(1)
+      }
 
-          override def onDownstreamFinish(cause: Throwable): Unit = {
-            if (log.isDebugEnabled) {
-              cause match {
-                case _: SubscriptionWithCancelException.NonFailureCancellation =>
-                  log.debug(
-                    "Unbinding from {}:{} because downstream cancelled stream",
-                    endpoint.getHostString,
-                    endpoint.getPort)
-                case ex =>
-                  log.debug(
-                    "Unbinding from {}:{} because of downstream failure: {}",
-                    endpoint.getHostString,
-                    endpoint.getPort,
-                    ex)
-              }
-            }
-            tryUnbind()
+      override def onDownstreamFinish(cause: Throwable): Unit = {
+        if (log.isDebugEnabled) {
+          cause match {
+            case _: SubscriptionWithCancelException.NonFailureCancellation =>
+              log.debug(
+                "Unbinding from {}:{} because downstream cancelled stream",
+                endpoint.getHostString,
+                endpoint.getPort)
+            case ex =>
+              log.debug(
+                "Unbinding from {}:{} because of downstream failure: {}",
+                endpoint.getHostString,
+                endpoint.getPort,
+                ex)
           }
-        })
+        }
+        tryUnbind()
+      }
 
       private def connectionFor(connected: Connected, connection: ActorRef): StreamTcp.IncomingConnection = {
         connectionFlowsAwaitingInitialization.incrementAndGet()
@@ -195,6 +191,8 @@ import akka.util.ByteString
         unbindPromise.trySuccess(())
         bindingPromise.tryFailure(new NoSuchElementException("Binding was unbound before it was completely finished"))
       }
+
+      setHandler(out, this)
     }
 
     (logic, bindingPromise.future)
@@ -242,6 +240,8 @@ private[stream] object ConnectionSourceStage {
       remoteAddress: InetSocketAddress,
       eagerMaterializer: Materializer)
       extends GraphStageLogic(shape)
+      with InHandler
+      with OutHandler
       with StageLogging {
     implicit def self: ActorRef = stageActor.ref
 
@@ -273,12 +273,13 @@ private[stream] object ConnectionSourceStage {
 
     // No reading until role have been decided
     setHandler(bytesOut, GraphStageLogic.EagerTerminateOutput)
+    setHandler(bytesIn, this);
 
     override def preStart(): Unit = {
       setKeepGoing(true)
       role match {
         case Inbound(conn, _, registerCallback) =>
-          setHandler(bytesOut, readHandler)
+          setHandler(bytesOut, this)
           connection = conn
           getStageActor(connected).watch(connection)
           connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
@@ -302,7 +303,7 @@ private[stream] object ConnectionSourceStage {
         case c: Connected =>
           role.asInstanceOf[Outbound].localAddressPromise.success(c.localAddress)
           connection = sender
-          setHandler(bytesOut, readHandler)
+          setHandler(bytesOut, this)
           stageActor.unwatch(ob.manager)
           stageActor.become(connected)
           stageActor.watch(connection)
@@ -416,67 +417,60 @@ private[stream] object ConnectionSourceStage {
         }
       }
     }
+    override def onPull(): Unit = {
+      connection ! ResumeReading
+    }
 
-    val readHandler = new OutHandler {
-      override def onPull(): Unit = {
-        connection ! ResumeReading
-      }
-
-      override def onDownstreamFinish(cause: Throwable): Unit = {
-        cause match {
-          case _: SubscriptionWithCancelException.NonFailureCancellation =>
-            log.debug(
-              "Closing connection from {}:{} because downstream cancelled stream without failure",
-              remoteAddress.getHostString,
-              remoteAddress.getPort)
-            closeConnectionDownstreamFinished()
-          case ex =>
-            log.debug(
-              "Aborting connection from {}:{} because of downstream failure: {}",
-              remoteAddress.getHostString,
-              remoteAddress.getPort,
-              ex)
-            connection ! Abort
-            failStage(cause)
-        }
+    override def onDownstreamFinish(cause: Throwable): Unit = {
+      cause match {
+        case _: SubscriptionWithCancelException.NonFailureCancellation =>
+          log.debug(
+            "Closing connection from {}:{} because downstream cancelled stream without failure",
+            remoteAddress.getHostString,
+            remoteAddress.getPort)
+          closeConnectionDownstreamFinished()
+        case ex =>
+          log.debug(
+            "Aborting connection from {}:{} because of downstream failure: {}",
+            remoteAddress.getHostString,
+            remoteAddress.getPort,
+            ex)
+          connection ! Abort
+          failStage(cause)
       }
     }
 
-    setHandler(
-      bytesIn,
-      new InHandler {
-        override def onPush(): Unit = {
-          val elem = grab(bytesIn)
-          ReactiveStreamsCompliance.requireNonNullElement(elem)
-          if (writeInProgress) {
-            writeBuffer = writeBuffer ++ elem
-          } else if (coalesceWritesDisabled || writeBuffer.length >= writeBufferSize) {
-            writeBuffer = writeBuffer ++ elem
-            sendWriteBuffer()
-          } else {
-            writeBuffer = writeBuffer ++ elem
-            writeDelayCountDown = coalesceWrites
-            sendWriteDelay()
-          }
-          if (writeBuffer.length < writeBufferSize)
-            pull(bytesIn)
+    override def onPush(): Unit = {
+      val elem = grab(bytesIn)
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
+      if (writeInProgress) {
+        writeBuffer = writeBuffer ++ elem
+      } else if (coalesceWritesDisabled || writeBuffer.length >= writeBufferSize) {
+        writeBuffer = writeBuffer ++ elem
+        sendWriteBuffer()
+      } else {
+        writeBuffer = writeBuffer ++ elem
+        writeDelayCountDown = coalesceWrites
+        sendWriteDelay()
+      }
+      if (writeBuffer.length < writeBufferSize)
+        pull(bytesIn)
+    }
+
+    override def onUpstreamFinish(): Unit =
+      closeConnectionUpstreamFinished()
+
+    override def onUpstreamFailure(ex: Throwable): Unit = {
+      if (connection != null) {
+        if (interpreter.log.isDebugEnabled) {
+          val msg = "Aborting tcp connection to {} because of upstream failure: {}"
+
+          if (ex.getStackTrace.isEmpty) interpreter.log.debug(msg, remoteAddress, ex)
+          else interpreter.log.debug(msg + "\n{}", remoteAddress, ex, ex.getStackTrace.mkString("\n"))
         }
-
-        override def onUpstreamFinish(): Unit =
-          closeConnectionUpstreamFinished()
-
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          if (connection != null) {
-            if (interpreter.log.isDebugEnabled) {
-              val msg = "Aborting tcp connection to {} because of upstream failure: {}"
-
-              if (ex.getStackTrace.isEmpty) interpreter.log.debug(msg, remoteAddress, ex)
-              else interpreter.log.debug(msg + "\n{}", remoteAddress, ex, ex.getStackTrace.mkString("\n"))
-            }
-            connection ! Abort
-          } else fail(ex)
-        }
-      })
+        connection ! Abort
+      } else fail(ex)
+    }
 
     /** Fail stage and report to localAddressPromise if still possible */
     private def fail(ex: Throwable): Unit = {
