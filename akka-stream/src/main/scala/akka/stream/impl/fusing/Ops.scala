@@ -416,18 +416,11 @@ private[stream] object Collect {
       import shape.{ in, out }
 
       // Initial behavior makes sure that the zero gets flushed if upstream is empty
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          push(out, aggregator)
-          setHandlers(in, out, self)
-        }
-      })
-
-      setHandler(
+      setHandlers(
         in,
-        new InHandler {
+        out,
+        new InHandler with OutHandler {
           override def onPush(): Unit = ()
-
           override def onUpstreamFinish(): Unit =
             setHandler(out, new OutHandler {
               override def onPull(): Unit = {
@@ -435,6 +428,10 @@ private[stream] object Collect {
                 completeStage()
               }
             })
+          override def onPull(): Unit = {
+            push(out, aggregator)
+            setHandlers(in, out, self)
+          }
         })
 
       override def onPull(): Unit = pull(in)
