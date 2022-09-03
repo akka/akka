@@ -271,10 +271,10 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   protected final def createSubInlet[T](out: Outlet[T]): SubSinkInlet[T] = {
     val sinkIn = new SubSinkInlet[T](s"RestartWithBackoff$name.subIn")
 
-    sinkIn.setHandler(new InHandler {
-      override def onPush() = push(out, sinkIn.grab())
+    val handler = new InHandler with OutHandler {
+      override def onPush(): Unit = push(out, sinkIn.grab())
 
-      override def onUpstreamFinish() = {
+      override def onUpstreamFinish(): Unit = {
         if (finishing || maxRestartsReached() || onlyOnFailures) {
           complete(out)
         } else {
@@ -289,7 +289,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
       /*
        * Upstream in this context is the wrapped stage.
        */
-      override def onUpstreamFailure(ex: Throwable) = {
+      override def onUpstreamFailure(ex: Throwable): Unit = {
         if (finishing || maxRestartsReached() || !settings.restartOn(ex)) {
           fail(out, ex)
         } else {
@@ -297,15 +297,17 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
           scheduleRestartTimer()
         }
       }
-    })
 
-    setHandler(out, new OutHandler {
-      override def onPull() = sinkIn.pull()
-      override def onDownstreamFinish(cause: Throwable) = {
+      override def onPull(): Unit = sinkIn.pull()
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         finishing = true
         sinkIn.cancel(cause)
       }
-    })
+    }
+
+    sinkIn.setHandler(handler)
+    setHandler(out, handler)
+
     sinkIn
   }
 
@@ -349,8 +351,20 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   protected final def createSubOutlet[T](in: Inlet[T]): SubSourceOutlet[T] = {
     val sourceOut = new SubSourceOutlet[T](s"RestartWithBackoff$name.subOut")
 
-    sourceOut.setHandler(new OutHandler {
-      override def onPull() =
+    val handler = new InHandler with OutHandler {
+      override def onPush(): Unit = if (sourceOut.isAvailable) {
+        sourceOut.push(grab(in))
+      }
+      override def onUpstreamFinish(): Unit = {
+        finishing = true
+        sourceOut.complete()
+      }
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        finishing = true
+        sourceOut.fail(ex)
+      }
+
+      override def onPull(): Unit =
         if (isAvailable(in)) {
           sourceOut.push(grab(in))
         } else {
@@ -365,30 +379,17 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
        * Can either be a failure or a cancel in the wrapped state.
        * onlyOnFailures is thus racy so a delay to cancellation is added in the case of a flow.
        */
-      override def onDownstreamFinish(cause: Throwable) = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         if (finishing || maxRestartsReached() || onlyOnFailures || !settings.restartOn(cause)) {
           cancel(in, cause)
         } else {
           scheduleRestartTimer()
         }
       }
-    })
+    }
 
-    setHandler(
-      in,
-      new InHandler {
-        override def onPush() = if (sourceOut.isAvailable) {
-          sourceOut.push(grab(in))
-        }
-        override def onUpstreamFinish() = {
-          finishing = true
-          sourceOut.complete()
-        }
-        override def onUpstreamFailure(ex: Throwable) = {
-          finishing = true
-          sourceOut.fail(ex)
-        }
-      })
+    sourceOut.setHandler(handler)
+    setHandler(in, handler)
 
     sourceOut
   }
