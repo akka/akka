@@ -1129,7 +1129,7 @@ final class ClusterShardingSettings(
     extends NoSerializationVerificationNeeded {
   @deprecated(
     "Use the ClusterShardingSettings factory methods or the constructor including coordinatorSingletonOverrideRole instead",
-    "2.6.19")
+    "2.6.20")
   def this(
       role: Option[String],
       rememberEntities: Boolean,
