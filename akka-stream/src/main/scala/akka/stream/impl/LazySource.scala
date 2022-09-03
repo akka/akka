@@ -50,22 +50,17 @@ import akka.stream.stage._
         val subSink = new SubSinkInlet[T]("LazySource")
         subSink.pull()
 
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            subSink.pull()
-          }
-
+        val handler = new InHandler with OutHandler {
+          override def onPush(): Unit = push(out, subSink.grab())
+          override def onPull(): Unit = subSink.pull()
           override def onDownstreamFinish(cause: Throwable): Unit = {
             subSink.cancel(cause)
             completeStage()
           }
-        })
+        }
 
-        subSink.setHandler(new InHandler {
-          override def onPush(): Unit = {
-            push(out, subSink.grab())
-          }
-        })
+        setHandler(out, handler)
+        subSink.setHandler(handler)
 
         try {
           val matVal = subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
@@ -80,7 +75,7 @@ import akka.stream.stage._
 
       setHandler(out, this)
 
-      override def postStop() = {
+      override def postStop(): Unit = {
         if (!matPromise.isCompleted) matPromise.tryFailure(new AbruptStageTerminationException(this))
       }
     }
