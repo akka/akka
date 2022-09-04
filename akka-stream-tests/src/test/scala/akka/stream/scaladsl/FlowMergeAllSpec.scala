@@ -27,8 +27,8 @@ class FlowMergeAllSpec extends StreamSpec("""
 
     "merge all elements of the first completed source to its downstream " in {
       val source1 = Source(1 to 2)
-      val source2 = Source(3 to 6)
-      val source3 = Source(7 to 10)
+      val source2 = Source.repeat(3)
+      val source3 = Source.repeat(4)
       val result =
         source1.mergeAll(List(source2, source3), eagerComplete = true).runFold(Set.empty[Int])((set, i) => set + i)
       result.futureValue should contain allElementsOf (Set(1, 2))
