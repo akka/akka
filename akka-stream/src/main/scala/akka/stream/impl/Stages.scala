@@ -117,7 +117,7 @@ import akka.stream.Attributes._
     val actorRefWithBackpressureSource = name("actorRefWithBackpressureSource")
     val queueSource = name("queueSource")
     val inputStreamSource = name("inputStreamSource") and IODispatcher
-    val outputStreamSource = name("outputStreamSource") and IODispatcher
+    val outputStreamSource = name("outputStreamSource")
     val fileSource = name("fileSource") and IODispatcher
     val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
     val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
