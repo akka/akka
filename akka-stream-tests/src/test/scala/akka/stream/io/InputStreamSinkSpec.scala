@@ -16,9 +16,6 @@ import scala.util.control.NoStackTrace
 
 import akka.stream._
 import akka.stream.Attributes.inputBuffer
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.impl.StreamSupervisor
-import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.InputStreamSinkStage
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
@@ -210,15 +207,6 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       sinkProbe.expectMsg(GraphStageMessages.Failure(ex))
       val e = intercept[IOException] { Await.result(Future(inputStream.read()), timeout) }
       e.getCause should ===(ex)
-    }
-
-    "use dedicated default-blocking-io-dispatcher by default" in {
-      // use a separate materializer to ensure we know what child is our stream
-      implicit val materializer = Materializer(system)
-      TestSource.probe[ByteString].runWith(StreamConverters.asInputStream())
-      materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-      val ref = expectMsgType[Children].children.find(_.path.toString contains "inputStreamSink").get
-      assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
     }
 
     "work when more bytes pulled from InputStream than available" in {
