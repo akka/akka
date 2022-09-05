@@ -2663,7 +2663,7 @@ trait FlowOps[+Out, +Mat] {
    * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
    *
    * Uses implicit [[LoggingAdapter]] if available, otherwise uses an internally created one,
-   * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
+   * which uses `akka.event.Logging(materializer.system, materializer)` as its source (use this class to configure slf4j loggers).
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
@@ -2686,7 +2686,7 @@ trait FlowOps[+Out, +Mat] {
    * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
    *
    * Uses implicit [[MarkerLoggingAdapter]] if available, otherwise uses an internally created one,
-   * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
+   * which uses `akka.event.Logging.withMarker(materializer.system, materializer)` as its source (use this class to configure slf4j loggers).
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
