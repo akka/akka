@@ -107,6 +107,7 @@ object ClusterShardingSettings {
       passivationStrategySettings = passivationStrategySettings,
       shardRegionQueryTimeout = config.getDuration("shard-region-query-timeout", MILLISECONDS).millis,
       tuningParameters,
+      config.getBoolean("coordinator-singleton-role-override"),
       coordinatorSingletonSettings,
       lease)
   }
@@ -1122,9 +1123,38 @@ final class ClusterShardingSettings(
     val passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings,
     val shardRegionQueryTimeout: FiniteDuration,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
+    val coordinatorSingletonOverrideRole: Boolean,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
+  @deprecated(
+    "Use the ClusterShardingSettings factory methods or the constructor including coordinatorSingletonOverrideRole instead",
+    "2.6.20")
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      rememberEntitiesStore: String,
+      passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings,
+      shardRegionQueryTimeout: FiniteDuration,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+      leaseSettings: Option[LeaseUsageSettings]) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      rememberEntitiesStore,
+      passivationStrategySettings,
+      shardRegionQueryTimeout,
+      tuningParameters,
+      true,
+      coordinatorSingletonSettings,
+      leaseSettings)
 
   @deprecated(
     "Use the ClusterShardingSettings factory methods or the constructor including passivationStrategySettings instead",
@@ -1151,6 +1181,7 @@ final class ClusterShardingSettings(
       ClusterShardingSettings.PassivationStrategySettings.oldDefault(passivateIdleEntityAfter),
       shardRegionQueryTimeout,
       tuningParameters,
+      true,
       coordinatorSingletonSettings,
       leaseSettings)
 
@@ -1335,6 +1366,7 @@ final class ClusterShardingSettings(
       passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings = passivationStrategySettings,
       shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
+      coordinatorSingletonOverrideRole: Boolean = coordinatorSingletonOverrideRole,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       leaseSettings: Option[LeaseUsageSettings] = leaseSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
@@ -1347,6 +1379,7 @@ final class ClusterShardingSettings(
       passivationStrategySettings,
       shardRegionQueryTimeout,
       tuningParameters,
+      coordinatorSingletonOverrideRole,
       coordinatorSingletonSettings,
       leaseSettings)
 }
