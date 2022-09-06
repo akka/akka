@@ -175,10 +175,7 @@ object Source {
    * @see [[scala.collection.immutable.Range.inclusive(Int, Int, Int)]]
    */
   def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, NotUsed] =
-    fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
-      def create(): util.Iterator[Integer] =
-        Range.inclusive(start, end, step).iterator.asJava.asInstanceOf[util.Iterator[Integer]]
-    })
+    new Source(scaladsl.Source(Range.inclusive(start, end, step).asInstanceOf[immutable.Iterable[Integer]]))
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
