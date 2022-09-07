@@ -77,7 +77,7 @@ The steps are exactly the same for everyone involved in the project, including t
 1. If it's a new feature or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka/tree/main/akka-docs). When the feature touches Scala and Java DSL, document both the Scala and Java APIs.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
     - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, as this will cause the PR to be linked properly with the issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
-1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](https://www.lightbend.com/contribute/cla) online. CLA stands for Contributor License Agreement and protects intellectual property disputes from harming the project.
+1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](https://www.lightbend.com/contribute/cla/akka) online. CLA stands for Contributor License Agreement and protects intellectual property disputes from harming the project.
 1. If you are a first time contributor, a core member must approve the CI to run for your pull request.
 1. Now, both committers and interested people will review your code. This process ensures that the code we merge is of the best possible quality and that no silly mistakes slip through. You're expected to follow-up on these comments by adding new commits to the same branch. The commit messages of those commits can be more loose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
     - The community and core team are really nice people, so don't be afraid to ask follow-up questions if you didn't understand some comment or would like clarification on how to continue with a given feature. We're here to help, so feel free to ask and discuss any questions you might have during the review process!
@@ -618,6 +618,6 @@ Anyone can propose new changes to our CI workflows, and we will gladly review th
 
 ### Related links
 
-* [Akka Contributor License Agreement](https://www.lightbend.com/contribute/cla)
+* [Akka Contributor License Agreement](https://www.lightbend.com/contribute/cla/akka)
 * [Akka Issue Tracker](https://doc.akka.io/docs/akka/current/project/issue-tracking.html)
 * [Scalafmt](https://scalameta.org/scalafmt/)
