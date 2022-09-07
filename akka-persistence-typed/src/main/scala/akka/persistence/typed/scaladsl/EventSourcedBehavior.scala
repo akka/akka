@@ -232,4 +232,10 @@ object EventSourcedBehavior {
    */
   @InternalApi
   private[akka] def withReplication(context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Override to define a custom stash capacity per entity.
+   * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
+   */
+  def withStashCapacity(size: Int): EventSourcedBehavior[Command, Event, State]
 }
