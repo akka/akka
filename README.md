@@ -57,7 +57,7 @@ A chat room is available for all questions related to *developing and contributi
 License
 -------
 
-Akka is Open Source and available under the Apache 2 License.
+Akka is licensed under the Business Source License 1.1, see LICENSE.
 
 [akka-dependency-badge]: https://index.scala-lang.org/count.svg?q=dependencies:akka/*&subject=scaladex:&color=blue&style=flat-square "Built with Akka"
 [akka-dependency-scaladex]: https://index.scala-lang.org/search?q=dependencies:akka/*
