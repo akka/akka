@@ -120,8 +120,8 @@ import akka.util.ccompat._
       override def onUpstreamFailure(ex: Throwable): Unit = subOutlet.fail(ex)
 
       subOutlet.setHandler(new OutHandler {
-        override def onPull(): Unit = pull(in)
-        override def onDownstreamFinish(cause: Throwable): Unit = cancel(in, cause)
+        override def onPull(): Unit = if (!isClosed(in)) tryPull(in)
+        override def onDownstreamFinish(cause: Throwable): Unit = if (!isClosed(in)) cancel(in, cause)
       })
       setHandler(in, this)
 
