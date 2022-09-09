@@ -48,7 +48,8 @@ object MiMa extends AutoPlugin {
         val akka26Previous = expandVersions(2, 6, firstPatchOf26 to latestPatchOf26)
         // FIXME during milestone phase we check latest milestone but when final it should be replaced with
         // val akka27Previous = expandVersions(2, 7, 0 to latestPatchOf27)
-        val akka27Previous = List("2.7.0-M1")
+        // FIXME why can't the snapshot be used here? List("2.7.0-M1")
+        val akka27Previous = Nil
 
         akka26Previous ++ akka27Previous
       }
