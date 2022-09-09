@@ -125,7 +125,7 @@ object OSGi {
       "!scala.util.parsing.*",
       scalaImport(scalaVersion),
       "*")
-  def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.6", "2.7")
+  def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.7", "2.8")
   def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.4.0", "1.5.0")
   def scalaImport(version: String) = {
     val packageName = "scala.*"
