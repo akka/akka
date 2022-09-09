@@ -5,6 +5,7 @@
 package akka.stream.impl
 
 import java.util.function.BinaryOperator
+
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -13,8 +14,10 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NonFatal
+
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+
 import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -29,6 +32,7 @@ import akka.stream.impl.QueueSink.Pull
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.scaladsl.{ Keep, Sink, SinkQueueWithCancel, Source }
+import akka.stream.scaladsl.BroadcastHub
 import akka.stream.stage._
 import akka.util.ccompat._
 
@@ -98,19 +102,46 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class FanoutPublisherSink[In](val attributes: Attributes, shape: SinkShape[In])
-    extends SinkModule[In, Publisher[In]](shape) {
+@InternalApi private[akka] final class FanoutPublisherSink[In]
+    extends GraphStageWithMaterializedValue[SinkShape[In], Publisher[In]] {
+  private val in = Inlet[In]("FanoutPublisherSink.in")
+  override val shape: SinkShape[In] = SinkShape.of(in)
+  override protected def initialAttributes: Attributes = DefaultAttributes.fanoutPublisherSink
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Publisher[In]) = {
+    val logic: GraphStageLogic with InHandler with Publisher[In] = new GraphStageLogic(shape)
+      with InHandler
+      with Publisher[In] {
+      private val bufferSize = inheritedAttributes.mandatoryAttribute[Attributes.InputBuffer].max
+      private val subOutlet = new SubSourceOutlet[In]("FanoutPublisherSink.subSink")
+      private var publisherSource: Source[In, NotUsed] = _
 
-  override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
-    val impl = context.materializer.actorOf(context, FanoutProcessorImpl.props(context.effectiveAttributes))
-    val fanoutProcessor = new ActorProcessor[In, In](impl)
-    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
-    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
-    (fanoutProcessor, fanoutProcessor)
+      override def onPush(): Unit = subOutlet.push(grab(in))
+      override def onUpstreamFinish(): Unit = subOutlet.complete()
+      override def onUpstreamFailure(ex: Throwable): Unit = subOutlet.fail(ex)
+
+      subOutlet.setHandler(new OutHandler {
+        override def onPull(): Unit = pull(in)
+        override def onDownstreamFinish(cause: Throwable): Unit = cancel(in, cause)
+      })
+      setHandler(in, this)
+
+      val handler = getAsyncCallback[Subscriber[_]] {
+        case sub: Subscriber[_] =>
+          interpreter.subFusingMaterializer
+            .materialize(publisherSource.to(Sink.fromSubscriber(sub.asInstanceOf[Subscriber[_ >: In]])), attributes)
+      }
+
+      override def preStart(): Unit = {
+        publisherSource = interpreter.subFusingMaterializer.materialize(
+          Source.fromGraph(subOutlet.source).toMat(BroadcastHub.sink[In](bufferSize))(Keep.right),
+          attributes)
+        super.preStart()
+      }
+      override def subscribe(subscriber: Subscriber[_ >: In]): Unit = handler.invoke(subscriber)
+    }
+
+    (logic, logic)
   }
-
-  override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
-    new FanoutPublisherSink[In](attr, amendShape(attr))
 }
 
 /**

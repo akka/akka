@@ -293,7 +293,7 @@ object Sink {
    */
   def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
     fromGraph(
-      if (fanout) new FanoutPublisherSink[T](DefaultAttributes.fanoutPublisherSink, shape("FanoutPublisherSink"))
+      if (fanout) new FanoutPublisherSink[T]
       else new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**
