@@ -114,6 +114,7 @@ import akka.util.ccompat._
       private val bufferSize = inheritedAttributes.mandatoryAttribute[Attributes.InputBuffer].max
       private val subOutlet = new SubSourceOutlet[In]("FanoutPublisherSink.subSink")
       private var publisherSource: Source[In, NotUsed] = _
+      private val callbackPromise = Promise[AsyncCallback[Subscriber[_]]]()
 
       override def onPush(): Unit = subOutlet.push(grab(in))
       override def onUpstreamFinish(): Unit = subOutlet.complete()
@@ -125,19 +126,19 @@ import akka.util.ccompat._
       })
       setHandler(in, this)
 
-      val handler = getAsyncCallback[Subscriber[_]] {
-        case sub: Subscriber[_] =>
-          interpreter.subFusingMaterializer
-            .materialize(publisherSource.to(Sink.fromSubscriber(sub.asInstanceOf[Subscriber[_ >: In]])), attributes)
-      }
-
       override def preStart(): Unit = {
         publisherSource = interpreter.subFusingMaterializer.materialize(
           Source.fromGraph(subOutlet.source).toMat(BroadcastHub.sink[In](bufferSize))(Keep.right),
           attributes)
+        callbackPromise.success(getAsyncCallback[Subscriber[_]] {
+          case sub: Subscriber[_] =>
+            interpreter.subFusingMaterializer
+              .materialize(publisherSource.to(Sink.fromSubscriber(sub.asInstanceOf[Subscriber[_ >: In]])), attributes)
+        })
         super.preStart()
       }
-      override def subscribe(subscriber: Subscriber[_ >: In]): Unit = handler.invoke(subscriber)
+      override def subscribe(subscriber: Subscriber[_ >: In]): Unit =
+        callbackPromise.future.foreach(_.invoke(subscriber))(ExecutionContexts.parasitic)
     }
 
     (logic, logic)
