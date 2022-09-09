@@ -4,10 +4,10 @@ on:
   pull_request:
   push:
     branches:
-      - master
       - main
     tags:
       - v2.6.*
+      - v2.7.*
 
 jobs:
   check-binary-compatibility:
