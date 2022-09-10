@@ -494,6 +494,16 @@ class HubSpec extends StreamSpec {
       out.expectComplete()
     }
 
+    "broadcast all elements to all consumers" in {
+      val broadcast = Source(1 to 10)
+        .runWith(BroadcastHub.sink[Int])
+      val resultOne = broadcast.runWith(Sink.seq) // nothing happening yet
+      val resultTwo = broadcast.runWith(Sink.seq)
+
+      Await.result(resultOne, 1.second) should be(1 to 10) // fails
+      Await.result(resultTwo, 1.second) should be(1 to 10) // fails
+    }
+
   }
 
   "PartitionHub" must {
