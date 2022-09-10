@@ -61,6 +61,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
 |Sink|<a name="completionstagesink"></a>@ref[completionStageSink](Sink/completionStageSink.md)|Streams the elements to the given future sink once it successfully completes. |
 |Sink|<a name="fold"></a>@ref[fold](Sink/fold.md)|Fold over emitted element with a function, where each invocation will get the new element and the result from the previous fold invocation.|
+|Sink|<a name="foldresource"></a>@ref[foldResource](Sink/foldResource.md)|Handle elements with the help of a resource that can be opened, handle each element (in a blocking way) and closed.|
 |Sink|<a name="foreach"></a>@ref[foreach](Sink/foreach.md)|Invoke a given procedure for each element received.|
 |Sink|<a name="foreachasync"></a>@ref[foreachAsync](Sink/foreachAsync.md)|Invoke a given procedure asynchronously for each element received.|
 |Sink|<a name="foreachparallel"></a>@ref[foreachParallel](Sink/foreachParallel.md)|Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.|
@@ -442,6 +443,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [fold](Source-or-Flow/fold.md)
 * [fold](Sink/fold.md)
 * [foldAsync](Source-or-Flow/foldAsync.md)
+* [foldResource](Sink/foldResource.md)
 * [foreach](Sink/foreach.md)
 * [foreachAsync](Sink/foreachAsync.md)
 * [foreachParallel](Sink/foreachParallel.md)

@@ -4,11 +4,29 @@
 
 package akka.stream.scaladsl
 
+import java.io._
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.nowarn
+import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.Success
+import scala.util.control.NoStackTrace
+
+import com.google.common.jimfs.Configuration
+import com.google.common.jimfs.Jimfs
+
 import akka.Done
 import akka.stream.AbruptTerminationException
 import akka.stream.ActorAttributes
 import akka.stream.ActorAttributes._
 import akka.stream.ActorMaterializer
+import akka.stream.Supervision
 import akka.stream.Supervision._
 import akka.stream.SystemMaterializer
 import akka.stream.impl.PhasedFusingActorMaterializer
@@ -21,21 +39,6 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.EventFilter
 import akka.util.ByteString
-import com.google.common.jimfs.Configuration
-import com.google.common.jimfs.Jimfs
-
-import java.io._
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.util.concurrent.atomic.AtomicInteger
-import scala.annotation.nowarn
-import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.util.Success
-import scala.util.control.NoStackTrace
 
 class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
@@ -384,6 +387,76 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       mat.shutdown()
       matVal.failed.futureValue shouldBe an[AbruptTerminationException]
       Await.result(promise.future, 3.seconds) shouldBe Done
+    }
+
+    "will not call onClose twice on cancel when `onClose` fails" in {
+      val closedCounter = new AtomicInteger(0)
+      val (source, sink) = TestSource[Int]()
+        .mapWithResource(() => 23)((_, elem) => elem, _ => {
+          closedCounter.incrementAndGet()
+          throw TE("boom")
+        })
+        .toMat(TestSink[Int]())(Keep.both)
+        .run()
+
+      EventFilter[TE](occurrences = 1).intercept {
+        sink.request(1)
+        source.sendNext(1)
+        sink.expectNext(1)
+        sink.cancel()
+        source.expectCancellation()
+      }
+      closedCounter.get() should ===(1)
+    }
+
+    "emit onClose return value before restarting" in {
+      val stateCounter = new AtomicInteger(0)
+      val (source, sink) = TestSource[String]()
+        .mapWithResource(() => stateCounter.incrementAndGet())({ (s, elem) =>
+          if (elem == "boom") throw TE("boom")
+          else elem + s.toString
+        }, _ => Some("onClose"))
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .toMat(TestSink())(Keep.both)
+        .run()
+
+      sink.request(1)
+      source.sendNext("one")
+      sink.expectNext("one1")
+      sink.request(1)
+      source.sendNext("boom")
+      sink.expectNext("onClose")
+      sink.request(1)
+      source.sendNext("two")
+      sink.expectNext("two2")
+      sink.cancel()
+      source.expectCancellation()
+    }
+
+    "not allow null resource" in {
+      EventFilter[NullPointerException](occurrences = 1).intercept {
+        Source
+          .single("one")
+          .mapWithResource(() => null: String)((_, t) => t, _ => None)
+          .runWith(Sink.head)
+          .failed
+          .futureValue shouldBe a[NullPointerException]
+      }
+    }
+
+    "not allow null resource on restart" in {
+      val counter = new AtomicInteger(0)
+      EventFilter[NullPointerException](occurrences = 1).intercept {
+        Source
+          .single("one")
+          .mapWithResource(() => if (counter.incrementAndGet() == 1) "resource" else null)(
+            (_, _) => throw TE("boom"),
+            _ => None)
+          .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+          .runWith(Sink.head)
+          .failed
+          .futureValue shouldBe a[NullPointerException]
+      }
     }
 
   }

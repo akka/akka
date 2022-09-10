@@ -517,6 +517,42 @@ object Sink {
     new Sink(scaladsl.Sink.lazyFutureSink { () =>
       create.create().toScala.map(_.asScala)((ExecutionContexts.parasitic))
     }).mapMaterializedValue(_.toJava)
+
+  /**
+   * Handle each stream element with the help of a resource.
+   *
+   * The resource creation function is invoked once when the stream is materialized and the returned resource is passed to
+   * the function `f` for handling each input element. A `null` resource is not allowed and will fail the stream.
+   *
+   * The `close` function is called only once when the upstream finishes or fails. You can do some clean-up here.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * You can configure the default dispatcher for the returning Sink by changing the `akka.stream.materializer.blocking-io-dispatcher` or
+   * set it by using [[ActorAttributes]].
+   *
+   * '''Backpressures when''' when the previous fold function invocation has not yet completed
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' never
+   *
+   * @tparam R the type of the resource
+   * @tparam T the type of the output elements
+   * @param create function that creates the resource
+   * @param f function that handles the upstream element with resource.
+   * @param close function that closes the resource
+   */
+  def foldResource[R, T](
+      create: java.util.function.Supplier[R],
+      f: java.util.function.BiConsumer[R, T],
+      close: java.util.function.Consumer[R]): Sink[T, CompletionStage[Done]] =
+    new Sink(
+      scaladsl.Sink
+        .foldResource[R, T](() => create.get())(
+          (resource, in) => f.accept(resource, in),
+          resource => close.accept(resource))
+        .toCompletionStage())
 }
 
 /**

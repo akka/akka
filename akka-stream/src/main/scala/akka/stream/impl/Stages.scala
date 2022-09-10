@@ -149,6 +149,7 @@ import akka.stream.Attributes._
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink")
     val fileSink = name("fileSink") and IODispatcher
+    val foldResourceSink = name("foldResourceSink") and IODispatcher
     val fromJavaStream = name("fromJavaStream")
 
     val inputBoundary = name("input-boundary")

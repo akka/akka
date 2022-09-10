@@ -55,9 +55,13 @@ class DslFactoriesConsistencySpec extends AnyWordSpec with Matchers {
       (classOf[Boolean],                                   classOf[akka.stream.javadsl.AsPublisher]) ::
       (classOf[scala.Function0[_]],                        classOf[akka.japi.function.Creator[_]]) ::
       (classOf[scala.Function0[_]],                        classOf[java.util.concurrent.Callable[_]]) ::
+      (classOf[scala.Function0[_]],                        classOf[java.util.function.Supplier[_]]) ::
+      (classOf[scala.Function1[_, Unit]],                  classOf[java.util.function.Consumer[_]]) ::
       (classOf[scala.Function1[_, Unit]],                  classOf[akka.japi.function.Procedure[_]]) ::
       (classOf[scala.Function1[_, _]],                     classOf[akka.japi.function.Function[_, _]]) ::
       (classOf[scala.Function2[_, _, _]],                  classOf[java.util.function.BiFunction[_, _, _]]) :: // setup
+      (classOf[scala.Function2[_, _, Unit]],               classOf[java.util.function.BiConsumer[_, _]]) ::
+      (classOf[scala.Function2[_, _, Unit]],               classOf[akka.japi.function.Procedure2[_, _]]) ::
       (classOf[scala.Function1[scala.Function1[_, _], _]], classOf[akka.japi.function.Function2[_, _, _]]) ::
       (classOf[akka.stream.scaladsl.Source[_, _]],         classOf[akka.stream.javadsl.Source[_, _]]) ::
       (classOf[akka.stream.scaladsl.Sink[_, _]],           classOf[akka.stream.javadsl.Sink[_, _]]) ::

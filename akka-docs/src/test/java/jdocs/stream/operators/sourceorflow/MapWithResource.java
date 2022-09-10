@@ -51,8 +51,8 @@ public interface MapWithResource {
     final Database db = null;
     Source.from(
             Arrays.asList(
-                "SELECT * FROM shop ORDER BY article-0000 order by gmtModified desc limit 100;",
-                "SELECT * FROM shop ORDER BY article-0001 order by gmtModified desc limit 100;"))
+                "SELECT * FROM article-0000 ORDER BY gmtModified DESC LIMIT 100;",
+                "SELECT * FROM article-0001 ORDER BY gmtModified DESC LIMIT 100;"))
         .mapWithResource(
             () -> dbDriver.create(url, userName, password),
             (connection, query) -> db.doQuery(connection, query).toList(),

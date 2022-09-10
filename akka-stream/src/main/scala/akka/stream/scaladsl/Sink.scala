@@ -24,9 +24,11 @@ import akka.actor.Status
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.stream._
+import akka.stream.Attributes.SourceLocation
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
+import akka.stream.impl.fusing.StatefulMap
 import akka.stream.javadsl
 import akka.stream.stage._
 import akka.util.ccompat._
@@ -732,4 +734,41 @@ object Sink {
   def lazyFutureSink[T, M](create: () => Future[Sink[T, M]]): Sink[T, Future[M]] =
     Sink.fromGraph(new LazySink(_ => create()))
 
+  /**
+   * Handle each stream element with the help of a resource.
+   *
+   * The resource creation function is invoked once when the stream is materialized and the returned resource is passed to
+   * the function `f` for handling each input element. A `null` resource is not allowed and will fail the stream.
+   *
+   * The `close` function is called only once when the upstream finishes or fails. You can do some clean-up here.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * You can configure the default dispatcher for the returning Sink by changing the `akka.stream.materializer.blocking-io-dispatcher` or
+   * set it by using [[ActorAttributes]].
+   *
+   * '''Backpressures when''' when the previous fold function invocation has not yet completed
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' never
+   *
+   * @tparam R the type of the resource
+   * @tparam T the type of the output elements
+   * @param create function that creates the resource
+   * @param f function that handles the upstream element with resource.
+   * @param close function that closes the resource
+   */
+  def foldResource[R, T](create: () => R)(f: (R, T) => Unit, close: R => Unit): Sink[T, Future[Done]] =
+    Flow[T]
+      .via(
+        new StatefulMap[R, T, Unit](
+          DefaultAttributes.foldResourceSink and SourceLocation.forLambda(create),
+          create,
+          (resource, in) => (resource, f(resource, in)),
+          resource => {
+            close(resource)
+            None
+          }))
+      .toMat(Sink.ignore)(Keep.right)
 }

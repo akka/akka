@@ -241,6 +241,7 @@ final class SubFlow[In, Out, Mat](
    * The resource creation function is invoked once when the stream is materialized and the returned resource is passed to
    * the mapping function for mapping the first element. The mapping function returns a mapped element to emit
    * downstream. The returned `T` MUST NOT be `null` as it is illegal as stream element - according to the Reactive Streams specification.
+   * A `null` resource is not allowed and will fail the stream.
    *
    * The `close` function is called only once when the upstream or downstream finishes or fails. You can do some clean-up here,
    * and if the returned value is not empty, it will be emitted to the downstream if available, otherwise the value will be dropped.
