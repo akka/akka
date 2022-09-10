@@ -1,0 +1,3 @@
+# internal classes
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.UnfoldResourceSourceAsync.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.UnfoldResourceSource.this")
