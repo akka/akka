@@ -1262,7 +1262,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsync]] and [[#mapAsyncPartitioned]]
    */
-  def mapAsyncUnordered[T](parallelism: Int)(f: Out => Future[T]): Repr[T] = via(MapAsyncUnordered(parallelism, f))
+  def mapAsyncUnordered[T](parallelism: Int)(f: Out => Future[T]): Repr[T] =
+    if (parallelism == 1) via(MapAsyncUnordered1(f)) else via(MapAsyncUnordered(parallelism, f))
 
   /**
    * Use the `ask` pattern to send a request-reply message to the target `ref` actor.

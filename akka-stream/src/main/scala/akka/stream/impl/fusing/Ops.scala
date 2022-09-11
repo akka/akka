@@ -1377,6 +1377,66 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
+@InternalApi
+private[akka] final case class MapAsyncUnordered1[In, Out](f: In => Future[Out])
+    extends GraphStage[FlowShape[In, Out]] {
+  private val in = Inlet[In]("MapAsyncUnordered.in")
+  private val out = Outlet[Out]("MapAsyncUnordered.out")
+  override val shape: FlowShape[In, Out] = FlowShape(in, out)
+  override def initialAttributes: Attributes = DefaultAttributes.mapAsyncUnordered and SourceLocation.forLambda(f)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic with InHandler with OutHandler =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      private lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
+      private val invokeFutureCB: Try[Out] => Unit = getAsyncCallback(handle).invoke
+      private var inFlight: Boolean = false
+      override def onPush(): Unit = {
+        try {
+          val future = f(grab(in))
+          future.value match {
+            case None =>
+              inFlight = true
+              future.onComplete(invokeFutureCB)(akka.dispatch.ExecutionContexts.parasitic)
+            case Some(value) =>
+              handle(value)
+          }
+        } catch {
+          case NonFatal(ex) =>
+            decider(ex) match {
+              case Supervision.Stop => failStage(ex)
+              case _                => if (isClosed(in)) completeStage() else pull(in)
+            }
+        }
+      }
+
+      private def handle(value: Try[Out]): Unit = {
+        inFlight = false
+        value match {
+          case Success(elem) if elem != null =>
+            push(out, elem)
+            if (isClosed(in)) completeStage()
+          case Success(_) => // future completes with null, ignore the value and try pull
+            if (isClosed(in)) completeStage()
+            else pull(in)
+          case Failure(ex) =>
+            decider(ex) match {
+              case Supervision.Stop => failStage(ex)
+              case _                => if (isClosed(in)) completeStage() else pull(in)
+            }
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = if (!inFlight) completeStage()
+
+      override def onPull(): Unit = if (isClosed(in)) completeStage() else pull(in)
+
+      setHandlers(in, out, this)
+    }
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: In => Future[Out])
     extends GraphStage[FlowShape[In, Out]] {
 
