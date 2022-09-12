@@ -158,6 +158,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       case (enumName, value) => MapperFeature.valueOf(enumName) -> value
     }
     val mapperFeatures = objectMapperFactory.overrideConfiguredMapperFeatures(bindingName, configuredMapperFeatures)
+
     mapperFeatures.foreach {
       case (feature, value) =>
         // TODO: This is deprecated and should used JsonMapper.Builder, but that would be difficult without

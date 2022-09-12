@@ -184,6 +184,7 @@ object TypedActorSpec {
     def crash(): Unit
   }
 
+  @nowarn("msg=deprecated")
   class LifeCyclesImpl(val latch: CountDownLatch)
       extends PreStart
       with PostStop

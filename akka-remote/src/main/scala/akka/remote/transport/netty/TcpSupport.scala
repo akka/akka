@@ -22,6 +22,7 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
+@nowarn("msg=deprecated")
 private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEventListener]] {
   override def initialValue(channel: Channel): Option[HandleEventListener] = None
   def notifyListener(channel: Channel, msg: HandleEvent): Unit = get(channel).foreach { _.notify(msg) }
