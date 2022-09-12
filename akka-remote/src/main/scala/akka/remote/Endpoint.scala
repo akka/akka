@@ -148,6 +148,7 @@ private[remote] class DefaultMessageDispatcher(
  * INTERNAL API
  */
 @SerialVersionUID(1L)
+@nowarn("msg=deprecated")
 private[remote] class EndpointException(msg: String, cause: Throwable)
     extends AkkaException(msg, cause)
     with OnlyCauseStackTrace {
@@ -163,6 +164,7 @@ private[remote] trait AssociationProblem
  * INTERNAL API
  */
 @SerialVersionUID(1L)
+@nowarn("msg=deprecated")
 private[remote] final case class ShutDownAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
     extends EndpointException("Shut down address: " + remoteAddress, cause)
     with AssociationProblem
@@ -171,6 +173,7 @@ private[remote] final case class ShutDownAssociation(localAddress: Address, remo
  * INTERNAL API
  */
 @SerialVersionUID(2L)
+@nowarn("msg=deprecated")
 private[remote] final case class InvalidAssociation(
     localAddress: Address,
     remoteAddress: Address,
@@ -183,6 +186,7 @@ private[remote] final case class InvalidAssociation(
  * INTERNAL API
  */
 @SerialVersionUID(1L)
+@nowarn("msg=deprecated")
 private[remote] final case class HopelessAssociation(
     localAddress: Address,
     remoteAddress: Address,

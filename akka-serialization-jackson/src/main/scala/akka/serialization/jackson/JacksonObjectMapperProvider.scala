@@ -6,12 +6,10 @@ package akka.serialization.jackson
 
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
-
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.util.Failure
 import scala.util.Success
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.PropertyAccessor
@@ -31,7 +29,6 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import com.typesafe.config.Config
-
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.DynamicAccess
@@ -45,6 +42,9 @@ import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.util.unused
 
+import scala.annotation.nowarn
+
+@nowarn("msg=deprecated")
 object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
   override def get(system: ClassicActorSystemProvider): JacksonObjectMapperProvider = super.get(system)

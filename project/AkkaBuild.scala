@@ -100,6 +100,7 @@ object AkkaBuild {
         "UTF-8",
         "-feature",
         "-unchecked",
+        "-deprecation",
         // 'blessed' since 2.13.1
         "-language:higherKinds")
     } else {

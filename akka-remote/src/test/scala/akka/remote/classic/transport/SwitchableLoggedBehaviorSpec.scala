@@ -7,10 +7,11 @@ package akka.remote.classic.transport
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.Failure
 import scala.util.control.NoStackTrace
-
 import akka.AkkaException
 import akka.remote.transport.TestTransport.SwitchableLoggedBehavior
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
+
+import scala.annotation.nowarn
 
 object SwitchableLoggedBehaviorSpec {
   object TestException extends AkkaException("Test exception") with NoStackTrace
@@ -19,6 +20,7 @@ object SwitchableLoggedBehaviorSpec {
 class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
   import akka.remote.classic.transport.SwitchableLoggedBehaviorSpec._
 
+  @nowarn("msg=deprecated")
   private def defaultBehavior = new SwitchableLoggedBehavior[Unit, Int]((_) => Future.successful(3), (_) => ())
 
   "A SwitchableLoggedBehavior" must {
@@ -99,6 +101,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
 
     "log calls and parameters" in {
       val logPromise = Promise[Int]()
+      @nowarn("msg=deprecated")
       val behavior = new SwitchableLoggedBehavior[Int, Int](_ => Future.successful(3), i => logPromise.success(i))
 
       behavior(11)
