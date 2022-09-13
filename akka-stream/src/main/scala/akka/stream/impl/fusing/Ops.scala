@@ -22,6 +22,7 @@ import akka.event._
 import akka.event.Logging.LogLevel
 import akka.stream.{ Supervision, _ }
 import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.Attributes
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.Attributes.SourceLocation
 import akka.stream.OverflowStrategies._
@@ -2197,8 +2198,13 @@ private[akka] object TakeWithin {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) => (S, Out), onComplete: S => Option[Out])
+private[akka] final class StatefulMap[S, In, Out](
+    attributes: Attributes,
+    create: () => S,
+    f: (S, In) => (S, Out),
+    onComplete: S => Option[Out])
     extends GraphStage[FlowShape[In, Out]] {
+  require(attributes != null, "attributes should not be null")
   require(create != null, "create function should not be null")
   require(f != null, "f function should not be null")
   require(onComplete != null, "onComplete function should not be null")
@@ -2207,7 +2213,7 @@ private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) =>
   private val out = Outlet[Out]("StatefulMap.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
-  override protected def initialAttributes: Attributes = DefaultAttributes.statefulMap and SourceLocation.forLambda(f)
+  override protected def initialAttributes: Attributes = attributes
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -2263,11 +2269,11 @@ private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) =>
       }
 
       private def closeStateAndFail(ex: Throwable): Unit = {
+        needInvokeOnCompleteCallback = false
         onComplete(state) match {
           case Some(elem) => emit(out, elem, () => failStage(ex))
           case None       => failStage(ex)
         }
-        needInvokeOnCompleteCallback = false
       }
 
       override def onPull(): Unit = pull(in)

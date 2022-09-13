@@ -30,6 +30,7 @@ import akka.stream.Attributes._
     val mapError = name("mapError")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
+    val mapWithResource = name("mapWithResource") and IODispatcher
     val ask = name("ask")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
