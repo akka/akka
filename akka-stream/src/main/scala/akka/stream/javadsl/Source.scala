@@ -2510,6 +2510,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
+   * If the `CompletionStage` is completed with `null`, it is ignored and the next element is processed.
+   *
    * The function `f` is always invoked on the elements in the order they arrive.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
@@ -2546,6 +2548,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the CompletionStages
    * returned by `f` might be emitted in a different order).
+   *
+   * If the `CompletionStage` is completed with `null`, it is ignored and the next element is processed.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
