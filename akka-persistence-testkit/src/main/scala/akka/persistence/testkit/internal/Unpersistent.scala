@@ -9,7 +9,9 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.persistence.testkit.{ ChangePersisted, EventPersisted, StatePersisted }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
+import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl
+import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -104,9 +106,11 @@ object Unpersistent {
       changeQueue: ConcurrentLinkedQueue[ChangePersisted[State, Event]],
       initialState: State,
       initialOffset: Long)
-      extends AbstractBehavior[Command](context) {
+      extends AbstractBehavior[Command](context) with WithSeqNrAccessible {
     import akka.persistence.typed.{ EventSourcedSignal, RecoveryCompleted, SnapshotCompleted, SnapshotMetadata }
     import akka.persistence.typed.internal._
+
+    def currentSequenceNumber: Long = offset
 
     private def commandHandler = esBehavior.commandHandler
     private def eventHandler = esBehavior.eventHandler
@@ -216,10 +220,12 @@ object Unpersistent {
       dsBehavior: DurableStateBehaviorImpl[Command, State],
       changeQueue: ConcurrentLinkedQueue[ChangePersisted[State, Nothing]],
       initialState: State)
-      extends AbstractBehavior[Command](context) {
+      extends AbstractBehavior[Command](context) with WithRevisionAccessible {
 
     import akka.persistence.typed.state.{ DurableStateSignal, RecoveryCompleted }
     import akka.persistence.typed.state.internal._
+
+    def currentRevision: Long = offset
 
     private def commandHandler = dsBehavior.commandHandler
     private def signalHandler = dsBehavior.signalHandler

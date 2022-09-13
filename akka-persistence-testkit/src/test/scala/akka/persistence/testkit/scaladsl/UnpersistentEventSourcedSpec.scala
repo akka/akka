@@ -6,13 +6,12 @@ package akka.persistence.testkit.scaladsl
 
 import akka.Done
 import akka.actor.typed.{ Behavior, RecipientRef }
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.testkit.{ EventPersisted, StatePersisted }
 import akka.persistence.typed.{ PersistenceId, RecoveryCompleted, SnapshotCompleted, SnapshotMetadata }
 import akka.persistence.typed.scaladsl._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.slf4j.Logger
 
 object UnpersistentEventSourcedSpec {
   object BehaviorUnderTest {
@@ -22,6 +21,7 @@ object UnpersistentEventSourcedSpec {
     case class PersistDomainEventIfBefore(count: Int, replyTo: RecipientRef[Boolean]) extends Command
     case class PersistDomainEventAfter(count: Int, replyTo: RecipientRef[Done]) extends Command
     case class NotifyAfter(count: Int, notifyTo: RecipientRef[Done], replyTo: RecipientRef[Boolean]) extends Command
+    case class GetSequenceNumber(replyTo: RecipientRef[Long]) extends Command
     case object SnapshotNow extends Command
 
     sealed trait Event
@@ -30,6 +30,8 @@ object UnpersistentEventSourcedSpec {
     case class ObserverAdded(count: Int, notifyTo: RecipientRef[Done]) extends Event
 
     case class State(domainEvtCount: Int, notifyAfter: Map[Int, RecipientRef[Done]], nextNotifyAt: Int)
+
+    val initialState = State(0, Map.empty, Int.MaxValue)
 
     def apply(
         id: String,
@@ -40,8 +42,8 @@ object UnpersistentEventSourcedSpec {
 
         EventSourcedBehavior[Command, Event, State](
           persistenceId = PersistenceId.ofUniqueId(id),
-          emptyState = State(0, Map.empty, Int.MaxValue),
-          commandHandler = applyCommand(_, _, context.log),
+          emptyState = initialState,
+          commandHandler = applyCommand(_, _, context),
           eventHandler = applyEvent(_, _))
           .receiveSignal {
             case (state, RecoveryCompleted) =>
@@ -63,7 +65,7 @@ object UnpersistentEventSourcedSpec {
           }
       }
 
-    private def applyCommand(state: State, cmd: Command, log: Logger): Effect[Event, State] = {
+    private def applyCommand(state: State, cmd: Command, context: ActorContext[Command]): Effect[Event, State] = {
       def persistDomainEvent[Reply](replyTo: RecipientRef[Reply], reply: Reply): Effect[Event, State] =
         Effect
           .persist[Event, State](DomainEvent)
@@ -85,7 +87,7 @@ object UnpersistentEventSourcedSpec {
 
         case PersistDomainEventIfBefore(count, replyTo) =>
           if (state.domainEvtCount >= count) {
-            log.info("Rejecting PersistDomainEventIfBefore as domainEvtCount = {}", state.domainEvtCount)
+            context.log.info("Rejecting PersistDomainEventIfBefore as domainEvtCount = {}", state.domainEvtCount)
             Effect.none.thenRun(_ => replyTo ! false)
           } else persistDomainEvent(replyTo, true)
 
@@ -106,6 +108,9 @@ object UnpersistentEventSourcedSpec {
           }
 
         case SnapshotNow => Effect.persist(SnapshotMade)
+
+        case GetSequenceNumber(replyTo) =>
+          Effect.none.thenRun(_ => replyTo ! EventSourcedBehavior.lastSequenceNumber(context))
       }
     }
 
@@ -288,6 +293,32 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       // unstash, but nothing in the stash
       testkit.run(pde)
       assert(!replyTo1.hasMessages, "should not send again")
+    }
+
+    "retrieve sequence number properly" in {
+      import BehaviorUnderTest._
+
+      val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref, TestInbox[SnapshotMetadata]().ref)
+
+      val randomStartingOffset =
+        scala.util.Random.nextLong() match {
+          case Long.MinValue => Long.MaxValue
+          case x if x < 0 => -x
+          case x => x
+        }
+
+      val (unpersistent, changes) =
+        UnpersistentBehavior.fromEventSourced[Command, Event, State](
+          behavior,
+          Some(initialState -> randomStartingOffset)
+        )
+
+      val replyTo = TestInbox[Long]()
+      val testkit = BehaviorTestKit(unpersistent)
+
+      testkit.run(GetSequenceNumber(replyTo.ref))
+      drainChangesToList(changes) shouldBe empty
+      replyTo.expectMessage(randomStartingOffset)
     }
   }
 }

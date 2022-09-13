@@ -6,14 +6,13 @@ package akka.persistence.testkit.scaladsl
 
 import akka.Done
 import akka.actor.typed.{ Behavior, RecipientRef }
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.testkit.StatePersisted
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.state.RecoveryCompleted
 import akka.persistence.typed.state.scaladsl._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.slf4j.Logger
 
 object UnpersistentDurableStateSpec {
   object BehaviorUnderTest {
@@ -23,6 +22,7 @@ object UnpersistentDurableStateSpec {
     case class AddIfLessThan(toAdd: Int, ifLessThan: Int, replyTo: RecipientRef[Boolean]) extends Command
     case class AddWhenAtLeast(toAdd: Int, whenAtLeast: Int, replyTo: RecipientRef[Done]) extends Command
     case class NotifyIfAtLeast(n: Int, notifyTo: RecipientRef[Done], replyTo: RecipientRef[Boolean]) extends Command
+    case class GetRevisionNumber(replyTo: RecipientRef[Long]) extends Command
 
     case class State(count: Int, notifyAfter: Map[Int, RecipientRef[Done]], nextNotifyAt: Int) {
       def processAdd(n: Int): State = {
@@ -65,7 +65,7 @@ object UnpersistentDurableStateSpec {
         DurableStateBehavior[Command, State](
           persistenceId = PersistenceId.ofUniqueId(id),
           emptyState = State(0, Map.empty, Int.MaxValue),
-          commandHandler = applyCommand(_, _, context.log))
+          commandHandler = applyCommand(_, _, context))
           .receiveSignal {
             case (state, RecoveryCompleted) =>
               context.log.debug("Recovered state for id [{}] is [{}]", id, state)
@@ -74,7 +74,7 @@ object UnpersistentDurableStateSpec {
           .withTag("count")
       }
 
-    private def applyCommand(state: State, cmd: Command, log: Logger): Effect[State] = {
+    private def applyCommand(state: State, cmd: Command, context: ActorContext[Command]): Effect[State] = {
       def persistAdd[Reply](n: Int, replyTo: RecipientRef[Reply], reply: Reply): Effect[State] = {
         val newState = state.processAdd(n)
 
@@ -99,7 +99,7 @@ object UnpersistentDurableStateSpec {
 
         case AddIfLessThan(toAdd, ifLessThan, replyTo) =>
           if (state.count >= ifLessThan) {
-            log.info("Rejecting AddIfLessThan as count = {}", state.count)
+            context.log.info("Rejecting AddIfLessThan as count = {}", state.count)
             Effect.none[State].thenRun(_ => replyTo ! false)
           } else persistAdd(toAdd, replyTo, true)
 
@@ -118,6 +118,9 @@ object UnpersistentDurableStateSpec {
           } else {
             Effect.persist(state.addObserver(n, notifyTo)).thenRun(_ => replyTo ! true)
           }
+
+        case GetRevisionNumber(replyTo) =>
+          Effect.none[State].thenRun(_ => replyTo ! DurableStateBehavior.lastSequenceNumber(context))
       }
     }
   }
@@ -246,6 +249,21 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
       // unstash but nothing in the stash
       testkit.run(add)
       assert(!replyTo1.hasMessages, "should not send again")
+    }
+
+    "retrieve revision number" in {
+      import BehaviorUnderTest._
+
+      val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
+
+      val (unpersistent, changes) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
+
+      val replyTo = TestInbox[Long]()
+      val testkit = BehaviorTestKit(unpersistent)
+
+      testkit.run(GetRevisionNumber(replyTo.ref))
+      drainChangesToList(changes) shouldBe empty
+      replyTo.expectMessage(0)
     }
   }
 }
