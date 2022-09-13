@@ -798,6 +798,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
+   * If the `CompletionStage` is completed with `null`, it is ignored and the next element is processed.
+   *
    * The function `f` is always invoked on the elements in the order they arrive.
    *
    * '''Emits when''' the CompletionStage returned by the provided function finishes for the next element in sequence
@@ -829,6 +831,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
+   *
+   * If the `CompletionStage` is completed with `null`, it is ignored and the next element is processed.
    *
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
    * returned by `f` might be emitted in a different order).
