@@ -246,7 +246,7 @@ lazy val docs = akkaModule("akka-docs")
   .disablePlugins(MimaPlugin)
   .disablePlugins((if (ScalafixSupport.fixTestScope) Nil else Seq(ScalafixPlugin)): _*)
   // TODO https://github.com/akka/akka/issues/30243
-  .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
+  .settings(crossScalaVersions --= akka.Dependencies.scala3Versions)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
   .dependsOn(
@@ -273,7 +273,7 @@ lazy val osgi = akkaModule("akka-osgi")
   .settings(Dependencies.osgi)
   .settings(AutomaticModuleName.settings("akka.osgi"))
   .settings(OSGi.osgi)
-  .settings(Test / parallelExecution := false, crossScalaVersions -= akka.Dependencies.scala3Version)
+  .settings(Test / parallelExecution := false, crossScalaVersions --= akka.Dependencies.scala3Versions)
 
 lazy val persistence = akkaModule("akka-persistence")
   .dependsOn(actor, stream, testkit % "test->test")
@@ -582,8 +582,9 @@ lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-
 
 lazy val serialversionRemoverPlugin =
   Project(id = "serialVersionRemoverPlugin", base = file("plugins/serialversion-remover-plugin")).settings(
-    scalaVersion := akka.Dependencies.scala3Version,
-    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % akka.Dependencies.scala3Version),
+    scalaVersion := akka.Dependencies.scala31Version,
+    crossScalaVersions := akka.Dependencies.scala3Versions,
+    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % scalaVersion.value),
     Compile / doc / sources := Nil,
     Compile / publishArtifact := false)
 
