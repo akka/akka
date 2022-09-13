@@ -27,7 +27,7 @@ private[akka] object MapAsyncPartitioned {
     else if (perPartition < 1) throw new IllegalArgumentException("perPartition must be at least 1")
     else if (perPartition >= parallelism) {
       // no point controlling per-partition, so just use a MapAsync, which has somewhat less overhead
-      val fin = { x: In =>
+      val fin = { (x: In) =>
         f(x, partitioner(x))
       }
       MapAsync(parallelism, fin)
