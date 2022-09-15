@@ -28,7 +28,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
         .actorRefWithBackpressure[Int](
           AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
-        .toMat(TestSink.probe[Int])(Keep.both)
+        .toMat(TestSink[Int]())(Keep.both)
         .run()
 
       val sub = s.expectSubscription()
@@ -51,7 +51,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       val probe = TestProbe()
       val (ref, s) = Source
         .actorRefWithBackpressure[Int](AckMsg, PartialFunction.empty, PartialFunction.empty)
-        .toMat(TestSink.probe[Int])(Keep.both)
+        .toMat(TestSink[Int]())(Keep.both)
         .run()
 
       val sub = s.expectSubscription()
@@ -81,7 +81,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
         .actorRefWithBackpressure[Int](
           AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
-        .toMat(TestSink.probe[Int])(Keep.both)
+        .toMat(TestSink[Int]())(Keep.both)
         .run()
 
       val sub = s.expectSubscription()
@@ -101,7 +101,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
         .actorRefWithBackpressure[Int](
           AckMsg,
           PartialFunction.empty, { case Status.Failure(f) => f }: PartialFunction[Any, Throwable])
-        .toMat(TestSink.probe[Int])(Keep.both)
+        .toMat(TestSink[Int]())(Keep.both)
         .run()
 
       val sub = s.expectSubscription()
@@ -121,7 +121,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
         .actorRefWithBackpressure[Int](
           AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
-        .toMat(TestSink.probe[Int])(Keep.both)
+        .toMat(TestSink[Int]())(Keep.both)
         .run()
 
       val sub = s.expectSubscription()

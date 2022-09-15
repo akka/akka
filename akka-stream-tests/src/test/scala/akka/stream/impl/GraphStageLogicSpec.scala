@@ -135,11 +135,11 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
   "A GraphStageLogic" must {
 
     "read N and emit N before completing" in {
-      Source(1 to 10).via(ReadNEmitN(2)).runWith(TestSink.probe).request(10).expectNext(1, 2).expectComplete()
+      Source(1 to 10).via(ReadNEmitN(2)).runWith(TestSink()).request(10).expectNext(1, 2).expectComplete()
     }
 
     "read N should not emit if upstream completes before N is sent" in {
-      Source(1 to 5).via(ReadNEmitN(6)).runWith(TestSink.probe).request(10).expectComplete()
+      Source(1 to 5).via(ReadNEmitN(6)).runWith(TestSink()).request(10).expectComplete()
     }
 
     "read N should not emit if upstream fails before N is sent" in {
@@ -147,7 +147,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       Source(1 to 5)
         .map(x => if (x > 3) throw error else x)
         .via(ReadNEmitN(6))
-        .runWith(TestSink.probe)
+        .runWith(TestSink())
         .request(10)
         .expectError(error)
     }
@@ -155,7 +155,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     "read N should provide elements read if onComplete happens before N elements have been seen" in {
       Source(1 to 5)
         .via(ReadNEmitRestOnComplete(6))
-        .runWith(TestSink.probe)
+        .runWith(TestSink())
         .request(10)
         .expectNext(1, 2, 3, 4, 5)
         .expectComplete()
@@ -165,7 +165,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
       Source.empty
         .via(emit1234.named("testStage"))
-        .runWith(TestSink.probe)
+        .runWith(TestSink())
         .request(5)
         .expectNext(1)
         //emitting with callback gives nondeterminism whether 2 or 3 will be pushed first

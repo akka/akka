@@ -34,7 +34,7 @@ class FlowCollectSpec extends StreamSpec with ScriptedTest {
       Source(1 to 3)
         .collect(pf)
         .withAttributes(supervisionStrategy(restartingDecider))
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(1)
         .expectNext(1)
         .request(1)

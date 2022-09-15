@@ -207,7 +207,7 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           reader.close()
           None
         })
-        .runWith(TestSink.probe)
+        .runWith(TestSink())
 
       SystemMaterializer(system).materializer
         .asInstanceOf[PhasedFusingActorMaterializer]
@@ -236,11 +236,10 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "fail when close throws exception" in {
-      val (pub, sub) = TestSource
-        .probe[Int]
+      val (pub, sub) = TestSource[Int]()
         .mapWithResource(() => Iterator("a"))((it, _) => if (it.hasNext) Some(it.next()) else None, _ => throw TE(""))
         .collect { case Some(line) => line }
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
       pub.ensureSubscription()
@@ -262,7 +261,7 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             closedCounter.incrementAndGet()
             None
           })
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
 
       probe.request(1)
       probe.expectError(TE("failing read"))
@@ -278,7 +277,7 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           if (closedCounter.get == 1) throw TE("boom")
           None
         })
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
 
       EventFilter[TE](occurrences = 1).intercept {
         probe.request(1)
@@ -289,15 +288,14 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "will close the resource when upstream complete" in {
       val closedCounter = new AtomicInteger(0)
-      val (pub, sub) = TestSource
-        .probe[Int]
+      val (pub, sub) = TestSource[Int]()
         .mapWithResource(() => newBufferedReader())((reader, count) => readLines(reader, count), reader => {
           reader.close()
           closedCounter.incrementAndGet()
           Some(List("End"))
         })
         .mapConcat(identity)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
       sub.expectSubscription().request(2)
       pub.sendNext(1)
@@ -310,15 +308,14 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "will close the resource when upstream fail" in {
       val closedCounter = new AtomicInteger(0)
-      val (pub, sub) = TestSource
-        .probe[Int]
+      val (pub, sub) = TestSource[Int]()
         .mapWithResource(() => newBufferedReader())((reader, count) => readLines(reader, count), reader => {
           reader.close()
           closedCounter.incrementAndGet()
           Some(List("End"))
         })
         .mapConcat(identity)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
       sub.expectSubscription().request(2)
       pub.sendNext(1)
@@ -331,15 +328,14 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "will close the resource when downstream cancel" in {
       val closedCounter = new AtomicInteger(0)
-      val (pub, sub) = TestSource
-        .probe[Int]
+      val (pub, sub) = TestSource[Int]()
         .mapWithResource(() => newBufferedReader())((reader, count) => readLines(reader, count), reader => {
           reader.close()
           closedCounter.incrementAndGet()
           Some(List("End"))
         })
         .mapConcat(identity)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
       val subscription = sub.expectSubscription()
       subscription.request(2)
@@ -352,15 +348,14 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "will close the resource when downstream fail" in {
       val closedCounter = new AtomicInteger(0)
-      val (pub, sub) = TestSource
-        .probe[Int]
+      val (pub, sub) = TestSource[Int]()
         .mapWithResource(() => newBufferedReader())((reader, count) => readLines(reader, count), reader => {
           reader.close()
           closedCounter.incrementAndGet()
           Some(List("End"))
         })
         .mapConcat(identity)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
       sub.request(2)
       pub.sendNext(2)

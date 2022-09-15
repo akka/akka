@@ -19,7 +19,7 @@ class FlowMergeAllSpec extends StreamSpec("""
       source1
         .mergeAll(List(source2, source3), eagerComplete = false)
         .fold(Set.empty[Int])((set, i) => set + i)
-        .runWith(TestSink.probe)
+        .runWith(TestSink())
         .request(1)
         .expectNext(Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
         .expectComplete();
@@ -37,7 +37,7 @@ class FlowMergeAllSpec extends StreamSpec("""
     "merge single upstream elements to its downstream" in {
       Source(1 to 3)
         .mergeAll(Nil, eagerComplete = false)
-        .runWith(TestSink.probe)
+        .runWith(TestSink())
         .request(3)
         .expectNext(1, 2, 3)
         .expectComplete()

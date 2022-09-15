@@ -36,8 +36,7 @@ class OutboundHandshakeSpec extends AkkaSpec("""
       livenessProbeInterval: Duration = Duration.Undefined)
       : (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
 
-    TestSource
-      .probe[String]
+    TestSource[String]()
       .map(msg => outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
       .via(
         new OutboundHandshake(
@@ -49,7 +48,7 @@ class OutboundHandshakeSpec extends AkkaSpec("""
           injectHandshakeInterval,
           livenessProbeInterval))
       .map(env => env.message)
-      .toMat(TestSink.probe[Any])(Keep.both)
+      .toMat(TestSink[Any]())(Keep.both)
       .run()
   }
 

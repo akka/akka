@@ -34,7 +34,7 @@ class FlowStatefulMapSpec extends StreamSpec {
         .statefulMap(() => 0)((agg, elem) => {
           (agg + elem, (agg, elem))
         }, _ => None)
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
       sinkProb.expectSubscription().request(6)
       sinkProb
         .expectNext((0, 1))
@@ -58,7 +58,7 @@ class FlowStatefulMapSpec extends StreamSpec {
           },
           state => Some(state.reverse))
         .mapConcat(identity)
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
       sinkProb.expectSubscription().request(10)
       sinkProb.expectNextN(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).expectComplete()
     }
@@ -72,7 +72,7 @@ class FlowStatefulMapSpec extends StreamSpec {
             (agg + elem, (agg, elem))
         }, _ => None)
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
 
       testSink.expectSubscription().request(5)
       testSink.expectNext((0, 1)).expectNext((1, 3)).expectNext((4, 5)).expectComplete()
@@ -87,7 +87,7 @@ class FlowStatefulMapSpec extends StreamSpec {
             (agg + elem, (agg, elem))
         }, _ => None)
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
 
       testSink.expectSubscription().request(5)
       testSink.expectNext((0, 1)).expectNext((1, 2)).expectNext((0, 4)).expectNext((4, 5)).expectComplete()
@@ -102,19 +102,18 @@ class FlowStatefulMapSpec extends StreamSpec {
             (agg + elem, (agg, elem))
         }, _ => None)
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.stoppingDecider))
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
 
       testSink.expectSubscription().request(5)
       testSink.expectNext((0, 1)).expectNext((1, 2)).expectError(ex)
     }
 
     "fail on upstream failure" in {
-      val (testSource, testSink) = TestSource
-        .probe[Int]
+      val (testSource, testSink) = TestSource[Int]()
         .statefulMap(() => 0)((agg, elem) => {
           (agg + elem, (agg, elem))
         }, _ => None)
-        .toMat(TestSink.probe[(Int, Int)])(Keep.both)
+        .toMat(TestSink[(Int, Int)]())(Keep.both)
         .run()
 
       testSink.expectSubscription().request(5)
@@ -131,10 +130,9 @@ class FlowStatefulMapSpec extends StreamSpec {
     }
 
     "defer upstream failure and remember state" in {
-      val (testSource, testSink) = TestSource
-        .probe[Int]
+      val (testSource, testSink) = TestSource[Int]()
         .statefulMap(() => 0)((agg, elem) => { (agg + elem, (agg, elem)) }, (state: Int) => Some((state, -1)))
-        .toMat(TestSink.probe[(Int, Int)])(Keep.both)
+        .toMat(TestSink[(Int, Int)]())(Keep.both)
         .run()
 
       testSink.expectSubscription().request(5)
@@ -153,8 +151,7 @@ class FlowStatefulMapSpec extends StreamSpec {
 
     "cancel upstream when downstream cancel" in {
       val promise = Promise[Done]()
-      val testSource = TestSource
-        .probe[Int]
+      val testSource = TestSource[Int]()
         .statefulMap(() => 100)((agg, elem) => {
           (agg + elem, (agg, elem))
         }, (state: Int) => {
@@ -170,8 +167,7 @@ class FlowStatefulMapSpec extends StreamSpec {
     "cancel upstream when downstream fail" in {
       val promise = Promise[Done]()
       val testProb = TestSubscriber.probe[(Int, Int)]()
-      val testSource = TestSource
-        .probe[Int]
+      val testSource = TestSource[Int]()
         .statefulMap(() => 100)((agg, elem) => {
           (agg + elem, (agg, elem))
         }, (state: Int) => {
@@ -220,7 +216,7 @@ class FlowStatefulMapSpec extends StreamSpec {
     "be able to be used as zipWithIndex" in {
       Source(List("A", "B", "C", "D"))
         .statefulMap(() => 0L)((index, elem) => (index + 1, (elem, index)), _ => None)
-        .runWith(TestSink.probe[(String, Long)])
+        .runWith(TestSink[(String, Long)]())
         .request(4)
         .expectNext(("A", 0L))
         .expectNext(("B", 1L))
@@ -230,7 +226,7 @@ class FlowStatefulMapSpec extends StreamSpec {
     }
 
     "be able to be used as bufferUntilChanged" in {
-      val sink = TestSink.probe[List[String]]
+      val sink = TestSink[List[String]]()
       Source("A" :: "B" :: "B" :: "C" :: "C" :: "C" :: "D" :: Nil)
         .statefulMap(() => List.empty[String])(
           (buffer, elem) =>
@@ -260,7 +256,7 @@ class FlowStatefulMapSpec extends StreamSpec {
             },
           _ => None)
         .collect({ case Some(elem) => elem })
-        .runWith(TestSink.probe[String])
+        .runWith(TestSink[String]())
         .request(4)
         .expectNext("A")
         .expectNext("B")
@@ -279,7 +275,7 @@ class FlowStatefulMapSpec extends StreamSpec {
             closedCounter.incrementAndGet()
             None
           })
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
 
       probe.request(1)
       probe.expectError(TE("failing read"))
@@ -297,7 +293,7 @@ class FlowStatefulMapSpec extends StreamSpec {
           }
           None
         })
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
 
       EventFilter[TE](occurrences = 1).intercept {
         probe.request(1)
