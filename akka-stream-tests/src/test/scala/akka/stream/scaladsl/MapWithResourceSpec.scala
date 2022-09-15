@@ -236,16 +236,20 @@ class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "fail when close throws exception" in {
-      val out = TestSubscriber.probe[String]()
-      Source
-        .single(1)
+      val (pub, sub) = TestSource
+        .probe[Int]
         .mapWithResource(() => Iterator("a"))((it, _) => if (it.hasNext) Some(it.next()) else None, _ => throw TE(""))
         .collect { case Some(line) => line }
-        .runWith(Sink.fromSubscriber(out))
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
 
-      out.request(61)
-      out.expectNext("a")
-      out.expectError(TE(""))
+      pub.ensureSubscription()
+      sub.ensureSubscription()
+      sub.request(1)
+      pub.sendNext(1)
+      sub.expectNext("a")
+      pub.sendComplete()
+      sub.expectError(TE(""))
     }
 
     "not close the resource twice when read fails" in {
