@@ -4,7 +4,6 @@
 
 package docs.stream
 
-import scala.util._
 import scala.concurrent.duration._
 import scala.concurrent._
 
@@ -121,7 +120,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#test-source-probe
     val sinkUnderTest = Sink.cancelled
 
-    TestSource.probe[Int].toMat(sinkUnderTest)(Keep.left).run().expectCancellation()
+    TestSource[Int]().toMat(sinkUnderTest)(Keep.left).run().expectCancellation()
     //#test-source-probe
   }
 
@@ -129,7 +128,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#injecting-failure
     val sinkUnderTest = Sink.head[Int]
 
-    val (probe, future) = TestSource.probe[Int].toMat(sinkUnderTest)(Keep.both).run()
+    val (probe, future) = TestSource[Int]().toMat(sinkUnderTest)(Keep.both).run()
     probe.sendError(new Exception("boom"))
 
     assert(future.failed.futureValue.getMessage == "boom")
@@ -143,7 +142,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
       pattern.after(10.millis * sleep, using = system.scheduler)(Future.successful(sleep))
     }
 
-    val (pub, sub) = TestSource.probe[Int].via(flowUnderTest).toMat(TestSink[Int]())(Keep.both).run()
+    val (pub, sub) = TestSource[Int]().via(flowUnderTest).toMat(TestSink[Int]())(Keep.both).run()
 
     sub.request(n = 3)
     pub.sendNext(3)

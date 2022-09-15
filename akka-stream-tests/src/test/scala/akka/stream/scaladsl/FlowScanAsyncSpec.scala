@@ -33,15 +33,14 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
     }
 
     "work with a empty source" in {
-      Source.empty[Int].via(sumScanFlow).runWith(TestSink.probe[Int]).request(1).expectNextOrComplete(0)
+      Source.empty[Int].via(sumScanFlow).runWith(TestSink[Int]()).request(1).expectNextOrComplete(0)
     }
 
     "complete after zero-element has been consumed" in {
       val (pub, sub) =
-        TestSource
-          .probe[Int]
+        TestSource[Int]()
           .via(Flow[Int].scanAsync(0)((acc, in) => Future.successful(acc + in)))
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink())(Keep.both)
           .run()
 
       sub.request(10)
@@ -52,10 +51,9 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
 
     "complete after stream has been consumed and pending futures resolved" in {
       val (pub, sub) =
-        TestSource
-          .probe[Int]
+        TestSource[Int]()
           .via(Flow[Int].scanAsync(0)((acc, in) => Future.successful(acc + in)))
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink())(Keep.both)
           .run()
 
       pub.sendNext(1)
@@ -68,10 +66,9 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
 
     "fail after zero-element has been consumed" in {
       val (pub, sub) =
-        TestSource
-          .probe[Int]
+        TestSource[Int]()
           .via(Flow[Int].scanAsync(0)((acc, in) => Future.successful(acc + in)))
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink())(Keep.both)
           .run()
 
       sub.request(10)
@@ -81,7 +78,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
     }
 
     "work with a single source" in {
-      Source.single(1).via(sumScanFlow).runWith(TestSink.probe[Int]).request(2).expectNext(0, 1).expectComplete()
+      Source.single(1).via(sumScanFlow).runWith(TestSink[Int]()).request(2).expectNext(0, 1).expectComplete()
     }
 
     "work with a large source" in {
@@ -99,7 +96,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
       val elements = 1 :: 1 :: Nil
       Source(elements)
         .via(delayedFutureScanFlow)
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(3)
         .expectNext(100.milliseconds, 0)
         .expectNext(1.second, 1)
@@ -109,12 +106,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
 
     "throw error with a failed source" in {
       val expected = Utils.TE("failed source")
-      Source
-        .failed[Int](expected)
-        .via(sumScanFlow)
-        .runWith(TestSink.probe[Int])
-        .request(2)
-        .expectNextOrError(0, expected)
+      Source.failed[Int](expected).via(sumScanFlow).runWith(TestSink[Int]()).request(2).expectNextOrError(0, expected)
     }
 
     "with the restarting decider" should {
@@ -219,7 +211,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
       Source(elements)
         .via(failedScanFlow)
         .withAttributes(ActorAttributes.supervisionStrategy(decider))
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(elements.size + 1)
         .expectNext(zero)
     }
@@ -233,11 +225,10 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
         promises(next).future
       }
 
-      val (pub, sub) = TestSource
-        .probe[Int]
+      val (pub, sub) = TestSource[Int]()
         .via(promiseScanFlow)
         .withAttributes(ActorAttributes.supervisionStrategy(decider))
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
       sub.request(promises.size + 1)
@@ -257,7 +248,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
       Source(elements)
         .via(failedFutureScanFlow)
         .withAttributes(ActorAttributes.supervisionStrategy(decider))
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(elements.size + 1)
         .expectNext(zero)
     }
@@ -273,7 +264,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
       Source(elements)
         .via(nullFutureScanFlow)
         .withAttributes(ActorAttributes.supervisionStrategy(decider))
-        .runWith(TestSink.probe[String])
+        .runWith(TestSink[String]())
         .request(elements.size + 1)
         .expectNext(zero)
     }

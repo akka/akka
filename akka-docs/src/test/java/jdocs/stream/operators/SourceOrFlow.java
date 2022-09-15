@@ -15,7 +15,6 @@ import akka.japi.pf.PFBuilder;
 import akka.stream.Attributes;
 import akka.stream.javadsl.Flow;
 
-
 // #zip
 // #zip-with
 // #zip-with-index
@@ -162,16 +161,17 @@ class SourceOrFlow {
 
     // #concatLazy
   }
-  
+
   void concatAllLazyExample() {
     // #concatAllLazy
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));
-    Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8 , 9));
-    sourceA.concatAllLazy(sourceB, sourceC)
+    Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8, 9));
+    sourceA
+        .concatAllLazy(sourceB, sourceC)
         .fold(new StringJoiner(","), (joiner, input) -> joiner.add(String.valueOf(input)))
         .runForeach(System.out::println, system);
-    //prints 1,2,3,4,5,6,7,8,9
+    // prints 1,2,3,4,5,6,7,8,9
     // #concatAllLazy
   }
 
@@ -184,19 +184,20 @@ class SourceOrFlow {
 
     // #interleave
   }
-  
+
   void interleaveAllExample() {
     // #interleaveAll
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 7, 8));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(3, 4, 9));
     Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(5, 6));
-    sourceA.interleaveAll(Arrays.asList(sourceB, sourceC), 2, false)
-        .fold(new StringJoiner(","),(joiner, input) -> joiner.add(String.valueOf(input)))
+    sourceA
+        .interleaveAll(Arrays.asList(sourceB, sourceC), 2, false)
+        .fold(new StringJoiner(","), (joiner, input) -> joiner.add(String.valueOf(input)))
         .runForeach(System.out::println, system);
-    //prints 1,2,3,4,5,6,7,8,9
+    // prints 1,2,3,4,5,6,7,8,9
     // #interleaveAll
   }
-  
+
   void mergeExample() {
     // #merge
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
@@ -206,13 +207,14 @@ class SourceOrFlow {
 
     // #merge
   }
-  
+
   void mergeAllExample() {
     // #merge-all
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));
     Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8, 9, 10));
-    sourceA.mergeAll(Arrays.asList(sourceB, sourceC), false)
+    sourceA
+        .mergeAll(Arrays.asList(sourceB, sourceC), false)
         .runForeach(System.out::println, system);
     // merging is not deterministic, can for example print 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     // #merge-all

@@ -177,7 +177,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val combined1: Source[Int, BoundedSourceQueue[Int]] =
         Source.combineMat(queueSource, intSeqSource)(Concat(_))(Keep.left) //Keep.left (i.e. preserve queueSource's materialized value)
 
-      val (queue1, sinkProbe1) = combined1.toMat(TestSink.probe[Int])(Keep.both).run()
+      val (queue1, sinkProbe1) = combined1.toMat(TestSink[Int]())(Keep.both).run()
       sinkProbe1.request(6)
       queue1.offer(10)
       queue1.offer(20)
@@ -195,7 +195,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         //queueSource to be the second of combined source
         Source.combineMat(intSeqSource, queueSource)(Concat(_))(Keep.right) //Keep.right (i.e. preserve queueSource's materialized value)
 
-      val (queue2, sinkProbe2) = combined2.toMat(TestSink.probe[Int])(Keep.both).run()
+      val (queue2, sinkProbe2) = combined2.toMat(TestSink[Int]())(Keep.both).run()
       sinkProbe2.request(6)
       queue2.offer(10)
       queue2.offer(20)
@@ -380,7 +380,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val matValPoweredSource = Source.maybe[Int]
       val (mat, src) = matValPoweredSource.preMaterialize()
 
-      val probe = src.runWith(TestSink.probe[Int])
+      val probe = src.runWith(TestSink[Int]())
 
       probe.request(1)
       mat.success(Some(42))
@@ -392,8 +392,8 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
-      val probe1 = src.runWith(TestSink.probe[String])
-      val probe2 = src.runWith(TestSink.probe[String])
+      val probe1 = src.runWith(TestSink[String]())
+      val probe2 = src.runWith(TestSink[String]())
 
       probe1.request(1)
       probe2.request(1)
@@ -406,7 +406,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
-      val probe1 = src.runWith(TestSink.probe[String])
+      val probe1 = src.runWith(TestSink[String]())
       src.runWith(Sink.cancelled)
 
       probe1.request(1)
@@ -418,8 +418,8 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
-      val probe1 = src.runWith(TestSink.probe[String])
-      val probe2 = src.runWith(TestSink.probe[String])
+      val probe1 = src.runWith(TestSink[String]())
+      val probe2 = src.runWith(TestSink[String]())
 
       mat.fail(new RuntimeException("boom"))
 

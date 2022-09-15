@@ -45,12 +45,11 @@ class InboundControlJunctionSpec
       val observerProbe = TestProbe()
       val recipient = OptionVal.None // not used
 
-      val ((upstream, controlSubject), downstream) = TestSource
-        .probe[AnyRef]
+      val ((upstream, controlSubject), downstream) = TestSource[AnyRef]()
         .map(msg => InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, OptionVal.None))
         .viaMat(new InboundControlJunction)(Keep.both)
         .map { case env: InboundEnvelope => env.message }
-        .toMat(TestSink.probe[Any])(Keep.both)
+        .toMat(TestSink[Any]())(Keep.both)
         .run()
 
       controlSubject.attach(new ControlMessageObserver {

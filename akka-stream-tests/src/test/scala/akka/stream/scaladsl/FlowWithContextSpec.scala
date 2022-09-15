@@ -24,7 +24,7 @@ class FlowWithContextSpec extends StreamSpec {
         .asSourceWithContext(_.offset)
         .via(flowWithContext)
         .asSource
-        .runWith(TestSink.probe[(Message, Long)])
+        .runWith(TestSink[(Message, Long)]())
         .request(1)
         .expectNext(((Message("az", 1L), 1L)))
         .expectComplete()
@@ -39,7 +39,7 @@ class FlowWithContextSpec extends StreamSpec {
         .mapMaterializedValue(_ => 42)
         .asSourceWithContext(_.offset)
         .viaMat(mapMaterializedValueFlow)(Keep.both)
-        .toMat(TestSink.probe[(Message, Long)])(Keep.both)
+        .toMat(TestSink[(Message, Long)]())(Keep.both)
         .run()
       matValue shouldBe (42 -> materializedValue)
       probe.request(1).expectNext(((Message("a", 1L), 1L))).expectComplete()
@@ -60,7 +60,7 @@ class FlowWithContextSpec extends StreamSpec {
         }
         .asSourceWithContext(_.offset)
         .via(mapErrorFlow)
-        .runWith(TestSink.probe[(Message, Long)])
+        .runWith(TestSink[(Message, Long)]())
         .request(3)
         .expectNext((Message("a", 1L), 1L))
         .expectNext((Message("a", 2L), 2L))
@@ -78,7 +78,7 @@ class FlowWithContextSpec extends StreamSpec {
       SourceWithContext
         .fromTuples(Source(data))
         .via(baseFlow)
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
         .request(4)
         .expectNext((1, 1), (2, 2), (3, 3), (4, 4))
         .expectComplete()

@@ -29,9 +29,9 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
   "mergeLatest" must {
 
     "start emit values only after each input stream emitted value" in assertAllStagesStopped {
-      val up1 = TestSource.probe[Int]
-      val up2 = TestSource.probe[Int]
-      val up3 = TestSource.probe[Int]
+      val up1 = TestSource[Int]()
+      val up2 = TestSource[Int]()
+      val up3 = TestSource[Int]()
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
       val (in1, in2, in3) = RunnableGraph
@@ -63,9 +63,9 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
     }
 
     "update values after message from one stream" in assertAllStagesStopped {
-      val up1 = TestSource.probe[Int]
-      val up2 = TestSource.probe[Int]
-      val up3 = TestSource.probe[Int]
+      val up1 = TestSource[Int]()
+      val up2 = TestSource[Int]()
+      val up3 = TestSource[Int]()
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
       val (in1, in2, in3) = RunnableGraph
@@ -129,8 +129,8 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
     }
 
     "complete stage if eagerComplete is set and one of input stream finished" in assertAllStagesStopped {
-      val up1 = TestSource.probe[Int]
-      val up2 = TestSource.probe[Int]
+      val up1 = TestSource[Int]()
+      val up2 = TestSource[Int]()
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
       val (in1, _) = RunnableGraph

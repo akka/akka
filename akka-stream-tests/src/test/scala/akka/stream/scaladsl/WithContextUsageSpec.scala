@@ -27,7 +27,7 @@ class WithContextUsageSpec extends StreamSpec {
 
       src
         .map { case (e, _) => e }
-        .runWith(TestSink.probe[Record])
+        .runWith(TestSink[Record]())
         .request(input.size)
         .expectNextN(expectedRecords)
         .expectComplete()
@@ -53,7 +53,7 @@ class WithContextUsageSpec extends StreamSpec {
 
       src
         .map { case (e, _) => e }
-        .runWith(TestSink.probe[Record])
+        .runWith(TestSink[Record]())
         .request(input.size)
         .expectNextN(expectedRecords)
         .expectComplete()
@@ -79,7 +79,7 @@ class WithContextUsageSpec extends StreamSpec {
 
       src
         .map { case (e, _) => e }
-        .runWith(TestSink.probe[Record])
+        .runWith(TestSink[Record]())
         .request(expectedRecords.size)
         .expectNextN(expectedRecords)
         .expectComplete()
@@ -105,7 +105,7 @@ class WithContextUsageSpec extends StreamSpec {
 
       src
         .map { case (e, _) => e }
-        .runWith(TestSink.probe[MultiRecord])
+        .runWith(TestSink[MultiRecord]())
         .request(expectedMultiRecords.size)
         .expectNextN(expectedMultiRecords)
         .expectComplete()
@@ -140,7 +140,7 @@ class WithContextUsageSpec extends StreamSpec {
 
       src
         .map { case (e, _) => e }
-        .runWith(TestSink.probe[MultiRecord])
+        .runWith(TestSink[MultiRecord]())
         .request(expectedMultiRecords.size)
         .expectNextN(expectedMultiRecords)
         .expectComplete()
@@ -172,7 +172,7 @@ class WithContextUsageSpec extends StreamSpec {
 
   def commitOffsets = commit[Offset](Offset.Uninitialized)
   def commit[Ctx](uninitialized: Ctx): Sink[Ctx, Probe[Ctx]] = {
-    val testSink = TestSink.probe[Ctx]
+    val testSink = TestSink[Ctx]()
     Flow[Ctx]
       .statefulMapConcat { () =>
         {

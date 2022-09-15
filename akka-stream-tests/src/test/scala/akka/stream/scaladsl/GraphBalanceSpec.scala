@@ -173,7 +173,7 @@ class GraphBalanceSpec extends StreamSpec("""
     }
 
     "fairly balance between three outputs" in {
-      val probe = TestSink.probe[Int]
+      val probe = TestSink[Int]()
       val (p1, p2, p3) = RunnableGraph
         .fromGraph(GraphDSL.createGraph(probe, probe, probe)(Tuple3.apply) { implicit b => (o1, o2, o3) =>
           val balance = b.add(Balance[Int](3))

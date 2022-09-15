@@ -201,7 +201,7 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
       val s1 = Source.fromPublisher(publisher1)
       val s2 = Source.fromPublisher(publisher2)
       val probeSink =
-        (if (eager) s1.concat(s2) else s1.concatLazy(s2)).runWith(TestSink.probe[Int])
+        (if (eager) s1.concat(s2) else s1.concatLazy(s2)).runWith(TestSink[Int]())
 
       val sub1 = publisher1.expectSubscription()
       val sub2 = publisher2.expectSubscription()
