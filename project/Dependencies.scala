@@ -26,22 +26,8 @@ object Dependencies {
   val logbackVersion = "1.2.11"
   val scalaFortifyVersion = "1.0.22"
   val fortifySCAVersion = "22.1"
-
-  val jacksonCoreVersion = Def.setting {
-    if (scalaVersion.value.startsWith("3.")) {
-      "2.13.2"
-    } else {
-      "2.11.4"
-    }
-  }
-
-  val jacksonDatabindVersion = Def.setting {
-    if (scalaVersion.value.startsWith("3.")) {
-      "2.13.2.2"
-    } else {
-      jacksonCoreVersion.value
-    }
-  }
+  val jacksonCoreVersion = "2.13.4"
+  val jacksonDatabindVersion = jacksonCoreVersion
 
   val scala212Version = "2.12.16"
   val scala213Version = "2.13.8"
@@ -129,30 +115,14 @@ object Dependencies {
 
     val asnOne = ("com.hierynomus" % "asn-one" % "0.5.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
 
-    val jacksonCore = Def.setting {
-      "com.fasterxml.jackson.core" % "jackson-core" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonAnnotations = Def.setting {
-      "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonDatabind = Def.setting {
-      "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion.value
-    } // ApacheV2
-    val jacksonJdk8 = Def.setting {
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonJsr310 = Def.setting {
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonScala = Def.setting {
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonParameterNames = Def.setting {
-      "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonCbor = Def.setting {
-      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonCoreVersion.value
-    } // ApacheV2
+    val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonCoreVersion // ApacheV2
+    val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonCoreVersion // ApacheV2
+    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion // ApacheV2
+    val jacksonJdk8 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonCoreVersion // ApacheV2
+    val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonCoreVersion // ApacheV2
+    val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonCoreVersion // ApacheV2
+    val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonCoreVersion // ApacheV2
+    val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonCoreVersion // ApacheV2
     val lz4Java = "org.lz4" % "lz4-java" % "1.8.0" // ApacheV2
 
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
@@ -344,14 +314,14 @@ object Dependencies {
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative, TestDependencies.logback)
 
   val jackson = l ++= Seq(
-        jacksonCore.value,
-        jacksonAnnotations.value,
-        jacksonDatabind.value,
-        jacksonJdk8.value,
-        jacksonJsr310.value,
-        jacksonParameterNames.value,
-        jacksonCbor.value,
-        jacksonScala.value,
+        jacksonCore,
+        jacksonAnnotations,
+        jacksonDatabind,
+        jacksonJdk8,
+        jacksonJsr310,
+        jacksonParameterNames,
+        jacksonCbor,
+        jacksonScala,
         lz4Java,
         TestDependencies.junit,
         TestDependencies.scalatest.value)
