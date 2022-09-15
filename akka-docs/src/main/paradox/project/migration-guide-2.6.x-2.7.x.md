@@ -24,3 +24,13 @@ No deprecated features or APIs have been removed in Akka 2.7.x.
 The Jackson dependency for @ref:[Serialization with Jackson](../serialization-jackson.md) has been updated to 2.13.4
 in Akka 2.7.0. That bump includes many fixes and changes to Jackson, but it should not introduce any incompatibility
 in serialized format.
+
+## Default configuration changes
+
+### Persistence plugin-dispatcher
+
+The default `plugin-dispatcher` for Akka Persistence plugins has been changed to use the ordinary
+`akka.actor.default-dispatcher`.
+
+Previously it used a `PinnedDispatcher`, which wasn't a good default choice and most plugins have already
+overridden that setting.
