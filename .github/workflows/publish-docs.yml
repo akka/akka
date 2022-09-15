@@ -22,7 +22,7 @@ jobs:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
       - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v13
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
       - name: Publish

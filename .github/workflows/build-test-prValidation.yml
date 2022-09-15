@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 8
-        uses: olafurpg/setup-scala@v13
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.8.0
 
@@ -45,7 +45,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 8
-        uses: olafurpg/setup-scala@v13
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.8.0
 
