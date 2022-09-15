@@ -131,7 +131,10 @@ object MapAsyncPartitioned extends App {
   // #mapAsyncPartitioned
   val eventsForEntities: Source[EntityEvent, NotUsed] = // ...
     // #mapAsyncPartitioned
-    Source.fromIterator { () => Iterator.from(1) }
+    Source
+      .fromIterator { () =>
+        Iterator.from(1)
+      }
       .throttle(1, 1.millis)
       .statefulMapConcat { () =>
         var countsPerEntity = immutable.Map.empty[Int, Int]
@@ -141,10 +144,7 @@ object MapAsyncPartitioned extends App {
             if (Random.nextBoolean || countsPerEntity.isEmpty) Random.nextInt(n)
             else {
               val m = Random.nextInt(countsPerEntity.size) + 1
-              countsPerEntity.keys.iterator
-                .take(m)
-                .drop(m - 1)
-                .next()
+              countsPerEntity.keys.iterator.take(m).drop(m - 1).next()
             }
           val seqNr = countsPerEntity.getOrElse(entityId, 0) + 1
           countsPerEntity = countsPerEntity + (entityId -> seqNr)
@@ -152,7 +152,7 @@ object MapAsyncPartitioned extends App {
         }
       }
       .take(1000)
-  
+
   // #mapAsyncPartitioned
   val partitioner: EntityEvent => Int = { event =>
     val partition = event.entityId
@@ -195,7 +195,8 @@ object MapAsyncPartitioned extends App {
     .flatMap { _ =>
       // give the printlns a chance to print
       akka.pattern.after(1.second)(Future.unit)
-    }.foreach { _ =>
+    }
+    .foreach { _ =>
       System.out.flush()
       sys.terminate()
     }

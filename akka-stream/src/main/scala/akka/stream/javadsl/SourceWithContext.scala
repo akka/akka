@@ -5,6 +5,7 @@
 package akka.stream.javadsl
 
 import java.util.concurrent.CompletionStage
+import java.util.function.BiFunction
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
@@ -38,7 +39,7 @@ object SourceWithContext {
  *
  * Can be created by calling [[Source.asSourceWithContext]]
  */
-final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithContext[Out, Ctx, Mat])
+final class SourceWithContext[Out, Ctx, +Mat](delegate: scaladsl.SourceWithContext[Out, Ctx, Mat])
     extends GraphDelegate(delegate) {
 
   /**
@@ -158,10 +159,29 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
   def map[Out2](f: function.Function[Out, Out2]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.map(f.apply))
 
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.mapAsync]].
+   *
+   * @see [[akka.stream.javadsl.Source.mapAsync]]
+   */
   def mapAsync[Out2](
       parallelism: Int,
       f: function.Function[Out, CompletionStage[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).toScala))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.mapAsyncPartitioned]].
+   *
+   * @see [[akka.stream.javadsl.Source.mapAsyncPartitioned]]
+   */
+  def mapAsyncPartitioned[Out2, P](
+      parallelism: Int,
+      perPartition: Int,
+      partitioner: function.Function[Out, P],
+      f: BiFunction[Out, P, CompletionStage[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
+    viaScala(_.mapAsyncPartitioned[Out2, P](parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
+      f(x, p).toScala
+    })
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.mapConcat]].

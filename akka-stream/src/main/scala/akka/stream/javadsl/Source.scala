@@ -2488,6 +2488,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.mapAsync(parallelism)(x => f(x).toScala))
 
+  /**
+   * @see [[akka.stream.javadsl.Flow.mapAsyncPartitioned]]
+   */
   def mapAsyncPartitioned[T, P](
       parallelism: Int,
       perPartition: Int,
