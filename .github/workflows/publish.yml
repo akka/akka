@@ -3,7 +3,6 @@ name: Publish
 on:
   push:
     branches:
-      - master
       - main
       # for testing the GH Action without merging to main,
       # in some cases

@@ -378,8 +378,6 @@ lazy val pki =
     .dependsOn(actor) // this dependency only exists for "@ApiMayChange"
     .settings(Dependencies.pki)
     .settings(AutomaticModuleName.settings("akka.pki"))
-    // The akka-pki artifact was added in Akka 2.6.2, no MiMa checks yet.
-    .disablePlugins(MimaPlugin)
 
 lazy val remote =
   akkaModule("akka-remote")
