@@ -217,7 +217,7 @@ class ReverseArrowSpec extends StreamSpec {
             src ~> f
             sink2 <~ f
             (the[IllegalArgumentException] thrownBy (s <~ f <~ src)).getMessage should include(
-              "[StatefulMapConcat.out] is already connected")
+              "[IterableSource.out] is already connected")
             ClosedShape
           })
           .run(),

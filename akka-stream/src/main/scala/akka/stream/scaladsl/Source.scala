@@ -346,7 +346,7 @@ object Source {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T, NotUsed] =
-    single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
+    fromGraph(new IterableSource[T](iterable))
 
   /**
    * Starts a new `Source` from the given `Future`. The stream will consist of
@@ -409,8 +409,7 @@ object Source {
    * Create a `Source` that will continually emit the given element.
    */
   def repeat[T](element: T): Source[T, NotUsed] = {
-    val next = Some((element, element))
-    unfold(element)(_ => next).withAttributes(DefaultAttributes.repeat)
+    fromIterator(() => Iterator.continually(element)).withAttributes(DefaultAttributes.repeat)
   }
 
   /**
