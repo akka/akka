@@ -66,8 +66,9 @@ object Paradox {
         "index.html",
         // Page that recommends Alpakka:
         "camel.html",
-        // TODO page not linked to
-        "fault-tolerance-sample.html"))
+        // not linked
+        "fault-tolerance-sample.html",
+        "project/migration-guide-2.4.x-2.5.x.html"))
 
   // FIXME https://github.com/lightbend/paradox/issues/350
   // Exclusions from direct compilation for includes dirs/files not belonging in a TOC
