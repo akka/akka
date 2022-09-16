@@ -17,3 +17,10 @@ Rolling updates of Akka Cluster from Akka 2.6.x to 2.7.x is fully supported.
 
 No deprecated features or APIs have been removed in Akka 2.7.x.
 
+## Dependency updates
+
+### Jackson
+
+The Jackson dependency for @ref:[Serialization with Jackson](../serialization-jackson.md) has been updated to 2.13.4
+in Akka 2.7.0. That bump includes many fixes and changes to Jackson, but it should not introduce any incompatibility
+in serialized format.
