@@ -467,13 +467,13 @@ import akka.stream.stage._
           handler(evt)
           if (promise ne GraphStageLogic.NoPromise) {
             promise.success(Done)
-            logic.onFeedbackDispatched()
+            logic.onFeedbackDispatched(promise)
           }
         } catch {
           case NonFatal(ex) =>
             if (promise ne GraphStageLogic.NoPromise) {
               promise.failure(ex)
-              logic.onFeedbackDispatched()
+              logic.onFeedbackDispatched(promise)
             }
             logic.failStage(ex)
         }
