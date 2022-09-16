@@ -6,13 +6,11 @@ package akka.remote.transport
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
-
 import FailureInjectorTransportAdapter._
-import scala.annotation.nowarn
 
+import scala.annotation.nowarn
 import akka.AkkaException
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
@@ -22,9 +20,11 @@ import akka.util.ByteString
 
 @SerialVersionUID(1L)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 final case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class FailureInjectorProvider extends TransportAdapterProvider {
 
   override def create(wrappedTransport: Transport, system: ExtendedActorSystem): Transport =
@@ -35,12 +35,14 @@ class FailureInjectorProvider extends TransportAdapterProvider {
 /**
  * INTERNAL API
  */
+@nowarn("msg=deprecated")
 private[remote] object FailureInjectorTransportAdapter {
   val FailureInjectorSchemeIdentifier = "gremlin"
 
   trait FailureInjectorCommand
   @SerialVersionUID(1L)
   @deprecated("Not implemented", "2.5.22")
+  @nowarn("msg=deprecated")
   final case class All(mode: GremlinMode)
   @SerialVersionUID(1L)
   final case class One(remoteAddress: Address, mode: GremlinMode)

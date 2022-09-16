@@ -5,7 +5,6 @@
 package docs.akka.persistence.typed
 
 import java.util.UUID
-
 import akka.actor.PoisonPill
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.scaladsl.Behaviors
@@ -32,8 +31,11 @@ import akka.persistence.typed.SnapshotAdapter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.concurrent.ScalaFutures
+
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+
+import scala.annotation.nowarn
 
 object PersistentFsmToTypedMigrationSpec {
   // cannot be moved to testkit journals as it requires sharing journal content across actor system instances
@@ -86,6 +88,7 @@ object ShoppingCartBehavior {
   class PersistentFsmEventAdapter extends EventAdapter[DomainEvent, Any] {
     override def toJournal(e: DomainEvent): Any = e
     override def manifest(event: DomainEvent): String = ""
+    @nowarn("msg=deprecated")
     override def fromJournal(journalEvent: Any, manifest: String): EventSeq[DomainEvent] = {
       journalEvent match {
         case _: StateChangeEvent =>

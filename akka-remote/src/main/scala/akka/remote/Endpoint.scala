@@ -171,6 +171,7 @@ private[remote] final case class ShutDownAssociation(localAddress: Address, remo
  * INTERNAL API
  */
 @SerialVersionUID(2L)
+@nowarn("msg=deprecated")
 private[remote] final case class InvalidAssociation(
     localAddress: Address,
     remoteAddress: Address,

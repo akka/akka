@@ -14,6 +14,8 @@ import scala.reflect.ClassTag
 
 import akka.util.Collections.EmptyImmutableSeq
 
+import scala.annotation.nowarn
+
 object ByteIterator {
   object ByteArrayIterator {
 
@@ -99,9 +101,11 @@ object ByteIterator {
       this
     }
 
+    @nowarn("msg=deprecated")
     override def copyToArray[B >: Byte](xs: Array[B], start: Int): Int =
       this.copyToArray(xs, start, xs.length)
 
+    @nowarn("msg=deprecated")
     override def copyToArray[B >: Byte](xs: Array[B]): Int =
       this.copyToArray(xs, 0, xs.length)
 
