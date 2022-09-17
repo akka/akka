@@ -76,6 +76,32 @@ class FlowStatefulMapAsyncSpec extends StreamSpec {
       probe.expectComplete()
     }
 
+    "got deterministic state shows up in every call of f when parallelism = 1" in {
+      val alphabet = "abcdefghijklmnopqrstuvwxyz"
+      val probe = Source(alphabet).statefulMapAsync[String, String](1)(
+        () =>
+          Future {
+            randomSleep()
+            ""
+          },
+        (str, char) =>
+          Future {
+            randomSleep()
+            str.appended(char) -> char.toString
+          },
+        str => Future.successful(Some(str)),
+        (_, y) => y)
+        .runWith(TestSink())
+
+      val sub = probe.ensureSubscription()
+
+      sub.request(alphabet.length)
+      probe.expectNextN(alphabet.length)
+      sub.request(1)
+      probe.expectNext(alphabet)
+      probe.expectComplete()
+    }
+
     "emulate mapAsync in happy case" in {
       implicit class EmulateMapAsync[Out, Mat](source: Source[Out, Mat]) {
         def emulatedMapAsync[U](parallelism: Int)(f: (Out) => Future[U]): Source[U, Mat] =
@@ -102,8 +128,6 @@ class FlowStatefulMapAsyncSpec extends StreamSpec {
       for (n <- 1 to 50) probe.expectNext(n)
       probe.expectComplete()
     }
-
-    // TODO try emulating UnfoldResourceAsync
 
   }
 
