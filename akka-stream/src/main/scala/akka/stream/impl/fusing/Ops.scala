@@ -2309,7 +2309,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
 
       // if release hasn't been called
       private var stateAcquired: Boolean = true
-      // if needed push element in state initialization callback
+      // if it is need to push element after state initialized
       // we need this flag bcs if stream ever been pushed or pulled at the time state doesn't available
       // that will require triggering push in create callback, but prevent push been triggered by just preStart
       private var tryPushAfterInitialized: Boolean = false
