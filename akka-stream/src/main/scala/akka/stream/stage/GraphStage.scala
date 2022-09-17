@@ -101,7 +101,7 @@ abstract class AbstractGraphStageWithMaterializedValue[+S <: Shape, M] extends G
  * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
  * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
  */
-abstract class GraphStage[S <: Shape] extends GraphStageWithMaterializedValue[S, NotUsed] {
+abstract class GraphStage[+S <: Shape] extends GraphStageWithMaterializedValue[S, NotUsed] {
   final override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, NotUsed) =
     (createLogic(inheritedAttributes), NotUsed)
 

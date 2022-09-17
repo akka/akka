@@ -272,6 +272,7 @@ object Source {
     apply(new immutable.Iterable[T] {
       override def iterator: Iterator[T] = f()
       override def toString: String = "() => Iterator"
+      override def hasDefiniteSize: Boolean = false
     })
 
   /**

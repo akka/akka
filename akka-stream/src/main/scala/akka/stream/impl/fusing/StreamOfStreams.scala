@@ -19,14 +19,18 @@ import akka.stream.Attributes.SourceLocation
 import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.ActorSubscriberMessage.OnError
+import akka.stream.impl.EmptySource
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.IterableSource
 import akka.stream.impl.fusing.GraphStages.SingleSource
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.OptionVal
 import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.nowarn
 
 /**
  * INTERNAL API
@@ -39,11 +43,11 @@ import akka.util.ccompat.JavaConverters._
   override def initialAttributes = DefaultAttributes.flattenMerge
   override val shape = FlowShape(in, out)
 
-  override def createLogic(enclosingAttributes: Attributes) =
-    new GraphStageLogic(shape) with OutHandler with InHandler {
+  override def createLogic(enclosingAttributes: Attributes): GraphStageLogic with InHandler with OutHandler =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
       var sources = Set.empty[SubSinkInlet[T]]
-      var pendingSingleSources = 0
-      def activeSources = sources.size + pendingSingleSources
+      var pendingDirectPushSources = 0
+      def activeSources: Int = sources.size + pendingDirectPushSources
 
       // To be able to optimize for SingleSource without materializing them the queue may hold either
       // SubSinkInlet[T] or SingleSource
@@ -60,15 +64,32 @@ import akka.util.ccompat.JavaConverters._
           case single: SingleSource[T] @unchecked =>
             push(out, single.elem)
             removeSource(single)
+          case iterableSource: IterableSource[T] @unchecked =>
+            handleIterableSource(iterableSource)
           case other =>
             throw new IllegalStateException(s"Unexpected source type in queue: '${other.getClass}'")
+        }
+      }
+
+      @nowarn("msg=deprecated")
+      private def handleIterableSource(iterableSource: IterableSource[T]): Unit = {
+        val elements = iterableSource.elements
+        if (elements.hasDefiniteSize) {
+          if (elements.isEmpty) {
+            removeSource(iterableSource)
+          } else if (elements.size == 1) {
+            push(out, elements.head)
+            removeSource(iterableSource)
+          }
+        } else {
+          emitMultiple(out, elements, () => removeSource(iterableSource))
         }
       }
 
       override def onPush(): Unit = {
         val source = grab(in)
         addSource(source)
-        if (activeSources < breadth) tryPull(in)
+        if (activeSources < breadth && !hasBeenPulled(in)) tryPull(in)
       }
 
       override def onUpstreamFinish(): Unit = if (activeSources == 0) completeStage()
@@ -87,32 +108,50 @@ import akka.util.ccompat.JavaConverters._
       def addSource(source: Graph[SourceShape[T], M]): Unit = {
         // If it's a SingleSource or wrapped such we can push the element directly instead of materializing it.
         // Have to use AnyRef because of OptionVal null value.
-        TraversalBuilder.getSingleSource(source.asInstanceOf[Graph[SourceShape[AnyRef], M]]) match {
-          case OptionVal.Some(single) =>
-            if (isAvailable(out) && queue.isEmpty) {
-              push(out, single.elem.asInstanceOf[T])
-            } else {
-              queue.enqueue(single)
-              pendingSingleSources += 1
+        TraversalBuilder.getDirectPushableSource(source.asInstanceOf[Graph[SourceShape[AnyRef], M]]) match {
+          case OptionVal.Some(s) =>
+            s.asInstanceOf[GraphStage[SourceShape[T]]] match {
+              case single: SingleSource[T] @unchecked =>
+                if (isAvailable(out) && queue.isEmpty) {
+                  push(out, single.elem)
+                } else {
+                  queue.enqueue(single)
+                  pendingDirectPushSources += 1
+                }
+              case iterable: IterableSource[T] @unchecked =>
+                pendingDirectPushSources += 1
+                if (isAvailable(out) && queue.isEmpty) {
+                  handleIterableSource(iterable)
+                } else {
+                  queue.enqueue(iterable)
+                }
+              case EmptySource =>
+                tryPullOrComplete()
+              case _ =>
+                addSourceWithMaterialization(source)
             }
           case _ =>
-            val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
-            sinkIn.setHandler(new InHandler {
-              override def onPush(): Unit = {
-                if (isAvailable(out)) {
-                  push(out, sinkIn.grab())
-                  sinkIn.pull()
-                } else {
-                  queue.enqueue(sinkIn)
-                }
-              }
-              override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
-            })
-            sinkIn.pull()
-            sources += sinkIn
-            val graph = Source.fromGraph(source).to(sinkIn.sink)
-            interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
+            addSourceWithMaterialization(source)
         }
+      }
+
+      private def addSourceWithMaterialization(source: Graph[SourceShape[T], M]): Unit = {
+        val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
+        sinkIn.setHandler(new InHandler {
+          override def onPush(): Unit = {
+            if (isAvailable(out)) {
+              push(out, sinkIn.grab())
+              sinkIn.pull()
+            } else {
+              queue.enqueue(sinkIn)
+            }
+          }
+          override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
+        })
+        sinkIn.pull()
+        sources += sinkIn
+        val graph = Source.fromGraph(source).to(sinkIn.sink)
+        interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
       }
 
       def removeSource(src: AnyRef): Unit = {
@@ -120,12 +159,20 @@ import akka.util.ccompat.JavaConverters._
         src match {
           case sub: SubSinkInlet[T] @unchecked =>
             sources -= sub
-          case _: SingleSource[_] =>
-            pendingSingleSources -= 1
+          case _: SingleSource[_] | _: IterableSource[_] =>
+            pendingDirectPushSources -= 1
           case other => throw new IllegalArgumentException(s"Unexpected source type: '${other.getClass}'")
         }
         if (pullSuppressed) tryPull(in)
         if (activeSources == 0 && isClosed(in)) completeStage()
+      }
+
+      private def tryPullOrComplete(): Unit = {
+        if (activeSources < breadth) {
+          tryPull(in)
+        } else if (activeSources == 0 && isClosed(in)) {
+          completeStage()
+        }
       }
 
       override def postStop(): Unit = sources.foreach(_.cancel())

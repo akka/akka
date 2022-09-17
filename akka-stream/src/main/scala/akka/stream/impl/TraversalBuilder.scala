@@ -6,14 +6,15 @@ package akka.stream.impl
 
 import scala.collection.immutable.Map.Map1
 import scala.language.existentials
-
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.TraversalBuilder.{ AnyFunction1, AnyFunction2 }
 import akka.stream.impl.fusing.GraphStageModule
+import akka.stream.impl.fusing.GraphStages.IterableSource
 import akka.stream.impl.fusing.GraphStages.SingleSource
 import akka.stream.scaladsl.Keep
+import akka.stream.stage.GraphStage
 import akka.util.OptionVal
 import akka.util.unused
 
@@ -365,6 +366,42 @@ import akka.util.unused
                   case _ => OptionVal.None
                 }
               case _ => OptionVal.None
+            }
+          case _ => OptionVal.None
+        }
+    }
+  }
+
+  /**
+   * Try to find `SingleSource` or wrapped such. This is used as a
+   * performance optimization in FlattenMerge and possibly other places.
+   */
+  def getDirectPushableSource[A >: Null](graph: Graph[SourceShape[A], _]): OptionVal[GraphStage[SourceShape[A]]] = {
+    graph match {
+      case single: SingleSource[A] @unchecked     => OptionVal.Some(single)
+      case iterable: IterableSource[A] @unchecked => OptionVal.Some(iterable)
+      case EmptySource                            => OptionVal.Some(EmptySource)
+      case _ =>
+        graph.traversalBuilder match {
+          case l: LinearTraversalBuilder =>
+            // It would be != EmptyTraversal if mapMaterializedValue was used and then we can't optimize.
+            if ((l.traversalSoFar ne EmptyTraversal) || l.attributes.isAsync) {
+              OptionVal.None
+            } else {
+              l.pendingBuilder match {
+                case OptionVal.Some(a: AtomicTraversalBuilder) =>
+                  a.module match {
+                    case m: GraphStageModule[_, _] =>
+                      m.stage match {
+                        case single: SingleSource[A] @unchecked     => OptionVal.Some(single)
+                        case iterable: IterableSource[A] @unchecked => OptionVal.Some(iterable)
+                        case EmptySource                            => OptionVal.Some(EmptySource)
+                        case _                                      => OptionVal.None
+                      }
+                    case _ => OptionVal.None
+                  }
+                case _ => OptionVal.None
+              }
             }
           case _ => OptionVal.None
         }
