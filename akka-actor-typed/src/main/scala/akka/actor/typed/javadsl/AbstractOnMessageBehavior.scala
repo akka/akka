@@ -53,7 +53,7 @@ abstract class AbstractOnMessageBehavior[T](context: ActorContext[T]) extends Ex
   def onSignal(signal: Signal): Behavior[T] = {
     signal match {
       case maf: MessageAdaptionFailure => throw maf.exception
-      case _ => this
+      case _                           => this
     }
   }
 
