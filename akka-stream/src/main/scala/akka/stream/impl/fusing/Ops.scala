@@ -2284,7 +2284,7 @@ private[akka] final class StatefulMap[S, In, Out](
  * INTERNAL API
  */
 private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
-    initialAttributes: Attributes,
+    attributes: Attributes,
     create: () => Future[S],
     //TODO (S, In) => (S, Future[Out]) seems more comfortable for user
     f: (S, In) => Future[(S, Out)],
@@ -2297,7 +2297,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
   private val in = Inlet[In]("StatefulMapAsync.in")
   private val out = Outlet[Out]("StatefulMapAsync.out")
 
-  override def initialAttributes = initialAttributes
+  override def initialAttributes = attributes
 
   override val shape = FlowShape(in, out)
 
@@ -2433,7 +2433,11 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
         buffer = BufferImpl(parallelism, inheritedAttributes)
       }
 
-      override def onPull(): Unit = pushNextIfPossible()
+      override def onPull(): Unit =
+        state match {
+          case Some(_) => pushNextIfPossible()
+          case None    => tryPushAfterInitialized = true
+        }
 
       override def onPush(): Unit = {
         val elem = grab(in)
@@ -2443,14 +2447,13 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
             pullIfNeeded()
           case None =>
             earlyPulledElem = Some(elem)
-            pushNextIfPossible()
+            tryPushAfterInitialized = true
         }
       }
 
       @tailrec
       private def pushNextIfPossible(): Unit =
-        if (state.isEmpty) tryPushAfterInitialized = true
-        else if (earlyPulledElem.isDefined) applyUserFunction(earlyPulledElem.get)
+        if (earlyPulledElem.isDefined) applyUserFunction(earlyPulledElem.get)
         else if (buffer.isEmpty) pullIfNeeded()
         else if (buffer.peek().elem eq NotYetThere) pullIfNeeded() // ahead of line blocking to keep order
         else if (isAvailable(out)) {
