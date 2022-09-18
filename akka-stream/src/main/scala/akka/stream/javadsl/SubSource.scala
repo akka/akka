@@ -38,7 +38,7 @@ object SubSource {
  * SubFlows cannot contribute to the super-flow’s materialized value since they
  * are materialized later, during the runtime of the flow graph processing.
  */
-class SubSource[Out, Mat](
+final class SubSource[Out, Mat](
     delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[Out, Mat]#Repr, scaladsl.RunnableGraph[Mat]]) {
 
   /** Converts this Flow to its Scala DSL counterpart */
