@@ -2284,6 +2284,7 @@ private[akka] final class StatefulMap[S, In, Out](
  * INTERNAL API
  */
 private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
+    initialAttributes: Attributes,
     create: () => Future[S],
     //TODO (S, In) => (S, Future[Out]) seems more comfortable for user
     f: (S, In) => Future[(S, Out)],
@@ -2296,7 +2297,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
   private val in = Inlet[In]("StatefulMapAsync.in")
   private val out = Outlet[Out]("StatefulMapAsync.out")
 
-  override def initialAttributes = DefaultAttributes.statefulMapAsync and SourceLocation.forLambda(f)
+  override def initialAttributes = initialAttributes
 
   override val shape = FlowShape(in, out)
 

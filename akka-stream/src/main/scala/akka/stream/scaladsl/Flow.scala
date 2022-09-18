@@ -1036,7 +1036,13 @@ trait FlowOps[+Out, +Mat] {
       f: (S, Out) => Future[(S, T)],
       onComplete: S => Future[Option[T]],
       combineState: (S, S) => S): Repr[T] =
-    via(new StatefulMapAsync[S, Out, T](parallelism)(create, f, onComplete, combineState))
+    via(
+      new StatefulMapAsync[S, Out, T](parallelism)(
+        DefaultAttributes.statefulMapAsync and SourceLocation.forLambda(f),
+        create,
+        f,
+        onComplete,
+        combineState))
 
   /**
    * Transform each stream element with the help of a resource.
