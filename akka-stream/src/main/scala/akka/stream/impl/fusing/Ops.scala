@@ -2518,6 +2518,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
         state match {
           case Some(s) =>
             val future = onComplete(s)
+            stateAcquired = false
             future.value match {
               case Some(v) => emitThenFailOrCompleteStage(None, v); initState()
               case None    => future.onComplete(v => releaseCB(None -> v))(akka.dispatch.ExecutionContexts.parasitic)
