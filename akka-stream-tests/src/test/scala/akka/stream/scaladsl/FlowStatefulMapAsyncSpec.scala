@@ -51,20 +51,21 @@ class FlowStatefulMapAsyncSpec extends StreamSpec {
 
     "combine state orderly" in {
       val alphabet = "abcdefghijklmnopqrstuvwxyz"
-      val probe = Source(alphabet).statefulMapAsync[String, String](10)(
-        () =>
-          Future {
-            randomSleep()
-            ""
-          },
-        (str, char) =>
-          Future {
-            randomSleep()
-            // current state isn't always the most updated snapshot
-            char.toString -> str
-          },
-        str => Future.successful(Some(str)),
-        _ ++ _)
+      val probe = Source(alphabet)
+        .statefulMapAsync[String, String](10)(
+          () =>
+            Future {
+              randomSleep()
+              ""
+            },
+          (str, char) =>
+            Future {
+              randomSleep()
+              // current state isn't always the most updated snapshot
+              char.toString -> str
+            },
+          str => Future.successful(Some(str)),
+          _ ++ _)
         .runWith(TestSink())
 
       val sub = probe.ensureSubscription()
@@ -78,19 +79,20 @@ class FlowStatefulMapAsyncSpec extends StreamSpec {
 
     "got deterministic state shows up in every call of f when parallelism = 1" in {
       val alphabet = "abcdefghijklmnopqrstuvwxyz"
-      val probe = Source(alphabet).statefulMapAsync[String, String](1)(
-        () =>
-          Future {
-            randomSleep()
-            ""
-          },
-        (str, char) =>
-          Future {
-            randomSleep()
-            str.appended(char) -> char.toString
-          },
-        str => Future.successful(Some(str)),
-        (_, y) => y)
+      val probe = Source(alphabet)
+        .statefulMapAsync[String, String](1)(
+          () =>
+            Future {
+              randomSleep()
+              ""
+            },
+          (str, char) =>
+            Future {
+              randomSleep()
+              str.appended(char) -> char.toString
+            },
+          str => Future.successful(Some(str)),
+          (_, y) => y)
         .runWith(TestSink())
 
       val sub = probe.ensureSubscription()
