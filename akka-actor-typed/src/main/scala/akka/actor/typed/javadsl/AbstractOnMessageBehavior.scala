@@ -52,12 +52,12 @@ abstract class AbstractOnMessageBehavior[T](context: ActorContext[T]) extends Ex
   @throws(classOf[Exception])
   def onSignal(signal: Signal): Behavior[T] = {
     signal match {
-      case maf: MessageAdaptionFailure => throw maf.exception
-      case _                           => this
+      case _: MessageAdaptionFailure => Behaviors.unhandled
+      case _                         => this
     }
   }
 
-  protected def getContext: ActorContext[T] = context
+  final protected def getContext: ActorContext[T] = context
 
   @throws(classOf[Exception])
   override final def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] = {
