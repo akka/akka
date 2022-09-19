@@ -415,7 +415,7 @@ public class BasicPersistentBehaviorTest {
 
       // #custom-stash-buffer
       @Override
-      public Optional<Integer> withStashCapacity() {
+      public Optional<Integer> stashCapacity() {
         return Optional.of(100);
       }
       // #custom-stash-buffer

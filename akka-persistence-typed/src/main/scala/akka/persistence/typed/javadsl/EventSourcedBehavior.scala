@@ -227,8 +227,8 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       else
         behaviorWithSignalHandler
 
-    if (withStashCapacity.isPresent()) {
-      withSignalHandler.withStashCapacity(withStashCapacity.get)
+    if (stashCapacity.isPresent()) {
+      withSignalHandler.withStashCapacity(stashCapacity.get)
     } else {
       withSignalHandler
     }
@@ -246,7 +246,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * Override to define a custom stash capacity per entity.
    * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
    */
-  def withStashCapacity: Optional[java.lang.Integer] = Optional.empty()
+  def stashCapacity: Optional[java.lang.Integer] = Optional.empty()
 
 }
 

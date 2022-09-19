@@ -136,10 +136,16 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
       if (handler.isEmpty) behavior
       else behavior.receiveSignal(handler.handler)
 
-    if (onPersistFailure.isPresent)
+    val withSignalHandler = if (onPersistFailure.isPresent)
       behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
     else
       behaviorWithSignalHandler
+
+    if (stashCapacity.isPresent()) {
+      withSignalHandler.withStashCapacity(stashCapacity.get)
+    } else {
+      withSignalHandler
+    }
   }
 
   /**
@@ -148,6 +154,12 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
   final def lastSequenceNumber(ctx: ActorContext[_]): Long = {
     scaladsl.DurableStateBehavior.lastSequenceNumber(ctx.asScala)
   }
+
+  /**
+   * Override to define a custom stash capacity per entity.
+   * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
+   */
+  def stashCapacity: Optional[java.lang.Integer] = Optional.empty()
 
 }
 
