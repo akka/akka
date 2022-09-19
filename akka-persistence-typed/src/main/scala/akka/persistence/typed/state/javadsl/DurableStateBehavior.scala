@@ -136,10 +136,11 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
       if (handler.isEmpty) behavior
       else behavior.receiveSignal(handler.handler)
 
-    val withSignalHandler = if (onPersistFailure.isPresent)
-      behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
-    else
-      behaviorWithSignalHandler
+    val withSignalHandler =
+      if (onPersistFailure.isPresent)
+        behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
+      else
+        behaviorWithSignalHandler
 
     if (stashCapacity.isPresent()) {
       withSignalHandler.withStashCapacity(stashCapacity.get)
