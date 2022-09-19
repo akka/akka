@@ -412,6 +412,25 @@ former simply speaks more languages than the latter. The opposite would be
 problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] where
 @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] is required will lead to a type error.
 
+#### AbstractOnMessageBehavior API
+
+@java[The `AbstractBehavior` API typically makes heavy use of builders which allows `instanceof` checks and casts to be
+performed "behind the scenes".  In some cases, it may be preferred to use a more "direct" style where a `Behavior`
+is, essentially, a function converting a message into a successor `Behavior`.  In contrast to builders, this style
+may have sufficiently reduced runtime overhead to be worth a little extra verbosity (recently-added Java features
+under the "pattern-matching" umbrella may substantially reduce that verbosity).]
+
+@java[To support this style, an alternative API for defining behavior in an object-oriented style is available by
+extending @apidoc(typed.javadsl.AbstractOnMessageBehavior).]
+
+@java[Here's the `AbstractOnMessageBehavior`-based implementation of the chat room protocol:]
+
+Scala
+: The Java API exposes the `AbstractOnMessageBehavior` API as the semantic equivalent of the Scala `AbstractBehavior` API
+
+Java
+: @@snip [OnMessageIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OnMessageIntroTest.java) {  #chatroom-behavior }
+
 #### Try it out
 
 In order to see this chat room in action we need to write a client Actor that can use it
