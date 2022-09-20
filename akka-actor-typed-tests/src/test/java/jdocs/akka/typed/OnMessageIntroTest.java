@@ -43,7 +43,6 @@ public interface OnMessageIntroTest {
       }
     }
     // #chatroom-protocol
-    // #chatroom-behavior
     private static final class PublishSessionMessage implements RoomCommand {
       public final String screenName;
       public final String message;
@@ -53,7 +52,6 @@ public interface OnMessageIntroTest {
         this.message = message;
       }
     }
-    // #chatroom-behavior
     // #chatroom-protocol
 
     static interface SessionEvent {}
@@ -139,10 +137,12 @@ public interface OnMessageIntroTest {
          *   }
          *
          * JEPs 420 and 427 make possibly-useful extensions to JEP 406 in post-17 Java versions.
-         *
-         * TODO: when we're comfortable with requiring JDK17 for development, replace this with
-         * JEP406 example
          */
+		// #chatroom-behavior
+        /* TODO: when we're comfortable with requiring JDK17 for development, replace this with
+         * JEP406 example
+		 */
+		// #chatroom-behavior
         if (msg instanceof GetSession) {
           return onGetSession((GetSession) msg);
         } else if (msg instanceof PublishSessionMessage) {
@@ -201,7 +201,9 @@ public interface OnMessageIntroTest {
 
       @Override
       public Behavior<SessionCommand> onMessage(SessionCommand msg) {
+		// #chatroom-behavior
         // TODO: JEP406ify
+		// #chatroom-behavior
         if (msg instanceof PostMessage) {
           // from client, publish to others via the room
           room.tell(new PublishSessionMessage(screenName, ((PostMessage) msg).message));
