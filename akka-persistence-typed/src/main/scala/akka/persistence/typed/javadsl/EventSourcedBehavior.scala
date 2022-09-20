@@ -227,7 +227,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       else
         behaviorWithSignalHandler
 
-    if (stashCapacity.isPresent()) {
+    if (stashCapacity.isPresent) {
       withSignalHandler.withStashCapacity(stashCapacity.get)
     } else {
       withSignalHandler
