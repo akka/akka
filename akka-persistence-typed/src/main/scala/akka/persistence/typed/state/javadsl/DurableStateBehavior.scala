@@ -142,7 +142,7 @@ abstract class DurableStateBehavior[Command, State] private[akka] (
       else
         behaviorWithSignalHandler
 
-    if (stashCapacity.isPresent()) {
+    if (stashCapacity.isPresent) {
       withSignalHandler.withStashCapacity(stashCapacity.get)
     } else {
       withSignalHandler
