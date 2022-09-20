@@ -703,14 +703,14 @@ private[stream] final class WireTap[T] extends GraphStage[FanOutShape2[T, T, T]]
   val in: Inlet[T] = Inlet[T]("WireTap.in")
   val outMain: Outlet[T] = Outlet[T]("WireTap.outMain")
   val outTap: Outlet[T] = Outlet[T]("WireTap.outTap")
-  override def initialAttributes = DefaultAttributes.wireTap
+  override def initialAttributes: Attributes = DefaultAttributes.wireTap
   override val shape: FanOutShape2[T, T, T] = new FanOutShape2(in, outMain, outTap)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    private var pendingTap: Option[T] = None
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      private var pendingTap: Option[T] = None
 
-    setHandler(in, new InHandler {
-      override def onPush() = {
+      override def onPush(): Unit = {
         val elem = grab(in)
         push(outMain, elem)
         if (isAvailable(outTap)) {
@@ -719,42 +719,41 @@ private[stream] final class WireTap[T] extends GraphStage[FanOutShape2[T, T, T]]
           pendingTap = Some(elem)
         }
       }
-    })
-
-    setHandler(outMain, new OutHandler {
-      override def onPull() = {
+      override def onPull(): Unit = {
         pull(in)
       }
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         cancelStage(cause)
       }
-    })
 
-    // The 'tap' output can neither backpressure, nor cancel, the stage.
-    setHandler(
-      outTap,
-      new OutHandler {
-        override def onPull() = {
-          pendingTap match {
-            case Some(elem) =>
-              push(outTap, elem)
-              pendingTap = None
-            case None => // no pending element to emit
-          }
-        }
-
-        override def onDownstreamFinish(cause: Throwable): Unit = {
-          setHandler(in, new InHandler {
-            override def onPush() = {
-              push(outMain, grab(in))
+      // The 'tap' output can neither backpressure, nor cancel, the stage.
+      setHandler(
+        outTap,
+        new OutHandler {
+          override def onPull() = {
+            pendingTap match {
+              case Some(elem) =>
+                push(outTap, elem)
+                pendingTap = None
+              case None => // no pending element to emit
             }
-          })
-          // Allow any outstanding element to be garbage-collected
-          pendingTap = None
-        }
-      })
-  }
+          }
+
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            setHandler(in, new InHandler {
+              override def onPush() = {
+                push(outMain, grab(in))
+              }
+            })
+            // Allow any outstanding element to be garbage-collected
+            pendingTap = None
+          }
+        })
+
+      setHandlers(in, outMain, this)
+
+    }
   override def toString = "WireTap"
 }
 
