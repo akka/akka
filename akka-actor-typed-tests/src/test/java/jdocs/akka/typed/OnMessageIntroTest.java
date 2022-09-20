@@ -6,12 +6,18 @@ package jdocs.akka.typed;
 
 // #imports
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
+// #imports
+import akka.actor.typed.Terminated;
+import akka.actor.typed.javadsl.AbstractBehavior;
+// #imports
 import akka.actor.typed.javadsl.AbstractOnMessageBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
-
 // #imports
+import akka.actor.typed.javadsl.Receive;
+import akka.actor.typed.javadsl.ReceiveBuilder;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -20,197 +26,198 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface OnMessageIntroTest {
-	// #chatroom-behavior
-	public class ChatRoom {
-		// #chatroom-behavior
-		// #chatroom-protocol
-		static interface RoomCommand {}
 
-		public static final class GetSession implements RoomCommand {
-			public final String screenName;
-			public final ActorRef<SessionEvent> replyTo;
+  // #chatroom-behavior
+  public class ChatRoom {
+    // #chatroom-behavior
+    // #chatroom-protocol
+    static interface RoomCommand {}
 
-			public GetSession(String screenName, ActorRef<SessionEvent> replyTo) {
-				this.screenName = screenName;
-				this.replyTo = replyTo;
-			}
-		}
-		// #chatroom-protocol
-		// #chatroom-behavior
-		private static final class PublishSessionMessage implements RoomCommand {
-			public final String screenName;
-			public final String message;
+    public static final class GetSession implements RoomCommand {
+      public final String screenName;
+      public final ActorRef<SessionEvent> replyTo;
 
-			public PublishSessionMessage(String screenName, String message) {
-				this.screenName = screenName;
-				this.message = message;
-			}
-		}
-		// #chatroom-behavior
-		// #chatroom-protocol
-		
-		static interface SessionEvent {}
+      public GetSession(String screenName, ActorRef<SessionEvent> replyTo) {
+        this.screenName = screenName;
+        this.replyTo = replyTo;
+      }
+    }
+    // #chatroom-protocol
+    // #chatroom-behavior
+    private static final class PublishSessionMessage implements RoomCommand {
+      public final String screenName;
+      public final String message;
 
-		public static final SessionGranted implements SessionEvent {
-			public final ActorRef<PostMessage> handle;
+      public PublishSessionMessage(String screenName, String message) {
+        this.screenName = screenName;
+        this.message = message;
+      }
+    }
+    // #chatroom-behavior
+    // #chatroom-protocol
 
-			public SessionGranted(ActorRef<PostMessage> handle) {
-				this.handle = handle;
-			}
-		}
+    static interface SessionEvent {}
 
-		public static final SessionDenied implements SessionEvent {
-			public final String reason;
+    public static final class SessionGranted implements SessionEvent {
+      public final ActorRef<PostMessage> handle;
 
-			public SessionDenied(String reason) {
-				this.reason = reason;
-			}
-		}
+      public SessionGranted(ActorRef<PostMessage> handle) {
+        this.handle = handle;
+      }
+    }
 
-		public static final class MessagePosted implements SessionEvent {
-			public final String screenName;
-			public final String message;
+    public static final class SessionDenied implements SessionEvent {
+      public final String reason;
 
-			public MessagePosted(String screenName, String message) {
-				this.screenName = screenName;
-				this.message = message;
-			}
-		}
+      public SessionDenied(String reason) {
+        this.reason = reason;
+      }
+    }
 
-		static interface SessionCommand {}
+    public static final class MessagePosted implements SessionEvent {
+      public final String screenName;
+      public final String message;
 
-		public static final class PostMessage implements SessionCommand {
-			public final String message;
+      public MessagePosted(String screenName, String message) {
+        this.screenName = screenName;
+        this.message = message;
+      }
+    }
 
-			public PostMessage(String message) {
-				this.message = message;
-			}
-		}
+    static interface SessionCommand {}
 
-		private static final class NotifyClient implements SessionCommand {
-			final MessagePosted message;
+    public static final class PostMessage implements SessionCommand {
+      public final String message;
 
-			NotifyClient(MessagePosted message) {
-				this.message = message;
-			}
-		}
-		// #chatroom-protocol
-		// #chatroom-behavior
+      public PostMessage(String message) {
+        this.message = message;
+      }
+    }
 
-		public static Behavior<RoomCommand> create() {
-			return Behaviors.setup(ChatRoomBehavior::new)
-		}
+    private static final class NotifyClient implements SessionCommand {
+      final MessagePosted message;
 
-		public static class ChatRoomBehavior extends AbstractOnMessageBehavior<RoomCommand> {
-			final List<ActorRef<SessionCommand>> sessions = new ArrayList<>();
+      NotifyClient(MessagePosted message) {
+        this.message = message;
+      }
+    }
+    // #chatroom-protocol
+    // #chatroom-behavior
 
-			private ChatRoomBehavior(ActorContext<RoomCommand> context) {
-				super(context);
-			}
+    public static Behavior<RoomCommand> create() {
+      return Behaviors.setup(ChatRoomBehavior::new);
+    }
 
-			@Override
-			public Behavior<RoomCommand> onMessage(RoomCommand msg) {
-				/* From Java 16 onward, various features broadly described as "pattern matching"
-				 * may prove useful here in lieu of the explicit instanceof checks and casts here:
-				 *
-				 * Java 16 onward: JEP 394 (https://openjdk.java.net/jeps/394) =>
-				 *   if (msg instanceof GetSession gs) {
-				 *     return onGetSession(gs);
-				 *   } else if (msg instanceof PublishSessionMessage psm) {
-				 *     return onPublishSessionMessage(psm);
-				 *   }
-				 *
-				 * Java 17 onward: JEP 406 (https://openjdk.org/jeps/406) =>
-				 *   switch(msg) {
-				 *     // NB: default clause omitted for brevity - JEP 409 (https://openjdk.org/jeps/409)
-				 *     // may allow not including a default clause
-				 *     case GetSession gs:
-				 *       return onGetSession(gs);
-				 *
-				 *     case PublishSessionMessage psm:
-				 *       return onPublishSessionMessage(psm);
-				 *   }
-				 *
-				 * JEPs 420 and 427 make possibly-useful extensions to JEP 406 in post-17 Java versions.
-				 *
-				 * TODO: when we're comfortable with requiring JDK17 for development, replace this with
-				 * JEP406 example
-				 */
-				if (msg instanceof GetSession) {
-					return onGetSession((GetSession)msg);
-				} else if (msg instanceof PublishSessionMessage) {
-					return onPublishSessionMessage((PublishSessionMessage)msg);
-				}
+    public static class ChatRoomBehavior extends AbstractOnMessageBehavior<RoomCommand> {
+      final List<ActorRef<SessionCommand>> sessions = new ArrayList<>();
 
-				// for completeness
-				return Behaviors.unhandled();
-			}
+      private ChatRoomBehavior(ActorContext<RoomCommand> context) {
+        super(context);
+      }
 
-			private Behavior<RoomCommand> onGetSession(GetSession gs) throws UnsupportedEncodingException {
-				ActorRef<SessionEvent> client = gs.replyTo;
-				ActorRef<SessionCommand> ses =
-					getContext().spawn(
-						SessionBehavior.create(getContext().getSelf(), gs.screenName, client),
-						URLEncoder.encode(gs.screenName, StandardCharsets.UTF_8.name())
-					);
+      @Override
+      public Behavior<RoomCommand> onMessage(RoomCommand msg) throws UnsupportedEncodingException {
+        /* From Java 16 onward, various features broadly described as "pattern matching"
+         * may prove useful here in lieu of the explicit instanceof checks and casts here:
+         *
+         * Java 16 onward: JEP 394 (https://openjdk.java.net/jeps/394) =>
+         *   if (msg instanceof GetSession gs) {
+         *     return onGetSession(gs);
+         *   } else if (msg instanceof PublishSessionMessage psm) {
+         *     return onPublishSessionMessage(psm);
+         *   }
+         *
+         * Java 17 onward: JEP 406 (https://openjdk.org/jeps/406) =>
+         *   switch(msg) {
+         *     // NB: default clause omitted for brevity - JEP 409 (https://openjdk.org/jeps/409)
+         *     // may allow not including a default clause
+         *     case GetSession gs:
+         *       return onGetSession(gs);
+         *
+         *     case PublishSessionMessage psm:
+         *       return onPublishSessionMessage(psm);
+         *   }
+         *
+         * JEPs 420 and 427 make possibly-useful extensions to JEP 406 in post-17 Java versions.
+         *
+         * TODO: when we're comfortable with requiring JDK17 for development, replace this with
+         * JEP406 example
+         */
+        if (msg instanceof GetSession) {
+          return onGetSession((GetSession) msg);
+        } else if (msg instanceof PublishSessionMessage) {
+          return onPublishSessionMessage((PublishSessionMessage) msg);
+        }
 
-				// narrow to only expose PostMessage
-				client.tell(new SessionGranted(ses.narrow()));
-				sessions.add(ses);
+        // for completeness
+        return Behaviors.unhandled();
+      }
 
-				return this;
-			}
+      private Behavior<RoomCommand> onGetSession(GetSession gs)
+          throws UnsupportedEncodingException {
+        ActorRef<SessionEvent> client = gs.replyTo;
+        ActorRef<SessionCommand> ses =
+            getContext()
+                .spawn(
+                    SessionBehavior.create(getContext().getSelf(), gs.screenName, client),
+                    URLEncoder.encode(gs.screenName, StandardCharsets.UTF_8.name()));
 
-			private Behavior<RoomCommand> onPublishSessionMessage(PublishSessionMessage pub) {
-				NotifyClient notification =
-					new NotifyClient(new MessagePosted(pub.screenName, pub.message));
+        // narrow to only expose PostMessage
+        client.tell(new SessionGranted(ses.narrow()));
+        sessions.add(ses);
 
-				sessions.forEach(s -> s.tell(notification));
-				return this;
-			}
-		}
+        return this;
+      }
 
-		static class SessionBehavior extends AbstractOnMessageBehavior<SessionCommand> {
-			private final ActorRef<RoomCommand> room;
-			private final String screenName;
-			private final ActorRef<SessionEvent> client;
+      private Behavior<RoomCommand> onPublishSessionMessage(PublishSessionMessage pub) {
+        NotifyClient notification =
+            new NotifyClient(new MessagePosted(pub.screenName, pub.message));
 
-			public static Behavior<SessionCommand> create(
-				ActorRef<RoomCommand> room,
-				String screenName,
-				ActorRef<SessionEvent> client
-			) {
-				return Behaviors.setup(context -> new SessionBehavior(context, room, screenName, client));
-			}
+        sessions.forEach(s -> s.tell(notification));
+        return this;
+      }
+    }
 
-			private SessionBehavior(
-				ActorContext<SessionCommand> context,
-				ActorRef<RoomCommand> room,
-				String screenName,
-				ActorRef<SessionEvent> client
-			) {
-				super(context);
-				this.room = room;
-				this.screenName = screenName;
-				this.client = client;
-			}
+    static class SessionBehavior extends AbstractOnMessageBehavior<SessionCommand> {
+      private final ActorRef<RoomCommand> room;
+      private final String screenName;
+      private final ActorRef<SessionEvent> client;
 
-			@Override
-			public Behavior<SessionCommand> onMessage(SessionCommand msg) {
-				// TODO: JEP406ify
-				if (msg instanceof PostMessage) {
-					// from client, publish to others via the room
-					room.tell(new PublishSessionMessage(screenName, ((PostMessage)msg).message));
-					return Behaviors.same();
-				} else if (msg instanceof NotifyClient) {
-					// published from the room
-					client.tell(((NotifyClient)msg).message);
-					return Behaviors.same();
-				}
-			}
-		}
-	}
-	// #chatroom-behavior
+      public static Behavior<SessionCommand> create(
+          ActorRef<RoomCommand> room, String screenName, ActorRef<SessionEvent> client) {
+        return Behaviors.setup(context -> new SessionBehavior(context, room, screenName, client));
+      }
+
+      private SessionBehavior(
+          ActorContext<SessionCommand> context,
+          ActorRef<RoomCommand> room,
+          String screenName,
+          ActorRef<SessionEvent> client) {
+        super(context);
+        this.room = room;
+        this.screenName = screenName;
+        this.client = client;
+      }
+
+      @Override
+      public Behavior<SessionCommand> onMessage(SessionCommand msg) {
+        // TODO: JEP406ify
+        if (msg instanceof PostMessage) {
+          // from client, publish to others via the room
+          room.tell(new PublishSessionMessage(screenName, ((PostMessage) msg).message));
+          return Behaviors.same();
+        } else if (msg instanceof NotifyClient) {
+          // published from the room
+          client.tell(((NotifyClient) msg).message);
+          return Behaviors.same();
+        }
+
+        // for completeness
+        return Behaviors.unhandled();
+      }
+    }
+  }
+  // #chatroom-behavior
 
   // #chatroom-gabbler
   public class Gabbler extends AbstractBehavior<ChatRoom.SessionEvent> {
