@@ -118,7 +118,7 @@ public interface OnMessageIntroTest {
       @Override
       public Behavior<RoomCommand> onMessage(RoomCommand msg) throws UnsupportedEncodingException {
         /* From Java 16 onward, various features broadly described as "pattern matching"
-         * may prove useful here in lieu of the explicit instanceof checks and casts here:
+         * may prove useful here in lieu of the explicit instanceof checks and casts:
          *
          * Java 16 onward: JEP 394 (https://openjdk.java.net/jeps/394) =>
          *   if (msg instanceof GetSession gs) {
