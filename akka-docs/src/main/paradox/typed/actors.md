@@ -415,13 +415,11 @@ problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`Actor
 @@@ div {.group-java}
 #### AbstractOnMessageBehavior API
 
-The `AbstractBehavior` API makes use of builders like `ReceiveBuilder`.  The benefit of these builders is that
-`instanceof` checks and casts are performed "behind the scenes", but this imposes some runtime overhead.  Pattern-matching
-features introduced in Java 17 and refined in subsequent versions allow the Java compiler to perform some of the
-work of the builders at compile-time, eliminating this runtime overhead without an increase in verbosity.  Users
-of earlier Java versions may also find eliminating this runtime overhead to be worth the verbosity of explicitly
-performing `instanceof` checks and casts.  Users of other JVM languages with pattern-matching support (such as Kotlin) may
-also prefer not using builders (note that the Scala DSL's `AbstractBehavior` does not make use of builders).
+The `AbstractBehavior` API makes use of a builder on receipt of the first message by the actor.  The `Receive` built
+by this builder performs `instanceof` checks and casts "behind the scenes".  Pattern-matching features introduced in Java
+17 and refined in subsequent versions improve the ergonomics of expressing this logic directly in code.  Users of other
+JVM languages (such as Kotlin) may also prefer to not use a builder while using the Java DSL (note that the Scala DSL's
+`AbstractBehavior` does not make use of builders).
 
 To support this "direct" style, an alternative API for defining behavior in an object-oriented style is available by
 extending @java[@javadoc[AbstractOnMessageBehavior](akka.actor.typed.javadsl.AbstractOnMessageBehavior)] and
