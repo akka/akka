@@ -7,34 +7,25 @@ package akka.persistence.testkit.internal
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
-import akka.persistence.testkit.{ ChangePersisted, EventPersisted, StatePersisted }
+import akka.persistence.testkit.{ javadsl, scaladsl }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl
 import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
+import akka.util.ccompat.JavaConverters.{ SeqHasAsJava, SetHasAsJava, SetHasAsScala }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
+import scala.reflect.ClassTag
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
 object Unpersistent {
 
-  /** Given an EventSourcedBehavior, converts it to a non-persistent Behavior which synchronously publishes events
-   *  and snapshots for inspection.  State is updated as in the EventSourcedBehavior, and side effects are performed
-   *  synchronously.  The resulting Behavior is, contingent on the command handling, event handling, and side effects
-   *  being compatible with the BehaviorTestKit, testable with the BehaviorTestKit.
-   *
-   *  Unlike the EventSourcedBehaviorTestKit, this style of testing does not depend on configuration: it therefore does
-   *  not serialize events and it assumes an unbounded stash for commands.  It should, however, execute tests
-   *  substantially more quickly than the EventSourcedBehaviorTestKit and thus may be more suitable for short cycles of
-   *  changes followed by spec validation or performing property-based tests on a Behavior.
-   */
-  def eventSourced[Command, Event, State](behavior: Behavior[Command], fromStateAndOffset: Option[(State, Long)])
-      : (Behavior[Command], ConcurrentLinkedQueue[ChangePersisted[State, Event]]) = {
+  def eventSourced[Command, Event, State](behavior: Behavior[Command], fromStateAndOffset: Option[(State, Long)])(
+    onEvent: (Event, Long, Set[String]) => Unit)(onSnapshot: (State, Long) => Unit): Behavior[Command] = {
     var esBehavior: EventSourcedBehaviorImpl[Command, Event, State] = null
-    val changeQueue = new ConcurrentLinkedQueue[ChangePersisted[State, Event]]()
 
     @tailrec
     def findEventSourcedBehavior(b: Behavior[Command], context: ActorContext[Command]): Unit = {
@@ -49,28 +40,25 @@ object Unpersistent {
       }
     }
 
-    val retBehavior =
-      Behaviors.setup[Command] { context =>
-        findEventSourcedBehavior(behavior, context)
+    Behaviors.setup[Command] { context =>
+      findEventSourcedBehavior(behavior, context)
 
-        if (esBehavior == null) {
-          context.log.warn("Did not find the expected EventSourcedBehavior")
-          Behaviors.empty
-        } else {
-          val (initialState, initialOffset) = fromStateAndOffset.getOrElse(esBehavior.emptyState -> 0L)
-          new WrappedEventSourcedBehavior(context, esBehavior, changeQueue, initialState, initialOffset)
-        }
+      if (esBehavior == null) {
+        context.log.warn("Did not find the expected EventSourcedBehavior")
+        Behaviors.empty
+      } else {
+        val (initialState, initialOffset) = fromStateAndOffset.getOrElse(esBehavior.emptyState -> 0L)
+        new WrappedEventSourcedBehavior(context, esBehavior, initialState, initialOffset, onEvent, onSnapshot)
       }
-
-    (retBehavior, changeQueue)
+    }
   }
 
   def durableState[Command, State](
       behavior: Behavior[Command],
-      fromState: Option[State]): (Behavior[Command], ConcurrentLinkedQueue[ChangePersisted[State, Nothing]]) = {
+      fromState: Option[State])(
+      onPersist: (State, Long, String) => Unit): Behavior[Command] = {
 
     var dsBehavior: DurableStateBehaviorImpl[Command, State] = null
-    val changeQueue = new ConcurrentLinkedQueue[ChangePersisted[State, Nothing]]()
 
     @tailrec
     def findDurableStateBehavior(b: Behavior[Command], context: ActorContext[Command]): Unit =
@@ -82,20 +70,17 @@ object Unpersistent {
         case _                                   => ()
       }
 
-    val retBehavior =
-      Behaviors.setup[Command] { context =>
-        findDurableStateBehavior(behavior, context)
+    Behaviors.setup[Command] { context =>
+      findDurableStateBehavior(behavior, context)
 
-        if (dsBehavior == null) {
-          context.log.warn("Did not find the expected DurableStateBehavior")
-          Behaviors.empty
-        } else {
-          val initialState = fromState.getOrElse(dsBehavior.emptyState)
-          new WrappedDurableStateBehavior(context, dsBehavior, changeQueue, initialState)
-        }
+      if (dsBehavior == null) {
+        context.log.warn("Did not find the expected DurableStateBehavior")
+        Behaviors.empty
+      } else {
+        val initialState = fromState.getOrElse(dsBehavior.emptyState)
+        new WrappedDurableStateBehavior(context, dsBehavior, initialState, onPersist)
       }
-
-    (retBehavior, changeQueue)
+    }
   }
 
   val doNothing: Any => Unit = _ => ()
@@ -103,9 +88,10 @@ object Unpersistent {
   private class WrappedEventSourcedBehavior[Command, Event, State](
       context: ActorContext[Command],
       esBehavior: EventSourcedBehaviorImpl[Command, Event, State],
-      changeQueue: ConcurrentLinkedQueue[ChangePersisted[State, Event]],
       initialState: State,
-      initialOffset: Long)
+      initialOffset: Long,
+      onEvent: (Event, Long, Set[String]) => Unit,
+      onSnapshot: (State, Long) => Unit)
       extends AbstractBehavior[Command](context) with WithSeqNrAccessible {
     import akka.persistence.typed.{ EventSourcedSignal, RecoveryCompleted, SnapshotCompleted, SnapshotMetadata }
     import akka.persistence.typed.internal._
@@ -147,7 +133,7 @@ object Unpersistent {
 
       def persistEvent(evt: Event): Unit = {
         offset += 1
-        changeQueue.offer(EventPersisted(evt, offset, tagger(evt)))
+        onEvent(evt, offset, tagger(evt))
         state = eventHandler(state, evt)
         shouldSnapshot = shouldSnapshot || snapshotRequested(evt)
       }
@@ -191,7 +177,7 @@ object Unpersistent {
       applyEffects(commandHandler(state, cmd).asInstanceOf[EffectImpl[Event, State]], Nil)
 
       if (shouldSnapshot) {
-        changeQueue.offer(StatePersisted(state, offset, Set.empty))
+        onSnapshot(state, offset)
         sendSignal(SnapshotCompleted(snapshotMetadata()))
       }
 
@@ -218,9 +204,9 @@ object Unpersistent {
   private class WrappedDurableStateBehavior[Command, State](
       context: ActorContext[Command],
       dsBehavior: DurableStateBehaviorImpl[Command, State],
-      changeQueue: ConcurrentLinkedQueue[ChangePersisted[State, Nothing]],
-      initialState: State)
-      extends AbstractBehavior[Command](context) with WithRevisionAccessible {
+      initialState: State,
+      onPersist: (State, Long, String) => Unit
+      ) extends AbstractBehavior[Command](context) with WithRevisionAccessible {
 
     import akka.persistence.typed.state.{ DurableStateSignal, RecoveryCompleted }
     import akka.persistence.typed.state.internal._
@@ -229,7 +215,7 @@ object Unpersistent {
 
     private def commandHandler = dsBehavior.commandHandler
     private def signalHandler = dsBehavior.signalHandler
-    private val tags = Set(dsBehavior.tag)
+    private val tag = dsBehavior.tag
 
     private var offset: Long = 0
     private var state: State = initialState
@@ -246,7 +232,7 @@ object Unpersistent {
 
       def persistState(st: State): Unit = {
         offset += 1
-        changeQueue.offer(StatePersisted(st, offset, tags))
+        onPersist(st, offset, tag)
         state = st
       }
 
@@ -301,4 +287,201 @@ object Unpersistent {
       } else this
     }
   }
+}
+
+class PersistenceProbeImpl[T] {
+  type Element = (T, Long, Set[String])
+
+  val queue = new ConcurrentLinkedQueue[Element]()
+
+  def persist(elem: Element): Unit = { queue.offer(elem); () }
+
+  def rawExtract(): Element =
+    queue.poll() match {
+      case null => throw new AssertionError("No persistence effects in probe")
+      case elem => elem
+    }
+
+  def asScala: scaladsl.PersistenceProbe[T] =
+    new scaladsl.PersistenceProbe[T] {
+      import scaladsl.PersistenceProbe
+
+      def drain(): Seq[Element] = {
+        @annotation.tailrec
+        def iter(acc: List[Element]): List[Element] = {
+          val elem = queue.poll()
+          if (elem == null) acc else iter(elem :: acc)
+        }
+
+        iter(Nil).reverse
+      }
+
+      def extract(): Element = rawExtract()
+
+      def expectPersistedType[S <: T : ClassTag](): (S, Long, Set[String]) = {
+        extract() match {
+          case (obj: S, offset, tags) => (obj, offset, tags)
+          case (extracted, _, _) =>
+            throw new AssertionError(
+              s"Expected object of type [${implicitly[ClassTag[S]].runtimeClass.getName}] to be persisted, " +
+              s"but actual was of type [${extracted.getClass.getName}]"
+            )
+        }
+      }
+
+      def hasEffects: Boolean = !queue.isEmpty
+
+      def expectPersisted(obj: T): PersistenceProbe[T] =
+        extract() match {
+          case (persistedObj, _, _) if obj == persistedObj => this
+          case (persistedObj, _, _) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted, but actual was [$persistedObj]"
+            )
+        }
+
+      def expectPersisted(obj: T, tag: String): PersistenceProbe[T] =
+        extract() match {
+          case (persistedObj, _, tags) if (obj == persistedObj) && (tags(tag)) => this
+
+          case (persistedObj, _, tags) if obj == persistedObj =>
+            throw new AssertionError(
+              s"Expected persistence with tag [$tag], but actual tags were [${tags.mkString(",")}]"
+            )
+
+          case (persistedObj, _, tags) if tags(tag) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted, but actual was [$persistedObj]"
+            )
+
+          case (persistedObj, _, tags) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted with tag [$tag], " +
+              s"but actual object was [$persistedObj] with tags [${tags.mkString(",")}]"
+            )
+        }
+
+      def expectPersisted(obj: T, tags: Set[String]): PersistenceProbe[T] =
+        extract() match {
+          case (persistedObj, _, persistedTags) if (obj == persistedObj) && (tags == persistedTags) => this
+          case (persistedObj, _, persistedTags) if obj == persistedObj =>
+            val unexpected = persistedTags.diff(tags)
+            val notPersistedWith = tags.diff(persistedTags)
+
+            throw new AssertionError(
+              s"Expected persistence with [${tags.mkString(",")}], " +
+              s"but saw unexpected actual tags [${unexpected.mkString(",")}] and " +
+              s"did not see actual tags [${notPersistedWith.mkString(",")}]"
+            )
+
+          case (persistedObj, _, persistedTags) if tags == persistedTags =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted, but actual was [$persistedObj}]"
+            )
+
+          case (persistedObj, _, persistedTags) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted with tags [${tags.mkString(",")}], " +
+              s"but actual object was [$persistedObj] with tags [${persistedTags.mkString(",")}]"
+            )
+        }
+    }
+
+  def asJava: javadsl.PersistenceProbe[T] =
+    new javadsl.PersistenceProbe[T] {
+      import javadsl.{ PersistenceProbe, PersistenceEffect }
+      import java.util.{ List => JList, Set => JSet }
+
+      def getAllEffects(): JList[PersistenceEffect[T]] = {
+        @annotation.tailrec
+        def iter(acc: List[PersistenceEffect[T]]): List[PersistenceEffect[T]] = {
+          val elem = queue.poll()
+          if (elem == null) acc else iter(persistenceEffect(elem) :: acc)
+        }
+
+        iter(Nil).reverse.asJava
+      }
+
+      def extract(): PersistenceEffect[T] = persistenceEffect(rawExtract())
+
+      def expectPersistedClass[S <: T](clazz: Class[S]): PersistenceEffect[S] =
+        rawExtract() match {
+          case (obj, offset, tags) if clazz.isInstance(obj) =>
+            PersistenceEffect(clazz.cast(obj), offset, tags.asJava)
+
+          case (extracted, _, _) =>
+            throw new AssertionError(
+              s"Expected object of type [${clazz.getName}] to be persisted, " +
+              s"but actual was of type [${extracted.getClass.getName}]"
+            )
+        }
+
+      def hasEffects: Boolean = !queue.isEmpty
+
+      def expectPersisted(obj: T): PersistenceProbe[T] =
+        rawExtract() match {
+          case (persistedObj, _, _) if obj == persistedObj => this
+          case (persistedObj, _, _) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted, but actual was [$persistedObj]"
+            )
+        }
+
+      def expectPersisted(obj: T, tag: String): PersistenceProbe[T] =
+        rawExtract() match {
+          case (persistedObj, _, tags) if (obj == persistedObj) && (tags(tag)) => this
+
+          case (persistedObj, _, tags) if obj == persistedObj =>
+            throw new AssertionError(
+              s"Expected persistence with tag [$tag], but actual tags were [${tags.mkString(",")}]"
+            )
+
+          case (persistedObj, _, tags) if tags(tag) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted, but actual was [$persistedObj]"
+            )
+
+          case (persistedObj, _, tags) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted with tag [$tag], " +
+              s"but actual object was [$persistedObj] with tags [${tags.mkString(",")}]"
+            )
+        }
+
+      def expectPersisted(obj: T, tags: JSet[String]): PersistenceProbe[T] = {
+        val sTags = tags.asScala
+
+        // Not sure if a Java Set after asScala-ing will compare equal to a Scala Set...
+        def sameTags(persistedTags: Set[String]): Boolean =
+          sTags.forall(persistedTags) && persistedTags.forall(sTags)
+
+        rawExtract() match {
+          case (persistedObj, _, persistedTags) if (obj == persistedObj) && sameTags(persistedTags) => this
+
+          case (persistedObj, _, persistedTags) if obj == persistedObj =>
+            val unexpected = persistedTags.diff(sTags)
+            val notPersistedWith = sTags.diff(persistedTags)
+
+            throw new AssertionError(
+              s"Expected persistence with [${sTags.mkString(",")}], " +
+              s"but saw unexpected actual tags [${unexpected.mkString(",")}] and " +
+              s"did not see actual tags [${notPersistedWith.mkString(",")}]"
+            )
+
+          case (persistedObj, _, persistedTags) if sameTags(persistedTags) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted, but actual was [$persistedObj}]"
+            )
+
+          case (persistedObj, _, persistedTags) =>
+            throw new AssertionError(
+              s"Expected object [$obj] to be persisted with tags [${sTags.mkString(",")}], " +
+              s"but actual object was [$persistedObj] with tags [${persistedTags.mkString(",")}]"
+            )
+        }
+      }
+
+      private def persistenceEffect(element: Element): PersistenceEffect[T] =
+        PersistenceEffect(element._1, element._2, element._3.asJava)
+    }
 }

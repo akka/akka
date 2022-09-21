@@ -5,10 +5,10 @@
 package akka.persistence.testkit.javadsl
 
 import akka.actor.typed.Behavior
-import akka.persistence.testkit.ChangePersisted
-import akka.persistence.testkit.internal.Unpersistent
+import akka.persistence.testkit.internal.{ PersistenceProbeImpl, Unpersistent }
 
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.{ List, Set }
+import scala.collection.immutable.{ Set => ScalaSet }
 
 object UnpersistentBehavior {
 
@@ -32,8 +32,17 @@ object UnpersistentBehavior {
     require(fromOffset >= 0, "fromOffset must be at least zero")
 
     val fromStateAndOffset = Option(fromState).map(_ -> fromOffset)
-    val (b, q) = Unpersistent.eventSourced[Command, Event, State](behavior, fromStateAndOffset)
-    new UnpersistentBehavior(b, q)
+    val eventProbe = new PersistenceProbeImpl[Event]
+    val snapshotProbe = new PersistenceProbeImpl[State]
+
+    val b =
+      Unpersistent.eventSourced(behavior, fromStateAndOffset) { (event: Event, offset: Long, tags: ScalaSet[String]) =>
+          eventProbe.persist((event, offset, tags))
+        } { (snapshot, offset) =>
+          snapshotProbe.persist((snapshot, offset, ScalaSet.empty))
+        }
+
+    new UnpersistentBehavior(b, eventProbe.asJava, snapshotProbe.asJava)
   }
 
   def fromEventSourced[Command, Event, State](
@@ -43,18 +52,79 @@ object UnpersistentBehavior {
   def fromDurableState[Command, State](
       behavior: Behavior[Command],
       fromState: State): UnpersistentBehavior[Command, Void, State] = {
-    val (b, q) = Unpersistent.durableState(behavior, Option(fromState))
-    new UnpersistentBehavior(b, q.asInstanceOf[ConcurrentLinkedQueue[ChangePersisted[State, Void]]])
+    val probe = new PersistenceProbeImpl[State]
+    val b =
+      Unpersistent.durableState(behavior, Option(fromState)) { (state, version, tag) =>
+        probe.persist((state, version, if (tag == "") ScalaSet.empty else ScalaSet(tag)))
+      }
+
+    new UnpersistentBehavior(b, noEventProbe, probe.asJava)
   }
 
   def fromDurableState[Command, State](behavior: Behavior[Command]): UnpersistentBehavior[Command, Void, State] =
     fromDurableState(behavior, null.asInstanceOf[State])
+
+  private val noEventProbe: PersistenceProbe[Void] =
+    new PersistenceProbe[Void] {
+      def getAllEffects(): List[PersistenceEffect[Void]] =
+        // could return an empty list, but the intent is that any use of this probe should fail the test
+        boom()
+
+      def extract(): PersistenceEffect[Void] = boom()
+      def expectPersistedClass[S <: Void](clazz: Class[S]): PersistenceEffect[S] = boom()
+      def hasEffects: Boolean = boom()
+      def expectPersisted(obj: Void): PersistenceProbe[Void] = boom()
+      def expectPersisted(obj: Void, tag: String): PersistenceProbe[Void] = boom()
+      def expectPersisted(obj: Void, tags: Set[String]): PersistenceProbe[Void] = boom()
+
+      private def boom() = throw new AssertionError("No events were persisted")
+    }
 }
 
 class UnpersistentBehavior[Command, Event, State] private (
     behavior: Behavior[Command],
-    changeQueue: ConcurrentLinkedQueue[ChangePersisted[State, Event]]) {
+    eventProbe: PersistenceProbe[Event],
+    stateProbe: PersistenceProbe[State]) {
   def getBehavior(): Behavior[Command] = behavior
 
-  def getChangeQueue(): ConcurrentLinkedQueue[ChangePersisted[State, Event]] = changeQueue
+  /** NB: durable state behaviors will not publish events to this probe */
+  def getEventProbe(): PersistenceProbe[Event] = eventProbe
+
+  def getStateProbe(): PersistenceProbe[State] = stateProbe
+  def getSnapshotProbe(): PersistenceProbe[State] = stateProbe
+}
+
+case class PersistenceEffect[T](persistedObject: T, offset: Long, tags: Set[String])
+
+trait PersistenceProbe[T] {
+  /** Collect all persistence effects from the probe and empty the probe */
+  def getAllEffects(): List[PersistenceEffect[T]]
+
+  /** Get and remove the oldest persistence effect from the probe */
+  def extract(): PersistenceEffect[T]
+
+  /** Get and remove the oldest persistence effect from the probe, failing if the
+   *  persisted object is not of the requested type
+   */
+  def expectPersistedClass[S <: T](clazz: Class[S]): PersistenceEffect[S]
+
+  /** Are there any persistence effects */
+  def hasEffects: Boolean
+
+  /** Assert that the given object was persisted in the oldest persistence effect and
+   *  remove that persistence effect
+   */
+  def expectPersisted(obj: T): PersistenceProbe[T]
+
+  /** Assert that the given object was persisted with the given tag in the oldest persistence
+   *  effect and remove that persistence effect.  If the persistence effect has multiple tags,
+   *  only one of them has to match in order for the assertion to succeed.
+   */
+  def expectPersisted(obj: T, tag: String): PersistenceProbe[T]
+
+  /** Assert that the given object was persisted with the given tag in the oldest persistence
+   *  effect and remove that persistence effect.  If the persistence effect has tags which are
+   *  not given, the assertion fails.
+   */
+  def expectPersisted(obj: T, tags: Set[String]): PersistenceProbe[T]
 }
