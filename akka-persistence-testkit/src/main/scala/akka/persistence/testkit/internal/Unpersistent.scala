@@ -7,11 +7,13 @@ package akka.persistence.testkit.internal
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.annotation.InternalApi
 import akka.persistence.testkit.{ javadsl, scaladsl }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl
 import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
+import akka.util.ConstantFun.{ scalaAnyToUnit => doNothing }
 import akka.util.ccompat.JavaConverters.{ SeqHasAsJava, SetHasAsJava, SetHasAsScala }
 
 import scala.annotation.tailrec
@@ -21,35 +23,35 @@ import scala.reflect.ClassTag
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
+/*
+ * INTERNAL API
+ */
+@InternalApi
 object Unpersistent {
 
-  def eventSourced[Command, Event, State](behavior: Behavior[Command], fromStateAndOffset: Option[(State, Long)])(
+  def eventSourced[Command, Event, State](behavior: Behavior[Command], fromStateAndSequenceNr: Option[(State, Long)])(
     onEvent: (Event, Long, Set[String]) => Unit)(onSnapshot: (State, Long) => Unit): Behavior[Command] = {
-    var esBehavior: EventSourcedBehaviorImpl[Command, Event, State] = null
-
     @tailrec
-    def findEventSourcedBehavior(b: Behavior[Command], context: ActorContext[Command]): Unit = {
+    def findEventSourcedBehavior(b: Behavior[Command], context: ActorContext[Command]): Option[EventSourcedBehaviorImpl[Command, Event, State]] = {
       b match {
         case es: EventSourcedBehaviorImpl[Command, _, _] =>
-          esBehavior = es.asInstanceOf[EventSourcedBehaviorImpl[Command, Event, State]]
+          Some(es.asInstanceOf[EventSourcedBehaviorImpl[Command, Event, State]])
 
         case deferred: DeferredBehavior[Command] =>
           findEventSourcedBehavior(deferred(context), context)
 
-        case _ => ()
+        case _ => None
       }
     }
 
     Behaviors.setup[Command] { context =>
       findEventSourcedBehavior(behavior, context)
-
-      if (esBehavior == null) {
-        context.log.warn("Did not find the expected EventSourcedBehavior")
-        Behaviors.empty
-      } else {
-        val (initialState, initialOffset) = fromStateAndOffset.getOrElse(esBehavior.emptyState -> 0L)
-        new WrappedEventSourcedBehavior(context, esBehavior, initialState, initialOffset, onEvent, onSnapshot)
-      }
+        .fold {
+          throw new AssertionError("Did not find the expected EventSourcedBehavior")
+        } { esBehavior =>
+          val (initialState, initialSequenceNr) = fromStateAndSequenceNr.getOrElse(esBehavior.emptyState -> 0L)
+          new WrappedEventSourcedBehavior(context, esBehavior, initialState, initialSequenceNr, onEvent, onSnapshot)
+        }
     }
   }
 
@@ -58,45 +60,39 @@ object Unpersistent {
       fromState: Option[State])(
       onPersist: (State, Long, String) => Unit): Behavior[Command] = {
 
-    var dsBehavior: DurableStateBehaviorImpl[Command, State] = null
-
     @tailrec
-    def findDurableStateBehavior(b: Behavior[Command], context: ActorContext[Command]): Unit =
+    def findDurableStateBehavior(b: Behavior[Command], context: ActorContext[Command]): Option[DurableStateBehaviorImpl[Command, State]] =
       b match {
         case ds: DurableStateBehaviorImpl[Command, _] =>
-          dsBehavior = ds.asInstanceOf[DurableStateBehaviorImpl[Command, State]]
+          Some(ds.asInstanceOf[DurableStateBehaviorImpl[Command, State]])
 
         case deferred: DeferredBehavior[Command] => findDurableStateBehavior(deferred(context), context)
-        case _                                   => ()
+        case _                                   => None
       }
 
     Behaviors.setup[Command] { context =>
       findDurableStateBehavior(behavior, context)
-
-      if (dsBehavior == null) {
-        context.log.warn("Did not find the expected DurableStateBehavior")
-        Behaviors.empty
-      } else {
-        val initialState = fromState.getOrElse(dsBehavior.emptyState)
-        new WrappedDurableStateBehavior(context, dsBehavior, initialState, onPersist)
-      }
+        .fold {
+          throw new AssertionError("Did not find the expected DurableStateBehavior")
+        } { dsBehavior =>
+          val initialState = fromState.getOrElse(dsBehavior.emptyState)
+          new WrappedDurableStateBehavior(context, dsBehavior, initialState, onPersist)
+        }
     }
   }
-
-  val doNothing: Any => Unit = _ => ()
 
   private class WrappedEventSourcedBehavior[Command, Event, State](
       context: ActorContext[Command],
       esBehavior: EventSourcedBehaviorImpl[Command, Event, State],
       initialState: State,
-      initialOffset: Long,
+      initialSequenceNr: Long,
       onEvent: (Event, Long, Set[String]) => Unit,
       onSnapshot: (State, Long) => Unit)
       extends AbstractBehavior[Command](context) with WithSeqNrAccessible {
     import akka.persistence.typed.{ EventSourcedSignal, RecoveryCompleted, SnapshotCompleted, SnapshotMetadata }
     import akka.persistence.typed.internal._
 
-    def currentSequenceNumber: Long = offset
+    override def currentSequenceNumber: Long = sequenceNr
 
     private def commandHandler = esBehavior.commandHandler
     private def eventHandler = esBehavior.eventHandler
@@ -105,12 +101,12 @@ object Unpersistent {
     private def retention = esBehavior.retention
     private def signalHandler = esBehavior.signalHandler
 
-    private var offset: Long = initialOffset
+    private var sequenceNr: Long = initialSequenceNr
     private var state: State = initialState
     private val stashedCommands = ListBuffer.empty[Command]
 
     private def snapshotMetadata() =
-      SnapshotMetadata(esBehavior.persistenceId.toString, offset, System.currentTimeMillis())
+      SnapshotMetadata(esBehavior.persistenceId.toString, sequenceNr, System.currentTimeMillis())
     private def sendSignal(signal: EventSourcedSignal): Unit =
       signalHandler.applyOrElse(state -> signal, doNothing)
 
@@ -124,16 +120,16 @@ object Unpersistent {
       def snapshotRequested(evt: Event): Boolean = {
         val snapshotFromRetention = retention match {
           case DisabledRetentionCriteria             => false
-          case s: SnapshotCountRetentionCriteriaImpl => s.snapshotWhen(offset)
+          case s: SnapshotCountRetentionCriteriaImpl => s.snapshotWhen(sequenceNr)
           case unexpected                            => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
         }
 
-        snapshotFromRetention || snapshotWhen(state, evt, offset)
+        snapshotFromRetention || snapshotWhen(state, evt, sequenceNr)
       }
 
       def persistEvent(evt: Event): Unit = {
-        offset += 1
-        onEvent(evt, offset, tagger(evt))
+        sequenceNr += 1
+        onEvent(evt, sequenceNr, tagger(evt))
         state = eventHandler(state, evt)
         shouldSnapshot = shouldSnapshot || snapshotRequested(evt)
       }
@@ -177,7 +173,7 @@ object Unpersistent {
       applyEffects(commandHandler(state, cmd).asInstanceOf[EffectImpl[Event, State]], Nil)
 
       if (shouldSnapshot) {
-        onSnapshot(state, offset)
+        onSnapshot(state, sequenceNr)
         sendSignal(SnapshotCompleted(snapshotMetadata()))
       }
 
@@ -211,13 +207,13 @@ object Unpersistent {
     import akka.persistence.typed.state.{ DurableStateSignal, RecoveryCompleted }
     import akka.persistence.typed.state.internal._
 
-    def currentRevision: Long = offset
+    override def currentRevision: Long = sequenceNr
 
     private def commandHandler = dsBehavior.commandHandler
     private def signalHandler = dsBehavior.signalHandler
     private val tag = dsBehavior.tag
 
-    private var offset: Long = 0
+    private var sequenceNr: Long = 0
     private var state: State = initialState
     private val stashedCommands = ListBuffer.empty[Command]
 
@@ -231,8 +227,8 @@ object Unpersistent {
       var shouldStop = false
 
       def persistState(st: State): Unit = {
-        offset += 1
-        onPersist(st, offset, tag)
+        sequenceNr += 1
+        onPersist(st, sequenceNr, tag)
         state = st
       }
 
@@ -320,7 +316,7 @@ class PersistenceProbeImpl[T] {
 
       def expectPersistedType[S <: T : ClassTag](): (S, Long, Set[String]) = {
         extract() match {
-          case (obj: S, offset, tags) => (obj, offset, tags)
+          case (obj: S, sequenceNr, tags) => (obj, sequenceNr, tags)
           case (extracted, _, _) =>
             throw new AssertionError(
               s"Expected object of type [${implicitly[ClassTag[S]].runtimeClass.getName}] to be persisted, " +
@@ -406,8 +402,8 @@ class PersistenceProbeImpl[T] {
 
       def expectPersistedClass[S <: T](clazz: Class[S]): PersistenceEffect[S] =
         rawExtract() match {
-          case (obj, offset, tags) if clazz.isInstance(obj) =>
-            PersistenceEffect(clazz.cast(obj), offset, tags.asJava)
+          case (obj, sequenceNr, tags) if clazz.isInstance(obj) =>
+            PersistenceEffect(clazz.cast(obj), sequenceNr, tags.asJava)
 
           case (extracted, _, _) =>
             throw new AssertionError(
