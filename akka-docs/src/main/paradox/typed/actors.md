@@ -415,19 +415,23 @@ problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`Actor
 @@@ div {.group-java}
 #### AbstractOnMessageBehavior API
 
-The `AbstractBehavior` API typically makes heavy use of builders which allows `instanceof` checks and casts to be
-performed "behind the scenes".  In some cases, it may be preferred to use a more "direct" style where a `Behavior`
-is, essentially, a function converting a message into a successor `Behavior`.  In contrast to builders, this style
-may have sufficiently reduced runtime overhead to be worth a little extra verbosity (recently-added Java features
-under the "pattern-matching" umbrella may substantially reduce that verbosity).
+The `AbstractBehavior` API makes use of builders like `ReceiveBuilder`.  The benefit of these builders is that
+`instanceof` checks and casts are performed "behind the scenes", but this imposes some runtime overhead.  Pattern-matching
+features introduced in Java 17 and refined in subsequent versions allow the Java compiler to perform some of the
+work of the builders at compile-time, eliminating this runtime overhead without an increase in verbosity.  Users
+of earlier Java versions may also find eliminating this runtime overhead to be worth the verbosity of explicitly
+performing `instanceof` checks and casts.  Users of other JVM languages with pattern-matching support (such as Kotlin) may
+also prefer not using builders (note that the Scala DSL's `AbstractBehavior` does not make use of builders).
 
-To support this style, an alternative API for defining behavior in an object-oriented style is available by
-extending @java[@javadoc[AbstractOnMessageBehavior](akka.actor.typed.javadsl.AbstractOnMessageBehavior)].
+To support this "direct" style, an alternative API for defining behavior in an object-oriented style is available by
+extending @java[@javadoc[AbstractOnMessageBehavior](akka.actor.typed.javadsl.AbstractOnMessageBehavior)] and
+implementing the @java[@javadoc[onMessage](akka.actor.typed.javadsl.AbstractOnMessageBehavior#onMessage(T))] method.
 
 Here's the `AbstractOnMessageBehavior`-based implementation of the chat room protocol:
 
 Java
 : @@snip [OnMessageIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OnMessageIntroTest.java) {  #chatroom-behavior }
+
 @@@
 
 #### Try it out

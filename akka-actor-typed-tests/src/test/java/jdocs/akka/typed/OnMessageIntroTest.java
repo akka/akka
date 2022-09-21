@@ -115,6 +115,7 @@ public interface OnMessageIntroTest {
 
       @Override
       public Behavior<RoomCommand> onMessage(RoomCommand msg) throws UnsupportedEncodingException {
+        // #chatroom-behavior
         /* From Java 16 onward, various features broadly described as "pattern matching"
          * may prove useful here in lieu of the explicit instanceof checks and casts:
          *
@@ -126,23 +127,26 @@ public interface OnMessageIntroTest {
          *   }
          *
          * Java 17 onward: JEP 406 (https://openjdk.org/jeps/406) =>
-         *   switch(msg) {
-         *     // NB: default clause omitted for brevity - JEP 409 (https://openjdk.org/jeps/409)
-         *     // may allow not including a default clause
-         *     case GetSession gs:
-         *       return onGetSession(gs);
-         *
-         *     case PublishSessionMessage psm:
-         *       return onPublishSessionMessage(psm);
-         *   }
+         // #chatroom-behavior
+        // uses Java 17-onward features
+        switch(msg) {
+          // NB: JEP 409 (https://openjdk.org/jeps/409) may allow not including a default clause
+          case GetSession gs:
+            return onGetSession(gs);
+
+          case PublishSessionMessage psm:
+            return onPublishSessionMessage(psm);
+
+          default:
+            // for completeness, should never happen
+        }
+        // #chatroom-behavior
          *
          * JEPs 420 and 427 make possibly-useful extensions to JEP 406 in post-17 Java versions.
-         */
-		// #chatroom-behavior
-        /* TODO: when we're comfortable with requiring JDK17 for development, replace this with
+         *
+         * TODO: when we're comfortable with requiring JDK17 for development, replace this with
          * JEP406 example
-		 */
-		// #chatroom-behavior
+         */
         if (msg instanceof GetSession) {
           return onGetSession((GetSession) msg);
         } else if (msg instanceof PublishSessionMessage) {
@@ -150,6 +154,7 @@ public interface OnMessageIntroTest {
         }
 
         // for completeness
+        // #chatroom-behavior
         return Behaviors.unhandled();
       }
 
@@ -201,9 +206,8 @@ public interface OnMessageIntroTest {
 
       @Override
       public Behavior<SessionCommand> onMessage(SessionCommand msg) {
-		// #chatroom-behavior
+        // #chatroom-behavior
         // TODO: JEP406ify
-		// #chatroom-behavior
         if (msg instanceof PostMessage) {
           // from client, publish to others via the room
           room.tell(new PublishSessionMessage(screenName, ((PostMessage) msg).message));
@@ -215,12 +219,33 @@ public interface OnMessageIntroTest {
         }
 
         // for completeness
+        /*
+        // #chatroom-behavior
+        switch (msg) {
+          case PostMessage pm:
+            // from client, publish to others via the room
+            room.tell(new PublishSessionMessage(screenName, pm.message);
+            return Behaviors.same();
+
+          case NotifyClient nc:
+            // published from the room
+            client.tell(nc.message);
+            return Behaviors.same();
+
+          default:
+            // for completeness, should never happen
+        }
+        // #chatroom-behavior
+        */
+        // #chatroom-behavior
+
         return Behaviors.unhandled();
       }
     }
   }
   // #chatroom-behavior
 
+  // NB: leaving the gabbler as an AbstractBehavior, as the point should be made by now
   // #chatroom-gabbler
   public class Gabbler extends AbstractBehavior<ChatRoom.SessionEvent> {
     public static Behavior<ChatRoom.SessionEvent> create() {
