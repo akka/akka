@@ -27,10 +27,7 @@ import akka.persistence.typed.javadsl.RetentionCriteria;
 import akka.persistence.typed.javadsl.SignalHandler;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class BasicPersistentBehaviorTest {
 
@@ -415,6 +412,13 @@ public class BasicPersistentBehaviorTest {
           throw new RuntimeException("TODO: process the event return the next state");
         };
       }
+
+      // #custom-stash-buffer
+      @Override
+      public Optional<Integer> stashCapacity() {
+        return Optional.of(100);
+      }
+      // #custom-stash-buffer
 
       // #wrapPersistentBehavior
       @Override

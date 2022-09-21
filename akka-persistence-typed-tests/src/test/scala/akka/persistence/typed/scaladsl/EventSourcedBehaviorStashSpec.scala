@@ -527,11 +527,12 @@ class EventSourcedBehaviorStashSpec
       stateProbe.expectMessage(State(5, active = true))
     }
 
-    "discard when stash has reached limit with default dropped setting" in {
+    trait StashLimit {
+      val customStashLimit: Option[Int] = None
       val probe = TestProbe[AnyRef]()
       system.toClassic.eventStream.subscribe(probe.ref.toClassic, classOf[Dropped])
       val behavior = Behaviors.setup[String] { context =>
-        EventSourcedBehavior[String, String, Boolean](
+        val esb = EventSourcedBehavior[String, String, Boolean](
           persistenceId = PersistenceId.ofUniqueId("stash-is-full-drop"),
           emptyState = false,
           commandHandler = { (state, command) =>
@@ -561,7 +562,15 @@ class EventSourcedBehaviorStashSpec
             case (_, "unstash")        => false
             case (_, _)                => throw new IllegalArgumentException()
           })
+        customStashLimit match {
+          case Some(value) => esb.withStashCapacity(value)
+          case None        => esb
+        }
+
       }
+    }
+
+    "discard when stash has reached limit with default dropped setting" in new StashLimit {
 
       val c = spawn(behavior)
 
@@ -584,6 +593,37 @@ class EventSourcedBehaviorStashSpec
       (0 until limit).foreach { n =>
         probe.expectMessage(s"cmd-$n")
       }
+      probe.expectMessage("done-unstashing") // before actually unstashing, see above
+
+      c ! "ping"
+      probe.expectMessage("pong")
+    }
+
+    "discard when custom stash buffer has reached limit with default dropped setting" in new StashLimit {
+      val customLimit = 100
+      override val customStashLimit: Option[Int] = Some(customLimit)
+
+      val c = spawn(behavior)
+
+      // make sure it completed recovery, before we try to overfill the stash
+      c ! "ping"
+      probe.expectMessage("pong")
+
+      c ! "start-stashing"
+
+      LoggingTestKit.warn("Stash buffer is full, dropping message").expect {
+        (0 to customLimit).foreach { n =>
+          c ! s"cmd-$n" // limit triggers overflow
+        }
+        probe.expectMessageType[Dropped]
+      }
+
+      // we can still unstash and continue interacting
+      c ! "unstash"
+      (0 until customLimit).foreach { n =>
+        probe.expectMessage(s"cmd-$n")
+      }
+
       probe.expectMessage("done-unstashing") // before actually unstashing, see above
 
       c ! "ping"

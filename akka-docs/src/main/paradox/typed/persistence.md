@@ -646,6 +646,14 @@ buffer will fill up and when reaching its maximum capacity the commands will be 
 akka.persistence.typed.stash-capacity = 10000
 ```
 
+To override the global config from above, use the following api to define a custom stash buffer capacity per entity:
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #custom-stash-buffer }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #custom-stash-buffer }
+
 Note that the stashed commands are kept in an in-memory buffer, so in case of a crash they will not be
 processed.
 

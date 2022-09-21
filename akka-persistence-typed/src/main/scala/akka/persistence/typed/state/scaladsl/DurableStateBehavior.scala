@@ -160,4 +160,9 @@ object DurableStateBehavior {
    */
   def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): DurableStateBehavior[Command, State]
 
+  /**
+   * Define a custom stash capacity per entity.
+   * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
+   */
+  def withStashCapacity(size: Int): DurableStateBehavior[Command, State]
 }
