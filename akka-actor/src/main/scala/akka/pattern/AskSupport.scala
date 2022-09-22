@@ -7,11 +7,11 @@ package akka.pattern
 import java.net.URLEncoder
 import java.util.concurrent.TimeoutException
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
-import scala.annotation.nowarn
 import scala.util.control.NoStackTrace
 
 import akka.actor._
@@ -530,11 +530,11 @@ private[akka] final class PromiseActorRef(
    * Stopped               => stopped, path not yet created
    */
   @volatile
-  @nowarn("msg=never used")
+  @nowarn("msg=never updated")
   private[this] var _stateDoNotCallMeDirectly: AnyRef = _
 
   @volatile
-  @nowarn("msg=never used")
+  @nowarn("msg=never updated")
   private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
 
   @nowarn private def _preventPrivateUnusedErasure = {
