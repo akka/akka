@@ -169,7 +169,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       val input = pa :: pb :: pc :: pd :: pe :: pf :: Nil
 
       val probe =
-        Source.fromIterator(() => input.iterator).mapAsync(5)(p => p.future.map(_.toUpperCase)).runWith(TestSink.probe)
+        Source.fromIterator(() => input.iterator).mapAsync(5)(p => p.future.map(_.toUpperCase)).runWith(TestSink())
 
       probe.request(100)
       val boom = new Exception("Boom at C")
@@ -299,7 +299,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       Source
         .single(1)
         .mapAsync(1)(v => Future { Thread.sleep(20); v })
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(1)
         .expectNext(1)
         .expectComplete()
@@ -309,7 +309,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       Source
         .single(1)
         .mapAsync(1)(v => Future.successful(v))
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(1)
         .expectNext(1)
         .expectComplete()
@@ -318,14 +318,14 @@ class FlowMapAsyncSpec extends StreamSpec {
     "complete without requiring further demand (parallelism = 2)" in {
       import system.dispatcher
       val probe =
-        Source(1 :: 2 :: Nil).mapAsync(2)(v => Future { Thread.sleep(20); v }).runWith(TestSink.probe[Int])
+        Source(1 :: 2 :: Nil).mapAsync(2)(v => Future { Thread.sleep(20); v }).runWith(TestSink[Int]())
 
       probe.request(2).expectNextN(2)
       probe.expectComplete()
     }
 
     "complete without requiring further demand with already completed future (parallelism = 2)" in {
-      val probe = Source(1 :: 2 :: Nil).mapAsync(2)(v => Future.successful(v)).runWith(TestSink.probe[Int])
+      val probe = Source(1 :: 2 :: Nil).mapAsync(2)(v => Future.successful(v)).runWith(TestSink[Int]())
 
       probe.request(2).expectNextN(2)
       probe.expectComplete()

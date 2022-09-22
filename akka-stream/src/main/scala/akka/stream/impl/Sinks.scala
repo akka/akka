@@ -5,6 +5,7 @@
 package akka.stream.impl
 
 import java.util.function.BinaryOperator
+
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -13,8 +14,10 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NonFatal
+
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+
 import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi

@@ -7,7 +7,6 @@ package akka.stream.impl.fusing
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.language.reflectiveCalls
 
 import akka.Done
 import akka.actor.ActorRef
@@ -30,6 +29,11 @@ class AsyncCallbackSpec extends AkkaSpec("""
   case class Elem(n: Int)
   case object Stopped
 
+  private class GraphStageLogicWithAsyncCallback(shape: Shape) extends GraphStageLogic(shape) {
+    def callback: AsyncCallback[AnyRef] = null
+    def callbacks: Set[AsyncCallback[AnyRef]] = Set.empty
+  }
+
   class AsyncCallbackGraphStage(probe: ActorRef, early: Option[AsyncCallback[AnyRef] => Unit] = None)
       extends GraphStageWithMaterializedValue[FlowShape[Int, Int], AsyncCallback[AnyRef]] {
 
@@ -38,14 +42,13 @@ class AsyncCallbackSpec extends AkkaSpec("""
     val shape = FlowShape(in, out)
 
     def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, AsyncCallback[AnyRef]) = {
-      val logic: GraphStageLogic { val callback: AsyncCallback[AnyRef] } = new GraphStageLogic(shape) {
-        val callback = getAsyncCallback((whatever: AnyRef) => {
-          whatever match {
-            case t: Throwable     => throw t
-            case "fail-the-stage" => failStage(new RuntimeException("failing the stage"))
-            case anythingElse     => probe ! anythingElse
-          }
-        })
+      val logic = new GraphStageLogicWithAsyncCallback(shape) {
+        override val callback = getAsyncCallback {
+          case t: Throwable     => throw t
+          case "fail-the-stage" => failStage(new RuntimeException("failing the stage"))
+          case anythingElse     => probe ! anythingElse
+        }
+
         early.foreach(cb => cb(callback))
 
         override def preStart(): Unit = {
@@ -245,8 +248,8 @@ class AsyncCallbackSpec extends AkkaSpec("""
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-          val logic: GraphStageLogic { val callbacks: Set[AsyncCallback[AnyRef]] } = new GraphStageLogic(shape) {
-            val callbacks = (0 to 10).map(_ => getAsyncCallback[AnyRef](probe ! _)).toSet
+          val logic = new GraphStageLogicWithAsyncCallback(shape) {
+            override val callbacks = (0 to 10).map(_ => getAsyncCallback[AnyRef](probe ! _)).toSet
             setHandler(out, new OutHandler {
               def onPull(): Unit = ()
             })

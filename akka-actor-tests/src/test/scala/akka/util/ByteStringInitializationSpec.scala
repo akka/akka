@@ -37,19 +37,17 @@ class ByteStringInitializationSpec extends AnyWordSpec with Matchers {
         }
       }
 
-      import scala.language.reflectiveCalls
-      type WithRun = { def run(): Unit }
       cleanCl
         .loadClass("akka.util.ByteStringInitTest")
         .getDeclaredConstructor()
         .newInstance()
-        .asInstanceOf[WithRun]
+        .asInstanceOf[Runnable]
         .run()
     }
   }
 }
 
-class ByteStringInitTest {
+class ByteStringInitTest extends Runnable {
   def run(): Unit = {
     require(CompactByteString.empty ne null)
     require(ByteString.empty ne null)

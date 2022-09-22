@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.CompletionStage
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
@@ -346,7 +347,7 @@ object Source {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T, NotUsed] =
-    single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
+    fromGraph(new IterableSource[T](iterable))
 
   /**
    * Starts a new `Source` from the given `Future`. The stream will consist of
@@ -409,8 +410,7 @@ object Source {
    * Create a `Source` that will continually emit the given element.
    */
   def repeat[T](element: T): Source[T, NotUsed] = {
-    val next = Some((element, element))
-    unfold(element)(_ => next).withAttributes(DefaultAttributes.repeat)
+    fromIterator(() => Iterator.continually(element)).withAttributes(DefaultAttributes.repeat)
   }
 
   /**
@@ -751,10 +751,12 @@ object Source {
    * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(
-      strategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
+      @nowarn
+      @deprecatedName(Symbol("strategy"))
+      fanInStrategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
-      val c = b.add(strategy(rest.size + 2))
+      val c = b.add(fanInStrategy(rest.size + 2))
       first ~> c.in(0)
       second ~> c.in(1)
 
@@ -768,18 +770,38 @@ object Source {
     })
 
   /**
-   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]] with a materialized value.
+   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
+   */
+  def combine[T, U, M](sources: immutable.Seq[Graph[SourceShape[T], M]])(
+      fanInStrategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, immutable.Seq[M]] =
+    sources match {
+      case immutable.Seq()       => Source.empty.mapMaterializedValue(_ => Nil)
+      case immutable.Seq(source) => source.asInstanceOf[Source[U, M]].mapMaterializedValue(_ :: Nil)
+      case _ =>
+        Source.fromGraph(GraphDSL.create(sources) { implicit b => shapes =>
+          import GraphDSL.Implicits._
+          val c = b.add(fanInStrategy(sources.size))
+          for ((shape, i) <- shapes.zipWithIndex) {
+            shape ~> c.in(i)
+          }
+          SourceShape(c.out)
+        })
+    }
+
+  /**
+   * Combines two sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]] with a materialized value.
    */
   def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(
-      strategy: Int => Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) => M): Source[U, M] = {
-    val secondPartiallyCombined = GraphDSL.createGraph(second) { implicit b => secondShape =>
+      @nowarn
+      @deprecatedName(Symbol("strategy"))
+      fanInStrategy: Int => Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) => M): Source[U, M] =
+    Source.fromGraph(GraphDSL.createGraph(first, second)(matF) { implicit b => (shape1, shape2) =>
       import GraphDSL.Implicits._
-      val c = b.add(strategy(2))
-      secondShape ~> c.in(1)
-      FlowShape(c.in(0), c.out)
-    }
-    first.viaMat(secondPartiallyCombined)(matF)
-  }
+      val c = b.add(fanInStrategy(2))
+      shape1 ~> c.in(0)
+      shape2 ~> c.in(1)
+      SourceShape(c.out)
+    })
 
   /**
    * Combine the elements of multiple streams into a stream of sequences.

@@ -30,6 +30,7 @@ trait Message extends Serializable
  * Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFSM.StateChangeEvent]] messages.
  */
 @ccompatUsedUntil213
+@nowarn("msg=deprecated")
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import PersistentRepr.Undefined
 

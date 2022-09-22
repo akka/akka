@@ -101,3 +101,5 @@ native/
 /core
 
 .tmp
+
+/fortify-scans/

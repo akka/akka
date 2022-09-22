@@ -318,6 +318,9 @@ object BasicPersistentBehaviorCompileOnly {
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
     .eventAdapter(new WrapperEventAdapter[Event])
-  //#install-event-adapter
+    //#install-event-adapter
+    //#custom-stash-buffer
+    .withStashCapacity(100)
+  //#custom-stash-buffer
 
 }

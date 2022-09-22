@@ -185,7 +185,7 @@ and are using PersistenceFSM with Cluster Sharding, a full shutdown is required 
 If you've migrated from classic remoting to Artery
 which has a completely different protocol, a rolling update is not supported.
 For more details on this migration
-see @ref:[the migration guide](../project/migration-guide-2.5.x-2.6.x.md#migrating-from-classic-remoting-to-artery).
+see [the migration guide](https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html#migrating-from-classic-remoting-to-artery).
 
 ### Changing remoting transport
 

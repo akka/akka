@@ -20,9 +20,20 @@ import akka.persistence.Persistence
 @InternalApi private[akka] object EventSourcedSettings {
 
   def apply(system: ActorSystem[_], journalPluginId: String, snapshotPluginId: String): EventSourcedSettings =
-    apply(system.settings.config, journalPluginId, snapshotPluginId)
+    apply(system.settings.config, journalPluginId, snapshotPluginId, None)
 
-  def apply(config: Config, journalPluginId: String, snapshotPluginId: String): EventSourcedSettings = {
+  def apply(
+      system: ActorSystem[_],
+      journalPluginId: String,
+      snapshotPluginId: String,
+      customStashCapacity: Option[Int]): EventSourcedSettings =
+    apply(system.settings.config, journalPluginId, snapshotPluginId, customStashCapacity)
+
+  def apply(
+      config: Config,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      customStashCapacity: Option[Int]): EventSourcedSettings = {
     val typedConfig = config.getConfig("akka.persistence.typed")
 
     val stashOverflowStrategy = typedConfig.getString("stash-overflow-strategy").toLowerCase match {
@@ -32,7 +43,7 @@ import akka.persistence.Persistence
         throw new IllegalArgumentException(s"Unknown value for stash-overflow-strategy: [$unknown]")
     }
 
-    val stashCapacity = typedConfig.getInt("stash-capacity")
+    val stashCapacity = customStashCapacity.getOrElse(typedConfig.getInt("stash-capacity"))
     require(stashCapacity > 0, "stash-capacity MUST be > 0, unbounded buffering is not supported.")
 
     val logOnStashing = typedConfig.getBoolean("log-stashing")

@@ -112,7 +112,7 @@ From the @apidoc[stage.GraphStageLogic] the following operations are available o
 The events corresponding to an *output* port can be received in an @scala[@scaladoc[OutHandler](akka.stream.stage.OutHandler)]@java[@javadoc[AbstractOutHandler](akka.stream.stage.AbstractOutHandler)] instance registered to the
 output port using `setHandler(out,handler)`. This handler has two callbacks:
 
- * @apidoc[onPull()](akka.stream.stage.OutHandler) {scala="#onPull():Unit" java="#onPull()"] is called when the output port is ready to emit the next element, `push(out, elem)` is now allowed
+ * @apidoc[onPull()](akka.stream.stage.OutHandler) {scala="#onPull():Unit" java="#onPull()"} is called when the output port is ready to emit the next element, `push(out, elem)` is now allowed
 to be called on this port.
  * @apidoc[onDownstreamFinish()](akka.stream.stage.OutHandler) {scala="#onDownstreamFinish(cause:Throwable):Unit" java="#onDownstreamFinish(java.lang.Throwable)"} is called once the downstream has cancelled and no longer allows messages to be pushed to it.
 No more `onPull()` will arrive after this event. If not overridden this will default to stopping the operator.

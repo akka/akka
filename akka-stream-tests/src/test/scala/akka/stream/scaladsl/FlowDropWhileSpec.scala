@@ -15,18 +15,18 @@ class FlowDropWhileSpec extends StreamSpec {
   "A DropWhile" must {
 
     "drop while predicate is true" in {
-      Source(1 to 4).dropWhile(_ < 3).runWith(TestSink.probe[Int]).request(2).expectNext(3, 4).expectComplete()
+      Source(1 to 4).dropWhile(_ < 3).runWith(TestSink[Int]()).request(2).expectNext(3, 4).expectComplete()
     }
 
     "complete the future for an empty stream" in {
-      Source.empty[Int].dropWhile(_ < 2).runWith(TestSink.probe[Int]).request(1).expectComplete()
+      Source.empty[Int].dropWhile(_ < 2).runWith(TestSink[Int]()).request(1).expectComplete()
     }
 
     "continue if error" in {
       Source(1 to 4)
         .dropWhile(a => if (a < 3) true else throw TE(""))
         .withAttributes(supervisionStrategy(resumingDecider))
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(1)
         .expectComplete()
     }
@@ -39,7 +39,7 @@ class FlowDropWhileSpec extends StreamSpec {
           case 2     => throw TE("")
         }
         .withAttributes(supervisionStrategy(restartingDecider))
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(1)
         .expectNext(4)
         .expectComplete()

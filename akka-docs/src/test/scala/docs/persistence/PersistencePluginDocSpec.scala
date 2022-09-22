@@ -87,7 +87,7 @@ class PersistencePluginDocSpec extends AnyWordSpec {
           # Class name of the plugin.
           class = "docs.persistence.MySnapshotStore"
           # Dispatcher for the plugin actor.
-          plugin-dispatcher = "akka.persistence.dispatchers.default-plugin-dispatcher"
+          plugin-dispatcher = "akka.actor.default-dispatcher"
         }
         //#snapshot-store-plugin-config
       """

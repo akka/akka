@@ -841,6 +841,7 @@ sealed abstract class ByteString
     array
   }
 
+  @nowarn("msg=deprecated")
   final override def copyToArray[B >: Byte](xs: Array[B], start: Int): Int = {
     // super uses byteiterator
     copyToArray(xs, start, size.min(xs.size))
@@ -1165,7 +1166,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   override def addAll(xs: IterableOnce[Byte]): this.type = {
     xs match {
       case bs: ByteString => addAll(bs)
-      case xs: WrappedArray.ofByte =>
+      case xs: WrappedArray.ofByte @nowarn("msg=deprecated") =>
         if (xs.nonEmpty) putByteArrayUnsafe(xs.array.clone)
       case seq: collection.IndexedSeq[Byte] if shouldResizeTempFor(seq.length) =>
         if (seq.nonEmpty) {

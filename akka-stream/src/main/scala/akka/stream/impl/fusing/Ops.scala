@@ -22,6 +22,7 @@ import akka.event._
 import akka.event.Logging.LogLevel
 import akka.stream.{ Supervision, _ }
 import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.Attributes
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.Attributes.SourceLocation
 import akka.stream.OverflowStrategies._
@@ -416,18 +417,11 @@ private[stream] object Collect {
       import shape.{ in, out }
 
       // Initial behavior makes sure that the zero gets flushed if upstream is empty
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          push(out, aggregator)
-          setHandlers(in, out, self)
-        }
-      })
-
-      setHandler(
+      setHandlers(
         in,
-        new InHandler {
+        out,
+        new InHandler with OutHandler {
           override def onPush(): Unit = ()
-
           override def onUpstreamFinish(): Unit =
             setHandler(out, new OutHandler {
               override def onPull(): Unit = {
@@ -435,6 +429,10 @@ private[stream] object Collect {
                 completeStage()
               }
             })
+          override def onPull(): Unit = {
+            push(out, aggregator)
+            setHandlers(in, out, self)
+          }
         })
 
       override def onPull(): Unit = pull(in)
@@ -1397,8 +1395,9 @@ private[stream] object Collect {
 
       private var inFlight = 0
       private var buffer: BufferImpl[Out] = _
+      private val invokeFutureCB: Try[Out] => Unit = getAsyncCallback(futureCompleted).invoke
 
-      private[this] def todo = inFlight + buffer.used
+      private[this] def todo: Int = inFlight + buffer.used
 
       override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
@@ -1421,9 +1420,6 @@ private[stream] object Collect {
             else if (!hasBeenPulled(in)) tryPull(in)
         }
       }
-
-      private val futureCB = getAsyncCallback(futureCompleted)
-      private val invokeFutureCB: Try[Out] => Unit = futureCB.invoke
 
       override def onPush(): Unit = {
         try {
@@ -2145,50 +2141,45 @@ private[akka] object TakeWithin {
     val pf: PartialFunction[Throwable, Graph[SourceShape[T], M]])
     extends SimpleLinearGraphStage[T] {
 
-  override def initialAttributes = DefaultAttributes.recoverWith
+  override def initialAttributes: Attributes = DefaultAttributes.recoverWith
 
-  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
-    var attempt = 0
-
-    setHandler(in, new InHandler {
+  override def createLogic(attr: Attributes) =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      var attempt = 0
       override def onPush(): Unit = push(out, grab(in))
-
-      override def onUpstreamFailure(ex: Throwable) = onFailure(ex)
-    })
-
-    setHandler(out, new OutHandler {
+      override def onUpstreamFailure(ex: Throwable): Unit = onFailure(ex)
       override def onPull(): Unit = pull(in)
-    })
+      def onFailure(ex: Throwable): Unit =
+        if ((maximumRetries < 0 || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
+          switchTo(pf(ex))
+          attempt += 1
+        } else
+          failStage(ex)
 
-    def onFailure(ex: Throwable) =
-      if ((maximumRetries < 0 || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
-        switchTo(pf(ex))
-        attempt += 1
-      } else
-        failStage(ex)
+      def switchTo(source: Graph[SourceShape[T], M]): Unit = {
+        val sinkIn = new SubSinkInlet[T]("RecoverWithSink")
 
-    def switchTo(source: Graph[SourceShape[T], M]): Unit = {
-      val sinkIn = new SubSinkInlet[T]("RecoverWithSink")
+        sinkIn.setHandler(new InHandler {
+          override def onPush(): Unit = push(out, sinkIn.grab())
 
-      sinkIn.setHandler(new InHandler {
-        override def onPush(): Unit = push(out, sinkIn.grab())
+          override def onUpstreamFinish(): Unit = completeStage()
 
-        override def onUpstreamFinish(): Unit = completeStage()
+          override def onUpstreamFailure(ex: Throwable): Unit = onFailure(ex)
+        })
 
-        override def onUpstreamFailure(ex: Throwable) = onFailure(ex)
-      })
+        val outHandler = new OutHandler {
+          override def onPull(): Unit = sinkIn.pull()
 
-      val outHandler = new OutHandler {
-        override def onPull(): Unit = sinkIn.pull()
+          override def onDownstreamFinish(cause: Throwable): Unit = sinkIn.cancel(cause)
+        }
 
-        override def onDownstreamFinish(cause: Throwable): Unit = sinkIn.cancel(cause)
+        Source.fromGraph(source).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+        setHandler(out, outHandler)
+        if (isAvailable(out)) sinkIn.pull()
       }
 
-      Source.fromGraph(source).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
-      setHandler(out, outHandler)
-      if (isAvailable(out)) sinkIn.pull()
+      setHandlers(in, out, this)
     }
-  }
 
   override def toString: String = "RecoverWith"
 }
@@ -2197,8 +2188,13 @@ private[akka] object TakeWithin {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) => (S, Out), onComplete: S => Option[Out])
+private[akka] final class StatefulMap[S, In, Out](
+    attributes: Attributes,
+    create: () => S,
+    f: (S, In) => (S, Out),
+    onComplete: S => Option[Out])
     extends GraphStage[FlowShape[In, Out]] {
+  require(attributes != null, "attributes should not be null")
   require(create != null, "create function should not be null")
   require(f != null, "f function should not be null")
   require(onComplete != null, "onComplete function should not be null")
@@ -2207,7 +2203,7 @@ private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) =>
   private val out = Outlet[Out]("StatefulMap.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
-  override protected def initialAttributes: Attributes = DefaultAttributes.statefulMap and SourceLocation.forLambda(f)
+  override protected def initialAttributes: Attributes = attributes
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -2263,11 +2259,11 @@ private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) =>
       }
 
       private def closeStateAndFail(ex: Throwable): Unit = {
+        needInvokeOnCompleteCallback = false
         onComplete(state) match {
           case Some(elem) => emit(out, elem, () => failStage(ex))
           case None       => failStage(ex)
         }
-        needInvokeOnCompleteCallback = false
       }
 
       override def onPull(): Unit = pull(in)

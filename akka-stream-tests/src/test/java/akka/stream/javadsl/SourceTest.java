@@ -929,6 +929,19 @@ public class SourceTest extends StreamTest {
     probe.expectMsgAllOf(0, 1, 2, 3);
   }
 
+  @Test
+  public void mustBeAbleToCombineN() throws Exception {
+    final Source<Integer, NotUsed> source1 = Source.single(1);
+    final Source<Integer, NotUsed> source2 = Source.single(2);
+    final Source<Integer, NotUsed> source3 = Source.single(3);
+    final List<Source<Integer, NotUsed>> sources = Arrays.asList(source1, source2, source3);
+    final CompletionStage<Integer> result =
+        Source.combine(sources, Concat::create)
+            .runWith(Sink.collect(Collectors.toList()), system)
+            .thenApply(list -> list.stream().mapToInt(l -> l).sum());
+    assertEquals(6, result.toCompletableFuture().get(3, TimeUnit.SECONDS).intValue());
+  }
+
   @SuppressWarnings("unchecked")
   @Test
   public void mustBeAbleToZipN() throws Exception {

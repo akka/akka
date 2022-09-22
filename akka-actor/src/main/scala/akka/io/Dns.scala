@@ -67,6 +67,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   sealed trait Command
 
   @deprecated("Use cached(DnsProtocol.Resolve)", "2.6.0")
+  @nowarn("msg=deprecated")
   case class Resolve(name: String) extends Command with ConsistentHashable {
     override def consistentHashKey = name
   }
