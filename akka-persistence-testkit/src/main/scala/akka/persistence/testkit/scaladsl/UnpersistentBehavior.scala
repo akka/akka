@@ -5,11 +5,12 @@
 package akka.persistence.testkit.scaladsl
 
 import akka.actor.typed.Behavior
-import akka.persistence.testkit.internal.{ Unpersistent, PersistenceProbeImpl }
+import akka.persistence.testkit.internal.{ PersistenceProbeImpl, Unpersistent }
 
 import scala.reflect.ClassTag
 
 object UnpersistentBehavior {
+
   /** Given an EventSourcedBehavior, produce a non-persistent Behavior which synchronously publishes events and snapshots
    *  for inspection.  State is updated as in the EventSourcedBehavior, and side effects are performed synchronously.  The
    *  resulting Behavior is, contingent on the command handling, event handling, and side effects being compatible with the
@@ -20,29 +21,31 @@ object UnpersistentBehavior {
    */
   def fromEventSourced[Command, Event, State](
       behavior: Behavior[Command],
-      initialStateAndSequenceNr: Option[(State, Long)] = None): (Behavior[Command], PersistenceProbe[Event], PersistenceProbe[State]) = {
+      initialStateAndSequenceNr: Option[(State, Long)] = None)
+      : (Behavior[Command], PersistenceProbe[Event], PersistenceProbe[State]) = {
     val eventProbe = new PersistenceProbeImpl[Event]
     val snapshotProbe = new PersistenceProbeImpl[State]
     val resultingBehavior =
-      Unpersistent.eventSourced(behavior, initialStateAndSequenceNr) { (event: Event, sequenceNr: Long, tags: Set[String]) =>
+      Unpersistent.eventSourced(behavior, initialStateAndSequenceNr) {
+        (event: Event, sequenceNr: Long, tags: Set[String]) =>
           eventProbe.persist((event, sequenceNr, tags))
-        } { (snapshot, sequenceNr) =>
-          snapshotProbe.persist((snapshot, sequenceNr, Set.empty))
-        }
+      } { (snapshot, sequenceNr) =>
+        snapshotProbe.persist((snapshot, sequenceNr, Set.empty))
+      }
 
     (resultingBehavior, eventProbe.asScala, snapshotProbe.asScala)
   }
 
   def fromEventSourced[Command, Event, State](
-    behavior: Behavior[Command],
-    initialState: State): (Behavior[Command], PersistenceProbe[Event], PersistenceProbe[State]) =
+      behavior: Behavior[Command],
+      initialState: State): (Behavior[Command], PersistenceProbe[Event], PersistenceProbe[State]) =
     fromEventSourced(behavior, Some(initialState -> 0L))
 
   def fromDurableState[Command, State](
       behavior: Behavior[Command],
       initialState: Option[State] = None): (Behavior[Command], PersistenceProbe[State]) = {
     val probe = new PersistenceProbeImpl[State]
-    
+
     Unpersistent.durableState(behavior, initialState) { (state, version, tag) =>
       probe.persist((state, version, if (tag.isEmpty) Set.empty else Set(tag)))
     } -> probe.asScala
@@ -52,6 +55,7 @@ object UnpersistentBehavior {
 case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
 
 trait PersistenceProbe[T] {
+
   /** Collect all persistence effects from the probe and empty the probe */
   def drain(): Seq[(PersistenceEffect[T])]
 
@@ -61,7 +65,7 @@ trait PersistenceProbe[T] {
   /** Get and remove the oldest persistence effect from the probe, failing if the
    *  persisted object is not of the requested type
    */
-  def expectPersistedType[S <: T : ClassTag](): PersistenceEffect[S]
+  def expectPersistedType[S <: T: ClassTag](): PersistenceEffect[S]
 
   /** Are there any persistence effects? */
   def hasEffects: Boolean

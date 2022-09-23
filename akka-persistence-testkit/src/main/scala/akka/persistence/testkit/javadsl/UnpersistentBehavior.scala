@@ -36,11 +36,12 @@ object UnpersistentBehavior {
     val snapshotProbe = new PersistenceProbeImpl[State]
 
     val b =
-      Unpersistent.eventSourced(behavior, initialStateAndSequenceNr) { (event: Event, sequenceNr: Long, tags: ScalaSet[String]) =>
+      Unpersistent.eventSourced(behavior, initialStateAndSequenceNr) {
+        (event: Event, sequenceNr: Long, tags: ScalaSet[String]) =>
           eventProbe.persist((event, sequenceNr, tags))
-        } { (snapshot, sequenceNr) =>
-          snapshotProbe.persist((snapshot, sequenceNr, ScalaSet.empty))
-        }
+      } { (snapshot, sequenceNr) =>
+        snapshotProbe.persist((snapshot, sequenceNr, ScalaSet.empty))
+      }
 
     new UnpersistentBehavior(b, eventProbe.asJava, snapshotProbe.asJava)
   }
@@ -97,6 +98,7 @@ class UnpersistentBehavior[Command, Event, State] private (
 case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
 
 trait PersistenceProbe[T] {
+
   /** Collect all persistence effects from the probe and empty the probe */
   def getAllEffects(): List[PersistenceEffect[T]]
 

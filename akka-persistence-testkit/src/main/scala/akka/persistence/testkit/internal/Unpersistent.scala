@@ -30,9 +30,11 @@ import java.util.concurrent.ConcurrentLinkedQueue
 object Unpersistent {
 
   def eventSourced[Command, Event, State](behavior: Behavior[Command], fromStateAndSequenceNr: Option[(State, Long)])(
-    onEvent: (Event, Long, Set[String]) => Unit)(onSnapshot: (State, Long) => Unit): Behavior[Command] = {
+      onEvent: (Event, Long, Set[String]) => Unit)(onSnapshot: (State, Long) => Unit): Behavior[Command] = {
     @tailrec
-    def findEventSourcedBehavior(b: Behavior[Command], context: ActorContext[Command]): Option[EventSourcedBehaviorImpl[Command, Event, State]] = {
+    def findEventSourcedBehavior(
+        b: Behavior[Command],
+        context: ActorContext[Command]): Option[EventSourcedBehaviorImpl[Command, Event, State]] = {
       b match {
         case es: EventSourcedBehaviorImpl[Command, _, _] =>
           Some(es.asInstanceOf[EventSourcedBehaviorImpl[Command, Event, State]])
@@ -45,23 +47,22 @@ object Unpersistent {
     }
 
     Behaviors.setup[Command] { context =>
-      findEventSourcedBehavior(behavior, context)
-        .fold {
-          throw new AssertionError("Did not find the expected EventSourcedBehavior")
-        } { esBehavior =>
-          val (initialState, initialSequenceNr) = fromStateAndSequenceNr.getOrElse(esBehavior.emptyState -> 0L)
-          new WrappedEventSourcedBehavior(context, esBehavior, initialState, initialSequenceNr, onEvent, onSnapshot)
-        }
+      findEventSourcedBehavior(behavior, context).fold {
+        throw new AssertionError("Did not find the expected EventSourcedBehavior")
+      } { esBehavior =>
+        val (initialState, initialSequenceNr) = fromStateAndSequenceNr.getOrElse(esBehavior.emptyState -> 0L)
+        new WrappedEventSourcedBehavior(context, esBehavior, initialState, initialSequenceNr, onEvent, onSnapshot)
+      }
     }
   }
 
-  def durableState[Command, State](
-      behavior: Behavior[Command],
-      fromState: Option[State])(
+  def durableState[Command, State](behavior: Behavior[Command], fromState: Option[State])(
       onPersist: (State, Long, String) => Unit): Behavior[Command] = {
 
     @tailrec
-    def findDurableStateBehavior(b: Behavior[Command], context: ActorContext[Command]): Option[DurableStateBehaviorImpl[Command, State]] =
+    def findDurableStateBehavior(
+        b: Behavior[Command],
+        context: ActorContext[Command]): Option[DurableStateBehaviorImpl[Command, State]] =
       b match {
         case ds: DurableStateBehaviorImpl[Command, _] =>
           Some(ds.asInstanceOf[DurableStateBehaviorImpl[Command, State]])
@@ -71,13 +72,12 @@ object Unpersistent {
       }
 
     Behaviors.setup[Command] { context =>
-      findDurableStateBehavior(behavior, context)
-        .fold {
-          throw new AssertionError("Did not find the expected DurableStateBehavior")
-        } { dsBehavior =>
-          val initialState = fromState.getOrElse(dsBehavior.emptyState)
-          new WrappedDurableStateBehavior(context, dsBehavior, initialState, onPersist)
-        }
+      findDurableStateBehavior(behavior, context).fold {
+        throw new AssertionError("Did not find the expected DurableStateBehavior")
+      } { dsBehavior =>
+        val initialState = fromState.getOrElse(dsBehavior.emptyState)
+        new WrappedDurableStateBehavior(context, dsBehavior, initialState, onPersist)
+      }
     }
   }
 
@@ -88,7 +88,8 @@ object Unpersistent {
       initialSequenceNr: Long,
       onEvent: (Event, Long, Set[String]) => Unit,
       onSnapshot: (State, Long) => Unit)
-      extends AbstractBehavior[Command](context) with WithSeqNrAccessible {
+      extends AbstractBehavior[Command](context)
+      with WithSeqNrAccessible {
     import akka.persistence.typed.{ EventSourcedSignal, RecoveryCompleted, SnapshotCompleted, SnapshotMetadata }
     import akka.persistence.typed.internal._
 
@@ -201,8 +202,9 @@ object Unpersistent {
       context: ActorContext[Command],
       dsBehavior: DurableStateBehaviorImpl[Command, State],
       initialState: State,
-      onPersist: (State, Long, String) => Unit
-      ) extends AbstractBehavior[Command](context) with WithRevisionAccessible {
+      onPersist: (State, Long, String) => Unit)
+      extends AbstractBehavior[Command](context)
+      with WithRevisionAccessible {
 
     import akka.persistence.typed.state.{ DurableStateSignal, RecoveryCompleted }
     import akka.persistence.typed.state.internal._
@@ -314,16 +316,14 @@ class PersistenceProbeImpl[T] {
 
       def extract(): PersistenceEffect[T] = persistenceEffect(rawExtract())
 
-      def expectPersistedType[S <: T : ClassTag](): PersistenceEffect[S] =
+      def expectPersistedType[S <: T: ClassTag](): PersistenceEffect[S] =
         rawExtract() match {
           case (obj: S, sequenceNr, tags) => PersistenceEffect(obj, sequenceNr, tags)
           case (extracted, _, _) =>
             throw new AssertionError(
               s"Expected object of type [${implicitly[ClassTag[S]].runtimeClass.getName}] to be persisted, " +
-              s"but actual was of type [${extracted.getClass.getName}]"
-            )
+              s"but actual was of type [${extracted.getClass.getName}]")
         }
-
 
       def hasEffects: Boolean = !queue.isEmpty
 
@@ -331,9 +331,7 @@ class PersistenceProbeImpl[T] {
         rawExtract() match {
           case (persistedObj, _, _) if obj == persistedObj => this
           case (persistedObj, _, _) =>
-            throw new AssertionError(
-              s"Expected object [$obj] to be persisted, but actual was [$persistedObj]"
-            )
+            throw new AssertionError(s"Expected object [$obj] to be persisted, but actual was [$persistedObj]")
         }
 
       def expectPersisted(obj: T, tag: String): PersistenceProbe[T] =
@@ -342,19 +340,15 @@ class PersistenceProbeImpl[T] {
 
           case (persistedObj, _, tags) if obj == persistedObj =>
             throw new AssertionError(
-              s"Expected persistence with tag [$tag], but actual tags were [${tags.mkString(",")}]"
-            )
+              s"Expected persistence with tag [$tag], but actual tags were [${tags.mkString(",")}]")
 
           case (persistedObj, _, tags) if tags(tag) =>
-            throw new AssertionError(
-              s"Expected object [$obj] to be persisted, but actual was [$persistedObj]"
-            )
+            throw new AssertionError(s"Expected object [$obj] to be persisted, but actual was [$persistedObj]")
 
           case (persistedObj, _, tags) =>
             throw new AssertionError(
               s"Expected object [$obj] to be persisted with tag [$tag], " +
-              s"but actual object was [$persistedObj] with tags [${tags.mkString(",")}]"
-            )
+              s"but actual object was [$persistedObj] with tags [${tags.mkString(",")}]")
         }
 
       def expectPersisted(obj: T, tags: Set[String]): PersistenceProbe[T] =
@@ -367,19 +361,15 @@ class PersistenceProbeImpl[T] {
             throw new AssertionError(
               s"Expected persistence with [${tags.mkString(",")}], " +
               s"but saw unexpected actual tags [${unexpected.mkString(",")}] and " +
-              s"did not see actual tags [${notPersistedWith.mkString(",")}]"
-            )
+              s"did not see actual tags [${notPersistedWith.mkString(",")}]")
 
           case (persistedObj, _, persistedTags) if tags == persistedTags =>
-            throw new AssertionError(
-              s"Expected object [$obj] to be persisted, but actual was [$persistedObj}]"
-            )
+            throw new AssertionError(s"Expected object [$obj] to be persisted, but actual was [$persistedObj}]")
 
           case (persistedObj, _, persistedTags) =>
             throw new AssertionError(
               s"Expected object [$obj] to be persisted with tags [${tags.mkString(",")}], " +
-              s"but actual object was [$persistedObj] with tags [${persistedTags.mkString(",")}]"
-            )
+              s"but actual object was [$persistedObj] with tags [${persistedTags.mkString(",")}]")
         }
 
       private def persistenceEffect(elem: Element): PersistenceEffect[T] =
@@ -388,7 +378,7 @@ class PersistenceProbeImpl[T] {
 
   def asJava: javadsl.PersistenceProbe[T] =
     new javadsl.PersistenceProbe[T] {
-      import javadsl.{ PersistenceProbe, PersistenceEffect }
+      import javadsl.{ PersistenceEffect, PersistenceProbe }
       import java.util.{ List => JList, Set => JSet }
 
       def getAllEffects(): JList[PersistenceEffect[T]] = {
@@ -411,8 +401,7 @@ class PersistenceProbeImpl[T] {
           case (extracted, _, _) =>
             throw new AssertionError(
               s"Expected object of type [${clazz.getName}] to be persisted, " +
-              s"but actual was of type [${extracted.getClass.getName}]"
-            )
+              s"but actual was of type [${extracted.getClass.getName}]")
         }
 
       def hasEffects: Boolean = !queue.isEmpty
@@ -421,9 +410,7 @@ class PersistenceProbeImpl[T] {
         rawExtract() match {
           case (persistedObj, _, _) if obj == persistedObj => this
           case (persistedObj, _, _) =>
-            throw new AssertionError(
-              s"Expected object [$obj] to be persisted, but actual was [$persistedObj]"
-            )
+            throw new AssertionError(s"Expected object [$obj] to be persisted, but actual was [$persistedObj]")
         }
 
       def expectPersisted(obj: T, tag: String): PersistenceProbe[T] =
@@ -432,19 +419,15 @@ class PersistenceProbeImpl[T] {
 
           case (persistedObj, _, tags) if obj == persistedObj =>
             throw new AssertionError(
-              s"Expected persistence with tag [$tag], but actual tags were [${tags.mkString(",")}]"
-            )
+              s"Expected persistence with tag [$tag], but actual tags were [${tags.mkString(",")}]")
 
           case (persistedObj, _, tags) if tags(tag) =>
-            throw new AssertionError(
-              s"Expected object [$obj] to be persisted, but actual was [$persistedObj]"
-            )
+            throw new AssertionError(s"Expected object [$obj] to be persisted, but actual was [$persistedObj]")
 
           case (persistedObj, _, tags) =>
             throw new AssertionError(
               s"Expected object [$obj] to be persisted with tag [$tag], " +
-              s"but actual object was [$persistedObj] with tags [${tags.mkString(",")}]"
-            )
+              s"but actual object was [$persistedObj] with tags [${tags.mkString(",")}]")
         }
 
       def expectPersisted(obj: T, tags: JSet[String]): PersistenceProbe[T] = {
@@ -464,19 +447,15 @@ class PersistenceProbeImpl[T] {
             throw new AssertionError(
               s"Expected persistence with [${sTags.mkString(",")}], " +
               s"but saw unexpected actual tags [${unexpected.mkString(",")}] and " +
-              s"did not see actual tags [${notPersistedWith.mkString(",")}]"
-            )
+              s"did not see actual tags [${notPersistedWith.mkString(",")}]")
 
           case (persistedObj, _, persistedTags) if sameTags(persistedTags) =>
-            throw new AssertionError(
-              s"Expected object [$obj] to be persisted, but actual was [$persistedObj}]"
-            )
+            throw new AssertionError(s"Expected object [$obj] to be persisted, but actual was [$persistedObj}]")
 
           case (persistedObj, _, persistedTags) =>
             throw new AssertionError(
               s"Expected object [$obj] to be persisted with tags [${sTags.mkString(",")}], " +
-              s"but actual object was [$persistedObj] with tags [${persistedTags.mkString(",")}]"
-            )
+              s"but actual object was [$persistedObj] with tags [${persistedTags.mkString(",")}]")
         }
       }
 

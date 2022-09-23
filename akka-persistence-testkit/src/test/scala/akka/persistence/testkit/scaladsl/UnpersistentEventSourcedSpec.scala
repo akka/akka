@@ -303,15 +303,14 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       val randomStartingOffset =
         scala.util.Random.nextLong() match {
           case Long.MinValue => Long.MaxValue
-          case x if x < 0 => -x
-          case x => x
+          case x if x < 0    => -x
+          case x             => x
         }
 
       val (unpersistent, changes) =
         UnpersistentBehavior.fromEventSourced[Command, Event, State](
           behavior,
-          Some(initialState -> randomStartingOffset)
-        )
+          Some(initialState -> randomStartingOffset))
 
       val replyTo = TestInbox[Long]()
       val testkit = BehaviorTestKit(unpersistent)
