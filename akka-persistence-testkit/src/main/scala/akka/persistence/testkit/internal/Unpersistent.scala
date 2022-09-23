@@ -300,30 +300,30 @@ class PersistenceProbeImpl[T] {
 
   def asScala: scaladsl.PersistenceProbe[T] =
     new scaladsl.PersistenceProbe[T] {
-      import scaladsl.PersistenceProbe
+      import scaladsl.{ PersistenceEffect, PersistenceProbe }
 
-      def drain(): Seq[Element] = {
+      def drain(): Seq[PersistenceEffect[T]] = {
         @annotation.tailrec
-        def iter(acc: List[Element]): List[Element] = {
+        def iter(acc: List[PersistenceEffect[T]]): List[PersistenceEffect[T]] = {
           val elem = queue.poll()
-          if (elem == null) acc else iter(elem :: acc)
+          if (elem == null) acc else iter(persistenceEffect(elem) :: acc)
         }
 
         iter(Nil).reverse
       }
 
-      def extract(): Element = rawExtract()
+      def extract(): PersistenceEffect[T] = persistenceEffect(rawExtract())
 
-      def expectPersistedType[S <: T : ClassTag](): (S, Long, Set[String]) = {
-        extract() match {
-          case (obj: S, sequenceNr, tags) => (obj, sequenceNr, tags)
+      def expectPersistedType[S <: T : ClassTag](): PersistenceEffect[S] =
+        rawExtract() match {
+          case (obj: S, sequenceNr, tags) => PersistenceEffect(obj, sequenceNr, tags)
           case (extracted, _, _) =>
             throw new AssertionError(
               s"Expected object of type [${implicitly[ClassTag[S]].runtimeClass.getName}] to be persisted, " +
               s"but actual was of type [${extracted.getClass.getName}]"
             )
         }
-      }
+
 
       def hasEffects: Boolean = !queue.isEmpty
 
@@ -381,6 +381,9 @@ class PersistenceProbeImpl[T] {
               s"but actual object was [$persistedObj] with tags [${persistedTags.mkString(",")}]"
             )
         }
+
+      private def persistenceEffect(elem: Element): PersistenceEffect[T] =
+        PersistenceEffect(elem._1, elem._2, elem._3)
     }
 
   def asJava: javadsl.PersistenceProbe[T] =

@@ -21,25 +21,25 @@ object UnpersistentBehavior {
    *  assumes an unbounded stash for commands.
    *
    *  @param behavior a (possibly wrapped) EventSourcedBehavior to serve as the basis for the unpersistent behavior
-   *  @param fromState start the unpersistent behavior with this state; if null, behavior's initialState will be used
-   *  @param fromOffset start the unpersistent behavior with this offset; only applies if fromState is non-null
+   *  @param initialState start the unpersistent behavior with this state; if null, behavior's initialState will be used
+   *  @param initialSequenceNr start the unpersistent behavior with this sequence number; only applies if initialState is non-null
    *  @return an UnpersistentBehavior based on an EventSourcedBehavior
    */
   def fromEventSourced[Command, Event, State](
       behavior: Behavior[Command],
-      fromState: State,
-      fromOffset: Long): UnpersistentBehavior[Command, Event, State] = {
-    require(fromOffset >= 0, "fromOffset must be at least zero")
+      initialState: State,
+      initialSequenceNr: Long): UnpersistentBehavior[Command, Event, State] = {
+    require(initialSequenceNr >= 0, "initialSequenceNr must be at least zero")
 
-    val fromStateAndOffset = Option(fromState).map(_ -> fromOffset)
+    val initialStateAndSequenceNr = Option(initialState).map(_ -> initialSequenceNr)
     val eventProbe = new PersistenceProbeImpl[Event]
     val snapshotProbe = new PersistenceProbeImpl[State]
 
     val b =
-      Unpersistent.eventSourced(behavior, fromStateAndOffset) { (event: Event, offset: Long, tags: ScalaSet[String]) =>
-          eventProbe.persist((event, offset, tags))
-        } { (snapshot, offset) =>
-          snapshotProbe.persist((snapshot, offset, ScalaSet.empty))
+      Unpersistent.eventSourced(behavior, initialStateAndSequenceNr) { (event: Event, sequenceNr: Long, tags: ScalaSet[String]) =>
+          eventProbe.persist((event, sequenceNr, tags))
+        } { (snapshot, sequenceNr) =>
+          snapshotProbe.persist((snapshot, sequenceNr, ScalaSet.empty))
         }
 
     new UnpersistentBehavior(b, eventProbe.asJava, snapshotProbe.asJava)
@@ -51,10 +51,10 @@ object UnpersistentBehavior {
 
   def fromDurableState[Command, State](
       behavior: Behavior[Command],
-      fromState: State): UnpersistentBehavior[Command, Void, State] = {
+      initialState: State): UnpersistentBehavior[Command, Void, State] = {
     val probe = new PersistenceProbeImpl[State]
     val b =
-      Unpersistent.durableState(behavior, Option(fromState)) { (state, version, tag) =>
+      Unpersistent.durableState(behavior, Option(initialState)) { (state, version, tag) =>
         probe.persist((state, version, if (tag == "") ScalaSet.empty else ScalaSet(tag)))
       }
 
@@ -94,7 +94,7 @@ class UnpersistentBehavior[Command, Event, State] private (
   def getSnapshotProbe(): PersistenceProbe[State] = stateProbe
 }
 
-case class PersistenceEffect[T](persistedObject: T, offset: Long, tags: Set[String])
+case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
 
 trait PersistenceProbe[T] {
   /** Collect all persistence effects from the probe and empty the probe */

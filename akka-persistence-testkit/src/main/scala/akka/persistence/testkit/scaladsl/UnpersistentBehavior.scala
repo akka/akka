@@ -20,41 +20,48 @@ object UnpersistentBehavior {
    */
   def fromEventSourced[Command, Event, State](
       behavior: Behavior[Command],
-      fromStateAndOffset: Option[(State, Long)] = None): (Behavior[Command], PersistenceProbe[Event], PersistenceProbe[State]) = {
+      initialStateAndSequenceNr: Option[(State, Long)] = None): (Behavior[Command], PersistenceProbe[Event], PersistenceProbe[State]) = {
     val eventProbe = new PersistenceProbeImpl[Event]
     val snapshotProbe = new PersistenceProbeImpl[State]
     val resultingBehavior =
-      Unpersistent.eventSourced(behavior, fromStateAndOffset) { (event: Event, offset: Long, tags: Set[String]) =>
-          eventProbe.persist((event, offset, tags))
-        } { (snapshot, offset) =>
-          snapshotProbe.persist((snapshot, offset, Set.empty))
+      Unpersistent.eventSourced(behavior, initialStateAndSequenceNr) { (event: Event, sequenceNr: Long, tags: Set[String]) =>
+          eventProbe.persist((event, sequenceNr, tags))
+        } { (snapshot, sequenceNr) =>
+          snapshotProbe.persist((snapshot, sequenceNr, Set.empty))
         }
 
     (resultingBehavior, eventProbe.asScala, snapshotProbe.asScala)
   }
 
+  def fromEventSourced[Command, Event, State](
+    behavior: Behavior[Command],
+    initialState: State): (Behavior[Command], PersistenceProbe[Event], PersistenceProbe[State]) =
+    fromEventSourced(behavior, Some(initialState -> 0L))
+
   def fromDurableState[Command, State](
       behavior: Behavior[Command],
-      fromState: Option[State] = None): (Behavior[Command], PersistenceProbe[State]) = {
+      initialState: Option[State] = None): (Behavior[Command], PersistenceProbe[State]) = {
     val probe = new PersistenceProbeImpl[State]
     
-    Unpersistent.durableState(behavior, fromState) { (state, version, tag) =>
+    Unpersistent.durableState(behavior, initialState) { (state, version, tag) =>
       probe.persist((state, version, if (tag.isEmpty) Set.empty else Set(tag)))
     } -> probe.asScala
   }
 }
 
+case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
+
 trait PersistenceProbe[T] {
   /** Collect all persistence effects from the probe and empty the probe */
-  def drain(): Seq[(T, Long, Set[String])]
+  def drain(): Seq[(PersistenceEffect[T])]
 
   /** Get and remove the oldest persistence effect from the probe */
-  def extract(): (T, Long, Set[String])
+  def extract(): (PersistenceEffect[T])
 
   /** Get and remove the oldest persistence effect from the probe, failing if the
    *  persisted object is not of the requested type
    */
-  def expectPersistedType[S <: T : ClassTag](): (S, Long, Set[String])
+  def expectPersistedType[S <: T : ClassTag](): PersistenceEffect[S]
 
   /** Are there any persistence effects? */
   def hasEffects: Boolean
