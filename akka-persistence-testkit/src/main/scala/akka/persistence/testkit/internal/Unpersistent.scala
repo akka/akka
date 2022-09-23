@@ -328,7 +328,7 @@ class PersistenceProbeImpl[T] {
       def hasEffects: Boolean = !queue.isEmpty
 
       def expectPersisted(obj: T): PersistenceProbe[T] =
-        extract() match {
+        rawExtract() match {
           case (persistedObj, _, _) if obj == persistedObj => this
           case (persistedObj, _, _) =>
             throw new AssertionError(
@@ -337,7 +337,7 @@ class PersistenceProbeImpl[T] {
         }
 
       def expectPersisted(obj: T, tag: String): PersistenceProbe[T] =
-        extract() match {
+        rawExtract() match {
           case (persistedObj, _, tags) if (obj == persistedObj) && (tags(tag)) => this
 
           case (persistedObj, _, tags) if obj == persistedObj =>
@@ -358,7 +358,7 @@ class PersistenceProbeImpl[T] {
         }
 
       def expectPersisted(obj: T, tags: Set[String]): PersistenceProbe[T] =
-        extract() match {
+        rawExtract() match {
           case (persistedObj, _, persistedTags) if (obj == persistedObj) && (tags == persistedTags) => this
           case (persistedObj, _, persistedTags) if obj == persistedObj =>
             val unexpected = persistedTags.diff(tags)
