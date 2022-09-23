@@ -191,7 +191,7 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
         .mapAsyncPartitioned(5, 1)(_ % 7) { (elem, _) =>
           promises(elem).future.map(n => ('A' + n).toChar)
         }
-        .runWith(TestSink.probe)
+        .runWith(TestSink())
 
     probe.request(100)
     val failure = new Exception("BOOM två")
