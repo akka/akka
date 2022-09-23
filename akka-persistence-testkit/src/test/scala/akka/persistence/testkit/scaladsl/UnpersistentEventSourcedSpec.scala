@@ -7,8 +7,7 @@ package akka.persistence.testkit.scaladsl
 import akka.Done
 import akka.actor.typed.{ Behavior, RecipientRef }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.testkit.{ EventPersisted, StatePersisted }
-import akka.persistence.typed.{ PersistenceId, RecoveryCompleted, SnapshotCompleted, SnapshotMetadata }
+import akka.persistence.typed.{ PersistenceId, RecoveryCompleted }
 import akka.persistence.typed.scaladsl._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -33,10 +32,7 @@ object UnpersistentEventSourcedSpec {
 
     val initialState = State(0, Map.empty, Int.MaxValue)
 
-    def apply(
-        id: String,
-        recoveryDone: RecipientRef[Done],
-        snapshotMetaTo: RecipientRef[SnapshotMetadata]): Behavior[Command] =
+    def apply(id: String, recoveryDone: RecipientRef[Done]): Behavior[Command] =
       Behaviors.setup { context =>
         context.setLoggerName(s"entity-$id")
 
@@ -49,10 +45,6 @@ object UnpersistentEventSourcedSpec {
             case (state, RecoveryCompleted) =>
               context.log.debug("Recovered state for id [{}] is [{}]", id, state)
               recoveryDone ! Done
-
-            case (_, SnapshotCompleted(meta)) =>
-              context.log.debug("Snapshot completed with metadata {}", meta)
-              snapshotMetaTo ! meta
           }
           .snapshotWhen {
             case (_, SnapshotMade, _) => true
@@ -154,45 +146,37 @@ object UnpersistentEventSourcedSpec {
 class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
   import akka.actor.testkit.typed.scaladsl._
   import org.slf4j.event.Level
-  import UnpersistentBehavior.drainChangesToList
 
   import UnpersistentEventSourcedSpec._
 
   "Unpersistent EventSourcedBehavior" must {
-    "generate an empty Behavior from a non-EventSourcedBehavior" in {
+    "generate a failing behavior from a non-EventSourcedBehavior" in {
       val notEventSourced =
         Behaviors.receive[Any] { (context, msg) =>
           context.log.info("Got message {}", msg)
           Behaviors.same
         }
 
-      val (unpersistent, changes) = UnpersistentBehavior.fromEventSourced[Any, Any, Any](notEventSourced)
-
-      val testkit = BehaviorTestKit(unpersistent)
-      testkit.run("Hello there")
-      assert(changes.isEmpty, "should be no changes")
-      assert(!testkit.hasEffects(), "should be no effects")
-      val logs = testkit.logEntries()
-      logs.size shouldBe 1
-      logs.head.level shouldBe Level.WARN
-      logs.head.message shouldBe "Did not find the expected EventSourcedBehavior"
-
-      succeed
+      val (unpersistent, eventProbe, snapshotProbe) =
+        UnpersistentBehavior.fromEventSourced[Any, Any, Any](notEventSourced)
+      an[AssertionError] shouldBe thrownBy { BehaviorTestKit(unpersistent) }
+      an[AssertionError] shouldBe thrownBy { eventProbe.extract() }
+      an[AssertionError] shouldBe thrownBy { snapshotProbe.extract() }
     }
 
     "generate a Behavior from an EventSourcedBehavior and process RecoveryCompleted" in {
       import BehaviorUnderTest._
 
       val recoveryDone = TestInbox[Done]()
-      val snapshotMeta = TestInbox[SnapshotMetadata]()
-      val behavior = BehaviorUnderTest("test-1", recoveryDone.ref, snapshotMeta.ref)
+      val behavior = BehaviorUnderTest("test-1", recoveryDone.ref)
 
-      val (unpersistent, changes) = UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior)
+      val (unpersistent, eventProbe, snapshotProbe) =
+        UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior)
 
       val testkit = BehaviorTestKit(unpersistent)
-      assert(changes.isEmpty, "should not be changes yet")
+      assert(!eventProbe.hasEffects, "should not be events")
+      assert(!snapshotProbe.hasEffects, "should not be snapshots")
       recoveryDone.expectMessage(Done)
-      assert(!snapshotMeta.hasMessages, "snapshot should not be made")
       val logs = testkit.logEntries()
       logs.size shouldBe 1
       logs.head.level shouldBe Level.DEBUG
@@ -202,10 +186,10 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
     "publish events and evolve observed state in response to commands" in {
       import BehaviorUnderTest._
 
-      val snapshotMeta = TestInbox[SnapshotMetadata]()
-      val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref, snapshotMeta.ref)
+      val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
 
-      val (unpersistent, changes) = UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior)
+      val (unpersistent, eventProbe, snapshotProbe) =
+        UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior)
 
       val testkit = BehaviorTestKit(unpersistent)
       testkit.clearLog()
@@ -213,57 +197,50 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
 
       testkit.run(PersistDomainEvent(replyTo.ref))
       replyTo.expectMessage(Done)
-      assert(!snapshotMeta.hasMessages, "snapshot should not be made")
-      drainChangesToList(changes) should contain theSameElementsInOrderAs
-      Seq(EventPersisted(DomainEvent, 1, Set("domain")))
+      eventProbe.expectPersisted(DomainEvent, Set("domain"))
+      snapshotProbe.drain() shouldBe empty
       assert(!testkit.hasEffects(), "should have no effects")
       testkit.clearLog()
 
       testkit.run(SnapshotNow)
       assert(!replyTo.hasMessages, "should not be a reply")
-      val snapshotMetaMsg = snapshotMeta.receiveMessage()
-      snapshotMetaMsg.persistenceId shouldBe "PersistenceId(test-1)"
-      snapshotMetaMsg.sequenceNr shouldBe 2
-      // not checking the timestamp...
-      drainChangesToList(changes) should contain theSameElementsInOrderAs
-      Seq(EventPersisted(SnapshotMade, 2, Set.empty), StatePersisted(State(1, Map.empty, Int.MaxValue), 2, Set.empty))
+
+      val PersistenceEffect(_, seqNr, tags) = eventProbe.expectPersistedType[SnapshotMade.type]()
+      seqNr shouldBe 2
+      tags shouldBe empty
+
+      snapshotProbe.expectPersisted(State(1, Map.empty, Int.MaxValue))
     }
 
     "allow a state and starting offset to be injected" in {
       import BehaviorUnderTest._
 
       val recoveryDone = TestInbox[Done]()
-      val snapshotMeta = TestInbox[SnapshotMetadata]()
-      val behavior = BehaviorUnderTest("test-1", recoveryDone.ref, snapshotMeta.ref)
+      val behavior = BehaviorUnderTest("test-1", recoveryDone.ref)
 
       val notify3 = TestInbox[Done]()
       val initialState =
         Seq(ObserverAdded(3, notify3.ref), SnapshotMade, DomainEvent, DomainEvent)
           .foldLeft(State(0, Map.empty, Int.MaxValue))(applyEvent _)
 
-      val (unpersistent, changes) =
-        UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> 41))
+      val (unpersistent, eventProbe, snapshotProbe) =
+        UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> 41L))
 
       val testkit = BehaviorTestKit(unpersistent)
       recoveryDone.expectMessage(Done)
-      assert(!snapshotMeta.hasMessages, "snapshot should not be made")
       val logs = testkit.logEntries()
       logs.size shouldBe 1
       logs.head.level shouldBe Level.DEBUG
       logs.head.message shouldBe s"Recovered state for id [test-1] is [$initialState]"
-      assert(changes.isEmpty, "should be no persisted changes")
+      eventProbe.drain() shouldBe empty
+      snapshotProbe.drain() shouldBe empty
       assert(!notify3.hasMessages, "no messages should be sent to notify3")
 
       val replyTo = TestInbox[Done]()
       testkit.run(PersistDomainEventAfter(2, replyTo.ref))
       assert(!testkit.hasEffects(), "should be no testkit effects")
-      val snapshotMetaMsg = snapshotMeta.receiveMessage()
-      snapshotMetaMsg.persistenceId shouldBe "PersistenceId(test-1)"
-      snapshotMetaMsg.sequenceNr shouldBe 42
-      drainChangesToList(changes) should contain theSameElementsInOrderAs
-      Seq(
-        EventPersisted(DomainEvent, 42, Set("domain")),
-        StatePersisted(State(3, Map.empty, Int.MaxValue), 42, Set.empty))
+      eventProbe.extract() shouldBe PersistenceEffect(DomainEvent, 42, Set("domain"))
+      snapshotProbe.expectPersisted(State(3, Map.empty, Int.MaxValue))
 
       notify3.expectMessage(Done)
       replyTo.expectMessage(Done)
@@ -272,9 +249,9 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
     "stash and unstash properly" in {
       import BehaviorUnderTest._
 
-      val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref, TestInbox[SnapshotMetadata]().ref)
+      val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
 
-      val (unpersistent, changes) =
+      val (unpersistent, eventProbe, snapshotProbe) =
         UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, None)
 
       val replyTo1 = TestInbox[Done]()
@@ -283,7 +260,8 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
 
       // stashes
       testkit.run(PersistDomainEventAfter(1, replyTo1.ref))
-      drainChangesToList(changes) shouldBe empty
+      eventProbe.drain() shouldBe empty
+      snapshotProbe.drain() shouldBe empty
       assert(!replyTo1.hasMessages, "have not persisted first domain event")
 
       // unstashes
@@ -298,7 +276,7 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
     "retrieve sequence number properly" in {
       import BehaviorUnderTest._
 
-      val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref, TestInbox[SnapshotMetadata]().ref)
+      val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
 
       val randomStartingOffset =
         scala.util.Random.nextLong() match {
@@ -307,7 +285,7 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
           case x             => x
         }
 
-      val (unpersistent, changes) =
+      val (unpersistent, eventProbe, snapshotProbe) =
         UnpersistentBehavior.fromEventSourced[Command, Event, State](
           behavior,
           Some(initialState -> randomStartingOffset))
@@ -316,7 +294,8 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       val testkit = BehaviorTestKit(unpersistent)
 
       testkit.run(GetSequenceNumber(replyTo.ref))
-      drainChangesToList(changes) shouldBe empty
+      eventProbe.drain() shouldBe empty
+      snapshotProbe.drain() shouldBe empty
       replyTo.expectMessage(randomStartingOffset)
     }
   }

@@ -7,7 +7,6 @@ package akka.persistence.testkit.scaladsl
 import akka.Done
 import akka.actor.typed.{ Behavior, RecipientRef }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.testkit.StatePersisted
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.state.RecoveryCompleted
 import akka.persistence.typed.state.scaladsl._
@@ -129,30 +128,20 @@ object UnpersistentDurableStateSpec {
 class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
   import akka.actor.testkit.typed.scaladsl._
   import org.slf4j.event.Level
-  import UnpersistentBehavior.drainChangesToList
 
   import UnpersistentDurableStateSpec._
 
   "Unpersistent DurableStateBehavior" must {
-    "generate an empty Behavior from a non-DurableStateBehavior" in {
+    "generate a fail-fast behavior from a non-DurableStateBehavior" in {
       val notDurableState =
         Behaviors.receive[Any] { (context, msg) =>
           context.log.info("Got message {}", msg)
           Behaviors.same
         }
 
-      val (unpersistent, changes) = UnpersistentBehavior.fromDurableState[Any, Any](notDurableState)
-
-      val testkit = BehaviorTestKit(unpersistent)
-      testkit.run("Hello there")
-      assert(changes.isEmpty, "should be no changes")
-      assert(!testkit.hasEffects(), "should be no effects")
-      val logs = testkit.logEntries()
-      logs.size shouldBe 1
-      logs.head.level shouldBe Level.WARN
-      logs.head.message shouldBe "Did not find the expected DurableStateBehavior"
-
-      succeed
+      val (unpersistent, probe) = UnpersistentBehavior.fromDurableState[Any, Any](notDurableState)
+      an[AssertionError] shouldBe thrownBy { BehaviorTestKit(unpersistent) }
+      assert(!probe.hasEffects, "should be no persistence effects")
     }
 
     "generate a Behavior from a DurableStateBehavior and process RecoveryCompleted" in {
@@ -161,10 +150,10 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
       val recoveryDone = TestInbox[Done]()
       val behavior = BehaviorUnderTest("test-1", recoveryDone.ref)
 
-      val (unpersistent, changes) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
+      val (unpersistent, probe) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
 
       val testkit = BehaviorTestKit(unpersistent)
-      assert(changes.isEmpty, "should not be changes yet")
+      assert(!probe.hasEffects, "should not be persistence yet")
       recoveryDone.expectMessage(Done)
       val logs = testkit.logEntries()
       logs.size shouldBe 1
@@ -177,17 +166,15 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
 
       val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
 
-      val (unpersistent, changes) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
+      val (unpersistent, probe) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
 
       val testkit = BehaviorTestKit(unpersistent)
       val replyTo = TestInbox[Done]()
 
       testkit.run(Add(1, replyTo.ref))
       replyTo.expectMessage(Done)
-      drainChangesToList(changes) should contain theSameElementsInOrderAs
-      Seq(StatePersisted(State(1, Map.empty, Int.MaxValue), 1, Set("count")))
-      assert(!testkit.hasEffects(), "should have no effects")
-      testkit.clearLog()
+      probe.expectPersisted(State(1, Map.empty, Int.MaxValue), tag = "count")
+      assert(!testkit.hasEffects(), "should have no actor effects")
     }
 
     "allow a state to be injected" in {
@@ -198,7 +185,7 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
       val notify3 = TestInbox[Done]()
       val initialState = State(1, Map(3 -> notify3.ref), 3)
 
-      val (unpersistent, changes) =
+      val (unpersistent, probe) =
         UnpersistentBehavior.fromDurableState[Command, State](behavior, Some(initialState))
 
       val testkit = BehaviorTestKit(unpersistent)
@@ -206,24 +193,23 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
       logs.size shouldBe 1
       logs.head.level shouldBe Level.DEBUG
       logs.head.message shouldBe s"Recovered state for id [test-1] is [$initialState]"
-      assert(changes.isEmpty, "should be no persisted changes")
+      assert(!probe.hasEffects, "should be no persistence effect")
       assert(!notify3.hasMessages, "no messages should be sent to notify3")
 
       val replyTo = TestInbox[Done]()
       testkit.run(AddWhenAtLeast(2, 2, replyTo.ref))
       assert(!replyTo.hasMessages, "no messages should be sent now")
       assert(!notify3.hasMessages, "no messages should be sent to notify3")
-      assert(changes.isEmpty, "should be no persisted changes")
+      assert(!probe.hasEffects, "should be no persistence effect")
       assert(!testkit.hasEffects(), "should be no testkit effects")
 
       testkit.run(Add(3, TestInbox[Done]().ref))
       replyTo.expectMessage(Done)
       notify3.expectMessage(Done)
       assert(!testkit.hasEffects(), "should be no testkit effects")
-      drainChangesToList(changes) should contain theSameElementsInOrderAs
-      Seq(
-        StatePersisted(State(4, Map.empty, Int.MaxValue), 1, Set("count")),
-        StatePersisted(State(6, Map.empty, Int.MaxValue), 2, Set("count")))
+      probe.drain() should contain theSameElementsInOrderAs Seq(
+        PersistenceEffect(State(4, Map.empty, Int.MaxValue), 1, Set("count")),
+        PersistenceEffect(State(6, Map.empty, Int.MaxValue), 2, Set("count")))
     }
 
     "stash and unstash properly" in {
@@ -231,7 +217,7 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
 
       val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
 
-      val (unpersistent, changes) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
+      val (unpersistent, probe) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
 
       val replyTo1 = TestInbox[Done]()
       val add = Add(1, TestInbox[Done]().ref)
@@ -239,16 +225,18 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
 
       // stashes
       testkit.run(AddWhenAtLeast(1, 1, replyTo1.ref))
-      assert(changes.isEmpty, "should be no persisted changes")
+      assert(!probe.hasEffects, "should be no persistence effect")
       assert(!replyTo1.hasMessages, "count is not yet 1")
 
       // unstashes
       testkit.run(add)
       replyTo1.expectMessage(Done)
+      probe.drain() shouldNot be(empty)
 
       // unstash but nothing in the stash
       testkit.run(add)
       assert(!replyTo1.hasMessages, "should not send again")
+      probe.drain() shouldNot be(empty)
     }
 
     "retrieve revision number" in {
@@ -256,13 +244,13 @@ class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
 
       val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
 
-      val (unpersistent, changes) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
+      val (unpersistent, probe) = UnpersistentBehavior.fromDurableState[Command, State](behavior)
 
       val replyTo = TestInbox[Long]()
       val testkit = BehaviorTestKit(unpersistent)
 
       testkit.run(GetRevisionNumber(replyTo.ref))
-      drainChangesToList(changes) shouldBe empty
+      (the[AssertionError] thrownBy (probe.extract())).getMessage shouldBe "No persistence effects in probe"
       replyTo.expectMessage(0)
     }
   }
