@@ -242,25 +242,47 @@ private[stream] object Collect {
   override def initialAttributes: Attributes = DefaultAttributes.collect and SourceLocation.forLambda(pf)
 
   def createLogic(inheritedAttributes: Attributes) =
-    new SupervisedGraphStageLogic(inheritedAttributes, shape) with InHandler with OutHandler {
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      private lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
+      private var buffer: OptionVal[Out] = OptionVal.none
+      private val contextPropagation = ContextPropagation()
 
-      import Collect.NotApplied
+      override def preStart(): Unit = pull(in)
 
-      val wrappedPf = () => pf.applyOrElse(grab(in), NotApplied)
-
-      override def onPush(): Unit = withSupervision(wrappedPf) match {
-        case OptionVal.Some(result) =>
-          result match {
-            case NotApplied             => pull(in)
-            case result: Out @unchecked => push(out, result)
-            case _                      => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+      def onPush(): Unit =
+        try {
+          val elem = grab(in)
+          import Collect.NotApplied
+          pf.applyOrElse(elem, NotApplied) match {
+            case NotApplied => pull(in)
+            case result: Out @unchecked =>
+              if (isAvailable(out)) {
+                push(out, result)
+                pull(in)
+              } else {
+                buffer = OptionVal.Some(result)
+                contextPropagation.suspendContext()
+              }
+            case _ => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
           }
-        case _ => //do nothing
+        } catch {
+          case NonFatal(ex) =>
+            decider(ex) match {
+              case Supervision.Stop => failStage(ex)
+              case _                => if (isClosed(in)) completeStage() else pull(in)
+            }
+        }
+
+      override def onPull(): Unit = buffer match {
+        case OptionVal.Some(value) =>
+          contextPropagation.resumeContext()
+          push(out, value)
+          buffer = OptionVal.none
+          if (!isClosed(in)) pull(in) else completeStage()
+        case _ => // already pulled
       }
 
-      override def onResume(t: Throwable): Unit = if (!hasBeenPulled(in)) pull(in)
-
-      override def onPull(): Unit = pull(in)
+      override def onUpstreamFinish(): Unit = if (buffer.isEmpty) super.onUpstreamFinish()
 
       setHandlers(in, out, this)
     }
@@ -307,7 +329,7 @@ private[stream] object Collect {
               recovered = Some(result)
             }
           }
-          case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+          case _ => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
         } catch {
           case NonFatal(ex) => failStage(ex)
         }
@@ -676,7 +698,7 @@ private[stream] object Collect {
             case Success(null) =>
               ReactiveStreamsCompliance.elementMustNotBeNullException
             case Success(_) =>
-              throw new IllegalArgumentException() // won't happen, compiler exhaustiveness check pleaser
+              throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
           }
           val supervision = decider(ex)
 
