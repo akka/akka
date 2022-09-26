@@ -267,11 +267,11 @@ class SubFlow[In, Out, Mat](
    * @param close function that closes the resource, optionally outputting a last element
    */
   def mapWithResource[R, T](
-      create: function.Creator[R],
-      f: function.Function2[R, Out, T],
-      close: function.Function[R, Optional[T]]): javadsl.SubFlow[In, T, Mat] =
+      create: java.util.function.Supplier[R],
+      f: java.util.function.BiFunction[R, Out, T],
+      close: java.util.function.Function[R, Optional[T]]): javadsl.SubFlow[In, T, Mat] =
     new SubFlow(
-      delegate.mapWithResource(() => create.create())(
+      delegate.mapWithResource(() => create.get())(
         (resource, out) => f(resource, out),
         resource => close.apply(resource).asScala))
 
