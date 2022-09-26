@@ -36,7 +36,7 @@ object Dependencies {
   val scala3Version = "3.1.3"
   val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
-  val reactiveStreamsVersion = "1.0.3"
+  val reactiveStreamsVersion = "1.0.4"
 
   val sslConfigVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
@@ -53,6 +53,7 @@ object Dependencies {
       "3.1.4"
     }
   }
+
   val scalaTestScalaCheckVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
       "1-15"
@@ -60,6 +61,7 @@ object Dependencies {
       "1-14"
     }
   }
+
   val scalaCheckVersion = "1.15.1"
 
   val Versions =
@@ -92,7 +94,7 @@ object Dependencies {
     val jctools = "org.jctools" % "jctools-core" % "3.3.0" // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
+    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // MIT-0
 
     // ssl-config
     val sslConfigCore = Def.setting {
@@ -179,7 +181,8 @@ object Dependencies {
       val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test // CC0
+      val reactiveStreamsTck = ("org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test)
+        .exclude("org.testng", "testng") // MIT-0
 
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % Test
 
