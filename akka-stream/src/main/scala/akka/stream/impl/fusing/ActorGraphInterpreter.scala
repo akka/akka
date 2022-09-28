@@ -66,6 +66,10 @@ import akka.util.OptionVal
     def execute(): Unit
   }
 
+  private val DummyReceive: Actor.Receive = {
+    case _ => throw new RuntimeException("receive should never be called on the ActorGraphInterpreter")
+  }
+
   def props(shell: GraphInterpreterShell): Props =
     Props(new ActorGraphInterpreter(shell)).withDeploy(Deploy.local)
 
@@ -812,22 +816,30 @@ import akka.util.OptionVal
     }
   }
 
-  override def receive: Receive = {
-    case b: BoundaryEvent =>
-      currentLimit = eventLimit
-      processEvent(b)
-      if (shortCircuitBuffer != null) shortCircuitBatch()
+  override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
+    // as we know we never become in stream actors, we can avoid some overhead with the partial function/behavior
+    // stack of classic actors entirely we also know that the receive is total, so we can avoid the orElse part as well.
+    msg match {
+      case b: BoundaryEvent =>
+        currentLimit = eventLimit
+        processEvent(b)
+        if (shortCircuitBuffer != null) shortCircuitBatch()
 
-    case Resume =>
-      currentLimit = eventLimit
-      if (shortCircuitBuffer != null) shortCircuitBatch()
+      case Resume =>
+        currentLimit = eventLimit
+        if (shortCircuitBuffer != null) shortCircuitBatch()
 
-    case Snapshot =>
-      sender() ! StreamSnapshotImpl(
-        self.path,
-        activeInterpreters.map(shell => shell.toSnapshot.asInstanceOf[RunningInterpreter]).toSeq,
-        newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter]))
+      case Snapshot =>
+        sender() ! StreamSnapshotImpl(
+          self.path,
+          activeInterpreters.map(shell => shell.toSnapshot.asInstanceOf[RunningInterpreter]).toSeq,
+          newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter]))
+
+      case other => unhandled(other)
+    }
   }
+
+  override def receive: Receive = ActorGraphInterpreter.DummyReceive
 
   override def postStop(): Unit = {
     if (shortCircuitBuffer ne null) {
