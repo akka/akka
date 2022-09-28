@@ -2263,11 +2263,11 @@ private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) =>
       }
 
       private def closeStateAndFail(ex: Throwable): Unit = {
+        needInvokeOnCompleteCallback = false
         onComplete(state) match {
           case Some(elem) => emit(out, elem, () => failStage(ex))
           case None       => failStage(ex)
         }
-        needInvokeOnCompleteCallback = false
       }
 
       override def onPull(): Unit = pull(in)
