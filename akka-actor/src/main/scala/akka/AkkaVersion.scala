@@ -30,20 +30,30 @@ object AkkaVersion {
   @InternalApi
   private[akka] def require(libraryName: String, requiredVersion: String, currentVersion: String): Unit = {
     if (requiredVersion != currentVersion) {
-      val VersionPattern = """(\d+)\.(\d+)\.(\d+)(-(?:M|RC)\d+)?""".r
+      val VersionPattern = """(\d+)\.(\d+)\.(\d+)(?:-(M|RC)(\d+))?""".r
       currentVersion match {
-        case VersionPattern(currentMajorStr, currentMinorStr, currentPatchStr, mOrRc) =>
+        case VersionPattern(currentMajorStr, currentMinorStr, currentPatchStr, mOrRc, mOrRcNrStr) =>
           requiredVersion match {
-            case requiredVersion @ VersionPattern(requiredMajorStr, requiredMinorStr, requiredPatchStr, _) =>
-              // a M or RC is basically in-between versions, so offset
-              val currentPatch =
-                if (mOrRc ne null) currentPatchStr.toInt - 1
-                else currentPatchStr.toInt
-              if (requiredMajorStr.toInt != currentMajorStr.toInt ||
-                  requiredMinorStr.toInt > currentMinorStr.toInt ||
-                  (requiredMinorStr == currentMinorStr && requiredPatchStr.toInt > currentPatch))
-                throw new UnsupportedAkkaVersion(
-                  s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
+            case requiredVersion @ VersionPattern(requiredMajorStr, requiredMinorStr, requiredPatchStr, requiredMorRc, requiredMOrRcNrStr) =>
+              def throwUnsupported() = throw new UnsupportedAkkaVersion(
+                s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
+              if (requiredMajorStr == currentMajorStr) {
+                if (requiredMinorStr == currentMinorStr) {
+                  if (requiredPatchStr == currentPatchStr) {
+                    if (requiredMorRc == null && mOrRc != null) throwUnsupported() // require final but actual is M or RC
+                    else if (requiredMorRc != null) {
+                      (requiredMorRc, requiredMOrRcNrStr, mOrRc, mOrRcNrStr) match {
+                        case ("M", reqN, "M", n) => if (reqN.toInt > n.toInt) throwUnsupported()
+                        case ("M", _, "RC", _) => // RC > M, ok!
+                        case ("RC", _, "M", _) => throwUnsupported()
+                        case ("RC", reqN, "RC", n) => if (reqN.toInt > n.toInt) throwUnsupported()
+                        case (_, _, null, _) => // requirement on RC or M but actual is final, ok!
+                        case unexpected => throw new IllegalArgumentException(s"Should never happen, comparing M/RC: $unexpected")
+                      }
+                    } // same versions, ok!
+                  } else if (requiredPatchStr.toInt > currentPatchStr.toInt) throwUnsupported()
+                } else if (requiredMinorStr.toInt > currentMinorStr.toInt) throwUnsupported()
+              } else throwUnsupported() // major diff
             case _ => // SNAPSHOT or unknown - you're on your own
           }
 
