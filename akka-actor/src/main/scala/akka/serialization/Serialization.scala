@@ -454,7 +454,10 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   }
 
   private def warnUnexpectedNonAkkaSerializer(clazz: Class[_], ser: Serializer): Boolean = {
-    if (clazz.getName.startsWith("akka.") && !ser.getClass.getName.startsWith("akka.")) {
+    val className = clazz.getName
+    if (className.startsWith("akka.") && !ser.getClass.getName.startsWith("akka.") &&
+      // no serializers for these in Akka
+      !(className.startsWith("akka.grpc") || className.startsWith("akka.http"))) {
       log.warning(
         "Using serializer [{}] for message [{}]. Note that this serializer " +
         "is not implemented by Akka. It's not recommended to replace serializers for messages " +
