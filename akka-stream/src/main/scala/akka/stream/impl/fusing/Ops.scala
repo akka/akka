@@ -2209,69 +2209,72 @@ private[akka] final class StatefulMap[S, In, Out](
     new GraphStageLogic(shape) with InHandler with OutHandler {
       lazy val decider: Decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
-      private var state: S = _
-      private var needInvokeOnCompleteCallback: Boolean = false
+      private var state: OptionVal[S] = _
 
       override def preStart(): Unit = {
-        state = create()
-        needInvokeOnCompleteCallback = true
+        state = OptionVal.Some(create())
       }
 
       override def onPush(): Unit =
         try {
           val elem = grab(in)
-          val (newState, newElem) = f(state, elem)
-          state = newState
+          val (newState, newElem) = f(state.get, elem)
+          state = OptionVal.Some(newState)
           push(out, newElem)
         } catch {
           case NonFatal(ex) =>
             decider(ex) match {
               case Supervision.Stop    => closeStateAndFail(ex)
               case Supervision.Resume  => pull(in)
-              case Supervision.Restart => resetStateAndPull()
+              case Supervision.Restart => restartState()
             }
         }
 
-      override def onUpstreamFinish(): Unit = closeStateAndComplete()
+      override def onUpstreamFinish(): Unit = {
+        completeStateIfNeeded() match {
+          case Some(elem) => emit(out, elem, () => completeStage())
+          case None       => completeStage()
+        }
+      }
 
       override def onUpstreamFailure(ex: Throwable): Unit = closeStateAndFail(ex)
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
-        onComplete(state)
-        needInvokeOnCompleteCallback = false
+        completeStateIfNeeded()
         super.onDownstreamFinish(cause)
       }
 
-      private def resetStateAndPull(): Unit = {
-        needInvokeOnCompleteCallback = false
-        onComplete(state)
-        state = create()
-        needInvokeOnCompleteCallback = true;
-        pull(in)
-      }
-
-      private def closeStateAndComplete(): Unit = {
-        onComplete(state) match {
-          case Some(elem) => emit(out, elem, () => completeStage())
-          case None       => completeStage()
+      private def restartState(): Unit = {
+        completeStateIfNeeded() match {
+          case Some(elem) =>
+            emit(out, elem, () => state = OptionVal.Some(create()))
+          case None =>
+            state = OptionVal.Some(create())
+            // should always happen here but for good measure
+            if (!hasBeenPulled(in)) pull(in)
         }
-        needInvokeOnCompleteCallback = false
       }
 
       private def closeStateAndFail(ex: Throwable): Unit = {
-        needInvokeOnCompleteCallback = false
-        onComplete(state) match {
+        completeStateIfNeeded() match {
           case Some(elem) => emit(out, elem, () => failStage(ex))
           case None       => failStage(ex)
+        }
+      }
+
+      private def completeStateIfNeeded(): Option[Out] = {
+        state match {
+          case OptionVal.Some(s) =>
+            state = OptionVal.none[S]
+            onComplete(s)
+          case _ => None
         }
       }
 
       override def onPull(): Unit = pull(in)
 
       override def postStop(): Unit = {
-        if (needInvokeOnCompleteCallback) {
-          onComplete(state)
-        }
+        completeStateIfNeeded()
       }
 
       setHandlers(in, out, this)

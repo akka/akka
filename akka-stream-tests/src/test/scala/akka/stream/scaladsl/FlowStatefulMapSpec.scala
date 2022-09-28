@@ -236,7 +236,6 @@ class FlowStatefulMapSpec extends StreamSpec {
             },
           buffer => Some(buffer))
         .filter(_.nonEmpty)
-        .alsoTo(Sink.foreach(println))
         .runWith(sink)
         .request(4)
         .expectNext(List("A"))
@@ -300,6 +299,50 @@ class FlowStatefulMapSpec extends StreamSpec {
         probe.expectError(TE("boom"))
       }
       closedCounter.get() should ===(1)
+    }
+
+    "will not call onComplete twice on cancel when `onComplete` fails" in {
+      val closedCounter = new AtomicInteger(0)
+      val (source, sink) = TestSource()
+        .viaMat(Flow[Int].statefulMap(() => 23)((s, elem) => (s, elem), _ => {
+          closedCounter.incrementAndGet()
+          throw TE("boom")
+        }))(Keep.left)
+        .toMat(TestSink[Int]())(Keep.both)
+        .run()
+
+      EventFilter[TE](occurrences = 1).intercept {
+        sink.request(1)
+        source.sendNext(1)
+        sink.expectNext(1)
+        sink.cancel()
+        source.expectCancellation()
+      }
+      closedCounter.get() should ===(1)
+    }
+
+    "emit onClose return value before restarting" in {
+      val stateCounter = new AtomicInteger(0)
+      val (source, sink) = TestSource[String]()
+        .viaMat(Flow[String].statefulMap(() => stateCounter.incrementAndGet())({ (s, elem) =>
+          if (elem == "boom") throw TE("boom")
+          else (s, elem + s.toString)
+        }, _ => Some("onClose")))(Keep.left)
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .toMat(TestSink())(Keep.both)
+        .run()
+
+      sink.request(1)
+      source.sendNext("one")
+      sink.expectNext("one1")
+      sink.request(1)
+      source.sendNext("boom")
+      sink.expectNext("onClose")
+      sink.request(1)
+      source.sendNext("two")
+      sink.expectNext("two2")
+      sink.cancel()
+      source.expectCancellation()
     }
 
   }
