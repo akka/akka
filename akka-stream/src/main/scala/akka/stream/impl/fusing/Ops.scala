@@ -172,13 +172,13 @@ import akka.util.ccompat._
       override def onPush(): Unit = {
         val elem = grab(in)
         withSupervision(() => p(elem)) match {
-          case Some(flag) =>
+          case OptionVal.Some(flag) =>
             if (flag) pull(in)
             else {
               push(out, elem)
               setHandler(in, rest)
             }
-          case None => // do nothing
+          case _ => // do nothing
         }
       }
 
@@ -203,9 +203,9 @@ import akka.util.ccompat._
     extends GraphStageLogic(shape) {
   private lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
-  def withSupervision[T](f: () => T): Option[T] =
+  def withSupervision[T](f: () => T): OptionVal[T] =
     try {
-      Some(f())
+      OptionVal.Some(f())
     } catch {
       case NonFatal(ex) =>
         decider(ex) match {
@@ -213,7 +213,7 @@ import akka.util.ccompat._
           case Supervision.Resume  => onResume(ex)
           case Supervision.Restart => onRestart(ex)
         }
-        None
+        OptionVal.none[T]
     }
 
   def onResume(t: Throwable): Unit
@@ -249,13 +249,13 @@ private[stream] object Collect {
       val wrappedPf = () => pf.applyOrElse(grab(in), NotApplied)
 
       override def onPush(): Unit = withSupervision(wrappedPf) match {
-        case Some(result) =>
+        case OptionVal.Some(result) =>
           result match {
             case NotApplied             => pull(in)
             case result: Out @unchecked => push(out, result)
             case _                      => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
           }
-        case None => //do nothing
+        case _ => //do nothing
       }
 
       override def onResume(t: Throwable): Unit = if (!hasBeenPulled(in)) pull(in)
@@ -842,10 +842,10 @@ private[stream] object Collect {
       override def onPush(): Unit = {
         val elem = grab(in)
         withSupervision(() => costFn(elem)) match {
-          case Some(weight) =>
+          case OptionVal.Some(weight) =>
             left -= weight
             if (left >= 0) push(out, elem) else failStage(new StreamLimitReachedException(n))
-          case None => //do nothing
+          case _ => //do nothing
         }
       }
 
