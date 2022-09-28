@@ -34,21 +34,29 @@ object AkkaVersion {
       currentVersion match {
         case VersionPattern(currentMajorStr, currentMinorStr, currentPatchStr, mOrRc, mOrRcNrStr) =>
           requiredVersion match {
-            case requiredVersion @ VersionPattern(requiredMajorStr, requiredMinorStr, requiredPatchStr, requiredMorRc, requiredMOrRcNrStr) =>
-              def throwUnsupported() = throw new UnsupportedAkkaVersion(
-                s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
+            case requiredVersion @ VersionPattern(
+                  requiredMajorStr,
+                  requiredMinorStr,
+                  requiredPatchStr,
+                  requiredMorRc,
+                  requiredMOrRcNrStr) =>
+              def throwUnsupported() =
+                throw new UnsupportedAkkaVersion(
+                  s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
               if (requiredMajorStr == currentMajorStr) {
                 if (requiredMinorStr == currentMinorStr) {
                   if (requiredPatchStr == currentPatchStr) {
-                    if (requiredMorRc == null && mOrRc != null) throwUnsupported() // require final but actual is M or RC
+                    if (requiredMorRc == null && mOrRc != null)
+                      throwUnsupported() // require final but actual is M or RC
                     else if (requiredMorRc != null) {
                       (requiredMorRc, requiredMOrRcNrStr, mOrRc, mOrRcNrStr) match {
-                        case ("M", reqN, "M", n) => if (reqN.toInt > n.toInt) throwUnsupported()
-                        case ("M", _, "RC", _) => // RC > M, ok!
-                        case ("RC", _, "M", _) => throwUnsupported()
+                        case ("M", reqN, "M", n)   => if (reqN.toInt > n.toInt) throwUnsupported()
+                        case ("M", _, "RC", _)     => // RC > M, ok!
+                        case ("RC", _, "M", _)     => throwUnsupported()
                         case ("RC", reqN, "RC", n) => if (reqN.toInt > n.toInt) throwUnsupported()
-                        case (_, _, null, _) => // requirement on RC or M but actual is final, ok!
-                        case unexpected => throw new IllegalArgumentException(s"Should never happen, comparing M/RC: $unexpected")
+                        case (_, _, null, _)       => // requirement on RC or M but actual is final, ok!
+                        case unexpected =>
+                          throw new IllegalArgumentException(s"Should never happen, comparing M/RC: $unexpected")
                       }
                     } // same versions, ok!
                   } else if (requiredPatchStr.toInt > currentPatchStr.toInt) throwUnsupported()
