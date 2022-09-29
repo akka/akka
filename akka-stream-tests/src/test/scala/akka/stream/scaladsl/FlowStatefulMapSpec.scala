@@ -202,10 +202,7 @@ class FlowStatefulMapSpec extends StreamSpec {
       val promise = Promise[Done]()
       Source
         .single(1)
-        .statefulMap(() => -1)((_, elem) => {
-          throw ex
-          (elem, elem)
-        }, _ => {
+        .statefulMap(() => -1)((_, _) => throw ex, _ => {
           promise.complete(Success(Done))
           None
         })
@@ -343,6 +340,43 @@ class FlowStatefulMapSpec extends StreamSpec {
       sink.expectNext("two2")
       sink.cancel()
       source.expectCancellation()
+    }
+
+    "not allow null state" in {
+      EventFilter[NullPointerException](occurrences = 1).intercept {
+        Source
+          .single("one")
+          .statefulMap(() => null: String)((s, t) => (s, t), _ => None)
+          .runWith(Sink.head)
+          .failed
+          .futureValue shouldBe a[NullPointerException]
+      }
+    }
+
+    "not allow null next state" in {
+      EventFilter[NullPointerException](occurrences = 1).intercept {
+        Source
+          .single("one")
+          .statefulMap(() => "state")((_, t) => (null, t), _ => None)
+          .runWith(Sink.seq)
+          .failed
+          .futureValue shouldBe a[NullPointerException]
+      }
+    }
+
+    "not allow null state on restart" in {
+      val counter = new AtomicInteger(0)
+      EventFilter[NullPointerException](occurrences = 1).intercept {
+        Source
+          .single("one")
+          .statefulMap(() => if (counter.incrementAndGet() == 1) "state" else null)(
+            (_, _) => throw TE("boom"),
+            _ => None)
+          .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+          .runWith(Sink.head)
+          .failed
+          .futureValue shouldBe a[NullPointerException]
+      }
     }
 
   }

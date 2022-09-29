@@ -2188,12 +2188,22 @@ private[akka] object TakeWithin {
  * INTERNAL API
  */
 @InternalApi
+private[akka] object StatefulMap {
+  private final class NullStateException(msg: String) extends NullPointerException(msg)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] final class StatefulMap[S, In, Out](
     attributes: Attributes,
     create: () => S,
     f: (S, In) => (S, Out),
     onComplete: S => Option[Out])
     extends GraphStage[FlowShape[In, Out]] {
+  import StatefulMap.NullStateException
+
   require(attributes != null, "attributes should not be null")
   require(create != null, "create function should not be null")
   require(f != null, "f function should not be null")
@@ -2213,15 +2223,18 @@ private[akka] final class StatefulMap[S, In, Out](
 
       override def preStart(): Unit = {
         state = OptionVal.Some(create())
+        throwIfNoState()
       }
 
-      override def onPush(): Unit =
+      override def onPush(): Unit = {
         try {
           val elem = grab(in)
           val (newState, newElem) = f(state.get, elem)
           state = OptionVal.Some(newState)
+          throwIfNoState()
           push(out, newElem)
         } catch {
+          case ex: NullStateException => throw ex // don't cover with supervision
           case NonFatal(ex) =>
             decider(ex) match {
               case Supervision.Stop    => closeStateAndFail(ex)
@@ -2229,6 +2242,7 @@ private[akka] final class StatefulMap[S, In, Out](
               case Supervision.Restart => restartState()
             }
         }
+      }
 
       override def onUpstreamFinish(): Unit = {
         completeStateIfNeeded() match {
@@ -2247,9 +2261,13 @@ private[akka] final class StatefulMap[S, In, Out](
       private def restartState(): Unit = {
         completeStateIfNeeded() match {
           case Some(elem) =>
-            emit(out, elem, () => state = OptionVal.Some(create()))
+            emit(out, elem, { () =>
+              state = OptionVal.Some(create())
+              throwIfNoState()
+            })
           case None =>
             state = OptionVal.Some(create())
+            throwIfNoState()
             // should always happen here but for good measure
             if (!hasBeenPulled(in)) pull(in)
         }
@@ -2275,6 +2293,13 @@ private[akka] final class StatefulMap[S, In, Out](
 
       override def postStop(): Unit = {
         completeStateIfNeeded()
+      }
+
+      private def throwIfNoState(): Unit = {
+        if (state.isEmpty) // Note: no state == null because optionval
+          throw new NullStateException(
+            "State returned by stateFulMap create lambda or mapping function was null, which is not allowed. " +
+            "Use Option or Optional to represent presence of state if needed.")
       }
 
       setHandlers(in, out, this)
