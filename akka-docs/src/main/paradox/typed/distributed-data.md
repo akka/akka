@@ -726,7 +726,7 @@ There is one important caveat when it comes pruning of @ref:[CRDT Garbage](#crdt
 If an old data entry that was never pruned is injected and merged with existing data after
 that the pruning markers have been removed the value will not be correct. The time-to-live
 of the markers is defined by configuration
-`akka.cluster.distributed-data.durable.remove-pruning-marker-after` and is in the magnitude of days.
+`akka.cluster.distributed-data.durable.pruning-marker-time-to-live` and is in the magnitude of days.
 This would be possible if a node with durable data didn't participate in the pruning
 (e.g. it was shutdown) and later started after this time. A node with durable data should not
 be stopped for longer time than this duration and if it is joining again after this
