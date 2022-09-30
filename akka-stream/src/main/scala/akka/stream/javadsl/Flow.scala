@@ -30,7 +30,7 @@ import akka.japi.Pair
 import akka.japi.Util
 import akka.japi.function
 import akka.japi.function.Creator
-import akka.stream.{ javadsl, _ }
+import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
@@ -1740,6 +1740,58 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     recoverWith({
       case elem if clazz.isInstance(elem) => supplier.get()
     }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
+
+  /**
+   * onErrorComplete allows to complete the stream when an upstream error occurs.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or failed with exception is an instance of the provided type
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def onErrorComplete(): javadsl.Flow[In, Out, Mat] = onErrorComplete(classOf[Throwable])
+
+  /**
+   * onErrorComplete allows to complete the stream when an upstream error occurs.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or failed with exception is an instance of the provided type
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def onErrorComplete(clazz: Class[_ <: Throwable]): javadsl.Flow[In, Out, Mat] =
+    onErrorComplete(ex => clazz.isInstance(ex))
+
+  /**
+   * onErrorComplete allows to complete the stream when an upstream error occurs.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or failed with predicate return ture
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def onErrorComplete(predicate: java.util.function.Predicate[_ >: Throwable]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.onErrorComplete {
+      case ex: Throwable if predicate.test(ex) => true
+    })
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
