@@ -19,7 +19,7 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
+private[akka] final class StatefulMapAsync[S, In, Out](parallelism: Int)(
     attributes: Attributes,
     create: () => Future[S],
     //TODO (S, In) => (S, Future[Out]) seems more comfortable for user
