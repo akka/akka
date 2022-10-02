@@ -80,6 +80,12 @@ private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
     if (x == null) throw new NoSuchElementException("OptionVal.None.get")
     else x
 
+  /**
+   * apply f for the option's value if it is exist
+   */
+  def foreach(f: A => Unit): Unit =
+    if (x != null) f(x)
+
   override def toString: String =
     if (x == null) "None" else s"Some($x)"
 }

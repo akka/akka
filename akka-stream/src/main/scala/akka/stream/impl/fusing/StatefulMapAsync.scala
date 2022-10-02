@@ -9,6 +9,7 @@ import akka.stream.{ Attributes, FlowShape, Inlet, Outlet, StreamDetachedExcepti
 import akka.stream.Supervision.Decider
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.impl.{ Buffer => BufferImpl }
+import akka.util.OptionVal
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
@@ -49,7 +50,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
       // we need this flag bcs if stream ever been pushed or pulled at the time state doesn't available
       // that will require triggering push in create callback, but prevent push been triggered by just preStart
       private var tryPushAfterInitialized: Boolean = false
-      private var state: Option[S] = None
+      private var state: OptionVal[S] = OptionVal.none[S]
       private var buffer: BufferImpl[Holder[(S, Out)]] = _
       // single size buffer to reserve element that arrival when state isn't available
       private var earlyPulledElem: Option[In] = None
@@ -58,7 +59,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
         getAsyncCallback[Try[S]] {
           case Failure(e) => failStage(e)
           case Success(s) =>
-            state = Some(s)
+            state = OptionVal.Some(s)
             if (tryPushAfterInitialized) pushNextIfPossible()
         }.invokeWithFeedback _
 
@@ -154,12 +155,12 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
 
       override def postStop(): Unit = {
         state match {
-          case Some(value) =>
+          case OptionVal.Some(value) =>
             // outlet isn't available here
             if (stateAcquired) onComplete(value)
           //TODO figure out what should be done here
           // since resource maybe in the half way of acquisition
-          case None =>
+          case _ =>
         }
       }
 
@@ -170,17 +171,17 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
 
       override def onPull(): Unit =
         state match {
-          case Some(_) => pushNextIfPossible()
-          case None    => tryPushAfterInitialized = true
+          case OptionVal.Some(_) => pushNextIfPossible()
+          case _    => tryPushAfterInitialized = true
         }
 
       override def onPush(): Unit = {
         val elem = grab(in)
         state match {
-          case Some(_) =>
+          case OptionVal.Some(_) =>
             applyUserFunction(elem)
             pullIfNeeded()
-          case None =>
+          case _ =>
             earlyPulledElem = Some(elem)
             tryPushAfterInitialized = true
         }
@@ -197,7 +198,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
             case Success(elem) =>
               if (elem != null && elem._1 != null && elem._2 != null) {
                 // state has to be presented here
-                state = Some(combineState(state.get, elem._1))
+                state = OptionVal.Some(combineState(state.get, elem._1))
                 push(out, elem._2)
                 pullIfNeeded()
               } else {
@@ -254,7 +255,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
       private def resetState(): Unit = {
         tryPushAfterInitialized = false
         state match {
-          case Some(s) =>
+          case OptionVal.Some(s) =>
             val future = onComplete(s)
             stateAcquired = false
             future.value match {
@@ -262,7 +263,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
               case None    => future.onComplete(v => releaseCB(None -> v))(akka.dispatch.ExecutionContexts.parasitic)
             }
           // unlikely to happen, but good for measurement anyway
-          case None => initState()
+          case _ => initState()
         }
       }
 
