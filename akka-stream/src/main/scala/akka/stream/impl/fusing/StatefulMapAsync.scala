@@ -22,7 +22,6 @@ import scala.util.control.NonFatal
 private[akka] final class StatefulMapAsync[S, In, Out](parallelism: Int)(
     attributes: Attributes,
     create: () => Future[S],
-    //TODO (S, In) => (S, Future[Out]) seems more comfortable for user
     f: (S, In) => Future[(S, Out)],
     onComplete: S => Future[Option[Out]],
     combineState: (S, S) => S)
