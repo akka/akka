@@ -53,7 +53,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
       private var state: OptionVal[S] = OptionVal.none[S]
       private var buffer: BufferImpl[Holder[(S, Out)]] = _
       // single size buffer to reserve element that arrival when state isn't available
-      private var earlyPulledElem: Option[In] = None
+      private var earlyPulledElem: OptionVal[In] = OptionVal.none[In]
 
       private val initCB =
         getAsyncCallback[Try[S]] {
@@ -182,7 +182,7 @@ private[akka] final case class StatefulMapAsync[S, In, Out](parallelism: Int)(
             applyUserFunction(elem)
             pullIfNeeded()
           case _ =>
-            earlyPulledElem = Some(elem)
+            earlyPulledElem = OptionVal.Some(elem)
             tryPushAfterInitialized = true
         }
       }
