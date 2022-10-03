@@ -219,6 +219,12 @@ private[akka] object Buffer {
     }
   }
 
+  /**
+    * INTERNAL API
+    *
+    * A buffer backed by a linked list, so as not to take up space when empty.
+    */
+  @InternalApi
   private[impl] final class DynamicQueue[T](override val capacity: Int) extends ju.LinkedList[T] with Buffer[T] {
     override def used = size
     override def isFull = size == capacity

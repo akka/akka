@@ -28,7 +28,7 @@ public class MapAsyncs {
   // #mapasync-concurrent
   // #mapasyncunordered
 
-  private final Source<Event, NotUsed> events = // ...
+  private final Source<Event, NotUsed> events = // simulate messages from a broker...
       // #mapasync-strict-order
       // #mapasync-concurrent
       // #mapasyncunordered
@@ -105,10 +105,9 @@ public class MapAsyncs {
 
   private void runPartitioned() {
     // #mapAsyncPartitioned
-    Source<EntityEvent, NotUsed> eventsForEntities = // ...
+    Source<EntityEvent, NotUsed> eventsForEntities = // simulates a message broker with offset tracking...
         // #mapAsyncPartitioned
         Source.fromIterator(() -> Stream.iterate(1, i -> i + 1).iterator())
-            .throttle(1, Duration.ofMillis(1))
             .statefulMapConcat(
                 () -> {
                   final HashMap<Integer, Integer> countsPerEntity = new HashMap<Integer, Integer>();
@@ -160,7 +159,6 @@ public class MapAsyncs {
         };
 
     eventsForEntities
-        // simulate a message broker with offset tracking
         .statefulMapConcat(
             () -> {
               final int[] offset = new int[1]; // trick to close over an int...

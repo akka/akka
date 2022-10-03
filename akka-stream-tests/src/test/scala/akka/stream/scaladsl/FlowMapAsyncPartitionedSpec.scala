@@ -109,6 +109,34 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
     probe.expectNoMessage(200.millis)
   }
 
+  "not backpressure based on perPartition limit" in {
+    val promises = Array.fill(10)(Promise[Int]())
+    val probes = Array.fill(10)(TestProbe())
+
+    val sinkProbe =
+      Source(0 until 10)
+        .mapAsyncPartitioned(10, 1)(_ < 9) { (elem, _) =>
+          probes(elem).ref ! elem
+          promises(elem).future
+        }
+        .runWith(TestSink())
+
+    sinkProbe.expectSubscription().request(10)
+    probes(0).expectMsg(0)  // true partition
+    probes(9).expectMsg(9)  // false partition
+    // all in the true partition, but should not be started
+    (1 until 9).foreach { x => probes(x).expectNoMessage(10.millis) }
+
+    // complete promises in reverse order
+    (1 to 9).foreach { negOff =>
+      promises(10 - negOff).success(negOff)
+      sinkProbe.expectNoMessage(10.millis)
+    }
+
+    promises(0).success(10)
+    sinkProbe.toStrict(100.millis) should contain theSameElementsAs (1 to 10)
+  }
+
   "signal future already failed" in {
     import system.dispatcher
 

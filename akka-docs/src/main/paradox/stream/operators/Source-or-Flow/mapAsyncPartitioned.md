@@ -1,6 +1,6 @@
 # mapAsyncPartitioned
 
-Pass incoming elements to a function that assigns a partitioning key, then to a function that returns a @scala[`Future`] @java[`CompletionStage`] result, bounding the number of incomplete @scala[futures] @java[`CompletionStage` s] per partitioning key.
+Pass incoming elements to a function that extracts a partitioning key from the element, then to a function that returns a @scala[`Future`] @java[`CompletionStage`] result, bounding the number of incomplete @scala[futures] @java[`CompletionStage` s] per partitioning key.
 
 @ref[Asynchronous operators](../index.md#asynchronous-operators)
 
@@ -22,9 +22,13 @@ If a @scala[`Future`] @java[`CompletionStage`] completes with failure, the strea
 
 If `parallelism` is 1, this stage is equivalent to @ref[`mapAsyncUnordered`](mapAsyncUnordered.md).  If `perPartition` is greater-than or equal to `parallelism`, this stage is equivalent to @ref[`mapAsync`](mapAsync.md).
 
+@@@ warning
+Care may need to be taken using this operator between a fan-out and a fan-in (including within a @apidoc[SubFlow](SubFlow)) to ensure that the fan-in preserves ordering.
+@@@
+
 ## Examples
 
-Imagine you are consuming messages from a broker.  This broker's semantics are such that acknowledging one message implies an acknowledgement of all messages delivered before that message; this in turn means that in order to ensure at-least-once processing of messages from the broker, they must be acknowledged in the order they were received.  These messages represent business events produced by some other service(s) and each concerns a particular entity.  You may process messages for different entities simultaneously, but can only process one message for a given entity at a time:
+Imagine you are consuming messages from a broker (for instance, Apache Kafka via [Alpakka Kafka](https://doc.akka.io/docs/alpakka-kafka/current/)).  This broker's semantics are such that acknowledging one message implies an acknowledgement of all messages delivered before that message; this in turn means that in order to ensure at-least-once processing of messages from the broker, they must be acknowledged in the order they were received.  These messages represent business events produced by some other service(s) and each concerns a particular entity.  You may process messages for different entities simultaneously, but can only process one message for a given entity at a time:
 
 Scala
 :   @@snip [MapAsyncs.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapAsyncs.scala) { #mapAsyncPartitioned }
