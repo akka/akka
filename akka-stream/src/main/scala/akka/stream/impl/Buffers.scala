@@ -362,8 +362,8 @@ private[impl] final class PartitionedBuffer[K, V](
   def clear(): Unit = {
     linearBuffer.clear()
     // ensure that all sub-buffers are cleared
-    partitionBuffers.foreachEntry { (_, buf) =>
-      buf.clear()
+    partitionBuffers.foreach {
+      case (_, buf) => buf.clear()
     }
     partitionBuffers.clear()
   }
