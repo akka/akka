@@ -111,7 +111,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    */
   def mapAsyncPartitioned[Out2, P](parallelism: Int, perPartition: Int)(partitioner: Out => P)(
       f: (Out, P) => Future[Out2]): Repr[Out2, Ctx] = {
-    val pairPartitioner = { pair: (Out, Ctx) =>
+    val pairPartitioner = { (pair: (Out, Ctx)) =>
       partitioner(pair._1)
     }
     val pairF = { (pair: (Out, Ctx), partition: P) =>

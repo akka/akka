@@ -344,13 +344,13 @@ class SubFlow[In, Out, Mat](
     new SubFlow(delegate.mapAsync(parallelism)(x => f(x).toScala))
 
   /**
-    * @see [[akka.stream.javadsl.Flow.mapAsyncPartitioned]]
-    */
+   * @see [[akka.stream.javadsl.Flow.mapAsyncPartitioned]]
+   */
   def mapAsyncPartitioned[T, P](
-    parallelism: Int,
-    perPartition: Int,
-    partitioner: function.Function[Out, P],
-    f: BiFunction[Out, P, CompletionStage[T]]): SubFlow[In, T, Mat] =
+      parallelism: Int,
+      perPartition: Int,
+      partitioner: function.Function[Out, P],
+      f: BiFunction[Out, P, CompletionStage[T]]): SubFlow[In, T, Mat] =
     new SubFlow(delegate.mapAsyncPartitioned(parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
       f(x, p).toScala
     })

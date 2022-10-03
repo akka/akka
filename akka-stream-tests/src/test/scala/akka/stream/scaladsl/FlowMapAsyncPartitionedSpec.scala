@@ -122,10 +122,12 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
         .runWith(TestSink())
 
     sinkProbe.expectSubscription().request(10)
-    probes(0).expectMsg(0)  // true partition
-    probes(9).expectMsg(9)  // false partition
+    probes(0).expectMsg(0) // true partition
+    probes(9).expectMsg(9) // false partition
     // all in the true partition, but should not be started
-    (1 until 9).foreach { x => probes(x).expectNoMessage(10.millis) }
+    (1 until 9).foreach { x =>
+      probes(x).expectNoMessage(10.millis)
+    }
 
     // complete promises in reverse order
     (1 to 9).foreach { negOff =>
