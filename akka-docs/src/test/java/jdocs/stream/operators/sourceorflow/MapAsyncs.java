@@ -160,6 +160,7 @@ public class MapAsyncs {
         };
 
     eventsForEntities
+        // simulate a message broker with offset tracking
         .statefulMapConcat(
             () -> {
               final int[] offset = new int[1]; // trick to close over an int...
