@@ -4,6 +4,7 @@
 
 package akka.stream.impl.fusing
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes.{ SourceLocation }
@@ -17,6 +18,10 @@ import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[akka] object MapAsyncPartitioned {
   def apply[In, Out, Partition](
       parallelism: Int,
@@ -69,6 +74,10 @@ private[akka] object MapAsyncPartitioned {
   val NotYetThere = MapAsync.NotYetThere
 }
 
+/**
+  * Internal API
+  */
+@InternalApi
 private[akka] sealed abstract case class MapAsyncPartitioned[In, Out, Partition] private (
     parallelism: Int,
     perPartition: Int,

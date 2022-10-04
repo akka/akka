@@ -84,8 +84,8 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
     val c = TestSubscriber.manualProbe[Int]()
 
     // parallelism, perPartition, and partitioner chosen to maximize number of futures
-    //  in-flight
-    val maxParallelism = (Runtime.getRuntime.availableProcessors / 2).max(3).min(8)
+    //  in-flight while leaving an opportunity for the stream etc. to still run
+    val maxParallelism = (Runtime.getRuntime.availableProcessors - 1).max(3).min(8)
     Source(1 to 22)
       .mapAsyncPartitioned(maxParallelism, 2)(_ % 22) { (elem, _) =>
         Future {
@@ -99,6 +99,9 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
     val sub = c.expectSubscription()
     probe.expectNoMessage(100.millis)
     sub.request(1)
+    
+    // theSameElementsAs (viz. ordering insensitive) because the order in which messages are received by the probe
+    //  is not deterministic, but the bunching (caused by downstream demand) should be deterministic
     probe.receiveN(maxParallelism + 1) should contain theSameElementsAs (1 to (maxParallelism + 1))
     probe.expectNoMessage(100.millis)
     sub.request(2)
@@ -129,14 +132,14 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
       probes(x).expectNoMessage(10.millis)
     }
 
-    // complete promises in reverse order
+    // complete promises in reverse order, key thing is completing all greater-than zero before completing zero
     (1 to 9).foreach { negOff =>
       promises(10 - negOff).success(negOff)
       sinkProbe.expectNoMessage(10.millis)
     }
 
     promises(0).success(10)
-    sinkProbe.toStrict(100.millis) should contain theSameElementsAs (1 to 10)
+    sinkProbe.toStrict(100.millis) should contain theSameElementsInOrderAs (1 to 10).reverse
   }
 
   "signal future already failed" in {
