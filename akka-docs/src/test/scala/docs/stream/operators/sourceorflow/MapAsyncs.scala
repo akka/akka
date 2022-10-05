@@ -35,6 +35,10 @@ object CommonMapAsync {
   val settings = new AnyRef
   val subscription = new AnyRef
 
+  // for access from java
+  def consumer = Consumer
+  def committer = Committer
+
   object Consumer {
     // almost but not quite like Alpakka Kafka
     def committableSource(settings: AnyRef, subscription: AnyRef): Source[EntityEvent, NotUsed] =
@@ -88,7 +92,6 @@ object CommonMapAsync {
 
   def eventHandler(event: Event): Future[Int] = {
     println(s"Processing event $event...")
-    //...
     // #mapasync-strict-order
     // #mapasync-concurrent
     // #mapasyncunordered
@@ -177,12 +180,12 @@ object MapAsyncPartitioned extends App {
   }
 
   eventsForEntities
-    .statefulMap(() => 0)({ (count, event) =>
-      println(s"Received event $event at offset $count from message broker")
-      (count + 1, event)
-    }, { _ =>
-      None
-    })
+    .zipWithIndex
+    .map {
+      case (event, count) =>
+        println(s"Received event $event at offset $count from message broker")
+        event
+    }
     .mapAsyncPartitioned(10, 1)(partitioner) { (event, partition) =>
       println(s"Processing event $event from partition $partition")
 

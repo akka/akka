@@ -15,6 +15,8 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
+import docs.stream.operators.sourceorflow.CommonMapAsync;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,6 +26,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
+import scala.compat.java8.FutureConverters;
 
 public class MapAsyncs {
 
@@ -149,7 +152,7 @@ public class MapAsyncs {
                     return s;
                   });
             })
-        // for this purpose of this example, will print every element, prepended with
+        // for the purpose of this example, will print every element, prepended with
         // "`mapAsyncPartitioned` emitted "
         .runWith(Committer.sink(commitSettings), system);
     // #mapAsyncPartitioned
@@ -224,71 +227,27 @@ public class MapAsyncs {
     // almost but not quite, like Alpakka Kafka...
     public static Source<EntityEvent, NotUsed> committableSource(
         Object settings, Object subscription) {
-      // pro forma use the dummy arguments
-      if (settings != null && subscription != null) {
-        return Source.fromIterator(() -> Stream.iterate(1, i -> i + 1).iterator())
-            .statefulMap(
-                () -> new HashMap<Integer, Integer>(), // create: countsPerEntity
-                (countsPerEntity, n) -> {
-                  int entityId;
-
-                  if (random.nextBoolean() || countsPerEntity.isEmpty()) {
-                    entityId = random.nextInt(n);
-                  } else {
-                    int m = random.nextInt(countsPerEntity.size()) + 1;
-                    Iterator<Integer> keysIterator = countsPerEntity.keySet().iterator();
-
-                    Integer selected = Integer.valueOf(-1);
-                    int i = 0;
-                    while (keysIterator.hasNext() && i < m) {
-                      if (i == m - 1) {
-                        selected = keysIterator.next();
-                      } else {
-                        keysIterator.next();
-                      }
-                      i++;
-                    }
-                    entityId = selected.intValue();
-                  }
-
-                  int seqNr =
-                      countsPerEntity
-                              .getOrDefault(Integer.valueOf(entityId), Integer.valueOf(0))
-                              .intValue()
-                          + 1;
-
-                  countsPerEntity.put(Integer.valueOf(entityId), Integer.valueOf(seqNr));
-
-                  return new Pair<HashMap<Integer, Integer>, EntityEvent>(
-                      countsPerEntity, new EntityEvent(entityId, seqNr));
-                }, // f
-                (countsPerEntity) -> {
-                  return Optional.empty();
-                } // onComplete
-                )
-            .take(1000);
-      } else {
-        throw new AssertionError("pro forma");
-      }
+      return CommonMapAsync.consumer()
+          .committableSource(settings, subscription)
+          .asJava()
+          .map(scalaEvent -> new EntityEvent(scalaEvent.entityId(), scalaEvent.sequenceNumber()));
     }
 
     // likewise ape the Alpakka Kafka API
     public static Source<Event, NotUsed> plainSource(Object settings, Object subscription) {
-      // pro forma use the dummy arguments
-      if (settings != null && subscription != null) {
-        return Source.fromIterator(() -> Stream.iterate(1, i -> i + 1).iterator())
-            .map(PlainEvent::new);
-      } else {
-        throw new AssertionError("pro forma");
-      }
+      return CommonMapAsync.consumer()
+          .plainSource(settings, subscription)
+          .asJava()
+          .map(scalaEvent -> new PlainEvent(scalaEvent.sequenceNumber()));
     }
   }
 
   private static class Committer {
     public static Sink<String, CompletionStage<Done>> sink(String prependTo) {
-      return Flow.of(String.class)
-          .map(in -> prependTo + " emitted " + in)
-          .toMat(Sink.foreach(str -> System.out.println(str)), Keep.right());
+      return CommonMapAsync.committer()
+          .sink(prependTo)
+          .asJava()
+          .mapMaterializedValue(scalaFuture -> FutureConverters.toJava(scalaFuture));
     }
   }
 }
