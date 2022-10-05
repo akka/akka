@@ -22,6 +22,7 @@ import akka.annotation.InternalApi
 import akka.stream.{ Outlet, SourceShape, _ }
 import akka.stream.impl.{ PublisherSource, _ }
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.fusing.CompletionStageSource
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
 import akka.stream.stage.GraphStageWithMaterializedValue
@@ -516,7 +517,7 @@ object Source {
    * Here for Java interoperability, the normal use from Scala should be [[Source.future]]
    */
   def completionStage[T](completionStage: CompletionStage[T]): Source[T, NotUsed] =
-    future(completionStage.toScala)
+    fromGraph(new CompletionStageSource(completionStage))
 
   /**
    * Turn a `Future[Source]` into a source that will emit the values of the source when the future completes successfully.
