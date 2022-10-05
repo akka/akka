@@ -331,10 +331,13 @@ private[stream] object Collect {
   override def createLogic(attr: Attributes) =
     new GraphStageLogic(shape) with InHandler with OutHandler {
       override def onPush(): Unit = push(out, grab(in))
+      import Collect.NotApplied
 
-      override def onUpstreamFailure(ex: Throwable): Unit =
-        if (f.isDefinedAt(ex)) super.onUpstreamFailure(f(ex))
-        else super.onUpstreamFailure(ex)
+      override def onUpstreamFailure(ex: Throwable): Unit = f.applyOrElse(ex, NotApplied) match {
+        case NotApplied   => super.onUpstreamFailure(ex)
+        case t: Throwable => super.onUpstreamFailure(t)
+        case _            => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+      }
 
       override def onPull(): Unit = pull(in)
 
