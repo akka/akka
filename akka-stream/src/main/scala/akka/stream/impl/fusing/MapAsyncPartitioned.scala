@@ -75,8 +75,8 @@ private[akka] object MapAsyncPartitioned {
 }
 
 /**
-  * Internal API
-  */
+ * Internal API
+ */
 @InternalApi
 private[akka] sealed abstract case class MapAsyncPartitioned[In, Out, Partition] private (
     parallelism: Int,

@@ -99,7 +99,7 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
     val sub = c.expectSubscription()
     probe.expectNoMessage(100.millis)
     sub.request(1)
-    
+
     // theSameElementsAs (viz. ordering insensitive) because the order in which messages are received by the probe
     //  is not deterministic, but the bunching (caused by downstream demand) should be deterministic
     probe.receiveN(maxParallelism + 1) should contain theSameElementsAs (1 to (maxParallelism + 1))
