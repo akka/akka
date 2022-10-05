@@ -153,13 +153,15 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           state = setup.snapshotAdapter.fromJournal(snapshot)
           setup.internalLogger.debug("Loaded snapshot with metadata [{}]", metadata)
           metadata.metadata match {
-            case Some(rm: ReplicatedSnapshotMetadata) => (metadata.sequenceNr, rm.seenPerReplica, rm.version)
-            case _                                    => (metadata.sequenceNr, Map.empty[ReplicaId, Long].withDefaultValue(0L), VersionVector.empty)
+            case Some(rm: ReplicatedSnapshotMetadata) =>
+              (metadata.sequenceNr, rm.seenPerReplica, rm.version)
+            case _ => (metadata.sequenceNr, Map.empty[ReplicaId, Long], VersionVector.empty)
           }
-        case None => (0L, Map.empty[ReplicaId, Long].withDefaultValue(0L), VersionVector.empty)
+        case None => (0L, Map.empty[ReplicaId, Long], VersionVector.empty)
       }
+      val seenPerReplicaWithDefault = seenPerReplica.withDefaultValue(0L)
 
-      setup.internalLogger.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
+      setup.internalLogger.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplicaWithDefault, version)
 
       setup.cancelRecoveryTimer()
 
@@ -173,7 +175,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           receivedPoisonPill,
           System.nanoTime(),
           version,
-          seenPerReplica,
+          seenPerReplicaWithDefault,
           eventsReplayed = 0))
     }
 
