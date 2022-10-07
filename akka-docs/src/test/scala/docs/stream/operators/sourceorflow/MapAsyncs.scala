@@ -179,8 +179,7 @@ object MapAsyncPartitioned extends App {
     partition
   }
 
-  eventsForEntities
-    .zipWithIndex
+  eventsForEntities.zipWithIndex
     .map {
       case (event, count) =>
         println(s"Received event $event at offset $count from message broker")

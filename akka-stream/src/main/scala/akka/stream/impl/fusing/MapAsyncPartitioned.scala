@@ -150,7 +150,9 @@ private[akka] sealed abstract case class MapAsyncPartitioned[In, Out, Partition]
                           dropCompletedThenPushIfPossible(p)
                         } else {
                           failStage(
-                            new IllegalStateException("Should only get here if f throws, not if future was created", ex))
+                            new IllegalStateException(
+                              "Should only get here if f throws, not if future was created",
+                              ex))
                         }
                       }
                   }
