@@ -1,0 +1,2 @@
+# internal API changed
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.fusing.SupervisedGraphStageLogic.withSupervision")
