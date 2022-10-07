@@ -36,7 +36,7 @@ private[akka] object MapAsyncPartitioned {
         f(x, partitioner(x))
       }
       MapAsync(parallelism, fin)
-    } else new MapAsyncPartitioned(parallelism, perPartition, partitioner, f) {}
+    } else MapAsyncPartitioned(parallelism, perPartition, partitioner, f)
 
   final class Holder[P, I, O](
       var incoming: I,
@@ -78,13 +78,19 @@ private[akka] object MapAsyncPartitioned {
  * Internal API
  */
 @InternalApi
-private[akka] sealed abstract case class MapAsyncPartitioned[In, Out, Partition] private (
+private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
     parallelism: Int,
     perPartition: Int,
     partitioner: In => Partition,
     f: (In, Partition) => Future[Out])
     extends GraphStage[FlowShape[In, Out]] {
   import MapAsyncPartitioned._
+
+  // duplicating the checks of the apply method since the constructor is public in the bytecode
+  if (parallelism < 1) throw new IllegalArgumentException("parallelism must be at least 1")
+  if (perPartition < 1) throw new IllegalArgumentException("perPartition must be at least 1")
+  if (perPartition >= parallelism)
+    throw new IllegalArgumentException("perPartition must be less than parallelism: consider mapAsync instead")
 
   private val in = Inlet[In]("MapAsyncPartitioned.in")
   private val out = Outlet[Out]("MapAsyncPartitioned.out")
