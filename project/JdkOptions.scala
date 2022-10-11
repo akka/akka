@@ -49,8 +49,7 @@ object JdkOptions extends AutoPlugin {
       jdk8home,
       fullJavaHomes,
       if (scalaVersion.startsWith("3.")) Seq("-Xtarget:8")
-      else if (scalaVersion.startsWith("2.13.")) Seq("-release", "8")
-      else Seq("-target:jvm-1.8"),
+      else Seq("-release", "8"),
       // '-release 8' is not enough, for some reason we need the 8 rt.jar
       // explicitly. To test whether this has the desired effect, compile
       // akka-remote and check the invocation of 'ByteBuffer.clear()' in
