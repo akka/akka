@@ -194,7 +194,7 @@ final class SubSource[Out, Mat](
    * the mapping function for mapping the first element. The mapping function returns a mapped element to emit
    * downstream and a state to pass to the next mapping function. The state can be the same for each mapping return,
    * be a new immutable state but it is also safe to use a mutable state. The returned `T` MUST NOT be `null` as it is
-   * illegal as stream element - according to the Reactive Streams specification. A `null` state is not allow and will fail the stream.
+   * illegal as stream element - according to the Reactive Streams specification. A `null` state is not allowed and will fail the stream.
    *
    * For stateless variant see [[map]].
    *

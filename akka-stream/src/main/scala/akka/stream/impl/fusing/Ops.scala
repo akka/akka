@@ -2219,11 +2219,10 @@ private[akka] final class StatefulMap[S, In, Out](
     new GraphStageLogic(shape) with InHandler with OutHandler {
       lazy val decider: Decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
-      private var state: OptionVal[S] = _
+      private var state: OptionVal[S] = OptionVal.none
 
       override def preStart(): Unit = {
-        state = OptionVal.Some(create())
-        throwIfNoState()
+        createNewState()
       }
 
       override def onPush(): Unit = {
@@ -2258,16 +2257,18 @@ private[akka] final class StatefulMap[S, In, Out](
         super.onDownstreamFinish(cause)
       }
 
+      private def createNewState(): Unit = {
+        state = OptionVal.Some(create())
+        throwIfNoState()
+      }
+
       private def restartState(): Unit = {
         completeStateIfNeeded() match {
           case Some(elem) =>
-            emit(out, elem, { () =>
-              state = OptionVal.Some(create())
-              throwIfNoState()
-            })
+            push(out, elem)
+            createNewState()
           case None =>
-            state = OptionVal.Some(create())
-            throwIfNoState()
+            createNewState()
             // should always happen here but for good measure
             if (!hasBeenPulled(in)) pull(in)
         }
