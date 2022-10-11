@@ -67,7 +67,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-stream-tests-tck",
     "akka-testkit")
 
-  val defaultScalaOptions = "-Wconf:cat=unused-nowarn:s,any:e"
+  val defaultScalaOptions = "-Wconf:cat=unused-nowarn:s,cat=lint-infer-any:s,any:e"
 
   lazy val nowarnSettings = Seq(
     Compile / scalacOptions ++= (
