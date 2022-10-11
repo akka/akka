@@ -159,9 +159,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           }
         case None => (0L, Map.empty[ReplicaId, Long], VersionVector.empty)
       }
-      val seenPerReplicaWithDefault = seenPerReplica.withDefaultValue(0L)
 
-      setup.internalLogger.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplicaWithDefault, version)
+      setup.internalLogger.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
 
       setup.cancelRecoveryTimer()
 
@@ -175,7 +174,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           receivedPoisonPill,
           System.nanoTime(),
           version,
-          seenPerReplicaWithDefault,
+          seenPerReplica,
           eventsReplayed = 0))
     }
 
