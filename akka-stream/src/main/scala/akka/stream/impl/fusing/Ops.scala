@@ -168,27 +168,51 @@ import akka.util.ccompat._
   override def initialAttributes: Attributes = DefaultAttributes.dropWhile and SourceLocation.forLambda(p)
 
   def createLogic(inheritedAttributes: Attributes) =
-    new SupervisedGraphStageLogic(inheritedAttributes, shape) with InHandler with OutHandler {
-      override def onPush(): Unit = {
-        val elem = grab(in)
-        withSupervision(() => p(elem)) match {
-          case OptionVal.Some(flag) =>
-            if (flag) pull(in)
-            else {
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      private lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
+      private var buffer: OptionVal[T] = OptionVal.none
+      private val contextPropagation = ContextPropagation()
+
+      override def preStart(): Unit = pull(in)
+
+      override def onPush(): Unit =
+        try {
+          val elem = grab(in)
+          if (p(elem)) {
+            pull(in)
+          } else {
+            if (isAvailable(out)) {
               push(out, elem)
-              setHandler(in, rest)
+            } else {
+              buffer = OptionVal.Some(elem)
+              contextPropagation.suspendContext()
             }
-          case _ => // do nothing
+            setHandler(in, new InHandler {
+              override def onPush(): Unit = push(out, grab(in))
+              override def onUpstreamFinish(): Unit =
+                if (buffer.isEmpty) super.onUpstreamFinish()
+            })
+          }
+        } catch {
+          case NonFatal(ex) =>
+            decider(ex) match {
+              case Supervision.Stop => failStage(ex)
+              case _                => if (isClosed(in)) completeStage() else pull(in)
+            }
         }
+
+      override def onPull(): Unit = buffer match {
+        case OptionVal.Some(value) =>
+          contextPropagation.resumeContext()
+          push(out, value)
+          buffer = OptionVal.none
+          if (isClosed(in)) completeStage()
+        case _ => if (!hasBeenPulled(in)) pull(in)
       }
 
-      def rest = new InHandler {
-        def onPush() = push(out, grab(in))
-      }
-
-      override def onResume(t: Throwable): Unit = if (!hasBeenPulled(in)) pull(in)
-
-      override def onPull(): Unit = pull(in)
+      override def onUpstreamFinish(): Unit =
+        if (buffer.isEmpty) super.onUpstreamFinish()
+      // else onPull will complete
 
       setHandlers(in, out, this)
     }
