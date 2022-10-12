@@ -401,16 +401,40 @@ private[stream] object Collect {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
+      private var buffer: OptionVal[T] = OptionVal.none
+      private val contextPropagation = ContextPropagation()
+
       private var left: Long = count
+
+      override def preStart(): Unit = pull(in)
 
       override def onPush(): Unit = {
         if (left > 0) {
           left -= 1
           pull(in)
-        } else push(out, grab(in))
+        } else {
+          val elem = grab(in)
+          if (isAvailable(out)) {
+            push(out, elem)
+          } else {
+            buffer = OptionVal.Some(elem)
+            contextPropagation.suspendContext()
+          }
+        }
       }
 
-      override def onPull(): Unit = pull(in)
+      override def onUpstreamFinish(): Unit =
+        if (buffer.isEmpty) super.onUpstreamFinish()
+      // else onPull will complete
+
+      override def onPull(): Unit = buffer match {
+        case OptionVal.Some(value) =>
+          contextPropagation.resumeContext()
+          push(out, value)
+          buffer = OptionVal.none
+          if (isClosed(in)) completeStage()
+        case _ => if (!hasBeenPulled(in)) pull(in)
+      }
 
       setHandlers(in, out, this)
     }

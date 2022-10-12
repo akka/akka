@@ -89,10 +89,9 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "work with a massive chain of drops" in new OneBoundedSetup[Int](Vector.fill(chainLength / 1000)(dropOne): _*) {
-      lastEvents() should be(Set.empty)
+      lastEvents() should be(Set(RequestOne))
 
       downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
 
       var i = 0
       while (i < (chainLength / 1000)) {
