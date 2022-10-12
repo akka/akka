@@ -11,7 +11,6 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -20,8 +19,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 import org.jboss.netty.bootstrap.Bootstrap
 import org.jboss.netty.bootstrap.ClientBootstrap
@@ -41,7 +38,6 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.util.HashedWheelTimer
-
 import akka.ConfigurationException
 import akka.OnlyCauseStackTrace
 import akka.actor.ActorSystem
@@ -58,7 +54,10 @@ import akka.util.Helpers
 import akka.util.Helpers.Requiring
 import akka.util.OptionVal
 
+import scala.annotation.nowarn
+
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 object NettyFutureBridge {
   def apply(nettyFuture: ChannelFuture): Future[Channel] = {
     val p = Promise[Channel]()
@@ -96,6 +95,7 @@ object NettyFutureBridge {
 
 @SerialVersionUID(1L)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class NettyTransportException(msg: String, cause: Throwable)
     extends RuntimeException(msg, cause)
     with OnlyCauseStackTrace {
@@ -104,6 +104,7 @@ class NettyTransportException(msg: String, cause: Throwable)
 
 @SerialVersionUID(1L)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class NettyTransportExceptionNoStack(msg: String, cause: Throwable)
     extends NettyTransportException(msg, cause)
     with NoStackTrace {
@@ -111,6 +112,7 @@ class NettyTransportExceptionNoStack(msg: String, cause: Throwable)
 }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class NettyTransportSettings(config: Config) {
 
   import config._
@@ -167,6 +169,7 @@ class NettyTransportSettings(config: Config) {
   }
 
   @deprecated("WARNING: This should only be used by professionals.", "2.0")
+  @nowarn("msg=deprecated")
   val PortSelector: Int = getInt("port")
 
   @deprecated("WARNING: This should only be used by professionals.", "2.4")
@@ -308,6 +311,7 @@ private[transport] object NettyTransport {
   // 4 bytes will be used to represent the frame length. Used by netty LengthFieldPrepender downstream handler.
   val FrameLengthFieldLength = 4
   def gracefulClose(channel: Channel)(implicit ec: ExecutionContext): Unit = {
+    @nowarn("msg=deprecated")
     def always(c: ChannelFuture) = NettyFutureBridge(c).recover { case _ => c.getChannel }
     for {
       _ <- always { channel.write(ChannelBuffers.buffer(0)) } // Force flush by waiting on a final dummy write
@@ -338,6 +342,7 @@ private[transport] object NettyTransport {
 }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedActorSystem) extends Transport {
 
   def this(system: ExtendedActorSystem, conf: Config) = this(new NettyTransportSettings(conf), system)

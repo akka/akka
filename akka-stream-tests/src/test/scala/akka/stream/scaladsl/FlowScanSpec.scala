@@ -53,8 +53,7 @@ class FlowScanSpec extends StreamSpec("""
           old + current
         }
         .withAttributes(supervisionStrategy(Supervision.restartingDecider))
-      Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink.probe).toStrict(1.second) should ===(
-        Seq(0, 1, 4, 0, 5, 12))
+      Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink()).toStrict(1.second) should ===(Seq(0, 1, 4, 0, 5, 12))
     }
 
     "resume properly" in {
@@ -65,14 +64,14 @@ class FlowScanSpec extends StreamSpec("""
           old + current
         }
         .withAttributes(supervisionStrategy(Supervision.resumingDecider))
-      Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink.probe).toStrict(1.second) should ===(Seq(0, 1, 4, 9, 16))
+      Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink()).toStrict(1.second) should ===(Seq(0, 1, 4, 9, 16))
     }
 
     "scan normally for empty source" in {
       Source
         .empty[Int]
         .scan(0) { case (a, b) => a + b }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(2)
         .expectNext(0)
         .expectComplete()
@@ -83,7 +82,7 @@ class FlowScanSpec extends StreamSpec("""
       Source
         .failed[Int](ex)
         .scan(0) { case (a, b) => a + b }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(2)
         .expectNextOrError(0, ex)
     }

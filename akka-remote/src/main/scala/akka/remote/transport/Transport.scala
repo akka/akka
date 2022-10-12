@@ -17,6 +17,7 @@ import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.util.{ unused, ByteString }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 object Transport {
 
   trait AssociationEvent extends NoSerializationVerificationNeeded
@@ -70,6 +71,7 @@ object Transport {
  * [[com.typesafe.config.Config]] and an [[akka.actor.ExtendedActorSystem]] as parameters.
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 trait Transport {
   import akka.remote.transport.Transport._
 
@@ -154,6 +156,7 @@ trait Transport {
 }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 object AssociationHandle {
 
   /**
@@ -183,6 +186,7 @@ object AssociationHandle {
   /**
    * Supertype of possible disassociation reasons
    */
+  @nowarn("msg=deprecated")
   sealed trait DisassociateInfo
 
   case object Unknown extends DisassociateInfo
@@ -221,6 +225,7 @@ object AssociationHandle {
  * this registration takes place.
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 trait AssociationHandle {
 
   /**
@@ -276,6 +281,7 @@ trait AssociationHandle {
   @deprecated(
     message = "Use method that states reasons to make sure disassociation reasons are logged.",
     since = "2.5.3")
+  @nowarn("msg=deprecated")
   def disassociate(): Unit
 
   /**

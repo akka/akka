@@ -8,17 +8,16 @@ import java.io.{ InputStream, OutputStream }
 import java.util.concurrent.CompletionStage
 import java.util.stream.Collector
 
-import scala.concurrent.duration.FiniteDuration
-
 import scala.annotation.nowarn
+import scala.concurrent.duration.FiniteDuration
 
 import akka.NotUsed
 import akka.japi.function
 import akka.stream.{ javadsl, scaladsl }
 import akka.stream.IOResult
-import akka.util.ByteString
 import akka.stream.scaladsl.SinkToCompletionStage
 import akka.stream.scaladsl.SourceToCompletionStage
+import akka.util.ByteString
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams

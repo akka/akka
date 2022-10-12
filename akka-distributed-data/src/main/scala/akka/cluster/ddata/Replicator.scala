@@ -2017,6 +2017,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       }))
   }
 
+  @nowarn("msg=deprecated")
   def receiveFlushChanges(): Unit = {
     def notify(keyId: KeyId, subs: mutable.Set[ActorRef]): Unit = {
       val key = subscriptionKeys(keyId)
@@ -2301,6 +2302,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     subscribers.exists { case (_, s)    => s.contains(subscriber) } ||
     newSubscribers.exists { case (_, s) => s.contains(subscriber) }
 
+  @nowarn("msg=deprecated")
   def receiveTerminated(ref: ActorRef): Unit = {
     if (ref == durableStore) {
       log.error("Stopping distributed-data Replicator because durable store terminated")

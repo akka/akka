@@ -51,6 +51,7 @@ import akka.util.OptionVal
 @InternalApi private[akka] object PhasedFusingActorMaterializer {
 
   val Debug = false
+  val Mailbox: String = "akka.stream.materializer.mailbox"
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
     override def apply(
@@ -106,7 +107,11 @@ import akka.util.OptionVal
 
     val dispatcher = attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher
     val supervisorProps =
-      StreamSupervisor.props(attributes, haveShutDown).withDispatcher(dispatcher).withDeploy(Deploy.local)
+      StreamSupervisor
+        .props(attributes, haveShutDown)
+        .withDispatcher(dispatcher)
+        .withMailbox(Mailbox)
+        .withDeploy(Deploy.local)
 
     // FIXME why do we need a global unique name for the child?
     val streamSupervisor = context.actorOf(supervisorProps, StreamSupervisor.nextName())
@@ -614,7 +619,9 @@ private final case class SavedIslandData(
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>
-        props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+        props
+          .withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+          .withMailbox(Mailbox)
       case _ => props
     }
 
@@ -809,6 +816,7 @@ private final case class SavedIslandData(
         val props = ActorGraphInterpreter
           .props(shell)
           .withDispatcher(effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+          .withMailbox(PhasedFusingActorMaterializer.Mailbox)
 
         val actorName = fullIslandName match {
           case OptionVal.Some(n) => n
@@ -964,7 +972,10 @@ private final case class SavedIslandData(
     val maxInputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props =
-      TLSActor.props(maxInputBuffer, tls.createSSLEngine, tls.verifySession, tls.closing).withDispatcher(dispatcher)
+      TLSActor
+        .props(maxInputBuffer, tls.createSSLEngine, tls.verifySession, tls.closing)
+        .withDispatcher(dispatcher)
+        .withMailbox(PhasedFusingActorMaterializer.Mailbox)
     tlsActor = materializer.actorOf(props, "TLS-for-" + islandName)
     def factory(id: Int) = new ActorPublisher[Any](tlsActor) {
       override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)

@@ -1106,7 +1106,7 @@ public class FlowTest extends StreamTest {
 
     source
         .via(flow)
-        .runWith(TestSink.probe(system), system)
+        .runWith(TestSink.create(system), system)
         .request(2)
         .expectNext(head)
         .expectError(boom);

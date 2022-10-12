@@ -7,6 +7,7 @@ package akka.serialization.jackson
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.util.Failure
@@ -126,6 +127,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     jsonFactory
   }
 
+  @nowarn("msg=deprecated")
   private def configureObjectMapperFeatures(
       bindingName: String,
       objectMapper: ObjectMapper,
@@ -156,8 +158,13 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       case (enumName, value) => MapperFeature.valueOf(enumName) -> value
     }
     val mapperFeatures = objectMapperFactory.overrideConfiguredMapperFeatures(bindingName, configuredMapperFeatures)
+
     mapperFeatures.foreach {
-      case (feature, value) => objectMapper.configure(feature, value)
+      case (feature, value) =>
+        // TODO: This is deprecated and should used JsonMapper.Builder, but that would be difficult without
+        // breaking compatibility for custom JacksonObjectMapperProvider that may create a custom instance
+        // of the ObjectMapper
+        objectMapper.configure(feature, value)
     }
 
     val configuredJsonParserFeatures = features(config, "json-parser-features").map {

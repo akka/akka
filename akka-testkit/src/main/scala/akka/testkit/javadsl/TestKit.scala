@@ -40,6 +40,7 @@ import akka.util.ccompat.JavaConverters._
  *
  *
  */
+@nowarn("msg=deprecated")
 class TestKit(system: ActorSystem) {
 
   /**

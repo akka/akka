@@ -42,6 +42,29 @@ class JsonFramingSpec extends AkkaSpec {
         """{ "name" : "jack" }""")
     }
 
+    // coverage of #31569
+    "parse json array with object size smaller than maximumObjectLength" in {
+      val input =
+        """
+          |[
+          | { "name" : "john" },
+          | { "name" : "Ég get etið gler án þess að meiða mig" },
+          | { "name" : "jack" },
+          |]
+          |""".stripMargin // also should complete once notices end of array
+
+      // Using small maximumObjectLength here. Smaller than the full input, but larger than each json object.
+      val result =
+        Source.single(ByteString(input)).via(JsonFraming.objectScanner(64)).runFold(Seq.empty[String]) {
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq(
+        """{ "name" : "john" }""",
+        """{ "name" : "Ég get etið gler án þess að meiða mig" }""",
+        """{ "name" : "jack" }""")
+    }
+
     "parse multiple arrays" in {
       val input1 =
         """
@@ -509,14 +532,19 @@ class JsonFramingSpec extends AkkaSpec {
       val input = List(
         """{ "name": "john" }""",
         """{ "name": "jack" }""",
+        """{ "name": "john2" }, { "name": "jack2" }, { "name": "john3" }, { "name": "jack3" }""",
         """{ "name": "very very long name somehow. how did this happen?" }""").map(s => ByteString(s))
 
-      val probe = Source(input).via(JsonFraming.objectScanner(48)).runWith(TestSink.probe)
+      val probe = Source(input).via(JsonFraming.objectScanner(48)).runWith(TestSink())
 
       probe.ensureSubscription()
       probe
         .requestNext(ByteString("""{ "name": "john" }"""))
         .requestNext(ByteString("""{ "name": "jack" }"""))
+        .requestNext(ByteString("""{ "name": "john2" }"""))
+        .requestNext(ByteString("""{ "name": "jack2" }"""))
+        .requestNext(ByteString("""{ "name": "john3" }"""))
+        .requestNext(ByteString("""{ "name": "jack3" }"""))
         .request(1)
         .expectError()
         .getMessage should include("exceeded")
@@ -524,7 +552,7 @@ class JsonFramingSpec extends AkkaSpec {
 
     "fail when completing inside an object" in {
       val input = ByteString("{")
-      val probe = Source.single(input).via(JsonFraming.objectScanner(48)).runWith(TestSink.probe)
+      val probe = Source.single(input).via(JsonFraming.objectScanner(48)).runWith(TestSink())
 
       probe.ensureSubscription()
       probe.request(1).expectError() shouldBe a[PartialObjectException]

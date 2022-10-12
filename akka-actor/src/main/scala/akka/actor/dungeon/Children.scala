@@ -6,10 +6,11 @@ package akka.actor.dungeon
 
 import java.util.Optional
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import scala.annotation.nowarn
+
 import akka.actor._
 import akka.annotation.InternalStableApi
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
@@ -23,7 +24,7 @@ private[akka] trait Children { this: ActorCell =>
 
   import ChildrenContainer._
 
-  @nowarn("msg=never used")
+  @nowarn("msg=never")
   @volatile
   private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
 

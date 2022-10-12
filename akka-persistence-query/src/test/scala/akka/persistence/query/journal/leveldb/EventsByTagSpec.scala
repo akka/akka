@@ -86,7 +86,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
 
       val greenSrc = queries.currentEventsByTag(tag = "green", offset = NoOffset)
       greenSrc
-        .runWith(TestSink.probe[Any])
+        .runWith(TestSink[Any]())
         .request(2)
         .expectNext(EventEnvelope(Sequence(1L), "a", 2L, "a green apple", 0L))
         .expectNext(EventEnvelope(Sequence(2L), "a", 3L, "a green banana", 0L))
@@ -97,7 +97,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
 
       val blackSrc = queries.currentEventsByTag(tag = "black", offset = Sequence(0L))
       blackSrc
-        .runWith(TestSink.probe[Any])
+        .runWith(TestSink[Any]())
         .request(5)
         .expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car", 0L))
         .expectComplete()
@@ -108,7 +108,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
 
       val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(0L))
       val probe = greenSrc
-        .runWith(TestSink.probe[Any])
+        .runWith(TestSink[Any]())
         .request(2)
         .expectNext(EventEnvelope(Sequence(1L), "a", 2L, "a green apple", 0L))
         .expectNext(EventEnvelope(Sequence(2L), "a", 3L, "a green banana", 0L))
@@ -127,7 +127,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
     "find events from offset (exclusive)" in {
       val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(2L))
       greenSrc
-        .runWith(TestSink.probe[Any])
+        .runWith(TestSink[Any]())
         .request(10)
         // note that banana is not included, since exclusive offset
         .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf", 0L))
@@ -145,7 +145,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       expectMsg(s"a pink orange-done")
 
       val pinkSrc = queries.currentEventsByTag(tag = "pink")
-      val probe = pinkSrc.runWith(TestSink.probe[Any])
+      val probe = pinkSrc.runWith(TestSink[Any]())
 
       probe.request(1).expectNext(EventEnvelope(Sequence(1L), "z", 1L, "a pink apple", 0L))
 
@@ -163,7 +163,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
     "include timestamp in EventEnvelope" in {
       system.actorOf(TestActor.props("testTimestamp"))
       val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(0L))
-      val probe = greenSrc.runWith(TestSink.probe[EventEnvelope])
+      val probe = greenSrc.runWith(TestSink[EventEnvelope]())
 
       probe.request(2)
       probe.expectNext().timestamp should be > 0L
@@ -177,7 +177,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       val d = system.actorOf(TestActor.props("d"))
 
       val blackSrc = queries.eventsByTag(tag = "black", offset = NoOffset)
-      val probe = blackSrc.runWith(TestSink.probe[Any])
+      val probe = blackSrc.runWith(TestSink[Any]())
 
       try {
 
@@ -200,7 +200,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
 
     "find events from offset (exclusive)" in {
       val greenSrc = queries.eventsByTag(tag = "green", offset = Sequence(2L))
-      val probe = greenSrc.runWith(TestSink.probe[Any])
+      val probe = greenSrc.runWith(TestSink[Any]())
       try {
         probe
           .request(10)
@@ -223,7 +223,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
 
       val yellowSrc = queries.eventsByTag(tag = "yellow", offset = NoOffset)
       val probe = yellowSrc
-        .runWith(TestSink.probe[Any])
+        .runWith(TestSink[Any]())
         .request(2)
         .expectNext(EventEnvelope(Sequence(1L), "y", 1L, "a yellow car", 0L))
         .expectNoMessage(100.millis)
@@ -245,7 +245,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
     "not complete for empty stream" in {
       val src = queries.eventsByTag(tag = "red", offset = NoOffset)
       val probe =
-        src.map(_.event).runWith(TestSink.probe[Any]).request(2)
+        src.map(_.event).runWith(TestSink[Any]()).request(2)
 
       probe.expectNoMessage(200.millis)
 

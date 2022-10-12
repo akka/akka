@@ -24,7 +24,7 @@ class FlowRecoverSpec extends StreamSpec("""
           if (a == 3) throw ex else a
         }
         .recover { case _: Throwable => 0 }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .requestNext(1)
         .requestNext(2)
         .requestNext(0)
@@ -38,7 +38,7 @@ class FlowRecoverSpec extends StreamSpec("""
           if (a == 2) throw ex else a
         }
         .recover { case _: IndexOutOfBoundsException => 0 }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .requestNext(1)
         .request(1)
         .expectError(ex)
@@ -48,14 +48,14 @@ class FlowRecoverSpec extends StreamSpec("""
       Source(1 to 3)
         .map(identity)
         .recover { case _: Throwable => 0 }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(3)
         .expectNextN(1 to 3)
         .expectComplete()
     }
 
     "finish stream if it's empty" in {
-      Source.empty.recover { case _: Throwable => 0 }.runWith(TestSink.probe[Int]).request(1).expectComplete()
+      Source.empty.recover { case _: Throwable => 0 }.runWith(TestSink[Int]()).request(1).expectComplete()
     }
 
     "not log error when exception is thrown from recover block" in {
@@ -64,7 +64,7 @@ class FlowRecoverSpec extends StreamSpec("""
         Source
           .failed(new IllegalStateException("expected illegal state"))
           .recover { case _: IllegalStateException => throw ex }
-          .runWith(TestSink.probe[Int])
+          .runWith(TestSink[Int]())
           .expectSubscriptionAndError(ex)
       }
     }

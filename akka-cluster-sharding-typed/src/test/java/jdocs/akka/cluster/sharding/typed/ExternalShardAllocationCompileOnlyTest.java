@@ -9,12 +9,15 @@ import akka.actor.Address;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.cluster.sharding.external.ExternalShardAllocation;
+import akka.cluster.sharding.external.ExternalShardAllocationStrategy;
 import akka.cluster.sharding.external.javadsl.ExternalShardAllocationClient;
 import akka.cluster.sharding.typed.ShardingEnvelope;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
+import akka.util.Timeout;
 
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
 import static jdocs.akka.cluster.sharding.typed.ShardingCompileOnlyTest.Counter;
@@ -30,7 +33,8 @@ public class ExternalShardAllocationCompileOnlyTest {
     EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
 
     ActorRef<ShardingEnvelope<Counter.Command>> shardRegion =
-        sharding.init(Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId())));
+            sharding.init(Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId()))
+                    .withAllocationStrategy(new ExternalShardAllocationStrategy(system, typeKey.name(), Timeout.create(Duration.ofSeconds(5)))));
     // #entity
 
     // #client

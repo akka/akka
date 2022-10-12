@@ -5,17 +5,16 @@
 package akka.remote.transport
 
 import java.util.concurrent.{ ConcurrentHashMap, CopyOnWriteArrayList }
-
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-
 import com.typesafe.config.Config
-
 import akka.actor._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.Transport._
 import akka.util.ByteString
+
+import scala.annotation.nowarn
 
 /**
  * Transport implementation to be used for testing.
@@ -26,6 +25,7 @@ import akka.util.ByteString
  * production systems.
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class TestTransport(
     val localAddress: Address,
     final val registry: TestTransport.AssociationRegistry,
@@ -457,6 +457,7 @@ object AssociationRegistry {
 }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 final case class TestAssociationHandle(
     localAddress: Address,
     remoteAddress: Address,

@@ -55,7 +55,7 @@ class FlowFilterSpec extends StreamSpec("""
       Source(1 to 3)
         .filter((x: Int) => if (x == 2) throw TE else true)
         .withAttributes(supervisionStrategy(resumingDecider))
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(3)
         .expectNext(1, 3)
         .expectComplete()
@@ -63,10 +63,9 @@ class FlowFilterSpec extends StreamSpec("""
 
     "filter out elements without demand" in {
       val (inProbe, outProbe) =
-        TestSource
-          .probe[Int]
+        TestSource[Int]()
           .filter(_ > 1000)
-          .toMat(TestSink.probe[Int])(Keep.both)
+          .toMat(TestSink[Int]())(Keep.both)
           .addAttributes(Attributes.inputBuffer(1, 1))
           .run()
 
@@ -85,7 +84,7 @@ class FlowFilterSpec extends StreamSpec("""
       outProbe.expectComplete()
     }
     "complete without demand if remaining elements are filtered out" in {
-      Source(1 to 1000).filter(_ > 1000).runWith(TestSink.probe[Int]).ensureSubscription().expectComplete()
+      Source(1 to 1000).filter(_ > 1000).runWith(TestSink[Int]()).ensureSubscription().expectComplete()
     }
   }
 

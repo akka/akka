@@ -67,6 +67,7 @@ private[akka] class SnapshotAfter(config: Config) extends Extension {
  *
  */
 @deprecated("Use EventSourcedBehavior", "2.6.0")
+@nowarn("msg=deprecated")
 trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with PersistentFSMBase[S, D, E] with ActorLogging {
   import akka.persistence.fsm.PersistentFSM._
 
@@ -186,6 +187,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
 }
 
 @deprecated("Use EventSourcedBehavior", "2.6.0")
+@nowarn("msg=deprecated")
 object PersistentFSM {
 
   /**
@@ -207,6 +209,7 @@ object PersistentFSM {
    * @param stateIdentifier FSM state identifier
    * @param timeout FSM state timeout
    */
+  @nowarn("msg=deprecated")
   case class StateChangeEvent(stateIdentifier: String, timeout: Option[FiniteDuration]) extends PersistentFsmEvent
 
   /**
@@ -218,6 +221,7 @@ object PersistentFSM {
    * @tparam D state data type
    */
   @InternalApi
+  @nowarn("msg=deprecated")
   private[persistence] case class PersistentFSMSnapshot[D](
       stateIdentifier: String,
       data: D,
@@ -439,6 +443,7 @@ object PersistentFSM {
     @deprecated(
       "Internal API easily to be confused with regular FSM's using. Use regular events (`applying`). Internally, `copy` can be used instead.",
       "2.5.5")
+    @nowarn("msg=deprecated")
     private[akka] def using(@deprecatedName(Symbol("nextStateDate")) nextStateData: D): State[S, D, E] = {
       copy0(stateData = nextStateData)
     }
@@ -493,6 +498,7 @@ object PersistentFSM {
  *
  */
 @deprecated("Use EventSourcedBehavior", "2.6.0")
+@nowarn("msg=deprecated")
 abstract class AbstractPersistentFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSMBase[S, D, E]
     with PersistentFSM[S, D, E] {

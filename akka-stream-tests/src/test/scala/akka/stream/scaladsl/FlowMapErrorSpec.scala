@@ -24,7 +24,7 @@ class FlowMapErrorSpec extends StreamSpec("""
           if (a == 3) throw ex else a
         }
         .mapError { case _: Throwable => boom }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(3)
         .expectNext(1)
         .expectNext(2)
@@ -37,7 +37,7 @@ class FlowMapErrorSpec extends StreamSpec("""
           if (a == 2) throw ex else a
         }
         .mapError { case _: Exception => throw boom }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .requestNext(1)
         .request(1)
         .expectError(boom)
@@ -49,7 +49,7 @@ class FlowMapErrorSpec extends StreamSpec("""
           if (a == 2) throw ex else a
         }
         .mapError { case _: IndexOutOfBoundsException => boom }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .requestNext(1)
         .request(1)
         .expectError(ex)
@@ -59,14 +59,14 @@ class FlowMapErrorSpec extends StreamSpec("""
       Source(1 to 3)
         .map(identity)
         .mapError { case _: Throwable => boom }
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
         .request(3)
         .expectNextN(1 to 3)
         .expectComplete()
     }
 
     "finish stream if it's empty" in {
-      Source.empty.mapError { case _: Throwable => boom }.runWith(TestSink.probe[Int]).request(1).expectComplete()
+      Source.empty.mapError { case _: Throwable => boom }.runWith(TestSink[Int]()).request(1).expectComplete()
     }
   }
 }

@@ -15,13 +15,14 @@ object TestSink {
   /**
    * A Sink that materialized to a [[akka.stream.testkit.TestSubscriber.Probe]].
    */
+  @deprecated("Use `TestSink.create` with ClassicActorSystemProvider instead.", "2.7.0")
   def probe[T](system: ActorSystem): Sink[T, TestSubscriber.Probe[T]] =
-    new Sink(scaladsl.TestSink.probe[T](system))
+    create(system)
 
   /**
    * A Sink that materialized to a [[akka.stream.testkit.TestSubscriber.Probe]].
    */
   def create[T](system: ClassicActorSystemProvider): Sink[T, TestSubscriber.Probe[T]] =
-    probe(system.classicSystem)
+    new Sink(scaladsl.TestSink[T]()(system))
 
 }

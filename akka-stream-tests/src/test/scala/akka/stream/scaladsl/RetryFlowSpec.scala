@@ -91,7 +91,7 @@ class RetryFlowSpec extends StreamSpec("""
           })
       // #withBackoff-demo
 
-      val (source, sink) = TestSource.probe[Int].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
+      val (source, sink) = TestSource[Int]().via(retryFlow).toMat(TestSink())(Keep.both).run()
 
       sink.request(4)
 
@@ -118,7 +118,7 @@ class RetryFlowSpec extends StreamSpec("""
             case (_, _)                    => None
           })
 
-      val (source, sink) = TestSource.probe[Int].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
+      val (source, sink) = TestSource[Int]().via(retryFlow).toMat(TestSink())(Keep.both).run()
 
       sink.request(5)
 
@@ -191,7 +191,7 @@ class RetryFlowSpec extends StreamSpec("""
         })
       //#retry-success
 
-      val (source, sink) = TestSource.probe[(Int, SomeContext)].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
+      val (source, sink) = TestSource[(Int, SomeContext)]().via(retryFlow).toMat(TestSink())(Keep.both).run()
 
       sink.request(4)
 
@@ -209,10 +209,9 @@ class RetryFlowSpec extends StreamSpec("""
     "work with a buffer in the inner flow" in {
       val flow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
         FlowWithContext.fromTuples(Flow[(Int, Int)].buffer(10, OverflowStrategy.backpressure).via(failEvenValuesFlow))
-      val (source, sink) = TestSource
-        .probe[(Int, Int)]
+      val (source, sink) = TestSource[(Int, Int)]()
         .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, flow)((_, _) => None))
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
       sink.request(99)
@@ -228,10 +227,9 @@ class RetryFlowSpec extends StreamSpec("""
   "Backing off" should {
     "have min backoff" in {
       val minBackoff = 200.millis
-      val (source, sink) = TestSource
-        .probe[(Int, Int)]
+      val (source, sink) = TestSource[(Int, Int)]()
         .via(RetryFlow.withBackoffAndContext(minBackoff, 5.second, 0d, 3, failEvenValuesFlow)(incrementFailedValues))
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
       sink.request(99)
@@ -247,11 +245,10 @@ class RetryFlowSpec extends StreamSpec("""
     "use min backoff for every try" in {
       val minBackoff = 50.millis
       val maxRetries = 3
-      val (source, sink) = TestSource
-        .probe[(Int, Int)]
+      val (source, sink) = TestSource[(Int, Int)]()
         .via(RetryFlow.withBackoffAndContext(minBackoff, 5.seconds, 0d, maxRetries, failAllValuesFlow)(
           incrementFailedValues))
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
       sink.request(1)
@@ -271,12 +268,11 @@ class RetryFlowSpec extends StreamSpec("""
         case (State(retriedAt), _) => State(System.nanoTime - nanoTimeOffset :: retriedAt) -> NotUsed
       })
 
-      val (source, sink) = TestSource
-        .probe[(State, NotUsed)]
+      val (source, sink) = TestSource[(State, NotUsed)]()
         .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, NumRetries, flow) {
           case (_, (s, _)) => Some(s -> NotUsed)
         })
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
       sink.request(1)
@@ -312,7 +308,7 @@ class RetryFlowSpec extends StreamSpec("""
           case _                            => None
         })
 
-      val (source, sink) = TestSource.probe[(Int, Int)].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
+      val (source, sink) = TestSource[(Int, Int)]().via(retryFlow).toMat(TestSink())(Keep.both).run()
 
       sink.request(99)
 
@@ -547,12 +543,10 @@ class RetryFlowSpec extends StreamSpec("""
 
     val throughDangerousFlow
         : FlowWithContext[In, Ctx, Out, Ctx, (TestSubscriber.Probe[(In, Ctx)], TestPublisher.Probe[(Out, Ctx)])] =
-      FlowWithContext.fromTuples(
-        Flow.fromSinkAndSourceMat(TestSink.probe[(In, Ctx)], TestSource.probe[(Out, Ctx)])(Keep.both))
+      FlowWithContext.fromTuples(Flow.fromSinkAndSourceMat(TestSink[(In, Ctx)](), TestSource[(Out, Ctx)]())(Keep.both))
 
     val ((externalIn, (internalOut, internalIn)), externalOut) =
-      TestSource
-        .probe[(In, Ctx)]
+      TestSource[(In, Ctx)]()
         .viaMat(
           RetryFlow.withBackoffAndContext(
             minBackoff = 10.millis,
@@ -560,7 +554,7 @@ class RetryFlowSpec extends StreamSpec("""
             randomFactor = 0d,
             maxRetries = 3,
             throughDangerousFlow)(retryWith))(Keep.both)
-        .toMat(TestSink.probe[(Out, Ctx)])(Keep.both)
+        .toMat(TestSink[(Out, Ctx)]())(Keep.both)
         .run()
   }
 

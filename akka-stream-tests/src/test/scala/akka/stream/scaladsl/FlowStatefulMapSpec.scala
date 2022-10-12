@@ -11,9 +11,12 @@ import akka.stream.ActorMaterializer
 import akka.stream.Supervision
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
+import akka.testkit.EventFilter
 
+import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.Promise
@@ -31,7 +34,7 @@ class FlowStatefulMapSpec extends StreamSpec {
         .statefulMap(() => 0)((agg, elem) => {
           (agg + elem, (agg, elem))
         }, _ => None)
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
       sinkProb.expectSubscription().request(6)
       sinkProb
         .expectNext((0, 1))
@@ -55,7 +58,7 @@ class FlowStatefulMapSpec extends StreamSpec {
           },
           state => Some(state.reverse))
         .mapConcat(identity)
-        .runWith(TestSink.probe[Int])
+        .runWith(TestSink[Int]())
       sinkProb.expectSubscription().request(10)
       sinkProb.expectNextN(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).expectComplete()
     }
@@ -69,7 +72,7 @@ class FlowStatefulMapSpec extends StreamSpec {
             (agg + elem, (agg, elem))
         }, _ => None)
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
 
       testSink.expectSubscription().request(5)
       testSink.expectNext((0, 1)).expectNext((1, 3)).expectNext((4, 5)).expectComplete()
@@ -84,7 +87,7 @@ class FlowStatefulMapSpec extends StreamSpec {
             (agg + elem, (agg, elem))
         }, _ => None)
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
 
       testSink.expectSubscription().request(5)
       testSink.expectNext((0, 1)).expectNext((1, 2)).expectNext((0, 4)).expectNext((4, 5)).expectComplete()
@@ -99,19 +102,18 @@ class FlowStatefulMapSpec extends StreamSpec {
             (agg + elem, (agg, elem))
         }, _ => None)
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.stoppingDecider))
-        .runWith(TestSink.probe[(Int, Int)])
+        .runWith(TestSink[(Int, Int)]())
 
       testSink.expectSubscription().request(5)
       testSink.expectNext((0, 1)).expectNext((1, 2)).expectError(ex)
     }
 
     "fail on upstream failure" in {
-      val (testSource, testSink) = TestSource
-        .probe[Int]
+      val (testSource, testSink) = TestSource[Int]()
         .statefulMap(() => 0)((agg, elem) => {
           (agg + elem, (agg, elem))
         }, _ => None)
-        .toMat(TestSink.probe[(Int, Int)])(Keep.both)
+        .toMat(TestSink[(Int, Int)]())(Keep.both)
         .run()
 
       testSink.expectSubscription().request(5)
@@ -128,10 +130,9 @@ class FlowStatefulMapSpec extends StreamSpec {
     }
 
     "defer upstream failure and remember state" in {
-      val (testSource, testSink) = TestSource
-        .probe[Int]
+      val (testSource, testSink) = TestSource[Int]()
         .statefulMap(() => 0)((agg, elem) => { (agg + elem, (agg, elem)) }, (state: Int) => Some((state, -1)))
-        .toMat(TestSink.probe[(Int, Int)])(Keep.both)
+        .toMat(TestSink[(Int, Int)]())(Keep.both)
         .run()
 
       testSink.expectSubscription().request(5)
@@ -150,8 +151,7 @@ class FlowStatefulMapSpec extends StreamSpec {
 
     "cancel upstream when downstream cancel" in {
       val promise = Promise[Done]()
-      val testSource = TestSource
-        .probe[Int]
+      val testSource = TestSource[Int]()
         .statefulMap(() => 100)((agg, elem) => {
           (agg + elem, (agg, elem))
         }, (state: Int) => {
@@ -167,8 +167,7 @@ class FlowStatefulMapSpec extends StreamSpec {
     "cancel upstream when downstream fail" in {
       val promise = Promise[Done]()
       val testProb = TestSubscriber.probe[(Int, Int)]()
-      val testSource = TestSource
-        .probe[Int]
+      val testSource = TestSource[Int]()
         .statefulMap(() => 100)((agg, elem) => {
           (agg + elem, (agg, elem))
         }, (state: Int) => {
@@ -195,7 +194,7 @@ class FlowStatefulMapSpec extends StreamSpec {
         })
         .runWith(Sink.never)(mat)
       mat.shutdown()
-      matVal.failed.futureValue shouldBe a[AbruptStageTerminationException]
+      matVal.failed.futureValue shouldBe an[AbruptStageTerminationException]
       Await.result(promise.future, 3.seconds) shouldBe Done
     }
 
@@ -203,10 +202,7 @@ class FlowStatefulMapSpec extends StreamSpec {
       val promise = Promise[Done]()
       Source
         .single(1)
-        .statefulMap(() => -1)((_, elem) => {
-          throw ex
-          (elem, elem)
-        }, _ => {
+        .statefulMap(() => -1)((_, _) => throw ex, _ => {
           promise.complete(Success(Done))
           None
         })
@@ -217,7 +213,7 @@ class FlowStatefulMapSpec extends StreamSpec {
     "be able to be used as zipWithIndex" in {
       Source(List("A", "B", "C", "D"))
         .statefulMap(() => 0L)((index, elem) => (index + 1, (elem, index)), _ => None)
-        .runWith(TestSink.probe[(String, Long)])
+        .runWith(TestSink[(String, Long)]())
         .request(4)
         .expectNext(("A", 0L))
         .expectNext(("B", 1L))
@@ -227,7 +223,7 @@ class FlowStatefulMapSpec extends StreamSpec {
     }
 
     "be able to be used as bufferUntilChanged" in {
-      val sink = TestSink.probe[List[String]]
+      val sink = TestSink[List[String]]()
       Source("A" :: "B" :: "B" :: "C" :: "C" :: "C" :: "D" :: Nil)
         .statefulMap(() => List.empty[String])(
           (buffer, elem) =>
@@ -237,7 +233,6 @@ class FlowStatefulMapSpec extends StreamSpec {
             },
           buffer => Some(buffer))
         .filter(_.nonEmpty)
-        .alsoTo(Sink.foreach(println))
         .runWith(sink)
         .request(4)
         .expectNext(List("A"))
@@ -257,7 +252,7 @@ class FlowStatefulMapSpec extends StreamSpec {
             },
           _ => None)
         .collect({ case Some(elem) => elem })
-        .runWith(TestSink.probe[String])
+        .runWith(TestSink[String]())
         .request(4)
         .expectNext("A")
         .expectNext("B")
@@ -265,5 +260,124 @@ class FlowStatefulMapSpec extends StreamSpec {
         .expectNext("D")
         .expectComplete()
     }
+
+    "will not call onComplete twice if `f` fail" in {
+      val closedCounter = new AtomicInteger(0)
+      val probe = Source
+        .repeat(1)
+        .statefulMap(() => 23)( // the best resource there is
+          (_, _) => throw TE("failing read"),
+          _ => {
+            closedCounter.incrementAndGet()
+            None
+          })
+        .runWith(TestSink[Int]())
+
+      probe.request(1)
+      probe.expectError(TE("failing read"))
+      closedCounter.get() should ===(1)
+    }
+
+    "will not call onComplete twice if `f` and `onComplete` both fail" in {
+      val closedCounter = new AtomicInteger(0)
+      val probe = Source
+        .repeat(1)
+        .statefulMap(() => 23)((_, _) => throw TE("failing read"), _ => {
+          closedCounter.incrementAndGet()
+          if (closedCounter.get == 1) {
+            throw TE("boom")
+          }
+          None
+        })
+        .runWith(TestSink[Int]())
+
+      EventFilter[TE](occurrences = 1).intercept {
+        probe.request(1)
+        probe.expectError(TE("boom"))
+      }
+      closedCounter.get() should ===(1)
+    }
+
+    "will not call onComplete twice on cancel when `onComplete` fails" in {
+      val closedCounter = new AtomicInteger(0)
+      val (source, sink) = TestSource()
+        .viaMat(Flow[Int].statefulMap(() => 23)((s, elem) => (s, elem), _ => {
+          closedCounter.incrementAndGet()
+          throw TE("boom")
+        }))(Keep.left)
+        .toMat(TestSink[Int]())(Keep.both)
+        .run()
+
+      EventFilter[TE](occurrences = 1).intercept {
+        sink.request(1)
+        source.sendNext(1)
+        sink.expectNext(1)
+        sink.cancel()
+        source.expectCancellation()
+      }
+      closedCounter.get() should ===(1)
+    }
+
+    "emit onClose return value before restarting" in {
+      val stateCounter = new AtomicInteger(0)
+      val (source, sink) = TestSource[String]()
+        .viaMat(Flow[String].statefulMap(() => stateCounter.incrementAndGet())({ (s, elem) =>
+          if (elem == "boom") throw TE("boom")
+          else (s, elem + s.toString)
+        }, _ => Some("onClose")))(Keep.left)
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .toMat(TestSink())(Keep.both)
+        .run()
+
+      sink.request(1)
+      source.sendNext("one")
+      sink.expectNext("one1")
+      sink.request(1)
+      source.sendNext("boom")
+      sink.expectNext("onClose")
+      sink.request(1)
+      source.sendNext("two")
+      sink.expectNext("two2")
+      sink.cancel()
+      source.expectCancellation()
+    }
+
+    "not allow null state" in {
+      EventFilter[NullPointerException](occurrences = 1).intercept {
+        Source
+          .single("one")
+          .statefulMap(() => null: String)((s, t) => (s, t), _ => None)
+          .runWith(Sink.head)
+          .failed
+          .futureValue shouldBe a[NullPointerException]
+      }
+    }
+
+    "not allow null next state" in {
+      EventFilter[NullPointerException](occurrences = 1).intercept {
+        Source
+          .single("one")
+          .statefulMap(() => "state")((_, t) => (null, t), _ => None)
+          .runWith(Sink.seq)
+          .failed
+          .futureValue shouldBe a[NullPointerException]
+      }
+    }
+
+    "not allow null state on restart" in {
+      val counter = new AtomicInteger(0)
+      EventFilter[NullPointerException](occurrences = 1).intercept {
+        Source
+          .single("one")
+          .statefulMap(() => if (counter.incrementAndGet() == 1) "state" else null)(
+            (_, _) => throw TE("boom"),
+            _ => None)
+          .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+          .runWith(Sink.head)
+          .failed
+          .futureValue shouldBe a[NullPointerException]
+      }
+    }
+
   }
 }

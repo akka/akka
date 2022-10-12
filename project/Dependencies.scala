@@ -17,38 +17,26 @@ object Dependencies {
   val junitVersion = "4.13.2"
   val slf4jVersion = "1.7.36"
   // check agrona version when updating this
-  val aeronVersion = "1.38.1"
+  val aeronVersion = "1.39.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.15.1"
+  val agronaVersion = "1.16.0"
   val nettyVersion = "3.10.6.Final"
   val protobufJavaVersion = "3.16.1"
   val logbackVersion = "1.2.11"
+  val scalaFortifyVersion = "1.0.22"
+  val fortifySCAVersion = "22.1"
+  val jacksonCoreVersion = "2.13.4"
+  val jacksonDatabindVersion = jacksonCoreVersion
 
-  val jacksonCoreVersion = Def.setting {
-    if (scalaVersion.value.startsWith("3.")) {
-      "2.13.2"
-    } else {
-      "2.11.4"
-    }
-  }
-
-  val jacksonDatabindVersion = Def.setting {
-    if (scalaVersion.value.startsWith("3.")) {
-      "2.13.2.2"
-    } else {
-      jacksonCoreVersion.value
-    }
-  }
-
-  val scala212Version = "2.12.16"
-  val scala213Version = "2.13.8"
+  val scala212Version = "2.12.17"
+  val scala213Version = "2.13.10"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
-  val scala3Version = "3.1.2"
+  val scala3Version = "3.1.3"
   val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
-  val reactiveStreamsVersion = "1.0.3"
+  val reactiveStreamsVersion = "1.0.4"
 
   val sslConfigVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
@@ -65,6 +53,7 @@ object Dependencies {
       "3.1.4"
     }
   }
+
   val scalaTestScalaCheckVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
       "1-15"
@@ -72,6 +61,7 @@ object Dependencies {
       "1-14"
     }
   }
+
   val scalaCheckVersion = "1.15.1"
 
   val Versions =
@@ -104,7 +94,7 @@ object Dependencies {
     val jctools = "org.jctools" % "jctools-core" % "3.3.0" // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
+    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // MIT-0
 
     // ssl-config
     val sslConfigCore = Def.setting {
@@ -125,32 +115,16 @@ object Dependencies {
     // Added explicitly for when artery tcp is used
     val agrona = "org.agrona" % "agrona" % agronaVersion // ApacheV2
 
-    val asnOne = ("com.hierynomus" % "asn-one" % "0.5.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val asnOne = ("com.hierynomus" % "asn-one" % "0.6.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
 
-    val jacksonCore = Def.setting {
-      "com.fasterxml.jackson.core" % "jackson-core" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonAnnotations = Def.setting {
-      "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonDatabind = Def.setting {
-      "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion.value
-    } // ApacheV2
-    val jacksonJdk8 = Def.setting {
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonJsr310 = Def.setting {
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonScala = Def.setting {
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonParameterNames = Def.setting {
-      "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonCoreVersion.value
-    } // ApacheV2
-    val jacksonCbor = Def.setting {
-      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonCoreVersion.value
-    } // ApacheV2
+    val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonCoreVersion // ApacheV2
+    val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonCoreVersion // ApacheV2
+    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion // ApacheV2
+    val jacksonJdk8 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonCoreVersion // ApacheV2
+    val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonCoreVersion // ApacheV2
+    val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonCoreVersion // ApacheV2
+    val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonCoreVersion // ApacheV2
+    val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonCoreVersion // ApacheV2
     val lz4Java = "org.lz4" % "lz4-java" % "1.8.0" // ApacheV2
 
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
@@ -196,8 +170,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % Test // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.10" % Test // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.10" % Test // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.12" % Test // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.12" % Test // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % Test // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % Test // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
@@ -207,7 +181,8 @@ object Dependencies {
       val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test // CC0
+      val reactiveStreamsTck = ("org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test)
+        .exclude("org.testng", "testng") // MIT-0
 
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % Test
 
@@ -342,14 +317,14 @@ object Dependencies {
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative, TestDependencies.logback)
 
   val jackson = l ++= Seq(
-        jacksonCore.value,
-        jacksonAnnotations.value,
-        jacksonDatabind.value,
-        jacksonJdk8.value,
-        jacksonJsr310.value,
-        jacksonParameterNames.value,
-        jacksonCbor.value,
-        jacksonScala.value,
+        jacksonCore,
+        jacksonAnnotations,
+        jacksonDatabind,
+        jacksonJdk8,
+        jacksonJsr310,
+        jacksonParameterNames,
+        jacksonCbor,
+        jacksonScala,
         lz4Java,
         TestDependencies.junit,
         TestDependencies.scalatest.value)

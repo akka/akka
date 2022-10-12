@@ -1,0 +1,3 @@
+# internal classes
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.javadsl.SubSource")
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.javadsl.SubFlow")

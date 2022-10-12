@@ -142,7 +142,7 @@ way as other nodes.
 #### Joining automatically to seed nodes with Cluster Bootstrap
 
 Automatic discovery of nodes for the joining process is available
-using the open source Akka Management project's module, 
+using the Akka Management project's module, 
 @ref:[Cluster Bootstrap](../additional/operations.md#cluster-bootstrap).
 Please refer to its documentation for more details.
 
