@@ -37,41 +37,34 @@ package akka.protobuf;
 import java.io.UnsupportedEncodingException;
 
 /**
- * The classes contained within are used internally by the Protocol Buffer
- * library and generated message implementations. They are public only because
- * those generated messages do not reside in the {@code protobuf} package.
- * Others should not use this class directly.
+ * The classes contained within are used internally by the Protocol Buffer library and generated
+ * message implementations. They are public only because those generated messages do not reside in
+ * the {@code protobuf} package. Others should not use this class directly.
  *
  * @author kenton@google.com (Kenton Varda)
  */
 public class Internal {
   /**
-   * Helper called by generated code to construct default values for string
-   * fields.
-   * <p>
-   * The protocol compiler does not actually contain a UTF-8 decoder -- it
-   * just pushes UTF-8-encoded text around without touching it.  The one place
-   * where this presents a problem is when generating Java string literals.
-   * Unicode characters in the string literal would normally need to be encoded
-   * using a Unicode escape sequence, which would require decoding them.
-   * To get around this, protoc instead embeds the UTF-8 bytes into the
-   * generated code and leaves it to the runtime library to decode them.
-   * <p>
-   * It gets worse, though.  If protoc just generated a byte array, like:
-   *   new byte[] {0x12, 0x34, 0x56, 0x78}
-   * Java actually generates *code* which allocates an array and then fills
-   * in each value.  This is much less efficient than just embedding the bytes
-   * directly into the bytecode.  To get around this, we need another
-   * work-around.  String literals are embedded directly, so protoc actually
-   * generates a string literal corresponding to the bytes.  The easiest way
-   * to do this is to use the ISO-8859-1 character set, which corresponds to
-   * the first 256 characters of the Unicode range.  Protoc can then use
-   * good old CEscape to generate the string.
-   * <p>
-   * So we have a string literal which represents a set of bytes which
-   * represents another string.  This function -- stringDefaultValue --
-   * converts from the generated string to the string we actually want.  The
-   * generated code calls this automatically.
+   * Helper called by generated code to construct default values for string fields.
+   *
+   * <p>The protocol compiler does not actually contain a UTF-8 decoder -- it just pushes
+   * UTF-8-encoded text around without touching it. The one place where this presents a problem is
+   * when generating Java string literals. Unicode characters in the string literal would normally
+   * need to be encoded using a Unicode escape sequence, which would require decoding them. To get
+   * around this, protoc instead embeds the UTF-8 bytes into the generated code and leaves it to the
+   * runtime library to decode them.
+   *
+   * <p>It gets worse, though. If protoc just generated a byte array, like: new byte[] {0x12, 0x34,
+   * 0x56, 0x78} Java actually generates *code* which allocates an array and then fills in each
+   * value. This is much less efficient than just embedding the bytes directly into the bytecode. To
+   * get around this, we need another work-around. String literals are embedded directly, so protoc
+   * actually generates a string literal corresponding to the bytes. The easiest way to do this is
+   * to use the ISO-8859-1 character set, which corresponds to the first 256 characters of the
+   * Unicode range. Protoc can then use good old CEscape to generate the string.
+   *
+   * <p>So we have a string literal which represents a set of bytes which represents another string.
+   * This function -- stringDefaultValue -- converts from the generated string to the string we
+   * actually want. The generated code calls this automatically.
    */
   public static String stringDefaultValue(String bytes) {
     try {
@@ -79,18 +72,16 @@ public class Internal {
     } catch (UnsupportedEncodingException e) {
       // This should never happen since all JVMs are required to implement
       // both of the above character sets.
-      throw new IllegalStateException(
-          "Java VM does not support a standard character set.", e);
+      throw new IllegalStateException("Java VM does not support a standard character set.", e);
     }
   }
 
   /**
-   * Helper called by generated code to construct default values for bytes
-   * fields.
-   * <p>
-   * This is a lot like {@link #stringDefaultValue}, but for bytes fields.
-   * In this case we only need the second of the two hacks -- allowing us to
-   * embed raw bytes as a string literal with ISO-8859-1 encoding.
+   * Helper called by generated code to construct default values for bytes fields.
+   *
+   * <p>This is a lot like {@link #stringDefaultValue}, but for bytes fields. In this case we only
+   * need the second of the two hacks -- allowing us to embed raw bytes as a string literal with
+   * ISO-8859-1 encoding.
    */
   public static ByteString bytesDefaultValue(String bytes) {
     try {
@@ -98,35 +89,32 @@ public class Internal {
     } catch (UnsupportedEncodingException e) {
       // This should never happen since all JVMs are required to implement
       // ISO-8859-1.
-      throw new IllegalStateException(
-          "Java VM does not support a standard character set.", e);
+      throw new IllegalStateException("Java VM does not support a standard character set.", e);
     }
   }
 
   /**
-   * Helper called by generated code to determine if a byte array is a valid
-   * UTF-8 encoded string such that the original bytes can be converted to
-   * a String object and then back to a byte array round tripping the bytes
-   * without loss.  More precisely, returns {@code true} whenever:
-   * <pre>   {@code
+   * Helper called by generated code to determine if a byte array is a valid UTF-8 encoded string
+   * such that the original bytes can be converted to a String object and then back to a byte array
+   * round tripping the bytes without loss. More precisely, returns {@code true} whenever:
+   *
+   * <pre>{@code
    * Arrays.equals(byteString.toByteArray(),
    *     new String(byteString.toByteArray(), "UTF-8").getBytes("UTF-8"))
    * }</pre>
    *
-   * <p>This method rejects "overlong" byte sequences, as well as
-   * 3-byte sequences that would map to a surrogate character, in
-   * accordance with the restricted definition of UTF-8 introduced in
-   * Unicode 3.1.  Note that the UTF-8 decoder included in Oracle's
-   * JDK has been modified to also reject "overlong" byte sequences,
-   * but currently (2011) still accepts 3-byte surrogate character
+   * <p>This method rejects "overlong" byte sequences, as well as 3-byte sequences that would map to
+   * a surrogate character, in accordance with the restricted definition of UTF-8 introduced in
+   * Unicode 3.1. Note that the UTF-8 decoder included in Oracle's JDK has been modified to also
+   * reject "overlong" byte sequences, but currently (2011) still accepts 3-byte surrogate character
    * byte sequences.
    *
    * <p>See the Unicode Standard,<br>
    * Table 3-6. <em>UTF-8 Bit Distribution</em>,<br>
    * Table 3-7. <em>Well Formed UTF-8 Byte Sequences</em>.
    *
-   * <p>As of 2011-02, this method simply returns the result of {@link
-   * ByteString#isValidUtf8()}.  Calling that method directly is preferred.
+   * <p>As of 2011-02, this method simply returns the result of {@link ByteString#isValidUtf8()}.
+   * Calling that method directly is preferred.
    *
    * @param byteString the string to check
    * @return whether the byte array is round trippable
@@ -136,20 +124,20 @@ public class Internal {
   }
 
   /**
-   * Interface for an enum value or value descriptor, to be used in FieldSet.
-   * The lite library stores enum values directly in FieldSets but the full
-   * library stores EnumValueDescriptors in order to better support reflection.
+   * Interface for an enum value or value descriptor, to be used in FieldSet. The lite library
+   * stores enum values directly in FieldSets but the full library stores EnumValueDescriptors in
+   * order to better support reflection.
    */
   public interface EnumLite {
     int getNumber();
   }
 
   /**
-   * Interface for an object which maps integers to {@link EnumLite}s.
-   * {@link Descriptors.EnumDescriptor} implements this interface by mapping
-   * numbers to {@link Descriptors.EnumValueDescriptor}s.  Additionally,
-   * every generated enum type has a static method internalGetValueMap() which
-   * returns an implementation of this type that maps numbers to enum values.
+   * Interface for an object which maps integers to {@link EnumLite}s. {@link
+   * Descriptors.EnumDescriptor} implements this interface by mapping numbers to {@link
+   * Descriptors.EnumValueDescriptor}s. Additionally, every generated enum type has a static method
+   * internalGetValueMap() which returns an implementation of this type that maps numbers to enum
+   * values.
    */
   public interface EnumLiteMap<T extends EnumLite> {
     T findValueByNumber(int number);

@@ -46,13 +46,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A partial implementation of the {@link Message} interface which implements
- * as many methods of that interface as possible in terms of other methods.
+ * A partial implementation of the {@link Message} interface which implements as many methods of
+ * that interface as possible in terms of other methods.
  *
  * @author kenton@google.com Kenton Varda
  */
-public abstract class AbstractMessage extends AbstractMessageLite
-                                      implements Message {
+public abstract class AbstractMessage extends AbstractMessageLite implements Message {
   @SuppressWarnings("unchecked")
   public boolean isInitialized() {
     // Check that all required fields are present.
@@ -65,8 +64,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
 
     // Check that embedded messages are initialized.
-    for (final Map.Entry<FieldDescriptor, Object> entry :
-        getAllFields().entrySet()) {
+    for (final Map.Entry<FieldDescriptor, Object> entry : getAllFields().entrySet()) {
       final FieldDescriptor field = entry.getKey();
       if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
         if (field.isRepeated()) {
@@ -111,16 +109,15 @@ public abstract class AbstractMessage extends AbstractMessageLite
   }
 
   public void writeTo(final CodedOutputStream output) throws IOException {
-    final boolean isMessageSet =
-        getDescriptorForType().getOptions().getMessageSetWireFormat();
+    final boolean isMessageSet = getDescriptorForType().getOptions().getMessageSetWireFormat();
 
-    for (final Map.Entry<FieldDescriptor, Object> entry :
-        getAllFields().entrySet()) {
+    for (final Map.Entry<FieldDescriptor, Object> entry : getAllFields().entrySet()) {
       final FieldDescriptor field = entry.getKey();
       final Object value = entry.getValue();
-      if (isMessageSet && field.isExtension() &&
-          field.getType() == FieldDescriptor.Type.MESSAGE &&
-          !field.isRepeated()) {
+      if (isMessageSet
+          && field.isExtension()
+          && field.getType() == FieldDescriptor.Type.MESSAGE
+          && !field.isRepeated()) {
         output.writeMessageSetExtension(field.getNumber(), (Message) value);
       } else {
         FieldSet.writeField(field, value, output);
@@ -144,18 +141,17 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
 
     size = 0;
-    final boolean isMessageSet =
-        getDescriptorForType().getOptions().getMessageSetWireFormat();
+    final boolean isMessageSet = getDescriptorForType().getOptions().getMessageSetWireFormat();
 
-    for (final Map.Entry<FieldDescriptor, Object> entry :
-        getAllFields().entrySet()) {
+    for (final Map.Entry<FieldDescriptor, Object> entry : getAllFields().entrySet()) {
       final FieldDescriptor field = entry.getKey();
       final Object value = entry.getValue();
-      if (isMessageSet && field.isExtension() &&
-          field.getType() == FieldDescriptor.Type.MESSAGE &&
-          !field.isRepeated()) {
-        size += CodedOutputStream.computeMessageSetExtensionSize(
-            field.getNumber(), (Message) value);
+      if (isMessageSet
+          && field.isExtension()
+          && field.getType() == FieldDescriptor.Type.MESSAGE
+          && !field.isRepeated()) {
+        size +=
+            CodedOutputStream.computeMessageSetExtensionSize(field.getNumber(), (Message) value);
       } else {
         size += FieldSet.computeFieldSize(field, value);
       }
@@ -184,8 +180,8 @@ public abstract class AbstractMessage extends AbstractMessageLite
     if (getDescriptorForType() != otherMessage.getDescriptorForType()) {
       return false;
     }
-    return getAllFields().equals(otherMessage.getAllFields()) &&
-        getUnknownFields().equals(otherMessage.getUnknownFields());
+    return getAllFields().equals(otherMessage.getAllFields())
+        && getUnknownFields().equals(otherMessage.getUnknownFields());
   }
 
   @Override
@@ -204,7 +200,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
       FieldDescriptor field = entry.getKey();
       Object value = entry.getValue();
       hash = (37 * hash) + field.getNumber();
-      if (field.getType() != FieldDescriptor.Type.ENUM){
+      if (field.getType() != FieldDescriptor.Type.ENUM) {
         hash = (53 * hash) + value.hashCode();
       } else if (field.isRepeated()) {
         List<? extends EnumLite> list = (List<? extends EnumLite>) value;
@@ -218,6 +214,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
 
   /**
    * Helper method for implementing {@link Message#hashCode()}.
+   *
    * @see Boolean#hashCode()
    */
   protected static int hashLong(long n) {
@@ -226,6 +223,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
 
   /**
    * Helper method for implementing {@link Message#hashCode()}.
+   *
    * @see Boolean#hashCode()
    */
   protected static int hashBoolean(boolean b) {
@@ -233,8 +231,8 @@ public abstract class AbstractMessage extends AbstractMessageLite
   }
 
   /**
-   * Package private helper method for AbstractParser to create
-   * UninitializedMessageException with missing field information.
+   * Package private helper method for AbstractParser to create UninitializedMessageException with
+   * missing field information.
    */
   @Override
   UninitializedMessageException newUninitializedMessageException() {
@@ -243,10 +241,10 @@ public abstract class AbstractMessage extends AbstractMessageLite
 
   /**
    * Helper method for implementing {@link Message#hashCode()}.
-   * <p>
-   * This is needed because {@link java.lang.Enum#hashCode()} is final, but we
-   * need to use the field number as the hash code to ensure compatibility
-   * between statically and dynamically generated enum objects.
+   *
+   * <p>This is needed because {@link java.lang.Enum#hashCode()} is final, but we need to use the
+   * field number as the hash code to ensure compatibility between statically and dynamically
+   * generated enum objects.
    */
   protected static int hashEnum(EnumLite e) {
     return e.getNumber();
@@ -264,21 +262,18 @@ public abstract class AbstractMessage extends AbstractMessageLite
   // =================================================================
 
   /**
-   * A partial implementation of the {@link Message.Builder} interface which
-   * implements as many methods of that interface as possible in terms of
-   * other methods.
+   * A partial implementation of the {@link Message.Builder} interface which implements as many
+   * methods of that interface as possible in terms of other methods.
    */
   @SuppressWarnings("unchecked")
-  public static abstract class Builder<BuilderType extends Builder>
-      extends AbstractMessageLite.Builder<BuilderType>
-      implements Message.Builder {
+  public abstract static class Builder<BuilderType extends Builder>
+      extends AbstractMessageLite.Builder<BuilderType> implements Message.Builder {
     // The compiler produces an error if this is not declared explicitly.
     @Override
     public abstract BuilderType clone();
 
     public BuilderType clear() {
-      for (final Map.Entry<FieldDescriptor, Object> entry :
-           getAllFields().entrySet()) {
+      for (final Map.Entry<FieldDescriptor, Object> entry : getAllFields().entrySet()) {
         clearField(entry.getKey());
       }
       return (BuilderType) this;
@@ -295,7 +290,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
     public BuilderType mergeFrom(final Message other) {
       if (other.getDescriptorForType() != getDescriptorForType()) {
         throw new IllegalArgumentException(
-          "mergeFrom(Message) can only merge messages of the same type.");
+            "mergeFrom(Message) can only merge messages of the same type.");
       }
 
       // Note:  We don't attempt to verify that other's fields have valid
@@ -307,23 +302,24 @@ public abstract class AbstractMessage extends AbstractMessageLite
       // TODO(kenton):  Provide a function somewhere called makeDeepCopy()
       //   which allows people to make secure deep copies of messages.
 
-      for (final Map.Entry<FieldDescriptor, Object> entry :
-           other.getAllFields().entrySet()) {
+      for (final Map.Entry<FieldDescriptor, Object> entry : other.getAllFields().entrySet()) {
         final FieldDescriptor field = entry.getKey();
         if (field.isRepeated()) {
-          for (final Object element : (List)entry.getValue()) {
+          for (final Object element : (List) entry.getValue()) {
             addRepeatedField(field, element);
           }
         } else if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
-          final Message existingValue = (Message)getField(field);
+          final Message existingValue = (Message) getField(field);
           if (existingValue == existingValue.getDefaultInstanceForType()) {
             setField(field, entry.getValue());
           } else {
-            setField(field,
-              existingValue.newBuilderForType()
-                .mergeFrom(existingValue)
-                .mergeFrom((Message)entry.getValue())
-                .build());
+            setField(
+                field,
+                existingValue
+                    .newBuilderForType()
+                    .mergeFrom(existingValue)
+                    .mergeFrom((Message) entry.getValue())
+                    .build());
           }
         } else {
           setField(field, entry.getValue());
@@ -336,26 +332,23 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
 
     @Override
-    public BuilderType mergeFrom(final CodedInputStream input)
-                                 throws IOException {
+    public BuilderType mergeFrom(final CodedInputStream input) throws IOException {
       return mergeFrom(input, ExtensionRegistry.getEmptyRegistry());
     }
 
     @Override
     public BuilderType mergeFrom(
-        final CodedInputStream input,
-        final ExtensionRegistryLite extensionRegistry)
+        final CodedInputStream input, final ExtensionRegistryLite extensionRegistry)
         throws IOException {
-      final UnknownFieldSet.Builder unknownFields =
-        UnknownFieldSet.newBuilder(getUnknownFields());
+      final UnknownFieldSet.Builder unknownFields = UnknownFieldSet.newBuilder(getUnknownFields());
       while (true) {
         final int tag = input.readTag();
         if (tag == 0) {
           break;
         }
 
-        if (!mergeFieldFrom(input, unknownFields, extensionRegistry,
-                            getDescriptorForType(), this, null, tag)) {
+        if (!mergeFieldFrom(
+            input, unknownFields, extensionRegistry, getDescriptorForType(), this, null, tag)) {
           // end group tag
           break;
         }
@@ -392,9 +385,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
 
     /** helper method to handle {@code builder} and {@code extensions}. */
     private static boolean hasOriginalMessage(
-        Message.Builder builder,
-        FieldSet<FieldDescriptor> extensions,
-        FieldDescriptor field) {
+        Message.Builder builder, FieldSet<FieldDescriptor> extensions, FieldDescriptor field) {
       if (builder != null) {
         return builder.hasField(field);
       } else {
@@ -404,9 +395,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
 
     /** helper method to handle {@code builder} and {@code extensions}. */
     private static Message getOriginalMessage(
-        Message.Builder builder,
-        FieldSet<FieldDescriptor> extensions,
-        FieldDescriptor field) {
+        Message.Builder builder, FieldSet<FieldDescriptor> extensions, FieldDescriptor field) {
       if (builder != null) {
         return (Message) builder.getField(field);
       } else {
@@ -427,15 +416,14 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
 
     /**
-     * Like {@link #mergeFrom(CodedInputStream, ExtensionRegistryLite)}, but
-     * parses a single field.
+     * Like {@link #mergeFrom(CodedInputStream, ExtensionRegistryLite)}, but parses a single field.
      *
-     * When {@code builder} is not null, the method will parse and merge the
-     * field into {@code builder}. Otherwise, it will try to parse the field
-     * into {@code extensions}, when it's called by the parsing constructor in
-     * generated classes.
+     * <p>When {@code builder} is not null, the method will parse and merge the field into {@code
+     * builder}. Otherwise, it will try to parse the field into {@code extensions}, when it's called
+     * by the parsing constructor in generated classes.
      *
-     * Package-private because it is used by GeneratedMessage.ExtendableMessage.
+     * <p>Package-private because it is used by GeneratedMessage.ExtendableMessage.
+     *
      * @param tag The tag, which should have already been read.
      * @return {@code true} unless the tag is an end-group tag.
      */
@@ -446,9 +434,9 @@ public abstract class AbstractMessage extends AbstractMessageLite
         Descriptor type,
         Message.Builder builder,
         FieldSet<FieldDescriptor> extensions,
-        int tag) throws IOException {
-      if (type.getOptions().getMessageSetWireFormat() &&
-          tag == WireFormat.MESSAGE_SET_ITEM_TAG) {
+        int tag)
+        throws IOException {
+      if (type.getOptions().getMessageSetWireFormat() && tag == WireFormat.MESSAGE_SET_ITEM_TAG) {
         mergeMessageSetExtensionFromCodedStream(
             input, unknownFields, extensionRegistry, type, builder, extensions);
         return true;
@@ -468,18 +456,16 @@ public abstract class AbstractMessage extends AbstractMessageLite
         // were empty.
         if (extensionRegistry instanceof ExtensionRegistry) {
           final ExtensionRegistry.ExtensionInfo extension =
-            ((ExtensionRegistry) extensionRegistry)
-              .findExtensionByNumber(type, fieldNumber);
+              ((ExtensionRegistry) extensionRegistry).findExtensionByNumber(type, fieldNumber);
           if (extension == null) {
             field = null;
           } else {
             field = extension.descriptor;
             defaultInstance = extension.defaultInstance;
-            if (defaultInstance == null &&
-                field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
+            if (defaultInstance == null
+                && field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
               throw new IllegalStateException(
-                  "Message-typed extension lacked default instance: " +
-                  field.getFullName());
+                  "Message-typed extension lacked default instance: " + field.getFullName());
             }
           }
         } else {
@@ -494,21 +480,19 @@ public abstract class AbstractMessage extends AbstractMessageLite
       boolean unknown = false;
       boolean packed = false;
       if (field == null) {
-        unknown = true;  // Unknown field.
-      } else if (wireType == FieldSet.getWireFormatForFieldType(
-                   field.getLiteType(),
-                   false  /* isPacked */)) {
+        unknown = true; // Unknown field.
+      } else if (wireType
+          == FieldSet.getWireFormatForFieldType(field.getLiteType(), false /* isPacked */)) {
         packed = false;
-      } else if (field.isPackable() &&
-                 wireType == FieldSet.getWireFormatForFieldType(
-                   field.getLiteType(),
-                   true  /* isPacked */)) {
+      } else if (field.isPackable()
+          && wireType
+              == FieldSet.getWireFormatForFieldType(field.getLiteType(), true /* isPacked */)) {
         packed = true;
       } else {
-        unknown = true;  // Unknown wire type.
+        unknown = true; // Unknown wire type.
       }
 
-      if (unknown) {  // Unknown field or wrong wire type.  Skip.
+      if (unknown) { // Unknown field or wrong wire type.  Skip.
         return unknownFields.mergeFieldFrom(tag, input);
       }
 
@@ -528,8 +512,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
           }
         } else {
           while (input.getBytesUntilLimit() > 0) {
-            final Object value =
-              FieldSet.readPrimitiveField(input, field.getLiteType());
+            final Object value = FieldSet.readPrimitiveField(input, field.getLiteType());
             addRepeatedField(builder, extensions, field, value);
           }
         }
@@ -537,34 +520,36 @@ public abstract class AbstractMessage extends AbstractMessageLite
       } else {
         final Object value;
         switch (field.getType()) {
-          case GROUP: {
-            final Message.Builder subBuilder;
-            if (defaultInstance != null) {
-              subBuilder = defaultInstance.newBuilderForType();
-            } else {
-              subBuilder = builder.newBuilderForField(field);
+          case GROUP:
+            {
+              final Message.Builder subBuilder;
+              if (defaultInstance != null) {
+                subBuilder = defaultInstance.newBuilderForType();
+              } else {
+                subBuilder = builder.newBuilderForField(field);
+              }
+              if (!field.isRepeated()) {
+                mergeOriginalMessage(builder, extensions, field, subBuilder);
+              }
+              input.readGroup(field.getNumber(), subBuilder, extensionRegistry);
+              value = subBuilder.buildPartial();
+              break;
             }
-            if (!field.isRepeated()) {
-              mergeOriginalMessage(builder, extensions, field, subBuilder);
+          case MESSAGE:
+            {
+              final Message.Builder subBuilder;
+              if (defaultInstance != null) {
+                subBuilder = defaultInstance.newBuilderForType();
+              } else {
+                subBuilder = builder.newBuilderForField(field);
+              }
+              if (!field.isRepeated()) {
+                mergeOriginalMessage(builder, extensions, field, subBuilder);
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              value = subBuilder.buildPartial();
+              break;
             }
-            input.readGroup(field.getNumber(), subBuilder, extensionRegistry);
-            value = subBuilder.buildPartial();
-            break;
-          }
-          case MESSAGE: {
-            final Message.Builder subBuilder;
-            if (defaultInstance != null) {
-              subBuilder = defaultInstance.newBuilderForType();
-            } else {
-              subBuilder = builder.newBuilderForField(field);
-            }
-            if (!field.isRepeated()) {
-              mergeOriginalMessage(builder, extensions, field, subBuilder);
-            }
-            input.readMessage(subBuilder, extensionRegistry);
-            value = subBuilder.buildPartial();
-            break;
-          }
           case ENUM:
             final int rawValue = input.readEnum();
             value = field.getEnumType().findValueByNumber(rawValue);
@@ -591,10 +576,9 @@ public abstract class AbstractMessage extends AbstractMessageLite
     }
 
     /**
-     * Called by {@code #mergeFieldFrom()} to parse a MessageSet extension.
-     * If {@code builder} is not null, this method will merge MessageSet into
-     * the builder.  Otherwise, it will merge the MessageSet into {@code
-     * extensions}.
+     * Called by {@code #mergeFieldFrom()} to parse a MessageSet extension. If {@code builder} is
+     * not null, this method will merge MessageSet into the builder. Otherwise, it will merge the
+     * MessageSet into {@code extensions}.
      */
     private static void mergeMessageSetExtensionFromCodedStream(
         CodedInputStream input,
@@ -602,7 +586,8 @@ public abstract class AbstractMessage extends AbstractMessageLite
         ExtensionRegistryLite extensionRegistry,
         Descriptor type,
         Message.Builder builder,
-        FieldSet<FieldDescriptor> extensions) throws IOException {
+        FieldSet<FieldDescriptor> extensions)
+        throws IOException {
 
       // The wire format for MessageSet is:
       //   message MessageSet {
@@ -641,8 +626,8 @@ public abstract class AbstractMessage extends AbstractMessageLite
             // extensions of it. Otherwise we will treat the registry as if it
             // were empty.
             if (extensionRegistry instanceof ExtensionRegistry) {
-              extension = ((ExtensionRegistry) extensionRegistry)
-                  .findExtensionByNumber(type, typeId);
+              extension =
+                  ((ExtensionRegistry) extensionRegistry).findExtensionByNumber(type, typeId);
             }
           }
 
@@ -675,8 +660,8 @@ public abstract class AbstractMessage extends AbstractMessageLite
               rawBytes, extension, extensionRegistry, builder, extensions);
         } else { // We don't know how to parse this. Ignore it.
           if (rawBytes != null) {
-            unknownFields.mergeField(typeId, UnknownFieldSet.Field.newBuilder()
-                .addLengthDelimited(rawBytes).build());
+            unknownFields.mergeField(
+                typeId, UnknownFieldSet.Field.newBuilder().addLengthDelimited(rawBytes).build());
           }
         }
       }
@@ -687,19 +672,18 @@ public abstract class AbstractMessage extends AbstractMessageLite
         ExtensionRegistry.ExtensionInfo extension,
         ExtensionRegistryLite extensionRegistry,
         Message.Builder builder,
-        FieldSet<FieldDescriptor> extensions) throws IOException {
+        FieldSet<FieldDescriptor> extensions)
+        throws IOException {
 
       FieldDescriptor field = extension.descriptor;
       Message value = null;
       if (hasOriginalMessage(builder, extensions, field)) {
-        Message originalMessage =
-            getOriginalMessage(builder, extensions, field);
+        Message originalMessage = getOriginalMessage(builder, extensions, field);
         Message.Builder subBuilder = originalMessage.toBuilder();
         input.readMessage(subBuilder, extensionRegistry);
         value = subBuilder.buildPartial();
       } else {
-        value = input.readMessage(extension.defaultInstance.getParserForType(),
-          extensionRegistry);
+        value = input.readMessage(extension.defaultInstance.getParserForType(), extensionRegistry);
       }
 
       if (builder != null) {
@@ -714,7 +698,8 @@ public abstract class AbstractMessage extends AbstractMessageLite
         ExtensionRegistry.ExtensionInfo extension,
         ExtensionRegistryLite extensionRegistry,
         Message.Builder builder,
-        FieldSet<FieldDescriptor> extensions) throws IOException {
+        FieldSet<FieldDescriptor> extensions)
+        throws IOException {
 
       FieldDescriptor field = extension.descriptor;
       boolean hasOriginalValue = hasOriginalMessage(builder, extensions, field);
@@ -723,20 +708,21 @@ public abstract class AbstractMessage extends AbstractMessageLite
         // If the field already exists, we just parse the field.
         Message value = null;
         if (hasOriginalValue) {
-          Message originalMessage =
-              getOriginalMessage(builder, extensions, field);
-          Message.Builder subBuilder= originalMessage.toBuilder();
+          Message originalMessage = getOriginalMessage(builder, extensions, field);
+          Message.Builder subBuilder = originalMessage.toBuilder();
           subBuilder.mergeFrom(rawBytes, extensionRegistry);
           value = subBuilder.buildPartial();
         } else {
-          value = extension.defaultInstance.getParserForType()
-              .parsePartialFrom(rawBytes, extensionRegistry);
+          value =
+              extension
+                  .defaultInstance
+                  .getParserForType()
+                  .parsePartialFrom(rawBytes, extensionRegistry);
         }
         setField(builder, extensions, field, value);
       } else {
         // Use LazyField to load MessageSet lazily.
-        LazyField lazyField = new LazyField(
-            extension.defaultInstance, extensionRegistry, rawBytes);
+        LazyField lazyField = new LazyField(extension.defaultInstance, extensionRegistry, rawBytes);
         if (builder != null) {
           // TODO(xiangl): it looks like this method can only be invoked by
           // ExtendableBuilder, but I'm not sure. So I double check the type of
@@ -754,9 +740,7 @@ public abstract class AbstractMessage extends AbstractMessageLite
 
     public BuilderType mergeUnknownFields(final UnknownFieldSet unknownFields) {
       setUnknownFields(
-        UnknownFieldSet.newBuilder(getUnknownFields())
-                       .mergeFrom(unknownFields)
-                       .build());
+          UnknownFieldSet.newBuilder(getUnknownFields()).mergeFrom(unknownFields).build());
       return (BuilderType) this;
     }
 
@@ -765,39 +749,32 @@ public abstract class AbstractMessage extends AbstractMessageLite
           "getFieldBuilder() called on an unsupported message type.");
     }
 
-    /**
-     * Construct an UninitializedMessageException reporting missing fields in
-     * the given message.
-     */
-    protected static UninitializedMessageException
-        newUninitializedMessageException(Message message) {
+    /** Construct an UninitializedMessageException reporting missing fields in the given message. */
+    protected static UninitializedMessageException newUninitializedMessageException(
+        Message message) {
       return new UninitializedMessageException(findMissingFields(message));
     }
 
     /**
-     * Populates {@code this.missingFields} with the full "path" of each
-     * missing required field in the given message.
+     * Populates {@code this.missingFields} with the full "path" of each missing required field in
+     * the given message.
      */
-    private static List<String> findMissingFields(
-        final MessageOrBuilder message) {
+    private static List<String> findMissingFields(final MessageOrBuilder message) {
       final List<String> results = new ArrayList<String>();
       findMissingFields(message, "", results);
       return results;
     }
 
     /** Recursive helper implementing {@link #findMissingFields(Message)}. */
-    private static void findMissingFields(final MessageOrBuilder message,
-                                          final String prefix,
-                                          final List<String> results) {
-      for (final FieldDescriptor field :
-          message.getDescriptorForType().getFields()) {
+    private static void findMissingFields(
+        final MessageOrBuilder message, final String prefix, final List<String> results) {
+      for (final FieldDescriptor field : message.getDescriptorForType().getFields()) {
         if (field.isRequired() && !message.hasField(field)) {
           results.add(prefix + field.getName());
         }
       }
 
-      for (final Map.Entry<FieldDescriptor, Object> entry :
-           message.getAllFields().entrySet()) {
+      for (final Map.Entry<FieldDescriptor, Object> entry : message.getAllFields().entrySet()) {
         final FieldDescriptor field = entry.getKey();
         final Object value = entry.getValue();
 
@@ -805,36 +782,29 @@ public abstract class AbstractMessage extends AbstractMessageLite
           if (field.isRepeated()) {
             int i = 0;
             for (final Object element : (List) value) {
-              findMissingFields((MessageOrBuilder) element,
-                                subMessagePrefix(prefix, field, i++),
-                                results);
+              findMissingFields(
+                  (MessageOrBuilder) element, subMessagePrefix(prefix, field, i++), results);
             }
           } else {
             if (message.hasField(field)) {
-              findMissingFields((MessageOrBuilder) value,
-                                subMessagePrefix(prefix, field, -1),
-                                results);
+              findMissingFields(
+                  (MessageOrBuilder) value, subMessagePrefix(prefix, field, -1), results);
             }
           }
         }
       }
     }
 
-    private static String subMessagePrefix(final String prefix,
-                                           final FieldDescriptor field,
-                                           final int index) {
+    private static String subMessagePrefix(
+        final String prefix, final FieldDescriptor field, final int index) {
       final StringBuilder result = new StringBuilder(prefix);
       if (field.isExtension()) {
-        result.append('(')
-              .append(field.getFullName())
-              .append(')');
+        result.append('(').append(field.getFullName()).append(')');
       } else {
         result.append(field.getName());
       }
       if (index != -1) {
-        result.append('[')
-              .append(index)
-              .append(']');
+        result.append('[').append(index).append(']');
       }
       result.append('.');
       return result.toString();
@@ -860,75 +830,64 @@ public abstract class AbstractMessage extends AbstractMessageLite
     // bug.
 
     @Override
-    public BuilderType mergeFrom(final ByteString data)
-        throws InvalidProtocolBufferException {
+    public BuilderType mergeFrom(final ByteString data) throws InvalidProtocolBufferException {
       return super.mergeFrom(data);
     }
 
     @Override
     public BuilderType mergeFrom(
-        final ByteString data,
-        final ExtensionRegistryLite extensionRegistry)
+        final ByteString data, final ExtensionRegistryLite extensionRegistry)
         throws InvalidProtocolBufferException {
       return super.mergeFrom(data, extensionRegistry);
     }
 
     @Override
-    public BuilderType mergeFrom(final byte[] data)
-        throws InvalidProtocolBufferException {
+    public BuilderType mergeFrom(final byte[] data) throws InvalidProtocolBufferException {
       return super.mergeFrom(data);
     }
 
     @Override
-    public BuilderType mergeFrom(
-        final byte[] data, final int off, final int len)
+    public BuilderType mergeFrom(final byte[] data, final int off, final int len)
         throws InvalidProtocolBufferException {
       return super.mergeFrom(data, off, len);
     }
 
     @Override
-    public BuilderType mergeFrom(
-        final byte[] data,
-        final ExtensionRegistryLite extensionRegistry)
+    public BuilderType mergeFrom(final byte[] data, final ExtensionRegistryLite extensionRegistry)
         throws InvalidProtocolBufferException {
       return super.mergeFrom(data, extensionRegistry);
     }
 
     @Override
     public BuilderType mergeFrom(
-        final byte[] data, final int off, final int len,
+        final byte[] data,
+        final int off,
+        final int len,
         final ExtensionRegistryLite extensionRegistry)
         throws InvalidProtocolBufferException {
       return super.mergeFrom(data, off, len, extensionRegistry);
     }
 
     @Override
-    public BuilderType mergeFrom(final InputStream input)
-        throws IOException {
+    public BuilderType mergeFrom(final InputStream input) throws IOException {
       return super.mergeFrom(input);
     }
 
     @Override
     public BuilderType mergeFrom(
-        final InputStream input,
-        final ExtensionRegistryLite extensionRegistry)
-        throws IOException {
+        final InputStream input, final ExtensionRegistryLite extensionRegistry) throws IOException {
       return super.mergeFrom(input, extensionRegistry);
     }
 
     @Override
-    public boolean mergeDelimitedFrom(final InputStream input)
-        throws IOException {
+    public boolean mergeDelimitedFrom(final InputStream input) throws IOException {
       return super.mergeDelimitedFrom(input);
     }
 
     @Override
     public boolean mergeDelimitedFrom(
-        final InputStream input,
-        final ExtensionRegistryLite extensionRegistry)
-        throws IOException {
+        final InputStream input, final ExtensionRegistryLite extensionRegistry) throws IOException {
       return super.mergeDelimitedFrom(input, extensionRegistry);
     }
-
   }
 }

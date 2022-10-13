@@ -41,8 +41,8 @@ import java.util.ListIterator;
 import java.util.Iterator;
 
 /**
- * An implementation of {@link LazyStringList} that wraps another
- * {@link LazyStringList} such that it cannot be modified via the wrapper.
+ * An implementation of {@link LazyStringList} that wraps another {@link LazyStringList} such that
+ * it cannot be modified via the wrapper.
  *
  * @author jonp@google.com (Jon Perlow)
  */
@@ -65,62 +65,62 @@ public class UnmodifiableLazyStringList extends AbstractList<String>
     return list.size();
   }
 
-  //@Override (Java 1.6 override semantics, but we must support 1.5)
+  // @Override (Java 1.6 override semantics, but we must support 1.5)
   public ByteString getByteString(int index) {
     return list.getByteString(index);
   }
 
-  //@Override (Java 1.6 override semantics, but we must support 1.5)
+  // @Override (Java 1.6 override semantics, but we must support 1.5)
   public void add(ByteString element) {
     throw new UnsupportedOperationException();
   }
 
-  //@Override (Java 1.6 override semantics, but we must support 1.5)
+  // @Override (Java 1.6 override semantics, but we must support 1.5)
   public ListIterator<String> listIterator(final int index) {
     return new ListIterator<String>() {
       ListIterator<String> iter = list.listIterator(index);
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public boolean hasNext() {
         return iter.hasNext();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public String next() {
         return iter.next();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public boolean hasPrevious() {
         return iter.hasPrevious();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public String previous() {
         return iter.previous();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public int nextIndex() {
         return iter.nextIndex();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public int previousIndex() {
         return iter.previousIndex();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public void remove() {
         throw new UnsupportedOperationException();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public void set(String o) {
         throw new UnsupportedOperationException();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public void add(String o) {
         throw new UnsupportedOperationException();
       }
@@ -132,17 +132,17 @@ public class UnmodifiableLazyStringList extends AbstractList<String>
     return new Iterator<String>() {
       Iterator<String> iter = list.iterator();
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public boolean hasNext() {
         return iter.hasNext();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public String next() {
         return iter.next();
       }
 
-      //@Override (Java 1.6 override semantics, but we must support 1.5)
+      // @Override (Java 1.6 override semantics, but we must support 1.5)
       public void remove() {
         throw new UnsupportedOperationException();
       }

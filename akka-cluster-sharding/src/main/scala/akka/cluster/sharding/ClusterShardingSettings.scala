@@ -1238,53 +1238,6 @@ final class ClusterShardingSettings(
       coordinatorSingletonSettings,
       leaseSettings)
 
-  // bin compat for 2.5.21
-  @deprecated(
-    "Use the ClusterShardingSettings factory methods or the constructor including shardRegionQueryTimeout instead",
-    since = "2.5.21")
-  def this(
-      role: Option[String],
-      rememberEntities: Boolean,
-      journalPluginId: String,
-      snapshotPluginId: String,
-      stateStoreMode: String,
-      passivateIdleEntityAfter: FiniteDuration,
-      tuningParameters: ClusterShardingSettings.TuningParameters,
-      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
-    this(
-      role,
-      rememberEntities,
-      journalPluginId,
-      snapshotPluginId,
-      stateStoreMode,
-      passivateIdleEntityAfter,
-      3.seconds,
-      tuningParameters,
-      coordinatorSingletonSettings,
-      None)
-
-  // included for binary compatibility reasons
-  @deprecated(
-    "Use the ClusterShardingSettings factory methods or the constructor including passivateIdleEntityAfter instead",
-    since = "2.5.18")
-  def this(
-      role: Option[String],
-      rememberEntities: Boolean,
-      journalPluginId: String,
-      snapshotPluginId: String,
-      stateStoreMode: String,
-      tuningParameters: ClusterShardingSettings.TuningParameters,
-      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
-    this(
-      role,
-      rememberEntities,
-      journalPluginId,
-      snapshotPluginId,
-      stateStoreMode,
-      Duration.Zero,
-      tuningParameters,
-      coordinatorSingletonSettings)
-
   import ClusterShardingSettings.{ RememberEntitiesStoreCustom, StateStoreModeDData, StateStoreModePersistence }
   require(
     stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData || stateStoreMode == RememberEntitiesStoreCustom,

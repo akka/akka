@@ -166,10 +166,6 @@ object Member {
     a.isOlderThan(b)
   }
 
-  @deprecated("Was accidentally made a public API, internal", since = "2.5.4")
-  def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] =
-    pickHighestPriority(a, b, Map.empty)
-
   /**
    * INTERNAL API.
    */

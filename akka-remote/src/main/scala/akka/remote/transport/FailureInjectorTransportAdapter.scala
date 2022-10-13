@@ -188,13 +188,6 @@ private[remote] final case class FailureInjectorHandle(
   override def disassociate(reason: String, log: LoggingAdapter): Unit =
     wrappedHandle.disassociate(reason, log)
 
-  @deprecated(
-    message = "Use method that states reasons to make sure disassociation reasons are logged.",
-    since = "2.5.3")
-  @nowarn("msg=deprecated")
-  override def disassociate(): Unit =
-    wrappedHandle.disassociate()
-
   override def notify(ev: HandleEvent): Unit =
     if (!gremlinAdapter.shouldDropInbound(wrappedHandle.remoteAddress, ev, "handler.notify"))
       upstreamListener.notify(ev)

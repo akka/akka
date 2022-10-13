@@ -146,24 +146,6 @@ object Sink {
         .toCompletionStage())
 
   /**
-   * A `Sink` that will invoke the given procedure for each received element in parallel. The sink is materialized
-   * into a [[java.util.concurrent.CompletionStage]].
-   *
-   * If `f` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Stop]] the `CompletionStage` will be completed with failure.
-   *
-   * If `f` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]] the
-   * element is dropped and the stream continues.
-   */
-  @deprecated(
-    "Use `foreachAsync` instead, it allows you to choose how to run the procedure, by calling some other API returning a CompletionStage or using CompletableFuture.supplyAsync.",
-    since = "2.5.17")
-  def foreachParallel[T](parallel: Int)(f: function.Procedure[T])(
-      ec: ExecutionContext): Sink[T, CompletionStage[Done]] =
-    new Sink(scaladsl.Sink.foreachParallel(parallel)(f.apply)(ec).toCompletionStage())
-
-  /**
    * A `Sink` that when the flow is completed, either through a failure or normal
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].

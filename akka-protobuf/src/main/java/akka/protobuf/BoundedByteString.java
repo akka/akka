@@ -37,14 +37,12 @@ package akka.protobuf;
 import java.util.NoSuchElementException;
 
 /**
- * This class is used to represent the substring of a {@link ByteString} over a
- * single byte array. In terms of the public API of {@link ByteString}, you end
- * up here by calling {@link ByteString#copyFrom(byte[])} followed by {@link
- * ByteString#substring(int, int)}.
+ * This class is used to represent the substring of a {@link ByteString} over a single byte array.
+ * In terms of the public API of {@link ByteString}, you end up here by calling {@link
+ * ByteString#copyFrom(byte[])} followed by {@link ByteString#substring(int, int)}.
  *
- * <p>This class contains most of the overhead involved in creating a substring
- * from a {@link LiteralByteString}.  The overhead involves some range-checking
- * and two extra fields.
+ * <p>This class contains most of the overhead involved in creating a substring from a {@link
+ * LiteralByteString}. The overhead involves some range-checking and two extra fields.
  *
  * @author carlanton@google.com (Carl Haverl)
  */
@@ -54,15 +52,13 @@ class BoundedByteString extends LiteralByteString {
   private final int bytesLength;
 
   /**
-   * Creates a {@code BoundedByteString} backed by the sub-range of given array,
-   * without copying.
+   * Creates a {@code BoundedByteString} backed by the sub-range of given array, without copying.
    *
-   * @param bytes  array to wrap
+   * @param bytes array to wrap
    * @param offset index to first byte to use in bytes
    * @param length number of bytes to use from bytes
-   * @throws IllegalArgumentException if {@code offset < 0}, {@code length < 0},
-   *                                  or if {@code offset + length >
-   *                                  bytes.length}.
+   * @throws IllegalArgumentException if {@code offset < 0}, {@code length < 0}, or if {@code offset
+   *     + length > bytes.length}.
    */
   BoundedByteString(byte[] bytes, int offset, int length) {
     super(bytes);
@@ -73,8 +69,7 @@ class BoundedByteString extends LiteralByteString {
       throw new IllegalArgumentException("Length too small: " + offset);
     }
     if ((long) offset + length > bytes.length) {
-      throw new IllegalArgumentException(
-          "Offset+Length too large: " + offset + "+" + length);
+      throw new IllegalArgumentException("Offset+Length too large: " + offset + "+" + length);
     }
 
     this.bytesOffset = offset;
@@ -82,10 +77,9 @@ class BoundedByteString extends LiteralByteString {
   }
 
   /**
-   * Gets the byte at the given index.
-   * Throws {@link ArrayIndexOutOfBoundsException}
-   * for backwards-compatibility reasons although it would more properly be
-   * {@link IndexOutOfBoundsException}.
+   * Gets the byte at the given index. Throws {@link ArrayIndexOutOfBoundsException} for
+   * backwards-compatibility reasons although it would more properly be {@link
+   * IndexOutOfBoundsException}.
    *
    * @param index index of byte
    * @return the value
@@ -99,8 +93,7 @@ class BoundedByteString extends LiteralByteString {
       throw new ArrayIndexOutOfBoundsException("Index too small: " + index);
     }
     if (index >= size()) {
-      throw new ArrayIndexOutOfBoundsException(
-          "Index too large: " + index + ", " + size());
+      throw new ArrayIndexOutOfBoundsException("Index too large: " + index + ", " + size());
     }
 
     return bytes[bytesOffset + index];
@@ -120,10 +113,10 @@ class BoundedByteString extends LiteralByteString {
   // ByteString -> byte[]
 
   @Override
-  protected void copyToInternal(byte[] target, int sourceOffset, 
-      int targetOffset, int numberToCopy) {
-    System.arraycopy(bytes, getOffsetIntoBytes() + sourceOffset, target,
-        targetOffset, numberToCopy);
+  protected void copyToInternal(
+      byte[] target, int sourceOffset, int targetOffset, int numberToCopy) {
+    System.arraycopy(
+        bytes, getOffsetIntoBytes() + sourceOffset, target, targetOffset, numberToCopy);
   }
 
   // =================================================================

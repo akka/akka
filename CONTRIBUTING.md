@@ -17,7 +17,7 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
 * `main` – active development branch of Akka 2.7.x
-* `release-2.5` – maintenance branch of Akka 2.5.x
+* `release-2.6` – maintenance branch of Akka 2.6.x
 * similarly `release-2.#` branches contain legacy versions of Akka
 
 ### Tags

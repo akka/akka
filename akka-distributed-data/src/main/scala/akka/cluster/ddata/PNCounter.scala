@@ -66,17 +66,11 @@ final class PNCounter private[akka] (private[akka] val increments: GCounter, pri
    */
   def :+(n: Long)(implicit node: SelfUniqueAddress): PNCounter = increment(node.uniqueAddress, n)
 
-  @deprecated("Use `:+` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def +(n: Long)(implicit node: Cluster): PNCounter = increment(node.selfUniqueAddress, n)
-
   /**
    * Increment the counter with the delta `n` specified.
    * If the delta is negative then it will decrement instead of increment.
    */
   def :+(n: BigInt)(implicit node: SelfUniqueAddress): PNCounter = increment(node.uniqueAddress, n)
-
-  @deprecated("Use `:+` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def +(n: BigInt)(implicit node: Cluster): PNCounter = increment(node.selfUniqueAddress, n)
 
   /**
    * Scala API: Increment the counter with the delta `n` specified.
@@ -84,17 +78,11 @@ final class PNCounter private[akka] (private[akka] val increments: GCounter, pri
    */
   def increment(n: Long)(implicit node: SelfUniqueAddress): PNCounter = increment(node.uniqueAddress, n)
 
-  @deprecated("Use `increment` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def increment(node: Cluster, n: Long = 1): PNCounter = increment(node.selfUniqueAddress, n)
-
   /**
    * Increment the counter with the delta `n` specified.
    * If the delta is negative then it will decrement instead of increment.
    */
   def increment(n: BigInt)(implicit node: SelfUniqueAddress): PNCounter = increment(node.uniqueAddress, n)
-
-  @deprecated("Use `increment` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def increment(node: Cluster, n: BigInt): PNCounter = increment(node.selfUniqueAddress, n)
 
   /**
    * Java API: Increment the counter with the delta `n` specified.
@@ -108,17 +96,11 @@ final class PNCounter private[akka] (private[akka] val increments: GCounter, pri
    */
   def increment(node: SelfUniqueAddress, n: Long): PNCounter = increment(node.uniqueAddress, n)
 
-  @deprecated("Use `increment` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def increment(node: Cluster, n: java.math.BigInteger): PNCounter = increment(node.selfUniqueAddress, n)
-
   /**
    * Decrement the counter with the delta `n` specified.
    * If the delta is negative then it will increment instead of decrement.
    */
   def decrement(n: Long)(implicit node: SelfUniqueAddress): PNCounter = decrement(node.uniqueAddress, n)
-
-  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def -(n: Long)(implicit node: Cluster): PNCounter = decrement(node.selfUniqueAddress, n)
 
   /**
    * Decrement the counter with the delta `n` specified.
@@ -126,17 +108,11 @@ final class PNCounter private[akka] (private[akka] val increments: GCounter, pri
    */
   def decrement(n: BigInt)(implicit node: SelfUniqueAddress): PNCounter = decrement(node.uniqueAddress, n)
 
-  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def -(n: BigInt)(implicit node: Cluster): PNCounter = decrement(node.selfUniqueAddress, n)
-
   /**
    * Decrement the counter with the delta `n` specified.
    * If the delta `n` is negative then it will increment instead of decrement.
    */
   def decrement(node: SelfUniqueAddress, n: Long): PNCounter = decrement(node.uniqueAddress, n)
-
-  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def decrement(node: Cluster, n: Long = 1): PNCounter = decrement(node.selfUniqueAddress, n)
 
   /**
    * Scala API: Decrement the counter with the delta `n` specified.
@@ -144,18 +120,11 @@ final class PNCounter private[akka] (private[akka] val increments: GCounter, pri
    */
   def decrement(node: SelfUniqueAddress, n: BigInt): PNCounter = decrement(node.uniqueAddress, n)
 
-  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def decrement(node: Cluster, n: BigInt): PNCounter = decrement(node.selfUniqueAddress, n)
-
   /**
    * Java API: Decrement the counter with the delta `n` specified.
    * If the delta `n` is negative then it will increment instead of decrement.
    */
   def decrement(node: SelfUniqueAddress, n: java.math.BigInteger): PNCounter = decrement(node.uniqueAddress, n)
-
-  @Deprecated
-  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def decrement(node: Cluster, n: java.math.BigInteger): PNCounter = decrement(node.selfUniqueAddress, n)
 
   /** Internal API */
   @InternalApi private[akka] def increment(key: UniqueAddress, n: BigInt): PNCounter = change(key, n)

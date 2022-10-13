@@ -382,25 +382,6 @@ object Sink {
     }
 
   /**
-   * A `Sink` that will invoke the given function to each of the elements
-   * as they pass in. The sink is materialized into a [[scala.concurrent.Future]]
-   *
-   * If `f` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Stop]] the `Future` will be completed with failure.
-   *
-   * If `f` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]] the
-   * element is dropped and the stream continues.
-   *
-   * See also [[Flow.mapAsyncUnordered]]
-   */
-  @deprecated(
-    "Use `foreachAsync` instead, it allows you to choose how to run the procedure, by calling some other API returning a Future or spawning a new Future.",
-    since = "2.5.17")
-  def foreachParallel[T](parallelism: Int)(f: T => Unit)(implicit ec: ExecutionContext): Sink[T, Future[Done]] =
-    Flow[T].mapAsyncUnordered(parallelism)(t => Future(f(t))).toMat(Sink.ignore)(Keep.right)
-
-  /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
    * output (or the given `zero` value) and the element as input.
    * The returned [[scala.concurrent.Future]] will be completed with value of the final
