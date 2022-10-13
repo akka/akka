@@ -66,7 +66,7 @@ class MaterializerStateSpec extends AkkaSpec() {
     "snapshot a stream that has a stopped stage" in {
       implicit val mat = Materializer(system)
       try {
-        val probe = TestSink.probe[String](system)
+        val probe = TestSink[String]()(system)
         val out = Source
           .single("one")
           .concat(Source.maybe[String]) // make sure we leave it running

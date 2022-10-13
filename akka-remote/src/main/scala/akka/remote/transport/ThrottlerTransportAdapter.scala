@@ -6,7 +6,6 @@ package akka.remote.transport
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 import scala.concurrent.{ Future, Promise }
@@ -14,9 +13,7 @@ import scala.concurrent.duration._
 import scala.math.min
 import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
-
 import scala.annotation.nowarn
-
 import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.dispatch.ExecutionContexts
@@ -38,6 +35,7 @@ import akka.remote.transport.Transport._
 import akka.util.{ ByteString, Timeout }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class ThrottlerProvider extends TransportAdapterProvider {
 
   override def create(wrappedTransport: Transport, system: ExtendedActorSystem): Transport =
@@ -171,6 +169,7 @@ object ThrottlerTransportAdapter {
    * Management Command to force disassociation of an address with an explicit error.
    */
   @SerialVersionUID(1L)
+  @nowarn("msg=deprecated")
   final case class ForceDisassociateExplicitly(address: Address, reason: DisassociateInfo)
 
   @SerialVersionUID(1L)
@@ -209,6 +208,7 @@ object ThrottlerTransportAdapter {
 }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedActorSystem)
     extends ActorTransportAdapter(_wrappedTransport, _system) {
 
@@ -435,6 +435,7 @@ private[transport] object ThrottledAssociation {
   case object Uninitialized extends ThrottlerData
   final case class ExposedHandle(handle: ThrottlerHandle) extends ThrottlerData
 
+  @nowarn("msg=deprecated")
   final case class FailWith(reason: DisassociateInfo)
 }
 

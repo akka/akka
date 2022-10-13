@@ -1,0 +1,6 @@
+# internal classes
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.TimerKeys")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.TimerKeys$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.TimerKeys$GroupedWithinTimerKey$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.TimerKeys$TakeWithinTimerKey$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.TimerKeys$DropWithinTimerKey$")

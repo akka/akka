@@ -86,7 +86,7 @@ object AkkaBuild {
     else Seq.empty,
     // should we be allowed to use artifacts from sonatype snapshots
     if (System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
-      resolvers += Resolver.sonatypeRepo("snapshots")
+      resolvers ++= Resolver.sonatypeOssRepos("snapshots")
     else Seq.empty,
     pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )
@@ -161,7 +161,7 @@ object AkkaBuild {
       }
     },
     ThisBuild / ivyLoggingLevel := UpdateLogging.Quiet,
-    licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))),
+    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/akka/main/LICENSE"))), // FIXME change s/main/v2.7.0/ when released
     homepage := Some(url("https://akka.io/")),
     description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
     scmInfo := Some(

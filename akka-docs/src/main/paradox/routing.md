@@ -608,7 +608,7 @@ insight into how consistent hashing is implemented.
 
 There is 3 ways to define what data to use for the consistent hash key.
 
- * You can define @scala[`hashMapping`]@java[@javadoc[withHashMapper](akka.routing.ConsistentHashingRoutingLogic#withHashMapper(akka.routing.ConsistentHashingRouter.ConsistentHashMapper))] of the router to map incoming
+ * You can define @scala[@scaladoc[hashMapping](akka.routing.ConsistentHashingPool#hashMapping:akka.routing.ConsistentHashingRouter.ConsistentHashMapping)]@java[@javadoc[withHashMapper](akka.routing.ConsistentHashingRoutingLogic#withHashMapper(akka.routing.ConsistentHashingRouter.ConsistentHashMapper))] of the router to map incoming
 messages to their consistent hash key. This makes the decision
 transparent for the sender.
  * The messages may implement @apidoc[akka.routing.ConsistentHashingRouter.ConsistentHashable].

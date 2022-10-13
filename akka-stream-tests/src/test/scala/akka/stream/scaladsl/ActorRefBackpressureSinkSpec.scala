@@ -70,8 +70,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
 
     "send the elements to the ActorRef2" in {
       val fw = createActor(classOf[Fw])
-      val probe = TestSource
-        .probe[Int]
+      val probe = TestSource[Int]()
         .to(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
         .run()
       probe.sendNext(1)
@@ -88,8 +87,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
     "cancel stream when actor terminates" in {
       val fw = createActor(classOf[Fw])
       val publisher =
-        TestSource
-          .probe[Int]
+        TestSource[Int]()
           .to(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
           .run()
           .sendNext(1)
@@ -101,8 +99,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
 
     "send message only when backpressure received" in {
       val fw = createActor(classOf[Fw2])
-      val publisher = TestSource
-        .probe[Int]
+      val publisher = TestSource[Int]()
         .to(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
         .run()
       expectMsg(initMessage)
@@ -126,10 +123,8 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
 
     "send message only when backpressure received with any ack message" in {
       val fw = createActor(classOf[Fw2])
-      val publisher = TestSource
-        .probe[Int]
-        .to(Sink.actorRefWithBackpressure(fw, initMessage, completeMessage, _ => failMessage))
-        .run()
+      val publisher =
+        TestSource[Int]().to(Sink.actorRefWithBackpressure(fw, initMessage, completeMessage, _ => failMessage)).run()
       expectMsg(initMessage)
 
       publisher.sendNext(1)
@@ -174,8 +169,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
     "work with one element buffer" in {
       val fw = createActor(classOf[Fw2])
       val publisher =
-        TestSource
-          .probe[Int]
+        TestSource[Int]()
           .to(
             Sink
               .actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage)

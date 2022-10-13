@@ -276,7 +276,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
             // run twice, but make sure we return the result of the materialization that ran second
             source.runWith(Sink.ignore).flatMap(_ => source.runWith(Sink.ignore))
           }
-          .toMat(TestSink.probe[Future[Done]])(Keep.right)
+          .toMat(TestSink[Future[Done]]())(Keep.right)
       val probe = stream.withAttributes(Attributes.inputBuffer(1, 1)).run()
       val future = probe.requestNext()
       val ex = the[IllegalStateException] thrownBy Await.result(future, 3.seconds)

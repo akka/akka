@@ -1,8 +1,12 @@
+import akka.Dependencies.{ allScalaVersions, fortifySCAVersion, scalaFortifyVersion }
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
+
+import scala.language.postfixOps
+import scala.sys.process._
 
 ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
 
-scalaVersion := Dependencies.allScalaVersions.head
+scalaVersion := allScalaVersions.head
 
 enablePlugins(
   UnidocRoot,
@@ -378,8 +382,6 @@ lazy val pki =
     .dependsOn(actor) // this dependency only exists for "@ApiMayChange"
     .settings(Dependencies.pki)
     .settings(AutomaticModuleName.settings("akka.pki"))
-    // The akka-pki artifact was added in Akka 2.6.2, no MiMa checks yet.
-    .disablePlugins(MimaPlugin)
 
 lazy val remote =
   akkaModule("akka-remote")
@@ -590,9 +592,26 @@ lazy val serialversionRemoverPlugin =
 lazy val serialversionRemoverPluginSettings = Seq(
   Compile / scalacOptions ++= (
       if (scalaVersion.value.startsWith("3."))
-        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString)
+        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath)
       else Nil
     ))
+
+lazy val doesFortifyLicenseExist: Boolean = {
+  import java.nio.file.Files
+  val home = System.getProperty("user.home")
+  val fortifyLicense = new File(s"$home/.lightbend/fortify.license")
+  Files.exists(fortifyLicense.toPath)
+}
+
+def fortifySettings(name: String) = {
+  if (doesFortifyLicenseExist) {
+    Seq(
+      addCompilerPlugin(("com.lightbend" %% "scala-fortify" % scalaFortifyVersion).cross(CrossVersion.patch)),
+      scalacOptions ++= Seq(s"-P:fortify:scaversion=$fortifySCAVersion", s"-P:fortify:build=$name"))
+  } else {
+    Seq()
+  }
+}
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
@@ -600,6 +619,7 @@ def akkaModule(name: String): Project =
     .disablePlugins(WelcomePlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
+    .settings(fortifySettings(name))
     .enablePlugins(BootstrapGenjavadoc)
 
 /* Command aliases one can run locally against a module
@@ -635,3 +655,19 @@ addCommandAlias(
     commandValue(clusterShardingTyped),
     commandValue(persistenceTyped),
     commandValue(streamTyped)).mkString)
+
+// Convenience task allowing all Fortify steps to be done in the sbt shell
+lazy val analyzeSource = taskKey[Unit]("Analyzing NST files emitted by Fortify  SCA")
+analyzeSource := {
+  val s = streams.value
+  val shell = Seq("bash", "-c")
+  val scan = shell :+ s"./scripts/runSourceAnalyzer.sh $fortifySCAVersion"
+  if (doesFortifyLicenseExist) {
+    s.log.info("Analyzing NST files emitted by Fortify SCA.")
+    scan !
+  } else {
+    s.log.info("Fortify license not found so NST files creation was skipped.")
+  }
+}
+
+addCommandAlias("runSourceAnalyzer", "; clean; compile; analyzeSource")

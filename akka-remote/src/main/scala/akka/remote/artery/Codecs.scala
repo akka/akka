@@ -681,12 +681,12 @@ private[remote] class Deserializer(
               case OptionVal.Some(a) => a.remoteAddress
               case _                 => "unknown"
             }
-            log.warning(
-              "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",
+            log.error(
+              e,
+              "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}].",
               from,
               envelope.serializer,
-              envelope.classManifest,
-              e)
+              envelope.classManifest)
             pull(in)
         } finally {
           val buf = envelope.envelopeBuffer

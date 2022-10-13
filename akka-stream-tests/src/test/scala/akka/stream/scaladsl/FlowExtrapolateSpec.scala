@@ -154,7 +154,7 @@ class FlowExtrapolateSpec extends StreamSpec("""
 
     "work properly with finite extrapolations" in {
       val (source, sink) =
-        TestSource.probe[Int].expand(i => Iterator.from(0).map(i -> _).take(3)).toMat(TestSink.probe)(Keep.both).run()
+        TestSource[Int]().expand(i => Iterator.from(0).map(i -> _).take(3)).toMat(TestSink())(Keep.both).run()
       source.sendNext(1)
       sink.request(4).expectNext(1 -> 0, 1 -> 1, 1 -> 2).expectNoMessage(100.millis)
       source.sendNext(2).sendComplete()

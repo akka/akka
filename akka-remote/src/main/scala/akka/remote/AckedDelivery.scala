@@ -5,10 +5,12 @@
 package akka.remote
 
 import scala.collection.immutable._
-
 import akka.AkkaException
 
+import scala.annotation.nowarn
+
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 object SeqNo {
 
   implicit val ord: Ordering[SeqNo] = new Ordering[SeqNo] {
@@ -24,6 +26,7 @@ object SeqNo {
  * Implements a 64 bit sequence number with proper wrap-around ordering.
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 final case class SeqNo(rawValue: Long) extends Ordered[SeqNo] {
 
   /**
@@ -46,6 +49,7 @@ final case class SeqNo(rawValue: Long) extends Ordered[SeqNo] {
 }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 object HasSequenceNumber {
   implicit def seqOrdering[T <: HasSequenceNumber]: Ordering[T] = new Ordering[T] {
     def compare(x: T, y: T) = x.seq.compare(y.seq)
@@ -57,6 +61,7 @@ object HasSequenceNumber {
  * to implement this interface to provide the sequence needed by the buffers.
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 trait HasSequenceNumber {
 
   /**
@@ -72,15 +77,18 @@ trait HasSequenceNumber {
  * @param nacks Set of sequence numbers between the last delivered one and cumulativeAck that has been not yet received.
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 final case class Ack(cumulativeAck: SeqNo, nacks: Set[SeqNo] = Set.empty) {
   override def toString = s"ACK[$cumulativeAck, ${nacks.mkString("{", ", ", "}")}]"
 }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class ResendBufferCapacityReachedException(c: Int)
     extends AkkaException(s"Resend buffer capacity of [$c] has been reached.")
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 class ResendUnfulfillableException
     extends AkkaException(
       "Unable to fulfill resend request since negatively acknowledged payload is no longer in buffer. " +
@@ -98,6 +106,7 @@ class ResendUnfulfillableException
  *               will be not stored but rejected with [[java.lang.IllegalArgumentException]]
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 final case class AckedSendBuffer[T <: HasSequenceNumber](
     capacity: Int,
     nonAcked: IndexedSeq[T] = Vector.empty[T],
@@ -154,6 +163,7 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
  * @param buf Buffer of messages that are waiting for delivery
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
+@nowarn("msg=deprecated")
 final case class AckedReceiveBuffer[T <: HasSequenceNumber](
     lastDelivered: SeqNo = SeqNo(-1),
     cumulativeAck: SeqNo = SeqNo(-1),

@@ -50,13 +50,13 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In
     FlowWithContext.fromTuples(Flow.fromGraph(GraphDSL.createGraph(delegate) { implicit b => d =>
       import GraphDSL.Implicits._
 
-      val bcast = b.add(Broadcast[(Out, CtxOut)](2))
+      val unzip = b.add(Unzip[Out, CtxOut]())
       val zipper = b.add(Zip[Out2, CtxOut]())
 
-      d ~> bcast.in
+      d ~> unzip.in
 
-      bcast.out(0).map { case (dataOut, _) => dataOut }.via(viaFlow) ~> zipper.in0
-      bcast.out(1).map { case (_, ctxOut) => ctxOut } ~> zipper.in1
+      unzip.out0.via(viaFlow) ~> zipper.in0
+      unzip.out1 ~> zipper.in1
 
       FlowShape(d.in, zipper.out)
     }))

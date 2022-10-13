@@ -7,7 +7,7 @@ package akka.stream
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
-import scala.annotation.nowarn
+import scala.annotation.{ implicitNotFound, nowarn }
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -25,6 +25,7 @@ import akka.event.LoggingAdapter
  *
  * Not for user extension
  */
+@implicitNotFound("A Materializer is required.  You may want to have the ActorSystem in implicit scope")
 @nowarn("msg=deprecated") // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
 @DoNotInherit
 abstract class Materializer {

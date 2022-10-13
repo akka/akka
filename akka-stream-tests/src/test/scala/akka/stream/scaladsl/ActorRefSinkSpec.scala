@@ -37,8 +37,7 @@ class ActorRefSinkSpec extends StreamSpec {
     "cancel stream when actor terminates" in {
       val fw = system.actorOf(Props(classOf[Fw], testActor).withDispatcher("akka.test.stream-dispatcher"))
       val publisher =
-        TestSource
-          .probe[Int]
+        TestSource[Int]()
           .to(Sink.actorRef(fw, onCompleteMessage = "done", _ => "failure"))
           .run()
           .sendNext(1)
@@ -51,7 +50,7 @@ class ActorRefSinkSpec extends StreamSpec {
 
     "sends error message if upstream fails" in {
       val actorProbe = TestProbe()
-      val probe = TestSource.probe[String].to(Sink.actorRef(actorProbe.ref, "complete", _ => "failure")).run()
+      val probe = TestSource[String]().to(Sink.actorRef(actorProbe.ref, "complete", _ => "failure")).run()
       probe.sendError(te)
       actorProbe.expectMsg("failure")
     }

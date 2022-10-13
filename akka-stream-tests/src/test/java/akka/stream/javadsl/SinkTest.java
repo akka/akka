@@ -14,15 +14,20 @@ import java.util.stream.Collectors;
 
 import akka.Done;
 import akka.NotUsed;
+import akka.dispatch.Futures;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.stream.*;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import akka.testkit.AkkaSpec;
 import akka.testkit.AkkaJUnitActorSystemResource;
+import org.reactivestreams.Subscription;
 
 import static org.junit.Assert.*;
 
@@ -79,6 +84,16 @@ public class SinkTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseCollectorOnSink() throws Exception {
+    // #collect-to-list
+    final List<Integer> list = Arrays.asList(1, 2, 3);
+    CompletionStage<List<Integer>> result =
+        Source.from(list).runWith(Sink.collect(Collectors.toList()), system);
+    // #collect-to-list
+    assertEquals(list, result.toCompletableFuture().get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
   public void mustBeAbleToCombine() throws Exception {
     final TestKit probe1 = new TestKit(system);
     final TestKit probe2 = new TestKit(system);
@@ -106,6 +121,41 @@ public class SinkTest extends StreamTest {
 
     probe1.expectMsgEquals("done1");
     probe2.expectMsgEquals("done2");
+  }
+
+  @Test
+  public void mustBeAbleToUseCombineMat() {
+    final Sink<Integer, TestSubscriber.Probe<Integer>> sink1 = TestSink.create(system);
+    final Sink<Integer, TestSubscriber.Probe<Integer>> sink2 = TestSink.create(system);
+    final Sink<Integer, Pair<TestSubscriber.Probe<Integer>, TestSubscriber.Probe<Integer>>> sink =
+        Sink.combineMat(sink1, sink2, Broadcast::create, Keep.both());
+
+    final Pair<TestSubscriber.Probe<Integer>, TestSubscriber.Probe<Integer>> subscribers =
+        Source.from(Arrays.asList(0, 1)).runWith(sink, system);
+    final TestSubscriber.Probe<Integer> subscriber1 = subscribers.first();
+    final TestSubscriber.Probe<Integer> subscriber2 = subscribers.second();
+    final Subscription sub1 = subscriber1.expectSubscription();
+    final Subscription sub2 = subscriber2.expectSubscription();
+    sub1.request(2);
+    sub2.request(2);
+    subscriber1.expectNext(0, 1).expectComplete();
+    subscriber2.expectNext(0, 1).expectComplete();
+  }
+
+  @Test
+  public void mustBeAbleToUseCombineMany() throws Exception {
+    final Sink<Long, CompletionStage<Long>> firstSink = Sink.head();
+    final Sink<Long, CompletionStage<Long>> secondSink = Sink.head();
+    final Sink<Long, CompletionStage<Long>> thirdSink = Sink.head();
+
+    final Sink<Long, List<CompletionStage<Long>>> combineSink =
+        Sink.combine(Arrays.asList(firstSink, secondSink, thirdSink), Broadcast::create);
+    final List<CompletionStage<Long>> results =
+        Source.single(1L).toMat(combineSink, Keep.right()).run(system);
+    for (CompletionStage<Long> result : results) {
+      final long value = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+      assertEquals(1L, value);
+    }
   }
 
   @Test

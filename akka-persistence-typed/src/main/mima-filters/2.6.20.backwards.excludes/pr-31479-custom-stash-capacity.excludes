@@ -1,0 +1,13 @@
+# new method to pass a custom stash buffer size
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.scaladsl.EventSourcedBehavior.withStashCapacity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.state.scaladsl.DurableStateBehavior.withStashCapacity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.state.internal.DurableStateBehaviorImpl.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.state.internal.DurableStateBehaviorImpl.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.state.internal.DurableStateBehaviorImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.state.internal.DurableStateBehaviorImpl.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.state.internal.DurableStateSettings.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.EventSourcedSettings.apply")

@@ -74,7 +74,7 @@ class EventsByPersistenceIdSpec
       val ackProbe = createTestProbe[Done]()
       val ref = setup("c")
       val src = queries.eventsByPersistenceId("c", 0L, Long.MaxValue)
-      val probe = src.map(_.event).runWith(TestSink.probe[Any]).request(5).expectNext("c-1", "c-2", "c-3")
+      val probe = src.map(_.event).runWith(TestSink[Any]()).request(5).expectNext("c-1", "c-2", "c-3")
 
       ref ! Command("c-4", ackProbe.ref)
       ackProbe.expectMessage(Done)
@@ -86,7 +86,7 @@ class EventsByPersistenceIdSpec
       val ackProbe = createTestProbe[Done]()
       val ref = setup("d")
       val src = queries.eventsByPersistenceId("d", 0L, 4L)
-      val probe = src.map(_.event).runWith(TestSink.probe[Any]).request(5).expectNext("d-1", "d-2", "d-3")
+      val probe = src.map(_.event).runWith(TestSink[Any]()).request(5).expectNext("d-1", "d-2", "d-3")
 
       ref ! Command("d-4", ackProbe.ref)
       ackProbe.expectMessage(Done)
@@ -99,7 +99,7 @@ class EventsByPersistenceIdSpec
       val ref = setup("e")
       val src = queries.eventsByPersistenceId("e", 0L, Long.MaxValue)
       val probe =
-        src.map(_.event).runWith(TestSink.probe[Any]).request(2).expectNext("e-1", "e-2").expectNoMessage(100.millis)
+        src.map(_.event).runWith(TestSink[Any]()).request(2).expectNext("e-1", "e-2").expectNoMessage(100.millis)
 
       ref ! Command("e-4", ackProbe.ref)
       ackProbe.expectMessage(Done)
@@ -111,7 +111,7 @@ class EventsByPersistenceIdSpec
       setup("n")
 
       val src = queries.eventsByPersistenceId("n", 0L, Long.MaxValue)
-      val probe = src.runWith(TestSink.probe[EventEnvelope])
+      val probe = src.runWith(TestSink[EventEnvelope]())
 
       probe.request(5)
       probe.expectNext().timestamp should be > 0L
@@ -123,7 +123,7 @@ class EventsByPersistenceIdSpec
       val ackProbe = createTestProbe[Done]()
       val src = queries.eventsByPersistenceId("o", 0L, Long.MaxValue)
       val probe =
-        src.map(_.event).runWith(TestSink.probe[Any]).request(2)
+        src.map(_.event).runWith(TestSink[Any]()).request(2)
 
       probe.expectNoMessage(200.millis) // must not complete
 

@@ -8,8 +8,8 @@ Akka is part of the [Akka Platform](https://www.lightbend.com/akka-platform).
 ## Sponsors
 
 **Lightbend** is the company behind the Akka Project, Scala Programming Language,
-Play Web Framework, Lagom, sbt and many other open source projects. 
-It also provides the Lightbend Reactive Platform, which is powered by an open source core and commercial Enterprise Suite for building scalable Reactive systems on the JVM. Learn more at [lightbend.com](https://www.lightbend.com).
+Play Web Framework, Lagom, sbt and many other open source and source available projects. 
+It also provides the Lightbend Reactive Platform, which is powered by a source available core and commercial Enterprise Suite for building scalable Reactive systems on the JVM. Learn more at [lightbend.com](https://www.lightbend.com).
 
 ## Akka Discuss Forums
 
@@ -45,7 +45,7 @@ The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unles
 Make sure that you add the repository to the sbt resolvers:
 
 ```
-resolvers += Resolver.sonatypeRepo("snapshots")
+resolvers ++= Resolver.sonatypeOssRepos("snapshots")
 ```
 
 Define the library dependencies with the complete version. For example:

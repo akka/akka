@@ -10,32 +10,33 @@ import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Status;
 import akka.japi.Pair;
+import akka.japi.Util;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 // #imports
 import akka.stream.*;
-
 // #imports
 import akka.stream.scaladsl.FlowSpec;
-import akka.util.ConstantFun;
-import akka.stream.stage.*;
-import akka.testkit.AkkaSpec;
+import akka.stream.stage.AbstractInHandler;
+import akka.stream.stage.AbstractOutHandler;
+import akka.stream.stage.GraphStage;
+import akka.stream.stage.GraphStageLogic;
 import akka.stream.testkit.TestPublisher;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.TestKit;
+import akka.util.ConstantFun;
 import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.util.Try;
-import akka.testkit.AkkaJUnitActorSystemResource;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -43,9 +44,10 @@ import java.util.stream.Stream;
 import static akka.NotUsed.notUsed;
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("serial")
 public class SourceTest extends StreamTest {
@@ -274,6 +276,17 @@ public class SourceTest extends StreamTest {
 
     List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
+  }
+
+  @Test
+  public void mustBeAbleToUseConcatAll() {
+    final Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
+    final Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));
+    final Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8, 9));
+    final TestSubscriber.Probe<Integer> sub =
+        sourceA.concatAllLazy(sourceB, sourceC).runWith(TestSink.probe(system), system);
+    sub.expectSubscription().request(9);
+    sub.expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9).expectComplete();
   }
 
   @Test
@@ -685,6 +698,56 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseStatefulMap() throws Exception {
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
+    final CompletionStage<String> grouped =
+        Source.from(input)
+            .statefulMap(
+                () -> new ArrayList<Integer>(2),
+                (buffer, elem) -> {
+                  if (buffer.size() == 2) {
+                    final ArrayList<Integer> group = new ArrayList<>(buffer);
+                    buffer.clear();
+                    buffer.add(elem);
+                    return Pair.create(buffer, group);
+                  } else {
+                    buffer.add(elem);
+                    return Pair.create(buffer, Collections.emptyList());
+                  }
+                },
+                Optional::ofNullable)
+            .filterNot(List::isEmpty)
+            .map(String::valueOf)
+            .runFold("", (acc, elem) -> acc + elem, system);
+    Assert.assertEquals("[1, 2][3, 4][5]", grouped.toCompletableFuture().get(3, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void mustBeAbleToUseStatefulMapAsDistinctUntilChanged() throws Exception {
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 1, 1, 2, 3, 3, 3, 4, 5, 5, 5);
+    final CompletionStage<String> result =
+        Source.from(input)
+            .statefulMap(
+                Optional::<Integer>empty,
+                (buffer, elem) -> {
+                  if (buffer.isPresent()) {
+                    if (buffer.get().equals(elem)) {
+                      return Pair.create(buffer, Optional.<Integer>empty());
+                    } else {
+                      return Pair.create(Optional.of(elem), Optional.of(elem));
+                    }
+                  } else {
+                    return Pair.create(Optional.of(elem), Optional.of(elem));
+                  }
+                },
+                last -> Optional.empty())
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .runFold("", (acc, elem) -> acc + elem, system);
+    Assert.assertEquals("12345", result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+  }
+
+  @Test
   public void mustBeAbleToUseIntersperse() throws Exception {
     final TestKit probe = new TestKit(system);
     final Source<String, NotUsed> source =
@@ -726,6 +789,19 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(",");
     probe.expectMsgEquals("3");
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToUseInterleaveAll() {
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 7, 8));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(3, 4, 9));
+    Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(5, 6));
+    final TestSubscriber.Probe<Integer> sub =
+        sourceA
+            .interleaveAll(Arrays.asList(sourceB, sourceC), 2, false)
+            .runWith(TestSink.probe(system), system);
+    sub.expectSubscription().request(9);
+    sub.expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9).expectComplete();
   }
 
   @Test
@@ -851,6 +927,19 @@ public class SourceTest extends StreamTest {
     // elements from source1 (i.e. first of combined source) come first, then source2 elements, due
     // to `Concat`
     probe.expectMsgAllOf(0, 1, 2, 3);
+  }
+
+  @Test
+  public void mustBeAbleToCombineN() throws Exception {
+    final Source<Integer, NotUsed> source1 = Source.single(1);
+    final Source<Integer, NotUsed> source2 = Source.single(2);
+    final Source<Integer, NotUsed> source3 = Source.single(3);
+    final List<Source<Integer, NotUsed>> sources = Arrays.asList(source1, source2, source3);
+    final CompletionStage<Integer> result =
+        Source.combine(sources, Concat::create)
+            .runWith(Sink.collect(Collectors.toList()), system)
+            .thenApply(list -> list.stream().mapToInt(l -> l).sum());
+    assertEquals(6, result.toCompletableFuture().get(3, TimeUnit.SECONDS).intValue());
   }
 
   @SuppressWarnings("unchecked")
@@ -1048,6 +1137,20 @@ public class SourceTest extends StreamTest {
             system);
 
     probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
+  }
+
+  @Test
+  public void mustBeAbleToUseMerge3() {
+    final Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
+    final Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));
+    final Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(7, 8, 9));
+    final TestSubscriber.Probe<Integer> sub =
+        sourceA
+            .mergeAll(Arrays.asList(sourceB, sourceC), false)
+            .runWith(TestSink.probe(system), system);
+    sub.expectSubscription().request(9);
+    sub.expectNextUnorderedN(Util.immutableSeq(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9)))
+        .expectComplete();
   }
 
   @Test

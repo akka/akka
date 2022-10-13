@@ -19,28 +19,28 @@ class FlowWatchTerminationSpec extends StreamSpec {
   "A WatchTermination" must {
 
     "complete future when stream is completed" in {
-      val (future, p) = Source(1 to 4).watchTermination()(Keep.right).toMat(TestSink.probe[Int])(Keep.both).run()
+      val (future, p) = Source(1 to 4).watchTermination()(Keep.right).toMat(TestSink[Int]())(Keep.both).run()
       p.request(4).expectNext(1, 2, 3, 4)
       future.futureValue should ===(Done)
       p.expectComplete()
     }
 
     "complete future when stream is cancelled from downstream" in {
-      val (future, p) = Source(1 to 4).watchTermination()(Keep.right).toMat(TestSink.probe[Int])(Keep.both).run()
+      val (future, p) = Source(1 to 4).watchTermination()(Keep.right).toMat(TestSink[Int]())(Keep.both).run()
       p.request(3).expectNext(1, 2, 3).cancel()
       future.futureValue should ===(Done)
     }
 
     "fail future when stream is failed" in {
       val ex = new RuntimeException("Stream failed.") with NoStackTrace
-      val (p, future) = TestSource.probe[Int].watchTermination()(Keep.both).to(Sink.ignore).run()
+      val (p, future) = TestSource[Int]().watchTermination()(Keep.both).to(Sink.ignore).run()
       p.sendNext(1)
       p.sendError(ex)
       whenReady(future.failed) { _ shouldBe (ex) }
     }
 
     "complete the future for an empty stream" in {
-      val (future, p) = Source.empty[Int].watchTermination()(Keep.right).toMat(TestSink.probe[Int])(Keep.both).run()
+      val (future, p) = Source.empty[Int].watchTermination()(Keep.right).toMat(TestSink[Int]())(Keep.both).run()
       p.request(1)
       future.futureValue should ===(Done)
     }
@@ -48,12 +48,8 @@ class FlowWatchTerminationSpec extends StreamSpec {
     "complete future for graph" in {
       implicit val ec = system.dispatcher
 
-      val ((sourceProbe, future), sinkProbe) = TestSource
-        .probe[Int]
-        .watchTermination()(Keep.both)
-        .concat(Source(2 to 5))
-        .toMat(TestSink.probe[Int])(Keep.both)
-        .run()
+      val ((sourceProbe, future), sinkProbe) =
+        TestSource[Int]().watchTermination()(Keep.both).concat(Source(2 to 5)).toMat(TestSink[Int]())(Keep.both).run()
       future.pipeTo(testActor)
       sinkProbe.request(5)
       sourceProbe.sendNext(1)
@@ -69,7 +65,7 @@ class FlowWatchTerminationSpec extends StreamSpec {
     "fail future when stream abruptly terminated" in {
       val mat = Materializer(system)
 
-      val (_, future) = TestSource.probe[Int].watchTermination()(Keep.both).to(Sink.ignore).run()(mat)
+      val (_, future) = TestSource[Int]().watchTermination()(Keep.both).to(Sink.ignore).run()(mat)
       mat.shutdown()
 
       future.failed.futureValue shouldBe an[AbruptTerminationException]

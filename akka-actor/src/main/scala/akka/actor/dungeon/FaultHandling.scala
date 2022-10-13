@@ -5,12 +5,14 @@
 package akka.actor.dungeon
 
 import scala.collection.immutable
-import scala.concurrent.duration.Duration
 import scala.util.control.Exception._
 import scala.util.control.NonFatal
 
-import akka.actor.{ ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
+import akka.actor.ActorCell
+import akka.actor.ActorInterruptedException
+import akka.actor.ActorRef
 import akka.actor.ActorRefScope
+import akka.actor.InternalActorRef
 import akka.actor.PostRestartException
 import akka.actor.PreRestartException
 import akka.annotation.InternalApi
@@ -146,8 +148,8 @@ private[akka] trait FaultHandling { this: ActorCell =>
     assert(mailbox.isSuspended, "mailbox must be suspended during failed creation, status=" + mailbox.currentStatus)
     assert(perpetrator == self)
 
-    setReceiveTimeout(Duration.Undefined)
     cancelReceiveTimeout()
+    cancelReceiveTimeoutTask()
 
     // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
     children.foreach(stop)
@@ -165,8 +167,8 @@ private[akka] trait FaultHandling { this: ActorCell =>
   }
 
   protected def terminate(): Unit = {
-    setReceiveTimeout(Duration.Undefined)
     cancelReceiveTimeout()
+    cancelReceiveTimeoutTask()
 
     // prevent Deadletter(Terminated) messages
     unwatchWatchedActors(actor)

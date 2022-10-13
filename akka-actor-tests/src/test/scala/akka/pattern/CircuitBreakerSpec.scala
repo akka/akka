@@ -14,13 +14,13 @@ import scala.language.postfixOps
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.testkit._
 
 object CircuitBreakerSpec {
 
   class TestException extends RuntimeException
+  class AllowException extends RuntimeException
   case class CBSuccess(value: FiniteDuration)
   case class CBFailure(value: FiniteDuration)
   case class CBTimeout(value: FiniteDuration)
@@ -34,6 +34,16 @@ object CircuitBreakerSpec {
     val callFailureLatch = new TestLatch(1)
     val callTimeoutLatch = new TestLatch(1)
     val callBreakerOpenLatch = new TestLatch(1)
+
+    def resetAll() = {
+      halfOpenLatch.reset()
+      openLatch.reset()
+      closedLatch.reset()
+      callSuccessLatch.reset()
+      callFailureLatch.reset()
+      callTimeoutLatch.reset()
+      callBreakerOpenLatch.reset()
+    }
 
     def apply(): CircuitBreaker = instance
     instance
@@ -65,9 +75,26 @@ object CircuitBreakerSpec {
     case Success(i) => i % 2 == 0
     case _          => true
   }
+
+  val anyExceptionIsFailure: Try[Int] => Boolean = {
+    case Success(_) => false
+    case _          => true
+  }
 }
 
-class CircuitBreakerSpec extends AkkaSpec {
+class CircuitBreakerSpec extends AkkaSpec("""
+    akka.circuit-breaker {
+      identified {
+        max-failures = 1
+        call-timeout = 100 ms
+        reset-timeout = 200 ms
+        exception-allowlist = [
+          "akka.pattern.CircuitBreakerSpec$AllowException"
+        ]
+      }
+    }
+    """) {
+
   import CircuitBreakerSpec._
   implicit def ec: ExecutionContextExecutor = system.dispatcher
 
@@ -91,6 +118,8 @@ class CircuitBreakerSpec extends AkkaSpec {
   def checkLatch(latch: TestLatch): Unit = Await.ready(latch, awaitTimeout)
 
   def throwException = throw new TestException
+
+  def throwAllowException = throw new AllowException
 
   def sayHi = "hi"
 
@@ -716,6 +745,47 @@ class CircuitBreakerSpec extends AkkaSpec {
       val breaker = shortCallTimeoutCb()
 
       breaker().withCircuitBreaker(Future(throwException))
+      checkLatch(breaker.openLatch)
+    }
+  }
+
+  "An identified asynchronous circuit breaker" must {
+
+    val breaker = new Breaker(CircuitBreaker("identified")(system.asInstanceOf[ExtendedActorSystem]))
+    val cb = breaker()
+
+    "be closed after success result" taggedAs TimingTest in {
+      breaker.resetAll()
+      Await.result(cb.withCircuitBreaker(Future(sayHi)), awaitTimeout) should ===("hi")
+      checkLatch(breaker.callSuccessLatch)
+    }
+
+    "be closed after throw allowable exception" taggedAs TimingTest in {
+      breaker.resetAll()
+      intercept[AllowException] { Await.result(cb.withCircuitBreaker(Future(throwAllowException)), awaitTimeout) }
+      checkLatch(breaker.callSuccessLatch)
+    }
+
+    "be open after throw exception and half-open after reset timeout" taggedAs TimingTest in {
+      breaker.resetAll()
+      intercept[TestException] { Await.result(cb.withCircuitBreaker(Future(throwException)), awaitTimeout) }
+      checkLatch(breaker.openLatch)
+      Thread.sleep(250.millis.dilated(system).toMillis)
+      checkLatch(breaker.halfOpenLatch)
+    }
+
+    "be closed again after success result" taggedAs TimingTest in {
+      breaker.resetAll()
+      Await.result(cb.withCircuitBreaker(Future(sayHi)), awaitTimeout) should ===("hi")
+      checkLatch(breaker.callSuccessLatch)
+      checkLatch(breaker.closedLatch)
+    }
+
+    "be open after pass custom failure function and throw allowable exception" taggedAs TimingTest in {
+      breaker.resetAll()
+      intercept[AllowException] {
+        Await.result(cb.withCircuitBreaker(Future(throwAllowException), anyExceptionIsFailure), awaitTimeout)
+      }
       checkLatch(breaker.openLatch)
     }
   }

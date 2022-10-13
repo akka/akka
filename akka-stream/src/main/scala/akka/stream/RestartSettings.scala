@@ -4,10 +4,11 @@
 
 package akka.stream
 
+import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
-
 import akka.event.Logging
 import akka.event.Logging.LogLevel
+import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
 
 final class RestartSettings private (
@@ -16,7 +17,8 @@ final class RestartSettings private (
     val randomFactor: Double,
     val maxRestarts: Int,
     val maxRestartsWithin: FiniteDuration,
-    val logSettings: RestartSettings.LogSettings) {
+    val logSettings: RestartSettings.LogSettings,
+    val restartOn: Throwable => Boolean) {
 
   /** Scala API: minimum (initial) duration until the child actor will started again, if it is terminated */
   def withMinBackoff(value: FiniteDuration): RestartSettings = copy(minBackoff = value)
@@ -44,6 +46,10 @@ final class RestartSettings private (
   def withMaxRestarts(count: Int, within: java.time.Duration): RestartSettings =
     copy(maxRestarts = count, maxRestartsWithin = within.asScala)
 
+  /** Decides whether the failure should restart the stream or make the surrounding stream fail */
+  def withRestartOn(restartOn: java.util.function.Predicate[Throwable]): RestartSettings =
+    copy(restartOn = restartOn.asScala)
+
   def withLogSettings(newLogSettings: RestartSettings.LogSettings): RestartSettings =
     copy(logSettings = newLogSettings)
 
@@ -61,8 +67,9 @@ final class RestartSettings private (
       randomFactor: Double = randomFactor,
       maxRestarts: Int = maxRestarts,
       maxRestartsWithin: FiniteDuration = maxRestartsWithin,
-      logSettings: RestartSettings.LogSettings = logSettings): RestartSettings =
-    new RestartSettings(minBackoff, maxBackoff, randomFactor, maxRestarts, maxRestartsWithin, logSettings)
+      logSettings: RestartSettings.LogSettings = logSettings,
+      restartOn: Throwable => Boolean = restartOn): RestartSettings =
+    new RestartSettings(minBackoff, maxBackoff, randomFactor, maxRestarts, maxRestartsWithin, logSettings, restartOn)
 
 }
 
@@ -76,7 +83,8 @@ object RestartSettings {
       randomFactor = randomFactor,
       maxRestarts = Int.MaxValue,
       maxRestartsWithin = minBackoff,
-      logSettings = LogSettings.defaultSettings)
+      logSettings = LogSettings.defaultSettings,
+      restartOn = ConstantFun.anyToTrue)
 
   /** Java API */
   def create(minBackoff: java.time.Duration, maxBackoff: java.time.Duration, randomFactor: Double): RestartSettings =
@@ -86,7 +94,8 @@ object RestartSettings {
       randomFactor = randomFactor,
       maxRestarts = Int.MaxValue,
       maxRestartsWithin = minBackoff.asScala,
-      logSettings = LogSettings.defaultSettings)
+      logSettings = LogSettings.defaultSettings,
+      restartOn = ConstantFun.anyToTrue)
 
   /** Java API */
   def createLogSettings(logLevel: LogLevel): LogSettings =

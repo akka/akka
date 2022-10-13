@@ -20,7 +20,7 @@ class FlowKillSwitchSpec extends StreamSpec {
 
     "stop a stream if requested" in {
       val ((upstream, switch), downstream) =
-        TestSource.probe[Int].viaMat(KillSwitches.single)(Keep.both).toMat(TestSink.probe)(Keep.both).run()
+        TestSource[Int]().viaMat(KillSwitches.single)(Keep.both).toMat(TestSink())(Keep.both).run()
 
       downstream.request(1)
       upstream.sendNext(1)
@@ -33,7 +33,7 @@ class FlowKillSwitchSpec extends StreamSpec {
 
     "fail a stream if requested" in {
       val ((upstream, switch), downstream) =
-        TestSource.probe[Int].viaMat(KillSwitches.single)(Keep.both).toMat(TestSink.probe)(Keep.both).run()
+        TestSource[Int]().viaMat(KillSwitches.single)(Keep.both).toMat(TestSink())(Keep.both).run()
 
       downstream.request(1)
       upstream.sendNext(1)
@@ -46,12 +46,11 @@ class FlowKillSwitchSpec extends StreamSpec {
 
     "work if used multiple times in a flow" in {
       val (((upstream, switch1), switch2), downstream) =
-        TestSource
-          .probe[Int]
+        TestSource[Int]()
           .viaMat(KillSwitches.single)(Keep.both)
           .recover { case TE(_) => -1 }
           .viaMat(KillSwitches.single)(Keep.both)
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink())(Keep.both)
           .run()
 
       downstream.request(1)
@@ -69,7 +68,7 @@ class FlowKillSwitchSpec extends StreamSpec {
 
     "ignore completion after already completed" in {
       val ((upstream, switch), downstream) =
-        TestSource.probe[Int].viaMat(KillSwitches.single)(Keep.both).toMat(TestSink.probe)(Keep.both).run()
+        TestSource[Int]().viaMat(KillSwitches.single)(Keep.both).toMat(TestSink())(Keep.both).run()
 
       upstream.ensureSubscription()
       downstream.ensureSubscription()
@@ -90,7 +89,7 @@ class FlowKillSwitchSpec extends StreamSpec {
     "stop a stream if requested" in {
       val switch = KillSwitches.shared("switch")
 
-      val (upstream, downstream) = TestSource.probe[Int].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream, downstream) = TestSource[Int]().via(switch.flow).toMat(TestSink())(Keep.both).run()
 
       downstream.request(1)
       upstream.sendNext(1)
@@ -104,7 +103,7 @@ class FlowKillSwitchSpec extends StreamSpec {
     "fail a stream if requested" in {
       val switch = KillSwitches.shared("switch")
 
-      val (upstream, downstream) = TestSource.probe[Int].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream, downstream) = TestSource[Int]().via(switch.flow).toMat(TestSink())(Keep.both).run()
 
       downstream.request(1)
       upstream.sendNext(1)
@@ -123,8 +122,8 @@ class FlowKillSwitchSpec extends StreamSpec {
     "provide a flow that if materialized multiple times (with multiple types) stops all streams if requested" in {
       val switch = KillSwitches.shared("switch")
 
-      val (upstream1, downstream1) = TestSource.probe[Int].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
-      val (upstream2, downstream2) = TestSource.probe[String].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream1, downstream1) = TestSource[Int]().via(switch.flow).toMat(TestSink())(Keep.both).run()
+      val (upstream2, downstream2) = TestSource[String]().via(switch.flow).toMat(TestSink())(Keep.both).run()
 
       downstream1.request(1)
       upstream1.sendNext(1)
@@ -144,8 +143,8 @@ class FlowKillSwitchSpec extends StreamSpec {
     "provide a flow that if materialized multiple times (with multiple types) fails all streams if requested" in {
       val switch = KillSwitches.shared("switch")
 
-      val (upstream1, downstream1) = TestSource.probe[Int].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
-      val (upstream2, downstream2) = TestSource.probe[String].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream1, downstream1) = TestSource[Int]().via(switch.flow).toMat(TestSink())(Keep.both).run()
+      val (upstream2, downstream2) = TestSource[String]().via(switch.flow).toMat(TestSink())(Keep.both).run()
 
       downstream1.request(1)
       upstream1.sendNext(1)
@@ -166,7 +165,7 @@ class FlowKillSwitchSpec extends StreamSpec {
     "ignore subsequent aborts and shutdowns after shutdown" in {
       val switch = KillSwitches.shared("switch")
 
-      val (upstream, downstream) = TestSource.probe[Int].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream, downstream) = TestSource[Int]().via(switch.flow).toMat(TestSink())(Keep.both).run()
 
       downstream.request(1)
       upstream.sendNext(1)
@@ -188,7 +187,7 @@ class FlowKillSwitchSpec extends StreamSpec {
     "ignore subsequent aborts and shutdowns after abort" in {
       val switch = KillSwitches.shared("switch")
 
-      val (upstream, downstream) = TestSource.probe[Int].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream, downstream) = TestSource[Int]().via(switch.flow).toMat(TestSink())(Keep.both).run()
 
       downstream.request(1)
       upstream.sendNext(1)
@@ -211,7 +210,7 @@ class FlowKillSwitchSpec extends StreamSpec {
       val switch = KillSwitches.shared("switch")
       switch.shutdown()
 
-      val (upstream, downstream) = TestSource.probe[Int].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream, downstream) = TestSource[Int]().via(switch.flow).toMat(TestSink())(Keep.both).run()
       upstream.expectCancellation()
       downstream.expectSubscriptionAndComplete()
     }
@@ -220,7 +219,7 @@ class FlowKillSwitchSpec extends StreamSpec {
       val switch = KillSwitches.shared("switch")
       switch.abort(TE("Abort"))
 
-      val (upstream, downstream) = TestSource.probe[Int].via(switch.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream, downstream) = TestSource[Int]().via(switch.flow).toMat(TestSink())(Keep.both).run()
       upstream.expectCancellation()
       downstream.expectSubscriptionAndError(TE("Abort"))
     }
@@ -247,8 +246,8 @@ class FlowKillSwitchSpec extends StreamSpec {
 
       switch1 should !==(switch2)
 
-      val (upstream1, downstream1) = TestSource.probe[Int].via(switch1.flow).toMat(TestSink.probe)(Keep.both).run()
-      val (upstream2, downstream2) = TestSource.probe[Int].via(switch2.flow).toMat(TestSink.probe)(Keep.both).run()
+      val (upstream1, downstream1) = TestSource[Int]().via(switch1.flow).toMat(TestSink())(Keep.both).run()
+      val (upstream2, downstream2) = TestSource[Int]().via(switch2.flow).toMat(TestSink())(Keep.both).run()
 
       downstream1.request(1)
       upstream1.sendNext(1)
@@ -276,7 +275,7 @@ class FlowKillSwitchSpec extends StreamSpec {
       val switch2 = KillSwitches.shared("switch")
 
       val downstream = RunnableGraph
-        .fromGraph(GraphDSL.createGraph(TestSink.probe[Int]) { implicit b => snk =>
+        .fromGraph(GraphDSL.createGraph(TestSink[Int]()) { implicit b => snk =>
           import GraphDSL.Implicits._
           val merge = b.add(Merge[Int](2))
 

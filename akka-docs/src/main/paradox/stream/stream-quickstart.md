@@ -408,20 +408,20 @@ prepared Sink using `toMat`]@java[`Sink.fold` will sum all `Integer` elements of
 a `CompletionStage<Integer>`. Next we use the `map` method of `tweets` `Source` which will change each incoming tweet
 into an integer value `1`.  Finally we connect the Flow to the previously prepared Sink using `toMat`].
 
-Remember those mysterious `Mat` type parameters on @scala[`Source[+Out, +Mat]`, `Flow[-In, +Out, +Mat]` and `Sink[-In, +Mat]`]@java[`Source<Out, Mat>`, `Flow<In, Out, Mat>` and `Sink<In, Mat>`]?
+Remember those mysterious `Mat` type parameters on @scala[@scaladoc[Source](akka.stream.scaladsl.Source)\[+Out, +Mat\], @scaladoc[Flow](akka.stream.scaladsl.Flow)\[-In, +Out, +Mat\] and @scaladoc[Sink](akka.stream.scaladsl.Sink)\[-In, +Mat\]]@java[@javadoc[Source](akka.stream.javadsl.Source)<Out, Mat>, @javadoc[Flow](akka.stream.javadsl.Flow)<In, Out, Mat> and @javadoc[Sink](akka.stream.javadsl.Sink)<In, Mat>]?
 They represent the type of values these processing parts return when materialized. When you chain these together,
-you can explicitly combine their materialized values. In our example we used the @scala[`Keep.right`]@java[`Keep.right()`] predefined function,
+you can explicitly combine their materialized values. In our example we used the @scala[@scaladoc[Keep.right](akka.stream.scaladsl.Keep$#right[L,R]:(L,R)=%3ER)]@java[@javadoc[Keep.right()](akka.stream.javadsl.Keep$#right())] predefined function,
 which tells the implementation to only care about the materialized type of the operator currently appended to the right.
-The materialized type of `sumSink` is @scala[`Future[Int]`]@java[`CompletionStage<Integer>`] and because of using @scala[`Keep.right`]@java[`Keep.right()`], the resulting `RunnableGraph`
+The materialized type of `sumSink` is @scala[@scaladoc[Future](scala.concurrent.Future)\[Int\]]@java[@javadoc[CompletionStage](java.util.concurrent.CompletionStage)<Integer>] and because of using @scala[`Keep.right`]@java[`Keep.right()`], the resulting @apidoc[akka.stream.*.RunnableGraph]
 has also a type parameter of @scala[`Future[Int]`]@java[`CompletionStage<Integer>`].
 
 This step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be `run()`, as indicated by its type: @scala[`RunnableGraph[Future[Int]]`]@java[`RunnableGraph<CompletionStage<Integer>>`]. Next we call `run()` which materializes and runs the Flow. The value returned by calling `run()` on a @scala[`RunnableGraph[T]`]@java[`RunnableGraph<T>`] is of type `T`.
+be `run()`, as indicated by its type: @scala[`RunnableGraph[Future[Int]]`]@java[`RunnableGraph<CompletionStage<Integer>>`]. Next we call @apidoc[run()](akka.stream.*.RunnableGraph) {scala="#run()(implicitmaterializer:akka.stream.Materializer):Mat" java="#run(akka.stream.Materializer)"} which materializes and runs the Flow. The value returned by calling `run()` on a @scala[`RunnableGraph[T]`]@java[`RunnableGraph<T>`] is of type `T`.
 In our case this type is @scala[`Future[Int]`]@java[`CompletionStage<Integer>`] which, when completed, will contain the total length of our `tweets` stream.
 In case of the stream failing, this future would complete with a Failure.
 
-A `RunnableGraph` may be reused
+A @apidoc[akka.stream.*.RunnableGraph] may be reused
 and materialized multiple times, because it is only the "blueprint" of the stream. This means that if we materialize a stream,
 for example one that consumes a live stream of tweets within a minute, the materialized values for those two materializations
 will be different, as illustrated by this example:

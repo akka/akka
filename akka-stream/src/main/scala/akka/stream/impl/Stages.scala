@@ -17,7 +17,6 @@ import akka.stream.Attributes._
     // reusable common attributes
     val IODispatcher = ActorAttributes.IODispatcher
     val inputBufferOne = inputBuffer(initial = 1, max = 1)
-    val inputBufferZero = inputBuffer(initial = 0, max = 0)
 
     // stage specific default attributes
     val fused = name("fused")
@@ -31,6 +30,7 @@ import akka.stream.Attributes._
     val mapError = name("mapError")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
+    val mapWithResource = name("mapWithResource") and IODispatcher
     val ask = name("ask")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
@@ -54,6 +54,7 @@ import akka.stream.Attributes._
     val batch = name("batch")
     val batchWeighted = name("batchWeighted")
     val expand = name("expand")
+    val statefulMap = name("statefulMap")
     val statefulMapConcat = name("statefulMapConcat")
     val detacher = name("detacher")
     val groupBy = name("groupBy")
@@ -117,7 +118,7 @@ import akka.stream.Attributes._
     val actorRefWithBackpressureSource = name("actorRefWithBackpressureSource")
     val queueSource = name("queueSource")
     val inputStreamSource = name("inputStreamSource") and IODispatcher
-    val outputStreamSource = name("outputStreamSource") and IODispatcher
+    val outputStreamSource = name("outputStreamSource")
     val fileSource = name("fileSource") and IODispatcher
     val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
     val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
@@ -136,7 +137,7 @@ import akka.stream.Attributes._
     val publisherSink = name("publisherSink")
     val fanoutPublisherSink = name("fanoutPublisherSink")
     val ignoreSink = name("ignoreSink")
-    val neverSink = name("neverSink") and inputBufferZero
+    val neverSink = name("neverSink")
     val actorRefSink = name("actorRefSink")
     val actorRefWithBackpressureSink = name("actorRefWithBackpressureSink")
     val actorSubscriberSink = name("actorSubscriberSink")
@@ -146,7 +147,7 @@ import akka.stream.Attributes._
     val futureFlow = name("futureFlow")
     val lazySource = name("lazySource")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
-    val inputStreamSink = name("inputStreamSink") and IODispatcher
+    val inputStreamSink = name("inputStreamSink")
     val fileSink = name("fileSink") and IODispatcher
     val fromJavaStream = name("fromJavaStream")
 

@@ -53,6 +53,18 @@ object ReceiveTimeoutSpec {
         probe ! other
     }
   }
+
+  class StoppingSelfActor(probe: ActorRef) extends Actor {
+    override def receive: Receive = {
+      case "Stop" =>
+        context.setReceiveTimeout(200.millis)
+        context.stop(self)
+    }
+
+    override def postStop(): Unit = {
+      probe ! "stopping"
+    }
+  }
 }
 
 class ReceiveTimeoutSpec extends AkkaSpec() {
@@ -289,6 +301,15 @@ class ReceiveTimeoutSpec extends AkkaSpec() {
       probe.expectMsg("stopping")
       probe.expectMsg("restarting")
       probe.expectMsg(ReceiveTimeout)
+    }
+
+    "Will cancel receive timeout task if stopped" in {
+      val probe = TestProbe()
+      system.eventStream.subscribe(probe.ref, classOf[DeadLetter])
+      val ref = system.actorOf(Props(new StoppingSelfActor(probe.ref)))
+      ref ! "Stop"
+      probe.expectMsg("stopping")
+      probe.expectNoMessage(200.millis * 2)
     }
   }
 }

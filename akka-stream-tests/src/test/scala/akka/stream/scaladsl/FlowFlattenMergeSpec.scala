@@ -155,9 +155,8 @@ class FlowFlattenMergeSpec extends StreamSpec {
 
     "cancel substreams when being cancelled" in {
       val p1, p2 = TestPublisher.probe[Int]()
-      val sink = Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2)))
-        .flatMapMerge(5, identity)
-        .runWith(TestSink.probe)
+      val sink =
+        Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2))).flatMapMerge(5, identity).runWith(TestSink())
       sink.request(1)
       p1.expectRequest()
       p2.expectRequest()
@@ -167,7 +166,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
     }
 
     "work with many concurrently queued events" in {
-      val p = Source((0 until 100).map(i => src10(10 * i))).flatMapMerge(Int.MaxValue, identity).runWith(TestSink.probe)
+      val p = Source((0 until 100).map(i => src10(10 * i))).flatMapMerge(Int.MaxValue, identity).runWith(TestSink())
       p.within(1.second) {
         p.ensureSubscription()
         p.expectNoMessage(remainingOrDefault)
@@ -208,7 +207,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
     }
 
     "work with optimized Source.single when slow demand" in {
-      val probe = Source(0 to 4).flatMapConcat(Source.single).runWith(TestSink.probe)
+      val probe = Source(0 to 4).flatMapConcat(Source.single).runWith(TestSink())
 
       probe.request(3)
       probe.expectNext(0)
@@ -235,7 +234,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
           Source.single(11)))
 
       val probe =
-        sources.flatMapConcat(identity).runWith(TestSink.probe)
+        sources.flatMapConcat(identity).runWith(TestSink())
 
       probe.request(3)
       probe.expectNext(0)

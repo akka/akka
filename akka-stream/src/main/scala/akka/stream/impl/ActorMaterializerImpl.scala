@@ -52,7 +52,9 @@ import akka.util.OptionVal
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>
         // the caller said to use the default dispatcher, but that can been trumped by the dispatcher attribute
-        props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+        props
+          .withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+          .withMailbox(PhasedFusingActorMaterializer.Mailbox)
       case _ => props
     }
 
@@ -189,6 +191,7 @@ private[akka] class SubFusingActorMaterializerImpl(
     Props(new StreamSupervisor(haveShutDown))
       .withDeploy(Deploy.local)
       .withDispatcher(attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+      .withMailbox(PhasedFusingActorMaterializer.Mailbox)
   private[stream] val baseName = "StreamSupervisor"
   private val actorName = SeqActorName(baseName)
   def nextName(): String = actorName.next()

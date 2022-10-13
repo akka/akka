@@ -51,6 +51,7 @@ import akka.util.OptionVal
 @InternalApi private[akka] object PhasedFusingActorMaterializer {
 
   val Debug = false
+  val Mailbox: String = "akka.stream.materializer.mailbox"
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
     override def apply(
@@ -106,7 +107,11 @@ import akka.util.OptionVal
 
     val dispatcher = attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher
     val supervisorProps =
-      StreamSupervisor.props(attributes, haveShutDown).withDispatcher(dispatcher).withDeploy(Deploy.local)
+      StreamSupervisor
+        .props(attributes, haveShutDown)
+        .withDispatcher(dispatcher)
+        .withMailbox(Mailbox)
+        .withDeploy(Deploy.local)
 
     // FIXME why do we need a global unique name for the child?
     val streamSupervisor = context.actorOf(supervisorProps, StreamSupervisor.nextName())
@@ -290,18 +295,14 @@ private final case class SavedIslandData(
         if (Debug)
           println(s"    cross island forward wiring from port ${forwardWire.from} wired to local slot = $localInSlot")
         val publisher = forwardWire.phase.createPublisher(forwardWire.from, forwardWire.outStage)
-        currentPhase.takePublisher(localInSlot, publisher, attributes)
+        currentPhase.takePublisher(localInSlot, publisher, null)
       }
     }
 
     currentGlobalOffset += 1
   }
 
-  @InternalApi private[akka] def wireOut(
-      out: OutPort,
-      absoluteOffset: Int,
-      logic: Any,
-      attributes: Attributes): Unit = {
+  @InternalApi private[akka] def wireOut(out: OutPort, absoluteOffset: Int, logic: Any): Unit = {
     if (Debug) println(s"  wiring $out to absolute = $absoluteOffset")
 
     //          <-------- backwards, visited stuff
@@ -342,7 +343,7 @@ private final case class SavedIslandData(
         } else {
           if (Debug) println(s"    cross-island wiring to local slot $localInSlot in target island")
           val publisher = currentPhase.createPublisher(out, logic)
-          targetSegment.phase.takePublisher(localInSlot, publisher, attributes)
+          targetSegment.phase.takePublisher(localInSlot, publisher, null)
         }
       }
     } else {
@@ -499,8 +500,7 @@ private final case class SavedIslandData(
         current match {
           case MaterializeAtomic(mod, outToSlot) =>
             if (Debug) println(s"materializing module: $mod")
-            val stageAttributes = attributesStack.getLast
-            val matAndStage = islandTracking.getCurrentPhase.materializeAtomic(mod, stageAttributes)
+            val matAndStage = islandTracking.getCurrentPhase.materializeAtomic(mod, attributesStack.getLast)
             val logic = matAndStage._1
             val matValue = matAndStage._2
             if (Debug) println(s"  materialized value is $matValue")
@@ -509,7 +509,7 @@ private final case class SavedIslandData(
             val stageGlobalOffset = islandTracking.getCurrentOffset
 
             wireInlets(islandTracking, mod, logic)
-            wireOutlets(islandTracking, mod, logic, stageGlobalOffset, outToSlot, stageAttributes)
+            wireOutlets(islandTracking, mod, logic, stageGlobalOffset, outToSlot)
 
             if (Debug) println(s"PUSH: $matValue => $matValueStack")
 
@@ -588,8 +588,7 @@ private final case class SavedIslandData(
       mod: StreamLayout.AtomicModule[Shape, Any],
       logic: Any,
       stageGlobalOffset: Int,
-      outToSlot: Array[Int],
-      stageAttributes: Attributes): Unit = {
+      outToSlot: Array[Int]): Unit = {
     val outlets = mod.shape.outlets
     if (outlets.nonEmpty) {
       if (Shape.hasOnePort(outlets)) {
@@ -597,14 +596,14 @@ private final case class SavedIslandData(
         val out = outlets.head
         val absoluteTargetSlot = stageGlobalOffset + outToSlot(out.id)
         if (Debug) println(s"  wiring offset: ${outToSlot.mkString("[", ",", "]")}")
-        islandTracking.wireOut(out, absoluteTargetSlot, logic, stageAttributes)
+        islandTracking.wireOut(out, absoluteTargetSlot, logic)
       } else {
         val outs = outlets.iterator
         while (outs.hasNext) {
           val out = outs.next()
           val absoluteTargetSlot = stageGlobalOffset + outToSlot(out.id)
           if (Debug) println(s"  wiring offset: ${outToSlot.mkString("[", ",", "]")}")
-          islandTracking.wireOut(out, absoluteTargetSlot, logic, stageAttributes)
+          islandTracking.wireOut(out, absoluteTargetSlot, logic)
         }
       }
     }
@@ -620,7 +619,9 @@ private final case class SavedIslandData(
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>
-        props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+        props
+          .withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+          .withMailbox(Mailbox)
       case _ => props
     }
 
@@ -665,7 +666,7 @@ private final case class SavedIslandData(
   def createPublisher(out: OutPort, logic: M): Publisher[Any]
 
   @InternalStableApi
-  def takePublisher(slot: Int, publisher: Publisher[Any], publisherAttributes: Attributes): Unit
+  def takePublisher(slot: Int, publisher: Publisher[Any], attributes: Attributes): Unit
 
   def onIslandReady(): Unit
 
@@ -773,9 +774,9 @@ private final case class SavedIslandData(
     boundary.publisher
   }
 
-  override def takePublisher(slot: Int, publisher: Publisher[Any], publisherAttributes: Attributes): Unit = {
+  override def takePublisher(slot: Int, publisher: Publisher[Any], attributes: Attributes): Unit = {
     val connection = conn(slot)
-    val bufferSize = publisherAttributes.mandatoryAttribute[InputBuffer].max
+    val bufferSize = connection.inOwner.attributes.mandatoryAttribute[InputBuffer].max
     val boundary =
       new BatchingActorInputBoundary(bufferSize, shell, publisher, "publisher.in")
     logics.add(boundary)
@@ -815,6 +816,7 @@ private final case class SavedIslandData(
         val props = ActorGraphInterpreter
           .props(shell)
           .withDispatcher(effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+          .withMailbox(PhasedFusingActorMaterializer.Mailbox)
 
         val actorName = fullIslandName match {
           case OptionVal.Some(n) => n
@@ -909,7 +911,7 @@ private final case class SavedIslandData(
     throw new UnsupportedOperationException("A Sink cannot create a Publisher")
   }
 
-  override def takePublisher(slot: Int, publisher: Publisher[Any], publisherAttributes: Attributes): Unit = {
+  override def takePublisher(slot: Int, publisher: Publisher[Any], attributes: Attributes): Unit = {
     subscriberOrVirtualPublisher match {
       case v: VirtualPublisher[_]        => v.registerPublisher(publisher)
       case s: Subscriber[Any] @unchecked => publisher.subscribe(s)
@@ -942,7 +944,7 @@ private final case class SavedIslandData(
   override def assignPort(out: OutPort, slot: Int, logic: Processor[Any, Any]): Unit = ()
 
   override def createPublisher(out: OutPort, logic: Processor[Any, Any]): Publisher[Any] = logic
-  override def takePublisher(slot: Int, publisher: Publisher[Any], publisherAttributes: Attributes): Unit =
+  override def takePublisher(slot: Int, publisher: Publisher[Any], attributes: Attributes): Unit =
     publisher.subscribe(processor)
 
   override def onIslandReady(): Unit = ()
@@ -970,7 +972,10 @@ private final case class SavedIslandData(
     val maxInputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props =
-      TLSActor.props(maxInputBuffer, tls.createSSLEngine, tls.verifySession, tls.closing).withDispatcher(dispatcher)
+      TLSActor
+        .props(maxInputBuffer, tls.createSSLEngine, tls.verifySession, tls.closing)
+        .withDispatcher(dispatcher)
+        .withMailbox(PhasedFusingActorMaterializer.Mailbox)
     tlsActor = materializer.actorOf(props, "TLS-for-" + islandName)
     def factory(id: Int) = new ActorPublisher[Any](tlsActor) {
       override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
@@ -985,7 +990,7 @@ private final case class SavedIslandData(
   def createPublisher(out: OutPort, logic: NotUsed): Publisher[Any] =
     publishers(out.id)
 
-  def takePublisher(slot: Int, publisher: Publisher[Any], publisherAttributes: Attributes): Unit =
+  override def takePublisher(slot: Int, publisher: Publisher[Any], attributes: Attributes): Unit =
     publisher.subscribe(FanIn.SubInput[Any](tlsActor, 1 - slot))
 
   def onIslandReady(): Unit = ()

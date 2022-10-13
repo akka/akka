@@ -31,7 +31,7 @@ class FlowDetacherSpec extends StreamSpec {
       Source
         .single(42)
         .detach
-        .runWith(TestSink.probe)
+        .runWith(TestSink())
         .ensureSubscription()
         .expectNoMessage(500.millis)
         .requestNext() should ===(42)

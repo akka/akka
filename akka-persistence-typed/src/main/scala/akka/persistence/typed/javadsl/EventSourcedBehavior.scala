@@ -199,11 +199,13 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       else tags.asScala.toSet
     }
 
+    val commandHandlerInstance = commandHandler()
+    val eventHandlerInstance = eventHandler()
     val behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
       emptyState,
-      (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
-      eventHandler()(_, _),
+      (state, cmd) => commandHandlerInstance(state, cmd).asInstanceOf[EffectImpl[Event, State]],
+      eventHandlerInstance(_, _),
       getClass)
       .snapshotWhen(snapshotWhen)
       .withRetention(retentionCriteria.asScala)
@@ -219,10 +221,18 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       if (handler.isEmpty) behavior
       else behavior.receiveSignal(handler.handler)
 
-    if (onPersistFailure.isPresent)
-      behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
-    else
-      behaviorWithSignalHandler
+    val withSignalHandler =
+      if (onPersistFailure.isPresent)
+        behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
+      else
+        behaviorWithSignalHandler
+
+    if (stashCapacity.isPresent) {
+      withSignalHandler.withStashCapacity(stashCapacity.get)
+    } else {
+      withSignalHandler
+    }
+
   }
 
   /**
@@ -231,6 +241,12 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
   final def lastSequenceNumber(ctx: ActorContext[_]): Long = {
     scaladsl.EventSourcedBehavior.lastSequenceNumber(ctx.asScala)
   }
+
+  /**
+   * Override to define a custom stash capacity per entity.
+   * If not defined, the default `akka.persistence.typed.stash-capacity` will be used.
+   */
+  def stashCapacity: Optional[java.lang.Integer] = Optional.empty()
 
 }
 

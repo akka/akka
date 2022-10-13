@@ -51,7 +51,7 @@ query types for the most common query scenarios, that most journals are likely t
 
 ## Read Journals
 
-In order to issue queries one has to first obtain an instance of a `ReadJournal`.
+In order to issue queries one has to first obtain an instance of a @apidoc[query.*.ReadJournal].
 Read journals are implemented as [Community plugins](https://akka.io/community/#plugins-to-akka-persistence-query), each targeting a specific datastore (for example Cassandra or JDBC
 databases). For example, given a library that provides a `akka.persistence.query.my-read-journal` obtaining the related
 journal is as simple as:
@@ -63,7 +63,7 @@ Java
 :  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #basic-usage }
 
 Journal implementers are encouraged to put this identifier in a variable known to the user, such that one can access it via
-@scala[`readJournalFor[NoopJournal](NoopJournal.identifier)`]@java[`getJournalFor(NoopJournal.class, NoopJournal.identifier)`], however this is not enforced.
+@scala[@scaladoc[readJournalFor[NoopJournal](NoopJournal.identifier)](akka.persistence.query.PersistenceQuery#readJournalFor[T%3C:akka.persistence.query.scaladsl.ReadJournal](readJournalPluginId:String):T)]@java[@javadoc[getJournalFor(NoopJournal.class, NoopJournal.identifier)](akka.persistence.query.PersistenceQuery#getReadJournalFor(java.lang.Class,java.lang.String))], however this is not enforced.
 
 Read journal implementations are available as [Community plugins](https://akka.io/community/#plugins-to-akka-persistence-query).
 
@@ -76,7 +76,7 @@ significantly inefficient.
 
 @@@ note
 
-Refer to the documentation of the `ReadJournal` plugin you are using for a specific list of supported query types.
+Refer to the documentation of the @apidoc[query.*.ReadJournal] plugin you are using for a specific list of supported query types.
 For example, Journal plugins should document their stream completion strategies.
 
 @@@
@@ -85,7 +85,7 @@ The predefined queries are:
 
 #### PersistenceIdsQuery and CurrentPersistenceIdsQuery
 
-`persistenceIds` which is designed to allow users to subscribe to a stream of all persistent ids in the system.
+@apidoc[persistenceIds](query.*.PersistenceIdsQuery) which is designed to allow users to subscribe to a stream of all persistent ids in the system.
 By default this stream should be assumed to be a "live" stream, which means that the journal should keep emitting new
 persistence ids as they come into the system:
 
@@ -95,7 +95,7 @@ Scala
 Java
 :  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-live }
 
-If your usage does not require a live stream, you can use the `currentPersistenceIds` query:
+If your usage does not require a live stream, you can use the @apidoc[currentPersistenceIds](query.*.CurrentPersistenceIdsQuery) query:
 
 Scala
 :  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #all-persistence-ids-snap }
@@ -105,7 +105,7 @@ Java
 
 #### EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
 
-`eventsByPersistenceId` is a query equivalent to replaying an @ref:[event sourced actor](typed/persistence.md#event-sourcing-concepts),
+@apidoc[eventsByPersistenceId](query.*.EventsByPersistenceIdQuery) is a query equivalent to replaying an @ref:[event sourced actor](typed/persistence.md#event-sourcing-concepts),
 however, since it is a stream it is possible to keep it alive and watch for additional incoming events persisted by the
 persistent actor identified by the given `persistenceId`.
 
@@ -118,20 +118,20 @@ Java
 Most journals will have to revert to polling in order to achieve this, 
 which can typically be configured with a `refresh-interval` configuration property.
 
-If your usage does not require a live stream, you can use the `currentEventsByPersistenceId` query.
+If your usage does not require a live stream, you can use the @apidoc[currentEventsByPersistenceId](query.*.CurrentEventsByPersistenceIdQuery) query.
 
 #### EventsByTag and CurrentEventsByTag
 
-`eventsByTag` allows querying events regardless of which `persistenceId` they are associated with. This query is hard to
+@apidoc[eventsByTag](query.*.EventsByTagQuery) allows querying events regardless of which `persistenceId` they are associated with. This query is hard to
 implement in some journals or may need some additional preparation of the used data store to be executed efficiently.
 The goal of this query is to allow querying for all events which are "tagged" with a specific tag.
 That includes the use case to query all domain events of an Aggregate Root type.
 Please refer to your read journal plugin's documentation to find out if and how it is supported.
 
 Some journals may support @ref:[tagging of events](typed/persistence.md#tagging) or
-@ref:[Event Adapters](persistence.md#event-adapters) that wraps the events in a `akka.persistence.journal.Tagged`
+@ref:[Event Adapters](persistence.md#event-adapters) that wraps the events in a @apidoc[akka.persistence.journal.Tagged](akka.persistence.journal.Tagged)
 with the given `tags`. The journal may support other ways of doing tagging - again,
-how exactly this is implemented depends on the used journal. Here is an example of such a tagging with an `EventSourcedBehavior`:
+how exactly this is implemented depends on the used journal. Here is an example of such a tagging with an @apidoc[typed.*.EventSourcedBehavior]:
 
 Scala
 :  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #tagging-query }
@@ -141,7 +141,7 @@ Java
 
 @@@ note
 
-A very important thing to keep in mind when using queries spanning multiple persistenceIds, such as `EventsByTag`
+A very important thing to keep in mind when using queries spanning multiple persistenceIds, such as @apidoc[EventsByTag](query.*.EventsByTagQuery)
 is that the order of events at which the events appear in the stream rarely is guaranteed (or stable between materializations).
 
 Journals *may* choose to opt for strict ordering of the events, and should then document explicitly what kind of ordering
@@ -167,7 +167,7 @@ query has an optionally supported offset parameter (of type `Long`) which the jo
 For example a journal may be able to use a WHERE clause to begin the read starting from a specific row, or in a datastore
 that is able to order events by insertion time it could treat the Long as a timestamp and select only older events.
 
-If your usage does not require a live stream, you can use the `currentEventsByTag` query.
+If your usage does not require a live stream, you can use the @apidoc[currentEventsByTag](query.*.CurrentEventsByTagQuery) query.
 
 #### EventsBySlice and CurrentEventsBySlice
 
@@ -183,7 +183,7 @@ which are a feature of @ref:[Streams](stream/index.md) that allows to expose add
 
 More advanced query journals may use this technique to expose information about the character of the materialized
 stream, for example if it's finite or infinite, strictly ordered or not ordered at all. The materialized value type
-is defined as the second type parameter of the returned `Source`, which allows journals to provide users with their
+is defined as the second type parameter of the returned @apidoc[stream.*.Source], which allows journals to provide users with their
 specialised query object, as demonstrated in the sample below:
 
 Scala
@@ -273,7 +273,7 @@ used the next time this projection is started. This pattern is implemented in th
 <a id="read-journal-plugin-api"></a>
 ## Query plugins
 
-Query plugins are various (mostly community driven) `ReadJournal` implementations for all kinds
+Query plugins are various (mostly community driven) @apidoc[query.*.ReadJournal] implementations for all kinds
 of available datastores. The complete list of available plugins is maintained on the Akka Persistence Query [Community Plugins](https://akka.io/community/#plugins-to-akka-persistence-query) page.
 
 This section aims to provide tips and guide plugin developers through implementing a custom query plugin.
@@ -288,11 +288,11 @@ their exposed semantics as well as handled query scenarios.
 
 ### ReadJournal plugin API
 
-A read journal plugin must implement `akka.persistence.query.ReadJournalProvider` which
-creates instances of `akka.persistence.query.scaladsl.ReadJournal` and
-`akka.persistence.query.javadsl.ReadJournal`. The plugin must implement both the `scaladsl`
-and the `javadsl` @scala[traits]@java[interfaces] because the `akka.stream.scaladsl.Source` and 
-`akka.stream.javadsl.Source` are different types and even though those types can be converted
+A read journal plugin must implement @apidoc[akka.persistence.query.ReadJournalProvider](akka.persistence.query.ReadJournalProvider) which
+creates instances of @scaladoc[akka.persistence.query.scaladsl.ReadJournal](akka.persistence.query.scaladsl.ReadJournal) and
+@javadoc[akka.persistence.query.javadsl.ReadJournal](akka.persistence.query.javadsl.ReadJournal). The plugin must implement both the `scaladsl`
+and the `javadsl` @scala[traits]@java[interfaces] because the @scaladoc[akka.stream.scaladsl.Source](akka.stream.scaladsl.Source) and 
+@javadoc[akka.stream.javadsl.Source](akka.stream.javadsl.Source) are different types and even though those types can be converted
 to each other it is most convenient for the end user to get access to the Java or Scala `Source` directly.
 As illustrated below one of the implementations can delegate to the other. 
 
@@ -304,7 +304,7 @@ Scala
 Java
 :  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #my-read-journal }
 
-And the `eventsByTag` could be backed by a GraphStage for example:
+And the @apidoc[eventsByTag](query.*.EventsByTagQuery) could be backed by a GraphStage for example:
 
 Scala
 :  @@snip [MyEventsByTagSource.scala](/akka-docs/src/test/scala/docs/persistence/query/MyEventsByTagSource.scala) { #events-by-tag-publisher }
@@ -312,9 +312,9 @@ Scala
 Java
 :  @@snip [MyEventsByTagSource.java](/akka-docs/src/test/java/jdocs/persistence/query/MyEventsByTagSource.java) { #events-by-tag-publisher }
 
-The `ReadJournalProvider` class must have a constructor with one of these signatures:
+The @apidoc[query.ReadJournalProvider] class must have a constructor with one of these signatures:
 
- * constructor with a `ExtendedActorSystem` parameter, a `com.typesafe.config.Config` parameter, and a `String` parameter for the config path
+ * constructor with a @apidoc[actor.ExtendedActorSystem] parameter, a @javadoc[com.typesafe.config.Config](com.typesafe.config.Config) parameter, and a `String` parameter for the config path
  * constructor with a `ExtendedActorSystem` parameter, and a `com.typesafe.config.Config` parameter
  * constructor with one `ExtendedActorSystem` parameter
  * constructor without parameters

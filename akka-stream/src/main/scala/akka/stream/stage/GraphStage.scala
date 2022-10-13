@@ -4,6 +4,7 @@
 
 package akka.stream.stage
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
@@ -1214,13 +1215,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
        * Add this promise to the owning logic, so it can be completed afterPostStop if it was never handled otherwise.
        * Returns whether the logic is still running.
        */
-      @tailrec
       def addToWaiting(): Boolean = {
         val previous = asyncCallbacksInProgress.get()
         if (previous != null) { // not stopped
-          val updated = promise :: previous
-          if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) addToWaiting()
-          else true
+          previous.add(promise)
+
+          // Need to read that again to make sure the stage hasn't been stopped in the meantime and the cleanup
+          // process is already running.
+          // If the cleanup process is already running (ref eq null) the promise needs to be dropped
+          asyncCallbacksInProgress.get() ne null
         } else // logic was already stopped
           false
       }
@@ -1269,7 +1272,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private var callbacksWaitingForInterpreter: List[ConcurrentAsyncCallback[_]] = Nil
   // is used for two purposes: keep track of running callbacks and signal that the
   // stage has stopped to fail incoming async callback invocations by being set to null
-  private val asyncCallbacksInProgress = new AtomicReference[List[Promise[Done]]](Nil)
+  private val asyncCallbacksInProgress: AtomicReference[java.util.Set[Promise[Done]]] =
+    new AtomicReference(ConcurrentHashMap.newKeySet[Promise[Done]]())
 
   private var _stageActor: StageActor = _
   final def stageActor: StageActor = _stageActor match {
@@ -1354,14 +1358,20 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   // Internal hooks to avoid reliance on user calling super in postStop
   /** INTERNAL API */
+  @nowarn("msg=JavaConverters in package collection is deprecated")
   protected[stream] def afterPostStop(): Unit = {
     if (_stageActor ne null) {
       _stageActor.stop()
       _stageActor = null
     }
+
+    import scala.collection.JavaConverters._
     // make sure any invokeWithFeedback after this fails fast
     // and fail current outstanding invokeWithFeedback promises
-    val inProgress = asyncCallbacksInProgress.getAndSet(null)
+    val inProgress =
+      asyncCallbacksInProgress
+        .getAndSet(null) // remove reference to signify that we are in the process of shutting down
+        .asScala
     if (inProgress.nonEmpty) {
       val exception = streamDetachedException
       inProgress.foreach(_.tryFailure(exception))
@@ -1369,29 +1379,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     cleanUpSubstreams(OptionVal.None)
   }
 
-  private[this] var asyncCleanupCounter = 0L
-
   /** Called from interpreter thread by GraphInterpreter.runAsyncInput */
-  private[stream] def onFeedbackDispatched(): Unit = {
-    asyncCleanupCounter += 1
-
-    // 256 seemed to be a sweet spot in SendQueueBenchmark.queue benchmarks
-    // It means that at most 255 completed promises are retained per logic that
-    // uses invokeWithFeedback callbacks.
-    //
-    // TODO: add periodical cleanup to get rid of those 255 promises as well
-    if (asyncCleanupCounter % 256 == 0) {
-      @tailrec def cleanup(): Unit = {
-        val previous = asyncCallbacksInProgress.get()
-        if (previous != null) {
-          val updated = previous.filterNot(_.isCompleted)
-          if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) cleanup()
-        }
-      }
-
-      cleanup()
+  private[stream] def onFeedbackDispatched(p: Promise[Done]): Unit =
+    asyncCallbacksInProgress.get() match {
+      case null => // already finished, nothing to do here
+      case x    => x.remove(p)
     }
-  }
 
   private def streamDetachedException =
     new StreamDetachedException(s"Stage with GraphStageLogic ${this} stopped before async invocation was processed")

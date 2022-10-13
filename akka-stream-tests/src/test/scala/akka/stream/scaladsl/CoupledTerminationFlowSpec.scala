@@ -126,12 +126,12 @@ class CoupledTerminationFlowSpec extends StreamSpec("""
     }
 
     "support usage with Graphs" in {
-      val source: Graph[SourceShape[Int], TestPublisher.Probe[Int]] = TestSource.probe[Int]
+      val source: Graph[SourceShape[Int], TestPublisher.Probe[Int]] = TestSource[Int]()
       val sink: Graph[SinkShape[Any], Future[Done]] = Sink.ignore
 
       val flow = Flow.fromSinkAndSourceCoupledMat(sink, source)(Keep.right)
 
-      val (source1, source2) = TestSource.probe[Int].viaMat(flow)(Keep.both).toMat(Sink.ignore)(Keep.left).run()
+      val (source1, source2) = TestSource[Int]().viaMat(flow)(Keep.both).toMat(Sink.ignore)(Keep.left).run()
 
       source1.sendComplete()
       source2.expectCancellation()

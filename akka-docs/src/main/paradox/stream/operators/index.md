@@ -56,6 +56,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |--|--|--|
 |Sink|<a name="aspublisher"></a>@ref[asPublisher](Sink/asPublisher.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.|
 |Sink|<a name="cancelled"></a>@ref[cancelled](Sink/cancelled.md)|Immediately cancel the stream|
+|Sink|<a name="collect"></a>@ref[collect](Sink/collect.md)|Collect all input elements using a Java @javadoc[Collector](java.util.stream.Collector).|
 |Sink|<a name="collection"></a>@ref[collection](Sink/collection.md)|@scala[Collect all values emitted from the stream into a collection.]@java[Operator only available in the Scala API. The closest operator in the Java API is @ref[`Sink.seq`](Sink/seq.md)].|
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
 |Sink|<a name="completionstagesink"></a>@ref[completionStageSink](Sink/completionStageSink.md)|Streams the elements to the given future sink once it successfully completes. |
@@ -168,12 +169,14 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="logwithmarker"></a>@ref[logWithMarker](Source-or-Flow/logWithMarker.md)|Log elements flowing through the stream as well as completion and erroring.|
 |Source/Flow|<a name="map"></a>@ref[map](Source-or-Flow/map.md)|Transform each element in the stream by calling a mapping function with it and passing the returned value downstream.|
 |Source/Flow|<a name="mapconcat"></a>@ref[mapConcat](Source-or-Flow/mapConcat.md)|Transform each element into zero or more elements that are individually passed downstream.|
+|Source/Flow|<a name="mapwithresource"></a>@ref[mapWithResource](Source-or-Flow/mapWithResource.md)|Map elements with the help of a resource that can be opened, transform each element (in a blocking way) and closed.|
 |Source/Flow|<a name="prematerialize"></a>@ref[preMaterialize](Source-or-Flow/preMaterialize.md)|Materializes this Graph, immediately returning (1) its materialized value, and (2) a new pre-materialized Graph.|
 |Source/Flow|<a name="reduce"></a>@ref[reduce](Source-or-Flow/reduce.md)|Start with first element and then apply the current and next value to the given function, when upstream complete the current value is emitted downstream.|
 |Source/Flow|<a name="scan"></a>@ref[scan](Source-or-Flow/scan.md)|Emit its current value, which starts at `zero`, and then apply the current and next value to the given function, emitting the next current value.|
 |Source/Flow|<a name="scanasync"></a>@ref[scanAsync](Source-or-Flow/scanAsync.md)|Just like @ref[`scan`](Source-or-Flow/./scan.md) but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.|
 |Source/Flow|<a name="setup"></a>@ref[setup](Source-or-Flow/setup.md)|Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`|
 |Source/Flow|<a name="sliding"></a>@ref[sliding](Source-or-Flow/sliding.md)|Provide a sliding window over the incoming stream and pass the windows as groups of elements downstream.|
+|Source/Flow|<a name="statefulmap"></a>@ref[statefulMap](Source-or-Flow/statefulMap.md)|Transform each stream element with the help of a state.|
 |Source/Flow|<a name="statefulmapconcat"></a>@ref[statefulMapConcat](Source-or-Flow/statefulMapConcat.md)|Transform each element into zero or more elements that are individually passed downstream.|
 |Source/Flow|<a name="take"></a>@ref[take](Source-or-Flow/take.md)|Pass `n` incoming elements downstream and then complete|
 |Source/Flow|<a name="takewhile"></a>@ref[takeWhile](Source-or-Flow/takeWhile.md)|Pass elements downstream as long as a predicate function returns true and then complete. |
@@ -266,9 +269,12 @@ the inputs in different ways.
 |--|--|--|
 | |<a name="mergesequence"></a>@ref[MergeSequence](MergeSequence.md)|Merge a linear sequence partitioned across multiple sources.|
 |Source/Flow|<a name="concat"></a>@ref[concat](Source-or-Flow/concat.md)|After completion of the original upstream the elements of the given source will be emitted.|
+|Source/Flow|<a name="concatalllazy"></a>@ref[concatAllLazy](Source-or-Flow/concatAllLazy.md)|After completion of the original upstream the elements of the given sources will be emitted sequentially.|
 |Source/Flow|<a name="concatlazy"></a>@ref[concatLazy](Source-or-Flow/concatLazy.md)|After completion of the original upstream the elements of the given source will be emitted.|
 |Source/Flow|<a name="interleave"></a>@ref[interleave](Source-or-Flow/interleave.md)|Emits a specifiable number of elements from the original source, then from the provided source and repeats.|
+|Source/Flow|<a name="interleaveall"></a>@ref[interleaveAll](Source-or-Flow/interleaveAll.md)|Emits a specifiable number of elements from the original source, then from the provided sources and repeats.|
 |Source/Flow|<a name="merge"></a>@ref[merge](Source-or-Flow/merge.md)|Merge multiple sources.|
+|Source/Flow|<a name="mergeall"></a>@ref[mergeAll](Source-or-Flow/mergeAll.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergelatest"></a>@ref[mergeLatest](Source-or-Flow/mergeLatest.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergepreferred"></a>@ref[mergePreferred](Source-or-Flow/mergePreferred.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergeprioritized"></a>@ref[mergePrioritized](Source-or-Flow/mergePrioritized.md)|Merge multiple sources.|
@@ -399,6 +405,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [buffer](Source-or-Flow/buffer.md)
 * [cancelled](Sink/cancelled.md)
 * [collect](Source-or-Flow/collect.md)
+* [collect](Sink/collect.md)
 * [collection](Sink/collection.md)
 * [collectType](Source-or-Flow/collectType.md)
 * [combine](Source/combine.md)
@@ -409,6 +416,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [completionStageSource](Source/completionStageSource.md)
 * [completionTimeout](Source-or-Flow/completionTimeout.md)
 * [concat](Source-or-Flow/concat.md)
+* [concatAllLazy](Source-or-Flow/concatAllLazy.md)
 * [concatLazy](Source-or-Flow/concatLazy.md)
 * [conflate](Source-or-Flow/conflate.md)
 * [conflateWithSeed](Source-or-Flow/conflateWithSeed.md)
@@ -474,6 +482,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [initialDelay](Source-or-Flow/initialDelay.md)
 * [initialTimeout](Source-or-Flow/initialTimeout.md)
 * [interleave](Source-or-Flow/interleave.md)
+* [interleaveAll](Source-or-Flow/interleaveAll.md)
 * [intersperse](Source-or-Flow/intersperse.md)
 * [javaCollector](StreamConverters/javaCollector.md)
 * [javaCollectorParallelUnordered](StreamConverters/javaCollectorParallelUnordered.md)
@@ -505,8 +514,10 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [mapAsyncUnordered](Source-or-Flow/mapAsyncUnordered.md)
 * [mapConcat](Source-or-Flow/mapConcat.md)
 * [mapError](Source-or-Flow/mapError.md)
+* [mapWithResource](Source-or-Flow/mapWithResource.md)
 * [maybe](Source/maybe.md)
 * [merge](Source-or-Flow/merge.md)
+* [mergeAll](Source-or-Flow/mergeAll.md)
 * [mergeLatest](Source-or-Flow/mergeLatest.md)
 * [mergePreferred](Source-or-Flow/mergePreferred.md)
 * [mergePrioritized](Source-or-Flow/mergePrioritized.md)
@@ -546,6 +557,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [source](PubSub/source.md)
 * [splitAfter](Source-or-Flow/splitAfter.md)
 * [splitWhen](Source-or-Flow/splitWhen.md)
+* [statefulMap](Source-or-Flow/statefulMap.md)
 * [statefulMapConcat](Source-or-Flow/statefulMapConcat.md)
 * [take](Source-or-Flow/take.md)
 * [takeLast](Sink/takeLast.md)

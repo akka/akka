@@ -21,7 +21,7 @@ Both streams will be materialized together.
    The `concat` operator is for backwards compatibility reasons "detached" and will eagerly 
    demand an element from both upstreams when the stream is materialized and will then have a 
    one element buffer for each of the upstreams, this is most often not what you want, instead
-   use @ref(concatLazy)[concatLazy.md]
+   use @ref:[`concatLazy`](concatLazy.md)
 
 @@@
 

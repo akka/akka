@@ -53,6 +53,7 @@ object ClusterShardingSettings {
       stateStoreMode = StateStoreMode.byName(classicSettings.stateStoreMode),
       rememberEntitiesStoreMode = RememberEntitiesStoreMode.byName(classicSettings.rememberEntitiesStore),
       new TuningParameters(classicSettings.tuningParameters),
+      classicSettings.coordinatorSingletonOverrideRole,
       new ClusterSingletonManagerSettings(
         classicSettings.coordinatorSingletonSettings.singletonName,
         classicSettings.coordinatorSingletonSettings.role,
@@ -98,6 +99,7 @@ object ClusterShardingSettings {
         coordinatorStateReadMajorityPlus = settings.tuningParameters.coordinatorStateReadMajorityPlus,
         leastShardAllocationAbsoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit,
         leastShardAllocationRelativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit),
+      coordinatorSingletonOverrideRole = settings.coordinatorSingletonOverrideRole,
       new ClassicClusterSingletonManagerSettings(
         settings.coordinatorSingletonSettings.singletonName,
         settings.coordinatorSingletonSettings.role,
@@ -821,8 +823,40 @@ final class ClusterShardingSettings(
     val stateStoreMode: ClusterShardingSettings.StateStoreMode,
     val rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
+    val coordinatorSingletonOverrideRole: Boolean,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings]) {
+
+  @deprecated("Use constructor with coordinatorSingletonOverrideRole", "2.6.20")
+  def this(
+      numberOfShards: Int,
+      role: Option[String],
+      dataCenter: Option[DataCenter],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings,
+      shardRegionQueryTimeout: FiniteDuration,
+      stateStoreMode: ClusterShardingSettings.StateStoreMode,
+      rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+      leaseSettings: Option[LeaseUsageSettings]) =
+    this(
+      numberOfShards,
+      role,
+      dataCenter,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      passivationStrategySettings,
+      shardRegionQueryTimeout,
+      stateStoreMode,
+      rememberEntitiesStoreMode,
+      tuningParameters,
+      true,
+      coordinatorSingletonSettings,
+      leaseSettings)
 
   @deprecated("Use constructor with passivationStrategySettings", "2.6.18")
   def this(
@@ -851,6 +885,7 @@ final class ClusterShardingSettings(
       stateStoreMode,
       rememberEntitiesStoreMode,
       tuningParameters,
+      true,
       coordinatorSingletonSettings,
       leaseSettings)
 
@@ -995,6 +1030,7 @@ final class ClusterShardingSettings(
       stateStoreMode: ClusterShardingSettings.StateStoreMode = stateStoreMode,
       rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode = rememberEntitiesStoreMode,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
+      coordinatorSingletonOverrideRole: Boolean = coordinatorSingletonOverrideRole,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       passivationStrategySettings: ClusterShardingSettings.PassivationStrategySettings = passivationStrategySettings,
       shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout,
@@ -1011,6 +1047,7 @@ final class ClusterShardingSettings(
       stateStoreMode,
       rememberEntitiesStoreMode,
       tuningParameters,
+      coordinatorSingletonOverrideRole,
       coordinatorSingletonSettings,
       leaseSettings)
 }

@@ -29,7 +29,7 @@ applicable.
 ## Receptionist
 
 When an actor needs to be discovered by another actor but you are unable to put a reference to it in an incoming message,
-you can use the `Receptionist`. It supports both local and cluster(see @ref:[cluster](#cluster-receptionist)). You register the specific actors that should be discoverable 
+you can use the @apidoc[receptionist.Receptionist]. It supports both local and cluster(see @ref:[cluster](#cluster-receptionist)). You register the specific actors that should be discoverable 
 from each node in the local `Receptionist` instance. The API of the receptionist is also based on actor messages. 
 This registry of actor references is then automatically distributed to all other nodes in the case of a cluster. 
 You can lookup such actors with the key that was used when they were registered. The reply to such a `Find` request is 
@@ -50,7 +50,7 @@ Java
 :  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #import }
 
 First we create a `PingService` actor and register it with the `Receptionist` against a
-`ServiceKey` that will later be used to lookup the reference:
+@apidoc[receptionist.ServiceKey] that will later be used to lookup the reference:
 
 Scala
 :  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExample.scala) { #ping-service }
@@ -67,7 +67,7 @@ Java
 :  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #pinger }
 
 Finally in the guardian actor we spawn the service as well as subscribing to any actors registering
-against the `ServiceKey`. Subscribing means that the guardian actor will be informed of any
+against the @apidoc[receptionist.ServiceKey]. Subscribing means that the guardian actor will be informed of any
 new registrations via a `Listing` message:
 
 Scala
@@ -90,7 +90,7 @@ Scala
 Java
 :  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #find }
 
-Also note how a `messageAdapter` is used to convert the `Receptionist.Listing` to a message type that
+Also note how a @apidoc[messageAdapter](akka.actor.typed.*.ActorContext) {scala="#messageAdapter[U](f:U=%3ET)(implicitevidence$1:scala.reflect.ClassTag[U]):akka.actor.typed.ActorRef[U]" java="#messageAdapter(java.lang.Class,akka.japi.function.Function)"} is used to convert the `Receptionist.Listing` to a message type that
 the `PingManager` understands.
 
 If a server no longer wish to be associated with a service key it can deregister using the command `Receptionist.Deregister`
@@ -115,7 +115,7 @@ will eventually reach the same set of actors per `ServiceKey`.
 
 `Subscription`s and `Find` queries to a clustered receptionist will keep track of cluster reachability and only list 
 registered actors that are reachable. The full set of actors, including unreachable ones, is available through 
-@scala[`Listing.allServiceInstances`]@java[`Listing.getAllServiceInstances`].
+@scala[@scaladoc[Listing.allServiceInstances](akka.actor.typed.receptionist.Receptionist.Listing#allServiceInstances[T](key:akka.actor.typed.receptionist.ServiceKey[T]):Set[akka.actor.typed.ActorRef[T]])]@java[@javadoc[Listing.getAllServiceInstances](akka.actor.typed.receptionist.Receptionist.Listing#getAllServiceInstances(akka.actor.typed.receptionist.ServiceKey))].
 
 One important difference from local only receptions are the serialization concerns, all messages sent to and back from 
 an actor on another node must be serializable, see @ref:[serialization](../serialization.md).

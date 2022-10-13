@@ -431,6 +431,9 @@ class ActorDocSpec extends AkkaSpec("""
     //#system-actorOf
     shutdown(system)
   }
+  private abstract class DummyActorProxy {
+    def actorRef: ActorRef
+  }
 
   "creating actor with IndirectActorProducer" in {
     class Echo(name: String) extends Actor {
@@ -444,7 +447,8 @@ class ActorDocSpec extends AkkaSpec("""
       }
     }
 
-    val a: { def actorRef: ActorRef } = new AnyRef {
+    import scala.language.existentials
+    val a: DummyActorProxy = new DummyActorProxy() {
       val applicationContext = this
 
       //#creating-indirectly
@@ -461,13 +465,12 @@ class ActorDocSpec extends AkkaSpec("""
         //#obtain-fresh-Actor-instance-from-DI-framework
       }
 
-      val actorRef = system.actorOf(Props(classOf[DependencyInjector], applicationContext, "hello"), "helloBean")
+      val actorRef: ActorRef =
+        system.actorOf(Props(classOf[DependencyInjector], applicationContext, "hello"), "helloBean")
       //#creating-indirectly
     }
-    val actorRef = {
-      import scala.language.reflectiveCalls
-      a.actorRef
-    }
+
+    val actorRef = a.actorRef
 
     val message = 42
     implicit val self = testActor

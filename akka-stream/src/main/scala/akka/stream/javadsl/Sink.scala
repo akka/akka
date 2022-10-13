@@ -8,7 +8,9 @@ import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
+import java.util.stream.Collector
 
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
@@ -16,15 +18,21 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-import org.reactivestreams.{ Publisher, Subscriber }
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
 
 import akka._
-import akka.actor.{ ActorRef, ClassicActorSystemProvider, Status }
+import akka.actor.ActorRef
+import akka.actor.ClassicActorSystemProvider
+import akka.actor.Status
 import akka.dispatch.ExecutionContexts
+import akka.japi.Util
 import akka.japi.function
 import akka.japi.function.Creator
-import akka.stream.{ javadsl, scaladsl, _ }
+import akka.stream._
 import akka.stream.impl.LinearTraversalBuilder
+import akka.stream.javadsl
+import akka.stream.scaladsl
 import akka.stream.scaladsl.SinkToCompletionStage
 
 /** Java API */
@@ -51,6 +59,16 @@ object Sink {
       zero: U,
       f: function.Function2[U, In, CompletionStage[U]]): javadsl.Sink[In, CompletionStage[U]] =
     new Sink(scaladsl.Sink.foldAsync[U, In](zero)(f(_, _).toScala).toCompletionStage())
+
+  /**
+   * Creates a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java ``Collector``
+   * transformation and reduction operations. This allows usage of Java streams transformations for reactive streams.
+   * The ``Collector`` will trigger demand downstream. Elements emitted through the stream will be accumulated into a mutable
+   * result container, optionally transformed into a final representation after all input elements have been processed.
+   * The ``Collector`` can also do reduction at the end. Reduction processing is performed sequentially.
+   */
+  def collect[U, In](collector: Collector[In, _ <: Any, U]): Sink[In, CompletionStage[U]] =
+    StreamConverters.javaCollector(() => collector)
 
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
@@ -348,10 +366,41 @@ object Sink {
       output1: Sink[U, _],
       output2: Sink[U, _],
       rest: java.util.List[Sink[U, _]],
-      strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]]): Sink[T, NotUsed] = {
+      @nowarn
+      @deprecatedName(Symbol("strategy"))
+      fanOutStrategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]])
+      : Sink[T, NotUsed] = {
     import akka.util.ccompat.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala).toSeq else immutable.Seq()
-    new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num => strategy.apply(num)))
+    new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num => fanOutStrategy.apply(num)))
+  }
+
+  /**
+   * Combine two sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink` with 2 outlets.
+   */
+  def combineMat[T, U, M1, M2, M](
+      first: Sink[U, M1],
+      second: Sink[U, M2],
+      fanOutStrategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]],
+      matF: function.Function2[M1, M2, M]): Sink[T, M] = {
+    new Sink(
+      scaladsl.Sink.combineMat(first.asScala, second.asScala)(size => fanOutStrategy(size))(combinerToScala(matF)))
+  }
+
+  /**
+   * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
+   * The fanoutGraph's outlets size must match the provides sinks'.
+   */
+  def combine[T, U, M](
+      sinks: java.util.List[_ <: Graph[SinkShape[U], M]],
+      fanOutStrategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]])
+      : Sink[T, java.util.List[M]] = {
+    val seq = if (sinks != null) Util.immutableSeq(sinks).collect {
+      case sink: Sink[U @unchecked, M @unchecked] => sink.asScala
+      case other                                  => other
+    } else immutable.Seq()
+    import akka.util.ccompat.JavaConverters._
+    new Sink(scaladsl.Sink.combine(seq)(size => fanOutStrategy(size)).mapMaterializedValue(_.asJava))
   }
 
   /**

@@ -25,13 +25,13 @@ How do I send a message to an actor without knowing which node it is running on?
 How do I send messages to all actors in the cluster that have registered interest
 in a named topic?
 
-This pattern provides a mediator actor, `akka.cluster.pubsub.DistributedPubSubMediator`,
+This pattern provides a mediator actor, @apidoc[akka.cluster.pubsub.DistributedPubSubMediator](akka.cluster.pubsub.DistributedPubSubMediator),
 that manages a registry of actor references and replicates the entries to peer
 actors among all cluster nodes or a group of nodes tagged with a specific role.
 
 The `DistributedPubSubMediator` actor is supposed to be started on all nodes,
 or all nodes with specified role, in the cluster. The mediator can be
-started with the `DistributedPubSub` extension or as an ordinary actor.
+started with the @apidoc[DistributedPubSub] extension or as an ordinary actor.
 
 The registry is eventually consistent, i.e. changes are not immediately visible at
 other nodes, but typically they will be fully replicated to all other nodes after
@@ -70,12 +70,12 @@ For efficiency the message is sent over the wire only once per node (that has a 
 and then delivered to all subscribers of the local topic representation.
 
 You register actors to the local mediator with `DistributedPubSubMediator.Subscribe`.
-Successful `Subscribe` and `Unsubscribe` is acknowledged with
-`DistributedPubSubMediator.SubscribeAck` and `DistributedPubSubMediator.UnsubscribeAck`
+Successful @apidoc[DistributedPubSubMediator.Subscribe] and @apidoc[DistributedPubSubMediator.Unsubscribe] is acknowledged with
+@apidoc[DistributedPubSubMediator.SubscribeAck] and @apidoc[DistributedPubSubMediator.UnsubscribeAck]
 replies. The acknowledgment means that the subscription is registered, but it can still
 take some time until it is replicated to other nodes.
 
-You publish messages by sending `DistributedPubSubMediator.Publish` message to the
+You publish messages by sending @apidoc[DistributedPubSubMediator.Publish] message to the
 local mediator.
 
 Actors are automatically removed from the registry when they are terminated, or you
@@ -118,14 +118,14 @@ Java
 
 Actors may also be subscribed to a named topic with a `group` id.
 If subscribing with a group id, each message published to a topic with the
-`sendOneMessageToEachGroup` flag set to `true` is delivered via the supplied `RoutingLogic`
+`sendOneMessageToEachGroup` flag set to `true` is delivered via the supplied @apidoc[akka.routing.RoutingLogic]
 (default random) to one actor within each subscribing group.
 
 If all the subscribed actors have the same group id, then this works just like
-`Send` and each message is only delivered to one subscriber.
+@apidoc[DistributedPubSubMediator.Send] and each message is only delivered to one subscriber.
 
 If all the subscribed actors have different group names, then this works like
-normal `Publish` and each message is broadcasted to all subscribers.
+normal @apidoc[DistributedPubSubMediator.Publish] and each message is broadcasted to all subscribers.
 
 @@@ note
 
@@ -148,23 +148,23 @@ cluster aware router where the routees dynamically can register themselves.
 
 The message will be delivered to one recipient with a matching path, if any such
 exists in the registry. If several entries match the path because it has been registered
-on several nodes the message will be sent via the supplied `RoutingLogic` (default random)
+on several nodes the message will be sent via the supplied @apidoc[RoutingLogic](akka.routing.RoutingLogic) (default random)
 to one destination. The sender of the message can specify that local affinity is preferred,
 i.e. the message is sent to an actor in the same local actor system as the used mediator actor,
 if any such exists, otherwise route to any other matching entry.
 
-You register actors to the local mediator with `DistributedPubSubMediator.Put`.
-The `ActorRef` in `Put` must belong to the same local actor system as the mediator.
+You register actors to the local mediator with @apidoc[DistributedPubSubMediator.Put].
+The @apidoc[actor.ActorRef] in `Put` must belong to the same local actor system as the mediator.
 The path without address information is the key to which you send messages.
 On each node there can only be one actor for a given path, since the path is unique
 within one local actor system.
 
-You send messages by sending `DistributedPubSubMediator.Send` message to the
+You send messages by sending @apidoc[DistributedPubSubMediator.Send] message to the
 local mediator with the path (without address information) of the destination
 actors.
 
 Actors are automatically removed from the registry when they are terminated, or you
-can explicitly remove entries with `DistributedPubSubMediator.Remove`.
+can explicitly remove entries with @apidoc[DistributedPubSubMediator.Remove].
 
 An example of a destination actor:
 
@@ -200,7 +200,7 @@ Java
 :  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-message }
 
 It is also possible to broadcast messages to the actors that have been registered with
-`Put`. Send `DistributedPubSubMediator.SendToAll` message to the local mediator and the wrapped message
+@apidoc[DistributedPubSubMediator.Put]. Send @apidoc[DistributedPubSubMediator.SendToAll] message to the local mediator and the wrapped message
 will then be delivered to all recipients with a matching path. Actors with
 the same path, without address information, can be registered on different nodes.
 On each node there can only be one such actor, since the path is unique within one
@@ -213,7 +213,7 @@ if the message should be sent to a matching path on the self node or not.
 
 ## DistributedPubSub Extension
 
-In the example above the mediator is started and accessed with the `akka.cluster.pubsub.DistributedPubSub` extension.
+In the example above the mediator is started and accessed with the @apidoc[akka.cluster.pubsub.DistributedPubSub](akka.cluster.pubsub.DistributedPubSub) extension.
 That is convenient and perfectly fine in most cases, but it can be good to know that it is possible to
 start the mediator actor as an ordinary actor and you can have several different mediators at the same
 time to be able to divide a large number of actors/topics to different mediators. For example you might

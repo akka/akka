@@ -197,7 +197,7 @@ class SystemMessageDeliverySpec extends AbstractSystemMessageDeliverySpec(System
         .via(drop(dropSeqNumbers = Vector(3L, 4L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[TestSysMsg])
-        .runWith(TestSink.probe[TestSysMsg])
+        .runWith(TestSink[TestSysMsg]())
 
       sink.request(100)
       sink.expectNext(TestSysMsg("msg-1"))
@@ -231,7 +231,7 @@ class SystemMessageDeliverySpec extends AbstractSystemMessageDeliverySpec(System
         .via(drop(dropSeqNumbers = Vector(1L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[TestSysMsg])
-        .runWith(TestSink.probe[TestSysMsg])
+        .runWith(TestSink[TestSysMsg]())
 
       sink.request(100)
       replyProbe.expectMsg(Nack(0L, addressB)) // from receiving 2
@@ -260,7 +260,7 @@ class SystemMessageDeliverySpec extends AbstractSystemMessageDeliverySpec(System
         .via(drop(dropSeqNumbers = Vector(3L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[TestSysMsg])
-        .runWith(TestSink.probe[TestSysMsg])
+        .runWith(TestSink[TestSysMsg]())
 
       sink.request(100)
       sink.expectNext(TestSysMsg("msg-1"))
