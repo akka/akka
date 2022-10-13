@@ -5,9 +5,7 @@ project.description: How to deploy Akka Cluster to Kubernetes and Docker.
 
 ## Deploying to Kubernetes
 
-[Akka Cloud Platform](https://developer.lightbend.com/docs/akka-platform-guide/deployment/index.html) is the easiest way to deploy an Akka Cluster application to Amazon Elastic Kubernetes Service (EKS) or Google Kubernetes Engine (GKE).
-
-Alternatively, you can deploy to Kubernetes according to the guide and example project for [Deploying Akka Cluster to Kubernetes](https://doc.akka.io/docs/akka-management/current/kubernetes-deployment/index.html), but that requires more expertise of Kubernetes.
+You can deploy to Kubernetes according to the guide and example project for [Deploying Akka Cluster to Kubernetes](https://doc.akka.io/docs/akka-management/current/kubernetes-deployment/index.html).
 
 ### Cluster bootstrap
 
