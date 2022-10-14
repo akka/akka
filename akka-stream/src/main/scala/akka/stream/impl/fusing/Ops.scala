@@ -302,33 +302,28 @@ private[stream] object Collect {
 
       import Collect.NotApplied
 
-      var recovered: Option[T] = None
+      var recovered: OptionVal[T] = OptionVal.none
 
-      override def onPush(): Unit = {
-        push(out, grab(in))
-      }
+      override def onPush(): Unit = push(out, grab(in))
 
-      override def onPull(): Unit = {
-        recovered match {
-          case Some(elem) =>
-            push(out, elem)
-            completeStage()
-          case None =>
-            pull(in)
-        }
+      override def onPull(): Unit = recovered match {
+        case OptionVal.Some(elem) =>
+          push(out, elem)
+          completeStage()
+        case _ => pull(in)
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit =
         try pf.applyOrElse(ex, NotApplied) match {
           case NotApplied => failStage(ex)
-          case result: T @unchecked => {
+          case result: T @unchecked =>
+            ReactiveStreamsCompliance.requireNonNullElement(result)
             if (isAvailable(out)) {
               push(out, result)
               completeStage()
             } else {
-              recovered = Some(result)
+              recovered = OptionVal.Some(result)
             }
-          }
           case _ => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
         } catch {
           case NonFatal(ex) => failStage(ex)
