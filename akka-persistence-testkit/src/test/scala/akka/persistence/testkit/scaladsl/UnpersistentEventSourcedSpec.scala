@@ -157,11 +157,10 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
           Behaviors.same
         }
 
-      val (unpersistent, eventProbe, snapshotProbe) =
-        UnpersistentBehavior.fromEventSourced[Any, Any, Any](notEventSourced)
-      an[AssertionError] shouldBe thrownBy { BehaviorTestKit(unpersistent) }
-      an[AssertionError] shouldBe thrownBy { eventProbe.extract() }
-      an[AssertionError] shouldBe thrownBy { snapshotProbe.extract() }
+      val unpersistent = UnpersistentBehavior.fromEventSourced[Any, Any, Any](notEventSourced)
+      an[AssertionError] shouldBe thrownBy { unpersistent.behaviorTestKit }
+      an[AssertionError] shouldBe thrownBy { unpersistent.eventProbe.extract() }
+      an[AssertionError] shouldBe thrownBy { unpersistent.snapshotProbe.extract() }
     }
 
     "generate a Behavior from an EventSourcedBehavior and process RecoveryCompleted" in {
@@ -170,10 +169,12 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       val recoveryDone = TestInbox[Done]()
       val behavior = BehaviorUnderTest("test-1", recoveryDone.ref)
 
-      val (unpersistent, eventProbe, snapshotProbe) =
-        UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior)
+      // accessor API
+      val unpersistent = UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior)
+      val testkit = unpersistent.behaviorTestKit
+      val eventProbe = unpersistent.eventProbe
+      val snapshotProbe = unpersistent.snapshotProbe
 
-      val testkit = BehaviorTestKit(unpersistent)
       assert(!eventProbe.hasEffects, "should not be events")
       assert(!snapshotProbe.hasEffects, "should not be snapshots")
       recoveryDone.expectMessage(Done)
@@ -187,29 +188,28 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       import BehaviorUnderTest._
 
       val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
-
-      val (unpersistent, eventProbe, snapshotProbe) =
-        UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior)
-
-      val testkit = BehaviorTestKit(unpersistent)
-      testkit.clearLog()
       val replyTo = TestInbox[Done]()
 
-      testkit.run(PersistDomainEvent(replyTo.ref))
-      replyTo.expectMessage(Done)
-      eventProbe.expectPersisted(DomainEvent, Set("domain"))
-      snapshotProbe.drain() shouldBe empty
-      assert(!testkit.hasEffects(), "should have no effects")
-      testkit.clearLog()
+      // resource-style API
+      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior) { (testkit, eventProbe, snapshotProbe) =>
+        testkit.clearLog()
 
-      testkit.run(SnapshotNow)
-      assert(!replyTo.hasMessages, "should not be a reply")
+        testkit.run(PersistDomainEvent(replyTo.ref))
+        replyTo.expectMessage(Done)
+        eventProbe.expectPersisted(DomainEvent, Set("domain"))
+        snapshotProbe.drain() shouldBe empty
+        assert(!testkit.hasEffects(), "should have no effects")
+        testkit.clearLog()
 
-      val PersistenceEffect(_, seqNr, tags) = eventProbe.expectPersistedType[SnapshotMade.type]()
-      seqNr shouldBe 2
-      tags shouldBe empty
+        testkit.run(SnapshotNow)
+        assert(!replyTo.hasMessages, "should not be a reply")
 
-      snapshotProbe.expectPersisted(State(1, Map.empty, Int.MaxValue))
+        val PersistenceEffect(_, seqNr, tags) = eventProbe.expectPersistedType[SnapshotMade.type]()
+        seqNr shouldBe 2
+        tags shouldBe empty
+
+        snapshotProbe.expectPersisted(State(1, Map.empty, Int.MaxValue))
+      }
     }
 
     "allow a state and starting offset to be injected" in {
@@ -223,27 +223,25 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
         Seq(ObserverAdded(3, notify3.ref), SnapshotMade, DomainEvent, DomainEvent)
           .foldLeft(State(0, Map.empty, Int.MaxValue))(applyEvent _)
 
-      val (unpersistent, eventProbe, snapshotProbe) =
-        UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> 41L))
+      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> 41L)) { (testkit, eventProbe, snapshotProbe) =>
+        recoveryDone.expectMessage(Done)
+        val logs = testkit.logEntries()
+        logs.size shouldBe 1
+        logs.head.level shouldBe Level.DEBUG
+        logs.head.message shouldBe s"Recovered state for id [test-1] is [$initialState]"
+        eventProbe.drain() shouldBe empty
+        snapshotProbe.drain() shouldBe empty
+        assert(!notify3.hasMessages, "no messages should be sent to notify3")
 
-      val testkit = BehaviorTestKit(unpersistent)
-      recoveryDone.expectMessage(Done)
-      val logs = testkit.logEntries()
-      logs.size shouldBe 1
-      logs.head.level shouldBe Level.DEBUG
-      logs.head.message shouldBe s"Recovered state for id [test-1] is [$initialState]"
-      eventProbe.drain() shouldBe empty
-      snapshotProbe.drain() shouldBe empty
-      assert(!notify3.hasMessages, "no messages should be sent to notify3")
+        val replyTo = TestInbox[Done]()
+        testkit.run(PersistDomainEventAfter(2, replyTo.ref))
+        assert(!testkit.hasEffects(), "should be no testkit effects")
+        eventProbe.extract() shouldBe PersistenceEffect(DomainEvent, 42, Set("domain"))
+        snapshotProbe.expectPersisted(State(3, Map.empty, Int.MaxValue))
 
-      val replyTo = TestInbox[Done]()
-      testkit.run(PersistDomainEventAfter(2, replyTo.ref))
-      assert(!testkit.hasEffects(), "should be no testkit effects")
-      eventProbe.extract() shouldBe PersistenceEffect(DomainEvent, 42, Set("domain"))
-      snapshotProbe.expectPersisted(State(3, Map.empty, Int.MaxValue))
-
-      notify3.expectMessage(Done)
-      replyTo.expectMessage(Done)
+        notify3.expectMessage(Done)
+        replyTo.expectMessage(Done)
+      }
     }
 
     "stash and unstash properly" in {
@@ -251,26 +249,24 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
 
       val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
 
-      val (unpersistent, eventProbe, snapshotProbe) =
-        UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, None)
+      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, None) { (testkit, eventProbe, snapshotProbe) =>
+        val replyTo1 = TestInbox[Done]()
+        val pde = PersistDomainEvent(TestInbox[Done]().ref)
 
-      val replyTo1 = TestInbox[Done]()
-      val pde = PersistDomainEvent(TestInbox[Done]().ref)
-      val testkit = BehaviorTestKit(unpersistent)
+        // stashes
+        testkit.run(PersistDomainEventAfter(1, replyTo1.ref))
+        eventProbe.drain() shouldBe empty
+        snapshotProbe.drain() shouldBe empty
+        assert(!replyTo1.hasMessages, "have not persisted first domain event")
 
-      // stashes
-      testkit.run(PersistDomainEventAfter(1, replyTo1.ref))
-      eventProbe.drain() shouldBe empty
-      snapshotProbe.drain() shouldBe empty
-      assert(!replyTo1.hasMessages, "have not persisted first domain event")
+        // unstashes
+        testkit.run(pde)
+        replyTo1.expectMessage(Done)
 
-      // unstashes
-      testkit.run(pde)
-      replyTo1.expectMessage(Done)
-
-      // unstash, but nothing in the stash
-      testkit.run(pde)
-      assert(!replyTo1.hasMessages, "should not send again")
+        // unstash, but nothing in the stash
+        testkit.run(pde)
+        assert(!replyTo1.hasMessages, "should not send again")
+      }
     }
 
     "retrieve sequence number properly" in {
@@ -285,18 +281,16 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
           case x             => x
         }
 
-      val (unpersistent, eventProbe, snapshotProbe) =
-        UnpersistentBehavior.fromEventSourced[Command, Event, State](
-          behavior,
-          Some(initialState -> randomStartingOffset))
+      UnpersistentBehavior.fromEventSourced[Command, Event, State](
+        behavior,
+        Some(initialState -> randomStartingOffset)) { (testkit, eventProbe, snapshotProbe) =>
+          val replyTo = TestInbox[Long]()
 
-      val replyTo = TestInbox[Long]()
-      val testkit = BehaviorTestKit(unpersistent)
-
-      testkit.run(GetSequenceNumber(replyTo.ref))
-      eventProbe.drain() shouldBe empty
-      snapshotProbe.drain() shouldBe empty
-      replyTo.expectMessage(randomStartingOffset)
+          testkit.run(GetSequenceNumber(replyTo.ref))
+          eventProbe.drain() shouldBe empty
+          snapshotProbe.drain() shouldBe empty
+          replyTo.expectMessage(randomStartingOffset)
+      }
     }
   }
 }

@@ -23,11 +23,11 @@ import scala.reflect.ClassTag
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-/*
+/**
  * INTERNAL API
  */
 @InternalApi
-object Unpersistent {
+private[akka] object Unpersistent {
 
   def eventSourced[Command, Event, State](behavior: Behavior[Command], fromStateAndSequenceNr: Option[(State, Long)])(
       onEvent: (Event, Long, Set[String]) => Unit)(onSnapshot: (State, Long) => Unit): Behavior[Command] = {
@@ -287,7 +287,11 @@ object Unpersistent {
   }
 }
 
-class PersistenceProbeImpl[T] {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] class PersistenceProbeImpl[T] {
   type Element = (T, Long, Set[String])
 
   val queue = new ConcurrentLinkedQueue[Element]()
@@ -381,7 +385,7 @@ class PersistenceProbeImpl[T] {
       import javadsl.{ PersistenceEffect, PersistenceProbe }
       import java.util.{ List => JList, Set => JSet }
 
-      def getAllEffects(): JList[PersistenceEffect[T]] = {
+      def drain(): JList[PersistenceEffect[T]] = {
         @annotation.tailrec
         def iter(acc: List[PersistenceEffect[T]]): List[PersistenceEffect[T]] = {
           val elem = queue.poll()

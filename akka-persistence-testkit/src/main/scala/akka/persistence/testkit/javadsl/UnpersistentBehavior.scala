@@ -4,7 +4,9 @@
 
 package akka.persistence.testkit.javadsl
 
+import akka.actor.testkit.typed.javadsl.BehaviorTestKit
 import akka.actor.typed.Behavior
+import akka.annotation.DoNotInherit
 import akka.persistence.testkit.internal.{ PersistenceProbeImpl, Unpersistent }
 
 import java.util.{ List, Set }
@@ -67,7 +69,7 @@ object UnpersistentBehavior {
 
   private val noEventProbe: PersistenceProbe[Void] =
     new PersistenceProbe[Void] {
-      def getAllEffects(): List[PersistenceEffect[Void]] =
+      def drain(): List[PersistenceEffect[Void]] =
         // could return an empty list, but the intent is that any use of this probe should fail the test
         boom()
 
@@ -82,25 +84,32 @@ object UnpersistentBehavior {
     }
 }
 
-class UnpersistentBehavior[Command, Event, State] private (
+final class UnpersistentBehavior[Command, Event, State] private (
     behavior: Behavior[Command],
     eventProbe: PersistenceProbe[Event],
     stateProbe: PersistenceProbe[State]) {
   def getBehavior(): Behavior[Command] = behavior
+  def getBehaviorTestKit(): BehaviorTestKit[Command] = btk
 
-  /** NB: durable state behaviors will not publish events to this probe */
+  /** Note: durable state behaviors will not publish events to this probe */
   def getEventProbe(): PersistenceProbe[Event] = eventProbe
 
   def getStateProbe(): PersistenceProbe[State] = stateProbe
   def getSnapshotProbe(): PersistenceProbe[State] = stateProbe
+
+  private lazy val btk = BehaviorTestKit.create(behavior)
 }
 
-case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
+final case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
 
+/**
+  * Not for user extension
+  */
+@DoNotInherit
 trait PersistenceProbe[T] {
 
   /** Collect all persistence effects from the probe and empty the probe */
-  def getAllEffects(): List[PersistenceEffect[T]]
+  def drain(): List[PersistenceEffect[T]]
 
   /** Get and remove the oldest persistence effect from the probe */
   def extract(): PersistenceEffect[T]
