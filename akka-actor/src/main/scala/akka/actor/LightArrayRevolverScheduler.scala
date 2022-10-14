@@ -338,7 +338,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
 object LightArrayRevolverScheduler {
   private[this] val taskOffset = unsafe.objectFieldOffset(classOf[TaskHolder].getDeclaredField("task"))
 
-  private class TaskQueue extends AbstractNodeQueue[TaskHolder]
+  private final class TaskQueue extends AbstractNodeQueue[TaskHolder]
 
   /**
    * INTERNAL API
@@ -348,17 +348,20 @@ object LightArrayRevolverScheduler {
   /**
    * INTERNAL API
    */
-  protected[actor] class TaskHolder(@volatile var task: Runnable, var ticks: Int, executionContext: ExecutionContext)
+  protected[actor] final class TaskHolder(
+      @volatile var task: Runnable,
+      var ticks: Int,
+      executionContext: ExecutionContext)
       extends TimerTask {
 
     @tailrec
-    private final def extractTask(replaceWith: Runnable): Runnable =
+    private def extractTask(replaceWith: Runnable): Runnable =
       task match {
         case t @ (ExecutedTask | CancelledTask) => t
         case x                                  => if (unsafe.compareAndSwapObject(this, taskOffset, x, replaceWith)) x else extractTask(replaceWith)
       }
 
-    private[akka] final def executeTask(): Boolean = extractTask(ExecutedTask) match {
+    private[akka] def executeTask(): Boolean = extractTask(ExecutedTask) match {
       case ExecutedTask | CancelledTask => false
       case other =>
         try {
