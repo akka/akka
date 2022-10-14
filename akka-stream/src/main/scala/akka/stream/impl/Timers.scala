@@ -4,7 +4,7 @@
 
 package akka.stream.impl
 
-import java.util.concurrent.{ TimeUnit, TimeoutException }
+import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
@@ -59,12 +59,13 @@ import akka.stream.stage._
 
         final override protected def onTimer(key: Any): Unit =
           if (!initialHasPassed)
-            failStage(new TimeoutException(s"The first element has not yet passed through in $timeout."))
+            failStage(
+              new InitialTimeoutException(s"The first element has not yet passed through in ${timeout.toCoarsest}."))
 
         override def preStart(): Unit = scheduleOnce(GraphStageLogicTimer, timeout)
       }
 
-    override def toString = "InitialTimeoutTimer"
+    override def toString = "InitialTimeout"
 
   }
 
@@ -80,7 +81,7 @@ import akka.stream.stage._
         override def onPull(): Unit = pull(in)
 
         final override protected def onTimer(key: Any): Unit =
-          failStage(new TimeoutException(s"The stream has not been completed in $timeout."))
+          failStage(new CompletionTimeoutException(s"The stream has not been completed in ${timeout.toCoarsest}."))
 
         override def preStart(): Unit = scheduleOnce(GraphStageLogicTimer, timeout)
       }
@@ -107,7 +108,7 @@ import akka.stream.stage._
 
         final override protected def onTimer(key: Any): Unit =
           if (nextDeadline - System.nanoTime < 0)
-            failStage(new TimeoutException(s"No elements passed in the last $timeout."))
+            failStage(new StreamIdleTimeoutException(s"No elements passed in the last ${timeout.toCoarsest}."))
 
         override def preStart(): Unit =
           scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
@@ -140,7 +141,7 @@ import akka.stream.stage._
 
         final override protected def onTimer(key: Any): Unit =
           if (waitingDemand && (nextDeadline - System.nanoTime < 0))
-            failStage(new TimeoutException(s"No demand signalled in the last $timeout."))
+            failStage(new BackpressureTimeoutException(s"No demand signalled in the last ${timeout.toCoarsest}."))
 
         override def preStart(): Unit =
           scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
@@ -169,7 +170,7 @@ import akka.stream.stage._
 
       final override def onTimer(key: Any): Unit =
         if (nextDeadline - System.nanoTime < 0)
-          failStage(new TimeoutException(s"No elements passed in the last $timeout."))
+          failStage(new StreamIdleTimeoutException(s"No elements passed in the last ${timeout.toCoarsest}."))
 
       override def preStart(): Unit =
         scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
@@ -283,7 +284,7 @@ import akka.stream.stage._
         }
       }
 
-    override def toString = "IdleTimer"
+    override def toString = "IdleInject"
 
   }
 

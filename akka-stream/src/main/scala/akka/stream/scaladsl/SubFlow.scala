@@ -4,9 +4,9 @@
 
 package akka.stream.scaladsl
 
-import akka.annotation.DoNotInherit
-
 import scala.annotation.unchecked.uncheckedVariance
+
+import akka.annotation.DoNotInherit
 import akka.stream._
 
 /**
