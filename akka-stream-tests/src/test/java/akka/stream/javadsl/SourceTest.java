@@ -46,8 +46,7 @@ import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("serial")
 public class SourceTest extends StreamTest {
@@ -1165,10 +1164,9 @@ public class SourceTest extends StreamTest {
                     .runWith(Sink.head(), system)
                     .toCompletableFuture()
                     .get(3, TimeUnit.SECONDS));
-    assertEquals(
+    assertTrue(
         "The cause of ExecutionException should be TimeoutException",
-        TimeoutException.class,
-        exception.getCause().getClass());
+        TimeoutException.class.isAssignableFrom(exception.getCause().getClass()));
   }
 
   @Test
@@ -1183,10 +1181,9 @@ public class SourceTest extends StreamTest {
                     .runWith(Sink.head(), system)
                     .toCompletableFuture()
                     .get(3, TimeUnit.SECONDS));
-    assertEquals(
+    assertTrue(
         "The cause of ExecutionException should be TimeoutException",
-        TimeoutException.class,
-        exception.getCause().getClass());
+        TimeoutException.class.isAssignableFrom(exception.getCause().getClass()));
   }
 
   @Test
@@ -1201,10 +1198,9 @@ public class SourceTest extends StreamTest {
                     .runWith(Sink.head(), system)
                     .toCompletableFuture()
                     .get(3, TimeUnit.SECONDS));
-    assertEquals(
+    assertTrue(
         "The cause of ExecutionException should be TimeoutException",
-        TimeoutException.class,
-        exception.getCause().getClass());
+        TimeoutException.class.isAssignableFrom(exception.getCause().getClass()));
   }
 
   @Test
