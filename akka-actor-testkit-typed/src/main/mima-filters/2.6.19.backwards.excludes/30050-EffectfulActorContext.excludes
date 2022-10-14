@@ -1,2 +1,0 @@
-# package-private @InternalApi
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.testkit.typed.internal.EffectfulActorContext.this")
