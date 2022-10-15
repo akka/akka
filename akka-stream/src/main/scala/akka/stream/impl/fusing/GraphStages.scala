@@ -4,15 +4,28 @@
 
 package akka.stream.impl.fusing
 
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+import scala.util.control.NonFatal
+
 import akka.Done
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
+import akka.stream._
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.FlowMonitorState._
 import akka.stream.Shape
-import akka.stream._
 import akka.stream.impl.ContextPropagation
 import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.impl.ReactiveStreamsCompliance
@@ -20,16 +33,6 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl._
 import akka.stream.stage._
-
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -395,27 +398,22 @@ import scala.util.control.NonFatal
           super.onDownstreamFinish(cause)
         }
 
-        def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
-          result
-            .map { graph =>
-              val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
-              val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
-              materialized.success(matVal)
+        def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = result match {
+          case Success(graph) =>
+            val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
+            val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
+            materialized.success(matVal)
 
-              setHandler(out, this)
-              sinkIn.setHandler(this)
+            setHandler(out, this)
+            sinkIn.setHandler(this)
 
-              if (isAvailable(out)) {
-                sinkIn.pull()
-              }
-
+            if (isAvailable(out)) {
+              sinkIn.pull()
             }
-            .recover {
-              case t =>
-                sinkIn.cancel()
-                materialized.failure(t)
-                failStage(t)
-            }
+          case Failure(ex) =>
+            sinkIn.cancel()
+            materialized.failure(ex)
+            failStage(ex)
         }
       }
 
