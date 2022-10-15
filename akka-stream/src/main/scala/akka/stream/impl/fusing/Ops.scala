@@ -29,6 +29,7 @@ import akka.stream.OverflowStrategies._
 import akka.stream.Supervision.Decider
 import akka.stream.impl.{ ContextPropagation, ReactiveStreamsCompliance, Buffer => BufferImpl }
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.TraversalBuilder
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.{ DelayStrategy, Source }
 import akka.stream.stage._
@@ -2147,12 +2148,21 @@ private[akka] object TakeWithin {
       override def onPush(): Unit = push(out, grab(in))
       override def onUpstreamFailure(ex: Throwable): Unit = onFailure(ex)
       override def onPull(): Unit = pull(in)
-      def onFailure(ex: Throwable): Unit =
-        if ((maximumRetries < 0 || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
-          switchTo(pf(ex))
-          attempt += 1
+      def onFailure(ex: Throwable): Unit = {
+        import Collect.NotApplied
+        if (maximumRetries < 0 || attempt < maximumRetries) {
+          pf.applyOrElse(ex, NotApplied) match {
+            case NotApplied => failStage(ex)
+            case source: Graph[SourceShape[T] @unchecked, M @unchecked] if TraversalBuilder.isEmptySource(source) =>
+              completeStage()
+            case other: Graph[SourceShape[T] @unchecked, M @unchecked] =>
+              switchTo(other)
+              attempt += 1
+            case _ => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+          }
         } else
           failStage(ex)
+      }
 
       def switchTo(source: Graph[SourceShape[T], M]): Unit = {
         val sinkIn = new SubSinkInlet[T]("RecoverWithSink")
