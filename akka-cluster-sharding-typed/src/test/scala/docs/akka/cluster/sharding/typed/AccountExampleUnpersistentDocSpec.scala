@@ -14,11 +14,12 @@ import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.persistence.testkit.scaladsl.UnpersistentBehavior
 import akka.persistence.typed.PersistenceId
 
-class AccountExampleUnpersistentDocSpec extends AnyWordSpecLike
+class AccountExampleUnpersistentDocSpec
+    extends AnyWordSpecLike
 // #test
-  with Matchers
+    with Matchers
 // #test
-{
+    {
 // #test
   import AccountExampleWithEventHandlersInState.AccountEntity
 // #test
@@ -30,9 +31,9 @@ class AccountExampleUnpersistentDocSpec extends AnyWordSpecLike
       onAnEmptyAccount { (testkit, eventProbe, snapshotProbe) =>
         testkit.run(AccountEntity.CreateAccount(replyToInbox.ref))
         replyToInbox.expectMessage(StatusReply.Ack)
-        
+
         eventProbe.expectPersisted(AccountEntity.AccountCreated)
-        
+
         // internal state is only exposed by the behavior via responses to messages or if it happens
         //  to snapshot.  This particular behavior never snapshots, so we query within the actor's
         //  protocol
@@ -60,7 +61,7 @@ class AccountExampleUnpersistentDocSpec extends AnyWordSpecLike
         eventProbe.expectPersisted(AccountEntity.Withdrawn(10))
 
         testkit.run(AccountEntity.GetBalance(getBalanceInbox.ref))
-        
+
         getBalanceInbox.receiveMessage().balance shouldBe 90
       }
     }
@@ -76,26 +77,29 @@ class AccountExampleUnpersistentDocSpec extends AnyWordSpecLike
       }
     }
   }
+// #test
 
   // #unpersistent-behavior
-  private def onAnEmptyAccount: UnpersistentBehavior.EventSourced[AccountEntity.Command, AccountEntity.Event, AccountEntity.Account] =
+  private def onAnEmptyAccount
+      : UnpersistentBehavior.EventSourced[AccountEntity.Command, AccountEntity.Event, AccountEntity.Account] =
     UnpersistentBehavior.fromEventSourced(AccountEntity("1", PersistenceId("Account", "1")))
   // #unpersistent-behavior
-  
+
   // #unpersistent-behavior-provided-state
-  private def onAnOpenedAccount: UnpersistentBehavior.EventSourced[AccountEntity.Command, AccountEntity.Event, AccountEntity.Account] =
+  private def onAnOpenedAccount
+      : UnpersistentBehavior.EventSourced[AccountEntity.Command, AccountEntity.Event, AccountEntity.Account] =
     UnpersistentBehavior.fromEventSourced(
       AccountEntity("1", PersistenceId("Account", "1")),
       Some(
-        AccountEntity.EmptyAccount.applyEvent(AccountEntity.AccountCreated) ->  // reuse the event handler
+        AccountEntity.EmptyAccount.applyEvent(AccountEntity.AccountCreated) -> // reuse the event handler
         1L // assume that CreateAccount was the first command
-      )
-    )
+      ))
   // #unpersistent-behavior-provided-state
-  
+
   private def onAnAccountWithBalance(balance: BigDecimal) =
     UnpersistentBehavior.fromEventSourced(
       AccountEntity("1", PersistenceId("Account", "1")),
-      Some(AccountEntity.OpenedAccount(balance) -> 2L)
-    )
+      Some(AccountEntity.OpenedAccount(balance) -> 2L))
+// #test
 }
+// #test
