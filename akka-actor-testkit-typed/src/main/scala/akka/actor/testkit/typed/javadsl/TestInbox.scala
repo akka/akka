@@ -4,8 +4,6 @@
 
 package akka.actor.testkit.typed.javadsl
 
-import java.util.concurrent.ThreadLocalRandom
-
 import scala.collection.immutable
 
 import akka.actor.testkit.typed.internal.TestInboxImpl
@@ -14,16 +12,8 @@ import akka.annotation.DoNotInherit
 import akka.util.ccompat.JavaConverters._
 
 object TestInbox {
-  import akka.actor.testkit.typed.scaladsl.TestInbox.address
-
-  def create[T](name: String): TestInbox[T] = {
-    val uid = ThreadLocalRandom.current().nextInt()
-    new TestInboxImpl((address / name).withUid(uid))
-  }
-  def create[T](): TestInbox[T] = {
-    val uid = ThreadLocalRandom.current().nextInt()
-    new TestInboxImpl((address / "inbox").withUid(uid))
-  }
+  def create[T](name: String): TestInbox[T] = TestInboxImpl(name)
+  def create[T](): TestInbox[T] = TestInboxImpl("inbox")
 }
 
 /**

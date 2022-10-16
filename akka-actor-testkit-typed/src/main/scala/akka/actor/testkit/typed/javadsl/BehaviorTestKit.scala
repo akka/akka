@@ -9,6 +9,7 @@ import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.{ ActorRef, Behavior, Signal }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.japi.function.{ Function => JFunction }
 import com.typesafe.config.Config
 
 import java.util.concurrent.ThreadLocalRandom
@@ -59,6 +60,14 @@ object BehaviorTestKit {
 @DoNotInherit
 @ApiMayChange
 abstract class BehaviorTestKit[T] {
+
+  /**
+   * Constructs a message using the provided 'messageFactory' to inject a single-use "reply to"
+   * [[akka.actor.typed.ActorRef]], and sends the constructed message to the behavior, recording any [[Effect]]s.
+   *
+   * The returned [[TestInbox]] allows the message sent to the "reply to" `ActorRef` to be asserted on.
+   */
+  def ask[Res](messageFactory: JFunction[ActorRef[Res], T]): TestInbox[Res]
 
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects

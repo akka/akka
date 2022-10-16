@@ -45,6 +45,14 @@ object BehaviorTestKit {
 @ApiMayChange
 trait BehaviorTestKit[T] {
 
+  /**
+   * Constructs a message using the provided function to inject a single-use "reply to" [[akka.actor.typed.ActorRef]],
+   * and sends the constructed message to the behavior, recording any [[Effect]]s.
+   *
+   * The returned [[TestInbox]] allows the message sent to the "reply to" `ActorRef` to be asserted on.
+   */
+  def ask[Res](f: ActorRef[Res] => T): TestInbox[Res]
+
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
   private[akka] def context: TypedActorContext[T]
 

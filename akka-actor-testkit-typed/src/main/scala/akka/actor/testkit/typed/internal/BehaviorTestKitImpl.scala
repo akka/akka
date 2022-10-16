@@ -19,6 +19,7 @@ import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, PostStop, Sig
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.japi.function.{ Function => JFunction }
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -50,6 +51,16 @@ private[akka] final class BehaviorTestKitImpl[T](
 
   // execute any future tasks scheduled in Actor's constructor
   runAllTasks()
+
+  override def ask[Res](f: ActorRef[Res] => T): TestInboxImpl[Res] = {
+    val replyToInbox = TestInboxImpl[Res]("replyTo")
+
+    run(f(replyToInbox.ref))
+    replyToInbox
+  }
+
+  override def ask[Res](messageFactory: JFunction[ActorRef[Res], T]): TestInboxImpl[Res] =
+    ask(messageFactory.apply _)
 
   override def retrieveEffect(): Effect = context.effectQueue.poll() match {
     case null => NoEffects
