@@ -9,6 +9,7 @@ import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.pattern.StatusReply
 import com.typesafe.config.Config
 
 import java.util.concurrent.ThreadLocalRandom
@@ -52,6 +53,12 @@ trait BehaviorTestKit[T] {
    * The returned [[TestInbox]] allows the message sent to the "reply to" `ActorRef` to be asserted on.
    */
   def ask[Res](f: ActorRef[Res] => T): TestInbox[Res]
+
+  /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   */
+  def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => T): TestInbox[StatusReply[Res]] =
+    ask[StatusReply[Res]](f)
 
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
   private[akka] def context: TypedActorContext[T]
