@@ -223,24 +223,25 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
         Seq(ObserverAdded(3, notify3.ref), SnapshotMade, DomainEvent, DomainEvent)
           .foldLeft(State(0, Map.empty, Int.MaxValue))(applyEvent _)
 
-      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> 41L)) { (testkit, eventProbe, snapshotProbe) =>
-        recoveryDone.expectMessage(Done)
-        val logs = testkit.logEntries()
-        logs.size shouldBe 1
-        logs.head.level shouldBe Level.DEBUG
-        logs.head.message shouldBe s"Recovered state for id [test-1] is [$initialState]"
-        eventProbe.drain() shouldBe empty
-        snapshotProbe.drain() shouldBe empty
-        assert(!notify3.hasMessages, "no messages should be sent to notify3")
+      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> 41L)) {
+        (testkit, eventProbe, snapshotProbe) =>
+          recoveryDone.expectMessage(Done)
+          val logs = testkit.logEntries()
+          logs.size shouldBe 1
+          logs.head.level shouldBe Level.DEBUG
+          logs.head.message shouldBe s"Recovered state for id [test-1] is [$initialState]"
+          eventProbe.drain() shouldBe empty
+          snapshotProbe.drain() shouldBe empty
+          assert(!notify3.hasMessages, "no messages should be sent to notify3")
 
-        val replyTo = TestInbox[Done]()
-        testkit.run(PersistDomainEventAfter(2, replyTo.ref))
-        assert(!testkit.hasEffects(), "should be no testkit effects")
-        eventProbe.extract() shouldBe PersistenceEffect(DomainEvent, 42, Set("domain"))
-        snapshotProbe.expectPersisted(State(3, Map.empty, Int.MaxValue))
+          val replyTo = TestInbox[Done]()
+          testkit.run(PersistDomainEventAfter(2, replyTo.ref))
+          assert(!testkit.hasEffects(), "should be no testkit effects")
+          eventProbe.extract() shouldBe PersistenceEffect(DomainEvent, 42, Set("domain"))
+          snapshotProbe.expectPersisted(State(3, Map.empty, Int.MaxValue))
 
-        notify3.expectMessage(Done)
-        replyTo.expectMessage(Done)
+          notify3.expectMessage(Done)
+          replyTo.expectMessage(Done)
       }
     }
 
@@ -249,23 +250,24 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
 
       val behavior = BehaviorUnderTest("test-1", TestInbox[Done]().ref)
 
-      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, None) { (testkit, eventProbe, snapshotProbe) =>
-        val replyTo1 = TestInbox[Done]()
-        val pde = PersistDomainEvent(TestInbox[Done]().ref)
+      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, None) {
+        (testkit, eventProbe, snapshotProbe) =>
+          val replyTo1 = TestInbox[Done]()
+          val pde = PersistDomainEvent(TestInbox[Done]().ref)
 
-        // stashes
-        testkit.run(PersistDomainEventAfter(1, replyTo1.ref))
-        eventProbe.drain() shouldBe empty
-        snapshotProbe.drain() shouldBe empty
-        assert(!replyTo1.hasMessages, "have not persisted first domain event")
+          // stashes
+          testkit.run(PersistDomainEventAfter(1, replyTo1.ref))
+          eventProbe.drain() shouldBe empty
+          snapshotProbe.drain() shouldBe empty
+          assert(!replyTo1.hasMessages, "have not persisted first domain event")
 
-        // unstashes
-        testkit.run(pde)
-        replyTo1.expectMessage(Done)
+          // unstashes
+          testkit.run(pde)
+          replyTo1.expectMessage(Done)
 
-        // unstash, but nothing in the stash
-        testkit.run(pde)
-        assert(!replyTo1.hasMessages, "should not send again")
+          // unstash, but nothing in the stash
+          testkit.run(pde)
+          assert(!replyTo1.hasMessages, "should not send again")
       }
     }
 
@@ -281,9 +283,8 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
           case x             => x
         }
 
-      UnpersistentBehavior.fromEventSourced[Command, Event, State](
-        behavior,
-        Some(initialState -> randomStartingOffset)) { (testkit, eventProbe, snapshotProbe) =>
+      UnpersistentBehavior.fromEventSourced[Command, Event, State](behavior, Some(initialState -> randomStartingOffset)) {
+        (testkit, eventProbe, snapshotProbe) =>
           val replyTo = TestInbox[Long]()
 
           testkit.run(GetSequenceNumber(replyTo.ref))

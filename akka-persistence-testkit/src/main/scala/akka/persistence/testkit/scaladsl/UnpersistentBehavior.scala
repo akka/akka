@@ -62,14 +62,21 @@ object UnpersistentBehavior {
     DurableState(resultingBehavior, probe.asScala)
   }
 
-  final case class EventSourced[Command, Event, State](override val behavior: Behavior[Command], val eventProbe: PersistenceProbe[Event], override val stateProbe: PersistenceProbe[State]) extends UnpersistentBehavior[Command, State] {
+  final case class EventSourced[Command, Event, State](
+      override val behavior: Behavior[Command],
+      val eventProbe: PersistenceProbe[Event],
+      override val stateProbe: PersistenceProbe[State])
+      extends UnpersistentBehavior[Command, State] {
     def apply(f: (BehaviorTestKit[Command], PersistenceProbe[Event], PersistenceProbe[State]) => Unit): Unit =
       f(behaviorTestKit, eventProbe, stateProbe)
 
     def snapshotProbe: PersistenceProbe[State] = stateProbe
   }
 
-  final case class DurableState[Command, State](override val behavior: Behavior[Command], override val stateProbe: PersistenceProbe[State]) extends UnpersistentBehavior[Command, State] {
+  final case class DurableState[Command, State](
+      override val behavior: Behavior[Command],
+      override val stateProbe: PersistenceProbe[State])
+      extends UnpersistentBehavior[Command, State] {
     def apply(f: (BehaviorTestKit[Command], PersistenceProbe[State]) => Unit): Unit =
       f(behaviorTestKit, stateProbe)
   }
@@ -78,8 +85,8 @@ object UnpersistentBehavior {
 final case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
 
 /**
-  * Not for user extension
-  */
+ * Not for user extension
+ */
 @DoNotInherit
 trait PersistenceProbe[T] {
 

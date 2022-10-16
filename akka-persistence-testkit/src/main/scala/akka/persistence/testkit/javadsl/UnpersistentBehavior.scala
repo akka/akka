@@ -103,8 +103,8 @@ final class UnpersistentBehavior[Command, Event, State] private (
 final case class PersistenceEffect[T](persistedObject: T, sequenceNr: Long, tags: Set[String])
 
 /**
-  * Not for user extension
-  */
+ * Not for user extension
+ */
 @DoNotInherit
 trait PersistenceProbe[T] {
 
