@@ -33,8 +33,11 @@ public class ExternalShardAllocationCompileOnlyTest {
     EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
 
     ActorRef<ShardingEnvelope<Counter.Command>> shardRegion =
-            sharding.init(Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId()))
-                    .withAllocationStrategy(new ExternalShardAllocationStrategy(system, typeKey.name(), Timeout.create(Duration.ofSeconds(5)))));
+        sharding.init(
+            Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId()))
+                .withAllocationStrategy(
+                    new ExternalShardAllocationStrategy(
+                        system, typeKey.name(), Timeout.create(Duration.ofSeconds(5)))));
     // #entity
 
     // #client
