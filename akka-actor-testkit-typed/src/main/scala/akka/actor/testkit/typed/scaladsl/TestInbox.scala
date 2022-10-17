@@ -140,6 +140,7 @@ trait StatusReplyInbox[T] {
    * Assert that the successful value of the status reply is [[akka.Done]].  Subsequent calls to any `receive` or
    * `expect` method will fail and `hasReply` will be false after calling this method.
    */
+  @annotation.nowarn("msg=never used")
   def expectDone()(implicit ev: T =:= Done): Unit = expectValue(Done.asInstanceOf[T])
 
   /**
