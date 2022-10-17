@@ -46,7 +46,7 @@ private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
     x == null
 
   /**
-   * Returns true if the option is `OptionVal.None`, false otherwise.
+   * Returns false if the option is `OptionVal.None`, true otherwise.
    */
   def isDefined: Boolean = !isEmpty
 

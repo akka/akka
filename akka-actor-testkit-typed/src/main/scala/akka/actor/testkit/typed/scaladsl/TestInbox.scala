@@ -15,15 +15,15 @@ import akka.pattern.StatusReply
 @ApiMayChange
 object TestInbox {
   def apply[T](name: String = "inbox"): TestInbox[T] = TestInboxImpl(name)
-  
+
   private[akka] val address = TestInboxImpl.address
 }
 
 /**
  * Utility for use as an [[ActorRef]] when *synchronously* testing [[akka.actor.typed.Behavior]]
- * with [[akka.actor.testkit.typed.javadsl.BehaviorTestKit]].
+ * with [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit]].
  *
- * If you plan to use a real [[akka.actor.typed.ActorSystem]] then use [[akka.actor.testkit.typed.javadsl.TestProbe]]
+ * If you plan to use a real [[akka.actor.typed.ActorSystem]] then use [[akka.actor.testkit.typed.scaladsl.TestProbe]]
  * for asynchronous testing.
  *
  * Use factory `apply` in companion to create instances
