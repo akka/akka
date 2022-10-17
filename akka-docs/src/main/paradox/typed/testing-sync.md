@@ -12,7 +12,7 @@ limitations:
 * Spawning of @scala[`Future`]@java[`CompletionStage`] or other asynchronous task and you rely on a callback to
   complete before observing the effect you want to test.
 * Usage of scheduler is not supported.
-* `EventSourcedBehavior` can't be tested.
+* `EventSourcedBehavior` can't be fully tested, but it is possible to @ref:[test the core functionality](persistence-testing.md#unit-testing-with-the-behaviortestkit)
 * Interactions with other actors must be stubbed.
 * Blackbox testing style.
 * Supervision is not supported.
