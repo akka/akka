@@ -361,7 +361,8 @@ public class BehaviorTestKitTest extends JUnitSuite {
     session.run("hello");
     assertEquals(Collections.singletonList("hello"), h.getAllReceived());
 
-    test.<Done>ask(replyTo -> new KillSession(sessionRef, replyTo)).expectReply(Done.getInstance());
+    ReplyInbox<Done> doneReply = test.ask(replyTo -> new KillSession(sessionRef, replyTo));
+    doneReply.expectReply(Done.getInstance());
 
     test.expectEffectClass(Effect.Stopped.class);
   }
