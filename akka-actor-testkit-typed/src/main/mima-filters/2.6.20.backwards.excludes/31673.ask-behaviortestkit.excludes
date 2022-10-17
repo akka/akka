@@ -1,0 +1,3 @@
+# Add ability to ask BehaviorTestKit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.BehaviorTestKit.ask")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.BehaviorTestKit.askWithStatus")
