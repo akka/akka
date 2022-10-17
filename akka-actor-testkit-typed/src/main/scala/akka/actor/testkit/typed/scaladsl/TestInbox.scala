@@ -13,6 +13,8 @@ import akka.annotation.{ ApiMayChange, DoNotInherit }
 @ApiMayChange
 object TestInbox {
   def apply[T](name: String = "inbox"): TestInbox[T] = TestInboxImpl(name)
+  
+  private[akka] val address = TestBoxImpl.address
 }
 
 /**
