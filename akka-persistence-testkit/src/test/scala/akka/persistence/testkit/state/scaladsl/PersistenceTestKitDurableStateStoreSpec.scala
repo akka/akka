@@ -88,6 +88,7 @@ class PersistenceTestKitDurableStateStoreSpec
       val deletedDurableState = testSink.request(1).expectNext().asInstanceOf[DeletedDurableState[Record]]
       deletedDurableState.persistenceId should be(persistenceId)
       deletedDurableState.revision should be(2L)
+      deletedDurableState.timestamp should be >= updatedDurableState.timestamp
     }
 
     "find tagged current state changes ordered by upsert" in {

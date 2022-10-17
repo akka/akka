@@ -76,7 +76,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     store.get(persistenceId) match {
       case Some(record) =>
         val globalOffset = lastGlobalOffset.incrementAndGet()
-        val updatedRecord = record.copy[A](globalOffset = globalOffset, value = None, revision = revision)
+        val updatedRecord = Record[A](globalOffset, persistenceId, revision, None, record.tag)
         store = store + (persistenceId -> updatedRecord)
         publisher ! updatedRecord
       case None => //ignore
