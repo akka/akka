@@ -278,6 +278,17 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToConcatEmptySource() {
+    Source.from(Arrays.asList("A", "B", "C"))
+        .concat(Source.empty())
+        .runWith(TestSink.probe(system), system)
+        .ensureSubscription()
+        .request(3)
+        .expectNext("A", "B", "C")
+        .expectComplete();
+  }
+
+  @Test
   public void mustBeAbleToUseConcatAll() {
     final Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3));
     final Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(4, 5, 6));

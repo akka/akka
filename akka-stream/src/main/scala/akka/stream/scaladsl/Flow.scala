@@ -3264,7 +3264,7 @@ trait FlowOps[+Out, +Mat] {
 
   private def internalConcat[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2], detached: Boolean): Repr[U] =
     that match {
-      case source if source eq Source.empty => this.asInstanceOf[Repr[U]]
+      case source if TraversalBuilder.isEmptySource(source) => this.asInstanceOf[Repr[U]]
       case other =>
         TraversalBuilder.getSingleSource(other) match {
           case OptionVal.Some(singleSource) =>
