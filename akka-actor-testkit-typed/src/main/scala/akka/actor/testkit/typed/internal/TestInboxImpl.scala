@@ -112,12 +112,12 @@ private[akka] final class ReplyInboxImpl[T](private var underlying: OptionVal[Te
 }
 
 /**
-  * INTERNAL API
-  */
+ * INTERNAL API
+ */
 @InternalApi
 private[akka] final class StatusReplyInboxImpl[T](private var underlying: OptionVal[TestInboxImpl[StatusReply[T]]])
-  extends akka.actor.testkit.typed.javadsl.StatusReplyInbox[T]
-  with akka.actor.testkit.typed.scaladsl.StatusReplyInbox[T] {
+    extends akka.actor.testkit.typed.javadsl.StatusReplyInbox[T]
+    with akka.actor.testkit.typed.scaladsl.StatusReplyInbox[T] {
 
   def receiveStatusReply(): StatusReply[T] =
     underlying match {
@@ -131,13 +131,13 @@ private[akka] final class StatusReplyInboxImpl[T](private var underlying: Option
   def receiveValue(): T =
     receiveStatusReply() match {
       case StatusReply.Success(v) => v.asInstanceOf[T]
-      case err => throw new AssertionError(s"Expected a successful reply but received $err")
+      case err                    => throw new AssertionError(s"Expected a successful reply but received $err")
     }
 
   def receiveError(): Throwable =
     receiveStatusReply() match {
       case StatusReply.Error(t) => t
-      case success => throw new AssertionError(s"Expected an error reply but received $success")
+      case success              => throw new AssertionError(s"Expected an error reply but received $success")
     }
 
   def expectValue(expectedValue: T): Unit =
@@ -169,6 +169,6 @@ private[akka] final class StatusReplyInboxImpl[T](private var underlying: Option
   def hasReply: Boolean =
     underlying match {
       case OptionVal.Some(testInbox) => testInbox.hasMessages
-      case _ => false
+      case _                         => false
     }
 }
