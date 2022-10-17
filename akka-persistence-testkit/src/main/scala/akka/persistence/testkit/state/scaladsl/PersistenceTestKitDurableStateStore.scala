@@ -73,9 +73,13 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
   override def deleteObject(persistenceId: String): Future[Done] = Future.successful(Done)
 
   override def deleteObject(persistenceId: String, revision: Long): Future[Done] = this.synchronized {
-    store = store.get(persistenceId) match {
-      case Some(record) => store + (persistenceId -> record.copy(value = None, revision = revision))
-      case None         => store
+    store.get(persistenceId) match {
+      case Some(record) =>
+        val globalOffset = lastGlobalOffset.incrementAndGet()
+        val updatedRecord = record.copy[A](globalOffset = globalOffset, value = None, revision = revision)
+        store = store + (persistenceId -> updatedRecord)
+        publisher ! updatedRecord
+      case None => //ignore
     }
 
     Future.successful(Done)
