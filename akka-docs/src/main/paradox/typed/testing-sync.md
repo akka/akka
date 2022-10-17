@@ -25,6 +25,7 @@ The following demonstrates how to test:
 * Spawning child actors anonymously
 * Sending a message either as a reply or to another actor
 * Sending a message to a child actor
+* Asking via the `ActorContext`
 
 The examples below require the following imports:
 
@@ -101,6 +102,14 @@ Scala
 
 Java
 :  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-child-message-anonymous }
+
+An @ref:[ask via `ActorContext`](interaction-patterns.md#request-response-with-ask-between-two-actors) can be tested with the assistance of the @apidoc[akka.actor.testkit.typed.Effect$AskInitiated] `Effect`.  The request message is sent to the target recipient and can be obtained from the `AskInitiated`.  The interaction may be completed by calling `respondWith` or `timeout` on the `AskInitiated`, and the transformation of the response or timeout into the requestor's protocol may also be tested using the `adaptResponse` or `adaptTimeout` methods.
+
+Scala
+:  @@snip[SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-contextual-ask }
+
+Java
+:  @@snip[SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-contextual-ask }
 
 ### Testing other effects
 

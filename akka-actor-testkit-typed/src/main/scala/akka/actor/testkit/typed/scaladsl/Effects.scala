@@ -6,7 +6,7 @@ package akka.actor.testkit.typed.scaladsl
 
 import scala.concurrent.duration.FiniteDuration
 
-import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.actor.typed.{ ActorRef, Behavior, Props, RecipientRef }
 
 /**
  * Factories for behavior effects for [[BehaviorTestKit]], each effect has a suitable equals and can be used to compare
@@ -14,6 +14,17 @@ import akka.actor.typed.{ ActorRef, Behavior, Props }
  */
 object Effects {
   import akka.actor.testkit.typed.Effect._
+
+  /**
+   * The behavior initiated an ask via its context.  Note that the effect returned
+   * from this method should only be used for an equality comparison with the actual
+   * effect from running the behavior.
+   */
+  def askInitiated[Req, Res, T](
+      target: RecipientRef[Req],
+      responseTimeout: FiniteDuration,
+      responseClass: Class[Res]): AskInitiated[Req, Res, T] =
+    AskInitiated(target, responseTimeout, responseClass)(null.asInstanceOf[Req], null, null)
 
   /**
    * The behavior spawned a named child with the given behavior with no specific props
