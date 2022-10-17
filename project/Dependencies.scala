@@ -15,7 +15,7 @@ object Dependencies {
     .withRank(KeyRanks.Invisible) // avoid 'unused key' warning
 
   val junitVersion = "4.13.2"
-  val slf4jVersion = "1.7.36"
+  val slf4jVersion = "2.0.3"
   // check agrona version when updating this
   val aeronVersion = "1.39.0"
   // needs to be inline with the aeron version, check
