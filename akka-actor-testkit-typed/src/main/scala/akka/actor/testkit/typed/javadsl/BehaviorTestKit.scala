@@ -66,15 +66,14 @@ abstract class BehaviorTestKit[T] {
    * Constructs a message using the provided 'messageFactory' to inject a single-use "reply to"
    * [[akka.actor.typed.ActorRef]], and sends the constructed message to the behavior, recording any [[Effect]]s.
    *
-   * The returned [[TestInbox]] allows the message sent to the "reply to" `ActorRef` to be asserted on.
+   * The returned [[ReplyInbox]] allows the message sent to the "reply to" `ActorRef` to be asserted on.
    */
-  def ask[Res](messageFactory: JFunction[ActorRef[Res], T]): TestInbox[Res]
+  def ask[Res](messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res]
 
   /**
    * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
    */
-  def askWithStatus[Res](messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): TestInbox[StatusReply[Res]] =
-    ask[StatusReply[Res]](messageFactory)
+  def askWithStatus[Res](messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res]
 
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects
