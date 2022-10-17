@@ -5,7 +5,6 @@
 package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.ThreadLocalRandom
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -57,11 +56,13 @@ private[akka] final class TestInboxImpl[T](path: ActorPath)
 
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 object TestInboxImpl {
   def apply[T](name: String): TestInboxImpl[T] = {
-    val uid = ThreadLocalRandom.current().nextInt()
-    new TestInboxImpl((address / name).withUid(uid))
+    new TestInboxImpl(address / name)
   }
 
   private[akka] val address = RootActorPath(Address("akka.actor.typed.inbox", "anonymous"))
