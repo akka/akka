@@ -365,7 +365,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val h = TestInbox[String]()
 
       val sessionRef =
-        testkit.ask(SpawnSession(_, h.ref)).receiveReply()
+        testkit.ask[ActorRef[String]](SpawnSession(_, h.ref)).receiveReply()
 
       val s = testkit.expectEffectType[SpawnedAnonymous[_]]
       // must be able to get the created ref, even without explicit reply
