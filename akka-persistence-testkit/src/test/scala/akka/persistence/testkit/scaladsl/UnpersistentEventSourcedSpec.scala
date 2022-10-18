@@ -212,6 +212,33 @@ class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
       }
     }
 
+    "not publish events if the event handler fails" in {
+      val behavior =
+        EventSourcedBehavior[Int, Int, Unit](
+          persistenceId = PersistenceId.ofUniqueId("degenerator"),
+          emptyState = (),
+          commandHandler = { (_, cmd: Int) =>
+            cmd match {
+              case nothing if nothing < 1 => Effect.none
+              case 1                      => Effect.persist(1)
+              case n                      => Effect.persist(Range(n, 0, -1)) // count down to 1
+            }
+          },
+          eventHandler = { (_, evt) =>
+            if (evt == 1) throw new RuntimeException("Kaboom!")
+          })
+
+      UnpersistentBehavior.fromEventSourced[Int, Int, Unit](behavior) { (testkit, eventProbe, _) =>
+        val oneException = the[RuntimeException] thrownBy testkit.run(1)
+        oneException.getMessage shouldBe "Kaboom!"
+        eventProbe.hasEffects shouldBe false
+
+        val twoException = the[RuntimeException] thrownBy testkit.run(2)
+        twoException.getMessage shouldBe "Kaboom!"
+        eventProbe.hasEffects shouldBe false
+      }
+    }
+
     "allow a state and starting offset to be injected" in {
       import BehaviorUnderTest._
 
