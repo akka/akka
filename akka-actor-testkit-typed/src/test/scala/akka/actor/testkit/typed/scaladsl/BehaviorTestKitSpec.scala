@@ -384,12 +384,11 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
   "BehaviorTestKit’s child actor support" must {
     "allow retrieving and killing" in {
       val testkit = BehaviorTestKit(Parent.init)
-      val i = TestInbox[ActorRef[String]]()
       val h = TestInbox[String]()
-      testkit.run(SpawnSession(i.ref, h.ref))
 
-      val sessionRef = i.receiveMessage()
-      i.hasMessages shouldBe false
+      val sessionRef =
+        testkit.runAsk[ActorRef[String]](SpawnSession(_, h.ref)).receiveReply()
+
       val s = testkit.expectEffectType[SpawnedAnonymous[_]]
       // must be able to get the created ref, even without explicit reply
       s.ref shouldBe sessionRef
@@ -398,10 +397,8 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       session.run("hello")
       h.receiveAll() shouldBe Seq("hello")
 
-      val d = TestInbox[Done]()
-      testkit.run(KillSession(sessionRef, d.ref))
+      testkit.runAsk(KillSession(sessionRef, _)).expectReply(Done)
 
-      d.receiveAll() shouldBe Seq(Done)
       testkit.expectEffectType[Stopped]
     }
 
@@ -436,9 +433,9 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
   "timer support" must {
     "schedule and cancel timers" in {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      val t = TestInbox[Boolean]()
-      testkit.run(IsTimerActive("abc", t.ref))
-      t.receiveMessage() shouldBe false
+
+      testkit.runAsk(IsTimerActive("abc", _)).expectReply(false)
+
       testkit.run(ScheduleCommand("abc", 42.seconds, Effect.TimerScheduled.SingleMode, SpawnChild))
       testkit.expectEffectPF {
         case Effect.TimerScheduled(
@@ -449,15 +446,16 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
             false /*not overriding*/ ) =>
           finiteDuration should equal(42.seconds)
       }
-      testkit.run(IsTimerActive("abc", t.ref))
-      t.receiveMessage() shouldBe true
+
+      testkit.runAsk(IsTimerActive("abc", _)).expectReply(true)
+
       testkit.run(CancelScheduleCommand("abc"))
       testkit.expectEffectPF {
         case Effect.TimerCancelled(key) =>
           key should equal("abc")
       }
-      testkit.run(IsTimerActive("abc", t.ref))
-      t.receiveMessage() shouldBe false
+
+      testkit.runAsk(IsTimerActive("abc", _)).expectReply(false)
     }
 
     "schedule and fire timers" in {

@@ -393,12 +393,13 @@ public class BehaviorTestKitTest extends JUnitSuite {
   @Test
   public void allowRetrievingAndKilling() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
-    TestInbox<ActorRef<String>> i = TestInbox.create();
     TestInbox<String> h = TestInbox.create();
-    test.run(new SpawnSession(i.getRef(), h.getRef()));
 
-    ActorRef<String> sessionRef = i.receiveMessage();
-    assertFalse(i.hasMessages());
+    ReplyInbox<ActorRef<String>> sessionReply =
+        test.runAsk(replyTo -> new SpawnSession(replyTo, h.getRef()));
+
+    ActorRef<String> sessionRef = sessionReply.receiveReply();
+
     Effect.SpawnedAnonymous s = test.expectEffectClass(Effect.SpawnedAnonymous.class);
     assertEquals(sessionRef, s.ref());
 
@@ -406,10 +407,9 @@ public class BehaviorTestKitTest extends JUnitSuite {
     session.run("hello");
     assertEquals(Collections.singletonList("hello"), h.getAllReceived());
 
-    TestInbox<Done> d = TestInbox.create();
-    test.run(new KillSession(sessionRef, d.getRef()));
+    ReplyInbox<Done> doneReply = test.runAsk(replyTo -> new KillSession(sessionRef, replyTo));
+    doneReply.expectReply(Done.getInstance());
 
-    assertEquals(Collections.singletonList(Done.getInstance()), d.getAllReceived());
     test.expectEffectClass(Effect.Stopped.class);
   }
 

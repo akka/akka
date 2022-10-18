@@ -19,6 +19,9 @@ import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, PostStop, Sig
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.japi.function.{ Function => JFunction }
+import akka.pattern.StatusReply
+import akka.util.OptionVal
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -50,6 +53,27 @@ private[akka] final class BehaviorTestKitImpl[T](
 
   // execute any future tasks scheduled in Actor's constructor
   runAllTasks()
+
+  override def runAsk[Res](f: ActorRef[Res] => T): ReplyInboxImpl[Res] = {
+    val replyToInbox = TestInboxImpl[Res]("replyTo")
+
+    run(f(replyToInbox.ref))
+    new ReplyInboxImpl(OptionVal(replyToInbox))
+  }
+
+  override def runAsk[Res](messageFactory: JFunction[ActorRef[Res], T]): ReplyInboxImpl[Res] =
+    runAsk(messageFactory.apply _)
+
+  override def runAskWithStatus[Res](f: ActorRef[StatusReply[Res]] => T): StatusReplyInboxImpl[Res] = {
+    val replyToInbox = TestInboxImpl[StatusReply[Res]]("replyTo")
+
+    run(f(replyToInbox.ref))
+    new StatusReplyInboxImpl(OptionVal(replyToInbox))
+  }
+
+  override def runAskWithStatus[Res](
+      messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInboxImpl[Res] =
+    runAskWithStatus(messageFactory.apply _)
 
   override def retrieveEffect(): Effect = context.effectQueue.poll() match {
     case null => NoEffects
