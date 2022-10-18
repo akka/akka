@@ -306,7 +306,6 @@ more advanced operators which may need to be debugged at some point.
 @@@ div { .group-scala }
 
 The helper trait @scaladoc[StageLogging](akka.stream.stage.StageLogging) is provided to enable you to obtain a @apidoc[akka.event.LoggingAdapter]
-
 inside of a @apidoc[stage.GraphStage] as long as the @apidoc[stream.Materializer] you're using is able to provide you with a logger.
 In that sense, it serves a very similar purpose as @apidoc[actor.ActorLogging] does for Actors. 
 
