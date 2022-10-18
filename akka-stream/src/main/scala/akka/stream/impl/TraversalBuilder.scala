@@ -370,6 +370,16 @@ import akka.util.unused
         }
     }
   }
+
+  /**
+   * Test if a Graph is an empty Source.
+   * */
+  def isEmptySource(graph: Graph[SourceShape[_], _]): Boolean = graph match {
+    case source: scaladsl.Source[_, _] if source eq scaladsl.Source.empty => true
+    case source: javadsl.Source[_, _] if source eq javadsl.Source.empty() => true
+    case _                                                                => false
+  }
+
 }
 
 /**
