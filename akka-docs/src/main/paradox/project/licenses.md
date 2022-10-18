@@ -104,8 +104,8 @@ other recipients of the licensed work to be provided by Licensor:
 
 ## Akka Committer License Agreement
 
-All committers have signed this [CLA](https://www.lightbend.com/contribute/cla/akka/current).
-It can be [signed online](https://www.lightbend.com/contribute/cla/akka).
+All committers have signed this [CLA](https://www.lightbend.com/contribute/cla).
+It can be [signed online](https://www.lightbend.com/contribute/cla).
 
 ## Licenses for Dependency Libraries
 
