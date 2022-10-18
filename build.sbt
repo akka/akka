@@ -94,15 +94,7 @@ lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .enablePlugins(PublishRsyncPlugin)
   .settings(rootSettings: _*)
-  .settings(
-    unidocRootIgnoreProjects := Seq(
-        remoteTests,
-        benchJmh,
-        protobuf,
-        protobufV3,
-        akkaScalaNightly,
-        docs,
-        serialversionRemoverPlugin))
+  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
   .settings(akka.AkkaBuild.welcomeSettings)
   .enablePlugins(CopyrightHeaderForBuild)
@@ -116,7 +108,6 @@ lazy val actor = akkaModule("akka-actor")
     (Compile / scalaSource).value.getParentFile / s"scala-$ver"
   })
   .settings(VersionGenerator.settings)
-  .settings(serialversionRemoverPluginSettings)
   .enablePlugins(BoilerplatePlugin)
 
 lazy val actorTests = akkaModule("akka-actor-tests")
@@ -399,7 +390,6 @@ lazy val remote =
     .settings(OSGi.remote)
     .settings(Protobuf.settings)
     .settings(Test / parallelExecution := false)
-    .settings(serialversionRemoverPluginSettings)
     .enablePlugins(Jdk9)
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
@@ -581,20 +571,6 @@ lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-
     name := "akka-bom",
     bomIncludeProjects := userProjects,
     description := s"${description.value} (depending on Scala ${CrossVersion.binaryScalaVersion(scalaVersion.value)})")
-
-lazy val serialversionRemoverPlugin =
-  Project(id = "serialVersionRemoverPlugin", base = file("plugins/serialversion-remover-plugin")).settings(
-    scalaVersion := akka.Dependencies.scala3Version,
-    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % akka.Dependencies.scala3Version),
-    Compile / doc / sources := Nil,
-    Compile / publishArtifact := false)
-
-lazy val serialversionRemoverPluginSettings = Seq(
-  Compile / scalacOptions ++= (
-      if (scalaVersion.value.startsWith("3."))
-        Seq("-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath)
-      else Nil
-    ))
 
 lazy val doesFortifyLicenseExist: Boolean = {
   import java.nio.file.Files
