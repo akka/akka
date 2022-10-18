@@ -6,7 +6,7 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
-import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.actor.typed.{ ActorRef, Behavior, Props, RecipientRef }
 import akka.util.JavaDurationConverters._
 
 /**
@@ -15,6 +15,18 @@ import akka.util.JavaDurationConverters._
  */
 object Effects {
   import akka.actor.testkit.typed.Effect._
+
+  /**
+   * The behavior initiated an ask via its context.  Note that the effect returned from this method should only
+   * be used to compare with an actual effect.
+   */
+  @annotation.nowarn("msg=never used") // messageClass is just a pretend param
+  def askInitiated[Req, Res, T](
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      responseClass: Class[Res],
+      messageClass: Class[T]): AskInitiated[Req, Res, T] =
+    AskInitiated(target, responseTimeout.asScala, responseClass)(null.asInstanceOf[Req], null, null)
 
   /**
    * The behavior spawned a named child with the given behavior with no specific props

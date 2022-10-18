@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
 import akka.actor.ActorPath
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
-import akka.actor.typed.internal.AdaptWithRegisteredMessageAdapter
+import akka.actor.typed.internal.{ AdaptMessage, AdaptWithRegisteredMessageAdapter }
 import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, PostStop, Signal, TypedActorContext }
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
@@ -37,7 +37,7 @@ private[akka] final class BehaviorTestKitImpl[T](
 
   // really this should be private, make so when we port out tests that need it
   private[akka] val context: EffectfulActorContext[T] =
-    new EffectfulActorContext[T](system, _path, () => currentBehavior)
+    new EffectfulActorContext[T](system, _path, () => currentBehavior, this)
 
   private[akka] def as[U]: BehaviorTestKitImpl[U] = this.asInstanceOf[BehaviorTestKitImpl[U]]
 
@@ -217,6 +217,11 @@ private[akka] object BehaviorTestKitImpl {
 
           val adaptedMsg = fn(msgToAdapt)
           target.apply(ctx, adaptedMsg)
+
+        case AdaptMessage(msgToAdapt, messageAdapter) =>
+          val adaptedMsg = messageAdapter(msgToAdapt)
+          target.apply(ctx, adaptedMsg)
+
         case t => target.apply(ctx, t)
       }
     }

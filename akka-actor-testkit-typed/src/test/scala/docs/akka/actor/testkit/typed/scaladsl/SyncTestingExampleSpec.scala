@@ -15,8 +15,11 @@ import com.typesafe.config.ConfigFactory
 import org.slf4j.event.Level
 
 //#imports
+import akka.util.Timeout
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 object SyncTestingExampleSpec {
   //#child
@@ -34,6 +37,9 @@ object SyncTestingExampleSpec {
     case object SayHelloToAnonymousChild extends Command
     case class SayHello(who: ActorRef[String]) extends Command
     case class LogAndSayHello(who: ActorRef[String]) extends Command
+    case class AskAQuestion(who: ActorRef[Question]) extends Command
+    case class GotAnAnswer(answer: String, from: ActorRef[Question]) extends Command
+    case class NoAnswerFrom(whom: ActorRef[Question]) extends Command
 
     def apply(): Behaviors.Receive[Command] = Behaviors.receivePartial {
       case (context, CreateChild(name)) =>
@@ -57,9 +63,26 @@ object SyncTestingExampleSpec {
         context.log.info("Saying hello to {}", who.path.name)
         who ! "hello"
         Behaviors.same
+      case (context, AskAQuestion(who)) =>
+        implicit val timeout: Timeout = 10.seconds
+        context.ask[Question, Answer](who, Question("do you know who I am?", _)) {
+          case Success(answer) => GotAnAnswer(answer.a, who)
+          case Failure(_)      => NoAnswerFrom(who)
+        }
+        Behaviors.same
+      case (context, GotAnAnswer(answer, from)) =>
+        context.log.info2("Got an answer [{}] from {}", answer, from)
+        Behaviors.same
+      case (context, NoAnswerFrom(from)) =>
+        context.log.info("Did not get an answer from {}", from)
+        Behaviors.same
     }
-    //#under-test
+
+    // Included in Hello for brevity
+    case class Question(q: String, replyTo: ActorRef[Answer])
+    case class Answer(a: String)
   }
+  //#under-test
 
   object ConfigAware {
     sealed trait Command
@@ -140,6 +163,53 @@ class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
       testKit.run(Hello.LogAndSayHello(inbox.ref))
       testKit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, "Saying hello to Inboxer"))
       //#test-check-logging
+    }
+
+    "support the contextual ask pattern" in {
+      //#test-contextual-ask
+      val testKit = BehaviorTestKit(Hello())
+      val askee = TestInbox[Hello.Question]()
+      testKit.run(Hello.AskAQuestion(askee.ref))
+
+      // The ask message is sent and can be inspected via the TestInbox
+      // note that the "replyTo" address is not directly predictable
+      val question = askee.receiveMessage()
+
+      // The particulars of the `context.ask` call are captured as an Effect
+      val effect = testKit.expectEffectType[AskInitiated[Hello.Question, Hello.Answer, Hello.Command]]
+
+      testKit.clearLog()
+
+      // The returned effect can be used to complete or time-out the ask at most once
+      effect.respondWith(Hello.Answer("I think I met you somewhere, sometime"))
+      // (since we completed the ask, timing out is commented out)
+      // effect.timeout()
+
+      // Completing/timing-out the ask is processed synchronously
+      testKit.logEntries().size shouldBe 1
+
+      // The message (including the synthesized "replyTo" address) can be inspected from the effect
+      val sentQuestion = effect.askMessage
+
+      // The response adaptation can be tested as many times as you want without completing the ask
+      val response1 = effect.adaptResponse(Hello.Answer("No.  Who are you?"))
+      val response2 = effect.adaptResponse(Hello.Answer("Hey Joe!"))
+
+      // ... as can the message sent on a timeout
+      val timeoutResponse = effect.adaptTimeout
+
+      // The response timeout can be inspected
+      val responseTimeout = effect.responseTimeout
+      //#test-contextual-ask
+
+      // pro-forma assertions to satisfy warn-unused while following the pattern in this spec of not
+      // using ScalaTest matchers in code exposed through paradox
+      question shouldNot be(null)
+      sentQuestion shouldNot be(null)
+      response1 shouldNot be(null)
+      response2 shouldNot be(null)
+      timeoutResponse shouldNot be(null)
+      responseTimeout shouldNot be(null)
     }
 
     "has access to the provided config" in {
