@@ -741,7 +741,7 @@ Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #get-shard-region-state }
 
 @apidoc[akka.cluster.sharding.typed.GetClusterShardingStats] which will query all the regions in the cluster and reply with a
-@apidoc[ShardRegion.ClusterShardingStats] containing the identifiers of the shards running in each region and a count
+@apidoc[akka.cluster.sharding.ShardRegion.ClusterShardingStats] containing the identifiers of the shards running in each region and a count
 of entities that are alive in each shard.
 
 Scala
