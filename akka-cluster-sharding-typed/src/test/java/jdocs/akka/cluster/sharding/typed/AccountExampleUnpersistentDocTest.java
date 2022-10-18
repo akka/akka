@@ -14,6 +14,8 @@ import static org.junit.Assert.*;
 // #test
 import java.math.BigDecimal;
 import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
+import akka.actor.testkit.typed.javadsl.ReplyInbox;
+import akka.actor.testkit.typed.javadsl.StatusReplyInbox;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.persistence.testkit.javadsl.UnpersistentBehavior;
 import akka.persistence.testkit.javadsl.PersistenceEffect;
@@ -32,12 +34,10 @@ public class AccountExampleUnpersistentDocTest
         unpersistent = emptyAccount();
 
     BehaviorTestKit<AccountEntity.Command> testkit = unpersistent.getBehaviorTestKit();
-    TestInbox<StatusReply<Done>> replyToInbox = TestInbox.create();
-    TestInbox<AccountEntity.CurrentBalance> getBalanceInbox = TestInbox.create();
 
-    testkit.run(new AccountEntity.CreateAccount(replyToInbox.getRef()));
+    StatusReplyInbox<Done> ackInbox = testkit.askWithStatus(AccountEntity.CreateAccount::new);
 
-    replyToInbox.expectMessage(StatusReply.ack());
+    ackInbox.expectValue(Done.getInstance());
     unpersistent.getEventProbe().expectPersisted(AccountEntity.AccountCreated.INSTANCE);
 
     // internal state is only exposed by the behavior via responses to messages or if it happens
@@ -45,9 +45,10 @@ public class AccountExampleUnpersistentDocTest
     //  protocol
     assertFalse(unpersistent.getSnapshotProbe().hasEffects());
 
-    testkit.run(new AccountEntity.GetBalance(getBalanceInbox.getRef()));
+    ReplyInbox<AccountEntity.CurrentBalance> currentBalanceInbox =
+        testkit.ask(AccountEntity.GetBalance::new);
 
-    assertEquals(BigDecimal.ZERO, getBalanceInbox.receiveMessage().balance);
+    assertEquals(BigDecimal.ZERO, currentBalanceInbox.receiveReply().balance);
   }
 
   @Test
@@ -56,12 +57,13 @@ public class AccountExampleUnpersistentDocTest
         unpersistent = openedAccount();
 
     BehaviorTestKit<AccountEntity.Command> testkit = unpersistent.getBehaviorTestKit();
-    TestInbox<StatusReply<Done>> replyToInbox = TestInbox.create();
-    TestInbox<AccountEntity.CurrentBalance> getBalanceInbox = TestInbox.create();
+    BigDecimal currentBalance;
 
-    testkit.run(new AccountEntity.Deposit(BigDecimal.valueOf(100), replyToInbox.getRef()));
+    testkit
+        .askWithStatus(
+            Done.class, replyTo -> new AccountEntity.Deposit(BigDecimal.valueOf(100), replyTo))
+        .expectValue(Done.getInstance());
 
-    replyToInbox.expectMessage(StatusReply.ack());
     assertEquals(
         BigDecimal.valueOf(100),
         unpersistent
@@ -70,13 +72,19 @@ public class AccountExampleUnpersistentDocTest
             .persistedObject()
             .amount);
 
-    testkit.run(new AccountEntity.GetBalance(getBalanceInbox.getRef()));
+    currentBalance =
+        testkit
+            .ask(AccountEntity.CurrentBalance.class, AccountEntity.GetBalance::new)
+            .receiveReply()
+            .balance;
 
-    assertEquals(BigDecimal.valueOf(100), getBalanceInbox.receiveMessage().balance);
+    assertEquals(BigDecimal.valueOf(100), currentBalance);
 
-    testkit.run(new AccountEntity.Withdraw(BigDecimal.valueOf(10), replyToInbox.getRef()));
+    testkit
+        .askWithStatus(
+            Done.class, replyTo -> new AccountEntity.Withdraw(BigDecimal.valueOf(10), replyTo))
+        .expectValue(Done.getInstance());
 
-    replyToInbox.expectMessage(StatusReply.ack());
     // can save the persistence effect for in-depth inspection
     PersistenceEffect<AccountEntity.Withdrawn> withdrawEffect =
         unpersistent.getEventProbe().expectPersistedClass(AccountEntity.Withdrawn.class);
@@ -84,9 +92,13 @@ public class AccountExampleUnpersistentDocTest
     assertEquals(3L, withdrawEffect.sequenceNr());
     assertTrue(withdrawEffect.tags().isEmpty());
 
-    testkit.run(new AccountEntity.GetBalance(getBalanceInbox.getRef()));
+    currentBalance =
+        testkit
+            .ask(AccountEntity.CurrentBalance.class, AccountEntity.GetBalance::new)
+            .receiveReply()
+            .balance;
 
-    assertEquals(BigDecimal.valueOf(90), getBalanceInbox.receiveMessage().balance);
+    assertEquals(BigDecimal.valueOf(90), currentBalance);
   }
 
   @Test
@@ -95,10 +107,12 @@ public class AccountExampleUnpersistentDocTest
         unpersistent = accountWithBalance(BigDecimal.valueOf(100));
 
     BehaviorTestKit<AccountEntity.Command> testkit = unpersistent.getBehaviorTestKit();
-    TestInbox<StatusReply<Done>> replyToInbox = TestInbox.create();
 
-    testkit.run(new AccountEntity.Withdraw(BigDecimal.valueOf(110), replyToInbox.getRef()));
-    assertTrue(replyToInbox.receiveMessage().isError());
+    testkit
+        .askWithStatus(
+            Done.class, replyTo -> new AccountEntity.Withdraw(BigDecimal.valueOf(110), replyTo))
+        .expectErrorMessage("not enough funds to withdraw 110");
+
     assertFalse(unpersistent.getEventProbe().hasEffects());
   }
 

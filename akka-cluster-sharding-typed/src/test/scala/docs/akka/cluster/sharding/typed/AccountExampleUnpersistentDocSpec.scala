@@ -4,13 +4,10 @@
 
 package docs.akka.cluster.sharding.typed
 
-import akka.Done
-import akka.pattern.StatusReply
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 
 // #test
-import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.persistence.testkit.scaladsl.UnpersistentBehavior
 import akka.persistence.typed.PersistenceId
 
@@ -25,8 +22,6 @@ class AccountExampleUnpersistentDocSpec
 // #test
   "Account" must {
     "be created with zero balance" in {
-      val getBalanceInbox = TestInbox[AccountEntity.CurrentBalance]()
-
       onAnEmptyAccount { (testkit, eventProbe, snapshotProbe) =>
         testkit.askWithStatus(AccountEntity.CreateAccount(_)).expectDone()
 
@@ -56,8 +51,6 @@ class AccountExampleUnpersistentDocSpec
     }
 
     "reject Withdraw overdraft" in {
-      val replyToInbox = TestInbox[StatusReply[Done]]()
-
       onAnAccountWithBalance(100) { (testkit, eventProbe, _) =>
         testkit.askWithStatus(AccountEntity.Withdraw(110, _)).receiveStatusReply().isError shouldBe true
 
