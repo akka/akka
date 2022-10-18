@@ -128,13 +128,6 @@ private[akka] object Unpersistent {
         snapshotFromRetention || snapshotWhen(state, evt, sequenceNr)
       }
 
-      def persistEvent(evt: Event): Unit = {
-        sequenceNr += 1
-        onEvent(evt, sequenceNr, tagger(evt))
-        state = eventHandler(state, evt)
-        shouldSnapshot = shouldSnapshot || snapshotRequested(evt)
-      }
-
       @tailrec
       def applyEffects(curEffect: EffectImpl[Event, State], sideEffects: immutable.Seq[SideEffect[State]]): Unit =
         curEffect match {
@@ -142,11 +135,27 @@ private[akka] object Unpersistent {
             applyEffects(eff, se ++ sideEffects)
 
           case Persist(event) =>
-            persistEvent(event)
+            sequenceNr += 1
+            state = eventHandler(state, event)
+            onEvent(event, sequenceNr, tagger(event))
+            shouldSnapshot = shouldSnapshot || snapshotRequested(event)
             sideEffect(sideEffects)
 
           case PersistAll(events) =>
-            events.foreach(persistEvent)
+            val eventsWithSeqNrs =
+              events.map { event =>
+                sequenceNr += 1
+                state = eventHandler(state, event)
+                event -> sequenceNr
+              }
+
+            eventsWithSeqNrs.foreach {
+              case (event, seqNr) =>
+                // technically doesn't persist them atomically, but in tests that shouldn't matter
+                onEvent(event, seqNr, tagger(event))
+                shouldSnapshot = shouldSnapshot || snapshotRequested(event)
+            }
+
             sideEffect(sideEffects)
 
           // From outside of the behavior, these are equivalent: no state update
