@@ -634,6 +634,13 @@ Reasons for disabling:
 
 For supporting remembered entities in an environment without disk storage use `eventsourced` mode instead.
 
+@@@ note { title="Java 17" }
+
+When using `remember-entities-store=ddata` the remember entities store is persisted to disk by LMDB.
+When running with Java 17 you have to add JVM flags `--add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED`.
+
+@@@
+
 #### Event sourced mode
 
 Enable `eventsourced` mode with:

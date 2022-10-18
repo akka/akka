@@ -675,6 +675,12 @@ possible to replace that with another implementation by implementing the actor p
 `akka.cluster.ddata.DurableStore` and defining the `akka.cluster.distributed-data.durable.store-actor-class`
 property for the new implementation.
 
+@@@ note { title="Java 17" }
+
+When using LMDB with Java 17 you have to add JVM flags `--add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED`.
+
+@@@
+
 The location of the files for the data is configured with:
 
 Scala
