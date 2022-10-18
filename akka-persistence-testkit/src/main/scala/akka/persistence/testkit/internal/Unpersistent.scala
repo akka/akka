@@ -14,7 +14,7 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl
 import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
 import akka.util.ConstantFun.{ scalaAnyToUnit => doNothing }
-import akka.util.ccompat.JavaConverters.{ SeqHasAsJava, SetHasAsJava, SetHasAsScala }
+import akka.util.ccompat.JavaConverters._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
