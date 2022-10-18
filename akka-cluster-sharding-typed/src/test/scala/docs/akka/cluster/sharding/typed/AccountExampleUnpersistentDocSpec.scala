@@ -4,6 +4,7 @@
 
 package docs.akka.cluster.sharding.typed
 
+import akka.Done
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 
@@ -23,7 +24,7 @@ class AccountExampleUnpersistentDocSpec
   "Account" must {
     "be created with zero balance" in {
       onAnEmptyAccount { (testkit, eventProbe, snapshotProbe) =>
-        testkit.askWithStatus(AccountEntity.CreateAccount(_)).expectDone()
+        testkit.askWithStatus[Done](AccountEntity.CreateAccount(_)).expectDone()
 
         eventProbe.expectPersisted(AccountEntity.AccountCreated)
 
@@ -32,21 +33,21 @@ class AccountExampleUnpersistentDocSpec
         //  protocol
         snapshotProbe.hasEffects shouldBe false
 
-        testkit.ask(AccountEntity.GetBalance(_)).receiveReply().balance shouldBe 0
+        testkit.ask[AccountEntity.CurrentBalance](AccountEntity.GetBalance(_)).receiveReply().balance shouldBe 0
       }
     }
 
     "handle Deposit and Withdraw" in {
       onAnOpenedAccount { (testkit, eventProbe, _) =>
-        testkit.askWithStatus(AccountEntity.Deposit(100, _)).expectDone()
+        testkit.askWithStatus[Done](AccountEntity.Deposit(100, _)).expectDone()
 
         eventProbe.expectPersisted(AccountEntity.Deposited(100))
 
-        testkit.askWithStatus(AccountEntity.Withdraw(10, _)).expectDone()
+        testkit.askWithStatus[Done](AccountEntity.Withdraw(10, _)).expectDone()
 
         eventProbe.expectPersisted(AccountEntity.Withdrawn(10))
 
-        testkit.ask(AccountEntity.GetBalance(_)).receiveReply().balance shouldBe 90
+        testkit.ask[AccountEntity.CurrentBalance](AccountEntity.GetBalance(_)).receiveReply().balance shouldBe 90
       }
     }
 
