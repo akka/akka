@@ -15,6 +15,8 @@ import com.typesafe.config.Config
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.nowarn
+
 object BehaviorTestKit {
 
   /**
@@ -71,9 +73,39 @@ abstract class BehaviorTestKit[T] {
   def ask[Res](messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res]
 
   /**
+   * The same as [[ask]], but with the response class specified.  This improves type inference in Java
+   * when asserting on the reply in the same statement as the `ask` as in:
+   *
+   * ```
+   * testkit.ask(Done.class, DoSomethingCommand::new).expectReply(Done.getInstance());
+   * ```
+   *
+   * If explicitly saving the [[ReplyInbox]] in a variable, the version without the class may be preferred.
+   */
+  @nowarn("msg=never used") // responseClass is a pretend param to guide inference
+  def ask[Res](responseClass: Class[Res], messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res] =
+    ask(messageFactory)
+
+  /**
    * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
    */
   def askWithStatus[Res](messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res]
+
+  /**
+   * The same as [[askWithStatus]], but with the response class specified.  This improves type inference in
+   * Java when asserting on the reply in the same statement as the `askWithStatus` as in:
+   *
+   * ```
+   * testkit.askWithStatus(Done.class, DoSomethingWithStatusCommand::new).expectValue(Done.getInstance());
+   * ```
+   *
+   * If explicitly saving the [[StatusReplyInbox]] in a variable, the version without the class may be preferred.
+   */
+  @nowarn("msg=never used") // responseClass is a pretend param to guide inference
+  def askWithStatus[Res](
+      responseClass: Class[Res],
+      messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res] =
+    askWithStatus(messageFactory)
 
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects
