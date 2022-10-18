@@ -738,7 +738,7 @@ See also additional information about how to make @ref:[smooth rolling updates](
 Two requests to inspect the cluster state are available:
 
 @apidoc[akka.cluster.sharding.typed.GetShardRegionState] which will reply with a 
-@apidoc[ShardRegion.CurrentShardRegionState] that contains the identifiers of the shards running in
+@apidoc[akka.cluster.sharding.ShardRegion.CurrentShardRegionState] that contains the identifiers of the shards running in
 a Region and what entities are alive for each of them.
 
 Scala
