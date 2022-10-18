@@ -25,12 +25,10 @@ class AccountExampleUnpersistentDocSpec
 // #test
   "Account" must {
     "be created with zero balance" in {
-      val replyToInbox = TestInbox[StatusReply[Done]]()
       val getBalanceInbox = TestInbox[AccountEntity.CurrentBalance]()
 
       onAnEmptyAccount { (testkit, eventProbe, snapshotProbe) =>
-        testkit.run(AccountEntity.CreateAccount(replyToInbox.ref))
-        replyToInbox.expectMessage(StatusReply.Ack)
+        testkit.askWithStatus(AccountEntity.CreateAccount(_)).expectDone()
 
         eventProbe.expectPersisted(AccountEntity.AccountCreated)
 
@@ -39,30 +37,21 @@ class AccountExampleUnpersistentDocSpec
         //  protocol
         snapshotProbe.hasEffects shouldBe false
 
-        testkit.run(AccountEntity.GetBalance(getBalanceInbox.ref))
-
-        getBalanceInbox.receiveMessage().balance shouldBe 0
+        testkit.ask(AccountEntity.GetBalance(_)).receiveReply().balance shouldBe 0
       }
     }
 
     "handle Deposit and Withdraw" in {
-      val replyToInbox = TestInbox[StatusReply[Done]]()
-      val getBalanceInbox = TestInbox[AccountEntity.CurrentBalance]()
-
       onAnOpenedAccount { (testkit, eventProbe, _) =>
-        testkit.run(AccountEntity.Deposit(100, replyToInbox.ref))
+        testkit.askWithStatus(AccountEntity.Deposit(100, _)).expectDone()
 
-        replyToInbox.expectMessage(StatusReply.Ack)
         eventProbe.expectPersisted(AccountEntity.Deposited(100))
 
-        testkit.run(AccountEntity.Withdraw(10, replyToInbox.ref))
+        testkit.askWithStatus(AccountEntity.Withdraw(10, _)).expectDone()
 
-        replyToInbox.expectMessage(StatusReply.Ack)
         eventProbe.expectPersisted(AccountEntity.Withdrawn(10))
 
-        testkit.run(AccountEntity.GetBalance(getBalanceInbox.ref))
-
-        getBalanceInbox.receiveMessage().balance shouldBe 90
+        testkit.ask(AccountEntity.GetBalance(_)).receiveReply().balance shouldBe 90
       }
     }
 
@@ -70,9 +59,8 @@ class AccountExampleUnpersistentDocSpec
       val replyToInbox = TestInbox[StatusReply[Done]]()
 
       onAnAccountWithBalance(100) { (testkit, eventProbe, _) =>
-        testkit.run(AccountEntity.Withdraw(110, replyToInbox.ref))
+        testkit.askWithStatus(AccountEntity.Withdraw(110, _)).receiveStatusReply().isError shouldBe true
 
-        replyToInbox.receiveMessage().isError shouldBe true
         eventProbe.hasEffects shouldBe false
       }
     }
