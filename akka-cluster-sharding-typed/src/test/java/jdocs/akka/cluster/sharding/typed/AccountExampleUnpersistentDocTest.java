@@ -35,7 +35,7 @@ public class AccountExampleUnpersistentDocTest
 
     BehaviorTestKit<AccountEntity.Command> testkit = unpersistent.getBehaviorTestKit();
 
-    StatusReplyInbox<Done> ackInbox = testkit.askWithStatus(AccountEntity.CreateAccount::new);
+    StatusReplyInbox<Done> ackInbox = testkit.runAskWithStatus(AccountEntity.CreateAccount::new);
 
     ackInbox.expectValue(Done.getInstance());
     unpersistent.getEventProbe().expectPersisted(AccountEntity.AccountCreated.INSTANCE);
@@ -46,7 +46,7 @@ public class AccountExampleUnpersistentDocTest
     assertFalse(unpersistent.getSnapshotProbe().hasEffects());
 
     ReplyInbox<AccountEntity.CurrentBalance> currentBalanceInbox =
-        testkit.ask(AccountEntity.GetBalance::new);
+        testkit.runAsk(AccountEntity.GetBalance::new);
 
     assertEquals(BigDecimal.ZERO, currentBalanceInbox.receiveReply().balance);
   }
@@ -60,7 +60,7 @@ public class AccountExampleUnpersistentDocTest
     BigDecimal currentBalance;
 
     testkit
-        .askWithStatus(
+        .runAskWithStatus(
             Done.class, replyTo -> new AccountEntity.Deposit(BigDecimal.valueOf(100), replyTo))
         .expectValue(Done.getInstance());
 
@@ -74,14 +74,14 @@ public class AccountExampleUnpersistentDocTest
 
     currentBalance =
         testkit
-            .ask(AccountEntity.CurrentBalance.class, AccountEntity.GetBalance::new)
+            .runAsk(AccountEntity.CurrentBalance.class, AccountEntity.GetBalance::new)
             .receiveReply()
             .balance;
 
     assertEquals(BigDecimal.valueOf(100), currentBalance);
 
     testkit
-        .askWithStatus(
+        .runAskWithStatus(
             Done.class, replyTo -> new AccountEntity.Withdraw(BigDecimal.valueOf(10), replyTo))
         .expectValue(Done.getInstance());
 
@@ -94,7 +94,7 @@ public class AccountExampleUnpersistentDocTest
 
     currentBalance =
         testkit
-            .ask(AccountEntity.CurrentBalance.class, AccountEntity.GetBalance::new)
+            .runAsk(AccountEntity.CurrentBalance.class, AccountEntity.GetBalance::new)
             .receiveReply()
             .balance;
 
@@ -109,7 +109,7 @@ public class AccountExampleUnpersistentDocTest
     BehaviorTestKit<AccountEntity.Command> testkit = unpersistent.getBehaviorTestKit();
 
     testkit
-        .askWithStatus(
+        .runAskWithStatus(
             Done.class, replyTo -> new AccountEntity.Withdraw(BigDecimal.valueOf(110), replyTo))
         .expectErrorMessage("not enough funds to withdraw 110");
 

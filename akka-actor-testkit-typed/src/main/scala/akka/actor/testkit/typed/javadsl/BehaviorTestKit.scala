@@ -70,42 +70,42 @@ abstract class BehaviorTestKit[T] {
    *
    * The returned [[ReplyInbox]] allows the message sent to the "reply to" `ActorRef` to be asserted on.
    */
-  def ask[Res](messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res]
+  def runAsk[Res](messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res]
 
   /**
-   * The same as [[ask]], but with the response class specified.  This improves type inference in Java
-   * when asserting on the reply in the same statement as the `ask` as in:
+   * The same as [[runAsk]], but with the response class specified.  This improves type inference in Java
+   * when asserting on the reply in the same statement as the `runAsk` as in:
    *
    * ```
-   * testkit.ask(Done.class, DoSomethingCommand::new).expectReply(Done.getInstance());
+   * testkit.runAsk(Done.class, DoSomethingCommand::new).expectReply(Done.getInstance());
    * ```
    *
    * If explicitly saving the [[ReplyInbox]] in a variable, the version without the class may be preferred.
    */
   @nowarn("msg=never used") // responseClass is a pretend param to guide inference
-  def ask[Res](responseClass: Class[Res], messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res] =
-    ask(messageFactory)
+  def runAsk[Res](responseClass: Class[Res], messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res] =
+    runAsk(messageFactory)
 
   /**
-   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * The same as [[runAsk]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
    */
-  def askWithStatus[Res](messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res]
+  def runAskWithStatus[Res](messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res]
 
   /**
-   * The same as [[askWithStatus]], but with the response class specified.  This improves type inference in
-   * Java when asserting on the reply in the same statement as the `askWithStatus` as in:
+   * The same as [[runAskWithStatus]], but with the response class specified.  This improves type inference in
+   * Java when asserting on the reply in the same statement as the `runAskWithStatus` as in:
    *
    * ```
-   * testkit.askWithStatus(Done.class, DoSomethingWithStatusCommand::new).expectValue(Done.getInstance());
+   * testkit.runAskWithStatus(Done.class, DoSomethingWithStatusCommand::new).expectValue(Done.getInstance());
    * ```
    *
    * If explicitly saving the [[StatusReplyInbox]] in a variable, the version without the class may be preferred.
    */
   @nowarn("msg=never used") // responseClass is a pretend param to guide inference
-  def askWithStatus[Res](
+  def runAskWithStatus[Res](
       responseClass: Class[Res],
       messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res] =
-    askWithStatus(messageFactory)
+    runAskWithStatus(messageFactory)
 
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects

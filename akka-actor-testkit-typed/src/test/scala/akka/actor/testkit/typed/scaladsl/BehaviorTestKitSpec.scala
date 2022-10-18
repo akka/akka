@@ -387,7 +387,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val h = TestInbox[String]()
 
       val sessionRef =
-        testkit.ask[ActorRef[String]](SpawnSession(_, h.ref)).receiveReply()
+        testkit.runAsk[ActorRef[String]](SpawnSession(_, h.ref)).receiveReply()
 
       val s = testkit.expectEffectType[SpawnedAnonymous[_]]
       // must be able to get the created ref, even without explicit reply
@@ -397,7 +397,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       session.run("hello")
       h.receiveAll() shouldBe Seq("hello")
 
-      testkit.ask(KillSession(sessionRef, _)).expectReply(Done)
+      testkit.runAsk(KillSession(sessionRef, _)).expectReply(Done)
 
       testkit.expectEffectType[Stopped]
     }
@@ -434,7 +434,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
     "schedule and cancel timers" in {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
 
-      testkit.ask(IsTimerActive("abc", _)).expectReply(false)
+      testkit.runAsk(IsTimerActive("abc", _)).expectReply(false)
 
       testkit.run(ScheduleCommand("abc", 42.seconds, Effect.TimerScheduled.SingleMode, SpawnChild))
       testkit.expectEffectPF {
@@ -447,7 +447,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
           finiteDuration should equal(42.seconds)
       }
 
-      testkit.ask(IsTimerActive("abc", _)).expectReply(true)
+      testkit.runAsk(IsTimerActive("abc", _)).expectReply(true)
 
       testkit.run(CancelScheduleCommand("abc"))
       testkit.expectEffectPF {
@@ -455,7 +455,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
           key should equal("abc")
       }
 
-      testkit.ask(IsTimerActive("abc", _)).expectReply(false)
+      testkit.runAsk(IsTimerActive("abc", _)).expectReply(false)
     }
 
     "schedule and fire timers" in {

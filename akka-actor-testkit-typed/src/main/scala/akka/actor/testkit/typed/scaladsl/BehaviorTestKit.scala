@@ -52,12 +52,12 @@ trait BehaviorTestKit[T] {
    *
    * The returned [[ReplyInbox]] allows the message sent to the "reply to" `ActorRef` to be asserted on.
    */
-  def ask[Res](f: ActorRef[Res] => T): ReplyInbox[Res]
+  def runAsk[Res](f: ActorRef[Res] => T): ReplyInbox[Res]
 
   /**
-   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * The same as [[runAsk]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
    */
-  def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => T): StatusReplyInbox[Res]
+  def runAskWithStatus[Res](f: ActorRef[StatusReply[Res]] => T): StatusReplyInbox[Res]
 
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
   private[akka] def context: TypedActorContext[T]

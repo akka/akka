@@ -396,7 +396,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     TestInbox<String> h = TestInbox.create();
 
     ReplyInbox<ActorRef<String>> sessionReply =
-        test.ask(replyTo -> new SpawnSession(replyTo, h.getRef()));
+        test.runAsk(replyTo -> new SpawnSession(replyTo, h.getRef()));
 
     ActorRef<String> sessionRef = sessionReply.receiveReply();
 
@@ -407,7 +407,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     session.run("hello");
     assertEquals(Collections.singletonList("hello"), h.getAllReceived());
 
-    ReplyInbox<Done> doneReply = test.ask(replyTo -> new KillSession(sessionRef, replyTo));
+    ReplyInbox<Done> doneReply = test.runAsk(replyTo -> new KillSession(sessionRef, replyTo));
     doneReply.expectReply(Done.getInstance());
 
     test.expectEffectClass(Effect.Stopped.class);

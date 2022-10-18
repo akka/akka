@@ -1,5 +1,5 @@
 # Add ability to ask BehaviorTestKit
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.BehaviorTestKit.ask")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.BehaviorTestKit.askWithStatus")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.BehaviorTestKit.ask")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.BehaviorTestKit.askWithStatus")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.BehaviorTestKit.runAsk")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.javadsl.BehaviorTestKit.runAskWithStatus")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.BehaviorTestKit.runAsk")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.testkit.typed.scaladsl.BehaviorTestKit.runAskWithStatus")
