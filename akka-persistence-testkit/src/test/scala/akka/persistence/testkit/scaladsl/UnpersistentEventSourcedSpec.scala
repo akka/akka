@@ -4,13 +4,20 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.Done
-import akka.actor.typed.{ Behavior, RecipientRef }
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.typed.{ PersistenceId, RecoveryCompleted }
-import akka.persistence.typed.scaladsl._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.Done
+import akka.actor.typed.Behavior
+import akka.actor.typed.RecipientRef
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.RetentionCriteria
 
 object UnpersistentEventSourcedSpec {
   object BehaviorUnderTest {
@@ -43,7 +50,7 @@ object UnpersistentEventSourcedSpec {
           eventHandler = applyEvent(_, _))
           .receiveSignal {
             case (state, RecoveryCompleted) =>
-              context.log.debug("Recovered state for id [{}] is [{}]", id, state)
+              context.log.debug2("Recovered state for id [{}] is [{}]", id, state)
               recoveryDone ! Done
           }
           .snapshotWhen {
@@ -144,10 +151,10 @@ object UnpersistentEventSourcedSpec {
 }
 
 class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
-  import akka.actor.testkit.typed.scaladsl._
   import org.slf4j.event.Level
 
   import UnpersistentEventSourcedSpec._
+  import akka.actor.testkit.typed.scaladsl._
 
   "Unpersistent EventSourcedBehavior" must {
     "generate a failing behavior from a non-EventSourcedBehavior" in {
