@@ -4,14 +4,19 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.Done
-import akka.actor.typed.{ Behavior, RecipientRef }
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.state.RecoveryCompleted
-import akka.persistence.typed.state.scaladsl._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.Done
+import akka.actor.typed.Behavior
+import akka.actor.typed.RecipientRef
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.state.RecoveryCompleted
+import akka.persistence.typed.state.scaladsl.DurableStateBehavior
+import akka.persistence.typed.state.scaladsl.Effect
 
 object UnpersistentDurableStateSpec {
   object BehaviorUnderTest {
@@ -67,7 +72,7 @@ object UnpersistentDurableStateSpec {
           commandHandler = applyCommand(_, _, context))
           .receiveSignal {
             case (state, RecoveryCompleted) =>
-              context.log.debug("Recovered state for id [{}] is [{}]", id, state)
+              context.log.debug2("Recovered state for id [{}] is [{}]", id, state)
               recoveryDone ! Done
           }
           .withTag("count")
@@ -126,10 +131,10 @@ object UnpersistentDurableStateSpec {
 }
 
 class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
-  import akka.actor.testkit.typed.scaladsl._
   import org.slf4j.event.Level
 
   import UnpersistentDurableStateSpec._
+  import akka.actor.testkit.typed.scaladsl._
 
   "Unpersistent DurableStateBehavior" must {
     "generate a fail-fast behavior from a non-DurableStateBehavior" in {
