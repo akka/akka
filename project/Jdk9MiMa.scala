@@ -15,12 +15,15 @@ object Jdk9MiMa extends AutoPlugin {
 
   override def projectSettings: Seq[Def.Setting[_]] =
     Seq(
-      // now we have two class directories under target but mima only understands one
+      // compiled jdk9+ only sources end up in a separate class directory
+      // so for those we now have two class directories under target but mima only understands one
       // so merge regular class directory with jdk9 class directory and have mima check those
       prepForMima := {
+        (Compile / compile).value
+        (CompileJdk9 / compile).value
         val destination = file((Compile / classDirectory).value.getParent) / "classesForMima"
         val log = streams.value.log
-        println("Special handling of JDK9 only classes and MiMa check")
+        streams.value.log.debug("Special handling of JDK9 only classes for MiMa check triggered")
         val allClassDirectories = (Compile / productDirectories).value ++ (CompileJdk9 / productDirectories).value
         if (destination.exists()) {
           IO.delete(destination)
