@@ -7,13 +7,10 @@ package akka.dispatch
 import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
-
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
 import akka.annotation.InternalStableApi
@@ -40,6 +37,8 @@ private[akka] class Mailboxes(
     deadLetters: ActorRef) {
 
   import Mailboxes._
+
+  private val requiredMessageQueueTypeCache = new ConcurrentHashMap[Class[_], Class[_]]()
 
   val deadLetterMailbox: Mailbox = new Mailbox(new MessageQueue {
     def enqueue(receiver: ActorRef, envelope: Envelope): Unit = onDeadLetterMailboxEnqueue(receiver, envelope)
@@ -104,17 +103,22 @@ private[akka] class Mailboxes(
   /**
    * Return the required message queue type for this class if any.
    */
-  def getRequiredType(actorClass: Class[_ <: Actor]): Class[_] =
-    Reflect.findMarker(actorClass, rmqClass) match {
-      case t: ParameterizedType =>
-        t.getActualTypeArguments.head match {
-          case c: Class[_] => c
-          case x =>
-            throw new IllegalArgumentException(s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
-        }
-      case unexpected =>
-        throw new IllegalArgumentException(s"Unexpected actor class marker: $unexpected") // will not happen, for exhaustiveness check
-    }
+  def getRequiredType(actorClass: Class[_ <: Actor]): Class[_] = {
+    requiredMessageQueueTypeCache.computeIfAbsent(
+      actorClass,
+      actorClass =>
+        Reflect.findMarker(actorClass, rmqClass) match {
+          case t: ParameterizedType =>
+            t.getActualTypeArguments.head match {
+              case c: Class[_] => c
+              case x =>
+                throw new IllegalArgumentException(
+                  s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
+            }
+          case unexpected =>
+            throw new IllegalArgumentException(s"Unexpected actor class marker: $unexpected") // will not happen, for exhaustiveness check
+        })
+  }
 
   // don’t care if this happens twice
   private var mailboxSizeWarningIssued = false
