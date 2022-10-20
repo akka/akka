@@ -15,6 +15,7 @@ object MiMa extends AutoPlugin {
   //  akka-pki artifact was added in Akka 2.6.6
   private val firstPatchOf26 = 6
   private val latestPatchOf26 = 20
+  private val firstPatchOf27 = 0
   private val latestPatchOf27 = 0
 
   override def requires = MimaPlugin
@@ -40,7 +41,7 @@ object MiMa extends AutoPlugin {
       projectName: String,
       organization: String,
       scalaBinaryVersion: String): Set[sbt.ModuleID] = {
-    val akka27Previous = expandVersions(2, 7, 0 to latestPatchOf27)
+    val akka27Previous = expandVersions(2, 7, firstPatchOf27 to latestPatchOf27)
     val versions: Seq[String] =
       if (scalaBinaryVersion.startsWith("3")) {
         // was experimental before 2.7.0

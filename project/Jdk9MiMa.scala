@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
+
 import akka.Jdk9.CompileJdk9
 import akka.{ Jdk9, MiMa }
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport.{ mimaCurrentClassfiles, mimaReportBinaryIssues }
