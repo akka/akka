@@ -8,7 +8,6 @@ package adapter
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
-
 import akka.{ actor => classic }
 import akka.annotation.InternalApi
 
