@@ -116,7 +116,7 @@ class PersistenceTestKitSnapshotPlugin extends SnapshotStore {
     Future.fromTry(Try(storage.tryDelete(metadata)))
 
   override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
-    Future.successful(Try(storage.tryDelete(persistenceId, criteria)))
+    Future.fromTry(Try(storage.tryDelete(persistenceId, criteria)))
 
 }
 
