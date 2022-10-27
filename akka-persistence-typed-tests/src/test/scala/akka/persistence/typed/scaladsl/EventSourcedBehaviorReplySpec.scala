@@ -71,7 +71,7 @@ class EventSourcedBehaviorReplySpec
   import EventSourcedBehaviorReplySpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()}")
 
   "A typed persistent actor with commands that are expecting replies" must {
 

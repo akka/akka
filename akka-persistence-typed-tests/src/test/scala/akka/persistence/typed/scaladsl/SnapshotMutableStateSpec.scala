@@ -75,7 +75,7 @@ class SnapshotMutableStateSpec
   import SnapshotMutableStateSpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()}")
 
   "A typed persistent actor with mutable state" must {
 
