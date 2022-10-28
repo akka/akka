@@ -382,7 +382,7 @@ private class ConsumerControllerImpl[A] private (
     } else if (s.receivedSeqNr == 0) {
       // needed for sharding
       context.log.debug(
-        "Received SequencedMessage seqNr [{}], from new producer producer [{}] but it wasn't first. Resending.",
+        "Received SequencedMessage seqNr [{}], from new producer [{}] but it wasn't first. Resending.",
         seqNr,
         seqMsg.producerController)
       // request resend of all unconfirmed, and mark first
