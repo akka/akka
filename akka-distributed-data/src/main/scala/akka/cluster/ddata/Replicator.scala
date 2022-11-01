@@ -453,6 +453,7 @@ final class ReplicatorSettings(
 }
 
 object Replicator {
+  private type Timestamp = Long
 
   /**
    * Factory method for the [[akka.actor.Props]] of the [[Replicator]] actor.
@@ -1103,7 +1104,7 @@ object Replicator {
     }
 
     final case class Status(
-        digests: Map[KeyId, Digest],
+        digests: Map[KeyId, (Digest, Timestamp)],
         chunk: Int,
         totChunks: Int,
         toSystemUid: Option[Long],
@@ -1113,12 +1114,12 @@ object Replicator {
       override def toString: String =
         (digests
           .map {
-            case (key, bytes) => key + " -> " + bytes.map(byte => f"$byte%02x").mkString("")
+            case (key, (bytes, _)) => key + " -> " + bytes.map(byte => f"$byte%02x").mkString("")
           })
           .mkString("Status(", ", ", ")")
     }
     final case class Gossip(
-        updatedData: Map[KeyId, DataEnvelope],
+        updatedData: Map[KeyId, (DataEnvelope, Timestamp)],
         sendBack: Boolean,
         toSystemUid: Option[Long],
         fromSystemUid: Option[Long])
@@ -1482,7 +1483,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   var unreachable = Set.empty[UniqueAddress]
 
   // the actual data
-  var dataEntries = Map.empty[KeyId, (DataEnvelope, Digest)]
+  var dataEntries = Map.empty[KeyId, (DataEnvelope, Digest, Timestamp)]
   // keys that have changed, Changed event published to subscribers on FlushChanges
   var changed = Set.empty[KeyId]
 
@@ -1685,6 +1686,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def receiveGet(key: KeyR, consistency: ReadConsistency, req: Option[Any]): Unit = {
     val localValue = getData(key.id)
     log.debug("Received Get for key [{}].", key)
+    updateUsedTimestamp(key.id, System.currentTimeMillis())
     if (isLocalGet(consistency)) {
       val reply = localValue match {
         case Some(DataEnvelope(DeletedData, _, _)) => GetDataDeleted(key, req)
@@ -1774,6 +1776,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         // note that it's important to do deltaPropagationSelector.update before setData,
         // so that the latest delta version is used
         val newEnvelope = setData(key.id, envelope)
+
+        updateUsedTimestamp(key.id, System.currentTimeMillis())
 
         val durable = isDurable(key.id)
         if (isLocalUpdate(writeConsistency)) {
@@ -1895,7 +1899,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def receiveGetKeyIds(): Unit = {
     val keys: Set[KeyId] = dataEntries.iterator
       .collect {
-        case (key, (DataEnvelope(data, _, _), _)) if data != DeletedData => key
+        case (key, (DataEnvelope(data, _, _), _, _)) if data != DeletedData => key
       }
       .to(immutable.Set)
     replyTo ! GetKeyIdsResult(keys)
@@ -1972,7 +1976,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       } else if (newEnvelope.data == DeletedData) DeletedDigest
       else LazyDigest
 
-    dataEntries = dataEntries.updated(key, (newEnvelope, dig))
+    dataEntries = dataEntries.updated(key, (newEnvelope, dig, getUsedTimestamp(key)))
     if (newEnvelope.data == DeletedData)
       deltaPropagationSelector.delete(key)
     newEnvelope
@@ -1980,13 +1984,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def getDigest(key: KeyId): Digest = {
     dataEntries.get(key) match {
-      case Some((envelope, LazyDigest)) =>
+      case Some((envelope, LazyDigest, usedTimestamp)) =>
         val (d, size) = digest(envelope)
         payloadSizeAggregator.updatePayloadSize(key, size)
-        dataEntries = dataEntries.updated(key, (envelope, d))
+        dataEntries = dataEntries.updated(key, (envelope, d, usedTimestamp))
         d
-      case Some((_, digest)) => digest
-      case None              => NotFoundDigest
+      case Some((_, digest, _)) => digest
+      case None                 => NotFoundDigest
     }
   }
 
@@ -2001,19 +2005,40 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       (dig, bytes.length)
     }
 
-  def getData(key: KeyId): Option[DataEnvelope] = dataEntries.get(key).map { case (envelope, _) => envelope }
+  def getData(key: KeyId): Option[DataEnvelope] =
+    dataEntries.get(key).map { case (envelope, _, _) => envelope }
+
+  def getUsedTimestamp(key: KeyId): Timestamp =
+    dataEntries.get(key) match {
+      case Some((_, _, usedTimestamp)) => usedTimestamp
+      case None                        => 0L
+    }
+
+  def isExpired(timestamp: Timestamp): Boolean = {
+    timestamp != 0L && timestamp <= System.currentTimeMillis() - 2000 // FIXME config
+  }
+
+  def updateUsedTimestamp(key: KeyId, timestamp: Timestamp): Unit = {
+    if (timestamp != 0) {
+      dataEntries.get(key).foreach {
+        case (existingEnvelope, existingDigest, existingTimestamp) =>
+          if (timestamp > existingTimestamp)
+            dataEntries = dataEntries.updated(key, (existingEnvelope, existingDigest, timestamp))
+      }
+    }
+  }
 
   def getDeltaSeqNr(key: KeyId, fromNode: UniqueAddress): Long =
     dataEntries.get(key) match {
-      case Some((DataEnvelope(_, _, deltaVersions), _)) => deltaVersions.versionAt(fromNode)
-      case None                                         => 0L
+      case Some((DataEnvelope(_, _, deltaVersions), _, _)) => deltaVersions.versionAt(fromNode)
+      case None                                            => 0L
     }
 
   def isNodeRemoved(node: UniqueAddress, keys: Iterable[KeyId]): Boolean = {
     removedNodes.contains(node) || (keys.exists(key =>
       dataEntries.get(key) match {
-        case Some((DataEnvelope(_, pruning, _), _)) => pruning.contains(node)
-        case None                                   => false
+        case Some((DataEnvelope(_, pruning, _), _, _)) => pruning.contains(node)
+        case None                                      => false
       }))
   }
 
@@ -2124,6 +2149,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
 
   def receiveGossipTick(): Unit = {
+    cleanupExpired()
     if (fullStateGossipEnabled)
       selectRandomNode(allNodes.toVector).foreach(gossipTo)
   }
@@ -2132,12 +2158,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val to = replica(address)
     val toSystemUid = Some(address.longUid)
     if (dataEntries.size <= maxDeltaElements) {
-      val status = Status(
-        dataEntries.map { case (key, (_, _)) => (key, getDigest(key)) },
-        chunk = 0,
-        totChunks = 1,
-        toSystemUid,
-        selfFromSystemUid)
+      val status = Status(dataEntries.map {
+        case (key, (_, _, usedTimestamp)) => (key, (getDigest(key), usedTimestamp))
+      }, chunk = 0, totChunks = 1, toSystemUid, selfFromSystemUid)
       to ! status
     } else {
       val totChunks = dataEntries.size / maxDeltaElements
@@ -2150,7 +2173,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         }
         val chunk = (statusCount % totChunks).toInt
         val status = Status(dataEntries.collect {
-          case (key, (_, _)) if math.abs(key.hashCode % totChunks) == chunk => (key, getDigest(key))
+          case (key, (_, _, usedTimestamp)) if math.abs(key.hashCode % totChunks) == chunk =>
+            (key, (getDigest(key), usedTimestamp))
         }, chunk, totChunks, toSystemUid, selfFromSystemUid)
         to ! status
       }
@@ -2163,7 +2187,11 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def replica(node: UniqueAddress): ActorSelection =
     context.actorSelection(self.path.toStringWithAddress(node.address))
 
-  def receiveStatus(otherDigests: Map[KeyId, Digest], chunk: Int, totChunks: Int, fromSystemUid: Option[Long]): Unit = {
+  def receiveStatus(
+      otherDigests: Map[KeyId, (Digest, Timestamp)],
+      chunk: Int,
+      totChunks: Int,
+      fromSystemUid: Option[Long]): Unit = {
     if (log.isDebugEnabled)
       log.debug(
         "Received gossip status from [{}], chunk [{}] of [{}] containing [{}].",
@@ -2172,18 +2200,28 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         totChunks,
         otherDigests.keys.mkString(", "))
 
+    // update the usedTimestamp when needed
+    otherDigests.foreach {
+      case (key, (_, usedTimestamp)) =>
+        log.info(s"# receiveStatus $key ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
+        updateUsedTimestamp(key, usedTimestamp)
+      // if we don't have the key it will be updated with the full Gossip
+    }
+
     def isOtherDifferent(key: KeyId, otherDigest: Digest): Boolean = {
       val d = getDigest(key)
       d != NotFoundDigest && d != otherDigest
     }
     val otherDifferentKeys = otherDigests.collect {
-      case (key, otherDigest) if isOtherDifferent(key, otherDigest) => key
+      case (key, (otherDigest, _)) if isOtherDifferent(key, otherDigest) => key
     }
     val otherKeys = otherDigests.keySet
     val myKeys =
       if (totChunks == 1) dataEntries.keySet
       else dataEntries.keysIterator.filter(key => math.abs(key.hashCode % totChunks) == chunk).toSet
-    val otherMissingKeys = myKeys.diff(otherKeys)
+    val otherMissingKeys = myKeys.diff(otherKeys).filterNot { key =>
+      isExpired(getUsedTimestamp(key))
+    }
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
@@ -2193,7 +2231,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         replyTo ! g
       }
     }
-    val myMissingKeys = otherKeys.diff(myKeys)
+    val myMissingKeys = otherKeys.diff(myKeys).filterNot { key =>
+      isExpired(getUsedTimestamp(key))
+    }
     if (myMissingKeys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug(
@@ -2201,7 +2241,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           replyTo.path.address,
           myMissingKeys.mkString(", "))
       val status = Status(
-        myMissingKeys.iterator.map(k => k -> NotFoundDigest).toMap,
+        myMissingKeys.iterator.map(k => k -> (NotFoundDigest, 0L)).toMap,
         chunk,
         totChunks,
         fromSystemUid,
@@ -2219,7 +2259,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val maxMessageSize = payloadSizeAggregator.maxFrameSize - 128
 
     var messages = Vector.empty[Gossip]
-    val collectedEntries = Vector.newBuilder[(KeyId, DataEnvelope)]
+    val collectedEntries = Vector.newBuilder[(KeyId, (DataEnvelope, Timestamp))]
     var sum = 0
 
     def addGossip(): Unit = {
@@ -2242,12 +2282,12 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
       val entrySize = keySize + dataSize + envelopeSize
       if (sum + entrySize <= maxMessageSize) {
-        collectedEntries += (key -> dataEnvelope)
+        collectedEntries += (key -> (dataEnvelope, getUsedTimestamp(key)))
         sum += entrySize
       } else {
         addGossip()
         collectedEntries.clear()
-        collectedEntries += (key -> dataEnvelope)
+        collectedEntries += (key -> (dataEnvelope, getUsedTimestamp(key)))
         sum = entrySize
       }
     }
@@ -2260,19 +2300,29 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     messages
   }
 
-  def receiveGossip(updatedData: Map[KeyId, DataEnvelope], sendBack: Boolean, fromSystemUid: Option[Long]): Unit = {
+  def receiveGossip(
+      updatedData: Map[KeyId, (DataEnvelope, Timestamp)],
+      sendBack: Boolean,
+      fromSystemUid: Option[Long]): Unit = {
     if (log.isDebugEnabled)
       log.debug("Received gossip from [{}], containing [{}].", replyTo.path.address, updatedData.keys.mkString(", "))
     var replyKeys = Set.empty[KeyId]
     updatedData.foreach {
-      case (key, envelope) =>
-        val hadData = dataEntries.contains(key)
-        writeAndStore(key, envelope, reply = false)
-        if (sendBack) getData(key) match {
-          case Some(d) =>
-            if (hadData || d.pruning.nonEmpty)
-              replyKeys += key
-          case None =>
+      case (key, (envelope, usedTimestamp)) =>
+        if (isExpired(usedTimestamp))
+          log.info(s"# receiveGossip $key EXPIRED ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
+        if (!isExpired(usedTimestamp)) {
+          val hadData = dataEntries.contains(key)
+          writeAndStore(key, envelope, reply = false)
+          log.info(s"# receiveGossip $key ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
+          updateUsedTimestamp(key, usedTimestamp)
+
+          if (sendBack) getData(key) match {
+            case Some(d) =>
+              if (hadData || d.pruning.nonEmpty)
+                replyKeys += key
+            case None =>
+          }
         }
     }
     if (sendBack && replyKeys.nonEmpty) {
@@ -2321,6 +2371,26 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         if (!subscribers.contains(key) && !newSubscribers.contains(key))
           subscriptionKeys -= key
       }
+    }
+  }
+
+  private def cleanupExpired(): Unit = {
+    val expiredTimestamp = System.currentTimeMillis() - 2000 // FIXME config
+    val expiredKeys = dataEntries.collect {
+      // it can be 0L when it was set via a DeltaPropagation or Write first time, don't expire such immediately
+      case (key, (_, _, usedTimestamp)) if usedTimestamp != 0L && usedTimestamp <= expiredTimestamp =>
+        key
+    }
+
+    if (expiredKeys.nonEmpty) {
+      // FIXME change to debug level
+      log.info("Removing expired keys [{}]", expiredKeys.mkString(", "))
+
+      // should subscribers be notified?
+
+      expiredKeys.foreach(deltaPropagationSelector.delete)
+
+      dataEntries = dataEntries -- expiredKeys
     }
   }
 
@@ -2405,7 +2475,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val knownNodes = allNodes.union(removedNodes.keySet)
     val newRemovedNodes =
       dataEntries.foldLeft(Set.empty[UniqueAddress]) {
-        case (acc, (_, (DataEnvelope(data: RemovedNodePruning, _, _), _))) =>
+        case (acc, (_, (DataEnvelope(data: RemovedNodePruning, _, _), _, _))) =>
           acc.union(data.modifiedByNodes.filterNot(n => n == selfUniqueAddress || knownNodes(n)))
         case (acc, _) =>
           acc
@@ -2426,7 +2496,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       .to(immutable.Set)
 
     if (removedSet.nonEmpty) {
-      for ((key, (envelope, _)) <- dataEntries; removed <- removedSet) {
+      for ((key, (envelope, _, _)) <- dataEntries; removed <- removedSet) {
 
         def init(): Unit = {
           val newEnvelope = envelope.initRemovedNodePruning(removed, selfUniqueAddress)
@@ -2455,7 +2525,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val pruningPerformed = PruningPerformed(System.currentTimeMillis() + pruningMarkerTimeToLive.toMillis)
     val durablePruningPerformed = PruningPerformed(System.currentTimeMillis() + durablePruningMarkerTimeToLive.toMillis)
     dataEntries.foreach {
-      case (key, (envelope @ DataEnvelope(data: RemovedNodePruning, pruning, _), _)) =>
+      case (key, (envelope @ DataEnvelope(data: RemovedNodePruning, pruning, _), _, _)) =>
         pruning.foreach {
           case (removed, PruningInitialized(owner, seen))
               if owner == selfUniqueAddress
@@ -2474,7 +2544,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def deleteObsoletePruningPerformed(): Unit = {
     val currentTime = System.currentTimeMillis()
     dataEntries.foreach {
-      case (key, (envelope @ DataEnvelope(_: RemovedNodePruning, pruning, _), _)) =>
+      case (key, (envelope @ DataEnvelope(_: RemovedNodePruning, pruning, _), _, _)) =>
         val newEnvelope = pruning.foldLeft(envelope) {
           case (acc, (removed, p: PruningPerformed)) if p.isObsolete(currentTime) =>
             log.debug("Removing obsolete pruning marker for [{}] in [{}]", removed, key)
