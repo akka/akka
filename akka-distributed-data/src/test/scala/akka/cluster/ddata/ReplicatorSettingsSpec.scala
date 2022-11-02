@@ -4,6 +4,7 @@
 
 package akka.cluster.ddata
 
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -16,7 +17,8 @@ object ReplicatorSettingsSpec {
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
-    akka.remote.artery.canonical.hostname = 127.0.0.1""")
+    akka.remote.artery.canonical.hostname = 127.0.0.1
+    """)
 }
 
 class ReplicatorSettingsSpec
@@ -30,6 +32,18 @@ class ReplicatorSettingsSpec
     }
     "have the prefixed replicator name" in {
       ReplicatorSettings.name(system, Some("other")) should ===("otherDdataReplicator")
+    }
+
+    "be able to configure expiry for certain keys" in {
+      val settings = ReplicatorSettings(ConfigFactory.parseString("""
+        expire-keys-after-inactivity {
+          "key-1" = 10 minutes
+          "cache-*" = 2 minutes
+        }
+        """).withFallback(system.settings.config.getConfig("akka.cluster.distributed-data")))
+      settings.expiryKeys("key-1") should ===(10.minutes)
+      settings.expiryKeys("cache-*") should ===(2.minutes)
+      settings.expiryKeys.size should ===(2)
     }
   }
 }

@@ -104,7 +104,8 @@ object ReplicatorSettings {
       deltaCrdtEnabled = config.getBoolean("delta-crdt.enabled"),
       maxDeltaSize = config.getInt("delta-crdt.max-delta-size"),
       preferOldest = config.getBoolean("prefer-oldest"),
-      logDataSizeExceeding = logDataSizeExceeding)
+      logDataSizeExceeding = logDataSizeExceeding,
+      expiryKeys = parseExpiry(config))
   }
 
   /**
@@ -120,6 +121,23 @@ object ReplicatorSettings {
   @InternalApi private[akka] def name(system: ActorSystem, modifier: Option[String]): String = {
     val name = system.settings.config.getString("akka.cluster.distributed-data.name")
     modifier.map(s => s + name.take(1).toUpperCase + name.drop(1)).getOrElse(name)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def parseExpiry(config: Config): Map[KeyId, FiniteDuration] = {
+    import akka.util.ccompat.JavaConverters._
+    val expiryConfig = config.getConfig("expire-keys-after-inactivity")
+    expiryConfig.root
+      .keySet()
+      .iterator()
+      .asScala
+      .map { key =>
+        val quotedKey = s"\"$key\"" // must use quotes because of the wildcard *
+        key -> expiryConfig.getDuration(quotedKey, MILLISECONDS).millis
+      }
+      .toMap
   }
 }
 
@@ -150,6 +168,10 @@ object ReplicatorSettings {
  *        in the `Set`.
  * @param preferOldest Update and Get operations are sent to oldest nodes first.
  * @param logDataSizeExceeding Log data size.
+ * @param expiryKeys Map of keys and inactivity duration for entries that will be automatically be removed
+ *        without tombstones when they have been inactive for the given duration.
+ *        Prefix matching is supported by using * at the end of a key.
+ *        Matching tombstones will also be removed after the expiry duration.
  */
 final class ReplicatorSettings(
     val roles: Set[String],
@@ -166,7 +188,44 @@ final class ReplicatorSettings(
     val deltaCrdtEnabled: Boolean,
     val maxDeltaSize: Int,
     val preferOldest: Boolean,
-    val logDataSizeExceeding: Option[Int]) {
+    val logDataSizeExceeding: Option[Int],
+    val expiryKeys: Map[KeyId, FiniteDuration]) {
+
+  // for backwards compatibility
+  @deprecated("use full constructor", "2.7.1")
+  def this(
+      roles: Set[String],
+      gossipInterval: FiniteDuration,
+      notifySubscribersInterval: FiniteDuration,
+      maxDeltaElements: Int,
+      dispatcher: String,
+      pruningInterval: FiniteDuration,
+      maxPruningDissemination: FiniteDuration,
+      durableStoreProps: Either[(String, Config), Props],
+      durableKeys: Set[KeyId],
+      pruningMarkerTimeToLive: FiniteDuration,
+      durablePruningMarkerTimeToLive: FiniteDuration,
+      deltaCrdtEnabled: Boolean,
+      maxDeltaSize: Int,
+      preferOldest: Boolean,
+      logDataSizeExceeding: Option[Int]) =
+    this(
+      roles,
+      gossipInterval,
+      notifySubscribersInterval,
+      maxDeltaElements,
+      dispatcher,
+      pruningInterval,
+      maxPruningDissemination,
+      durableStoreProps,
+      durableKeys,
+      pruningMarkerTimeToLive,
+      durablePruningMarkerTimeToLive,
+      deltaCrdtEnabled,
+      maxDeltaSize,
+      preferOldest,
+      logDataSizeExceeding,
+      expiryKeys = Map.empty)
 
   // for backwards compatibility
   @deprecated("use full constructor", "2.6.11")
@@ -418,6 +477,20 @@ final class ReplicatorSettings(
   def withLogDataSizeExceeding(logDataSizeExceeding: Int): ReplicatorSettings =
     copy(logDataSizeExceeding = Some(logDataSizeExceeding))
 
+  /**
+   * Scala API
+   */
+  def withExpiryKeys(expiryKeys: Map[KeyId, FiniteDuration]): ReplicatorSettings =
+    copy(expiryKeys = expiryKeys)
+
+  /**
+   * Java API
+   */
+  def withExpiryKeys(expiryKeys: java.util.Map[String, java.time.Duration]): ReplicatorSettings = {
+    import akka.util.ccompat.JavaConverters._
+    withExpiryKeys(expiryKeys.asScala.iterator.map {case (key, value) => key -> value.asScala}.toMap)
+  }
+
   private def copy(
       roles: Set[String] = roles,
       gossipInterval: FiniteDuration = gossipInterval,
@@ -433,7 +506,8 @@ final class ReplicatorSettings(
       deltaCrdtEnabled: Boolean = deltaCrdtEnabled,
       maxDeltaSize: Int = maxDeltaSize,
       preferOldest: Boolean = preferOldest,
-      logDataSizeExceeding: Option[Int] = logDataSizeExceeding): ReplicatorSettings =
+      logDataSizeExceeding: Option[Int] = logDataSizeExceeding,
+      expiryKeys: Map[KeyId, FiniteDuration] = expiryKeys): ReplicatorSettings =
     new ReplicatorSettings(
       roles,
       gossipInterval,
@@ -449,7 +523,8 @@ final class ReplicatorSettings(
       deltaCrdtEnabled,
       maxDeltaSize,
       preferOldest,
-      logDataSizeExceeding)
+      logDataSizeExceeding,
+      expiryKeys)
 }
 
 object Replicator {
@@ -1399,6 +1474,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   val serializer = SerializationExtension(context.system).serializerFor(classOf[DataEnvelope])
   val maxPruningDisseminationNanos = maxPruningDissemination.toNanos
 
+  val expiryWildcards = settings.expiryKeys.collect { case (k, v) if k.endsWith("*") => k.dropRight(1) -> v }
+  val expiryEnabled: Boolean = settings.expiryKeys.nonEmpty
+
   val hasDurableKeys = settings.durableKeys.nonEmpty
   val durable = settings.durableKeys.filterNot(_.endsWith("*"))
   val durableWildcards = settings.durableKeys.collect { case k if k.endsWith("*") => k.dropRight(1) }
@@ -2008,18 +2086,40 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def getData(key: KeyId): Option[DataEnvelope] =
     dataEntries.get(key).map { case (envelope, _, _) => envelope }
 
-  def getUsedTimestamp(key: KeyId): Timestamp =
-    dataEntries.get(key) match {
-      case Some((_, _, usedTimestamp)) => usedTimestamp
-      case None                        => 0L
+  def getExpiryDuration(key: KeyId): FiniteDuration = {
+    if (expiryEnabled) {
+      expiryKeys.get(key) match {
+        case Some(d) => d
+        case None if expiryWildcards.isEmpty => Duration.Zero
+        case None => expiryWildcards.collectFirst {
+          case (k, v) if key.startsWith(k) => v
+        }.getOrElse(Duration.Zero)
+      }
+    } else {
+      Duration.Zero
     }
+  }
 
-  def isExpired(timestamp: Timestamp): Boolean = {
-    timestamp != 0L && timestamp <= System.currentTimeMillis() - 2000 // FIXME config
+  def getUsedTimestamp(key: KeyId): Timestamp = {
+    if (expiryEnabled) {
+      dataEntries.get(key) match {
+        case Some((_, _, usedTimestamp)) => usedTimestamp
+        case None => 0L
+      }
+    } else {
+      0L
+    }
+  }
+
+  def isExpired(key: KeyId): Boolean =
+    isExpired(key, getUsedTimestamp(key))
+
+  def isExpired(key: KeyId, timestamp: Timestamp): Boolean = {
+    expiryEnabled && timestamp != 0L && timestamp <= System.currentTimeMillis() - getExpiryDuration(key).toMillis
   }
 
   def updateUsedTimestamp(key: KeyId, timestamp: Timestamp): Unit = {
-    if (timestamp != 0) {
+    if (expiryEnabled && timestamp != 0) {
       dataEntries.get(key).foreach {
         case (existingEnvelope, existingDigest, existingTimestamp) =>
           if (timestamp > existingTimestamp)
@@ -2201,11 +2301,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         otherDigests.keys.mkString(", "))
 
     // update the usedTimestamp when needed
-    otherDigests.foreach {
-      case (key, (_, usedTimestamp)) =>
-        log.info(s"# receiveStatus $key ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
-        updateUsedTimestamp(key, usedTimestamp)
-      // if we don't have the key it will be updated with the full Gossip
+    if (expiryEnabled) {
+      otherDigests.foreach {
+        case (key, (_, usedTimestamp)) =>
+          log.info(s"# receiveStatus $key ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
+          updateUsedTimestamp(key, usedTimestamp)
+        // if we don't have the key it will be updated with the full Gossip
+      }
     }
 
     def isOtherDifferent(key: KeyId, otherDigest: Digest): Boolean = {
@@ -2219,9 +2321,11 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val myKeys =
       if (totChunks == 1) dataEntries.keySet
       else dataEntries.keysIterator.filter(key => math.abs(key.hashCode % totChunks) == chunk).toSet
-    val otherMissingKeys = myKeys.diff(otherKeys).filterNot { key =>
-      isExpired(getUsedTimestamp(key))
-    }
+    val otherMissingKeys =
+      if (expiryEnabled)
+      myKeys.diff(otherKeys).filterNot(key =>isExpired(key))
+      else
+        myKeys.diff(otherKeys)
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
@@ -2231,9 +2335,11 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         replyTo ! g
       }
     }
-    val myMissingKeys = otherKeys.diff(myKeys).filterNot { key =>
-      isExpired(getUsedTimestamp(key))
-    }
+    val myMissingKeys =
+      if (expiryEnabled)
+        otherKeys.diff(myKeys).filterNot(key =>isExpired(key))
+      else
+        otherKeys.diff(myKeys)
     if (myMissingKeys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug(
@@ -2309,9 +2415,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     var replyKeys = Set.empty[KeyId]
     updatedData.foreach {
       case (key, (envelope, usedTimestamp)) =>
-        if (isExpired(usedTimestamp))
+        if (isExpired(key, usedTimestamp))
           log.info(s"# receiveGossip $key EXPIRED ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
-        if (!isExpired(usedTimestamp)) {
+        if (!isExpired(key, usedTimestamp)) {
           val hadData = dataEntries.contains(key)
           writeAndStore(key, envelope, reply = false)
           log.info(s"# receiveGossip $key ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
@@ -2375,22 +2481,26 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   private def cleanupExpired(): Unit = {
-    val expiredTimestamp = System.currentTimeMillis() - 2000 // FIXME config
-    val expiredKeys = dataEntries.collect {
-      // it can be 0L when it was set via a DeltaPropagation or Write first time, don't expire such immediately
-      case (key, (_, _, usedTimestamp)) if usedTimestamp != 0L && usedTimestamp <= expiredTimestamp =>
-        key
-    }
+    if (expiryEnabled) {
+      val now = System.currentTimeMillis()
+      val expiredKeys = dataEntries.collect {
+        // it can be 0L when it was set via a DeltaPropagation or Write first time, don't expire such immediately
+        case (key, (_, _, usedTimestamp)) if usedTimestamp != 0L && getExpiryDuration(key) != Duration.Zero && usedTimestamp <= now - getExpiryDuration(key).toMillis =>
+          key
+      }
 
-    if (expiredKeys.nonEmpty) {
-      // FIXME change to debug level
-      log.info("Removing expired keys [{}]", expiredKeys.mkString(", "))
+      if (expiredKeys.nonEmpty) {
+        if (log.isDebugEnabled)
+          log.debug("Removing expired keys [{}]", expiredKeys.mkString(", "))
 
-      // should subscribers be notified?
+        // FIXME should subscribers be notified?
 
-      expiredKeys.foreach(deltaPropagationSelector.delete)
+        // FIXME if we allow use with durable it should be removed from durable store
 
-      dataEntries = dataEntries -- expiredKeys
+        expiredKeys.foreach(deltaPropagationSelector.delete)
+
+        dataEntries = dataEntries -- expiredKeys
+      }
     }
   }
 

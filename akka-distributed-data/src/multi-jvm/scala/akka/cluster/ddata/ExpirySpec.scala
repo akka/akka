@@ -22,8 +22,12 @@ object ExpirySpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.cluster.distributed-data {
-      gossip-interval = 500 millis 
+      gossip-interval = 500 millis
+      expire-keys-after-inactivity {
+        "expiry-*" = 2 seconds
+      }
     }
+    
     """))
 
 }
@@ -42,12 +46,12 @@ class ExpirySpec extends MultiNodeSpec(ExpirySpec) with STMultiNodeSpec with Imp
   private val replicator = system.actorOf(Replicator.props(ReplicatorSettings(system)), "replicator")
   private val writeAll = WriteAll(5.seconds)
 
-  private val KeyA = GCounterKey("A")
-  private val KeyB = GCounterKey("B")
-  private val KeyC = GCounterKey("C")
-  private val KeyD = GCounterKey("D")
-  private val KeyE = GCounterKey("E")
-  private val KeyF = GCounterKey("F")
+  private val KeyA = GCounterKey("expiry-A")
+  private val KeyB = GCounterKey("expiry-B")
+  private val KeyC = GCounterKey("expiry-C")
+  private val KeyD = GCounterKey("expiry-D")
+  private val KeyE = GCounterKey("expiry-E")
+  private val KeyF = GCounterKey("expiry-F")
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -68,7 +72,7 @@ class ExpirySpec extends MultiNodeSpec(ExpirySpec) with STMultiNodeSpec with Imp
         replicator ! Get(KeyA, ReadLocal)
         expectMsgType[GetSuccess[GCounter]].get(KeyA).value should ===(1)
 
-        expectNoMessage(3.seconds)
+        expectNoMessage(5.seconds)
         replicator ! Get(KeyA, ReadLocal)
         expectMsg(NotFound(KeyA, None))
 
