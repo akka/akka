@@ -10,6 +10,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import akka.{ actor => classic }
 import akka.annotation.InternalApi
+import akka.util.OptionVal
 
 @InternalApi
 private[akka] object ActorContextAdapter {
@@ -42,7 +43,16 @@ private[akka] object ActorContextAdapter {
 
   private[akka] override def currentBehavior: Behavior[T] = adapter.currentBehavior
 
-  final override val self = ActorRefAdapter(classicContext.self)
+  // optimization to avoid adapter allocation unless used
+  // self documented as thread safe, on purpose not volatile since
+  // lazily created because creating adapter is idempotent
+  private var _self: OptionVal[ActorRef[T]] = OptionVal.None
+  override def self: ActorRef[T] = {
+    if (_self.isEmpty) {
+      _self = OptionVal.Some(ActorRefAdapter(classicContext.self))
+    }
+    _self.get
+  }
   final override val system = ActorSystemAdapter(classicContext.system)
   private[akka] def classicActorContext = classicContext
   override def children: Iterable[ActorRef[Nothing]] = {
