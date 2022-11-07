@@ -49,6 +49,9 @@ import akka.util.ccompat.JavaConverters._
  * When the `Replicator` needs to store a value it sends a `Store` message
  * to the durable store actor, which must then reply with the `successMsg` or
  * `failureMsg` to the `replyTo`.
+ *
+ * When entries have expired the `Replicator` sends a `Expire` message to the durable
+ * store actor, which can delete the entries from the backend store.
  */
 object DurableStore {
 
@@ -75,6 +78,11 @@ object DurableStore {
   class LoadFailed(message: String, cause: Throwable) extends RuntimeException(message, cause) {
     def this(message: String) = this(message, null)
   }
+
+  /**
+   * Request to expire (remove) entries.
+   */
+  final case class Expire(keys: Set[KeyId])
 
   /**
    * Wrapper class for serialization of a data value.
@@ -264,6 +272,9 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
     case WriteBehind =>
       writeBehind()
+
+    case Expire(keys) =>
+      dbDelete(keys)
   }
 
   def dbPut(tx: OptionVal[Txn[ByteBuffer]], key: KeyId, data: DurableDataEnvelope): Unit = {
@@ -308,6 +319,32 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       } finally {
         pending.clear()
       }
+    }
+  }
+
+  def dbDelete(keys: Set[KeyId]): Unit = {
+    val t0 = System.nanoTime()
+    val l = lmdb()
+    val tx = lmdb().env.txnWrite()
+    try {
+
+      keys.foreach { key =>
+        l.keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
+        l.db.delete(tx, l.keyBuffer)
+      }
+      tx.commit()
+      if (log.isDebugEnabled)
+        log.debug(
+          "delete and commit of [{}] entries took [{} ms]",
+          keys.size,
+          TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+    } catch {
+      case NonFatal(e) =>
+        import akka.util.ccompat.JavaConverters._
+        log.error(e, "failed to delete [{}]", pending.keySet.asScala.mkString(","))
+        tx.abort()
+    } finally {
+      l.keyBuffer.clear()
     }
   }
 

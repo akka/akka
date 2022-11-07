@@ -2481,7 +2481,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       val now = System.currentTimeMillis()
       val expiredKeys = dataEntries.collect {
         // it can be 0L when it was set via a DeltaPropagation or Write first time, don't expire such immediately
-        case (key, (_, _, usedTimestamp)) if usedTimestamp != 0L && getExpiryDuration(key) != Duration.Zero && usedTimestamp <= now - getExpiryDuration(key).toMillis =>
+        case (key, (_, _, usedTimestamp)) if usedTimestamp != 0L &&
+          getExpiryDuration(key) != Duration.Zero &&
+          usedTimestamp <= now - getExpiryDuration(key).toMillis =>
           key
       }
 
@@ -2491,7 +2493,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
         // Notification of subscribers for expired entries is not supported (yet)
 
-        // FIXME if we allow use with durable it should be removed from durable store
+        val durableExpiredKeys = expiredKeys.filter(isDurable).toSet
+        if (durableExpiredKeys.nonEmpty)
+          durableStore ! DurableStore.Expire(durableExpiredKeys)
 
         expiredKeys.foreach(deltaPropagationSelector.delete)
 
