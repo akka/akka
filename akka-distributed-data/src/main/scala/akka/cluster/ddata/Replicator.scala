@@ -2304,7 +2304,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (expiryEnabled) {
       otherDigests.foreach {
         case (key, (_, usedTimestamp)) =>
-          log.info(s"# receiveStatus $key ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
           updateUsedTimestamp(key, usedTimestamp)
         // if we don't have the key it will be updated with the full Gossip
       }
@@ -2415,12 +2414,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     var replyKeys = Set.empty[KeyId]
     updatedData.foreach {
       case (key, (envelope, usedTimestamp)) =>
-        if (isExpired(key, usedTimestamp))
-          log.info(s"# receiveGossip $key EXPIRED ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
         if (!isExpired(key, usedTimestamp)) {
           val hadData = dataEntries.contains(key)
           writeAndStore(key, envelope, reply = false)
-          log.info(s"# receiveGossip $key ${getUsedTimestamp(key)} -> $usedTimestamp") // FIXME
           updateUsedTimestamp(key, usedTimestamp)
 
           if (sendBack) getData(key) match {
@@ -2493,7 +2489,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         if (log.isDebugEnabled)
           log.debug("Removing expired keys [{}]", expiredKeys.mkString(", "))
 
-        // FIXME should subscribers be notified?
+        // Notification of subscribers for expired entries is not supported (yet)
 
         // FIXME if we allow use with durable it should be removed from durable store
 
