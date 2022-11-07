@@ -68,7 +68,8 @@ trait LogCapturing extends BeforeAndAfterAll { self: TestSuite =>
   abstract override def withFixture(test: NoArgTest): Outcome = {
     myLogger.info(s"${Console.BLUE}Logging started for test [${self.getClass.getName}: ${test.name}]${Console.RESET}")
     val res = test()
-    myLogger.info(s"${Console.BLUE}Logging finished for test [${self.getClass.getName}: ${test.name}] that [$res]${Console.RESET}")
+    myLogger.info(
+      s"${Console.BLUE}Logging finished for test [${self.getClass.getName}: ${test.name}] that [$res]${Console.RESET}")
 
     if (!(res.isSucceeded || res.isPending)) {
       println(
