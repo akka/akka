@@ -24,7 +24,8 @@ import akka.util.OptionVal
           if (cachedProps.typedProps eq props) && cachedProps.rethrowTypedFailure == rethrowTypedFailure =>
         cachedProps.adaptedProps
       case _ =>
-        val adapted = internal.adapter.PropsAdapter(() => behavior, props, rethrowTypedFailure)
+        val adapted =
+          internal.adapter.PropsAdapter(() => Behavior.validateAsInitial(behavior), props, rethrowTypedFailure)
         // we only optimistically cache the last seen typed props instance, since for most scenarios
         // with large numbers of actors, they will be of the same type and the same props
         behavior._internalClassicPropsCache = OptionVal.Some(CachedProps(props, adapted, rethrowTypedFailure))

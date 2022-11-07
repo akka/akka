@@ -21,7 +21,7 @@ class PropsAdapterSpec extends AnyWordSpec with Matchers {
       val pa: actor.Props = PropsAdapter(() => Behaviors.empty, props, rethrowTypedFailure = false)
       pa.mailbox === ("akka.actor.typed.default-mailbox")
 
-      val props2: Props = Props.empty.withNext(MailboxSelector.defaultMailbox())
+      val props2: Props = MailboxSelector.defaultMailbox()
       val pa2: actor.Props = PropsAdapter(() => Behaviors.empty, props2, rethrowTypedFailure = false)
       pa2.mailbox === ("akka.actor.typed.default-mailbox")
     }
@@ -36,17 +36,17 @@ class PropsAdapterSpec extends AnyWordSpec with Matchers {
       pa.dispatcher should ===("..")
     }
     "adapt mailbox from config" in {
-      val props: Props = Props.empty.withNext(MailboxSelector.fromConfig("some.path"))
+      val props: Props = MailboxSelector.fromConfig("some.path")
       val pa: actor.Props = PropsAdapter(() => Behaviors.empty, props, rethrowTypedFailure = false)
       pa.mailbox should ===("some.path")
     }
     "adapt bounded mailbox" in {
-      val props: Props = Props.empty.withNext(MailboxSelector.bounded(24))
+      val props: Props = MailboxSelector.bounded(24)
       val pa: actor.Props = PropsAdapter(() => Behaviors.empty, props, rethrowTypedFailure = false)
       pa.mailbox should ===("bounded-capacity:24")
     }
     "adapt tags" in {
-      val props: Props = Props.empty.withNext(ActorTags.create("my-tag"))
+      val props: Props = ActorTags.create("my-tag")
       val pa: actor.Props = PropsAdapter(() => Behaviors.empty, props, rethrowTypedFailure = false)
       pa.deploy.tags should ===(Set("my-tag"))
     }
