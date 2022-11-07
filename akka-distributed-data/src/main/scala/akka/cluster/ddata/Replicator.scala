@@ -1764,7 +1764,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def receiveGet(key: KeyR, consistency: ReadConsistency, req: Option[Any]): Unit = {
     val localValue = getData(key.id)
     log.debug("Received Get for key [{}].", key)
-    updateUsedTimestamp(key.id, System.currentTimeMillis())
+    updateUsedTimestamp(key.id, currentUsedTimestamp())
     if (isLocalGet(consistency)) {
       val reply = localValue match {
         case Some(DataEnvelope(DeletedData, _, _)) => GetDataDeleted(key, req)
@@ -1855,7 +1855,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         // so that the latest delta version is used
         val newEnvelope = setData(key.id, envelope)
 
-        updateUsedTimestamp(key.id, System.currentTimeMillis())
+        updateUsedTimestamp(key.id, currentUsedTimestamp())
 
         val durable = isDurable(key.id)
         if (isLocalUpdate(writeConsistency)) {
@@ -2117,6 +2117,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def isExpired(key: KeyId, timestamp: Timestamp): Boolean = {
     expiryEnabled && timestamp != 0L && timestamp <= System.currentTimeMillis() - getExpiryDuration(key).toMillis
   }
+
+  def currentUsedTimestamp(): Long =
+    if (expiryEnabled) System.currentTimeMillis() else 0L
 
   def updateUsedTimestamp(key: KeyId, timestamp: Timestamp): Unit = {
     if (expiryEnabled && timestamp != 0) {
