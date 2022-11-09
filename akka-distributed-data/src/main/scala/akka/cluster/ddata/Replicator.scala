@@ -747,6 +747,9 @@ object Replicator {
    *
    * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
+   *
+   * If the key is deleted the subscriber is notified with an [[Expired]]
+   * message.
    */
   final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
 
@@ -792,6 +795,11 @@ object Replicator {
    * @see [[Replicator.Subscribe]]
    */
   final case class Deleted[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
+
+  /**
+   * @see [[Replicator.Subscribe]]
+   */
+  final case class Expired[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
 
   object Update {
 
@@ -1564,7 +1572,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   // the actual data
   var dataEntries = Map.empty[KeyId, (DataEnvelope, Digest, Timestamp)]
-  // keys that have changed, Changed event published to subscribers on FlushChanges
+  // keys that have changed, Changed, Deleted, Expired event published to subscribers on FlushChanges
   var changed = Set.empty[KeyId]
 
   // for splitting up gossip in chunks
@@ -2146,26 +2154,32 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   @nowarn("msg=deprecated")
   def receiveFlushChanges(): Unit = {
-    def notify(keyId: KeyId, subs: mutable.Set[ActorRef]): Unit = {
+    def notify(keyId: KeyId, subs: mutable.Set[ActorRef], sendExpiredIfMissing: Boolean): Unit = {
       val key = subscriptionKeys(keyId)
       getData(keyId) match {
         case Some(envelope) =>
           val msg = if (envelope.data == DeletedData) Deleted(key) else Changed(key)(envelope.data)
           subs.foreach { _ ! msg }
         case None =>
+          if (sendExpiredIfMissing) {
+            val msg = Expired(key)
+            subs.foreach {
+              _ ! msg
+            }
+          }
       }
     }
 
     if (subscribers.nonEmpty) {
       for (key <- changed; if subscribers.contains(key); subs <- subscribers.get(key))
-        notify(key, subs)
+        notify(key, subs, sendExpiredIfMissing = true)
     }
 
     // Changed event is sent to new subscribers even though the key has not changed,
-    // i.e. send current value
+    // i.e. send current value. Expired is not sent to new subscribers as the first event.
     if (newSubscribers.nonEmpty) {
       for ((key, subs) <- newSubscribers) {
-        notify(key, subs)
+        notify(key, subs, sendExpiredIfMissing = false)
         subs.foreach { subscribers.addBinding(key, _) }
       }
       newSubscribers.clear()
@@ -2501,7 +2515,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         if (durableExpiredKeys.nonEmpty)
           durableStore ! DurableStore.Expire(durableExpiredKeys)
 
-        expiredKeys.foreach(deltaPropagationSelector.delete)
+        expiredKeys.foreach { key =>
+          deltaPropagationSelector.delete(key)
+          changed += key // notify subscribers, later
+        }
 
         dataEntries = dataEntries -- expiredKeys
       }

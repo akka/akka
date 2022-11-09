@@ -66,8 +66,12 @@ class ExpirySpec extends MultiNodeSpec(ExpirySpec) with STMultiNodeSpec with Imp
       join(first, first)
 
       runOn(first) {
+        val subscriberProbe = TestProbe()
+        replicator ! Subscribe(KeyA, subscriberProbe.ref)
+
         replicator ! Update(KeyA, GCounter.empty, WriteLocal)(_ :+ 1)
         expectMsgType[UpdateSuccess[_]]
+        subscriberProbe.expectMsgType[Changed[GCounter]]
 
         replicator ! Get(KeyA, ReadLocal)
         expectMsgType[GetSuccess[GCounter]].get(KeyA).value should ===(1)
@@ -75,10 +79,12 @@ class ExpirySpec extends MultiNodeSpec(ExpirySpec) with STMultiNodeSpec with Imp
         expectNoMessage(5.seconds)
         replicator ! Get(KeyA, ReadLocal)
         expectMsg(NotFound(KeyA, None))
+        subscriberProbe.expectMsg(Expired[GCounter](KeyA))
 
         // same key can be used again
         replicator ! Update(KeyA, GCounter.empty, WriteLocal)(_ :+ 2)
         expectMsgType[UpdateSuccess[_]]
+        subscriberProbe.expectMsgType[Changed[GCounter]]
         replicator ! Get(KeyA, ReadLocal)
         expectMsgType[GetSuccess[GCounter]].get(KeyA).value should ===(2)
       }

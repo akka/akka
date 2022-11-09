@@ -291,6 +291,15 @@ object Replicator {
    */
   type Deleted[A <: ReplicatedData] = dd.Replicator.Deleted[A]
 
+  object Expired {
+    def unapply[A <: ReplicatedData](exp: Expired[A]): Option[Key[A]] = Some(exp.key)
+  }
+
+  /**
+   * @see [[Expired]]
+   */
+  type Expired[A <: ReplicatedData] = dd.Replicator.Expired[A]
+
   object Delete {
 
     /**
