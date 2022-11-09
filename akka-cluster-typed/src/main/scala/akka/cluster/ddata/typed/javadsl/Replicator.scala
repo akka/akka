@@ -256,6 +256,9 @@ object Replicator {
    *
    * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
+   *
+   * If the key is expired the subscriber is notified with a [[Expired]]
+   * message.
    */
   final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
       extends Command
@@ -301,6 +304,11 @@ object Replicator {
    * @see [[Replicator.Subscribe]]
    */
   final case class Deleted[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
+
+  /**
+   * @see [[Replicator.Subscribe]]
+   */
+  final case class Expired[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
 
   /**
    * Send this message to the local `Replicator` to delete a data value for the
