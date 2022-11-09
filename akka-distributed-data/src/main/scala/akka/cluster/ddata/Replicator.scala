@@ -134,7 +134,7 @@ object ReplicatorSettings {
       .iterator()
       .asScala
       .map { key =>
-        val quotedKey = s"\"$key\"" // must use quotes because of the wildcard *
+        val quotedKey = s""""$key"""" // must use quotes because of the wildcard *
         key -> expiryConfig.getDuration(quotedKey, MILLISECONDS).millis
       }
       .toMap
@@ -488,7 +488,7 @@ final class ReplicatorSettings(
    */
   def withExpiryKeys(expiryKeys: java.util.Map[String, java.time.Duration]): ReplicatorSettings = {
     import akka.util.ccompat.JavaConverters._
-    withExpiryKeys(expiryKeys.asScala.iterator.map {case (key, value) => key -> value.asScala}.toMap)
+    withExpiryKeys(expiryKeys.asScala.iterator.map { case (key, value) => key -> value.asScala }.toMap)
   }
 
   private def copy(
@@ -2100,11 +2100,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def getExpiryDuration(key: KeyId): FiniteDuration = {
     if (expiryEnabled) {
       expiryKeys.get(key) match {
-        case Some(d) => d
+        case Some(d)                         => d
         case None if expiryWildcards.isEmpty => Duration.Zero
-        case None => expiryWildcards.collectFirst {
-          case (k, v) if key.startsWith(k) => v
-        }.getOrElse(Duration.Zero)
+        case None =>
+          expiryWildcards
+            .collectFirst {
+              case (k, v) if key.startsWith(k) => v
+            }
+            .getOrElse(Duration.Zero)
       }
     } else {
       Duration.Zero
@@ -2115,7 +2118,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (expiryEnabled) {
       dataEntries.get(key) match {
         case Some((_, _, usedTimestamp)) => usedTimestamp
-        case None => 0L
+        case None                        => 0L
       }
     } else {
       0L
@@ -2339,7 +2342,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       else dataEntries.keysIterator.filter(key => math.abs(key.hashCode % totChunks) == chunk).toSet
     val otherMissingKeys =
       if (expiryEnabled)
-        myKeys.diff(otherKeys).filterNot(key =>isExpired(key))
+        myKeys.diff(otherKeys).filterNot(key => isExpired(key))
       else
         myKeys.diff(otherKeys)
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
@@ -2500,9 +2503,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       currentUsedTimestamp = now
       val expiredKeys = dataEntries.collect {
         // it can be 0L when it was set via a DeltaPropagation or Write first time, don't expire such immediately
-        case (key, (_, _, usedTimestamp)) if usedTimestamp != 0L &&
-          getExpiryDuration(key) != Duration.Zero &&
-          usedTimestamp <= now - getExpiryDuration(key).toMillis =>
+        case (key, (_, _, usedTimestamp))
+            if usedTimestamp != 0L &&
+            getExpiryDuration(key) != Duration.Zero &&
+            usedTimestamp <= now - getExpiryDuration(key).toMillis =>
           key
       }
 
