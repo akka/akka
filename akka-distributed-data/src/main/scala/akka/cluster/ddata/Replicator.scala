@@ -2000,6 +2000,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         replyTo ! DataDeleted(key, req)
       case _ =>
         setData(key.id, DeletedEnvelope)
+        updateUsedTimestamp(key.id, currentUsedTimestamp)
         payloadSizeAggregator.remove(key.id)
         val durable = isDurable(key.id)
         if (isLocalUpdate(consistency)) {
@@ -2517,6 +2518,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
         expiredKeys.foreach { key =>
           deltaPropagationSelector.delete(key)
+          payloadSizeAggregator.remove(key)
           changed += key // notify subscribers, later
         }
 
