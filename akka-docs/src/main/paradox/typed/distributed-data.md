@@ -190,16 +190,47 @@ A deleted key cannot be reused again, but it is still recommended to delete unus
 data entries because that reduces the replication overhead when new nodes join the cluster.
 Subsequent `Delete`, `Update` and `Get` requests will be replied with `Replicator.DataDeleted`.
 Subscribers will receive `Replicator.Deleted`.
+
+The @ref:[automatic expiry](#expire) is an alternative for removing unused data entries.
  
 @@@ warning
 
 As deleted keys continue to be included in the stored data on each node as well as in gossip
 messages, a continuous series of updates and deletes of top-level entities will result in
 growing memory usage until an ActorSystem runs out of memory. To use Akka Distributed Data
-where frequent adds and removes are required, you should use a fixed number of top-level data
-types that support both updates and removals, for example `ORMap` or `ORSet`.
+where frequent adds and removes are required, you should use @ref:[automatic expiry](#expire) 
+or a fixed number of top-level data types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
+
+### Expire
+
+A data entry can automatically be removed after a period of inactivity, i.e. when there has been no access of
+the entry with `Get`, `Update` or `Delete`.
+
+Expiry is enabled for configured keys:
+
+```
+akka.cluster.distributed-data.expire-keys-after-inactivity {
+ "key-1" = 10 minutes
+ "cache-*" = 2 minutes
+}
+```
+
+Prefix matching is supported by using `*` at the end of a key.
+
+Expiry can be enabled for all entries by specifying:
+
+```
+akka.cluster.distributed-data.expire-keys-after-inactivity {
+  "*" = 10 minutes
+}
+```
+
+Subscribers will receive `Replicator.Expired` when an entry has expired.
+
+Expired entries are completely removed and does not leave any tombstones as is the case for @ref:[Delete](#delete). 
+Expired keys can be reused again. Also @ref:[deleted](#delete) entries can be expired and then completely removed.
 
 ### Consistency
 
