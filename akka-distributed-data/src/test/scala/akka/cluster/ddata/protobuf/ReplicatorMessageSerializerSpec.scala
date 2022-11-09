@@ -113,27 +113,33 @@ class ReplicatorMessageSerializerSpec
       checkSerialization(ReadResult(None))
       checkSerialization(
         Status(
-          Map("A" -> (ByteString.fromString("a"), usedTimestamp), "B" -> (ByteString.fromString("b"), usedTimestamp)),
+          Map(
+            "A" -> (ByteString.fromString("a") -> usedTimestamp),
+            "B" -> (ByteString.fromString("b") -> usedTimestamp)),
           chunk = 3,
           totChunks = 10,
           Some(17),
           Some(19)))
       checkSerialization(
         Status(
-          Map("A" -> (ByteString.fromString("a"), 0L), "B" -> (ByteString.fromString("b"), 0L)),
+          Map("A" -> (ByteString.fromString("a") -> 0L), "B" -> (ByteString.fromString("b") -> 0L)),
           chunk = 3,
           totChunks = 10,
           None, // can be None when sending back to a node of version 2.5.21
           Some(19)))
       checkSerialization(
         Gossip(
-          Map("A" -> (DataEnvelope(data1), usedTimestamp), "B" -> (DataEnvelope(GSet() + "b" + "c"), usedTimestamp)),
+          Map(
+            "A" -> (DataEnvelope(data1) -> usedTimestamp),
+            "B" -> (DataEnvelope(GSet() + "b" + "c") -> usedTimestamp)),
           sendBack = true,
           Some(17),
           Some(19)))
       checkSerialization(
         Gossip(
-          Map("A" -> (DataEnvelope(data1), usedTimestamp), "B" -> (DataEnvelope(GSet() + "b" + "c"), usedTimestamp)),
+          Map(
+            "A" -> (DataEnvelope(data1) -> usedTimestamp),
+            "B" -> (DataEnvelope(GSet() + "b" + "c") -> usedTimestamp)),
           sendBack = true,
           None, // can be None when sending back to a node of version 2.5.21
           Some(19)))

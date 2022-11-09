@@ -2366,7 +2366,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           replyTo.path.address,
           myMissingKeys.mkString(", "))
       val status = Status(
-        myMissingKeys.iterator.map(k => k -> (NotFoundDigest, 0L)).toMap,
+        myMissingKeys.iterator.map(k => k -> (NotFoundDigest -> 0L)).toMap,
         chunk,
         totChunks,
         fromSystemUid,
@@ -2407,12 +2407,12 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
       val entrySize = keySize + dataSize + envelopeSize
       if (sum + entrySize <= maxMessageSize) {
-        collectedEntries += (key -> (dataEnvelope, getUsedTimestamp(key)))
+        collectedEntries += (key -> (dataEnvelope -> getUsedTimestamp(key)))
         sum += entrySize
       } else {
         addGossip()
         collectedEntries.clear()
-        collectedEntries += (key -> (dataEnvelope, getUsedTimestamp(key)))
+        collectedEntries += (key -> (dataEnvelope -> getUsedTimestamp(key)))
         sum = entrySize
       }
     }

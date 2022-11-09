@@ -285,7 +285,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val fromSystemUid = if (status.hasFromSystemUid) Some(status.getFromSystemUid) else None
     Status(
       status.getEntriesList.asScala.iterator
-        .map(e => e.getKey -> (AkkaByteString.fromArrayUnsafe(e.getDigest.toByteArray()), e.getUsedTimestamp))
+        .map(e => e.getKey -> (AkkaByteString.fromArrayUnsafe(e.getDigest.toByteArray()) -> e.getUsedTimestamp))
         .toMap,
       status.getChunk,
       status.getTotChunks,
@@ -314,7 +314,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val fromSystemUid = if (gossip.hasFromSystemUid) Some(gossip.getFromSystemUid) else None
     Gossip(
       gossip.getEntriesList.asScala.iterator
-        .map(e => e.getKey -> (dataEnvelopeFromProto(e.getEnvelope), e.getUsedTimestamp))
+        .map(e => e.getKey -> (dataEnvelopeFromProto(e.getEnvelope) -> e.getUsedTimestamp))
         .toMap,
       sendBack = gossip.getSendBack,
       toSystemUid,
