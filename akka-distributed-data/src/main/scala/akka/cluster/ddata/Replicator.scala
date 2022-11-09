@@ -2338,7 +2338,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
     val myMissingKeys =
       if (expiryEnabled)
-        otherKeys.diff(myKeys).filterNot(key =>isExpired(key))
+        otherKeys.diff(myKeys)
       else
         otherKeys.diff(myKeys)
     if (myMissingKeys.nonEmpty) {
