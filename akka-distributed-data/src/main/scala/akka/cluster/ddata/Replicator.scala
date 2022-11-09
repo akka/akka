@@ -1476,6 +1476,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   val expiryWildcards = settings.expiryKeys.collect { case (k, v) if k.endsWith("*") => k.dropRight(1) -> v }
   val expiryEnabled: Boolean = settings.expiryKeys.nonEmpty
+  // updated on the gossip tick to avoid too many calls to `currentTimeMillis()`
+  private var currentUsedTimestamp = if (expiryEnabled) System.currentTimeMillis() else 0L
 
   val hasDurableKeys = settings.durableKeys.nonEmpty
   val durable = settings.durableKeys.filterNot(_.endsWith("*"))
@@ -1764,7 +1766,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def receiveGet(key: KeyR, consistency: ReadConsistency, req: Option[Any]): Unit = {
     val localValue = getData(key.id)
     log.debug("Received Get for key [{}].", key)
-    updateUsedTimestamp(key.id, currentUsedTimestamp())
+    updateUsedTimestamp(key.id, currentUsedTimestamp)
     if (isLocalGet(consistency)) {
       val reply = localValue match {
         case Some(DataEnvelope(DeletedData, _, _)) => GetDataDeleted(key, req)
@@ -1855,7 +1857,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         // so that the latest delta version is used
         val newEnvelope = setData(key.id, envelope)
 
-        updateUsedTimestamp(key.id, currentUsedTimestamp())
+        updateUsedTimestamp(key.id, currentUsedTimestamp)
 
         val durable = isDurable(key.id)
         if (isLocalUpdate(writeConsistency)) {
@@ -2118,9 +2120,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     expiryEnabled && timestamp != 0L && timestamp <= System.currentTimeMillis() - getExpiryDuration(key).toMillis
   }
 
-  def currentUsedTimestamp(): Long =
-    if (expiryEnabled) System.currentTimeMillis() else 0L
-
   def updateUsedTimestamp(key: KeyId, timestamp: Timestamp): Unit = {
     if (expiryEnabled && timestamp != 0) {
       dataEntries.get(key).foreach {
@@ -2325,7 +2324,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       else dataEntries.keysIterator.filter(key => math.abs(key.hashCode % totChunks) == chunk).toSet
     val otherMissingKeys =
       if (expiryEnabled)
-      myKeys.diff(otherKeys).filterNot(key =>isExpired(key))
+        myKeys.diff(otherKeys).filterNot(key =>isExpired(key))
       else
         myKeys.diff(otherKeys)
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
@@ -2482,6 +2481,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   private def cleanupExpired(): Unit = {
     if (expiryEnabled) {
       val now = System.currentTimeMillis()
+      // no need to be more accurate than the gossip tick interval
+      currentUsedTimestamp = now
       val expiredKeys = dataEntries.collect {
         // it can be 0L when it was set via a DeltaPropagation or Write first time, don't expire such immediately
         case (key, (_, _, usedTimestamp)) if usedTimestamp != 0L &&
