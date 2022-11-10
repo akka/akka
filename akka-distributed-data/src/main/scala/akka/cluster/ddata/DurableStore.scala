@@ -49,6 +49,9 @@ import akka.util.ccompat.JavaConverters._
  * When the `Replicator` needs to store a value it sends a `Store` message
  * to the durable store actor, which must then reply with the `successMsg` or
  * `failureMsg` to the `replyTo`.
+ *
+ * When entries have expired the `Replicator` sends a `Expire` message to the durable
+ * store actor, which can delete the entries from the backend store.
  */
 object DurableStore {
 
@@ -75,6 +78,11 @@ object DurableStore {
   class LoadFailed(message: String, cause: Throwable) extends RuntimeException(message, cause) {
     def this(message: String) = this(message, null)
   }
+
+  /**
+   * Request to expire (remove) entries.
+   */
+  final case class Expire(keys: Set[KeyId])
 
   /**
    * Wrapper class for serialization of a data value.
@@ -138,7 +146,8 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   private def lmdb(): Lmdb = _lmdb match {
     case OptionVal.Some(l) => l
     case _ =>
-      val t0 = System.nanoTime()
+      val debugEnabled = log.isDebugEnabled
+      val t0 = if (debugEnabled) System.nanoTime() else 0L
       log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
       val env = {
         val mapSize = config.getBytes("lmdb.map-size")
@@ -151,11 +160,11 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       val keyBuffer = ByteBuffer.allocateDirect(env.getMaxKeySize)
       val valueBuffer = ByteBuffer.allocateDirect(100 * 1024) // will grow when needed
 
-      if (log.isDebugEnabled)
+      if (debugEnabled)
         log.debug(
           "Init of LMDB in directory [{}] took [{} ms]",
           dir.getCanonicalPath,
-          TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+          TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0))
       val l = Lmdb(env, db, keyBuffer, valueBuffer)
       _lmdb = OptionVal.Some(l)
       l
@@ -197,8 +206,9 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   def init: Receive = {
     case LoadAll =>
       if (dir.exists && dir.list().length > 0) {
+        val debugEnabled = log.isDebugEnabled
+        val t0 = if (debugEnabled) System.nanoTime() else 0L
         val l = lmdb()
-        val t0 = System.nanoTime()
         val tx = l.env.txnRead()
         try {
           val iter = l.db.iterate(tx)
@@ -217,8 +227,11 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
             if (loadData.data.nonEmpty)
               sender() ! loadData
             sender() ! LoadAllCompleted
-            if (log.isDebugEnabled)
-              log.debug("load all of [{}] entries took [{} ms]", n, TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+            if (debugEnabled)
+              log.debug(
+                "load all of [{}] entries took [{} ms]",
+                n,
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0))
             context.become(active)
           } finally {
             Try(iter.close())
@@ -264,6 +277,9 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
     case WriteBehind =>
       writeBehind()
+
+    case Expire(keys) =>
+      dbDelete(keys)
   }
 
   def dbPut(tx: OptionVal[Txn[ByteBuffer]], key: KeyId, data: DurableDataEnvelope): Unit = {
@@ -286,7 +302,8 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
   def writeBehind(): Unit = {
     if (!pending.isEmpty()) {
-      val t0 = System.nanoTime()
+      val debugEnabled = log.isDebugEnabled
+      val t0 = if (debugEnabled) System.nanoTime() else 0L
       val tx = lmdb().env.txnWrite()
       try {
         val iter = pending.entrySet.iterator
@@ -295,11 +312,11 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
           dbPut(OptionVal.Some(tx), entry.getKey, entry.getValue)
         }
         tx.commit()
-        if (log.isDebugEnabled)
+        if (debugEnabled)
           log.debug(
             "store and commit of [{}] entries took [{} ms]",
             pending.size,
-            TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0))
       } catch {
         case NonFatal(e) =>
           import akka.util.ccompat.JavaConverters._
@@ -308,6 +325,32 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       } finally {
         pending.clear()
       }
+    }
+  }
+
+  def dbDelete(keys: Set[KeyId]): Unit = {
+    val debugEnabled = log.isDebugEnabled
+    val t0 = if (debugEnabled) System.nanoTime() else 0L
+    val l = lmdb()
+    val tx = lmdb().env.txnWrite()
+    try {
+      keys.foreach { key =>
+        l.keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
+        l.db.delete(tx, l.keyBuffer)
+      }
+      tx.commit()
+      if (debugEnabled)
+        log.debug(
+          "delete and commit of [{}] entries took [{} ms]",
+          keys.size,
+          TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0))
+    } catch {
+      case NonFatal(e) =>
+        import akka.util.ccompat.JavaConverters._
+        log.error(e, "failed to delete [{}]", pending.keySet.asScala.mkString(","))
+        tx.abort()
+    } finally {
+      l.keyBuffer.clear()
     }
   }
 

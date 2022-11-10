@@ -87,6 +87,7 @@ message Status {
   message Entry {
     required string key = 1;
     required bytes digest = 2;
+    optional sint64 usedTimestamp = 3;
   }
   
   required uint32 chunk = 1;
@@ -100,6 +101,7 @@ message Gossip {
   message Entry {
     required string key = 1;
     required DataEnvelope envelope = 2;
+    optional sint64 usedTimestamp = 3;
   }
   
   required bool sendBack = 1;

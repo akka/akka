@@ -101,10 +101,10 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     enterBarrier("after-" + testStepCounter)
   }
 
-  def newReplicator(sys: ActorSystem = system) =
-    sys.actorOf(
-      Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)),
-      "replicator-" + testStepCounter)
+  def newReplicator(
+      sys: ActorSystem = system,
+      settings: ReplicatorSettings = ReplicatorSettings(system).withGossipInterval(1.second)) =
+    sys.actorOf(Replicator.props(settings), "replicator-" + testStepCounter)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -157,6 +157,67 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
 
       enterBarrierAfterTestStep()
     }
+  }
+
+  "remove expired" in {
+    runOn(first) {
+
+      val settings = ReplicatorSettings(system)
+        .withGossipInterval(200.millis)
+        .withExpiryKeys(Map(KeyA.id -> 300.millis, KeyC.id -> 300.millis))
+      val r = newReplicator(settings = settings)
+      within(10.seconds) {
+        awaitAssert {
+          r ! GetReplicaCount
+          expectMsg(ReplicaCount(1))
+        }
+      }
+
+      r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+      r ! Update(KeyB, GCounter(), WriteLocal)(_ :+ 2)
+      r ! Update(KeyC, ORSet(), WriteLocal)(_ :+ "3")
+
+      expectMsg(UpdateSuccess(KeyA, None))
+      expectMsg(UpdateSuccess(KeyB, None))
+      expectMsg(UpdateSuccess(KeyC, None))
+
+      r ! Get(KeyB, ReadLocal)
+      expectMsgType[GetSuccess[GCounter]].dataValue.value.toInt should be(2)
+
+      // A and C expired
+      expectNoMessage(3.seconds)
+      r ! Get(KeyA, ReadLocal)
+      expectMsg(NotFound(KeyA, None))
+      r ! Get(KeyC, ReadLocal)
+      expectMsg(NotFound(KeyC, None))
+
+      // delete in DurableStore is async
+      expectNoMessage(1.second)
+
+      watch(r)
+      system.stop(r)
+      expectTerminated(r)
+
+      var r2: ActorRef = null
+      awaitAssert { r2 = newReplicator(settings = settings) } // try until name is free
+
+      // note that it will stash the commands until loading completed
+      r2 ! Get(KeyB, ReadLocal)
+      expectMsgType[GetSuccess[GCounter]].dataValue.value.toInt should be(2)
+
+      // A and C expired
+      r2 ! Get(KeyA, ReadLocal)
+      expectMsg(NotFound(KeyA, None))
+
+      r2 ! Get(KeyC, ReadLocal)
+      expectMsg(NotFound(KeyC, None))
+
+      watch(r2)
+      system.stop(r2)
+      expectTerminated(r2)
+    }
+
+    enterBarrierAfterTestStep()
   }
 
   "work in multi node cluster" in {
