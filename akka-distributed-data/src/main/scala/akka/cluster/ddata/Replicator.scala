@@ -168,7 +168,7 @@ object ReplicatorSettings {
  *        in the `Set`.
  * @param preferOldest Update and Get operations are sent to oldest nodes first.
  * @param logDataSizeExceeding Log data size.
- * @param expiryKeys Map of keys and inactivity duration for entries that will be automatically be removed
+ * @param expiryKeys Map of keys and inactivity duration for entries that will automatically be removed
  *        without tombstones when they have been inactive for the given duration.
  *        Prefix matching is supported by using * at the end of a key.
  *        Matching tombstones will also be removed after the expiry duration.
@@ -2509,7 +2509,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       if (expiredKeys.nonEmpty) {
         if (log.isDebugEnabled)
           log.debug("Removing expired keys [{}]", expiredKeys.mkString(", "))
-
 
         val durableExpiredKeys = expiredKeys.filter(isDurable).toSet
         if (durableExpiredKeys.nonEmpty)
