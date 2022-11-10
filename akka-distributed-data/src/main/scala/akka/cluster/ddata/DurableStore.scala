@@ -327,7 +327,6 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     val l = lmdb()
     val tx = lmdb().env.txnWrite()
     try {
-
       keys.foreach { key =>
         l.keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
         l.db.delete(tx, l.keyBuffer)

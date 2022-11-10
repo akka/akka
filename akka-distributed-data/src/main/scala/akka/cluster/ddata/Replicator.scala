@@ -748,7 +748,7 @@ object Replicator {
    * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
    *
-   * If the key is deleted the subscriber is notified with an [[Expired]]
+   * If the key is expired the subscriber is notified with an [[Expired]]
    * message.
    */
   final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
@@ -2354,11 +2354,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         replyTo ! g
       }
     }
-    val myMissingKeys =
-      if (expiryEnabled)
-        otherKeys.diff(myKeys)
-      else
-        otherKeys.diff(myKeys)
+    val myMissingKeys = otherKeys.diff(myKeys)
     if (myMissingKeys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug(
@@ -2514,7 +2510,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         if (log.isDebugEnabled)
           log.debug("Removing expired keys [{}]", expiredKeys.mkString(", "))
 
-        // Notification of subscribers for expired entries is not supported (yet)
 
         val durableExpiredKeys = expiredKeys.filter(isDurable).toSet
         if (durableExpiredKeys.nonEmpty)

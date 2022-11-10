@@ -149,7 +149,7 @@ import akka.util.Timeout
                 rsp match {
                   case chg: dd.Replicator.Changed[_] => subscriber ! JReplicator.Changed(chg.key)(chg.dataValue)
                   case del: dd.Replicator.Deleted[_] => subscriber ! JReplicator.Deleted(del.key)
-                  case del: dd.Replicator.Expired[_] => subscriber ! JReplicator.Expired(del.key)
+                  case exp: dd.Replicator.Expired[_] => subscriber ! JReplicator.Expired(exp.key)
                 }
                 Behaviors.same
 
