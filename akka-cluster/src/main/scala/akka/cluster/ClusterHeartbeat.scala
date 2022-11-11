@@ -240,8 +240,14 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
   }
 
   def heartbeatRsp(response: HeartbeatRsp): Unit = {
-    // TODO: log response time and validate sequence nrs once serialisation of sendTime is released
-    if (verboseHeartbeat) logDebug("Heartbeat response from [{}]", response.from.address)
+    if (verboseHeartbeat) {
+      val latencyMs = (System.nanoTime() - response.creationTimeNanos) / 1000000
+      logDebug(
+        "Heartbeat response from [{}] (round trip {} ms, seq nr [{}])",
+        response.from.address,
+        latencyMs,
+        response.sequenceNr)
+    }
     state = state.heartbeatRsp(response.from)
   }
 
