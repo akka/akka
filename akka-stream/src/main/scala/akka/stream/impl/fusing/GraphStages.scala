@@ -432,25 +432,43 @@ import scala.util.control.NonFatal
     override def initialAttributes: Attributes = DefaultAttributes.futureSource
     override def createLogic(attr: Attributes) =
       new GraphStageLogic(shape) with OutHandler {
+        // Always register a callback which will fail the stage if the future fails...
+        val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
+        future.onComplete(cb)(ExecutionContexts.parasitic)
+
         def onPull(): Unit = {
+          // ...if, after the initial demand...
           future.value match {
-            case Some(completed) =>
-              // optimization if the future is already completed
-              onFutureCompleted(completed)
+            case Some(scala.util.Success(result)) =>
+              // ...the future has already completed with success, we directly invoke the success callback
+              //  (the completion callback, which would have done nothing, may or may not have already executed)...
+              onFutureSuccess(result)
+
+            case Some(scala.util.Failure(_)) =>
+              // ...the future has already failed, the callback to fail the stream will execute if it hasn't
+              // already, so there's nothing to do
+              ()
+
             case None =>
-              val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
-              future.onComplete(cb)(ExecutionContexts.parasitic)
+              // ...otherwise, we register a callback which will only run if the future succeeds (whether or not
+              //  the completion callback executes and does nothing already)
+              val successCb = getAsyncCallback[T](onFutureSuccess).invoke _
+              future.foreach(successCb)(ExecutionContexts.parasitic)
           }
 
-          def onFutureCompleted(result: Try[T]): Unit = {
-            result match {
-              case scala.util.Success(null) => completeStage()
-              case scala.util.Success(v)    => emit(out, v, () => completeStage())
-              case scala.util.Failure(t)    => failStage(t)
-            }
+          def onFutureSuccess(result: T): Unit = {
+            if (result == null) completeStage()
+            else emit(out, result, () => completeStage())
           }
 
           setHandler(out, eagerTerminateOutput) // After first pull we won't produce anything more
+        }
+
+        def onFutureCompleted(result: Try[T]): Unit = {
+          result match {
+            case scala.util.Success(_) => () // Do nothing: the onFutureSuccess will handle it
+            case scala.util.Failure(t) => failStage(t)
+          }
         }
 
         setHandler(out, this)

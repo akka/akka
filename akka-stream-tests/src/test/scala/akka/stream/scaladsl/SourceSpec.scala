@@ -500,4 +500,12 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       Await.result(result, 4.seconds) shouldBe Done
     }
   }
+
+  "Source.future" must {
+    "fail on failed future, even with no demand" in {
+      val result = Source.future(Future.failed(new RuntimeException("BOOM!"))).runWith(Sink.never)
+
+      (the[RuntimeException] thrownBy (Await.result(result, 1.second))).getMessage shouldBe "BOOM!"
+    }
+  }
 }
