@@ -14,7 +14,7 @@ concurrency:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       matrix:

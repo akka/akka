@@ -12,7 +12,7 @@ on:
 jobs:
   check-binary-compatibility:
     name: Check / Binary Compatibility
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false

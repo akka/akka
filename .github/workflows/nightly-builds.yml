@@ -9,7 +9,7 @@ jobs:
 
   akka-cluster-metrics-sigar:
     name: Akka Cluster Metrics Test with Sigar
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     steps:
 
@@ -69,7 +69,7 @@ jobs:
 
   akka-classic-remoting-tests:
     name: Akka Classic Remoting Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false
@@ -123,7 +123,7 @@ jobs:
 
   jdk-nightly-build:
     name: JDK ${{ matrix.jdkVersion }} / Scala ${{ matrix.scalaVersion }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false
@@ -220,7 +220,7 @@ jobs:
 
   akka-artery-aeron-tests:
     name: Akka Artery Aeron Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false

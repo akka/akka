@@ -9,7 +9,7 @@ jobs:
 
   akka-timing-sensitive-tests:
     name: Akka Tests taggedAs TimingTest
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     steps:
 
