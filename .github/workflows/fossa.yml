@@ -27,7 +27,7 @@ jobs:
 
       - name: FOSSA policy check
         run: |-
-          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/spectrometer/master/install.sh | bash
+          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash
           fossa analyze && fossa test
         env:
           FOSSA_API_KEY: "${{secrets.FOSSA_API_KEY}}"
