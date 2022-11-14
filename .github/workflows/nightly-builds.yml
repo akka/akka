@@ -5,30 +5,34 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
 
   akka-cluster-metrics-sigar:
     name: Akka Cluster Metrics Test with Sigar
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: adopt:1.11
 
       - name: sbt akka-cluster-metrics/test
         run: |-
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.sigar=true \
             -Dakka.cluster.assert=on \
@@ -46,7 +50,7 @@ jobs:
       - name: Test Reports
         # Makes it easier to spot failures instead of looking at the logs.
         if: ${{ failure() }}
-        uses: marcospereira/action-surefire-report@v1
+        uses: scacap/action-surefire-report@482f012643ed0560e23ef605a79e8e87ca081648
         with:
           report_paths: '**/target/test-reports/TEST-*.xml'
           fail_if_no_tests: false
@@ -54,7 +58,7 @@ jobs:
 
       - name: Email on failure
         if: ${{ failure() }}
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@6063705cefe50cb915fc53bb06d4049cae2953b2
         with:
           server_address: smtp.gmail.com
           server_port: 465
@@ -69,7 +73,7 @@ jobs:
 
   akka-classic-remoting-tests:
     name: Akka Classic Remoting Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false
@@ -80,23 +84,24 @@ jobs:
           - akka-cluster-typed/test akka-cluster-sharding-typed/test
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: adopt:1.11
 
       - name: sbt ${{ matrix.command }}
         # note that this is not running any multi-jvm tests because multi-in-test=false
         run: |-
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.enabled=off \
           -Dakka.test.timefactor=2 \
@@ -108,7 +113,7 @@ jobs:
 
       - name: Email on failure
         if: ${{ failure() }}
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@6063705cefe50cb915fc53bb06d4049cae2953b2
         with:
           server_address: smtp.gmail.com
           server_port: 465
@@ -123,7 +128,7 @@ jobs:
 
   jdk-nightly-build:
     name: JDK ${{ matrix.jdkVersion }} / Scala ${{ matrix.scalaVersion }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false
@@ -132,32 +137,33 @@ jobs:
         # binary version is required and Akka build will set the right
         # full version from it.
         scalaVersion: ["2.12", "2.13"]
-        jdkVersion: ["adopt@1.8.0", "adopt@1.11", "openjdk@1.17.0"]
+        jdkVersion: ["adopt:1.8.0", "adopt:1.11", "temurin:1.17.0"]
         include:
-          - jdkVersion: adopt@1.8.0
+          - jdkVersion: adopt:1.8.0
             extraOpts: ""
-          - jdkVersion: adopt@1.11
+          - jdkVersion: adopt:1.11
             extraOpts: ""
-          - jdkVersion: openjdk@1.17.0
+          - jdkVersion: temurin:1.17.0
             extraopts: ""
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
 
-      - name: Set up JDK ${{ matrix.jdkVersion }}
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: ${{ matrix.jdkVersion }}
-
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK ${{ matrix.jdkVersion }}
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: ${{ matrix.jdkVersion }}
 
       - name: Compile and Test
         # note that this is not running any multi-jvm tests because multi-in-test=false
         run: |-
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
             -Dakka.cluster.assert=on \
             -Dakka.log.timestamps=true \
             -Dakka.test.timefactor=2 \
@@ -170,7 +176,7 @@ jobs:
       - name: Test Reports
         # Makes it easier to spot failures instead of looking at the logs.
         if: ${{ failure() }}
-        uses: marcospereira/action-surefire-report@v1
+        uses: scacap/action-surefire-report@482f012643ed0560e23ef605a79e8e87ca081648
         with:
           report_paths: '**/target/test-reports/TEST-*.xml'
           fail_if_no_tests: false
@@ -190,7 +196,8 @@ jobs:
         if: ${{ startsWith(matrix.jdkVersion, 'adopt@1.11') }}
         run: |-
           sudo apt-get install graphviz
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
             -Dakka.genjavadoc.enabled=true \
             "+~ ${{ matrix.scalaVersion }} doc"
 
@@ -199,13 +206,14 @@ jobs:
         if: ${{ startsWith(matrix.jdkVersion, 'adopt@1.11') }}
         run: |-
           sudo apt-get install graphviz
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
             "+~ ${{ matrix.scalaVersion }} publishLocal publishM2"
 
       - name: Email on failure
         if: ${{ failure() }}
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@6063705cefe50cb915fc53bb06d4049cae2953b2
         with:
           server_address: smtp.gmail.com
           server_port: 465
@@ -220,7 +228,7 @@ jobs:
 
   akka-artery-aeron-tests:
     name: Akka Artery Aeron Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       fail-fast: false
@@ -230,23 +238,24 @@ jobs:
           - akka-cluster/test akka-cluster-typed/test
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: adopt:1.11
 
       - name: sbt ${{ matrix.command }}
         # note that this is not running any multi-jvm tests because multi-in-test=false
         run: |-
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.transport=aeron-udp \
           -Dakka.test.timefactor=2 \
@@ -260,7 +269,7 @@ jobs:
 
       - name: Email on failure
         if: ${{ failure() }}
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@6063705cefe50cb915fc53bb06d4049cae2953b2
         with:
           server_address: smtp.gmail.com
           server_port: 465

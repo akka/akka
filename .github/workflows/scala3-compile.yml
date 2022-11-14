@@ -3,6 +3,9 @@ name: Compile Akka with Scala 3
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   # Only run once for latest commit per ref and cancel other (previous) runs.
   group: ci-scala3-${{ github.ref }}
@@ -11,7 +14,7 @@ concurrency:
 jobs:
   compile:
     name: Compile
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     strategy:
       matrix:
@@ -30,19 +33,20 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: adopt:1.11
 
       - name: Compile on Scala 3
         run: |
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
           "+~ 3 ${{ matrix.command }}"
