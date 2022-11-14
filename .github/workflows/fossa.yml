@@ -12,7 +12,7 @@ jobs:
     if: github.repository == 'akka/akka'
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
@@ -23,7 +23,7 @@ jobs:
           java-version: adopt@1.11
 
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
 
       - name: FOSSA policy check
         run: |-

@@ -33,7 +33,7 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
 
@@ -43,7 +43,7 @@ jobs:
           java-version: adopt@1.11
 
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
 
       - name: Compile and run tests on Scala 3
         # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
