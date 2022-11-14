@@ -15,8 +15,8 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.util.HashCode
 
-import scala.compat.java8.DurationConverters.DurationOps
-import scala.compat.java8.FutureConverters.FutureOps
+import scala.jdk.DurationConverters._
+import scala.jdk.FutureConverters._
 
 object ServiceDiscovery {
 
@@ -336,6 +336,6 @@ abstract class ServiceDiscovery {
    *                                [DiscoveryTimeoutException]
    */
   def lookup(serviceName: String, resolveTimeout: java.time.Duration): CompletionStage[Resolved] =
-    lookup(serviceName, resolveTimeout.toScala).toJava
+    lookup(serviceName, resolveTimeout.toScala).asJava
 
 }
