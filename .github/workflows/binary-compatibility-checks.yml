@@ -43,7 +43,6 @@ jobs:
 
       - name: Check correct MiMa filter directories
         run: |
-          mv .jvmopts-ci .jvmopts
           sbt checkMimaFilterDirectories
 
       - name: Email on failure
