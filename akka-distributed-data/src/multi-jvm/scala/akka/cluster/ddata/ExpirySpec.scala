@@ -23,11 +23,11 @@ object ExpirySpec extends MultiNodeConfig {
     akka.actor.provider = "cluster"
     akka.cluster.distributed-data {
       gossip-interval = 500 millis
+      delta-crdt.enabled = off
       expire-keys-after-inactivity {
         "expiry-*" = 2 seconds
       }
     }
-    
     """))
 
 }
@@ -52,6 +52,7 @@ class ExpirySpec extends MultiNodeSpec(ExpirySpec) with STMultiNodeSpec with Imp
   private val KeyD = GCounterKey("expiry-D")
   private val KeyE = GCounterKey("expiry-E")
   private val KeyF = GCounterKey("expiry-F")
+  private val KeyOtherA = GCounterKey("other-A")
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -198,6 +199,30 @@ class ExpirySpec extends MultiNodeSpec(ExpirySpec) with STMultiNodeSpec with Imp
       expectMsgType[GetSuccess[GCounter]].get(KeyF).value should ===(1)
 
       enterBarrier("done-6")
+    }
+
+    "don't impact gossip of other keys" in {
+      runOn(first) {
+        enterBarrier("subscribed")
+
+        replicator ! Update(KeyOtherA, GCounter.empty, writeLocal)(_ :+ 1)
+        expectMsgType[UpdateSuccess[_]]
+        enterBarrier("updated")
+      }
+
+      runOn(second) {
+        val subscriberProbe = TestProbe()
+        replicator ! Subscribe(KeyOtherA, subscriberProbe.ref)
+        enterBarrier("subscribed")
+
+        enterBarrier("updated")
+
+        subscriberProbe.expectMsgType[Changed[GCounter]].get(KeyOtherA).value should ===(1)
+        replicator ! Get(KeyOtherA, ReadLocal)
+        expectMsgType[GetSuccess[GCounter]].get(KeyOtherA).value should ===(1)
+      }
+
+      enterBarrier("done-7")
     }
   }
 }

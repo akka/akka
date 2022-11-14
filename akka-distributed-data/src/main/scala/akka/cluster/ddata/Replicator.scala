@@ -1482,14 +1482,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   val serializer = SerializationExtension(context.system).serializerFor(classOf[DataEnvelope])
   val maxPruningDisseminationNanos = maxPruningDissemination.toNanos
 
-  val expiryWildcards = settings.expiryKeys.collect { case (k, v) if k.endsWith("*") => k.dropRight(1) -> v }
+  val expiryWildcards = settings.expiryKeys.collect { case (k, v) if isWildcard(k) => dropWildcard(k) -> v }
   val expiryEnabled: Boolean = settings.expiryKeys.nonEmpty
   // updated on the gossip tick to avoid too many calls to `currentTimeMillis()`
   private var currentUsedTimestamp = if (expiryEnabled) System.currentTimeMillis() else 0L
 
   val hasDurableKeys = settings.durableKeys.nonEmpty
-  val durable = settings.durableKeys.filterNot(_.endsWith("*"))
-  val durableWildcards = settings.durableKeys.collect { case k if k.endsWith("*") => k.dropRight(1) }
+  val durable = settings.durableKeys.filterNot(isWildcard)
+  val durableWildcards = settings.durableKeys.collect { case k if isWildcard(k) => dropWildcard(k) }
   val durableStore: ActorRef =
     if (hasDurableKeys) {
       val props = settings.durableStoreProps match {
@@ -1586,6 +1586,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   @nowarn("msg=deprecated")
   val newSubscribers = new mutable.HashMap[KeyId, mutable.Set[ActorRef]] with mutable.MultiMap[KeyId, ActorRef]
   var subscriptionKeys = Map.empty[KeyId, KeyR]
+  @nowarn("msg=deprecated")
+  val wildcardSubscribers = new mutable.HashMap[KeyId, mutable.Set[ActorRef]] with mutable.MultiMap[KeyId, ActorRef]
 
   // To be able to do efficient stashing we use this field instead of sender().
   // Using internal buffer instead of Stash to avoid the overhead of the Stash mailbox.
@@ -2055,7 +2057,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
 
     val dig =
-      if (subscribers.contains(key) && !changed.contains(key)) {
+      if (hasSubscriber(key) && !changed.contains(key)) {
         val oldDigest = getDigest(key)
         val (dig, payloadSize) = digest(newEnvelope)
         payloadSizeAggregator.updatePayloadSize(key, payloadSize)
@@ -2129,7 +2131,12 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     isExpired(key, getUsedTimestamp(key))
 
   def isExpired(key: KeyId, timestamp: Timestamp): Boolean = {
-    expiryEnabled && timestamp != 0L && timestamp <= System.currentTimeMillis() - getExpiryDuration(key).toMillis
+    if (expiryEnabled && timestamp != 0L) {
+      val expiryDuration = getExpiryDuration(key)
+      expiryDuration != Duration.Zero && timestamp <= System.currentTimeMillis() - expiryDuration.toMillis
+    } else {
+      false
+    }
   }
 
   def updateUsedTimestamp(key: KeyId, timestamp: Timestamp): Unit = {
@@ -2158,8 +2165,17 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   @nowarn("msg=deprecated")
   def receiveFlushChanges(): Unit = {
-    def notify(keyId: KeyId, subs: mutable.Set[ActorRef], sendExpiredIfMissing: Boolean): Unit = {
-      val key = subscriptionKeys(keyId)
+    def notify(keyId: KeyId, subs: Iterator[ActorRef], sendExpiredIfMissing: Boolean): Unit = {
+      val key = subscriptionKeys.get(keyId) match {
+        case Some(r) => r
+        case None =>
+          subscriptionKeys
+            .collectFirst {
+              case (k, r) if isWildcard(k) && keyId.startsWith(dropWildcard(k)) => r.withId(keyId)
+            }
+            .getOrElse(throw new IllegalStateException(s"Subscription notification of [$keyId], but no matching " +
+            s"subscription key in [${subscriptionKeys.keysIterator.mkString(", ")}]"))
+      }
       getData(keyId) match {
         case Some(envelope) =>
           val msg = if (envelope.data == DeletedData) Deleted(key) else Changed(key)(envelope.data)
@@ -2174,17 +2190,30 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       }
     }
 
-    if (subscribers.nonEmpty) {
-      for (key <- changed; if subscribers.contains(key); subs <- subscribers.get(key))
-        notify(key, subs, sendExpiredIfMissing = true)
+    if (subscribers.nonEmpty || wildcardSubscribers.nonEmpty) {
+      changed.foreach { key =>
+        if (hasSubscriber(key))
+          notify(key, getSubscribersIterator(key), sendExpiredIfMissing = true)
+      }
     }
 
     // Changed event is sent to new subscribers even though the key has not changed,
     // i.e. send current value. Expired is not sent to new subscribers as the first event.
     if (newSubscribers.nonEmpty) {
       for ((key, subs) <- newSubscribers) {
-        notify(key, subs, sendExpiredIfMissing = false)
-        subs.foreach { subscribers.addBinding(key, _) }
+        if (isWildcard(key)) {
+          dataEntries.keysIterator.filter(_.startsWith(dropWildcard(key))).foreach { matchingKey =>
+            notify(matchingKey, subs.iterator, sendExpiredIfMissing = false)
+          }
+          subs.foreach {
+            wildcardSubscribers.addBinding(dropWildcard(key), _)
+          }
+        } else {
+          notify(key, subs.iterator, sendExpiredIfMissing = false)
+          subs.foreach {
+            subscribers.addBinding(key, _)
+          }
+        }
       }
       newSubscribers.clear()
     }
@@ -2458,17 +2487,45 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def receiveUnsubscribe(key: KeyR, subscriber: ActorRef): Unit = {
-    subscribers.removeBinding(key.id, subscriber)
+    if (isWildcard(key.id))
+      wildcardSubscribers.removeBinding(dropWildcard(key.id), subscriber)
+    else
+      subscribers.removeBinding(key.id, subscriber)
     newSubscribers.removeBinding(key.id, subscriber)
     if (!hasSubscriber(subscriber))
       context.unwatch(subscriber)
-    if (!subscribers.contains(key.id) && !newSubscribers.contains(key.id))
+    if (!hasSubscriber(key.id) && !newSubscribers.contains(key.id))
       subscriptionKeys -= key.id
   }
 
   def hasSubscriber(subscriber: ActorRef): Boolean =
-    subscribers.exists { case (_, s)    => s.contains(subscriber) } ||
-    newSubscribers.exists { case (_, s) => s.contains(subscriber) }
+    subscribers.exists { case (_, s)         => s.contains(subscriber) } ||
+    wildcardSubscribers.exists { case (_, s) => s.contains(subscriber) } ||
+    newSubscribers.exists { case (_, s)      => s.contains(subscriber) }
+
+  private def hasSubscriber(keyId: KeyId): Boolean =
+    subscribers.contains(keyId) || (wildcardSubscribers.nonEmpty && wildcardSubscribers.exists {
+      case (k, _) => keyId.startsWith(k)
+    })
+
+  private def getSubscribersIterator(keyId: KeyId): Iterator[ActorRef] = {
+    val subscribersIter = subscribers.get(keyId).map(_.iterator).getOrElse(Iterator.empty)
+    if (wildcardSubscribers.isEmpty)
+      subscribersIter
+    else
+      subscribersIter ++ wildcardSubscribers
+        .collectFirst {
+          case (k, v) if keyId.startsWith(k) => v
+        }
+        .map(_.iterator)
+        .getOrElse(Iterator.empty)
+  }
+
+  private def isWildcard(keyId: KeyId): Boolean =
+    keyId.endsWith("*")
+
+  private def dropWildcard(keyId: KeyId): KeyId =
+    keyId.dropRight(1)
 
   @nowarn("msg=deprecated")
   def receiveTerminated(ref: ActorRef): Unit = {
@@ -2480,13 +2537,17 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       keys1.foreach { key =>
         subscribers.removeBinding(key, ref)
       }
-      val keys2 = newSubscribers.collect { case (k, s) if s.contains(ref) => k }
+      val keys2 = wildcardSubscribers.collect { case (k, s) if s.contains(ref) => k }
       keys2.foreach { key =>
+        wildcardSubscribers.removeBinding(key, ref)
+      }
+      val keys3 = newSubscribers.collect { case (k, s) if s.contains(ref) => k }
+      keys3.foreach { key =>
         newSubscribers.removeBinding(key, ref)
       }
 
-      (keys1 ++ keys2).foreach { key =>
-        if (!subscribers.contains(key) && !newSubscribers.contains(key))
+      (keys1 ++ keys3).foreach { key =>
+        if (!hasSubscriber(key) && !newSubscribers.contains(key))
           subscriptionKeys -= key
       }
     }
