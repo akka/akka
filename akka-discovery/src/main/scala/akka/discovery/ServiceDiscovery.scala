@@ -8,14 +8,15 @@ import java.net.InetAddress
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
-
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.util.HashCode
+
+import scala.compat.java8.DurationConverters.DurationOps
+import scala.compat.java8.FutureConverters.FutureOps
 
 object ServiceDiscovery {
 
@@ -335,6 +336,6 @@ abstract class ServiceDiscovery {
    *                                [DiscoveryTimeoutException]
    */
   def lookup(serviceName: String, resolveTimeout: java.time.Duration): CompletionStage[Resolved] =
-    lookup(serviceName, resolveTimeout)
+    lookup(serviceName, resolveTimeout.toScala).toJava
 
 }
