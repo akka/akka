@@ -353,21 +353,23 @@ object Source {
    * Starts a new `Source` from the given `Future`. The stream will consist of
    * one element when the `Future` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
-   * The stream terminates with a failure if the `Future` is completed with a failure.
+   * The stream terminates with a failure if the `Future` is completed with a failure
+   * and there has been demand.
    */
   @deprecated("Use 'Source.future' instead", "2.6.0")
   def fromFuture[T](future: Future[T]): Source[T, NotUsed] =
-    fromGraph(new FutureSource(future))
+    fromGraph(new FutureSource(future, false))
 
   /**
    * Starts a new `Source` from the given `Future`. The stream will consist of
    * one element when the `Future` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
-   * The stream terminates with a failure if the `Future` is completed with a failure.
+   * The stream terminates with a failure if the `Future` is completed with a failure
+   * and there has been demand.
    */
   @deprecated("Use 'Source.completionStage' instead", "2.6.0")
   def fromCompletionStage[T](future: CompletionStage[T]): Source[T, NotUsed] =
-    fromGraph(new FutureSource(future.toScala))
+    fromGraph(new FutureSource(future.toScala, false))
 
   /**
    * Streams the elements of the given future source once it successfully completes.
@@ -496,10 +498,12 @@ object Source {
 
   /**
    * Emits a single value when the given `Future` is successfully completed and then completes the stream.
-   * The stream fails if the `Future` is completed with a failure.
+   * The stream fails if there is demand and the `Future` is completed with a failure.
+   *
+   * @param eagerFail whether to fail the stream on a failed 'futureElement' before any demand has been received (default: `false`)
    */
-  def future[T](futureElement: Future[T]): Source[T, NotUsed] =
-    fromGraph(new FutureSource[T](futureElement))
+  def future[T](futureElement: Future[T], eagerFail: Boolean = false): Source[T, NotUsed] =
+    fromGraph(new FutureSource[T](futureElement, eagerFail))
 
   /**
    * Never emits any elements, never completes and never fails.
@@ -511,12 +515,14 @@ object Source {
 
   /**
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
-   * If the `CompletionStage` is completed with a failure the stream is failed.
+   * The stream fails if there is demand and the `CompletionStage` is completed with a failure.
    *
    * Here for Java interoperability, the normal use from Scala should be [[Source.future]]
+   *
+   * @param eagerFail whether to fail the stream on a failed 'completionStage' before any demand has been received (default: `false`)
    */
-  def completionStage[T](completionStage: CompletionStage[T]): Source[T, NotUsed] =
-    future(completionStage.toScala)
+  def completionStage[T](completionStage: CompletionStage[T], eagerFail: Boolean = false): Source[T, NotUsed] =
+    future(completionStage.toScala, eagerFail)
 
   /**
    * Turn a `Future[Source]` into a source that will emit the values of the source when the future completes successfully.
@@ -548,7 +554,7 @@ object Source {
   def lazyFuture[T](create: () => Future[T]): Source[T, NotUsed] =
     lazySource { () =>
       val f = create()
-      future(f)
+      future(f, false) // because this isn't called until there is demand, eagerFail doesn't matter
     }.mapMaterializedValue(_ => NotUsed)
 
   /**

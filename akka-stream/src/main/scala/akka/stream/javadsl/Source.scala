@@ -181,7 +181,8 @@ object Source {
    * Start a new `Source` from the given `Future`. The stream will consist of
    * one element when the `Future` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
-   * The stream terminates with a failure if the `Future` is completed with a failure.
+   * The stream terminates with a failure if the `Future` is completed with a failure
+   * and there has been demand.
    */
   @deprecated("Use 'Source.future' instead", "2.6.0")
   def fromFuture[O](future: Future[O]): javadsl.Source[O, NotUsed] =
@@ -191,11 +192,12 @@ object Source {
    * Starts a new `Source` from the given `CompletionStage`. The stream will consist of
    * one element when the `CompletionStage` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
-   * The stream terminates with a failure if the `CompletionStage` is completed with a failure.
+   * The stream terminates with a failure if the `CompletionStage` is completed with a failure
+   * and there has been demand.
    */
   @deprecated("Use 'Source.completionStage' instead", "2.6.0")
   def fromCompletionStage[O](future: CompletionStage[O]): javadsl.Source[O, NotUsed] =
-    new Source(scaladsl.Source.completionStage(future))
+    new Source(scaladsl.Source.completionStage(future, false))
 
   /**
    * Streams the elements of the given future source once it successfully completes.
@@ -294,12 +296,22 @@ object Source {
 
   /**
    * Emits a single value when the given Scala `Future` is successfully completed and then completes the stream.
-   * The stream fails if the `Future` is completed with a failure.
+   * The stream fails if there is demand and the `Future` is completed with a failure.
    *
    * Here for Java interoperability, the normal use from Java should be [[Source.completionStage]]
    */
   def future[T](futureElement: Future[T]): Source[T, NotUsed] =
-    scaladsl.Source.future(futureElement).asJava
+    future(futureElement, false)
+
+  /**
+   * Emits a single value when the given Scala `Future` is successfully completed and then completes the stream.
+   * The stream fails if there is demand and the `Future` is completed with a failure, or if 'eagerFail' is `true`
+   * and the `Future` is completed with a failure.
+   *
+   * @param eagerFail whether to fail the stream on a failed 'futureElement' before any demand has been received
+   */
+  def future[T](futureElement: Future[T], eagerFail: Boolean): Source[T, NotUsed] =
+    scaladsl.Source.future(futureElement, eagerFail).asJava
 
   /**
    * Never emits any elements, never completes and never fails.
@@ -312,8 +324,18 @@ object Source {
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
    * If the `CompletionStage` is completed with a failure the stream is failed.
    */
-  def completionStage[T](completionStage: CompletionStage[T]): Source[T, NotUsed] =
-    future(completionStage.toScala)
+  def completionStage[T](completionStageElement: CompletionStage[T]): Source[T, NotUsed] =
+    completionStage(completionStageElement, false)
+
+  /**
+   * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
+   * The stream fails if there is demand and the `CompletionStage` is completed with a failure, or if 'eagerFail' is
+   * `true` and the `CompletionStage` is completed with a failure.
+   *
+   * @param eagerFail whether to fail the stream on a failed 'completionStage' before any demand has been received
+   */
+  def completionStage[T](completionStage: CompletionStage[T], eagerFail: Boolean): Source[T, NotUsed] =
+    future(completionStage.toScala, eagerFail)
 
   /**
    * Turn a `CompletionStage[Source]` into a source that will emit the values of the source when the future completes successfully.
@@ -359,7 +381,7 @@ object Source {
     scaladsl.Source
       .lazySource { () =>
         val f = create.create().toScala
-        scaladsl.Source.future(f)
+        scaladsl.Source.future(f, false)
       }
       .mapMaterializedValue(_ => NotUsed.notUsed())
       .asJava

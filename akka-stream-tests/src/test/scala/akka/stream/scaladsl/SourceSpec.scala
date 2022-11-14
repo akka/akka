@@ -502,10 +502,28 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
   }
 
   "Source.future" must {
-    "fail on failed future, even with no demand" in {
-      val result = Source.future(Future.failed(new RuntimeException("BOOM!"))).runWith(Sink.never)
+    "consider the eagerFail option when a future fails before there is demand" in {
+      val fail = Future.failed(new RuntimeException("BOOM!"))
 
-      (the[RuntimeException] thrownBy (Await.result(result, 1.second))).getMessage shouldBe "BOOM!"
+      val eagerFailResult =
+        Source.future(fail, eagerFail = true)
+          .runWith(Sink.never)
+
+      (the[RuntimeException] thrownBy (Await.result(eagerFailResult, 1.second))).getMessage shouldBe "BOOM!"
+
+      val lazyFailProbe =
+        Source.future(fail, eagerFail = false)
+          .runWith(TestSink[Any]())
+
+      val subscription = lazyFailProbe.expectSubscription()
+
+      // Doesn't fail immediately...
+      an[AssertionError] shouldBe thrownBy(lazyFailProbe.expectError())
+
+      subscription.request(1)
+
+      // ...but fails upon demand
+      lazyFailProbe.expectError().getMessage shouldBe "BOOM!"
     }
   }
 }

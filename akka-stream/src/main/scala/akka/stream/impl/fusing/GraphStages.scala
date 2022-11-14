@@ -425,35 +425,38 @@ import scala.util.control.NonFatal
     override def toString: String = "FutureFlattenSource"
   }
 
-  final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
+  final class FutureSource[T](val future: Future[T], eagerFail: Boolean) extends GraphStage[SourceShape[T]] {
     ReactiveStreamsCompliance.requireNonNullElement(future)
     val shape = SourceShape(Outlet[T]("FutureSource.out"))
     val out = shape.out
     override def initialAttributes: Attributes = DefaultAttributes.futureSource
     override def createLogic(attr: Attributes) =
       new GraphStageLogic(shape) with OutHandler {
-        // Always register a callback which will fail the stage if the future fails...
-        val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
-        future.onComplete(cb)(ExecutionContexts.parasitic)
+        if (eagerFail) {
+          val cb = getAsyncCallback[Try[T]](failOnFailure).invoke _
+          future.onComplete(cb)(ExecutionContexts.parasitic)
+        }
 
         def onPull(): Unit = {
-          // ...if, after the initial demand...
           future.value match {
             case Some(scala.util.Success(result)) =>
-              // ...the future has already completed with success, we directly invoke the success callback
-              //  (the completion callback, which would have done nothing, may or may not have already executed)...
+              // if eagerly failing, the failOnFailure callback may or may not have executed (and done nothing)
               onFutureSuccess(result)
 
-            case Some(scala.util.Failure(_)) =>
-              // ...the future has already failed, the callback to fail the stream will execute if it hasn't
-              // already, so there's nothing to do
-              ()
+            case Some(t @ scala.util.Failure(_)) =>
+              if (!eagerFail) {
+                failOnFailure(t)
+              }
 
             case None =>
-              // ...otherwise, we register a callback which will only run if the future succeeds (whether or not
-              //  the completion callback executes and does nothing already)
-              val successCb = getAsyncCallback[T](onFutureSuccess).invoke _
-              future.foreach(successCb)(ExecutionContexts.parasitic)
+              if (eagerFail) {
+                // We already registered the callback to fail on failure, so only need a callback for success
+                val successCb = getAsyncCallback[T](onFutureSuccess).invoke _
+                future.foreach(successCb)(ExecutionContexts.parasitic)
+              } else {
+                val successOrFailureCb = getAsyncCallback[Try[T]](bothCallbacks).invoke _
+                future.onComplete(successOrFailureCb)(ExecutionContexts.parasitic)
+              }
           }
 
           def onFutureSuccess(result: T): Unit = {
@@ -461,10 +464,15 @@ import scala.util.control.NonFatal
             else emit(out, result, () => completeStage())
           }
 
+          def bothCallbacks(result: Try[T]): Unit = {
+            result.foreach(onFutureSuccess _)
+            failOnFailure(result)
+          }
+
           setHandler(out, eagerTerminateOutput) // After first pull we won't produce anything more
         }
 
-        def onFutureCompleted(result: Try[T]): Unit = {
+        def failOnFailure(result: Try[T]): Unit = {
           result match {
             case scala.util.Success(_) => () // Do nothing: the onFutureSuccess will handle it
             case scala.util.Failure(t) => failStage(t)
