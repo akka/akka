@@ -29,7 +29,8 @@ jobs:
 
       - name: Code style check
         run: |-
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
           -Dsbt.override.build.repos=false \
           -Dsbt.log.noformat=false \
           verifyCodeStyle
@@ -54,7 +55,8 @@ jobs:
 
       - name: sbt validatePullRequest
         run: |-
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
           -Dakka.mima.enabled=false \
           -Dakka.test.multi-in-test=false \
           -Dakka.test.timefactor=2 \

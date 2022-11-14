@@ -48,7 +48,8 @@ jobs:
       - name: Compile and run tests on Scala 3
         # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
         run: |
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
           -Dakka.log.timestamps=true \
           -Dakka.test.timefactor=2 \
           -Dakka.actor.testkit.typed.timefactor=2 \

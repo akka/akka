@@ -37,10 +37,14 @@ jobs:
           jvm: adopt:1.11
 
       - name: Report MiMa Binary Issues
-        run: sbt -jvm-opts .jvmopts-ci "+~ ${{ matrix.scalaVersion }} mimaReportBinaryIssues"
+        run: |-
+          mv .jvmopts-ci .jvmopts
+          sbt "+~ ${{ matrix.scalaVersion }} mimaReportBinaryIssues"
 
       - name: Check correct MiMa filter directories
-        run: sbt -jvm-opts .jvmopts-ci checkMimaFilterDirectories
+        run: |
+          mv .jvmopts-ci .jvmopts
+          sbt checkMimaFilterDirectories
 
       - name: Email on failure
         if: ${{ failure() }}

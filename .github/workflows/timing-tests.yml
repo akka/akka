@@ -28,7 +28,8 @@ jobs:
 
       - name: sbt test
         run: |-
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.cluster.assert=on \
             -Dakka.test.timefactor=2 \

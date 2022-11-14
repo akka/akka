@@ -51,7 +51,8 @@ jobs:
       - name: Multi node test
         run: |
           cat multi-node-test.hosts
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.test.tags.exclude=gh-exclude,timing \
@@ -134,7 +135,8 @@ jobs:
       - name: Multi node test with Artery Aeron UDP
         run: |
           cat multi-node-test.hosts
-          sbt -jvm-opts .jvmopts-ci \
+          mv .jvmopts-ci .jvmopts
+          sbt \
             -Dakka.test.timefactor=2 \
             -Dakka.actor.testkit.typed.timefactor=2 \
             -Dakka.cluster.assert=on \
