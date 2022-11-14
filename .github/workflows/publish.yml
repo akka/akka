@@ -9,6 +9,9 @@ on:
       - test-publish-snapshots
     tags: ["*"]
 
+permissions:
+  contents: read
+
 jobs:
   sbt:
     name: sbt publish

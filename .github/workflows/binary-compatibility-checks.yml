@@ -9,6 +9,9 @@ on:
       - v2.6.*
       - v2.7.*
 
+permissions:
+  contents: read
+
 jobs:
   check-binary-compatibility:
     name: Check / Binary Compatibility

@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: '0 0 * * 6' # At 00:00 on saturdays
 
+permissions:
+  contents: read
+
 jobs:
   fossa:
     name: Fossa

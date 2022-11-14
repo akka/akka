@@ -5,6 +5,9 @@ on:
     - cron: '0 2 * * 1,3,5'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   # Only run once for latest commit per ref and cancel other (previous) runs.
   group: ci-multi-node-${{ github.ref }}

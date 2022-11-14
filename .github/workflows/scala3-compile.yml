@@ -3,6 +3,9 @@ name: Compile Akka with Scala 3
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   # Only run once for latest commit per ref and cancel other (previous) runs.
   group: ci-scala3-${{ github.ref }}
