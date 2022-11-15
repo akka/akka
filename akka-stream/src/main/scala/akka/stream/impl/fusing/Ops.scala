@@ -892,7 +892,7 @@ private[stream] object Collect {
           if (buf.size == n) {
             push(out, buf)
           } else pull(in)
-        } else if (step > n) {
+        } else {
           if (buf.size == step) {
             buf = buf.drop(step)
           }
