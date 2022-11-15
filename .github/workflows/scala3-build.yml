@@ -45,7 +45,7 @@ jobs:
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.11
+          jvm: temurin:1.11
 
       - name: Compile and run tests on Scala 3
         # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
