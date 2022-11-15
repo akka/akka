@@ -19,7 +19,7 @@ object WildcardSubscribeSpec extends MultiNodeConfig {
   val second = role("second")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.cluster.distributed-data {
       gossip-interval = 500 millis
