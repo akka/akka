@@ -183,10 +183,10 @@ jobs:
 
       # Archive test results so we can do some diagnostics later
       - name: Upload test results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3.1.1
         if: success() || failure()        # run this step even if previous step failed
         with:
-          name: test-results-${{ matrix.jdkVersion }}-${{ matrix.scalaVersion }}
+          name: 'test-results-${{ matrix.jdkVersion }}-${{ matrix.scalaVersion }}'
           path: '**/target/test-reports/TEST-*.xml'
 
       - name: Docs
