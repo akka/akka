@@ -137,13 +137,16 @@ jobs:
         # binary version is required and Akka build will set the right
         # full version from it.
         scalaVersion: ["2.12", "2.13"]
-        jdkVersion: ["adopt:1.8.0", "adopt:1.11", "temurin:1.17.0"]
+        jdkVersion: ["1.8.0", "1.11", "1.17.0"]
         include:
-          - jdkVersion: adopt:1.8.0
+          - jdkVersion: 1.8.0
+            jvmName: adopt:1.8.0
             extraOpts: ""
-          - jdkVersion: adopt:1.11
+          - jdkVersion: 1.11
+            jvmName: adopt:1.11
             extraOpts: ""
-          - jdkVersion: temurin:1.17.0
+          - jdkVersion: 1.17.0
+            jvmName: temurin:1.17.0
             extraopts: ""
     steps:
       - name: Checkout
@@ -157,7 +160,7 @@ jobs:
       - name: Set up JDK ${{ matrix.jdkVersion }}
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: ${{ matrix.jdkVersion }}
+          jvm: ${{ matrix.jvmName }}
 
       - name: Compile and Test
         # note that this is not running any multi-jvm tests because multi-in-test=false
@@ -183,17 +186,17 @@ jobs:
 
       # Archive test results so we can do some diagnostics later
       - name: Upload test results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3.1.1
         if: success() || failure()        # run this step even if previous step failed
         with:
-          name: test-results-${{ matrix.jdkVersion }}-${{ matrix.scalaVersion }}
+          name: 'test-results-${{ matrix.jdkVersion }}-${{ matrix.scalaVersion }}'
           path: '**/target/test-reports/TEST-*.xml'
 
       - name: Docs
         # Docs generation requires JDK 11. Checks with `startsWith` helps
         # the check to be more resilient if the JDK version changes to a
         # more specific one such as adopt@1.11.0-9.
-        if: ${{ startsWith(matrix.jdkVersion, 'adopt@1.11') }}
+        if: ${{ startsWith(matrix.jdkVersion, '1.11') }}
         run: |-
           sudo apt-get install graphviz
           mv .jvmopts-ci .jvmopts
@@ -203,7 +206,7 @@ jobs:
 
       - name: Publish
         # Publish (osgi bundle) not working with JDK 17, issue #31132
-        if: ${{ startsWith(matrix.jdkVersion, 'adopt@1.11') }}
+        if: ${{ startsWith(matrix.jdkVersion, '1.11') }}
         run: |-
           sudo apt-get install graphviz
           mv .jvmopts-ci .jvmopts
