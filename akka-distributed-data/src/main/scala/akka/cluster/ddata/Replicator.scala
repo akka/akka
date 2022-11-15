@@ -739,6 +739,10 @@ object Replicator {
    * when the value of the given `key` is changed. Current value is also
    * sent as a [[Changed]] message to a new subscriber.
    *
+   * In addition to subscribing to individual keys it is possible to subscribe to all keys with a given prefix
+   * by using a `*` at the end of the key `id`. For example `GCounterKey("counter-*")`. Notifications will be
+   * sent for all matching keys, also new keys added later.
+   *
    * Subscribers will be notified periodically with the configured `notify-subscribers-interval`,
    * and it is also possible to send an explicit `FlushChanges` message to
    * the `Replicator` to notify the subscribers immediately.
