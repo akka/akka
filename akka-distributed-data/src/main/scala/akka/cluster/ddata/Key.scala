@@ -17,7 +17,7 @@ object Key {
 
   type KeyId = String
 
-  final case class UnspecificKey(_id: KeyId) extends Key[ReplicatedData](_id) with ReplicatedDataSerialization // FIXME serialization
+  final case class UnspecificKey(_id: KeyId) extends Key[ReplicatedData](_id) with ReplicatedDataSerialization
 
 }
 
@@ -31,7 +31,6 @@ object Key {
  */
 abstract class Key[+T <: ReplicatedData](val id: Key.KeyId) extends Serializable {
 
-  // FIXME override this with concrete Key types in Akka's known types
   def withId(newId: Key.KeyId): Key[ReplicatedData] =
     UnspecificKey(newId)
 

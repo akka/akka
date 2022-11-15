@@ -567,4 +567,7 @@ object ORSetKey {
 }
 
 @SerialVersionUID(1L)
-final case class ORSetKey[A](_id: String) extends Key[ORSet[A]](_id) with ReplicatedDataSerialization
+final case class ORSetKey[A](_id: String) extends Key[ORSet[A]](_id) with ReplicatedDataSerialization {
+  override def withId(newId: Key.KeyId): ORSetKey[A] =
+    ORSetKey(newId)
+}

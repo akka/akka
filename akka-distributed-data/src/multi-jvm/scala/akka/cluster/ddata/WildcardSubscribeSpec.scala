@@ -71,6 +71,7 @@ class WildcardSubscribeSpec extends MultiNodeSpec(WildcardSubscribeSpec) with ST
         expectMsgType[UpdateSuccess[_]]
         val chg1 = subscriberProbe.expectMsgType[Changed[GCounter]]
         chg1.key should ===(KeyA)
+        chg1.key.getClass should ===(KeyA.getClass)
         chg1.get(KeyA).value should ===(1)
 
         replicator ! Update(KeyA, GCounter.empty, WriteLocal)(_ :+ 1)

@@ -164,4 +164,7 @@ object GCounterKey {
 }
 
 @SerialVersionUID(1L)
-final case class GCounterKey(_id: String) extends Key[GCounter](_id) with ReplicatedDataSerialization
+final case class GCounterKey(_id: String) extends Key[GCounter](_id) with ReplicatedDataSerialization {
+  override def withId(newId: Key.KeyId): GCounterKey =
+    GCounterKey(newId)
+}
