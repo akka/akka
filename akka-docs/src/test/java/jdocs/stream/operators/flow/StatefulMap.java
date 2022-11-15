@@ -4,7 +4,7 @@
 
 package jdocs.stream.operators.flow;
 
-import akka.actor.typed.ActorSystem;
+import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 public class StatefulMap {
-  static final ActorSystem<?> system = null;
+  static final ActorSystem system = null;
 
   public void indexed() {
     // #zipWithIndex
@@ -35,10 +35,7 @@ public class StatefulMap {
     // #bufferUntilChanged
     Source.from(Arrays.asList("A", "B", "B", "C", "C", "C", "D"))
         .statefulMap(
-            () -> {
-              final List<String> buffer = new LinkedList<>();
-              return buffer;
-            },
+            () -> (List<String>) new LinkedList<String>(),
             (buffer, element) -> {
               if (buffer.size() > 0 && (!buffer.get(0).equals(element))) {
                 return Pair.create(
@@ -49,7 +46,8 @@ public class StatefulMap {
                 return Pair.create(buffer, Collections.<String>emptyList());
               }
             },
-            listOnComplete -> Optional.ofNullable(listOnComplete))
+            Optional::ofNullable)
+        .filterNot(List::isEmpty)
         .runForeach(System.out::println, system);
     // prints
     // [A]
@@ -95,7 +93,7 @@ public class StatefulMap {
                 return Pair.create(list, Collections.<Integer>emptyList());
               }
             },
-            listOnComplete -> Optional.ofNullable(listOnComplete))
+            Optional::ofNullable)
         .mapConcat(list -> list)
         .runForeach(System.out::println, system);
     // prints
