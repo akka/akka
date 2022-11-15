@@ -24,6 +24,7 @@ import akka.stream.impl.{ PublisherSource, _ }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
+import akka.stream.impl.fusing.LazyFutureSource
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.util.ConstantFun
 
@@ -546,10 +547,7 @@ object Source {
    * the laziness and will trigger the factory immediately.
    */
   def lazyFuture[T](create: () => Future[T]): Source[T, NotUsed] =
-    lazySource { () =>
-      val f = create()
-      future(f)
-    }.mapMaterializedValue(_ => NotUsed)
+    fromGraph(new LazyFutureSource(create))
 
   /**
    * Defers invoking the `create` function to create a future source until there is downstream demand.
