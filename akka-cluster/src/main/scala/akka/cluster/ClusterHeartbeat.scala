@@ -214,7 +214,7 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
       if (failureDetector.isMonitoring(to.address)) {
         if (verboseHeartbeat) logDebug("Heartbeat #{} to [{}]", nextHB.sequenceNr, to.address)
       } else {
-        if (verboseHeartbeat) logDebug("First Heartbeat (#{}) to [{}]", nextHB.sequenceNr, to.address)
+        if (verboseHeartbeat) logDebug("First Heartbeat #{} to [{}]", nextHB.sequenceNr, to.address)
         // schedule the expected first heartbeat for later, which will give the
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ExpectedFirstHeartbeat(to))
