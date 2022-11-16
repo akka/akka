@@ -86,13 +86,17 @@ class WildcardSubscribeSpec extends MultiNodeSpec(WildcardSubscribeSpec) with ST
         chg3.key should ===(KeyB)
         chg3.get(KeyB).value should ===(1)
 
-        replicator ! Update(KeyOtherA, GCounter.empty, WriteLocal)(_ :+ 1)
+        replicator ! Update(KeyOtherA, GCounter.empty, WriteLocal)(_ :+ 17)
         expectMsgType[UpdateSuccess[_]]
         subscriberProbe.expectNoMessage(200.millis)
 
-        // another subscriber
+        // a few more subscribers
         val subscriberProbe2 = TestProbe()
         replicator ! Subscribe(GCounterKey("counter-*"), subscriberProbe2.ref)
+        val subscriberProbeA = TestProbe()
+        replicator ! Subscribe(KeyA, subscriberProbeA.ref)
+        val subscriberProbeOther = TestProbe()
+        replicator ! Subscribe(GCounterKey("other-*"), subscriberProbeOther.ref)
         subscriberProbe.expectNoMessage(200.millis)
         subscriberProbe2.receiveN(2).foreach {
           case chg: Changed[GCounter] @unchecked =>
@@ -106,6 +110,8 @@ class WildcardSubscribeSpec extends MultiNodeSpec(WildcardSubscribeSpec) with ST
             fail(s"Unexpected $other")
         }
         subscriberProbe2.expectNoMessage()
+        subscriberProbeA.expectMsgType[Changed[GCounter]].get(KeyA).value should ===(2)
+        subscriberProbeOther.expectMsgType[Changed[GCounter]].get(KeyOtherA).value should ===(17)
 
         replicator ! Update(KeyB, GCounter.empty, WriteLocal)(_ :+ 10)
         expectMsgType[UpdateSuccess[_]]
@@ -184,14 +190,14 @@ class WildcardSubscribeSpec extends MultiNodeSpec(WildcardSubscribeSpec) with ST
 
         val chg1 = subscriberProbe.expectMsgType[Changed[GCounter]](10.seconds)
         chg1.key should ===(KeyOtherA)
-        chg1.get(KeyOtherA).value should ===(2) // it was also incremented once in earlier test
+        chg1.get(KeyOtherA).value should ===(18) // it was also incremented to 17 in earlier test
         enterBarrier("received-1")
 
         enterBarrier("updated-2")
 
         val chg2 = subscriberProbe.expectMsgType[Changed[GCounter]]
         chg2.key should ===(KeyOtherA)
-        chg2.get(KeyOtherA).value should ===(3)
+        chg2.get(KeyOtherA).value should ===(19)
         enterBarrier("received-2")
       }
     }
