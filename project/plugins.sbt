@@ -16,7 +16,7 @@ addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.3")
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.45")
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.7.0")
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.9.0")
 addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.30")
 
