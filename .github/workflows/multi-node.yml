@@ -86,7 +86,7 @@ jobs:
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: Multi node test (Akka)
-          to: akka.official@gmail.com
+          to: ${{secrets.MAIL_SEND_TO}}
           from: Akka CI (GHActions)
           body: |
             Multi node test of ${{github.repository}} failed!
@@ -171,7 +171,7 @@ jobs:
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: Multi node test with Aeron (Akka)
-          to: akka.official@gmail.com
+          to: ${{secrets.MAIL_SEND_TO}}
           from: Akka CI (GHActions)
           body: |
             Multi node test of ${{github.repository}} failed!
