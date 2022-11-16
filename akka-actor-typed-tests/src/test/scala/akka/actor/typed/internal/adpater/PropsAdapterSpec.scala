@@ -19,11 +19,11 @@ class PropsAdapterSpec extends AnyWordSpec with Matchers {
     "default to akka.dispatch.SingleConsumerOnlyUnboundedMailbox" in {
       val props: Props = Props.empty
       val pa: actor.Props = PropsAdapter(() => Behaviors.empty, props, rethrowTypedFailure = false)
-      pa.mailbox === ("akka.actor.typed.default-mailbox")
+      pa.mailbox should ===("akka.actor.typed.default-mailbox")
 
       val props2: Props = MailboxSelector.defaultMailbox()
       val pa2: actor.Props = PropsAdapter(() => Behaviors.empty, props2, rethrowTypedFailure = false)
-      pa2.mailbox === ("akka.actor.typed.default-mailbox")
+      pa2.mailbox should ===("akka.actor.typed.default-mailbox")
     }
     "adapt dispatcher from config" in {
       val props: Props = Props.empty.withDispatcherFromConfig("some.path")
