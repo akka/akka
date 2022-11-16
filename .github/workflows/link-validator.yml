@@ -28,7 +28,7 @@ jobs:
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:11
+          jvm: temurin:1.11
           apps: cs
 
       - name: create the Akka site

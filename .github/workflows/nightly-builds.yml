@@ -27,7 +27,7 @@ jobs:
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.11
+          jvm: temurin:1.11
 
       - name: sbt akka-cluster-metrics/test
         run: |-
@@ -95,7 +95,7 @@ jobs:
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.11
+          jvm: temurin:1.11
 
       - name: sbt ${{ matrix.command }}
         # note that this is not running any multi-jvm tests because multi-in-test=false
@@ -140,10 +140,10 @@ jobs:
         jdkVersion: ["1.8.0", "1.11", "1.17.0"]
         include:
           - jdkVersion: 1.8.0
-            jvmName: adopt:1.8.0
+            jvmName: temurin:1.8.0
             extraOpts: ""
           - jdkVersion: 1.11
-            jvmName: adopt:1.11
+            jvmName: temurin:1.11
             extraOpts: ""
           - jdkVersion: 1.17.0
             jvmName: temurin:1.17.0
@@ -252,7 +252,7 @@ jobs:
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.11
+          jvm: temurin:1.11
 
       - name: sbt ${{ matrix.command }}
         # note that this is not running any multi-jvm tests because multi-in-test=false

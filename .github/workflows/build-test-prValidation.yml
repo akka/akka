@@ -28,7 +28,7 @@ jobs:
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.11
+          jvm: temurin:1.11
 
       - name: Code style check
         run: |-
@@ -54,7 +54,7 @@ jobs:
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.11
+          jvm: temurin:1.11
 
       - name: sbt validatePullRequest
         run: |-
