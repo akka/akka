@@ -4,15 +4,14 @@
 
 package akka.japi.pf;
 
-import java.util.Arrays;
-import java.util.List;
-import org.junit.Test;
-import org.junit.Before;
-import org.scalatestplus.junit.JUnitSuite;
+import static org.junit.Assert.*;
 
 import akka.actor.AbstractActor.Receive;
-
-import static org.junit.Assert.*;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.Before;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
 
 @SuppressWarnings("serial")
 public class ReceiveBuilderTest extends JUnitSuite {

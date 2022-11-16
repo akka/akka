@@ -13,15 +13,14 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.PartitionHub.ConsumerInfo;
 import akka.testkit.javadsl.TestKit;
-import jdocs.AbstractJavaTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.ToLongBiFunction;
+import jdocs.AbstractJavaTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class HubDocTest extends AbstractJavaTest {
 

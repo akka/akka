@@ -4,25 +4,23 @@
 
 package jdocs.stream;
 
+import akka.NotUsed;
+import akka.actor.ActorSystem;
+import akka.japi.Pair;
+import akka.stream.*;
+import akka.stream.ClosedShape;
+import akka.stream.javadsl.*;
+import akka.stream.javadsl.Tcp.OutgoingConnection;
+import akka.testkit.javadsl.TestKit;
+import akka.util.ByteString;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
-import akka.NotUsed;
-import akka.stream.ClosedShape;
 import jdocs.AbstractJavaTest;
-import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import akka.actor.ActorSystem;
-import akka.japi.Pair;
-import akka.stream.*;
-import akka.stream.javadsl.*;
-import akka.stream.javadsl.Tcp.OutgoingConnection;
-import akka.util.ByteString;
 
 public class CompositionDocTest extends AbstractJavaTest {
 

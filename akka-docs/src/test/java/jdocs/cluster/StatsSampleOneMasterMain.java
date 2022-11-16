@@ -4,9 +4,6 @@
 
 package jdocs.cluster;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-
 import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
@@ -14,6 +11,8 @@ import akka.cluster.singleton.ClusterSingletonManager;
 import akka.cluster.singleton.ClusterSingletonManagerSettings;
 import akka.cluster.singleton.ClusterSingletonProxy;
 import akka.cluster.singleton.ClusterSingletonProxySettings;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 
 public class StatsSampleOneMasterMain {
 

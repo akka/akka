@@ -5,7 +5,6 @@
 package akka.event;
 
 import akka.actor.AbstractActor;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;

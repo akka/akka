@@ -6,7 +6,6 @@ package akka.actor;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.TestProbe;
-
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;

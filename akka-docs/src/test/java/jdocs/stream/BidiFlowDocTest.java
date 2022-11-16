@@ -4,30 +4,29 @@
 
 package jdocs.stream;
 
+import static akka.util.ByteString.emptyByteString;
+import static org.junit.Assert.assertArrayEquals;
+
+import akka.NotUsed;
+import akka.actor.ActorSystem;
+import akka.japi.pf.PFBuilder;
+import akka.stream.*;
+import akka.stream.javadsl.*;
+import akka.stream.javadsl.GraphDSL;
+import akka.stream.stage.*;
+import akka.testkit.javadsl.TestKit;
+import akka.util.ByteIterator;
+import akka.util.ByteString;
+import akka.util.ByteStringBuilder;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import akka.NotUsed;
-import akka.stream.javadsl.GraphDSL;
 import jdocs.AbstractJavaTest;
-import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import akka.actor.ActorSystem;
-import akka.japi.pf.PFBuilder;
-import akka.stream.*;
-import akka.stream.javadsl.*;
-import akka.stream.stage.*;
-import akka.util.ByteIterator;
-import akka.util.ByteString;
-import static akka.util.ByteString.emptyByteString;
-import akka.util.ByteStringBuilder;
-import static org.junit.Assert.assertArrayEquals;
 
 public class BidiFlowDocTest extends AbstractJavaTest {
 

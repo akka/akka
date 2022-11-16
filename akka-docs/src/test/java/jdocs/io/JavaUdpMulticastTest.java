@@ -9,17 +9,15 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.io.Udp;
 import akka.testkit.SocketUtil;
-
-import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.*;
+import jdocs.AbstractJavaTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class JavaUdpMulticastTest extends AbstractJavaTest {
 

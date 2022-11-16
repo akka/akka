@@ -4,22 +4,21 @@
 
 package akka.stream.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.StreamTest;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
-import org.junit.ClassRule;
-import org.junit.Test;
-import scala.concurrent.Future;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.ClassRule;
+import org.junit.Test;
+import scala.concurrent.Future;
 
 public class LazyAndFutureSourcesTest extends StreamTest {
 

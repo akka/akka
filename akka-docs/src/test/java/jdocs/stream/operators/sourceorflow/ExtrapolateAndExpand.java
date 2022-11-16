@@ -15,7 +15,6 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import docs.stream.operators.sourceorflow.ExtrapolateAndExpandCommon;
 import docs.stream.operators.sourceorflow.ExtrapolateAndExpandCommon.Frame;
-
 import java.time.Duration;
 import java.util.stream.Stream;
 

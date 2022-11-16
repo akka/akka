@@ -4,6 +4,10 @@
 
 package akka.persistence.typed.javadsl;
 
+import static akka.Done.done;
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.LoggingTestKit;
@@ -29,18 +33,13 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Sets;
 import com.typesafe.config.ConfigFactory;
+import java.time.Duration;
+import java.util.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 import org.slf4j.event.Level;
-
-import java.time.Duration;
-import java.util.*;
-
-import static akka.Done.done;
-import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
 
 public class EventSourcedBehaviorJavaDslTest extends JUnitSuite {
 

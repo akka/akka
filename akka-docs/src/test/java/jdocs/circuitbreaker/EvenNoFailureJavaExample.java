@@ -7,7 +7,6 @@ package jdocs.circuitbreaker;
 import akka.actor.AbstractActor;
 import akka.pattern.CircuitBreaker;
 import java.time.Duration;
-
 import java.util.Optional;
 import java.util.function.BiFunction;
 

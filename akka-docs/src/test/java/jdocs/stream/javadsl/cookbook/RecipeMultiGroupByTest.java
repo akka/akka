@@ -4,6 +4,9 @@
 
 package jdocs.stream.javadsl.cookbook;
 
+import static java.util.stream.Collectors.toList;
+import static junit.framework.TestCase.assertTrue;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Function;
@@ -12,18 +15,14 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SubSource;
 import akka.testkit.javadsl.TestKit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.stream.Collectors.toList;
-import static junit.framework.TestCase.assertTrue;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class RecipeMultiGroupByTest extends RecipeTest {
   static ActorSystem system;

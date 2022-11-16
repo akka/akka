@@ -4,12 +4,11 @@
 
 package jdocs.io.japi;
 
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.Queue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
-import akka.actor.ActorRef;
 import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.io.Tcp.CommandFailed;
@@ -20,9 +19,9 @@ import akka.io.Tcp.Write;
 import akka.io.Tcp.WritingResumed;
 import akka.io.TcpMessage;
 import akka.util.ByteString;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.Queue;
 
 // #echo-handler
 public class EchoHandler extends AbstractActor {

@@ -4,6 +4,18 @@
 
 package jdocs.stream;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import akka.Done;
+import akka.NotUsed;
+import akka.actor.*;
+import akka.japi.Pair;
+import akka.stream.*;
+import akka.stream.javadsl.*;
+import akka.stream.testkit.*;
+import akka.stream.testkit.javadsl.*;
+import akka.testkit.javadsl.TestKit;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,21 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import akka.Done;
-import akka.NotUsed;
 import jdocs.AbstractJavaTest;
-import akka.testkit.javadsl.TestKit;
 import org.junit.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import akka.actor.*;
-import akka.japi.Pair;
-import akka.stream.*;
-import akka.stream.javadsl.*;
-import akka.stream.testkit.*;
-import akka.stream.testkit.javadsl.*;
 
 public class StreamTestKitDocTest extends AbstractJavaTest {
 

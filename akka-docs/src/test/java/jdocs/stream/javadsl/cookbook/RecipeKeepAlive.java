@@ -9,11 +9,10 @@ import akka.actor.ActorSystem;
 import akka.stream.javadsl.Flow;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import java.time.Duration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.time.Duration;
 
 public class RecipeKeepAlive extends RecipeTest {
   static ActorSystem system;

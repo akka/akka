@@ -4,6 +4,8 @@
 
 package akka.actor.testkit.typed.javadsl;
 
+import static org.junit.Assert.*;
+
 import akka.Done;
 import akka.actor.testkit.typed.CapturedLogEvent;
 import akka.actor.testkit.typed.Effect;
@@ -11,18 +13,15 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-import org.slf4j.event.Level;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
-
-import static org.junit.Assert.*;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
+import org.slf4j.event.Level;
 
 public class BehaviorTestKitTest extends JUnitSuite {
 

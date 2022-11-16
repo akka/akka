@@ -12,7 +12,6 @@ import akka.stream.FlowMonitorState;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.CompletionStage;

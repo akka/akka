@@ -6,9 +6,9 @@ package akka.cluster.singleton;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.cluster.singleton.TestSingletonMessages.*;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.cluster.singleton.TestSingletonMessages.*;
 
 public class Consumer extends AbstractActor {
 

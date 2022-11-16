@@ -5,8 +5,8 @@
 package jdocs.akka.typed;
 
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.*;
 import akka.actor.typed.DispatcherSelector;
+import akka.actor.typed.javadsl.*;
 
 public class DispatchersDocTest {
 
