@@ -586,4 +586,7 @@ object ORMapKey {
 @SerialVersionUID(1L)
 final case class ORMapKey[A, B <: ReplicatedData](_id: String)
     extends Key[ORMap[A, B]](_id)
-    with ReplicatedDataSerialization
+    with ReplicatedDataSerialization {
+  override def withId(newId: Key.KeyId): ORMapKey[A, B] =
+    ORMapKey(newId)
+}

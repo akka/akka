@@ -85,6 +85,8 @@ class ReplicatedDataSerializerSpec
       checkSameContent(GSet() + "a" + "b", GSet() + "b" + "a")
       checkSameContent(GSet() + ref1 + ref2 + ref3, GSet() + ref2 + ref1 + ref3)
       checkSameContent(GSet() + ref1 + ref2 + ref3, GSet() + ref3 + ref2 + ref1)
+
+      checkSerialization(GSetKey[String]("id"))
     }
 
     "serialize ORSet" in {
@@ -114,6 +116,8 @@ class ReplicatedDataSerializerSpec
       val s5 = ORSet().add(address1, "a").add(address2, ref1)
       val s6 = ORSet().add(address2, ref1).add(address1, "a")
       checkSameContent(s5.merge(s6), s6.merge(s5))
+
+      checkSerialization(ORSetKey[String]("id"))
     }
 
     "serialize ORSet with ActorRef message sent between two systems" in {
@@ -176,6 +180,7 @@ class ReplicatedDataSerializerSpec
     "serialize Flag" in {
       checkSerialization(Flag())
       checkSerialization(Flag().switchOn)
+      checkSerialization(FlagKey("id"))
     }
 
     "serialize LWWRegister" in {
@@ -183,6 +188,7 @@ class ReplicatedDataSerializerSpec
       checkSerialization(
         LWWRegister(address1, "value2", LWWRegister.defaultClock[String])
           .withValue(address2, "value3", LWWRegister.defaultClock[String]))
+      checkSerialization(LWWRegisterKey[String]("id"))
     }
 
     "serialize GCounter" in {
@@ -196,6 +202,8 @@ class ReplicatedDataSerializerSpec
       checkSameContent(
         GCounter().increment(address1, 2).increment(address3, 5),
         GCounter().increment(address3, 5).increment(address1, 2))
+
+      checkSerialization(GCounterKey("id"))
     }
 
     "serialize PNCounter" in {
@@ -214,6 +222,8 @@ class ReplicatedDataSerializerSpec
       checkSameContent(
         PNCounter().increment(address1, 2).decrement(address1, 1).increment(address3, 5),
         PNCounter().increment(address3, 5).increment(address1, 2).decrement(address1, 1))
+
+      checkSerialization(PNCounterKey("id"))
     }
 
     "serialize ORMap" in {
@@ -222,6 +232,8 @@ class ReplicatedDataSerializerSpec
       checkSerialization(ORMap().put(address1, 1L, GSet() + "A"))
       // use Flag for this test as object key because it is serializable
       checkSerialization(ORMap().put(address1, Flag(), GSet() + "A"))
+
+      checkSerialization(ORMapKey[UniqueAddress, GSet[String]]("id"))
     }
 
     "serialize ORMap delta" in {
@@ -259,6 +271,8 @@ class ReplicatedDataSerializerSpec
         LWWMap()
           .put(address1, "a", "value1", LWWRegister.defaultClock[Any])
           .put(address2, "b", 17, LWWRegister.defaultClock[Any]))
+
+      checkSerialization(LWWMapKey[UniqueAddress, String]("id"))
     }
 
     "serialize PNCounterMap" in {
@@ -269,6 +283,8 @@ class ReplicatedDataSerializerSpec
       checkSerialization(PNCounterMap().increment(address1, Flag(), 3))
       checkSerialization(
         PNCounterMap().increment(address1, "a", 3).decrement(address2, "a", 2).increment(address2, "b", 5))
+
+      checkSerialization(PNCounterMapKey[String]("id"))
     }
 
     "serialize ORMultiMap" in {
@@ -292,6 +308,8 @@ class ReplicatedDataSerializerSpec
       val m3 = ORMultiMap.empty[String, String].addBinding(address1, "a", "A1")
       val d3 = m3.resetDelta.addBinding(address1, "a", "A2").addBinding(address1, "a", "A3").delta.get
       checkSerialization(d3)
+
+      checkSerialization(ORMultiMapKey[String, String]("id"))
     }
 
     "serialize ORMultiMap withValueDeltas" in {
@@ -327,6 +345,10 @@ class ReplicatedDataSerializerSpec
       val v1 = VersionVector().increment(address1).increment(address1)
       val v2 = VersionVector().increment(address2)
       checkSameContent(v1.merge(v2), v2.merge(v1))
+    }
+
+    "serialize UnspecificKey" in {
+      checkSerialization(Key.UnspecificKey("id"))
     }
 
   }

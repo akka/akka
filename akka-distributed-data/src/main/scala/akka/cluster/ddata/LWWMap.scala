@@ -215,4 +215,7 @@ object LWWMapKey {
 }
 
 @SerialVersionUID(1L)
-final case class LWWMapKey[A, B](_id: String) extends Key[LWWMap[A, B]](_id) with ReplicatedDataSerialization
+final case class LWWMapKey[A, B](_id: String) extends Key[LWWMap[A, B]](_id) with ReplicatedDataSerialization {
+  override def withId(newId: Key.KeyId): LWWMapKey[A, B] =
+    LWWMapKey(newId)
+}

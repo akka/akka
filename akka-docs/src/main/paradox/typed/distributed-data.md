@@ -176,6 +176,10 @@ configurable `akka.cluster.distributed-data.notify-subscribers-interval`.
 The subscriber is automatically unsubscribed if the subscriber is terminated. A subscriber can
 also be de-registered with the `replicatorAdapter.unsubscribe(key)` function.
 
+In addition to subscribing to individual keys it is possible to subscribe to all keys with a given prefix
+by using a `*` at the end of the key `id`. For example `GCounterKey("counter-*")`. Notifications will be
+sent for all matching keys, also new keys added later.
+
 ### Delete
 
 A data entry can be deleted by sending a `Replicator.Delete` message to the local

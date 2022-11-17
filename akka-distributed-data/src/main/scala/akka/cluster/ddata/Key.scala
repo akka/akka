@@ -4,6 +4,8 @@
 
 package akka.cluster.ddata
 
+import akka.cluster.ddata.Key.UnspecificKey
+
 object Key {
 
   /**
@@ -14,6 +16,8 @@ object Key {
   private[akka] type KeyR = Key[ReplicatedData]
 
   type KeyId = String
+
+  final case class UnspecificKey(_id: KeyId) extends Key[ReplicatedData](_id) with ReplicatedDataSerialization
 
 }
 
@@ -26,6 +30,9 @@ object Key {
  * and you can create your own keys.
  */
 abstract class Key[+T <: ReplicatedData](val id: Key.KeyId) extends Serializable {
+
+  def withId(newId: Key.KeyId): Key[ReplicatedData] =
+    UnspecificKey(newId)
 
   override final def equals(o: Any): Boolean = o match {
     case k: Key[_] => id == k.id
