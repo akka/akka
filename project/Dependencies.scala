@@ -85,10 +85,6 @@ object Dependencies {
 
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion // MIT
 
-    // mirrored in OSGi sample https://github.com/akka/akka-samples/tree/2.6/akka-sample-osgi-dining-hakkers
-    val osgiCore = "org.osgi" % "org.osgi.core" % "6.0.0" // ApacheV2
-    val osgiCompendium = "org.osgi" % "org.osgi.compendium" % "5.0.0" // ApacheV2
-
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
     val jctools = "org.jctools" % "jctools-core" % "3.3.0" // ApacheV2
@@ -159,8 +155,6 @@ object Dependencies {
         "org.scalatestplus" %% "mockito-3-4" % (scalaTestVersion.value + ".0") % Test
       } // ApacheV2
 
-      val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % Test // ApacheV2
-      val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "3.0.0" % Test // ApacheV2
       val log4j = "log4j" % "log4j" % "1.2.17" % Test // ApacheV2
 
       // in-memory filesystem for file related tests
@@ -328,15 +322,6 @@ object Dependencies {
         lz4Java,
         TestDependencies.junit,
         TestDependencies.scalatest.value)
-  val osgi = l ++= Seq(
-        osgiCore,
-        osgiCompendium,
-        TestDependencies.logback,
-        TestDependencies.commonsIo,
-        TestDependencies.pojosr,
-        TestDependencies.tinybundles,
-        TestDependencies.scalatest.value,
-        TestDependencies.junit)
 
   val docs = l ++= Seq(
         TestDependencies.scalatest.value,

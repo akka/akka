@@ -41,6 +41,7 @@ object Jdk9 extends AutoPlugin {
     externalDependencyClasspath := (Test / externalDependencyClasspath).value)
 
   val compileSettings = Seq(
+    // FIXME see if this works now that we dropped OSGi
     // It might have been more 'neat' to add the jdk9 products to the jar via packageBin/mappings, but that doesn't work with the OSGi plugin,
     // so we add them to the fullClasspath instead.
     //    Compile / packageBin / mappings
