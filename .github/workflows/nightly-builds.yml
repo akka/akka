@@ -65,7 +65,7 @@ jobs:
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
-          to: akka.official@gmail.com
+          to: ${{secrets.MAIL_SEND_TO}}
           from: Akka CI (GHActions)
           body: |
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
@@ -120,7 +120,7 @@ jobs:
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
-          to: akka.official@gmail.com
+          to: ${{secrets.MAIL_SEND_TO}}
           from: Akka CI (GHActions)
           body: |
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
@@ -223,7 +223,7 @@ jobs:
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
-          to: akka.official@gmail.com
+          to: ${{secrets.MAIL_SEND_TO}}
           from: Akka CI (GHActions)
           body: |
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
@@ -279,7 +279,7 @@ jobs:
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
-          to: akka.official@gmail.com
+          to: ${{secrets.MAIL_SEND_TO}}
           from: Akka CI (GHActions)
           body: |
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
