@@ -339,7 +339,7 @@ object Source {
    * is failed with a [[akka.stream.NeverMaterializedException]]
    */
   def lazySingle[T](create: Creator[T]): Source[T, NotUsed] =
-    lazySource(() => single(create.create())).mapMaterializedValue(_ => NotUsed)
+    scaladsl.Source.lazySingle(() => create.create()).asJava
 
   /**
    * Defers invoking the `create` function to create a future element until there is downstream demand.
@@ -356,13 +356,9 @@ object Source {
    * is failed with a [[akka.stream.NeverMaterializedException]]
    */
   def lazyCompletionStage[T](create: Creator[CompletionStage[T]]): Source[T, NotUsed] =
-    scaladsl.Source
-      .lazySource { () =>
-        val f = create.create().toScala
-        scaladsl.Source.future(f)
-      }
-      .mapMaterializedValue(_ => NotUsed.notUsed())
-      .asJava
+    scaladsl.Source.lazyFuture { () =>
+      create.create().toScala
+    }.asJava
 
   /**
    * Defers invoking the `create` function to create a future source until there is downstream demand.
