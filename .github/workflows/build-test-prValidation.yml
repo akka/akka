@@ -32,7 +32,7 @@ jobs:
 
       - name: Code style check
         run: |-
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
           -Dsbt.override.build.repos=false \
           -Dsbt.log.noformat=false \
@@ -58,7 +58,7 @@ jobs:
 
       - name: sbt validatePullRequest
         run: |-
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
           -Dakka.mima.enabled=false \
           -Dakka.test.multi-in-test=false \

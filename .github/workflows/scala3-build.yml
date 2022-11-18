@@ -50,7 +50,7 @@ jobs:
       - name: Compile and run tests on Scala 3
         # note that this is not running any multi-jvm tests (yet) because multi-in-test=false
         run: |
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
           -Dakka.log.timestamps=true \
           -Dakka.test.timefactor=2 \

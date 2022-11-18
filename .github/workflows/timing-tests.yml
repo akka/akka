@@ -31,7 +31,7 @@ jobs:
 
       - name: sbt test
         run: |-
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.cluster.assert=on \
