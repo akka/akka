@@ -31,7 +31,7 @@ jobs:
 
       - name: sbt akka-cluster-metrics/test
         run: |-
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.test.sigar=true \
@@ -100,7 +100,7 @@ jobs:
       - name: sbt ${{ matrix.command }}
         # note that this is not running any multi-jvm tests because multi-in-test=false
         run: |-
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.enabled=off \
@@ -165,7 +165,7 @@ jobs:
       - name: Compile and Test
         # note that this is not running any multi-jvm tests because multi-in-test=false
         run: |-
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
             -Dakka.cluster.assert=on \
             -Dakka.log.timestamps=true \
@@ -199,7 +199,7 @@ jobs:
         if: ${{ startsWith(matrix.jdkVersion, '1.11') }}
         run: |-
           sudo apt-get install graphviz
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
             -Dakka.genjavadoc.enabled=true \
             "+~ ${{ matrix.scalaVersion }} doc"
@@ -209,7 +209,7 @@ jobs:
         if: ${{ startsWith(matrix.jdkVersion, '1.11') }}
         run: |-
           sudo apt-get install graphviz
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
             -Dakka.build.scalaVersion=${{ matrix.scalaVersion }} \
             "+~ ${{ matrix.scalaVersion }} publishLocal publishM2"
@@ -257,7 +257,7 @@ jobs:
       - name: sbt ${{ matrix.command }}
         # note that this is not running any multi-jvm tests because multi-in-test=false
         run: |-
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
           -Djava.security.egd=file:/dev/./urandom \
           -Dakka.remote.artery.transport=aeron-udp \

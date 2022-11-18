@@ -47,6 +47,6 @@ jobs:
 
       - name: Compile on Scala 3
         run: |
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt \
           "+~ 3 ${{ matrix.command }}"

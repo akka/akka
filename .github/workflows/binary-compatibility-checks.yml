@@ -41,7 +41,7 @@ jobs:
 
       - name: Report MiMa Binary Issues
         run: |-
-          mv .jvmopts-ci .jvmopts
+          cp .jvmopts-ci .jvmopts
           sbt "+~ ${{ matrix.scalaVersion }} mimaReportBinaryIssues"
 
       - name: Check correct MiMa filter directories
