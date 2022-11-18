@@ -997,7 +997,6 @@ private[akka] class ActorSystemImpl(
       "akka-distributed-data",
       "akka-testkit",
       "akka-multi-node-testkit",
-      "akka-osgi",
       "akka-persistence",
       "akka-persistence-query",
       "akka-persistence-shared",
