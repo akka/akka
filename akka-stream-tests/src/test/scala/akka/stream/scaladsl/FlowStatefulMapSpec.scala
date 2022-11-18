@@ -318,6 +318,28 @@ class FlowStatefulMapSpec extends StreamSpec {
       closedCounter.get() should ===(1)
     }
 
+    "will not call onComplete twice if `onComplete` fail on upstream complete" in {
+      val closedCounter = new AtomicInteger(0)
+      val (pub, sub) = TestSource[Int]()
+        .statefulMap(() => 23)((state, value) => (state, value), _ => {
+          closedCounter.incrementAndGet()
+          throw TE("boom")
+        })
+        .toMat(TestSink[Int]())(Keep.both)
+        .run()
+
+      EventFilter[TE](occurrences = 1).intercept {
+        sub.request(1)
+        pub.sendNext(1)
+        sub.expectNext(1)
+        sub.request(1)
+        pub.sendComplete()
+        sub.expectError(TE("boom"))
+      }
+
+      closedCounter.get() should ===(1)
+    }
+
     "emit onClose return value before restarting" in {
       val stateCounter = new AtomicInteger(0)
       val (source, sink) = TestSource[String]()
