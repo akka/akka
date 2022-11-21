@@ -82,7 +82,7 @@ class DurableStateBehaviorReplySpec
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
-  "A typed persistent actor with commands that are expecting replies" must {
+  "A DurableStateBehavior actor with commands that are expecting replies" must {
 
     "persist state thenReply" in {
       val c = spawn(counter(nextPid()))
@@ -126,6 +126,29 @@ class DurableStateBehaviorReplySpec
       val queryProbe = TestProbe[State]()
       c ! GetValue(queryProbe.ref)
       queryProbe.expectMessage(State(0))
+    }
+
+    "handle commands sequentially" in {
+      val c = spawn(counter(nextPid()))
+      val probe = TestProbe[Any]()
+
+      c ! IncrementWithConfirmation(probe.ref)
+      c ! IncrementWithConfirmation(probe.ref)
+      c ! IncrementWithConfirmation(probe.ref)
+      c ! GetValue(probe.ref)
+      probe.expectMessage(Done)
+      probe.expectMessage(Done)
+      probe.expectMessage(Done)
+      probe.expectMessage(State(3))
+
+      c ! IncrementWithConfirmation(probe.ref)
+      c ! IncrementWithConfirmation(probe.ref)
+      c ! DeleteWithConfirmation(probe.ref)
+      c ! GetValue(probe.ref)
+      probe.expectMessage(Done)
+      probe.expectMessage(Done)
+      probe.expectMessage(Done)
+      probe.expectMessage(State(0))
     }
   }
 }
