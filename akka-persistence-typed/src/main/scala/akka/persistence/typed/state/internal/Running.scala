@@ -246,7 +246,7 @@ private[akka] object Running {
           .debug("Received DeleteSuccess response after: {} nanos", System.nanoTime() - persistStartTime)
       }
 
-      onWriteSuccess(setup.context)
+      // TODO Might need to call hook method for Telemetry
 
       visibleState = state
       val newState = applySideEffects(sideEffects, state)
@@ -254,7 +254,7 @@ private[akka] object Running {
     }
 
     final def onDeleteFailed(cause: Throwable): Behavior[InternalProtocol] = {
-      onWriteFailed(setup.context, cause)
+      // TODO Might need to call hook method for Telemetry
       throw new DurableStateStoreException(setup.persistenceId, currentRevision, cause)
     }
 
