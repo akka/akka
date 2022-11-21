@@ -118,6 +118,16 @@ private[akka] object Running {
       (persistingState(newState2, state, sideEffects), false)
     }
 
+    private def handleDelete(
+        cmd: Any,
+        sideEffects: immutable.Seq[SideEffect[S]]): (Behavior[InternalProtocol], Boolean) = {
+      _currentRevision = state.revision + 1
+
+      val nextState = internalDelete(setup.context, cmd, state)
+
+      (persistingState(nextState, state, sideEffects), false)
+    }
+
     @tailrec def applyEffects(
         msg: Any,
         state: RunningState[S],
@@ -142,8 +152,7 @@ private[akka] object Running {
           (applySideEffects(sideEffects, state), true)
 
         case _: Delete[_] =>
-          val nextState = internalDelete(setup.context, msg, state)
-          (applySideEffects(sideEffects, nextState), true)
+          handleDelete(msg, sideEffects)
 
         case _: Unhandled.type =>
           import akka.actor.typed.scaladsl.adapter._
@@ -194,12 +203,12 @@ private[akka] object Running {
         case UpsertFailure(exc)                => onUpsertFailed(exc)
         case in: IncomingCommand[C @unchecked] => onCommand(in)
         case get: GetState[S @unchecked]       => stashInternal(get)
+        case DeleteSuccess                     => onDeleteSuccess()
+        case DeleteFailure(exc)                => onDeleteFailed(exc)
         case RecoveryTimeout                   => Behaviors.unhandled
         case RecoveryPermitGranted             => Behaviors.unhandled
         case _: GetSuccess[_]                  => Behaviors.unhandled
         case _: GetFailure                     => Behaviors.unhandled
-        case DeleteSuccess                     => Behaviors.unhandled
-        case DeleteFailure(_)                  => Behaviors.unhandled
       }
     }
 
@@ -227,6 +236,24 @@ private[akka] object Running {
     }
 
     final def onUpsertFailed(cause: Throwable): Behavior[InternalProtocol] = {
+      onWriteFailed(setup.context, cause)
+      throw new DurableStateStoreException(setup.persistenceId, currentRevision, cause)
+    }
+
+    final def onDeleteSuccess(): Behavior[InternalProtocol] = {
+      if (setup.internalLogger.isDebugEnabled) {
+        setup.internalLogger
+          .debug("Received DeleteSuccess response after: {} nanos", System.nanoTime() - persistStartTime)
+      }
+
+      onWriteSuccess(setup.context)
+
+      visibleState = state
+      val newState = applySideEffects(sideEffects, state)
+      tryUnstashOne(newState)
+    }
+
+    final def onDeleteFailed(cause: Throwable): Behavior[InternalProtocol] = {
       onWriteFailed(setup.context, cause)
       throw new DurableStateStoreException(setup.persistenceId, currentRevision, cause)
     }
