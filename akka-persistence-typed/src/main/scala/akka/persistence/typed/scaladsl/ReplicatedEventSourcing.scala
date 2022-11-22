@@ -4,10 +4,13 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicatedEventHub
 import akka.persistence.typed.ReplicationId
+import akka.persistence.typed.internal.JournalEventHub
 import akka.persistence.typed.internal.ReplicationContextImpl
 
 /**
@@ -110,7 +113,21 @@ object ReplicatedEventSourcing {
       allReplicasAndQueryPlugins: Map[ReplicaId, String])(
       eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ReplicationContextImpl(replicationId, allReplicasAndQueryPlugins)
+    val context = new ReplicationContextImpl(
+      replicationId,
+      allReplicasAndQueryPlugins.keySet,
+      system => new JournalEventHub(allReplicasAndQueryPlugins)(system))
+    eventSourcedBehaviorFactory(context).withReplication(context)
+  }
+
+  @ApiMayChange
+  def withCustomReplication[Command, Event, State](
+      replicationId: ReplicationId,
+      allReplicas: Set[ReplicaId],
+      replicatedEventHub: ReplicatedEventHub)(
+      eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
+      : EventSourcedBehavior[Command, Event, State] = {
+    val context = new ReplicationContextImpl(replicationId, allReplicas, _ => replicatedEventHub)
     eventSourcedBehaviorFactory(context).withReplication(context)
   }
 

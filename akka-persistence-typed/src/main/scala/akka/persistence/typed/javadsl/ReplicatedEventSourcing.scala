@@ -4,14 +4,17 @@
 
 package akka.persistence.typed.javadsl
 
+import akka.annotation.ApiMayChange
+
 import java.util.function.{ Function => JFunction }
 import java.util.{ Set => JSet }
 import java.util.{ Map => JMap }
-
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicatedEventHub
 import akka.persistence.typed.ReplicationId
+import akka.persistence.typed.internal.JournalEventHub
 import akka.persistence.typed.internal.ReplicationContextImpl
 import akka.util.ccompat.JavaConverters._
 
@@ -118,7 +121,20 @@ object ReplicatedEventSourcing {
       allReplicasAndQueryPlugins: JMap[ReplicaId, String],
       eventSourcedBehaviorFactory: JFunction[ReplicationContext, EventSourcedBehavior[Command, Event, State]])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ReplicationContextImpl(replicationId, allReplicasAndQueryPlugins.asScala.toMap)
+    val plugins = allReplicasAndQueryPlugins.asScala.toMap
+    val context =
+      new ReplicationContextImpl(replicationId, plugins.keySet, system => new JournalEventHub(plugins)(system))
+    eventSourcedBehaviorFactory(context)
+  }
+
+  @ApiMayChange
+  def withCustomReplication[Command, Event, State](
+      replicationId: ReplicationId,
+      allReplicas: Set[ReplicaId],
+      replicatedEventHub: ReplicatedEventHub)(
+      eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
+      : EventSourcedBehavior[Command, Event, State] = {
+    val context = new ReplicationContextImpl(replicationId, allReplicas, _ => replicatedEventHub)
     eventSourcedBehaviorFactory(context)
   }
 

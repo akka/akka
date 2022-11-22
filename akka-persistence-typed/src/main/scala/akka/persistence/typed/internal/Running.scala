@@ -8,13 +8,13 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.actor.UnhandledMessage
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
+import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
@@ -31,10 +31,10 @@ import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
-import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
-import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
+import akka.persistence.query.EventEnvelope
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
+import akka.persistence.typed.ReplicationStreamControl
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -53,10 +53,9 @@ import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
-import akka.stream.scaladsl.Keep
-import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
+import akka.stream.{ SystemMaterializer, WatchedActorTerminatedException }
 import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.{ RestartSource, Sink }
+import akka.stream.scaladsl.Sink
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.OptionVal
 import akka.util.unused
@@ -113,51 +112,27 @@ private[akka] object Running {
       replicationSetup: ReplicationSetup): RunningState[S] = {
     import scala.concurrent.duration._
     val system = setup.context.system
-    val ref = setup.context.self
+    val self = setup.context.self
+    // FIXME create event hub once per system + entity type rather than once per replicated actor?
+    val eventHub = replicationSetup.replicationContext.createEventHub(system)
 
-    val query = PersistenceQuery(system)
     replicationSetup.allReplicas.foldLeft(state) { (state, replicaId) =>
       if (replicaId != replicationSetup.replicaId) {
         val pid = ReplicationId(
           replicationSetup.replicationContext.replicationId.typeName,
           replicationSetup.replicationContext.entityId,
           replicaId)
-        val queryPluginId = replicationSetup.allReplicasAndQueryPlugins(replicaId)
-        val replication = query.readJournalFor[EventsByPersistenceIdQuery](queryPluginId)
 
         implicit val timeout: Timeout = 30.seconds
         implicit val scheduler = setup.context.system.scheduler
-        implicit val ec = setup.context.system.executionContext
+        val requestLastSeenSeqNr = (rId: ReplicaId) => self.ask[Long](replyTo => GetSeenSequenceNr(rId, replyTo))
 
-        val controlRef = new AtomicReference[ReplicationStreamControl]()
+        val replicationStream = eventHub.createReplicationStream(pid, requestLastSeenSeqNr)
 
-        import akka.actor.typed.scaladsl.AskPattern._
-        val source = RestartSource
-          .withBackoff(RestartSettings(2.seconds, 10.seconds, randomFactor = 0.2)) { () =>
-            Source.futureSource {
-              setup.context.self.ask[Long](replyTo => GetSeenSequenceNr(replicaId, replyTo)).map { seqNr =>
-                replication
-                  .eventsByPersistenceId(pid.persistenceId.id, seqNr + 1, Long.MaxValue)
-                  // from each replica, only get the events that originated there, this prevents most of the event filtering
-                  // the downside is that events can't be received via other replicas in the event of an uneven network partition
-                  .filter(event =>
-                    event.eventMetadata match {
-                      case Some(replicatedMeta: ReplicatedEventMetadata) => replicatedMeta.originReplica == replicaId
-                      case _ =>
-                        throw new IllegalArgumentException(
-                          s"Replication stream from replica ${replicaId} for ${setup.persistenceId} contains event " +
-                          s"(sequence nr ${event.sequenceNr}) without replication metadata. " +
-                          s"Is the persistence id used by a regular event sourced actor there or the journal for that replica (${queryPluginId}) " +
-                          "used that does not support Replicated Event Sourcing?")
-                    })
-                  .viaMat(new FastForwardingFilter)(Keep.right)
-                  .mapMaterializedValue(streamControl => controlRef.set(streamControl))
-              }
-            }
-          }
-          // needs to be outside of the restart source so that it actually cancels when terminating the replica
-          .via(ActorFlow
-            .ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) { (eventEnvelope, replyTo) =>
+        // needs to be outside of the restart source so that it actually cancels when terminating the replica
+        val source = replicationStream.source.via(
+          ActorFlow
+            .ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](self) { (eventEnvelope, replyTo) =>
               // Need to handle this not being available migration from non-replicated is supported
               val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetadata]
               val re =
@@ -182,7 +157,7 @@ private[akka] object Running {
             state.replicationControl.updated(replicaId, new ReplicationStreamControl {
               override def fastForward(sequenceNumber: Long): Unit = {
                 // (logging is safe here since invoked on message receive
-                OptionVal(controlRef.get) match {
+                replicationStream.control match {
                   case OptionVal.Some(control) =>
                     if (setup.internalLogger.isDebugEnabled)
                       setup.internalLogger.debug("Fast forward replica [{}] to [{}]", replicaId, sequenceNumber)

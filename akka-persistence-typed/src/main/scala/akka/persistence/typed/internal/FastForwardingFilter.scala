@@ -6,6 +6,7 @@ package akka.persistence.typed.internal
 
 import akka.annotation.InternalApi
 import akka.persistence.query.EventEnvelope
+import akka.persistence.typed.ReplicationStreamControl
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
@@ -14,14 +15,6 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] trait ReplicationStreamControl {
-  def fastForward(sequenceNumber: Long): Unit
-}
 
 /**
  * INTERNAL API

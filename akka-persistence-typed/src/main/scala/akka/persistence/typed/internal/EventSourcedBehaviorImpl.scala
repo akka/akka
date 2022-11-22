@@ -291,7 +291,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   override private[akka] def withReplication(
       context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State] = {
     copy(
-      replication = Some(ReplicationSetup(context.replicationId.replicaId, context.replicasAndQueryPlugins, context)))
+      replication = Some(ReplicationSetup(context.replicationId.replicaId, context.allReplicas, context)))
   }
 
   override def withStashCapacity(size: Int): EventSourcedBehavior[Command, Event, State] =
