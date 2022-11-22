@@ -1,0 +1,8 @@
+# internals
+ProblemFilters.exclude[MissingClassProblem]("akka.persistence.typed.internal.ReplicationStreamControl")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.Running#RunningState.replicationControl")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.Running#RunningState.copy")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.Running#RunningState.copy$default$6")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.Running#RunningState.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.Running#RunningState.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.Running#RunningState.unapply")
