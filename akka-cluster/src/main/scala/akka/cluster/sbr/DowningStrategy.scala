@@ -51,6 +51,9 @@ import akka.coordination.lease.scaladsl.Lease
   case object DownSelfQuarantinedByRemote extends Decision {
     override def isIndirectlyConnected: Boolean = false
   }
+  case object DownSelfSuspended extends Decision {
+    override def isIndirectlyConnected: Boolean = false
+  }
 }
 
 /**
@@ -277,6 +280,9 @@ import akka.coordination.lease.scaladsl.Lease
         // indirectly connected + all reachable
         downable.intersect(indirectlyConnected).union(downable.diff(unreachable))
       case DownSelfQuarantinedByRemote =>
+        if (downable.contains(selfUniqueAddress)) Set(selfUniqueAddress)
+        else Set.empty
+      case DownSelfSuspended =>
         if (downable.contains(selfUniqueAddress)) Set(selfUniqueAddress)
         else Set.empty
     }

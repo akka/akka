@@ -9,8 +9,8 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import scala.annotation.nowarn
+
 import com.typesafe.config.Config
 
 import akka.Done
@@ -19,11 +19,12 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.SuspendDetector
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
 import akka.event.ActorWithLogClass
 import akka.event.Logging
 import akka.pattern.ask
-import akka.remote.{ QuarantinedEvent => ClassicQuarantinedEvent }
+import akka.remote.{QuarantinedEvent => ClassicQuarantinedEvent}
 import akka.remote.artery.QuarantinedEvent
 import akka.util.Timeout
 import akka.util.Version
@@ -1495,7 +1496,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * Reaps the unreachable members according to the failure detector's verdict.
    */
   def reapUnreachableMembers(): Unit = {
-    if (!isSingletonCluster) {
+    // FIXME how long should the suspend timeout be?
+    if (!isSingletonCluster && !SuspendDetector(context.system).wasSuspended(3.seconds)) {
       // only scrutinize if we are a non-singleton cluster
 
       val localGossip = latestGossip
