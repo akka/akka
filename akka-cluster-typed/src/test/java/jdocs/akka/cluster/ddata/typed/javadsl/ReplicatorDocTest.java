@@ -4,6 +4,9 @@
 
 package jdocs.akka.cluster.ddata.typed.javadsl;
 
+import static jdocs.akka.cluster.ddata.typed.javadsl.ReplicatorDocSample.Counter;
+import static org.junit.Assert.assertEquals;
+
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -15,15 +18,11 @@ import akka.cluster.ddata.typed.javadsl.DistributedData;
 import akka.cluster.ddata.typed.javadsl.Replicator;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
-
-import java.time.Duration;
-
-import static jdocs.akka.cluster.ddata.typed.javadsl.ReplicatorDocSample.Counter;
-import static org.junit.Assert.assertEquals;
 
 public class ReplicatorDocTest extends JUnitSuite {
 

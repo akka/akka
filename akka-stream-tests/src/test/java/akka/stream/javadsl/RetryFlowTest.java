@@ -4,6 +4,8 @@
 
 package akka.stream.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.StreamTest;
@@ -13,16 +15,13 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
+import java.time.Duration;
+import java.util.Optional;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.util.Failure;
 import scala.util.Success;
 import scala.util.Try;
-
-import java.time.Duration;
-import java.util.Optional;
-
-import static org.junit.Assert.assertEquals;
 
 public class RetryFlowTest extends StreamTest {
   public RetryFlowTest() {

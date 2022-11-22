@@ -5,10 +5,9 @@
 package jdocs.akka.persistence.typed;
 
 import java.io.Serializable;
-
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList;
 
 /**
  * The model from akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM brought here

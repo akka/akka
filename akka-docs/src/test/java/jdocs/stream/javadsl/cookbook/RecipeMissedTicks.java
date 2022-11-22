@@ -17,12 +17,11 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.TestLatch;
 import akka.testkit.javadsl.TestKit;
+import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
-
-import java.util.concurrent.TimeUnit;
 
 public class RecipeMissedTicks extends RecipeTest {
   static ActorSystem system;

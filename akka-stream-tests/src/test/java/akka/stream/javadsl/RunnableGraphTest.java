@@ -4,6 +4,8 @@
 
 package akka.stream.javadsl;
 
+import static org.junit.Assert.*;
+
 import akka.NotUsed;
 import akka.stream.StreamTest;
 import akka.stream.SystemMaterializer;
@@ -11,8 +13,6 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class RunnableGraphTest extends StreamTest {
   public RunnableGraphTest() {

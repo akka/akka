@@ -7,7 +7,6 @@ package jdocs.stream.operators.sourceorflow;
 import akka.NotUsed;
 import akka.actor.typed.ActorSystem;
 import akka.stream.javadsl.Source;
-
 import java.util.Arrays;
 
 public class Sliding {

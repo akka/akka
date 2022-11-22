@@ -4,17 +4,14 @@
 
 package akka.actor;
 
-import static org.junit.Assert.*;
 import static java.util.stream.Collectors.toCollection;
-
-import java.util.ArrayList;
-import java.util.stream.IntStream;
-
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.Assert.*;
 
 import akka.japi.Creator;
-
+import java.util.ArrayList;
+import java.util.stream.IntStream;
+import org.junit.Assert;
+import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
 public class ActorCreationTest extends JUnitSuite {

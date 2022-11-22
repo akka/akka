@@ -6,22 +6,7 @@ package jdocs.testkit;
 
 import static org.junit.Assert.*;
 
-import akka.pattern.Patterns;
-import jdocs.AbstractJavaTest;
-import org.junit.Assert;
-import akka.japi.JavaPartialFunction;
-import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.CallingThreadDispatcher;
-import akka.testkit.TestActor;
-import akka.testkit.TestActorRef;
-import akka.testkit.TestProbe;
-import akka.testkit.javadsl.EventFilter;
-import akka.testkit.javadsl.TestKit;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import com.typesafe.config.ConfigFactory;
-
+import akka.actor.AbstractActor;
 import akka.actor.AbstractActorWithTimers;
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
@@ -30,13 +15,24 @@ import akka.actor.Kill;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.Terminated;
-import akka.actor.AbstractActor;
+import akka.japi.JavaPartialFunction;
+import akka.pattern.Patterns;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.CallingThreadDispatcher;
+import akka.testkit.TestActor;
 import akka.testkit.TestActor.AutoPilot;
-
-import java.util.List;
-
-import java.util.concurrent.CompletableFuture;
+import akka.testkit.TestActorRef;
+import akka.testkit.TestProbe;
+import akka.testkit.javadsl.EventFilter;
+import akka.testkit.javadsl.TestKit;
+import com.typesafe.config.ConfigFactory;
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import jdocs.AbstractJavaTest;
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 public class TestKitDocTest extends AbstractJavaTest {
 

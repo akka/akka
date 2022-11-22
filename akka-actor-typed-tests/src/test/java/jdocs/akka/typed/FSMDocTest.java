@@ -7,7 +7,6 @@ package jdocs.akka.typed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;

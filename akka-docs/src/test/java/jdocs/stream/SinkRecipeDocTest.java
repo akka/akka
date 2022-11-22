@@ -7,14 +7,13 @@ package jdocs.stream;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.function.Function;
-import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import jdocs.AbstractJavaTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 public class SinkRecipeDocTest extends AbstractJavaTest {
   static ActorSystem system;

@@ -6,9 +6,8 @@ package akka.persistence.fsm.japi.pf;
 
 import akka.japi.pf.FI;
 import akka.japi.pf.PFBuilder;
-import scala.PartialFunction;
-
 import java.util.List;
+import scala.PartialFunction;
 
 /**
  * Builder used to create a partial function for {@link akka.actor.FSM#whenUnhandled}.

@@ -14,13 +14,12 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.TestLatch;
 import akka.testkit.javadsl.TestKit;
+import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
-
-import java.util.concurrent.TimeUnit;
 
 public class RecipeSimpleDrop extends RecipeTest {
   static ActorSystem system;

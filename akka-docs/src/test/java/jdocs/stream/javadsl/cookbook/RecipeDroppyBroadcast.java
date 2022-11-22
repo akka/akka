@@ -10,13 +10,12 @@ import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class RecipeDroppyBroadcast extends RecipeTest {
   static ActorSystem system;

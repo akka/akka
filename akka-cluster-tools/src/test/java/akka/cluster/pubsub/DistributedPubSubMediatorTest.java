@@ -4,19 +4,16 @@
 
 package akka.cluster.pubsub;
 
-import com.typesafe.config.ConfigFactory;
-
-import akka.testkit.AkkaJUnitActorSystemResource;
-
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import com.typesafe.config.ConfigFactory;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
 public class DistributedPubSubMediatorTest extends JUnitSuite {

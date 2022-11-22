@@ -10,10 +10,9 @@ import akka.stream.Materializer;
 import akka.stream.ThrottleMode;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-
+import docs.stream.operators.sourceorflow.ThrottleCommon.Frame;
 import java.time.Duration;
 import java.util.stream.Stream;
-import docs.stream.operators.sourceorflow.ThrottleCommon.Frame;
 
 /** */
 public class Throttle {

@@ -10,7 +10,6 @@ import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;

@@ -5,14 +5,13 @@
 package akka.cluster.client;
 
 import akka.actor.*;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import com.typesafe.config.ConfigFactory;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import akka.testkit.AkkaJUnitActorSystemResource;
 import org.scalatestplus.junit.JUnitSuite;
 
 public class ClusterClientTest extends JUnitSuite {

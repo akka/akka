@@ -4,21 +4,20 @@
 
 package akka.stream.javadsl;
 
-import akka.util.ByteString;
+import static org.junit.Assert.assertEquals;
+
 import akka.stream.StreamTest;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import akka.util.ByteString;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 public class JsonFramingTest extends StreamTest {
   public JsonFramingTest() {

@@ -4,6 +4,10 @@
 
 package jdocs.stream.operators.converters;
 
+import static akka.util.ByteString.emptyByteString;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -15,11 +19,6 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import jdocs.AbstractJavaTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -29,10 +28,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static akka.util.ByteString.emptyByteString;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import jdocs.AbstractJavaTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class ToFromJavaIOStreams extends AbstractJavaTest {
 
