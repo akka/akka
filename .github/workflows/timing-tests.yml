@@ -7,6 +7,9 @@ on:
 
 permissions:
   contents: read
+  # scacap/action-surefire-report (see https://github.com/ScaCap/action-surefire-report/pull/88/files)
+  checks: write
+  pull-requests: write
 
 jobs:
 
@@ -49,6 +52,8 @@ jobs:
       - name: Test Reports
         # Makes it easier to spot failures instead of looking at the logs.
         if: ${{ failure() }}
+        # https://github.com/ScaCap/action-surefire-report/releases/
+        # v1.0.13
         uses: scacap/action-surefire-report@482f012643ed0560e23ef605a79e8e87ca081648
         with:
           report_paths: '**/target/test-reports/TEST-*.xml'
