@@ -157,9 +157,8 @@ all use cases.
 The event stream is the main event bus of each actor system: it is used for
 carrying @ref:[log messages](logging.md) and @ref:[Dead Letters](#dead-letters) and may be
 used by the user code for other purposes as well. It uses @ref:[Subchannel
-Classification](#subchannel-classification) which enables registering to related sets of channels (as is
-used for @apidoc[RemotingLifecycleEvent]). The following example demonstrates
-how a simple subscription works. Given a simple actor:
+Classification](#subchannel-classification) which enables registering to related sets of channels.
+The following example demonstrates how a simple subscription works. Given a simple actor:
 
 @@@ div { .group-scala }
 
