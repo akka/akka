@@ -592,7 +592,7 @@ of the matching `ActorRef` if such an actor exists. It is completed with
 failure @apidoc[akka.actor.ActorNotFound] if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
 
-Remote actor addresses may also be looked up, if @ref:[remoting](remoting.md) is enabled:
+Remote actor addresses may also be looked up, if @ref:[remoting](remoting-artery.md) is enabled:
 
 Scala
 :  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #selection-remote }

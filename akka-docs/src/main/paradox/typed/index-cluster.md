@@ -24,7 +24,6 @@ project.description: Akka Cluster concepts, node membership service, CRDT Distri
 * [multi-jvm-testing](../multi-jvm-testing.md)
 * [multi-node-testing](../multi-node-testing.md)
 * [remoting-artery](../remoting-artery.md)
-* [remoting](../remoting.md)
 * [split-brain-resolver](../split-brain-resolver.md)
 * [coordination](../coordination.md)
 * [choosing-cluster](choosing-cluster.md)
