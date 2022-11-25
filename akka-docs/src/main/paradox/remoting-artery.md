@@ -1027,6 +1027,6 @@ The list of allowed classes has to be configured on the "remote" system, in othe
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentAllowListSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentAllowListSpec.scala) { #allow-list-config }
+@@snip [RemoteDeploymentAllowListSpec.scala](/akka-remote/src/test/scala/akka/remote/artery/RemoteDeploymentSpec.scala) { #allow-list-config }
 
 Actor classes not included in the allow list will not be allowed to be remote deployed onto this system.
