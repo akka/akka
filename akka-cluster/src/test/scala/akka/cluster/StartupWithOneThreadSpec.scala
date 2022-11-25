@@ -17,7 +17,6 @@ object StartupWithOneThreadSpec {
   val config = """
     akka.actor.provider = "cluster"
     akka.actor.creation-timeout = 10s
-    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
 
     akka.actor.default-dispatcher {

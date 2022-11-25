@@ -46,7 +46,7 @@ object TransformationFrontend {
     // Override the configuration of the port when specified as program argument
     val port = if (args.isEmpty) "0" else args(0)
     val config = ConfigFactory
-      .parseString(s"akka.remote.classic.netty.tcp.port=$port")
+      .parseString(s"akka.remote.artery.canonical.port=$port")
       .withFallback(ConfigFactory.parseString("akka.cluster.roles = [frontend]"))
       .withFallback(ConfigFactory.load())
 

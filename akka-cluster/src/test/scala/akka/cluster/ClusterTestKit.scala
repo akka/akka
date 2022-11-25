@@ -136,7 +136,6 @@ trait ClusterTestKit extends TestKitBase {
       actorSystems = actorSystems.filterNot(_ == actorSystem)
 
       val newConfig = ConfigFactory.parseString(s"""
-          akka.remote.classic.netty.tcp.port = $port
           akka.remote.artery.canonical.port = $port
           """).withFallback(config)
 

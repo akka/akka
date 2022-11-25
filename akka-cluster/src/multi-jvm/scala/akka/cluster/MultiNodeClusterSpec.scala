@@ -59,9 +59,6 @@ object MultiNodeClusterSpec {
     akka.loglevel = INFO
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
-    akka.remote {
-      log-remote-lifecycle-events = off
-    }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {
       single-expect-default = 5 s
@@ -133,12 +130,7 @@ abstract class MultiNodeClusterSpec(multiNodeconfig: MultiNodeConfig)
         classOf[GossipStatus],
         classOf[InternalClusterAction.Tick],
         classOf[akka.actor.PoisonPill],
-        classOf[akka.dispatch.sysmsg.DeathWatchNotification],
-        classOf[akka.remote.transport.AssociationHandle.Disassociated],
-        //        akka.remote.transport.AssociationHandle.Disassociated.getClass,
-        classOf[akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying],
-        //        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
-        classOf[akka.remote.transport.AssociationHandle.InboundPayload])(sys)
+        classOf[akka.dispatch.sysmsg.DeathWatchNotification])(sys)
 
     }
   }

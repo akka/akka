@@ -21,7 +21,6 @@ import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata._
 import akka.cluster.ddata.Replicator.Internal._
-import akka.remote.RARP
 import akka.testkit.TestActors
 import akka.testkit.TestKit
 
@@ -32,7 +31,6 @@ class ReplicatedDataSerializerSpec
         ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.actor.provider=cluster
-    akka.remote.classic.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
     """)))
     with AnyWordSpecLike
@@ -41,7 +39,7 @@ class ReplicatedDataSerializerSpec
 
   val serializer = new ReplicatedDataSerializer(system.asInstanceOf[ExtendedActorSystem])
 
-  val Protocol = if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp"
+  val Protocol = "akka"
 
   val address1 = UniqueAddress(Address(Protocol, system.name, "some.host.org", 4711), 1L)
   val address2 = UniqueAddress(Address(Protocol, system.name, "other.host.org", 4711), 2L)

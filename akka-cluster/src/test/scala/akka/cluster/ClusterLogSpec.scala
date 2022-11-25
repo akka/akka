@@ -18,8 +18,6 @@ object ClusterLogSpec {
       failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet
     }
     akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.loglevel = "INFO"
     akka.loggers = ["akka.testkit.TestEventListener"]

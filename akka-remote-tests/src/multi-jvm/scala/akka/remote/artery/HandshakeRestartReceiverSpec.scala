@@ -28,9 +28,6 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
        akka {
          loglevel = INFO
          actor.provider = remote
-         remote.artery {
-           enabled = on
-         }
        }
        # test is using Java serialization and not priority to rewrite
        akka.actor.allow-java-serialization = on

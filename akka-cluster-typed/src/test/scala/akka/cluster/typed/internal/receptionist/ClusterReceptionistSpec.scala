@@ -39,12 +39,8 @@ object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(s"""
       akka.loglevel = DEBUG # issue #24960
       akka.actor.provider = cluster
-      akka.remote.classic.netty.tcp.port = 0
-      akka.remote.classic.netty.tcp.host = 127.0.0.1
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
-
-      akka.remote.retry-gate-closed-for = 1 s
 
       akka.cluster.typed.receptionist {
         pruning-interval = 1 s
@@ -364,7 +360,6 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         val testKit3 = ActorTestKit(
           system1.name,
           ConfigFactory.parseString(s"""
-            akka.remote.classic.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
             akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
             # retry joining when existing member removed
             akka.cluster.retry-unsuccessful-join-after = 1s
@@ -480,7 +475,6 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         val testKit3 = ActorTestKit(
           system1.name,
           ConfigFactory.parseString(s"""
-            akka.remote.classic.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
             akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
           """).withFallback(config))
 

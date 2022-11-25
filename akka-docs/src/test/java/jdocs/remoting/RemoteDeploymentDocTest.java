@@ -41,7 +41,6 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
           "RemoteDeploymentDocTest",
           ConfigFactory.parseString(
                   "   akka.actor.provider = remote\n"
-                      + "    akka.remote.classic.netty.tcp.port = 0\n"
                       + "    akka.remote.artery.canonical.port = 0\n"
                       + "    akka.remote.use-unsafe-remote-features-outside-cluster = on")
               .withFallback(AkkaSpec.testConf()));
@@ -80,11 +79,6 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateProgrammaticConfig() {
-    // #programmatic
-    ConfigFactory.parseString("akka.remote.classic.netty.tcp.hostname=\"1.2.3.4\"")
-        .withFallback(ConfigFactory.load());
-    // #programmatic
-
     // #programmatic-artery
     ConfigFactory.parseString("akka.remote.artery.canonical.hostname=\"1.2.3.4\"")
         .withFallback(ConfigFactory.load());

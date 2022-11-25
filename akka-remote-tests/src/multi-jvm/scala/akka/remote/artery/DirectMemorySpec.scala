@@ -22,8 +22,6 @@ object DirectMemorySpec extends MultiNodeConfig {
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
       akka.loglevel = WARNING
-      akka.remote.log-remote-lifecycle-events = WARNING
-      akka.remote.artery.enabled = on
       akka.remote.artery.large-message-destinations = ["/user/large"]
       akka.remote.artery.buffer-pool-size = 32
       akka.remote.artery.maximum-frame-size = 256 KiB

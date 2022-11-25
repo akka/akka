@@ -15,7 +15,6 @@ object ArterySpecSupport {
       }
       remote.warn-about-direct-use = off
       remote.artery {
-        enabled = on
         canonical {
           hostname = localhost
           port = 0

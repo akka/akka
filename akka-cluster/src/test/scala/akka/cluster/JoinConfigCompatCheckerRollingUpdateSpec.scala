@@ -17,7 +17,6 @@ object JoinConfigCompatCheckerRollingUpdateSpec {
   val baseConfig = ConfigFactory.parseString(s"""
       akka.log-dead-letters = off
       akka.log-dead-letters-during-shutdown = off
-      akka.remote.log-remote-lifecycle-events = off
       akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
       akka.cluster.testkit.auto-down-unreachable-after = 0s
       akka.cluster {

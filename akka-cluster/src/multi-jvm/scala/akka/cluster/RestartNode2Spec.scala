@@ -33,8 +33,6 @@ object RestartNode2SpecMultiJvmSpec extends MultiNodeConfig {
       akka.cluster.testkit.auto-down-unreachable-after = 2s
       akka.cluster.retry-unsuccessful-join-after = 3s
       akka.cluster.allow-weakly-up-members = off
-      akka.remote.retry-gate-closed-for = 45s
-      akka.remote.log-remote-lifecycle-events = INFO
       # test is using Java serialization and not priority to rewrite
       akka.actor.allow-java-serialization = on
       akka.actor.warn-about-java-serializer-usage = off
@@ -63,9 +61,7 @@ abstract class RestartNode2SpecSpec extends MultiNodeClusterSpec(RestartNode2Spe
   lazy val restartedSeed1System = ActorSystem(
     system.name,
     ConfigFactory.parseString(s"""
-      akka.remote.classic.netty.tcp.port = ${seedNodes.head.port.get}
       akka.remote.artery.canonical.port = ${seedNodes.head.port.get}
-      #akka.remote.retry-gate-closed-for = 1s
       """).withFallback(system.settings.config))
 
   override def afterAll(): Unit = {

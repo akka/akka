@@ -33,7 +33,6 @@ object DistributedPubSubRestartSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.cluster.pub-sub.gossip-interval = 500ms
     akka.actor.provider = cluster
-    akka.remote.log-remote-lifecycle-events = off
     akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
     akka.cluster.testkit.auto-down-unreachable-after = off
     """))
@@ -142,7 +141,6 @@ class DistributedPubSubRestartSpec
           val port = Cluster(system).selfAddress.port.get
           val config = ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port=$port
-              akka.remote.classic.netty.tcp.port=$port
               """).withFallback(system.settings.config)
 
           ActorSystem(system.name, config)

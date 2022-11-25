@@ -23,7 +23,7 @@ object MultiDcSingletonManagerSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off"""))
+    """))
 
   nodeConfig(controller) {
     ConfigFactory.parseString("""

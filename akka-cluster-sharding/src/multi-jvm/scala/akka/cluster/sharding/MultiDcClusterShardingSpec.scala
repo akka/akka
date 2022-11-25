@@ -54,7 +54,6 @@ object MultiDcClusterShardingSpecConfig
       debug.verbose-gossip-logging = on
       sharding.retry-interval = 200ms
     }
-    akka.remote.log-remote-lifecycle-events = on
     """) {
 
   val first = role("first")

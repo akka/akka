@@ -37,9 +37,7 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
-      akka.remote.classic.system-message-buffer-size=100
       akka.remote.artery.advanced.system-message-buffer-size=100
-      akka.remote.classic.netty.tcp.connection-timeout = 10s
       """))
       .withFallback(MultiNodeClusterSpec.clusterConfig))
 
@@ -92,28 +90,17 @@ abstract class SurviveNetworkInstabilitySpec
 
   private val remoteSettings = RARP(system).provider.remoteSettings
 
-  @nowarn
-  def quarantinedEventClass: Class[_] =
-    if (remoteSettings.Artery.Enabled)
-      classOf[QuarantinedEvent]
-    else
-      classOf[akka.remote.QuarantinedEvent]
+  def quarantinedEventClass: Class[_] = classOf[QuarantinedEvent]
 
   @nowarn
   def quarantinedEventFrom(event: Any): Address = {
     event match {
-      case QuarantinedEvent(uniqueAddress)          => uniqueAddress.address
-      case akka.remote.QuarantinedEvent(address, _) => address
+      case QuarantinedEvent(uniqueAddress) => uniqueAddress.address
     }
 
   }
 
-  @nowarn
-  def sysMsgBufferSize: Int =
-    if (RARP(system).provider.remoteSettings.Artery.Enabled)
-      remoteSettings.Artery.Advanced.SysMsgBufferSize
-    else
-      remoteSettings.SysMsgBufferSize
+  def sysMsgBufferSize: Int = remoteSettings.Artery.Advanced.SysMsgBufferSize
 
   def assertUnreachable(subjects: RoleName*): Unit = {
     val expected = subjects.toSet.map(address)

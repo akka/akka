@@ -23,7 +23,6 @@ object RemoteDeployerSpec {
           dispatcher = mydispatcher
         }
       }
-      akka.remote.classic.netty.tcp.port = 0
       """,
     ConfigParseOptions.defaults)
 

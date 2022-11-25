@@ -32,7 +32,6 @@ class ArteryFailedToBindSpec extends AnyWordSpec with Matchers {
            |  }
            |  remote {
            |    artery {
-           |      enabled = on
            |      canonical.hostname = "127.0.0.1"
            |      canonical.port = $port
            |      aeron.log-aeron-counters = on

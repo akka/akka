@@ -116,7 +116,6 @@ abstract class MultiNodeClusterShardingConfig(
         }
         akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
         akka.loglevel = $loglevel
-        akka.remote.log-remote-lifecycle-events = off
         """)
       .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
       .withFallback(MultiNodeClusterSpec.clusterConfig)

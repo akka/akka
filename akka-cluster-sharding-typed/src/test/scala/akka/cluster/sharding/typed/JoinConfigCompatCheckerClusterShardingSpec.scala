@@ -29,7 +29,6 @@ object JoinConfigCompatCheckerClusterShardingSpec {
       akka.cluster.sharding.state-store-mode = "persistence"
       akka.cluster.configuration-compatibility-check.enforce-on-join = on
       akka.cluster.jmx.enabled = off
-      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
     """)
 

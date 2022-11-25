@@ -106,19 +106,8 @@ private[akka] object RemoteActorRefProvider {
    */
   private class RemoteDeadLetterActorRef(_provider: ActorRefProvider, _path: ActorPath, _eventStream: EventStream)
       extends DeadLetterActorRef(_provider, _path, _eventStream) {
-    import EndpointManager.Send
 
-    // Still supports classic remoting as well
-    @nowarn("msg=Classic remoting is deprecated, use Artery")
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
-      case Send(m, senderOption, recipient, seqOpt) =>
-        // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
-        // the dead letter status
-        if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
-      case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) =>
-        // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
-        // the dead letter status
-        if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
       case env: OutboundEnvelope =>
         super.!(
           DeadLetter(
@@ -230,8 +219,6 @@ private[akka] class RemoteActorRefProvider(
 
     if (remoteSettings.Artery.Enabled && remoteSettings.Artery.Transport == AeronUpd) {
       checkAeronOnClassPath(system)
-    } else if (!remoteSettings.Artery.Enabled) {
-      checkNettyOnClassPath(system)
     } // artery tcp has no dependencies
 
     val internals = Internals(
@@ -246,11 +233,14 @@ private[akka] class RemoteActorRefProvider(
         local.registerExtraNames(Map(("remote", d)))
         d
       },
-      transport = if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Transport match {
-        case ArterySettings.AeronUpd => new ArteryAeronUdpTransport(system, this)
-        case ArterySettings.Tcp      => new ArteryTcpTransport(system, this, tlsEnabled = false)
-        case ArterySettings.TlsTcp   => new ArteryTcpTransport(system, this, tlsEnabled = true)
-      } else new Remoting(system, this))
+      transport =
+        if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Transport match {
+          case ArterySettings.AeronUpd => new ArteryAeronUdpTransport(system, this)
+          case ArterySettings.Tcp      => new ArteryTcpTransport(system, this, tlsEnabled = false)
+          case ArterySettings.TlsTcp   => new ArteryTcpTransport(system, this, tlsEnabled = true)
+        } else
+          throw new IllegalArgumentException(
+            "Classic remoting has been removed in Akka 2.8.0. Use default Artery remoting instead."))
     _internals = internals
     remotingTerminator ! internals
 
@@ -265,15 +255,6 @@ private[akka] class RemoteActorRefProvider(
     _addressString = OptionVal.Some(_internals.transport.defaultAddress.toString)
     _remoteWatcher = createOrNone[ActorRef](createRemoteWatcher(system))
     remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
-  }
-
-  private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
-    checkClassOrThrow(
-      system,
-      "org.jboss.netty.channel.Channel",
-      "Classic",
-      "Netty",
-      "https://doc.akka.io/docs/akka/current/remoting.html")
   }
 
   private def checkAeronOnClassPath(system: ActorSystemImpl): Unit = {

@@ -30,7 +30,6 @@ object JepsenInspiredInsertSpec extends MultiNodeConfig {
     akka.actor.provider = "cluster"
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
-    akka.remote.log-remote-lifecycle-events = ERROR
     akka.testconductor.barrier-timeout = 60 s
     """))
 

@@ -23,7 +23,6 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.ActorWithLogClass
 import akka.event.Logging
 import akka.pattern.ask
-import akka.remote.{ QuarantinedEvent => ClassicQuarantinedEvent }
 import akka.remote.artery.QuarantinedEvent
 import akka.util.Timeout
 import akka.util.Version
@@ -445,10 +444,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  @nowarn("msg=deprecated")
   private def subscribeQuarantinedEvent(): Unit = {
     context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
-    context.system.eventStream.subscribe(self, classOf[ClassicQuarantinedEvent])
   }
 
   private def isClusterBootstrapAvailable: Boolean =
@@ -560,14 +557,13 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case InitJoin(joiningNodeConfig) =>
         logInfo("Received InitJoin message from [{}] to [{}]", sender(), selfAddress)
         initJoin(joiningNodeConfig)
-      case Join(node, roles, appVersion)         => joining(node, roles, appVersion)
-      case ClusterUserAction.Down(address)       => downing(address)
-      case ClusterUserAction.Leave(address)      => leaving(address)
-      case ClusterUserAction.PrepareForShutdown  => startPrepareForShutdown()
-      case SendGossipTo(address)                 => sendGossipTo(address)
-      case msg: SubscriptionMessage              => publisher.forward(msg)
-      case QuarantinedEvent(ua)                  => quarantined(UniqueAddress(ua))
-      case ClassicQuarantinedEvent(address, uid) => quarantined(UniqueAddress(address, uid))
+      case Join(node, roles, appVersion)        => joining(node, roles, appVersion)
+      case ClusterUserAction.Down(address)      => downing(address)
+      case ClusterUserAction.Leave(address)     => leaving(address)
+      case ClusterUserAction.PrepareForShutdown => startPrepareForShutdown()
+      case SendGossipTo(address)                => sendGossipTo(address)
+      case msg: SubscriptionMessage             => publisher.forward(msg)
+      case QuarantinedEvent(ua)                 => quarantined(UniqueAddress(ua))
       case ClusterUserAction.JoinTo(address) =>
         logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
       case JoinSeedNodes(nodes) =>

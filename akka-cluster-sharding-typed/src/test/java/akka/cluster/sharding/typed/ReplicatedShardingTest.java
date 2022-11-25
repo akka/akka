@@ -215,7 +215,6 @@ public class ReplicatedShardingTest extends JUnitSuite {
                       + "      akka.actor.provider = \"cluster\"\n"
                       + "      # pretend we're a node in all dc:s\n"
                       + "      akka.cluster.roles = [\"DC-A\", \"DC-B\", \"DC-C\"]\n"
-                      + "      akka.remote.classic.netty.tcp.port = 0\n"
                       + "      akka.remote.artery.canonical.port = 0")
               .withFallback(PersistenceTestKitPlugin.getInstance().config()));
 

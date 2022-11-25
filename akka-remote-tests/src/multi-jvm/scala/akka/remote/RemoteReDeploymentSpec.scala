@@ -20,64 +20,49 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction._
 import akka.testkit.TestProbe
 
-class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
+object RemoteReDeploymentConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
   commonConfig(
-    debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""akka.remote.classic.transport-failure-detector {
-         threshold=0.1
-         heartbeat-interval=0.1s
-         acceptable-heartbeat-pause=1s
-       }
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
        akka.remote.watch-failure-detector {
          threshold=0.1
          heartbeat-interval=0.1s
          acceptable-heartbeat-pause=2.5s
        }
-       akka.remote.artery.enabled = $artery
        akka.remote.use-unsafe-remote-features-outside-cluster = on
        akka.loglevel = INFO
-       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+       """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   testTransport(on = true)
 
   deployOn(second, "/parent/hello.remote = \"@first@\"")
 }
 
-class RemoteReDeploymentFastMultiJvmNode1 extends RemoteReDeploymentFastMultiJvmSpec(artery = false)
-class RemoteReDeploymentFastMultiJvmNode2 extends RemoteReDeploymentFastMultiJvmSpec(artery = false)
+class RemoteReDeploymentFastMultiJvmNode1 extends RemoteReDeploymentFastMultiJvmSpec
+class RemoteReDeploymentFastMultiJvmNode2 extends RemoteReDeploymentFastMultiJvmSpec
 
-class ArteryRemoteReDeploymentFastMultiJvmNode1 extends RemoteReDeploymentFastMultiJvmSpec(artery = true)
-class ArteryRemoteReDeploymentFastMultiJvmNode2 extends RemoteReDeploymentFastMultiJvmSpec(artery = true)
-
-abstract class RemoteReDeploymentFastMultiJvmSpec(artery: Boolean)
-    extends RemoteReDeploymentMultiJvmSpec(new RemoteReDeploymentConfig(artery)) {
+abstract class RemoteReDeploymentFastMultiJvmSpec extends RemoteReDeploymentMultiJvmSpec {
   override def sleepAfterKill = 0.seconds // new association will come in while old is still “healthy”
   override def expectQuarantine = false
 }
 
-class RemoteReDeploymentMediumMultiJvmNode1 extends RemoteReDeploymentMediumMultiJvmSpec(artery = false)
-class RemoteReDeploymentMediumMultiJvmNode2 extends RemoteReDeploymentMediumMultiJvmSpec(artery = false)
+class RemoteReDeploymentMediumMultiJvmNode1 extends RemoteReDeploymentMediumMultiJvmSpec
+class RemoteReDeploymentMediumMultiJvmNode2 extends RemoteReDeploymentMediumMultiJvmSpec
 
-class ArteryRemoteReDeploymentMediumMultiJvmNode1 extends RemoteReDeploymentMediumMultiJvmSpec(artery = true)
-class ArteryRemoteReDeploymentMediumMultiJvmNode2 extends RemoteReDeploymentMediumMultiJvmSpec(artery = true)
-
-abstract class RemoteReDeploymentMediumMultiJvmSpec(artery: Boolean)
-    extends RemoteReDeploymentMultiJvmSpec(new RemoteReDeploymentConfig(artery)) {
+abstract class RemoteReDeploymentMediumMultiJvmSpec extends RemoteReDeploymentMultiJvmSpec {
   override def sleepAfterKill =
     1.seconds // new association will come in while old is gated in ReliableDeliverySupervisor
   override def expectQuarantine = false
 }
 
-class RemoteReDeploymentSlowMultiJvmNode1 extends RemoteReDeploymentSlowMultiJvmSpec(artery = false)
-class RemoteReDeploymentSlowMultiJvmNode2 extends RemoteReDeploymentSlowMultiJvmSpec(artery = false)
+class RemoteReDeploymentSlowMultiJvmNode1 extends RemoteReDeploymentSlowMultiJvmSpec
+class RemoteReDeploymentSlowMultiJvmNode2 extends RemoteReDeploymentSlowMultiJvmSpec
 
-class ArteryRemoteReDeploymentSlowMultiJvmNode1 extends RemoteReDeploymentSlowMultiJvmSpec(artery = true)
-class ArteryRemoteReDeploymentSlowMultiJvmNode2 extends RemoteReDeploymentSlowMultiJvmSpec(artery = true)
-
-abstract class RemoteReDeploymentSlowMultiJvmSpec(artery: Boolean)
-    extends RemoteReDeploymentMultiJvmSpec(new RemoteReDeploymentConfig(artery)) {
+abstract class RemoteReDeploymentSlowMultiJvmSpec extends RemoteReDeploymentMultiJvmSpec {
   override def sleepAfterKill = 10.seconds // new association will come in after old has been quarantined
   override def expectQuarantine = true
 }
@@ -111,8 +96,8 @@ object RemoteReDeploymentMultiJvmSpec {
   def echoProps(target: ActorRef) = Props(new Echo(target))
 }
 
-abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymentConfig)
-    extends RemotingMultiNodeSpec(multiNodeConfig) {
+abstract class RemoteReDeploymentMultiJvmSpec extends RemotingMultiNodeSpec(RemoteReDeploymentConfig) {
+  import RemoteReDeploymentConfig._
 
   def sleepAfterKill: FiniteDuration
   def expectQuarantine: Boolean
@@ -120,7 +105,6 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
   def initialParticipants = roles.size
 
   import RemoteReDeploymentMultiJvmSpec._
-  import multiNodeConfig._
 
   "A remote deployment target system" must {
 

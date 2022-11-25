@@ -4,7 +4,6 @@
 
 package akka.remote
 
-import MessageLoggingSpec._
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.{ Actor, ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Props, RootActorPath }
@@ -14,24 +13,11 @@ import akka.testkit.TestActors
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit }
 
 object MessageLoggingSpec {
-  def config(artery: Boolean) = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString("""
      akka.loglevel = info // debug makes this test fail intentionally
      akka.actor.provider = remote
      akka.remote {
-     
-      classic {
-        log-received-messages = on
-        log-sent-messages = on
-        log-frame-size-exceeding = 10000b
-        netty.tcp {
-          hostname = localhost
-          port = 0
-        }
-
-      } 
-     
       artery {
-        enabled = $artery
         transport = aeron-udp
         canonical.hostname = localhost
         canonical.port = 0
@@ -55,10 +41,8 @@ object MessageLoggingSpec {
   }
 }
 
-class ArteryMessageLoggingSpec extends MessageLoggingSpec(config(true))
-class ClassicMessageLoggingSpec extends MessageLoggingSpec(config(false))
-
-abstract class MessageLoggingSpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
+class MessageLoggingSpec(config: Config) extends AkkaSpec(MessageLoggingSpec.config) with ImplicitSender {
+  import MessageLoggingSpec._
 
   val remoteSystem = ActorSystem("remote-sys", ConfigFactory.load(config))
   val remoteAddress = remoteSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress

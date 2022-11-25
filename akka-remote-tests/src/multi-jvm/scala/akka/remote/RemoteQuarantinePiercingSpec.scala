@@ -14,30 +14,24 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 
-class RemoteQuarantinePiercingConfig(artery: Boolean) extends MultiNodeConfig {
+object RemoteQuarantinePiercingConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.loglevel = INFO
-      akka.remote.log-remote-lifecycle-events = INFO
-      akka.remote.artery.enabled = $artery
       # test is using Java serialization and not priority to rewrite
       akka.actor.allow-java-serialization = on
       akka.actor.warn-about-java-serializer-usage = off
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
 
-class RemoteQuarantinePiercingMultiJvmNode1
-    extends RemoteQuarantinePiercingSpec(new RemoteQuarantinePiercingConfig(artery = false))
-class RemoteQuarantinePiercingMultiJvmNode2
-    extends RemoteQuarantinePiercingSpec(new RemoteQuarantinePiercingConfig(artery = false))
-
-class ArteryRemoteQuarantinePiercingMultiJvmNode1
-    extends RemoteQuarantinePiercingSpec(new RemoteQuarantinePiercingConfig(artery = true))
-class ArteryRemoteQuarantinePiercingMultiJvmNode2
-    extends RemoteQuarantinePiercingSpec(new RemoteQuarantinePiercingConfig(artery = true))
+class RemoteQuarantinePiercingMultiJvmNode1 extends RemoteQuarantinePiercingSpec
+class RemoteQuarantinePiercingMultiJvmNode2 extends RemoteQuarantinePiercingSpec
 
 object RemoteQuarantinePiercingSpec {
   class Subject extends Actor {
@@ -48,10 +42,9 @@ object RemoteQuarantinePiercingSpec {
   }
 }
 
-abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePiercingConfig)
-    extends RemotingMultiNodeSpec(multiNodeConfig) {
+abstract class RemoteQuarantinePiercingSpec extends RemotingMultiNodeSpec(RemoteQuarantinePiercingConfig) {
   import RemoteQuarantinePiercingSpec._
-  import multiNodeConfig._
+  import RemoteQuarantinePiercingConfig._
 
   override def initialParticipants = roles.size
 
@@ -115,7 +108,6 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
         val freshSystem = ActorSystem(
           system.name,
           ConfigFactory.parseString(s"""
-          akka.remote.classic.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject](), "subject")

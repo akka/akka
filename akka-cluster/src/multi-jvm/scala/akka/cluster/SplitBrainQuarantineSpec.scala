@@ -7,7 +7,6 @@ package akka.cluster
 import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.RootActorPath
-import akka.remote.artery.ArterySettings
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit.LongRunningTest
@@ -48,12 +47,6 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeClusterSpec(SplitBrainQ
   // and after that the partition is resolved and the two split brain halves reconnects
 
   "Cluster node downed by other" must {
-
-    if (!ArterySettings(system.settings.config.getConfig("akka.remote.artery")).Enabled) {
-      // this feature only works in Artery, because classic remoting will not accept connections from
-      // a quarantined node, and that is too high risk of introducing regressions if changing that
-      pending
-    }
 
     "join cluster" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth)

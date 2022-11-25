@@ -22,7 +22,6 @@ object RemoteMessageSpec {
     akka {
       loglevel = debug
       actor.provider = cluster
-      remote.classic.netty.tcp.port = 0
       remote.artery {
         canonical {
           hostname = 127.0.0.1

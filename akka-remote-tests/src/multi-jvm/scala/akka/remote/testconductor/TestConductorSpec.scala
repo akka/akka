@@ -5,20 +5,20 @@
 package akka.remote.testconductor
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
-import com.typesafe.config.ConfigFactory
-import language.postfixOps
-
-import akka.actor.{ Actor, ActorIdentity, Deploy, Identify, Props }
+import akka.actor.Actor
+import akka.actor.ActorIdentity
+import akka.actor.Deploy
+import akka.actor.Identify
+import akka.actor.Props
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit.LongRunningTest
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-      akka.remote.artery.enabled = false 
-    """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   val leader = role("leader")
   val follower = role("follower")

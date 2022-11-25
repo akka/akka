@@ -24,8 +24,6 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
       akka.loglevel = WARNING
-      akka.remote.log-remote-lifecycle-events = WARNING
-      akka.remote.artery.enabled = on
       # test is using Java serialization and not priority to rewrite
       akka.actor.allow-java-serialization = on
       akka.actor.warn-about-java-serializer-usage = off

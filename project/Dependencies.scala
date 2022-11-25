@@ -245,7 +245,7 @@ object Dependencies {
         Compile.slf4jApi,
         TestDependencies.scalatest.value)
 
-  val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
+  val remoteDependencies = Seq(aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
 
   val remote = l ++= Seq(

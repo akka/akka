@@ -48,7 +48,6 @@ object RememberEntitiesAndStartEntitySpec {
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
       akka.remote.artery.canonical.port = 0
-      akka.remote.classic.netty.tcp.port = 0
       akka.cluster.sharding.verbose-debug-logging = on
       akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
       # no leaks between test runs thank you

@@ -5,6 +5,7 @@
 package akka.cluster
 
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor._
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
@@ -18,7 +19,6 @@ import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.event.ActorWithLogClass
 import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
-import akka.remote.RARP
 import akka.remote.RemoteSettings
 import akka.remote.RemoteWatcher
 
@@ -66,7 +66,6 @@ private[cluster] class ClusterRemoteWatcher(
 
   import ClusterRemoteWatcher.DelayedQuarantine
 
-  private val arteryEnabled = RARP(context.system).provider.remoteSettings.Artery.Enabled
   val cluster = Cluster(context.system)
   import cluster.selfAddress
 
@@ -124,22 +123,14 @@ private[cluster] class ClusterRemoteWatcher(
     if (m.address != selfAddress) {
       clusterNodes -= m.address
 
-      if (previousStatus == MemberStatus.Down) {
-        quarantine(
-          m.address,
-          Some(m.uniqueAddress.longUid),
-          s"Cluster member removed, previous status [$previousStatus]",
-          harmless = false)
-      } else if (arteryEnabled) {
-        // Don't quarantine gracefully removed members (leaving) directly,
-        // give Cluster Singleton some time to exchange TakeOver/HandOver messages.
-        // If new incarnation of same host:port is seen then the quarantine of previous incarnation
-        // is triggered earlier.
-        pendingDelayedQuarantine += m.uniqueAddress
-        import context.dispatcher
-        context.system.scheduler
-          .scheduleOnce(cluster.settings.QuarantineRemovedNodeAfter, self, DelayedQuarantine(m, previousStatus))
-      }
+      // Don't quarantine gracefully removed members (leaving) directly,
+      // give Cluster Singleton some time to exchange TakeOver/HandOver messages.
+      // If new incarnation of same host:port is seen then the quarantine of previous incarnation
+      // is triggered earlier.
+      pendingDelayedQuarantine += m.uniqueAddress
+      import context.dispatcher
+      context.system.scheduler
+        .scheduleOnce(cluster.settings.QuarantineRemovedNodeAfter, self, DelayedQuarantine(m, previousStatus))
 
       publishAddressTerminated(m.address)
     }

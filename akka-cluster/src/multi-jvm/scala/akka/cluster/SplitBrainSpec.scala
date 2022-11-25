@@ -23,7 +23,6 @@ final case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) exten
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
-        akka.remote.retry-gate-closed-for = 3 s
         akka.cluster {
           downing-provider-class = akka.cluster.testkit.AutoDowning
           testkit.auto-down-unreachable-after = 1s

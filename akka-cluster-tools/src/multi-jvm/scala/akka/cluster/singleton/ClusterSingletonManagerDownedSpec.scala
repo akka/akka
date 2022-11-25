@@ -31,7 +31,6 @@ object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
     """))
 
   testTransport(on = true)

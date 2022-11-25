@@ -8,11 +8,11 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorIdentity
 import akka.actor.Identify
-import akka.remote.EndpointDisassociatedException
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent }
 import akka.testkit.DeadLettersFilter
 import akka.testkit.TestEvent.Mute
+import akka.testkit.ImplicitSender
+import akka.testkit.TestActors
 
 object RemoteFailureSpec {
   final case class Ping(s: String) extends CborSerializable
@@ -29,8 +29,6 @@ class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
       val remoteSystems = Vector.fill(3)(newRemoteSystem())
 
       remoteSystems.foreach { sys =>
-        sys.eventStream.publish(TestEvent
-          .Mute(EventFilter[EndpointDisassociatedException](), EventFilter.warning(pattern = "received dead letter.*")))
         sys.actorOf(TestActors.echoActorProps, name = "echo")
       }
       val remoteSelections = remoteSystems.map { sys =>

@@ -71,7 +71,6 @@ abstract class MultiNodeConfig {
           receive = on
           fsm = on
         }
-        akka.remote.log-remote-lifecycle-events = on
         """)
     else
       ConfigFactory.empty
@@ -108,7 +107,6 @@ abstract class MultiNodeConfig {
   private[akka] def config: Config = {
     val transportConfig =
       if (_testTransport) ConfigFactory.parseString("""
-           akka.remote.classic.netty.tcp.applied-adapters = [trttl, gremlin]
            akka.remote.artery.advanced.test-mode = on
         """)
       else ConfigFactory.empty
@@ -238,8 +236,6 @@ object MultiNodeSpec {
     Map(
       "akka.actor.provider" -> "remote",
       "akka.remote.artery.canonical.hostname" -> selfName,
-      "akka.remote.classic.netty.tcp.hostname" -> selfName,
-      "akka.remote.classic.netty.tcp.port" -> tcpPort,
       "akka.remote.artery.canonical.port" -> selfPort))
 
   private[testkit] val baseConfig: Config =
@@ -275,10 +271,8 @@ object MultiNodeSpec {
   // are exposed in kubernetes
   def configureNextPortIfFixed(config: Config): Config = {
     val arteryPortConfig = getNextPortString("akka.remote.artery.canonical.port", config)
-    val nettyPortConfig = getNextPortString("akka.remote.classic.netty.tcp.port", config)
     ConfigFactory.parseString(s"""{
       $arteryPortConfig
-      $nettyPortConfig
       }""").withFallback(config)
   }
 
@@ -540,7 +534,7 @@ abstract class MultiNodeSpec(
    */
   protected def startNewSystem(): ActorSystem = {
     val config = ConfigFactory
-      .parseString(s"akka.remote.classic.netty.tcp{port=${myAddress.port.get}\nhostname=${myAddress.host.get}}")
+      .parseString(s"akka.remote.artery.canonical{port=${myAddress.port.get}\nhostname=${myAddress.host.get}}")
       .withFallback(system.settings.config)
     val sys = ActorSystem(system.name, config)
     injectDeployments(sys, myself)

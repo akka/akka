@@ -21,7 +21,6 @@ object ClusterApiSpec {
   val config =
     ConfigFactory.parseString("""
       akka.actor.provider = cluster
-      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on

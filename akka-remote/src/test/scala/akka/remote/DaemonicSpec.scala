@@ -27,7 +27,6 @@ class DaemonicSpec extends AkkaSpec {
         ConfigFactory.parseString("""
         akka.daemonic = on
         akka.actor.provider = remote
-        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.log-dead-letters-during-shutdown = off
         #akka.remote.artery.advanced.aeron.idle-cpu = 5
@@ -36,7 +35,7 @@ class DaemonicSpec extends AkkaSpec {
       try {
         val unusedPort = 86 // very unlikely to ever be used, "system port" range reserved for Micro Focus Cobol
 
-        val protocol = if (RARP(daemonicSystem).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp"
+        val protocol = "akka"
         val unusedAddress =
           RARP(daemonicSystem).provider.getExternalAddressFor(Address(protocol, "", "", unusedPort)).get
         val selection = daemonicSystem.actorSelection(s"$unusedAddress/user/SomeActor")

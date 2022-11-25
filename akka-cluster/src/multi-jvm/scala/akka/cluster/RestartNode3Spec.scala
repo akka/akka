@@ -63,7 +63,6 @@ abstract class RestartNode3Spec extends MultiNodeClusterSpec(RestartNode3MultiJv
     system.name,
     ConfigFactory.parseString(s"""
         akka.remote.artery.canonical.port = ${secondUniqueAddress.address.port.get}
-        akka.remote.classic.netty.tcp.port = ${secondUniqueAddress.address.port.get}
         """).withFallback(system.settings.config))
 
   override def afterAll(): Unit = {

@@ -70,7 +70,6 @@ abstract class QuickRestartSpec extends MultiNodeClusterSpec(QuickRestartMultiJv
               // use the same port
               ConfigFactory.parseString(s"""
                        akka.cluster.roles = [round-$n]
-                       akka.remote.classic.netty.tcp.port = ${Cluster(restartingSystem).selfAddress.port.get}
                        akka.remote.artery.canonical.port = ${Cluster(restartingSystem).selfAddress.port.get}
                      """).withFallback(system.settings.config))
           }

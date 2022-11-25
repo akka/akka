@@ -29,7 +29,6 @@ object ClusterShardingInternalsSpec {
 
 class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.actor.provider = cluster
-    |akka.remote.classic.netty.tcp.port = 0
     |akka.remote.artery.canonical.port = 0
     |akka.loglevel = DEBUG
     |akka.cluster.sharding.verbose-debug-logging = on

@@ -34,10 +34,6 @@ object DownAllUnstable5NodeSpec extends MultiNodeConfig {
         run-coordinated-shutdown-when-down = off
       }
 
-      # quicker reconnect
-      remote.retry-gate-closed-for = 1s
-      remote.netty.tcp.connection-timeout = 3 s
-
       actor.provider = cluster
 
       test.filter-leeway = 10s

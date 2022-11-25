@@ -5,7 +5,7 @@
 package akka.remote.artery
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Outcome, Pending }
+import org.scalatest.Outcome
 
 import akka.actor.{ ActorSystem, Address, BootstrapSetup, RootActorPath }
 import akka.actor.setup.ActorSystemSetup
@@ -41,11 +41,7 @@ abstract class ArteryMultiNodeSpec(config: Config)
 
   override protected def withFixture(test: NoArgTest): Outcome = {
     // note that withFixture is also used in FlightRecorderSpecIntegration
-    if (!RARP(system).provider.remoteSettings.Artery.Enabled) {
-      info(s"${getClass.getName} is only enabled for Artery")
-      Pending
-    } else
-      super.withFixture(test)
+    super.withFixture(test)
   }
 
   /**

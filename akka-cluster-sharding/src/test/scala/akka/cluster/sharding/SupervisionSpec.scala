@@ -19,7 +19,6 @@ object SupervisionSpec {
     ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
     akka.remote.artery.canonical.port = 0
-    akka.remote.classic.netty.tcp.port = 0
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.loglevel = DEBUG
     akka.cluster.sharding.verbose-debug-logging = on

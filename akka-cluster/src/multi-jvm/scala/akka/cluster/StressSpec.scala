@@ -110,7 +110,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
-    akka.remote.log-remote-lifecycle-events = off
     akka.actor.default-dispatcher.fork-join-executor {
       parallelism-min = 8
       parallelism-max = 8
@@ -470,8 +469,6 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
         println("Abrupt exit of JVM without closing media driver. This should not happen and may cause test failure.")
     }
   })
-
-  def isArteryEnabled: Boolean = RARP(system).provider.remoteSettings.Artery.Enabled
 
   def isAeronUdpTransport: Boolean = RARP(system).provider.remoteSettings.Artery.Transport == AeronUpd
 
@@ -845,7 +842,7 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
 
     // Aeron UDP with embedded driver seems too heavy to get to pass
     // note: there must be one test step before pending, otherwise afterTermination will not run
-    if (isArteryEnabled && isAeronUdpTransport) pending
+    if (isAeronUdpTransport) pending
 
     "join seed nodes" taggedAs LongRunningTest in within(30 seconds) {
 
