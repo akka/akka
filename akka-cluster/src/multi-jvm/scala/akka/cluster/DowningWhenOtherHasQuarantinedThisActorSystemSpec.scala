@@ -13,7 +13,7 @@ import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.remote.artery.ThisActorSystemQuarantinedEvent
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter
+import akka.remote.testkit.Direction
 import akka.testkit.LongRunningTest
 
 object DowningWhenOtherHasQuarantinedThisActorSystemSpec extends MultiNodeConfig {
@@ -60,8 +60,8 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
 
     "down itself" taggedAs LongRunningTest in {
       runOn(first) {
-        testConductor.blackhole(first, second, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.blackhole(third, second, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.blackhole(first, second, Direction.Both).await
+        testConductor.blackhole(third, second, Direction.Both).await
       }
       enterBarrier("blackhole")
 
@@ -84,8 +84,8 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
       enterBarrier("down-second")
 
       runOn(first) {
-        testConductor.passThrough(first, second, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.passThrough(third, second, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.passThrough(first, second, Direction.Both).await
+        testConductor.passThrough(third, second, Direction.Both).await
       }
       enterBarrier("pass-through")
 

@@ -19,7 +19,7 @@ import akka.cluster.typed.MultiDcClusterSingletonSpecConfig.third
 import akka.cluster.typed.MultiNodeTypedClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 
 object ClusterReceptionistUnreachabilitySpecConfig extends MultiNodeConfig {
   val first = role("first")

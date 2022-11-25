@@ -14,7 +14,7 @@ import akka.actor.ActorIdentity
 import akka.actor.Identify
 import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 
 object SurviveNetworkPartitionSpec extends MultiNodeConfig {

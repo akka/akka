@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 
 import akka.cluster.MemberStatus.WeaklyUp
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 
 object MemberWeaklyUpSpec extends MultiNodeConfig {

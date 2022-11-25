@@ -17,7 +17,7 @@ import akka.actor.ActorSystem
 import akka.actor.Identify
 import akka.actor.Props
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction._
+import akka.remote.testkit.Direction._
 import akka.testkit.TestProbe
 
 object RemoteReDeploymentConfig extends MultiNodeConfig {

@@ -38,9 +38,9 @@ import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.compress._
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
-import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
-import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
-import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
+import akka.remote.testkit.Blackhole
+import akka.remote.testkit.SetThrottle
+import akka.remote.testkit.Unthrottled
 import akka.stream._
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep

@@ -10,7 +10,7 @@ import akka.actor._
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.util.ccompat._

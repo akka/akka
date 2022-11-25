@@ -12,7 +12,7 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter
+import akka.remote.testkit.Direction
 
 object DownAllUnstable5NodeSpec extends MultiNodeConfig {
   val node1 = role("node1")
@@ -79,7 +79,7 @@ class DownAllUnstable5NodeSpec extends MultiNodeClusterSpec(DownAllUnstable5Node
 
       runOn(node1) {
         for (x <- List(node1, node2, node3); y <- List(node4, node5)) {
-          testConductor.blackhole(x, y, ThrottlerTransportAdapter.Direction.Both).await
+          testConductor.blackhole(x, y, Direction.Both).await
         }
       }
       enterBarrier("blackholed-clean-partition")
@@ -104,14 +104,14 @@ class DownAllUnstable5NodeSpec extends MultiNodeClusterSpec(DownAllUnstable5Node
       }
 
       runOn(node1) {
-        testConductor.blackhole(node2, node3, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.blackhole(node2, node3, Direction.Both).await
       }
       enterBarrier("blackhole-2")
       // then it takes about 5 seconds for failure detector to observe that
       Thread.sleep(7000)
 
       runOn(node1) {
-        testConductor.passThrough(node2, node3, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.passThrough(node2, node3, Direction.Both).await
       }
       enterBarrier("passThrough-2")
 

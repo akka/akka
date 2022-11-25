@@ -8,7 +8,7 @@ import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter
+import akka.remote.testkit.Direction
 import akka.testkit.LongRunningTest
 import com.typesafe.config.ConfigFactory
 
@@ -55,10 +55,10 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeClusterSpec(SplitBrainQ
 
     "split brain" taggedAs LongRunningTest in {
       runOn(first) {
-        testConductor.blackhole(first, third, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.blackhole(first, fourth, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.blackhole(second, third, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.blackhole(second, fourth, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.blackhole(first, third, Direction.Both).await
+        testConductor.blackhole(first, fourth, Direction.Both).await
+        testConductor.blackhole(second, third, Direction.Both).await
+        testConductor.blackhole(second, fourth, Direction.Both).await
       }
       enterBarrier("blackhole")
       system.log.info("cluster split into [JVM-1, JVM-2] and [JVM-3, JVM-4] with blackhole")
@@ -94,10 +94,10 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeClusterSpec(SplitBrainQ
 
       runOn(first) {
         system.log.info("unblackholing cluster")
-        testConductor.passThrough(first, third, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.passThrough(first, fourth, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.passThrough(second, third, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.passThrough(second, fourth, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.passThrough(first, third, Direction.Both).await
+        testConductor.passThrough(first, fourth, Direction.Both).await
+        testConductor.passThrough(second, third, Direction.Both).await
+        testConductor.passThrough(second, fourth, Direction.Both).await
       }
       enterBarrier("unblackholed")
 

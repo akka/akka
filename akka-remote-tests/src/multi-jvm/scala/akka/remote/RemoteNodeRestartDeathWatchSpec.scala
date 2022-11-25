@@ -19,7 +19,7 @@ import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 
 object RemoteNodeRestartDeathWatchConfig extends MultiNodeConfig {

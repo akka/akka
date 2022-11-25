@@ -12,7 +12,7 @@ import akka.cluster.Cluster
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 
 object ReplicatorChaosSpec extends MultiNodeConfig {

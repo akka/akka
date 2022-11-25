@@ -20,7 +20,7 @@ import akka.remote.RARP
 import akka.remote.artery.QuarantinedEvent
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 

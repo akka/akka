@@ -9,7 +9,7 @@ import scala.annotation.tailrec
 import akka.actor.Address
 import akka.event.Logging
 import akka.remote.artery.OutboundHandshake.HandshakeReq
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet

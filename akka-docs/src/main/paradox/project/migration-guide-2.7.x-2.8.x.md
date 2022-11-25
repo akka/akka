@@ -26,3 +26,18 @@ which has been the default since 2.6.0 and declared ready for production in Akka
 
 See [migration guide for Akka 2.6.x](https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html#default-remoting-is-now-artery-tcp)
 and [What is new in Artery](https://doc.akka.io/docs/akka/2.6/remoting-artery.html#what-is-new-in-artery).
+
+### Moved classes for Multi JVM TestKit
+
+When using the @ref:[Multi JVM TestKit](../multi-jvm-testing.md) you need to change the imports for
+`Direction` and `ThrottleMode` classes.
+
+```
+akka.remote.transport.ThrottlerTransportAdapter.*
+```
+
+was moved to:
+
+```
+akka.remote.testkit.*
+```

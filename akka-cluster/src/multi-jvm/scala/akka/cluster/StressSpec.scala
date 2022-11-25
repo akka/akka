@@ -37,7 +37,7 @@ import akka.remote.RARP
 import akka.remote.artery.ArterySettings.AeronUpd
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter
+import akka.remote.testkit.Direction
 import akka.testkit.TestEvent._
 import akka.testkit._
 import akka.util.Helpers.ConfigOps
@@ -710,7 +710,7 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
 
       runOn(roles.head) {
         for (x <- currentRoles; y <- removeRoles) {
-          testConductor.blackhole(x, y, ThrottlerTransportAdapter.Direction.Both).await
+          testConductor.blackhole(x, y, Direction.Both).await
         }
       }
       enterBarrier("partition-several-blackhole")

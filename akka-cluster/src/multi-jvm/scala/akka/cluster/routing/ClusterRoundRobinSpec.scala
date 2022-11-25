@@ -18,7 +18,7 @@ import akka.actor.Terminated
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.routing.ActorRefRoutee
 import akka.routing.ActorSelectionRoutee
 import akka.routing.FromConfig

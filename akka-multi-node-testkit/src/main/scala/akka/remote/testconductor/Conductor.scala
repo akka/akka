@@ -41,7 +41,7 @@ import akka.actor.{
 import akka.event.{ Logging, LoggingAdapter }
 import akka.event.LoggingReceive
 import akka.pattern.ask
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.util.Timeout
 
 /**
