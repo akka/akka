@@ -39,11 +39,6 @@ abstract class ArteryMultiNodeSpec(config: Config)
 
   private var remoteSystems: Vector[ActorSystem] = Vector.empty
 
-  override protected def withFixture(test: NoArgTest): Outcome = {
-    // note that withFixture is also used in FlightRecorderSpecIntegration
-    super.withFixture(test)
-  }
-
   /**
    * @return A new actor system configured with artery enabled. The system will
    *         automatically be terminated after test is completed to avoid leaks.
