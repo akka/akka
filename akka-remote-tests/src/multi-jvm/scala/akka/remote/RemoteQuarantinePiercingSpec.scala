@@ -37,7 +37,7 @@ object RemoteQuarantinePiercingSpec {
   class Subject extends Actor {
     def receive = {
       case "shutdown" => context.system.terminate()
-      case "identify" => sender() ! context.system.asInstanceOf[ExtendedActorSystem].uid -> self)
+      case "identify" => sender() ! (context.system.asInstanceOf[ExtendedActorSystem].uid -> self)
     }
   }
 }

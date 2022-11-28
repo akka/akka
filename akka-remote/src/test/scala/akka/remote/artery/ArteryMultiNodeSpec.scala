@@ -5,7 +5,6 @@
 package akka.remote.artery
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.Outcome
 
 import akka.actor.{ ActorSystem, Address, BootstrapSetup, RootActorPath }
 import akka.actor.setup.ActorSystemSetup
