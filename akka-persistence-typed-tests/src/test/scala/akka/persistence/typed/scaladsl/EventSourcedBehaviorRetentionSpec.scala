@@ -500,32 +500,41 @@ class EventSourcedBehaviorRetentionSpec
               deleteSnapshotSignalProbe = Some(deleteSnapshotSignalProbe.ref))
               .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1, keepNSnapshots = 3))))
 
-      (1 to 10).foreach(_ => persistentActor ! Increment)
+      (1 to 4).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(10, (0 until 10).toVector))
+      replyProbe.expectMessage(State(4, (0 until 4).toVector))
       snapshotSignalProbe.expectSnapshotCompleted(1)
       snapshotSignalProbe.expectSnapshotCompleted(2)
       snapshotSignalProbe.expectSnapshotCompleted(3)
       snapshotSignalProbe.expectSnapshotCompleted(4)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(1, 0)
 
+      persistentActor ! Increment
       snapshotSignalProbe.expectSnapshotCompleted(5)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(2, 0)
 
+      persistentActor ! Increment
       snapshotSignalProbe.expectSnapshotCompleted(6)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(3, 0)
 
+      persistentActor ! Increment
       snapshotSignalProbe.expectSnapshotCompleted(7)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(4, 1)
 
+      persistentActor ! Increment
       snapshotSignalProbe.expectSnapshotCompleted(8)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(5, 2)
 
+      persistentActor ! Increment
       snapshotSignalProbe.expectSnapshotCompleted(9)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(6, 3)
 
+      persistentActor ! Increment
       snapshotSignalProbe.expectSnapshotCompleted(10)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(7, 4)
+
+      persistentActor ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(10, (0 until 10).toVector))
     }
 
     "be possible to snapshot every event withDeleteEventsOnSnapshot" in {
