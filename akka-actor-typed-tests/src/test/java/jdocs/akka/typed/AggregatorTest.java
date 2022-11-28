@@ -4,11 +4,6 @@
 
 package jdocs.akka.typed;
 
-import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel1;
-import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel2;
-import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.HotelCustomer;
-import static org.junit.Assert.assertEquals;
-
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -30,6 +25,13 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+// format: OFF
+import static org.junit.Assert.assertEquals;
+import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel1;
+import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel2;
+import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.HotelCustomer;
+// format: ON
 
 public class AggregatorTest extends JUnitSuite {
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
