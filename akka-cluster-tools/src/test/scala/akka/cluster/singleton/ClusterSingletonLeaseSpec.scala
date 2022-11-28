@@ -52,6 +52,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
        use-lease = "test-lease"
        lease-retry-interval = 2000ms
      }
+     akka.remote.artery.canonical.port = 0
   """).withFallback(TestLease.config)) {
   import TestLease.{ AcquireReq, ReleaseReq }
 

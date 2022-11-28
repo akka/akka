@@ -87,6 +87,7 @@ class SerializationTransportInformationSpec
         }
       }
     }
+    akka.remote.artery.canonical.port = 0
   """))
     with ImplicitSender {
 

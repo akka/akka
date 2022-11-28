@@ -26,6 +26,7 @@ object LogSourceSpec {
 class LogSourceSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.actor.provider = remote
+    akka.remote.artery.canonical.port = 0
   """) {
 
   import LogSourceSpec._
