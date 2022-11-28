@@ -1,0 +1,5 @@
+# Removal of deprecated classic remoting.
+# Moving the ThrottlerTransportAdapter classes.
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.testconductor.TestConductorExt.throttle")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.testconductor.TestConductorExt.blackhole")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.testconductor.TestConductorExt.passThrough")
