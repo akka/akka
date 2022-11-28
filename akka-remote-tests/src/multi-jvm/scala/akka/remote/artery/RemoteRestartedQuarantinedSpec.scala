@@ -11,7 +11,7 @@ import scala.language.postfixOps
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
@@ -33,7 +33,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   class Subject extends Actor {
     def receive = {
       case "shutdown" => context.system.terminate()
-      case "identify" => sender() ! (AddressUidExtension(context.system).longAddressUid -> self)
+      case "identify" => sender() ! context.system.asInstanceOf[ExtendedActorSystem].uid -> self)
     }
   }
 

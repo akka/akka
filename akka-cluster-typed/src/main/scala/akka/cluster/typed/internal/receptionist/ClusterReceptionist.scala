@@ -7,6 +7,7 @@ package akka.cluster.typed.internal.receptionist
 import scala.concurrent.duration._
 
 import akka.actor.Address
+import akka.actor.ExtendedActorSystem
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, ReceptionistBehaviorProvider, ReceptionistMessages }
 import akka.actor.typed.receptionist.Receptionist.Command
@@ -26,7 +27,6 @@ import akka.cluster.ClusterEvent.ReachableMember
 import akka.cluster.ClusterEvent.UnreachableMember
 import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.ddata.SelfUniqueAddress
-import akka.remote.AddressUidExtension
 import akka.util.TypedMultiMap
 
 // just to provide a log class
@@ -176,7 +176,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   final class Setup(ctx: ActorContext[Command]) {
     val classicSystem = ctx.system.toClassic
     val settings = ClusterReceptionistSettings(ctx.system)
-    val selfSystemUid = AddressUidExtension(classicSystem).longAddressUid
+    val selfSystemUid = classicSystem.asInstanceOf[ExtendedActorSystem].uid
     lazy val keepTombstonesFor = cluster.settings.PruneGossipTombstonesAfter match {
       case f: FiniteDuration => f
       case _                 => throw new IllegalStateException("Cannot actually happen")

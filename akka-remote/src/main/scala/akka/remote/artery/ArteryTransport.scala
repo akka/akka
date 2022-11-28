@@ -26,7 +26,6 @@ import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
-import akka.remote.AddressUidExtension
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
@@ -383,14 +382,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     val (port, boundPort) = bindInboundStreams()
 
-    _localAddress = UniqueAddress(
-      Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port),
-      AddressUidExtension(system).longAddressUid)
+    _localAddress =
+      UniqueAddress(Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port), system.uid)
     _addresses = Set(_localAddress.address)
 
-    _bindAddress = UniqueAddress(
-      Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort),
-      AddressUidExtension(system).longAddressUid)
+    _bindAddress =
+      UniqueAddress(Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort), system.uid)
 
     flightRecorder.transportUniqueAddressSet(_localAddress)
 

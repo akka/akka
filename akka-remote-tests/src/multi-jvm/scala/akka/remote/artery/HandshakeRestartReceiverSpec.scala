@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import akka.actor._
-import akka.remote.AddressUidExtension
 import akka.remote.RARP
 import akka.remote.UniqueAddress
 import akka.remote.testkit.MultiNodeConfig
@@ -37,7 +36,7 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
   class Subject extends Actor {
     def receive = {
       case "shutdown" => context.system.terminate()
-      case "identify" => sender() ! (AddressUidExtension(context.system).longAddressUid -> self)
+      case "identify" => sender() ! context.system.asInstanceOf[ExtendedActorSystem].uid -> self)
     }
   }
 

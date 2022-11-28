@@ -109,7 +109,7 @@ private[akka] class RemoteWatcher(
   val remoteProvider: RemoteActorRefProvider = RARP(context.system).provider
 
   val heartBeatMsg = ArteryHeartbeat
-  val selfHeartbeatRspMsg = ArteryHeartbeatRsp(AddressUidExtension(context.system).longAddressUid)
+  val selfHeartbeatRspMsg = ArteryHeartbeatRsp(context.system.asInstanceOf[ExtendedActorSystem].uid)
 
   // actors that this node is watching, map of watchee -> Set(watchers)
   @nowarn("msg=deprecated")
