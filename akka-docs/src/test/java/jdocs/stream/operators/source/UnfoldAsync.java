@@ -7,10 +7,11 @@ package jdocs.stream.operators.source;
 import akka.NotUsed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
-import akka.actor.typed.javadsl.AskPattern;
 import akka.japi.Pair;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import akka.actor.typed.javadsl.AskPattern;
+
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;

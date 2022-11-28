@@ -4,9 +4,10 @@
 
 package jdocs.cluster;
 
-import akka.actor.AbstractActor;
 import java.util.HashMap;
 import java.util.Map;
+
+import akka.actor.AbstractActor;
 
 // #worker
 public class StatsWorker extends AbstractActor {

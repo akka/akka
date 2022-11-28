@@ -6,6 +6,7 @@ package akka.stream.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
+
 import java.util.concurrent.CompletableFuture;
 
 public class SourceRunWithTest {

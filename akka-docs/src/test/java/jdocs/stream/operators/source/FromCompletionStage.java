@@ -5,12 +5,13 @@
 package jdocs.stream.operators.source;
 
 // #sourceFromCompletionStage
-import akka.Done;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
+
 import akka.NotUsed;
+import akka.Done;
 import akka.actor.typed.ActorSystem;
 import akka.stream.javadsl.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 // #sourceFromCompletionStage
 

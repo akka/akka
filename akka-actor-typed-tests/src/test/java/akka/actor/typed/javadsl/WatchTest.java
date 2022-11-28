@@ -4,20 +4,23 @@
 
 package akka.actor.typed.javadsl;
 
-import static akka.Done.done;
-import static akka.actor.typed.javadsl.Behaviors.*;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
-import akka.actor.typed.*;
-import java.time.Duration;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+import org.junit.Test;
+
+import akka.actor.typed.*;
+
+import java.time.Duration;
+
+import static akka.Done.done;
+import static akka.actor.typed.javadsl.Behaviors.*;
 
 public class WatchTest extends JUnitSuite {
 

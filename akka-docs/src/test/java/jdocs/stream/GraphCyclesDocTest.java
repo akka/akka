@@ -4,17 +4,19 @@
 
 package jdocs.stream;
 
+import java.util.Arrays;
+
 import akka.NotUsed;
+import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.scaladsl.MergePreferred.MergePreferredShape;
-import akka.testkit.javadsl.TestKit;
-import java.util.Arrays;
-import jdocs.AbstractJavaTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class GraphCyclesDocTest extends AbstractJavaTest {
 

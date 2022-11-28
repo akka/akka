@@ -4,20 +4,21 @@
 
 package akka.stream.io;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.stream.StreamTest;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.stream.testkit.Utils;
-import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.ClassRule;
-import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class SinkAsJavaSourceTest extends StreamTest {
   public SinkAsJavaSourceTest() {

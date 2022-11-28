@@ -4,12 +4,13 @@
 
 package jdocs.cluster;
 
+import java.util.concurrent.TimeUnit;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.cluster.Cluster;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import java.util.concurrent.TimeUnit;
 
 public class FactorialFrontendMain {
 

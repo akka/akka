@@ -9,13 +9,14 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.pf.FI;
-import akka.testkit.javadsl.TestKit;
-import java.time.Duration;
-import java.util.Optional;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.time.Duration;
+import java.util.Optional;
 
 public class InitializationDocTest extends AbstractJavaTest {
 

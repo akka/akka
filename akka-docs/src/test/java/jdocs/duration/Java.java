@@ -5,11 +5,10 @@
 package jdocs.duration;
 
 // #import
-import static org.junit.Assert.assertTrue;
-
-import scala.concurrent.duration.Deadline;
 import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.Deadline;
 
+import static org.junit.Assert.assertTrue;
 // #import
 
 class Java {

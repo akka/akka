@@ -4,9 +4,10 @@
 
 package jdocs.cluster;
 
+import com.typesafe.config.ConfigFactory;
+
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import com.typesafe.config.ConfigFactory;
 
 public class StatsSampleOneMasterClientMain {
 

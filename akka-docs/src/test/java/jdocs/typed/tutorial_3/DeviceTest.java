@@ -5,14 +5,14 @@
 package jdocs.typed.tutorial_3;
 
 // #device-read-test
-import static org.junit.Assert.assertEquals;
-
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
-import java.util.Optional;
 import org.junit.ClassRule;
 import org.junit.Test;
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
 
 // #device-read-test
 /*

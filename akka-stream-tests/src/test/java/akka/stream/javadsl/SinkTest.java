@@ -4,28 +4,32 @@
 
 package akka.stream.javadsl;
 
-import static org.junit.Assert.*;
+import java.util.Arrays;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import akka.Done;
 import akka.NotUsed;
+import akka.dispatch.Futures;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.stream.*;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
-import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.TestKit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import akka.testkit.AkkaSpec;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import org.reactivestreams.Subscription;
+
+import static org.junit.Assert.*;
 
 public class SinkTest extends StreamTest {
   public SinkTest() {

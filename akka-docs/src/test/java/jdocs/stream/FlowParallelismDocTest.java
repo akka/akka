@@ -5,14 +5,14 @@
 package jdocs.stream;
 
 import akka.NotUsed;
-import akka.actor.ActorSystem;
-import akka.stream.*;
-import akka.stream.javadsl.*;
-import akka.testkit.javadsl.TestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import akka.actor.ActorSystem;
+import akka.stream.*;
+import akka.stream.javadsl.*;
 
 public class FlowParallelismDocTest extends AbstractJavaTest {
 

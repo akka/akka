@@ -4,9 +4,6 @@
 
 package akka.actor.typed.javadsl;
 
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.*;
-
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.LoggingTestKit;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
@@ -15,13 +12,17 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import com.typesafe.config.ConfigFactory;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.junit.Assert.*;
 
 public final class ActorContextPipeToSelfTest extends JUnitSuite {
 

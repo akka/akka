@@ -8,11 +8,12 @@ import akka.actor.ActorSystem;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-import java.util.Arrays;
 import jdocs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Arrays;
 
 public class SubstreamDocTest extends AbstractJavaTest {
 

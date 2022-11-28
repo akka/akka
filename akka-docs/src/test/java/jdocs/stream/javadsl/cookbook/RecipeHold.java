@@ -16,11 +16,12 @@ import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.javadsl.TestKit;
-import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
+
+import java.util.concurrent.TimeUnit;
 
 public class RecipeHold extends RecipeTest {
   static ActorSystem system;

@@ -5,24 +5,25 @@
 package jdocs.stream;
 
 import static org.junit.Assert.assertEquals;
-
-import akka.NotUsed;
-import akka.actor.ActorSystem;
-import akka.japi.function.Function;
-import akka.japi.pf.PFBuilder;
-import akka.stream.ActorAttributes;
-import akka.stream.Supervision;
-import akka.stream.javadsl.*;
-import akka.testkit.javadsl.TestKit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import akka.NotUsed;
+import akka.japi.pf.PFBuilder;
+import akka.stream.javadsl.*;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import akka.actor.ActorSystem;
+import akka.stream.Supervision;
+import akka.stream.ActorAttributes;
+import akka.japi.function.Function;
 
 public class FlowErrorDocTest extends AbstractJavaTest {
 

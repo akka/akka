@@ -4,19 +4,20 @@
 
 package jdocs.stream.javadsl.cookbook;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 public class RecipeFlattenList extends RecipeTest {
   static ActorSystem system;

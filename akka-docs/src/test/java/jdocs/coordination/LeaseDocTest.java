@@ -10,14 +10,15 @@ import akka.coordination.lease.javadsl.Lease;
 import akka.coordination.lease.javadsl.LeaseProvider;
 import akka.testkit.javadsl.TestKit;
 import docs.coordination.LeaseDocSpec;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 @SuppressWarnings("unused")
 public class LeaseDocTest extends JUnitSuite {

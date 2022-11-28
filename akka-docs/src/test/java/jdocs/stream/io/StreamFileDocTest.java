@@ -4,26 +4,28 @@
 
 package jdocs.stream.io;
 
-import akka.Done;
-import akka.NotUsed;
-import akka.actor.ActorSystem;
-import akka.stream.*;
-import akka.stream.ActorAttributes;
-import akka.stream.javadsl.FileIO;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.testkit.javadsl.TestKit;
-import akka.util.ByteString;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.IOException;
 import java.util.concurrent.CompletionStage;
+
+import akka.Done;
+import akka.NotUsed;
+import akka.actor.ActorSystem;
+import akka.stream.ActorAttributes;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.FileIO;
+import akka.stream.javadsl.Source;
 import jdocs.AbstractJavaTest;
 import jdocs.stream.SilenceSystemOut;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import akka.stream.*;
+import akka.util.ByteString;
 
 public class StreamFileDocTest extends AbstractJavaTest {
 

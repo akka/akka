@@ -6,20 +6,22 @@ package akka.stream.io;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.OutputStream;
+import java.time.Duration;
+
+import akka.testkit.javadsl.TestKit;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import akka.actor.ActorRef;
 import akka.japi.function.Procedure;
 import akka.stream.StreamTest;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.stream.testkit.Utils;
-import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import java.io.OutputStream;
-import java.time.Duration;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 public class OutputStreamSourceTest extends StreamTest {
   public OutputStreamSourceTest() {

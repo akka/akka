@@ -4,8 +4,8 @@
 
 package jdocs.cluster;
 
-import java.io.Serializable;
 import java.math.BigInteger;
+import java.io.Serializable;
 
 public class FactorialResult implements Serializable {
   private static final long serialVersionUID = 1L;

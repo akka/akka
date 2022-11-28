@@ -7,8 +7,9 @@ package akka.persistence.snapshot.japi;
 import akka.persistence.SelectedSnapshot;
 import akka.persistence.SnapshotMetadata;
 import akka.persistence.SnapshotSelectionCriteria;
-import java.util.Optional;
 import scala.concurrent.Future;
+
+import java.util.Optional;
 
 interface SnapshotStorePlugin {
   // #snapshot-store-plugin-api

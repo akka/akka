@@ -4,9 +4,6 @@
 
 package akka.persistence.typed;
 
-import static akka.Done.done;
-import static org.junit.Assert.assertEquals;
-
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
@@ -17,11 +14,15 @@ import akka.persistence.testkit.PersistenceTestKitPlugin;
 import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.javadsl.*;
 import com.typesafe.config.ConfigFactory;
-import java.util.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.util.*;
+
+import static akka.Done.done;
+import static org.junit.Assert.assertEquals;
 
 public class ReplicatedEventSourcingTest extends JUnitSuite {
 

@@ -7,6 +7,7 @@ package jdocs.stream.operators.sourceorflow;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.javadsl.Source;
+
 import java.util.Arrays;
 
 public class FlatMapMerge {

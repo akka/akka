@@ -5,9 +5,10 @@
 package jdoc.akka.discovery;
 
 import akka.actor.ActorSystem;
-import akka.discovery.Discovery;
 import akka.discovery.Lookup;
+import akka.discovery.Discovery;
 import akka.discovery.ServiceDiscovery;
+
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 

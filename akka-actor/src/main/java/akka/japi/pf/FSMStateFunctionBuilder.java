@@ -5,8 +5,8 @@
 package akka.japi.pf;
 
 import akka.actor.FSM;
-import java.util.List;
 import scala.PartialFunction;
+import java.util.List;
 
 /**
  * Builder used to create a partial function for {@link akka.actor.FSM#whenUnhandled}.

@@ -5,11 +5,12 @@
 package akka.persistence.fsm;
 
 import akka.actor.*;
+
 import java.io.Serializable;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.time.Duration;
 
 @Deprecated
 public class AbstractPersistentFSMTest {

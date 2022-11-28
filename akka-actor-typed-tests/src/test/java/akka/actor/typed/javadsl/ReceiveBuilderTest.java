@@ -4,18 +4,19 @@
 
 package akka.actor.typed.javadsl;
 
-import static akka.actor.typed.javadsl.Behaviors.same;
-
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import akka.actor.typed.Behavior;
+
+import static akka.actor.typed.javadsl.Behaviors.same;
 
 /** Test creating [[MutableActor]]s using [[ReceiveBuilder]] */
 public class ReceiveBuilderTest extends JUnitSuite {

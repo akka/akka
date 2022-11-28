@@ -4,22 +4,23 @@
 
 package akka.stream.io;
 
-import static org.junit.Assert.assertTrue;
-
 import akka.stream.StreamTest;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.stream.testkit.Utils;
-import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.util.ByteString;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.junit.ClassRule;
-import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 public class InputStreamSinkTest extends StreamTest {
   public InputStreamSinkTest() {

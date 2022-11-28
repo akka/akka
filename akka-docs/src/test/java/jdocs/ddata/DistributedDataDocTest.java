@@ -4,25 +4,29 @@
 
 package jdocs.ddata;
 
-import static akka.cluster.ddata.Replicator.*;
-import static org.junit.Assert.assertEquals;
+import java.util.HashSet;
+import java.util.Arrays;
+import java.util.Set;
+import java.math.BigInteger;
+import java.util.Optional;
 
 import akka.actor.*;
-import akka.cluster.ddata.*;
-import akka.japi.pf.ReceiveBuilder;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 import docs.ddata.DistributedDataDocSpec;
-import java.math.BigInteger;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
 import jdocs.AbstractJavaTest;
+import java.time.Duration;
+
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
+
+import akka.cluster.ddata.*;
+import akka.japi.pf.ReceiveBuilder;
+
+import static akka.cluster.ddata.Replicator.*;
 
 @SuppressWarnings({"unchecked", "unused"})
 public class DistributedDataDocTest extends AbstractJavaTest {

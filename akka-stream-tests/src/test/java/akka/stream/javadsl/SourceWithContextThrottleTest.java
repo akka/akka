@@ -4,19 +4,20 @@
 
 package akka.stream.javadsl;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.japi.Pair;
 import akka.stream.StreamTest;
 import akka.stream.ThrottleMode;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.junit.ClassRule;
-import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class SourceWithContextThrottleTest extends StreamTest {
 

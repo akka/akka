@@ -5,8 +5,8 @@
 package akka.japi.pf;
 
 import scala.PartialFunction;
-import scala.Tuple2;
 import scala.runtime.BoxedUnit;
+import scala.Tuple2;
 
 /**
  * Builder used to create a partial function for {@link akka.actor.FSM#onTransition}.

@@ -6,6 +6,7 @@ package jdocs.akka.typed.supervision;
 
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Behaviors;
+
 import java.time.Duration;
 
 public class SupervisionCompileOnlyTest {

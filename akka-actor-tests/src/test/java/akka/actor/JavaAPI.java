@@ -4,8 +4,6 @@
 
 package akka.actor;
 
-import static org.junit.Assert.*;
-
 import akka.event.Logging;
 import akka.event.Logging.LoggerInitialized;
 import akka.japi.Creator;
@@ -13,17 +11,21 @@ import akka.japi.Pair;
 import akka.japi.Util;
 import akka.japi.tuple.Tuple22;
 import akka.japi.tuple.Tuple4;
-import akka.routing.FromConfig;
 import akka.routing.GetRoutees;
+import akka.routing.FromConfig;
 import akka.routing.NoRouter;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
-import java.util.Optional;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 import scala.Option;
+
+import java.util.Optional;
+
+import static org.junit.Assert.*;
 
 public class JavaAPI extends JUnitSuite {
 

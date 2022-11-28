@@ -4,8 +4,6 @@
 
 package jdocs.stream.javadsl.cookbook;
 
-import static junit.framework.TestCase.assertTrue;
-
 import akka.NotUsed;
 import akka.actor.*;
 import akka.pattern.Patterns;
@@ -14,12 +12,15 @@ import akka.stream.javadsl.*;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.CompletionStage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.CompletionStage;
+
+import static junit.framework.TestCase.assertTrue;
 
 public class RecipeGlobalRateLimit extends RecipeTest {
   static ActorSystem system;

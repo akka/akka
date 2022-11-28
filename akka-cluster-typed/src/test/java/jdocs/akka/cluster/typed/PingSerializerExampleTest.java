@@ -9,6 +9,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorRefResolver;
 import akka.actor.typed.javadsl.Adapter;
 import akka.serialization.SerializerWithStringManifest;
+
 import java.nio.charset.StandardCharsets;
 
 public class PingSerializerExampleTest {

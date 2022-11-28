@@ -4,17 +4,18 @@
 
 package akka.actor.testkit.typed.javadsl;
 
-import static org.junit.Assert.*;
-
-import akka.actor.testkit.typed.scaladsl.TestProbeSpec;
-import akka.actor.testkit.typed.scaladsl.TestProbeSpec.*;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+
+import akka.actor.testkit.typed.scaladsl.TestProbeSpec;
+import akka.actor.testkit.typed.scaladsl.TestProbeSpec.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import static org.junit.Assert.*;
 
 public class TestProbeTest extends JUnitSuite {
 

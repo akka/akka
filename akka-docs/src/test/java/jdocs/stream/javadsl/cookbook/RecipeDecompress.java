@@ -4,19 +4,19 @@
 
 package jdocs.stream.javadsl.cookbook;
 
-import static akka.util.ByteString.emptyByteString;
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.javadsl.Compression;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import java.util.concurrent.TimeUnit;
+import static akka.util.ByteString.emptyByteString;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 public class RecipeDecompress extends RecipeTest {
 

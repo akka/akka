@@ -4,13 +4,13 @@
 
 package akka.actor;
 
-import static org.junit.Assert.*;
-
 import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.*;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
-import org.junit.*;
 import org.scalatestplus.junit.JUnitSuite;
+
+import static org.junit.Assert.*;
 
 public class JavaExtension extends JUnitSuite {
 

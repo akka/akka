@@ -4,14 +4,15 @@
 
 package akka.actor.typed.javadsl;
 
-import static akka.actor.typed.javadsl.Behaviors.*;
-
 import akka.actor.typed.*;
 import akka.actor.typed.TypedActorContext;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
+
+import static akka.actor.typed.javadsl.Behaviors.*;
 
 @SuppressWarnings("unused")
 public class ActorCompile {

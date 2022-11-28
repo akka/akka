@@ -4,22 +4,23 @@
 
 package akka.pattern;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.actor.*;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.util.JavaDurationConverters;
-import java.time.Duration;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.Await;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.time.Duration;
+
+import static org.junit.Assert.assertEquals;
 
 public class CircuitBreakerTest extends JUnitSuite {
 

@@ -12,8 +12,8 @@ import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.typed.javadsl.ActorSource;
-import java.util.Optional;
 
+import java.util.Optional;
 // #actor-source-ref
 
 public class ActorSourceExample {

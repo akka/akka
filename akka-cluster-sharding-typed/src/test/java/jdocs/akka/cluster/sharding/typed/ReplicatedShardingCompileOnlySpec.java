@@ -11,6 +11,7 @@ import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.persistence.typed.ReplicaId;
 import akka.persistence.typed.ReplicationId;
+
 import java.util.*;
 
 public class ReplicatedShardingCompileOnlySpec {

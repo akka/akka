@@ -4,8 +4,6 @@
 
 package jdocs.stream.javadsl.cookbook;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.*;
@@ -14,12 +12,15 @@ import akka.stream.javadsl.Source;
 import akka.stream.stage.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 public class RecipeDigest extends RecipeTest {
   static ActorSystem system;

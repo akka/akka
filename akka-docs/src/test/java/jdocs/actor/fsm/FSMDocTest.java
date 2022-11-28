@@ -4,17 +4,19 @@
 
 package jdocs.actor.fsm;
 
-import static jdocs.actor.fsm.FSMDocTest.Messages.*;
-import static jdocs.actor.fsm.FSMDocTest.StateType.*;
-import static org.junit.Assert.*;
-
 import akka.actor.*;
-import akka.testkit.javadsl.TestKit;
-import java.time.Duration;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
+
+import static jdocs.actor.fsm.FSMDocTest.StateType.*;
+import static jdocs.actor.fsm.FSMDocTest.Messages.*;
+
+import java.time.Duration;
 
 public class FSMDocTest extends AbstractJavaTest {
   static ActorSystem system;

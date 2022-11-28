@@ -4,28 +4,30 @@
 
 package jdocs.typed.tutorial_5;
 
-import static jdocs.typed.tutorial_5.DeviceManager.DeviceRegistered;
-import static jdocs.typed.tutorial_5.DeviceManager.ReplyDeviceList;
-import static jdocs.typed.tutorial_5.DeviceManager.RequestAllTemperatures;
-import static jdocs.typed.tutorial_5.DeviceManager.RequestDeviceList;
-import static jdocs.typed.tutorial_5.DeviceManager.RequestTrackDevice;
-import static jdocs.typed.tutorial_5.DeviceManager.RespondAllTemperatures;
-import static jdocs.typed.tutorial_5.DeviceManager.Temperature;
-import static jdocs.typed.tutorial_5.DeviceManager.TemperatureNotAvailable;
-import static jdocs.typed.tutorial_5.DeviceManager.TemperatureReading;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
+import static jdocs.typed.tutorial_5.DeviceManager.RespondAllTemperatures;
+import static jdocs.typed.tutorial_5.DeviceManager.TemperatureReading;
+import static jdocs.typed.tutorial_5.DeviceManager.Temperature;
+import static jdocs.typed.tutorial_5.DeviceManager.TemperatureNotAvailable;
+import static jdocs.typed.tutorial_5.DeviceManager.DeviceRegistered;
+import static jdocs.typed.tutorial_5.DeviceManager.RequestTrackDevice;
+import static jdocs.typed.tutorial_5.DeviceManager.ReplyDeviceList;
+import static jdocs.typed.tutorial_5.DeviceManager.RequestDeviceList;
+import static jdocs.typed.tutorial_5.DeviceManager.RequestAllTemperatures;
 
 public class DeviceGroupTest extends JUnitSuite {
 

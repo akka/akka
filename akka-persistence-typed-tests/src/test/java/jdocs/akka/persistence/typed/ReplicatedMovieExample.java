@@ -15,6 +15,7 @@ import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior;
 import akka.persistence.typed.javadsl.ReplicatedEventSourcing;
 import akka.persistence.typed.javadsl.ReplicationContext;
+
 import java.util.Collections;
 import java.util.Set;
 

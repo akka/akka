@@ -12,8 +12,8 @@ import akka.dispatch.MailboxType;
 import akka.dispatch.MessageQueue;
 import akka.dispatch.ProducesMessageQueue;
 import com.typesafe.config.Config;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 import scala.Option;
 
 public class MyUnboundedMailbox

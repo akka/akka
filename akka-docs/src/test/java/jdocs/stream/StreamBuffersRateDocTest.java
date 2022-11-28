@@ -10,12 +10,13 @@ import akka.actor.Cancellable;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
-import java.time.Duration;
-import java.util.Arrays;
 import jdocs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.time.Duration;
+import java.util.Arrays;
 
 public class StreamBuffersRateDocTest extends AbstractJavaTest {
 

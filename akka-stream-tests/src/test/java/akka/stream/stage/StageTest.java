@@ -4,20 +4,21 @@
 
 package akka.stream.stage;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.NotUsed;
 import akka.stream.StreamTest;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
+
+import org.junit.ClassRule;
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 public class StageTest extends StreamTest {
   public StageTest() {

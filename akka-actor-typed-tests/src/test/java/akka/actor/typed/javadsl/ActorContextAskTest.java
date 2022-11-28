@@ -6,17 +6,18 @@ package akka.actor.typed.javadsl;
 
 import akka.actor.testkit.typed.TestException;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
-import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
-import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.pattern.StatusReply;
 import akka.testkit.AkkaSpec;
-import java.time.Duration;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.time.Duration;
 
 public class ActorContextAskTest extends JUnitSuite {
 

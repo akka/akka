@@ -9,6 +9,7 @@ import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.ReplicaId;
 import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.*;
+
 import java.util.HashSet;
 import java.util.Set;
 

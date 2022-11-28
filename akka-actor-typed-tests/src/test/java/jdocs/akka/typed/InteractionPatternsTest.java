@@ -4,27 +4,28 @@
 
 package jdocs.akka.typed;
 
-import static jdocs.akka.typed.InteractionPatternsTest.Samples.*;
-import static org.junit.Assert.assertEquals;
-
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
-import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.*;
+import akka.actor.testkit.typed.javadsl.TestProbe;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+
+import static jdocs.akka.typed.InteractionPatternsTest.Samples.*;
+import static org.junit.Assert.assertEquals;
 
 public class InteractionPatternsTest extends JUnitSuite {
 

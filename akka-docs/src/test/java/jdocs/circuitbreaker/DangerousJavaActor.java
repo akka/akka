@@ -6,13 +6,14 @@ package jdocs.circuitbreaker;
 
 // #imports1
 
+import akka.actor.AbstractActor;
+import akka.event.LoggingAdapter;
+import java.time.Duration;
+import akka.pattern.CircuitBreaker;
+import akka.event.Logging;
+
 import static akka.pattern.Patterns.pipe;
 
-import akka.actor.AbstractActor;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
-import akka.pattern.CircuitBreaker;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 // #imports1

@@ -6,6 +6,7 @@ package jdocs.akka.persistence.typed.auction;
 
 import akka.Done;
 import akka.actor.typed.ActorRef;
+
 import java.util.UUID;
 
 /** An auction command. */

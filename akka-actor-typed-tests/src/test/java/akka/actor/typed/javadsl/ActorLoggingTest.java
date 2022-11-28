@@ -12,14 +12,15 @@ import akka.event.Logging;
 import akka.japi.pf.PFBuilder;
 import akka.testkit.CustomEventFilter;
 import com.typesafe.config.ConfigFactory;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class ActorLoggingTest extends JUnitSuite {
 

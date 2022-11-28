@@ -4,10 +4,6 @@
 
 package akka.stream.javadsl;
 
-import static akka.Done.done;
-import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
-import static org.junit.Assert.*;
-
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorRef;
@@ -16,29 +12,34 @@ import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
-import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.scaladsl.FlowSpec;
-import akka.stream.stage.*;
-import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.javadsl.TestSink;
-import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.AkkaSpec;
-import akka.testkit.javadsl.TestKit;
 import akka.util.ConstantFun;
-import java.time.Duration;
+import akka.stream.javadsl.GraphDSL.Builder;
+import akka.stream.stage.*;
+import akka.testkit.AkkaSpec;
+import akka.stream.testkit.TestPublisher;
+import akka.testkit.javadsl.TestKit;
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.reactivestreams.Publisher;
+import akka.testkit.AkkaJUnitActorSystemResource;
+
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.reactivestreams.Publisher;
+import java.time.Duration;
+
+import static akka.Done.done;
+import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("serial")
 public class FlowTest extends StreamTest {

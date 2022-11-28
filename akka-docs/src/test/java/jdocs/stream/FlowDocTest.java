@@ -4,8 +4,6 @@
 
 package jdocs.stream;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.AbstractActor;
@@ -17,6 +15,11 @@ import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
+import jdocs.AbstractJavaTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -25,10 +28,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import jdocs.AbstractJavaTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class FlowDocTest extends AbstractJavaTest {
 

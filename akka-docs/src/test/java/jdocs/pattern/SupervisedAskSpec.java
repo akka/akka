@@ -4,10 +4,11 @@
 
 package jdocs.pattern;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
 import akka.actor.Props;
+import akka.actor.AbstractActor;
+
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;

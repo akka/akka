@@ -10,6 +10,7 @@ import akka.actor.typed.Extension;
 import akka.actor.typed.ExtensionId;
 import akka.actor.typed.javadsl.Behaviors;
 import docs.akka.typed.extensions.DatabasePool;
+
 import java.util.concurrent.CompletionStage;
 
 interface ExtensionDocTest {

@@ -5,17 +5,19 @@
 package jdocs.testkit;
 
 // #fullsample
-import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.testkit.javadsl.TestKit;
-import java.time.Duration;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.actor.AbstractActor;
+
+import java.time.Duration;
 
 public class TestKitSampleTest extends AbstractJavaTest {
 

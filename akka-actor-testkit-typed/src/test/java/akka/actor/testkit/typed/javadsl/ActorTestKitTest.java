@@ -4,18 +4,19 @@
 
 package akka.actor.testkit.typed.javadsl;
 
-import static akka.Done.done;
-import static org.junit.Assert.assertEquals;
-
 import akka.Done;
 import akka.actor.typed.javadsl.Behaviors;
-import java.util.HashMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+import static akka.Done.done;
+import static org.junit.Assert.assertEquals;
 
 public class ActorTestKitTest extends JUnitSuite {
 

@@ -4,11 +4,6 @@
 
 package jdocs.akka.typed;
 
-import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel1;
-import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel2;
-import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.HotelCustomer;
-import static org.junit.Assert.assertEquals;
-
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -18,6 +13,11 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
+
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -26,10 +26,11 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+
+import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.HotelCustomer;
+import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel1;
+import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel2;
+import static org.junit.Assert.assertEquals;
 
 public class AggregatorTest extends JUnitSuite {
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();

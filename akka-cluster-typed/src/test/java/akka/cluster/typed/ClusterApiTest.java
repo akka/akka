@@ -4,14 +4,15 @@
 
 package akka.cluster.typed;
 
-import akka.actor.testkit.typed.javadsl.TestProbe;
-import akka.actor.typed.ActorSystem;
 import akka.cluster.ClusterEvent;
+import akka.actor.typed.ActorSystem;
+import akka.actor.testkit.typed.javadsl.TestProbe;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.util.concurrent.TimeUnit;
 
 public class ClusterApiTest extends JUnitSuite {
 

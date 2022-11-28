@@ -4,14 +4,15 @@
 
 package jdocs.cluster;
 
-import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
-import akka.actor.ReceiveTimeout;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Duration;
+
 import jdocs.cluster.StatsMessages.JobFailed;
 import jdocs.cluster.StatsMessages.StatsResult;
+import akka.actor.ActorRef;
+import akka.actor.ReceiveTimeout;
+import akka.actor.AbstractActor;
 
 // #aggregator
 public class StatsAggregator extends AbstractActor {

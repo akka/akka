@@ -4,22 +4,24 @@
 
 package akka.pattern;
 
-import static akka.pattern.Patterns.askWithStatus;
-import static org.junit.Assert.*;
-
 import akka.actor.ActorRef;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestException;
 import akka.testkit.TestProbe;
-import java.time.Duration;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.time.Duration;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import static akka.pattern.Patterns.askWithStatus;
+
+import static org.junit.Assert.*;
 
 public class StatusReplyTest extends JUnitSuite {
 

@@ -5,8 +5,8 @@
 package jdocs.actor;
 
 // #timers
-import akka.actor.AbstractActorWithTimers;
 import java.time.Duration;
+import akka.actor.AbstractActorWithTimers;
 
 // #timers
 

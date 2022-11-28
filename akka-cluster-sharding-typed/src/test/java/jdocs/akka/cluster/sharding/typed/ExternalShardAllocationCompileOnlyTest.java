@@ -4,8 +4,6 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
-import static jdocs.akka.cluster.sharding.typed.ShardingCompileOnlyTest.Counter;
-
 import akka.Done;
 import akka.actor.Address;
 import akka.actor.typed.ActorRef;
@@ -18,8 +16,11 @@ import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 import akka.util.Timeout;
+
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
+
+import static jdocs.akka.cluster.sharding.typed.ShardingCompileOnlyTest.Counter;
 
 public class ExternalShardAllocationCompileOnlyTest {
 

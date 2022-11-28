@@ -5,14 +5,15 @@
 package jdocs.ddata.protobuf;
 
 // #serializer
-import akka.actor.ExtendedActorSystem;
-import akka.cluster.ddata.GSet;
-import akka.cluster.ddata.protobuf.AbstractSerializationSupport;
+import jdocs.ddata.TwoPhaseSet;
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages;
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.Builder;
 import java.util.ArrayList;
 import java.util.Collections;
-import jdocs.ddata.TwoPhaseSet;
+
+import akka.actor.ExtendedActorSystem;
+import akka.cluster.ddata.GSet;
+import akka.cluster.ddata.protobuf.AbstractSerializationSupport;
 
 public class TwoPhaseSetSerializer extends AbstractSerializationSupport {
 

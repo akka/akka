@@ -5,14 +5,16 @@
 package jdocs.routing;
 
 // #group
-import static jdocs.routing.CustomRouterDocTest.RedundancyRoutingLogic;
+import java.util.List;
 
 import akka.actor.ActorSystem;
 import akka.dispatch.Dispatchers;
-import akka.routing.GroupBase;
 import akka.routing.Router;
+
 import com.typesafe.config.Config;
-import java.util.List;
+
+import akka.routing.GroupBase;
+import static jdocs.routing.CustomRouterDocTest.RedundancyRoutingLogic;
 
 public class RedundancyGroup extends GroupBase {
   private final List<String> paths;

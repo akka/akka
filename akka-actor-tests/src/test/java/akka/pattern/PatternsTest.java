@@ -4,21 +4,12 @@
 
 package akka.pattern;
 
-import static akka.pattern.Patterns.ask;
-import static akka.pattern.Patterns.pipe;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-
 import akka.actor.*;
 import akka.dispatch.Futures;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
 import akka.util.Timeout;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
@@ -26,6 +17,16 @@ import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
+
+import java.util.Arrays;
+import java.util.concurrent.*;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static akka.pattern.Patterns.ask;
+import static akka.pattern.Patterns.pipe;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
 
 /** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
 public class PatternsTest extends JUnitSuite {

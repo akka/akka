@@ -7,16 +7,19 @@ package jdocs.akka.actor.testkit.typed.javadsl;
 // #manual-scheduling-simple
 
 import akka.actor.testkit.typed.javadsl.LogCapturing;
+import akka.actor.typed.Behavior;
 import akka.actor.testkit.typed.javadsl.ManualTime;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
-import akka.actor.testkit.typed.javadsl.TestProbe;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.Behaviors;
-import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+import java.time.Duration;
+
+import akka.actor.typed.javadsl.Behaviors;
+
+import org.junit.Test;
+
+import akka.actor.testkit.typed.javadsl.TestProbe;
 
 public class ManualTimerExampleTest extends JUnitSuite {
 

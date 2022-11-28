@@ -6,6 +6,8 @@ package jdocs.typed.tutorial_3;
 
 // #full-device
 
+import java.util.Optional;
+
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
@@ -13,7 +15,6 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import java.util.Optional;
 
 public class Device extends AbstractBehavior<Device.Command> {
 

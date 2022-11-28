@@ -4,8 +4,6 @@
 
 package akka.stream.typed.javadsl;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -16,11 +14,14 @@ import akka.stream.AbruptStageTerminationException;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 public class CustomGuardianAndMaterializerTest extends JUnitSuite {
 

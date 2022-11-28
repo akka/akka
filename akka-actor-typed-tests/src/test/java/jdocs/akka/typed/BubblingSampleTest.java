@@ -4,18 +4,19 @@
 
 package jdocs.akka.typed;
 
-import static jdocs.akka.typed.BubblingSample.Boss;
-import static jdocs.akka.typed.BubblingSample.Protocol;
-
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
-import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import java.time.Duration;
+
+import static jdocs.akka.typed.BubblingSample.Boss;
+import static jdocs.akka.typed.BubblingSample.Protocol;
 
 public class BubblingSampleTest extends JUnitSuite {
 

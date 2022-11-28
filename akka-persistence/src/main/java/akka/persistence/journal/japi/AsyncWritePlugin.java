@@ -4,9 +4,11 @@
 
 package akka.persistence.journal.japi;
 
-import akka.persistence.*;
 import java.util.Optional;
+
 import scala.concurrent.Future;
+
+import akka.persistence.*;
 
 interface AsyncWritePlugin {
   // #async-write-plugin-api

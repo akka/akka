@@ -4,11 +4,11 @@
 
 package jdocs.cluster;
 
-import static akka.pattern.Patterns.pipe;
-
-import akka.actor.AbstractActor;
 import java.math.BigInteger;
 import java.util.concurrent.CompletableFuture;
+
+import akka.actor.AbstractActor;
+import static akka.pattern.Patterns.pipe;
 
 // #backend
 public class FactorialBackend extends AbstractActor {

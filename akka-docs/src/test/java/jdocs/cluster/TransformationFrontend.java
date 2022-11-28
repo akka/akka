@@ -6,13 +6,14 @@ package jdocs.cluster;
 
 import static jdocs.cluster.TransformationMessages.BACKEND_REGISTRATION;
 
-import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
-import akka.actor.Terminated;
 import java.util.ArrayList;
 import java.util.List;
+
 import jdocs.cluster.TransformationMessages.JobFailed;
 import jdocs.cluster.TransformationMessages.TransformationJob;
+import akka.actor.ActorRef;
+import akka.actor.Terminated;
+import akka.actor.AbstractActor;
 
 // #frontend
 public class TransformationFrontend extends AbstractActor {

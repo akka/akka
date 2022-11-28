@@ -5,8 +5,8 @@
 package jdocs.actor;
 
 // #my-stopping-actor
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.AbstractActor;
 
 public class MyStoppingActor extends AbstractActor {
 

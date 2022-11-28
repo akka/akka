@@ -4,10 +4,11 @@
 
 package jdocs.actor.typed;
 
-import akka.actor.typed.*;
-import akka.actor.typed.javadsl.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+
+import akka.actor.typed.*;
+import akka.actor.typed.javadsl.*;
 
 // #separate-dispatcher
 class SeparateDispatcherFutureActor extends AbstractBehavior<Integer> {
