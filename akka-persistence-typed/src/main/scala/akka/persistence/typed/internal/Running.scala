@@ -423,7 +423,7 @@ private[akka] object Running {
       val sideEffects = ackToOnPersisted match {
         case None => Nil
         case Some(ref) =>
-          SideEffect { _: S =>
+          SideEffect { (_: S) =>
             // FIXME do we really have to create this every time?
             val pid = ReplicationId(
               setup.persistenceId.entityTypeHint,
