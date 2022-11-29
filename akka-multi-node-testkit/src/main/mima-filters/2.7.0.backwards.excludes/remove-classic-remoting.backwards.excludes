@@ -3,3 +3,7 @@
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.testconductor.TestConductorExt.throttle")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.testconductor.TestConductorExt.blackhole")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.testconductor.TestConductorExt.passThrough")
+# For Scala 3 these are also needed
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.testconductor.Conductor.throttle")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.testconductor.Conductor.blackhole")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.testconductor.Conductor.passThrough")
