@@ -4,10 +4,6 @@
 
 package jdocs.akka.persistence.typed;
 
-import static jdocs.akka.persistence.typed.AuctionEntity.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -41,6 +37,12 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+// format: OFF
+import static jdocs.akka.persistence.typed.AuctionEntity.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+// format: ON
 
 public class ReplicatedAuctionExampleTest extends JUnitSuite {
   @ClassRule
