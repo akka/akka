@@ -86,7 +86,8 @@ class ReplicationSnapshotSpec
           1L,
           "two-again",
           System.currentTimeMillis(),
-          Some(new ReplicatedPublishedEventMetaData(R1, VersionVector.empty)))
+          Some(new ReplicatedPublishedEventMetaData(R1, VersionVector.empty)),
+          None)
 
         // r2 should now filter out that event if it receives it again
         r2EventProbe.expectNoMessage()
@@ -100,7 +101,8 @@ class ReplicationSnapshotSpec
           1L,
           "two-again",
           System.currentTimeMillis(),
-          Some(new ReplicatedPublishedEventMetaData(R1, VersionVector.empty)))
+          Some(new ReplicatedPublishedEventMetaData(R1, VersionVector.empty)),
+          None)
         r2EventProbe.expectNoMessage()
 
         val stateProbe = createTestProbe[State]()

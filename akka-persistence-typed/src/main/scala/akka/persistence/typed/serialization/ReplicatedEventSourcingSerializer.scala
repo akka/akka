@@ -8,10 +8,13 @@ import java.io.NotSerializableException
 import java.util.{ ArrayList, Collections, Comparator }
 import java.{ lang => jl }
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.ActorRefResolver
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.annotation.InternalApi
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.{ Counter, ORSet }
+import akka.persistence.typed.internal.EventConsumed
 import akka.persistence.typed.internal.PublishedEventImpl
 import akka.persistence.typed.internal.ReplicatedEventMetadata
 import akka.persistence.typed.internal.ReplicatedSnapshotMetadata
@@ -64,6 +67,9 @@ import scala.collection.immutable.TreeMap
     with BaseSerializer {
 
   private val wrappedSupport = new WrappedPayloadSupport(system)
+  // lazy because Serializers are initialized early on. `toTyped` might then try to
+  // initialize the classic ActorSystemAdapter extension.
+  private lazy val resolver = ActorRefResolver(system.toTyped)
 
   private val CrdtCounterManifest = "AA"
   private val CrdtCounterUpdatedManifest = "AB"
@@ -80,6 +86,7 @@ import scala.collection.immutable.TreeMap
   private val ReplicatedSnapshotMetadataManifest = "RS"
 
   private val PublishedEventManifest = "PA"
+  private val EventConsumedManifest = "PC"
 
   def manifest(o: AnyRef) = o match {
     case _: ORSet[_]                  => ORSetManifest
@@ -97,6 +104,7 @@ import scala.collection.immutable.TreeMap
     case _: ReplicatedSnapshotMetadata => ReplicatedSnapshotMetadataManifest
 
     case _: PublishedEventImpl => PublishedEventManifest
+    case _: EventConsumed      => EventConsumedManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -117,7 +125,7 @@ import scala.collection.immutable.TreeMap
     case m: Counter.Updated => counterUpdatedToProtoBufByteArray(m)
 
     case m: PublishedEventImpl => publishedEventToProtoByteArray(m)
-
+    case m: EventConsumed      => eventConsumedToProtoByteArray(m)
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
@@ -139,6 +147,7 @@ import scala.collection.immutable.TreeMap
     case CrdtCounterUpdatedManifest => counterUpdatedFromBinary(bytes)
 
     case PublishedEventManifest => publishedEventFromBinary(bytes)
+    case EventConsumedManifest  => eventConsumedFromBinary(bytes)
 
     case _ =>
       throw new NotSerializableException(
@@ -153,7 +162,7 @@ import scala.collection.immutable.TreeMap
       .setPayload(wrappedSupport.payloadBuilder(impl.payload))
       .setTimestamp(impl.timestamp)
 
-    (impl.replicatedMetaData match {
+    impl.replicatedMetaData match {
       case None =>
         builder
       case Some(m) =>
@@ -163,7 +172,23 @@ import scala.collection.immutable.TreeMap
             .setReplicaId(m.replicaId.id)
             .setVersionVector(versionVectorToProto(m.version))
             .build())
-    }).build().toByteArray
+    }
+
+    impl.replyTo match {
+      case Some(ref) => builder.setReplyTo(resolver.toSerializationFormat(ref))
+      case None      =>
+    }
+
+    builder.build().toByteArray
+  }
+
+  def eventConsumedToProtoByteArray(ec: EventConsumed): Array[Byte] = {
+    val builder = ReplicatedEventSourcing.EventConsumed
+      .newBuilder()
+      .setPersistenceId(ec.persistenceId.id)
+      .setSequenceNr(ec.originSequenceNumber)
+
+    builder.build().toByteArray
   }
 
   def publishedEventFromBinary(bytes: Array[Byte]): PublishedEventImpl = {
@@ -179,7 +204,14 @@ import scala.collection.immutable.TreeMap
           new ReplicatedPublishedEventMetaData(
             ReplicaId(protoMeta.getReplicaId),
             versionVectorFromProto(protoMeta.getVersionVector)))
-      } else None)
+      } else None,
+      if (!p.hasReplyTo) None
+      else Some(resolver.resolveActorRef(p.getReplyTo)))
+  }
+
+  def eventConsumedFromBinary(bytes: Array[Byte]): EventConsumed = {
+    val ec = ReplicatedEventSourcing.EventConsumed.parseFrom(bytes)
+    EventConsumed(PersistenceId.ofUniqueId(ec.getPersistenceId), ec.getSequenceNr)
   }
 
   def counterFromBinary(bytes: Array[Byte]): Counter =

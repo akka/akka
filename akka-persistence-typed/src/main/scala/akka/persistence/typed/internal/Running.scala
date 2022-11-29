@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.actor.UnhandledMessage
+import akka.actor.typed.ActorRef
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
@@ -278,7 +279,7 @@ private[akka] object Running {
           "Saving event [{}] from [{}] as first time",
           envelope.event.originSequenceNr,
           envelope.event.originReplica)
-        handleExternalReplicatedEventPersist(replication, envelope.event)
+        handleExternalReplicatedEventPersist(replication, envelope.event, None)
       } else {
         setup.internalLogger.debug(
           "Filtering event [{}] from [{}] as it was already seen",
@@ -343,6 +344,7 @@ private[akka] object Running {
               event.sequenceNumber,
               originReplicaId,
               expectedSequenceNumber)
+          event.replyTo.foreach(_ ! EventConsumed(event.persistenceId, event.sequenceNumber))
           this
         } else if (expectedSequenceNumber != event.sequenceNumber) {
           // gap in sequence numbers (message lost or query and direct replication out of sync, should heal up by itself
@@ -375,7 +377,8 @@ private[akka] object Running {
               event.event.asInstanceOf[E],
               originReplicaId,
               event.sequenceNumber,
-              replicatedMetadata.version))
+              replicatedMetadata.version),
+            event.replyTo)
         }
 
       }
@@ -394,7 +397,8 @@ private[akka] object Running {
 
     private def handleExternalReplicatedEventPersist(
         replication: ReplicationSetup,
-        event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
+        event: ReplicatedEvent[E],
+        ackToOnPersisted: Option[ActorRef[EventConsumed]]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
       val isConcurrent: Boolean = event.originVersion <> state.version
       val updatedVersion = event.originVersion.merge(state.version)
@@ -416,6 +420,19 @@ private[akka] object Running {
 
       replication.clearContext()
 
+      val sideEffects = ackToOnPersisted match {
+        case None => Nil
+        case Some(ref) =>
+          SideEffect { _: S =>
+            // FIXME do we really have to create this every time?
+            val pid = ReplicationId(
+              setup.persistenceId.entityTypeHint,
+              setup.persistenceId.entityId,
+              event.originReplica).persistenceId
+            ref ! EventConsumed(pid, event.originSequenceNr)
+          } :: Nil
+      }
+
       val newState2: RunningState[S] = internalPersist(
         setup.context,
         null,
@@ -433,7 +450,7 @@ private[akka] object Running {
         numberOfEvents = 1,
         shouldSnapshotAfterPersist,
         shouldPublish = false,
-        Nil)
+        sideEffects)
     }
 
     private def handleEventPersist(
@@ -705,7 +722,7 @@ private[akka] object Running {
           val meta = setup.replication.map(replication =>
             new ReplicatedPublishedEventMetaData(replication.replicaId, state.version))
           context.system.eventStream ! EventStream.Publish(
-            PublishedEventImpl(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp, meta))
+            PublishedEventImpl(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp, meta, None))
         }
 
         // only once all things are applied we can revert back
