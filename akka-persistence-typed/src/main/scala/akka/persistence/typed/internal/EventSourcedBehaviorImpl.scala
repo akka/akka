@@ -405,5 +405,4 @@ private[akka] final case class PublishedEventImpl(
  */
 @InternalStableApi
 // FIXME what fields do we actually need here?
-// FIXME probably needs serialization
 private[akka] final case class EventConsumed(persistenceId: PersistenceId, originSequenceNumber: Long)
