@@ -56,6 +56,31 @@ object ReplicatedEventPublishingSpec {
                 },
               (state, string) => state + string))
       }
+
+    def externalReplication(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
+      Behaviors.setup { ctx =>
+        ReplicatedEventSourcing.externalReplication(ReplicationId(EntityType, entityId, replicaId), allReplicas)(
+          replicationContext =>
+            EventSourcedBehavior[Command, String, Set[String]](
+              replicationContext.persistenceId,
+              Set.empty,
+              (state, command) =>
+                command match {
+                  case Add(string, replyTo) =>
+                    ctx.log.debug("Persisting [{}]", string)
+                    Effect.persist(string).thenRun { _ =>
+                      ctx.log.debug("Ack:ing [{}]", string)
+                      replyTo ! Done
+                    }
+                  case Get(replyTo) =>
+                    replyTo ! state
+                    Effect.none
+                  case Stop =>
+                    Effect.stop()
+                  case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
+                },
+              (state, string) => state + string))
+      }
   }
 }
 
@@ -101,7 +126,7 @@ class ReplicatedEventPublishingSpec
 
     "reply with an ack for a published event if requested" in {
       val id = nextEntityId()
-      val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB)))
+      val actor = spawn(MyReplicatedBehavior.externalReplication(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
 
       val ackProbe = createTestProbe[EventConsumed]()

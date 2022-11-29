@@ -292,8 +292,10 @@ private[akka] final class ReplayingEvents[C, E, S](
           replicationControl = Map.empty)
         val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
         val initialRunningState = setup.replication match {
-          case Some(replication) => startReplicationStream(setup, runningState, replication)
-          case None              => runningState
+          case Some(replication)
+              if replication.allReplicasAndQueryPlugins.values.forall(_ != ReplicationContextImpl.NoPlugin) =>
+            startReplicationStream(setup, runningState, replication)
+          case _ => runningState
         }
         setup.retention match {
           case criteria: SnapshotCountRetentionCriteriaImpl if criteria.snapshotEveryNEvents <= state.eventsReplayed =>

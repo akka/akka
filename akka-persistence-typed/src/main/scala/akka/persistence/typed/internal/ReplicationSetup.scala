@@ -16,6 +16,14 @@ import akka.util.ccompat.JavaConverters._
  * INTERNAL API
  */
 @InternalApi
+private[akka] object ReplicationContextImpl {
+  val NoPlugin = "no-plugin"
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] final class ReplicationContextImpl(
     val replicationId: ReplicationId,
     val replicasAndQueryPlugins: Map[ReplicaId, String])
