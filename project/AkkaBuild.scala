@@ -178,7 +178,7 @@ object AkkaBuild {
          |import scala.concurrent.duration._
          |import akka.util.Timeout
          |var config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
-         |var remoteConfig = ConfigFactory.parseString("akka.remote.classic.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=remote").withFallback(config)
+         |var remoteConfig = ConfigFactory.parseString("akka.remote.artery.canonical.port=0,akka.actor.provider=remote").withFallback(config)
          |var system: ActorSystem = null
          |implicit def _system: ActorSystem = system
          |def startSystem(remoting: Boolean = false) = { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.terminate()!") }

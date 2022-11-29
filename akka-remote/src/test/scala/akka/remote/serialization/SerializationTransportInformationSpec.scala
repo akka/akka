@@ -4,9 +4,11 @@
 
 package akka.remote.serialization
 
+import java.io.NotSerializableException
 import java.nio.charset.StandardCharsets
-import com.typesafe.config.Config
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -20,8 +22,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.JavaSerializable
 import akka.testkit.TestActors
-
-import java.io.NotSerializableException
 
 object SerializationTransportInformationSpec {
 
@@ -71,8 +71,8 @@ object SerializationTransportInformationSpec {
   }
 }
 
-abstract class AbstractSerializationTransportInformationSpec(config: Config)
-    extends AkkaSpec(config.withFallback(
+class SerializationTransportInformationSpec
+    extends AkkaSpec(
       ConfigFactory.parseString("""
     akka {
       loglevel = info
@@ -87,16 +87,15 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config)
         }
       }
     }
-  """)))
+    akka.remote.artery.canonical.port = 0
+  """))
     with ImplicitSender {
 
   import SerializationTransportInformationSpec._
 
   val port = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
   val sysName = system.name
-  val protocol =
-    if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
-    else "akka.tcp"
+  val protocol = "akka"
 
   val system2 = ActorSystem(system.name, system.settings.config)
   val system2Address = RARP(system2).provider.getDefaultAddress
@@ -129,12 +128,3 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config)
     shutdown(system2)
   }
 }
-
-class SerializationTransportInformationSpec
-    extends AbstractSerializationTransportInformationSpec(ConfigFactory.parseString("""
-  akka.remote.artery.enabled = off
-  akka.remote.classic.netty.tcp {
-    hostname = localhost
-    port = 0
-  }
-"""))

@@ -37,7 +37,7 @@ import akka.remote.RARP
 import akka.remote.artery.ArterySettings.AeronUpd
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter
+import akka.remote.testkit.Direction
 import akka.testkit.TestEvent._
 import akka.testkit._
 import akka.util.Helpers.ConfigOps
@@ -110,7 +110,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
-    akka.remote.log-remote-lifecycle-events = off
     akka.actor.default-dispatcher.fork-join-executor {
       parallelism-min = 8
       parallelism-max = 8
@@ -471,8 +470,6 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
     }
   })
 
-  def isArteryEnabled: Boolean = RARP(system).provider.remoteSettings.Artery.Enabled
-
   def isAeronUdpTransport: Boolean = RARP(system).provider.remoteSettings.Artery.Transport == AeronUpd
 
   def jvmInfo(): String = {
@@ -713,7 +710,7 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
 
       runOn(roles.head) {
         for (x <- currentRoles; y <- removeRoles) {
-          testConductor.blackhole(x, y, ThrottlerTransportAdapter.Direction.Both).await
+          testConductor.blackhole(x, y, Direction.Both).await
         }
       }
       enterBarrier("partition-several-blackhole")
@@ -845,7 +842,7 @@ abstract class StressSpec extends MultiNodeClusterSpec(StressMultiJvmSpec) with 
 
     // Aeron UDP with embedded driver seems too heavy to get to pass
     // note: there must be one test step before pending, otherwise afterTermination will not run
-    if (isArteryEnabled && isAeronUdpTransport) pending
+    if (isAeronUdpTransport) pending
 
     "join seed nodes" taggedAs LongRunningTest in within(30 seconds) {
 

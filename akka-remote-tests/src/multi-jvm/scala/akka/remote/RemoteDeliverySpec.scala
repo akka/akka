@@ -7,8 +7,6 @@ package akka.remote
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.typesafe.config.ConfigFactory
-
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -18,23 +16,17 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.serialization.jackson.CborSerializable
 
-class RemoteDeliveryConfig(artery: Boolean) extends MultiNodeConfig {
+object RemoteDeliveryConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
-      akka.remote.artery.enabled = $artery
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.commonConfig))
 }
 
-class RemoteDeliveryMultiJvmNode1 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = false))
-class RemoteDeliveryMultiJvmNode2 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = false))
-class RemoteDeliveryMultiJvmNode3 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = false))
-
-class ArteryRemoteDeliveryMultiJvmNode1 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = true))
-class ArteryRemoteDeliveryMultiJvmNode2 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = true))
-class ArteryRemoteDeliveryMultiJvmNode3 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = true))
+class RemoteDeliveryMultiJvmNode1 extends RemoteDeliverySpec
+class RemoteDeliveryMultiJvmNode2 extends RemoteDeliverySpec
+class RemoteDeliveryMultiJvmNode3 extends RemoteDeliverySpec
 
 object RemoteDeliverySpec {
   final case class Letter(n: Int, route: List[ActorRef]) extends CborSerializable
@@ -46,10 +38,9 @@ object RemoteDeliverySpec {
   }
 }
 
-abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
-    extends RemotingMultiNodeSpec(multiNodeConfig) {
+abstract class RemoteDeliverySpec extends RemotingMultiNodeSpec(RemoteDeliveryConfig) {
   import RemoteDeliverySpec._
-  import multiNodeConfig._
+  import RemoteDeliveryConfig._
 
   override def initialParticipants = roles.size
 

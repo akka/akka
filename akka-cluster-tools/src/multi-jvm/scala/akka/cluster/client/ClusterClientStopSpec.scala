@@ -24,7 +24,6 @@ object ClusterClientStopSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
     akka.cluster.client {
       heartbeat-interval = 1s
       acceptable-heartbeat-pause = 1s

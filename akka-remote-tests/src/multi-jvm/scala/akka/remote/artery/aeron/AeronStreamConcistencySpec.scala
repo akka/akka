@@ -38,7 +38,6 @@ object AeronStreamConsistencySpec extends MultiNodeConfig {
          actor {
            provider = remote
          }
-         remote.artery.enabled = off
        }
        """)))
 }

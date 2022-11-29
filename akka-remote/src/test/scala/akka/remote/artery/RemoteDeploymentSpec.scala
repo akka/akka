@@ -7,6 +7,7 @@ package akka.remote.artery
 import com.typesafe.config._
 
 import akka.actor._
+import akka.remote.NotAllowedClassRemoteDeploymentAttemptException
 import akka.remote.RARP
 import akka.testkit._
 
@@ -34,6 +35,8 @@ object RemoteDeploymentSpec {
       target ! "postStop"
     }
   }
+
+  class NotAllowed extends Echo1
 
   def parentProps(probe: ActorRef): Props =
     Props(new Parent(probe))
@@ -69,10 +72,26 @@ object RemoteDeploymentSpec {
 }
 
 class RemoteDeploymentSpec
-    extends ArteryMultiNodeSpec(ConfigFactory.parseString("""
+    extends ArteryMultiNodeSpec(
+      ConfigFactory.parseString("""
     akka.remote.artery.advanced.inbound-lanes = 10
     akka.remote.artery.advanced.outbound-lanes = 3
     akka.remote.use-unsafe-remote-features-outside-cluster = on
+    
+    //#allow-list-config
+    akka.remote.deployment {
+      enable-allow-list = on
+      
+      allowed-actor-classes = [
+        //#allow-list-config
+        "NOT_ON_CLASSPATH", # verify we don't throw if a class not on classpath is listed here
+        "akka.remote.artery.RemoteDeploymentSpec.DeadOnArrival",
+        //#allow-list-config
+        "akka.remote.artery.RemoteDeploymentSpec.Echo1"
+      ]
+    }
+    //#allow-list-config
+    
     """).withFallback(ArterySpecSupport.defaultConfig)) {
 
   import RemoteDeploymentSpec._
@@ -84,9 +103,10 @@ class RemoteDeploymentSpec
       /blub.remote = "akka://${system.name}@localhost:$port"
       /blub2.remote = "akka://${system.name}@localhost:$port"
       "/parent*/*".remote = "akka://${system.name}@localhost:$port"
+      /danger-mouse.remote = "akka://${system.name}@localhost:$port"
     }
     akka.remote.artery.advanced.inbound-lanes = 10
-    akka.remote.artery.advanced.outbound-lanes = 3
+    akka.remote.artery.advanced.outbound-lanes = 3    
     """
 
   val masterSystem = newRemoteSystem(name = Some("Master" + system.name), extraConfig = Some(conf))
@@ -168,6 +188,18 @@ class RemoteDeploymentSpec
         probe.receiveN(numMessages) should equal(expectedMessages)
       }
 
+    }
+
+    "not deploy actor not listed in allow list" in {
+      val senderProbe = TestProbe()(masterSystem)
+      EventFilter[NotAllowedClassRemoteDeploymentAttemptException](occurrences = 1).intercept {
+        val r = masterSystem.actorOf(Props[NotAllowed](), "danger-mouse")
+        r.path.toString should ===(
+          s"akka://${system.name}@localhost:${port}/remote/akka/${masterSystem.name}@localhost:${masterPort}/user/danger-mouse")
+
+        r.tell(42, senderProbe.ref)
+        senderProbe.expectNoMessage()
+      }
     }
 
   }

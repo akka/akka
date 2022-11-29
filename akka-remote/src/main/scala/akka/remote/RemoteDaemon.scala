@@ -175,7 +175,7 @@ private[akka] class RemoteSystemDaemon(
               log.error(
                 LogMarker.Security,
                 ex,
-                "Received command to create remote Actor, but class [{}] is not white-listed! " +
+                "Received command to create remote Actor, but class [{}] is not allow-listed! " +
                 "Target path: [{}]",
                 props.actorClass(),
                 path)

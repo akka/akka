@@ -25,7 +25,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 import akka.util.Timeout
 import akka.util.unused
@@ -40,7 +40,6 @@ object ClusterClientSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
     akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
     akka.cluster.testkit.auto-down-unreachable-after = 0s
     akka.cluster.client.heartbeat-interval = 1s

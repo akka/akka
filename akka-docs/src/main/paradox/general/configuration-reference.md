@@ -70,12 +70,7 @@ nondeterministic when loading the configuration.`
 <a id="config-akka-remote-artery"></a>
 ### akka-remote artery
 
-@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #shared #artery type=none }
-
-<a id="config-akka-remote"></a>
-### akka-remote classic (deprecated)
-
-@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #shared #classic type=none }
+@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #artery type=none }
 
 <a id="config-akka-testkit"></a>
 ### akka-testkit

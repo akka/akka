@@ -98,11 +98,9 @@ class SplitBrainResolverSpec
   |  actor.provider = cluster
   |  cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
   |  cluster.split-brain-resolver.active-strategy=keep-majority
-  |  remote {
-  |    netty.tcp {
-  |      hostname = "127.0.0.1"
-  |      port = 0
-  |    }
+  |  remote.artery.canonical {
+  |    hostname = "127.0.0.1"
+  |    port = 0
   |  }
   |}
   """.stripMargin)

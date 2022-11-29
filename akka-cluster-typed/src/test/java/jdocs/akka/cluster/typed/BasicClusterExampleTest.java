@@ -43,8 +43,7 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
 
   private Config noPort =
       ConfigFactory.parseString(
-          "      akka.remote.classic.netty.tcp.port = 0 \n"
-              + "      akka.remote.artery.canonical.port = 0 \n");
+              "      akka.remote.artery.canonical.port = 0 \n");
 
   // @Test
   public void clusterApiExample() {

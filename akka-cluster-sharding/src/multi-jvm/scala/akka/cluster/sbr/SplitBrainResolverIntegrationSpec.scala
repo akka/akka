@@ -59,7 +59,6 @@ object SplitBrainResolverIntegrationSpec extends MultiNodeConfig {
       }
 
       actor.provider = cluster
-      remote.log-remote-lifecycle-events = off
     }
 
     akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off

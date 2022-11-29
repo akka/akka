@@ -15,10 +15,9 @@ import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.cluster.MultiNodeClusterSpec.EndActor
-import akka.remote.RARP
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 import akka.util.ccompat._
 
@@ -29,9 +28,7 @@ object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(ConfigFactory.parseString("""
-      akka.remote.log-remote-lifecycle-events = off
-    """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 
@@ -158,21 +155,12 @@ abstract class UnreachableNodeJoinsAgainSpec extends MultiNodeClusterSpec(Unreac
       runOn(victim) {
         val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val freshConfig =
-          ConfigFactory
-            .parseString(
-              if (RARP(system).provider.remoteSettings.Artery.Enabled)
-                s"""
+          ConfigFactory.parseString(s"""
                 akka.remote.artery.canonical {
                   hostname = ${victimAddress.host.get}
                   port = ${victimAddress.port.get}
                 }
-               """
-              else s"""
-              akka.remote.classic.netty.tcp {
-                hostname = ${victimAddress.host.get}
-                port = ${victimAddress.port.get}
-              }""")
-            .withFallback(system.settings.config)
+               """).withFallback(system.settings.config)
 
         Await.ready(system.whenTerminated, 10 seconds)
 

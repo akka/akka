@@ -13,10 +13,10 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.pattern.pipe
 import akka.remote.RemoteActorRefProvider
-import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
-import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
+import akka.remote.testkit.Blackhole
+import akka.remote.testkit.Direction
+import akka.remote.testkit.SetThrottle
+import akka.remote.testkit.Unthrottled
 import akka.serialization.jackson.CborSerializable
 
 object GremlinController {

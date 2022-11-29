@@ -290,7 +290,6 @@ object DistributedPubSubExample {
         akka.cluster.pub-sub.max-delta-elements = 500
         akka.cluster.jmx.enabled = off
         akka.remote.artery.canonical.hostname = 127.0.0.1
-        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.loglevel = INFO
         akka.loggers = ["akka.testkit.TestEventListener"]

@@ -61,7 +61,6 @@ abstract class RestartFirstSeedNodeSpec
   lazy val restartedSeed1System = ActorSystem(
     system.name,
     ConfigFactory.parseString(s"""
-        akka.remote.classic.netty.tcp.port = ${seedNodes.head.port.get}
         akka.remote.artery.canonical.port = ${seedNodes.head.port.get}
         """).withFallback(system.settings.config))
 

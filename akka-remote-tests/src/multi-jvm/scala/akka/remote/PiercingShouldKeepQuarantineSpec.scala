@@ -6,45 +6,32 @@ package akka.remote
 
 import scala.concurrent.duration._
 
-import com.typesafe.config.ConfigFactory
-
 import akka.actor._
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 
-class PiercingShouldKeepQuarantineConfig(artery: Boolean) extends MultiNodeConfig {
+object PiercingShouldKeepQuarantineConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
-      akka.remote.retry-gate-closed-for = 0.5s
-      akka.remote.artery.enabled = $artery
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
 
-class PiercingShouldKeepQuarantineSpecMultiJvmNode1
-    extends PiercingShouldKeepQuarantineSpec(new PiercingShouldKeepQuarantineConfig(artery = false))
-class PiercingShouldKeepQuarantineSpecMultiJvmNode2
-    extends PiercingShouldKeepQuarantineSpec(new PiercingShouldKeepQuarantineConfig(artery = false))
-
-class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode1
-    extends PiercingShouldKeepQuarantineSpec(new PiercingShouldKeepQuarantineConfig(artery = true))
-class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode2
-    extends PiercingShouldKeepQuarantineSpec(new PiercingShouldKeepQuarantineConfig(artery = true))
+class PiercingShouldKeepQuarantineSpecMultiJvmNode1 extends PiercingShouldKeepQuarantineSpec
+class PiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShouldKeepQuarantineSpec
 
 object PiercingShouldKeepQuarantineSpec {
   class Subject extends Actor {
     def receive = {
-      case "getuid" => sender() ! AddressUidExtension(context.system).longAddressUid
+      case "getuid" => sender() ! context.system.asInstanceOf[ExtendedActorSystem].uid
     }
   }
 }
 
-abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldKeepQuarantineConfig)
-    extends RemotingMultiNodeSpec(multiNodeConfig) {
+abstract class PiercingShouldKeepQuarantineSpec extends RemotingMultiNodeSpec(PiercingShouldKeepQuarantineConfig) {
+  import PiercingShouldKeepQuarantineConfig._
   import PiercingShouldKeepQuarantineSpec._
-  import multiNodeConfig._
 
   override def initialParticipants = roles.size
 

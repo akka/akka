@@ -22,7 +22,6 @@ object ClusterClientHandoverSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
     akka.cluster.client {
       heartbeat-interval = 1d
       acceptable-heartbeat-pause = 1d

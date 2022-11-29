@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 
 import akka.actor._
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 
 /**

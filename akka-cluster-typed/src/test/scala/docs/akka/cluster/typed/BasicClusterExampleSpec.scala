@@ -51,7 +51,6 @@ akka {
      """)
 
   val configSystem2 = ConfigFactory.parseString(s"""
-        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
      """).withFallback(configSystem1)
 
@@ -119,7 +118,6 @@ class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventual
       val sys1Port = SocketUtil.temporaryLocalPort()
       val sys2Port = SocketUtil.temporaryLocalPort()
       def config(port: Int) = ConfigFactory.parseString(s"""
-          akka.remote.classic.netty.tcp.port = $port
           akka.remote.artery.canonical.port = $port
           akka.cluster.jmx.multi-mbeans-in-same-jvm = on
           akka.cluster.seed-nodes = [ "akka://ClusterSystem@127.0.0.1:$sys1Port", "akka://ClusterSystem@127.0.0.1:$sys2Port" ]
@@ -159,7 +157,6 @@ akka {
      """)
 
   val noPort = ConfigFactory.parseString("""
-      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
     """)
 

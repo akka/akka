@@ -11,12 +11,13 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
+import akka.AkkaException
 import akka.Done
+import akka.OnlyCauseStackTrace
 import akka.actor.EmptyLocalActorRef
 import akka.actor._
 import akka.event.Logging
 import akka.remote.MessageSerializer
-import akka.remote.OversizedPayloadException
 import akka.remote.RemoteActorRefProvider
 import akka.remote.UniqueAddress
 import akka.remote.artery.Decoder.AdvertiseActorRefsCompressionTable
@@ -35,6 +36,12 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.OptionVal
 import akka.util.unused
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[remote] class OversizedPayloadException(msg: String) extends AkkaException(msg) with OnlyCauseStackTrace
 
 /**
  * INTERNAL API

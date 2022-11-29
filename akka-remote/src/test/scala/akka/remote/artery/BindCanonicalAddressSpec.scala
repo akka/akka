@@ -5,6 +5,7 @@
 package akka.remote.artery
 
 import java.net.InetAddress
+import java.net.InetSocketAddress
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -13,12 +14,33 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import akka.actor.ExtendedActorSystem
 import akka.actor.{ ActorSystem, Address }
-import akka.remote.classic.transport.netty.NettyTransportSpec._
+import akka.remote.BoundAddressesExtension
 import akka.testkit.SocketUtil
+
+object BindCanonicalAddressBehaviors {
+  def getInternal()(implicit sys: ActorSystem) =
+    BoundAddressesExtension(sys).boundAddresses.values.flatten
+
+  def getExternal()(implicit sys: ActorSystem) =
+    sys.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+
+  implicit class RichInetSocketAddress(address: InetSocketAddress) {
+    def toAkkaAddress(protocol: String)(implicit system: ActorSystem) =
+      Address(protocol, system.name, address.getAddress.getHostAddress, address.getPort)
+  }
+
+  implicit class RichAkkaAddress(address: Address) {
+    def withProtocol(protocol: String) =
+      address.copy(protocol = protocol)
+  }
+}
 
 trait BindCanonicalAddressBehaviors {
   this: AnyWordSpec with Matchers =>
+  import BindCanonicalAddressBehaviors._
+
   def arteryConnectionTest(transport: String, isUDP: Boolean): Unit = {
 
     val commonConfig = BindCanonicalAddressSpec.commonConfig(transport)

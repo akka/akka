@@ -4,26 +4,20 @@
 
 package akka.cluster.metrics
 
-import scala.Vector
-
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.Address
 import akka.actor.RootActorPath
-import akka.remote.RARP
 import akka.routing.ActorRefRoutee
 import akka.routing.ActorSelectionRoutee
 import akka.testkit.AkkaSpec
 
 class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       akka.actor.provider = "cluster"
-      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       """)) {
 
-  val protocol =
-    if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
-    else "akka.tcp"
+  val protocol = "akka"
 
   val a1 = Address(protocol, "sys", "a1", 2551)
   val b1 = Address(protocol, "sys", "b1", 2551)

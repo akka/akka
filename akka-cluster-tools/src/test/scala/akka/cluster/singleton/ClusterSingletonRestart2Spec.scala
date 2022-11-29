@@ -37,10 +37,6 @@ class ClusterSingletonRestart2Spec
   akka.cluster.testkit.auto-down-unreachable-after = 2s
   akka.cluster.singleton.min-number-of-hand-over-retries = 5
   akka.remote {
-    classic.netty.tcp {
-      hostname = "127.0.0.1"
-      port = 0
-    }
     artery.canonical {
       hostname = "127.0.0.1"
       port = 0
@@ -110,7 +106,6 @@ class ClusterSingletonRestart2Spec
         val sys4Config =
           ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$sys2port
-            akka.remote.classic.netty.tcp.port=$sys2port
             """).withFallback(system.settings.config)
 
         ActorSystem(system.name, sys4Config)

@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigFactory
 
 import akka.cluster.MemberStatus.Up
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 
 class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
   val first = role("first")

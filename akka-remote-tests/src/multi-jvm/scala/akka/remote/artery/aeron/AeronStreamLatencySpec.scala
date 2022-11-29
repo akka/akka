@@ -51,7 +51,6 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
            provider = remote
          }
          remote.artery {
-           enabled = off
            advanced.aeron.idle-cpu-level=8
          }
        }

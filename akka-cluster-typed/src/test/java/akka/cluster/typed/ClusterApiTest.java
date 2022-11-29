@@ -20,7 +20,6 @@ public class ClusterApiTest extends JUnitSuite {
     Config config =
         ConfigFactory.parseString(
             "akka.actor.provider = cluster \n"
-                + "akka.remote.classic.netty.tcp.port = 0 \n"
                 + "akka.remote.artery.canonical.port = 0 \n"
                 + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
                 + "akka.cluster.jmx.multi-mbeans-in-same-jvm = on \n"

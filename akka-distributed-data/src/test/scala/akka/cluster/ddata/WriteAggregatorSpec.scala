@@ -17,7 +17,6 @@ import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
-import akka.remote.RARP
 import akka.testkit._
 
 object WriteAggregatorSpec {
@@ -130,7 +129,6 @@ object WriteAggregatorSpec {
 
 class WriteAggregatorSpec extends AkkaSpec(s"""
       akka.actor.provider = "cluster"
-      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.cluster.distributed-data.durable.lmdb {
         dir = target/WriteAggregatorSpec-${System.currentTimeMillis}-ddata
@@ -139,9 +137,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
       """) with ImplicitSender {
   import WriteAggregatorSpec._
 
-  val protocol =
-    if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
-    else "akka.tcp"
+  val protocol = "akka"
 
   val nodeA = UniqueAddress(Address(protocol, "Sys", "a", 2552), 17L)
   val nodeB = UniqueAddress(Address(protocol, "Sys", "b", 2552), 17L)

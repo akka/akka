@@ -25,7 +25,6 @@ object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeC
       .withFallback(ConfigFactory.parseString("""
         akka.loglevel = INFO
         akka.remote.artery {
-          enabled = on
           advanced {
             inbound-lanes = 4
             give-up-system-message-after = 4s

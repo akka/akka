@@ -44,7 +44,6 @@ object RememberEntitiesBatchedUpdatesSpec {
       # akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
       akka.remote.artery.canonical.port = 0
-      akka.remote.classic.netty.tcp.port = 0
       akka.cluster.sharding.state-store-mode = ddata
       akka.cluster.sharding.remember-entities = on
       # no leaks between test runs thank you

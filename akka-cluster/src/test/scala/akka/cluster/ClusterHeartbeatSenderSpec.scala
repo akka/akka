@@ -27,6 +27,7 @@ class ClusterHeartbeatSenderSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.actor.provider = cluster 
     akka.cluster.failure-detector.heartbeat-interval = 0.2s
+    akka.remote.artery.canonical.port = 0
   """.stripMargin) with ImplicitSender {
 
   "ClusterHeartBeatSender" must {

@@ -21,17 +21,19 @@ import akka.routing.ScatterGatherFirstCompletedPool
 import akka.testkit._
 import akka.testkit.TestEvent._
 
-class RemoteScatterGatherConfig(artery: Boolean) extends MultiNodeConfig {
+object RemoteScatterGatherConfig extends MultiNodeConfig {
 
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
-      akka.remote.artery.enabled = $artery
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.remote.use-unsafe-remote-features-outside-cluster = on
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   deployOnAll("""
       /service-hello {
@@ -42,19 +44,10 @@ class RemoteScatterGatherConfig(artery: Boolean) extends MultiNodeConfig {
     """)
 }
 
-class RemoteScatterGatherMultiJvmNode1 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
-class RemoteScatterGatherMultiJvmNode2 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
-class RemoteScatterGatherMultiJvmNode3 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
-class RemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
-
-class ArteryRemoteScatterGatherMultiJvmNode1
-    extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
-class ArteryRemoteScatterGatherMultiJvmNode2
-    extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
-class ArteryRemoteScatterGatherMultiJvmNode3
-    extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
-class ArteryRemoteScatterGatherMultiJvmNode4
-    extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+class RemoteScatterGatherMultiJvmNode1 extends RemoteScatterGatherSpec
+class RemoteScatterGatherMultiJvmNode2 extends RemoteScatterGatherSpec
+class RemoteScatterGatherMultiJvmNode3 extends RemoteScatterGatherSpec
+class RemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec
 
 object RemoteScatterGatherSpec {
   class SomeActor extends Actor {
@@ -64,11 +57,9 @@ object RemoteScatterGatherSpec {
   }
 }
 
-class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig)
-    extends RemotingMultiNodeSpec(multiNodeConfig)
-    with DefaultTimeout {
+class RemoteScatterGatherSpec extends RemotingMultiNodeSpec(RemoteRoundRobinConfig) with DefaultTimeout {
   import RemoteScatterGatherSpec._
-  import multiNodeConfig._
+  import RemoteRoundRobinConfig._
 
   def initialParticipants = roles.size
 

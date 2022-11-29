@@ -38,6 +38,7 @@ class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
       self-data-center = "dc1"
       failure-detector.heartbeat-interval = 0.2s
     }
+    akka.remote.artery.canonical.port = 0
   """) with ImplicitSender {
   "CrossDcHeartBeatSender" should {
     "increment heart beat sequence nr" in {

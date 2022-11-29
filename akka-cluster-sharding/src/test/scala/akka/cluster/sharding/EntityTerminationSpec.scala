@@ -28,7 +28,6 @@ object EntityTerminationSpec {
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
       akka.remote.artery.canonical.port = 0
-      akka.remote.classic.netty.tcp.port = 0
       akka.cluster.sharding.state-store-mode = ddata
       # no leaks between test runs thank you
       akka.cluster.sharding.distributed-data.durable.keys = []

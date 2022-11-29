@@ -20,17 +20,19 @@ import akka.routing.RandomPool
 import akka.routing.RoutedActorRef
 import akka.testkit._
 
-class RemoteRandomConfig(artery: Boolean) extends MultiNodeConfig {
+object RemoteRandomConfig extends MultiNodeConfig {
 
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
-      akka.remote.artery.enabled = $artery
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.remote.use-unsafe-remote-features-outside-cluster = on
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   deployOnAll("""
       /service-hello {
@@ -41,15 +43,10 @@ class RemoteRandomConfig(artery: Boolean) extends MultiNodeConfig {
     """)
 }
 
-class RemoteRandomMultiJvmNode1 extends RemoteRandomSpec(new RemoteRandomConfig(artery = false))
-class RemoteRandomMultiJvmNode2 extends RemoteRandomSpec(new RemoteRandomConfig(artery = false))
-class RemoteRandomMultiJvmNode3 extends RemoteRandomSpec(new RemoteRandomConfig(artery = false))
-class RemoteRandomMultiJvmNode4 extends RemoteRandomSpec(new RemoteRandomConfig(artery = false))
-
-class ArteryRemoteRandomMultiJvmNode1 extends RemoteRandomSpec(new RemoteRandomConfig(artery = true))
-class ArteryRemoteRandomMultiJvmNode2 extends RemoteRandomSpec(new RemoteRandomConfig(artery = true))
-class ArteryRemoteRandomMultiJvmNode3 extends RemoteRandomSpec(new RemoteRandomConfig(artery = true))
-class ArteryRemoteRandomMultiJvmNode4 extends RemoteRandomSpec(new RemoteRandomConfig(artery = true))
+class RemoteRandomMultiJvmNode1 extends RemoteRandomSpec
+class RemoteRandomMultiJvmNode2 extends RemoteRandomSpec
+class RemoteRandomMultiJvmNode3 extends RemoteRandomSpec
+class RemoteRandomMultiJvmNode4 extends RemoteRandomSpec
 
 object RemoteRandomSpec {
   class SomeActor extends Actor {
@@ -59,11 +56,9 @@ object RemoteRandomSpec {
   }
 }
 
-class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig)
-    extends RemotingMultiNodeSpec(multiNodeConfig)
-    with DefaultTimeout {
+class RemoteRandomSpec extends RemotingMultiNodeSpec(RemoteRandomConfig) with DefaultTimeout {
   import RemoteRandomSpec._
-  import multiNodeConfig._
+  import RemoteRandomConfig._
 
   def initialParticipants = roles.size
 

@@ -14,7 +14,7 @@ import akka.actor.ActorIdentity
 import akka.actor.Identify
 import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 
 object SurviveNetworkPartitionSpec extends MultiNodeConfig {
@@ -25,7 +25,6 @@ object SurviveNetworkPartitionSpec extends MultiNodeConfig {
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
       akka.loglevel = INFO
-      akka.remote.artery.enabled = on
       akka.remote.artery.advanced.give-up-system-message-after = 4s
       akka.remote.use-unsafe-remote-features-outside-cluster = on
       """))

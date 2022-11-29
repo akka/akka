@@ -41,7 +41,7 @@ import akka.actor.{
 import akka.event.{ Logging, LoggingAdapter }
 import akka.event.LoggingReceive
 import akka.pattern.ask
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.util.Timeout
 
 /**
@@ -149,17 +149,10 @@ trait Conductor { this: TestConductorExt =>
     throttle(node, target, direction, 0f)
 
   private def requireTestConductorTranport(): Unit = {
-    if (transport.provider.remoteSettings.Artery.Enabled) {
-      if (!transport.provider.remoteSettings.Artery.Advanced.TestMode)
-        throw new ConfigurationException(
-          "To use this feature you must activate the test mode " +
-          "by specifying `testTransport(on = true)` in your MultiNodeConfig.")
-    } else {
-      if (!transport.defaultAddress.protocol.contains(".trttl.gremlin."))
-        throw new ConfigurationException(
-          "To use this feature you must activate the failure injector adapters " +
-          "(trttl, gremlin) by specifying `testTransport(on = true)` in your MultiNodeConfig.")
-    }
+    if (!transport.provider.remoteSettings.Artery.Advanced.TestMode)
+      throw new ConfigurationException(
+        "To use this feature you must activate the test mode " +
+        "by specifying `testTransport(on = true)` in your MultiNodeConfig.")
   }
 
   /**

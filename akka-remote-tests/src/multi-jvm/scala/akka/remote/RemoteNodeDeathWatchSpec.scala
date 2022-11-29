@@ -20,47 +20,39 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 
-class RemoteNodeDeathWatchConfig(artery: Boolean) extends MultiNodeConfig {
+object RemoteNodeDeathWatchConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString(
+        """
       akka.loglevel = INFO
-      akka.remote.log-remote-lifecycle-events = off
       ## Use a tighter setting than the default, otherwise it takes 20s for DeathWatch to trigger
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3 s
-      akka.remote.artery.enabled = $artery
       akka.remote.use-unsafe-remote-features-outside-cluster = on
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
 
 // Several different variations of the test
 
-class RemoteNodeDeathWatchFastMultiJvmNode1 extends RemoteNodeDeathWatchFastSpec(artery = false)
-class RemoteNodeDeathWatchFastMultiJvmNode2 extends RemoteNodeDeathWatchFastSpec(artery = false)
-class RemoteNodeDeathWatchFastMultiJvmNode3 extends RemoteNodeDeathWatchFastSpec(artery = false)
+class RemoteNodeDeathWatchFastMultiJvmNode1 extends RemoteNodeDeathWatchFastSpec
+class RemoteNodeDeathWatchFastMultiJvmNode2 extends RemoteNodeDeathWatchFastSpec
+class RemoteNodeDeathWatchFastMultiJvmNode3 extends RemoteNodeDeathWatchFastSpec
 
-class ArteryRemoteNodeDeathWatchFastMultiJvmNode1 extends RemoteNodeDeathWatchFastSpec(artery = true)
-class ArteryRemoteNodeDeathWatchFastMultiJvmNode2 extends RemoteNodeDeathWatchFastSpec(artery = true)
-class ArteryRemoteNodeDeathWatchFastMultiJvmNode3 extends RemoteNodeDeathWatchFastSpec(artery = true)
-
-abstract class RemoteNodeDeathWatchFastSpec(artery: Boolean)
-    extends RemoteNodeDeathWatchSpec(new RemoteNodeDeathWatchConfig(artery)) {
+abstract class RemoteNodeDeathWatchFastSpec extends RemoteNodeDeathWatchSpec {
   override def scenario = "fast"
 }
 
-class RemoteNodeDeathWatchSlowMultiJvmNode1 extends RemoteNodeDeathWatchSlowSpec(artery = false)
-class RemoteNodeDeathWatchSlowMultiJvmNode2 extends RemoteNodeDeathWatchSlowSpec(artery = false)
-class RemoteNodeDeathWatchSlowMultiJvmNode3 extends RemoteNodeDeathWatchSlowSpec(artery = false)
+class RemoteNodeDeathWatchSlowMultiJvmNode1 extends RemoteNodeDeathWatchSlowSpec
+class RemoteNodeDeathWatchSlowMultiJvmNode2 extends RemoteNodeDeathWatchSlowSpec
+class RemoteNodeDeathWatchSlowMultiJvmNode3 extends RemoteNodeDeathWatchSlowSpec
 
-class ArteryRemoteNodeDeathWatchSlowMultiJvmNode1 extends RemoteNodeDeathWatchSlowSpec(artery = true)
-class ArteryRemoteNodeDeathWatchSlowMultiJvmNode2 extends RemoteNodeDeathWatchSlowSpec(artery = true)
-class ArteryRemoteNodeDeathWatchSlowMultiJvmNode3 extends RemoteNodeDeathWatchSlowSpec(artery = true)
-
-abstract class RemoteNodeDeathWatchSlowSpec(artery: Boolean)
-    extends RemoteNodeDeathWatchSpec(new RemoteNodeDeathWatchConfig(artery)) {
+abstract class RemoteNodeDeathWatchSlowSpec extends RemoteNodeDeathWatchSpec {
   override def scenario = "slow"
   override def sleep(): Unit = Thread.sleep(3000)
 }
@@ -92,11 +84,10 @@ object RemoteNodeDeathWatchSpec {
   }
 }
 
-abstract class RemoteNodeDeathWatchSpec(multiNodeConfig: RemoteNodeDeathWatchConfig)
-    extends RemotingMultiNodeSpec(multiNodeConfig) {
+abstract class RemoteNodeDeathWatchSpec extends RemotingMultiNodeSpec(RemoteNodeDeathWatchConfig) {
   import RemoteNodeDeathWatchSpec._
   import RemoteWatcher._
-  import multiNodeConfig._
+  import RemoteNodeDeathWatchConfig._
 
   def scenario: String
   // Possible to override to let them heartbeat for a while.

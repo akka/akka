@@ -30,7 +30,6 @@ class JoinConfigCompatCheckShardingSpec extends AkkaSpec() with WithLogCapturing
      akka.loglevel = DEBUG
      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
      akka.coordinated-shutdown.terminate-actor-system = on
-     akka.remote.classic.netty.tcp.port = 0
      akka.remote.artery.canonical.port = 0
      akka.cluster.sharding.verbose-debug-logging = on
      """)

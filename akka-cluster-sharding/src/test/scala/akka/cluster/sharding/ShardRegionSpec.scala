@@ -18,7 +18,6 @@ object ShardRegionSpec {
   val host = "127.0.0.1"
   val tempConfig =
     s"""
-       akka.remote.classic.netty.tcp.hostname = "$host"
        akka.remote.artery.canonical.hostname = "$host"
        """
 
@@ -27,9 +26,7 @@ object ShardRegionSpec {
         akka.loglevel = DEBUG
         akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
         akka.actor.provider = "cluster"
-        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
-        akka.remote.log-remote-lifecycle-events = off
         akka.test.single-expect-default = 5 s
         akka.cluster.sharding.distributed-data.durable.lmdb {
             dir = "target/ShardRegionSpec/sharding-ddata"

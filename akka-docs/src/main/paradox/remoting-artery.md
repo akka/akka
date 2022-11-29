@@ -97,13 +97,6 @@ All settings are described in @ref:[Remote Configuration](#remote-configuration-
 We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
 underlying module that allows for Cluster, it is still useful to understand details about it though.
 
-@@@ note
-
-This page describes the remoting subsystem, codenamed *Artery* that has replaced the
-@ref:[classic remoting implementation](remoting.md).
-
-@@@
-
 Remoting enables Actor systems on different hosts or JVMs to communicate with each other. By enabling remoting
 the system will start listening on a provided network address and also gains the ability to connect to other
 systems through the network. From the application's perspective there is no API difference between local or remote
@@ -912,3 +905,128 @@ The flight recorder is automatically enabled by detecting JDK 11 but can be disa
 
 Low overhead Artery specific events are emitted by default when JFR is enabled, higher overhead events needs a custom settings template and are not enabled automatically with the `profiling` JFR template.
 To enable those create a copy of the `profiling` template and enable all `Akka` sub category events, for example through the JMC GUI. 
+
+## Creating Actors Remotely
+
+@@@ warning
+
+We recommend against Creating Actors Remotely, also known as remote deployment, but it is documented here
+for completeness.
+
+@@@
+
+If you want to use the creation functionality in Akka remoting you have to further amend the
+`application.conf` file in the following way (only showing deployment section):
+
+```
+akka {
+  actor {
+    deployment {
+      /sampleActor {
+        remote = "akka.tcp://sampleActorSystem@127.0.0.1:2553"
+      }
+    }
+  }
+}
+```
+
+The configuration above instructs Akka to react when an actor with path `/sampleActor` is created, i.e.
+using @scala[`system.actorOf(Props(...), "sampleActor")`]@java[`system.actorOf(new Props(...), "sampleActor")`]. This specific actor will not be directly instantiated,
+but instead the remote daemon of the remote system will be asked to create the actor,
+which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
+
+Once you have configured the properties above you would do the following in code:
+
+Scala
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
+
+Java
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
+
+The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
+actor systems has to have a JAR containing the class.
+
+When using remote deployment of actors you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
+
+@@@ note
+
+In order to ensure serializability of `Props` when passing constructor
+arguments to the actor being created, do not make the factory @scala[an]@java[a non-static] inner class:
+this will inherently capture a reference to its enclosing object, which in
+most cases is not serializable. It is best to @scala[create a factory method in the
+companion object of the actor’s class]@java[make a static
+inner class which implements `Creator<T extends Actor>`].
+
+Serializability of all Props can be tested by setting the configuration item
+`akka.actor.serialize-creators=on`. Only Props whose `deploy` has
+`LocalScope` are exempt from this check.
+
+@@@
+
+@@@ note
+
+You can use asterisks as wildcard matches for the actor path sections, so you could specify:
+`/*/sampleActor` and that would match all `sampleActor` on that level in the hierarchy.
+You can also use wildcard in the last position to match all actors at a certain level:
+`/someParent/*`. Non-wildcard matches always have higher priority to match than wildcards, so:
+`/foo/bar` is considered **more specific** than `/foo/*` and only the highest priority match is used.
+Please note that it **cannot** be used to partially match section, like this: `/foo*/bar`, `/f*o/bar` etc.
+
+@@@
+
+### Programmatic Remote Deployment
+
+@@@ warning
+
+We recommend against Creating Actors Remotely, also known as remote deployment, but it is documented here
+for completeness. This is only available for the classic Actor API.
+
+@@@
+
+To allow dynamically deployed systems, it is also possible to include
+deployment configuration in the `Props` which are used to create an
+actor: this information is the equivalent of a deployment section from the
+configuration file, and if both are given, the external configuration takes
+precedence.
+
+With these imports:
+
+Scala
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
+
+Java
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
+
+and a remote address like this:
+
+Scala
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address }
+
+Java
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address }
+
+you can advise the system to create a child on that remote node like so:
+
+Scala
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
+
+Java
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
+
+### Remote deployment allow list
+
+As remote deployment can potentially be abused by both users and even attackers an allow list feature
+is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
+is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
+remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
+only a specific set of known actors by enabling the allow list feature.
+
+To enable remote deployment allow list set the `akka.remote.deployment.enable-allow-list` value to `on`.
+The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which
+others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
+should not allow others to remote deploy onto it. The full settings section may for example look like this:
+
+@@snip [RemoteDeploymentAllowListSpec.scala](/akka-remote/src/test/scala/akka/remote/artery/RemoteDeploymentSpec.scala) { #allow-list-config }
+
+Actor classes not included in the allow list will not be allowed to be remote deployed onto this system.

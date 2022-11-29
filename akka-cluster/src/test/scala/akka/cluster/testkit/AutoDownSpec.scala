@@ -14,7 +14,6 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus._
 import akka.cluster.TestMember
-import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.testkit.TimingTest
 
@@ -44,9 +43,7 @@ class AutoDownSpec extends AkkaSpec("""
     |""".stripMargin) {
   import AutoDownSpec._
 
-  val protocol =
-    if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
-    else "akka.tcp"
+  val protocol = "akka"
 
   val memberA = TestMember(Address(protocol, "sys", "a", 2552), Up)
   val memberB = TestMember(Address(protocol, "sys", "b", 2552), Up)

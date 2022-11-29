@@ -18,17 +18,19 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.routing._
 import akka.testkit._
 
-class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
+object RemoteRoundRobinConfig extends MultiNodeConfig {
 
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
-      akka.remote.artery.enabled = $artery
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.remote.use-unsafe-remote-features-outside-cluster = on
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   deployOnAll("""
       /service-hello {
@@ -52,15 +54,10 @@ class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
     """)
 }
 
-class RemoteRoundRobinMultiJvmNode1 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = false))
-class RemoteRoundRobinMultiJvmNode2 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = false))
-class RemoteRoundRobinMultiJvmNode3 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = false))
-class RemoteRoundRobinMultiJvmNode4 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = false))
-
-class ArteryRemoteRoundRobinMultiJvmNode1 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = true))
-class ArteryRemoteRoundRobinMultiJvmNode2 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = true))
-class ArteryRemoteRoundRobinMultiJvmNode3 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = true))
-class ArteryRemoteRoundRobinMultiJvmNode4 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = true))
+class RemoteRoundRobinMultiJvmNode1 extends RemoteRoundRobinSpec
+class RemoteRoundRobinMultiJvmNode2 extends RemoteRoundRobinSpec
+class RemoteRoundRobinMultiJvmNode3 extends RemoteRoundRobinSpec
+class RemoteRoundRobinMultiJvmNode4 extends RemoteRoundRobinSpec
 
 object RemoteRoundRobinSpec {
   class SomeActor extends Actor {
@@ -75,11 +72,9 @@ object RemoteRoundRobinSpec {
   }
 }
 
-class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
-    extends RemotingMultiNodeSpec(multiNodeConfig)
-    with DefaultTimeout {
+class RemoteRoundRobinSpec extends RemotingMultiNodeSpec(RemoteRoundRobinConfig) with DefaultTimeout {
   import RemoteRoundRobinSpec._
-  import multiNodeConfig._
+  import RemoteRoundRobinConfig._
 
   def initialParticipants = roles.size
 

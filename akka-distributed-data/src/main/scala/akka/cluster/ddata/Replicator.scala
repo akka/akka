@@ -1461,9 +1461,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val sizeExceeding = settings.logDataSizeExceeding.getOrElse(Int.MaxValue)
     val remoteProvider = RARP(context.system).provider
     val remoteSettings = remoteProvider.remoteSettings
-    val maxFrameSize =
-      if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Advanced.MaximumFrameSize
-      else context.system.settings.config.getBytes("akka.remote.classic.netty.tcp.maximum-frame-size").toInt
+    val maxFrameSize = remoteSettings.Artery.Advanced.MaximumFrameSize
     new PayloadSizeAggregator(log, sizeExceeding, maxFrameSize)
   }
 

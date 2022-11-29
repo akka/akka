@@ -110,7 +110,7 @@ class CodecBenchmark {
 
     uniqueLocalAddress = UniqueAddress(
       system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
-      AddressUidExtension(system).longAddressUid)
+      system.asInstanceOf[ExtendedActorSystem].uid)
 
     val actorOnSystemA = system.actorOf(Props.empty, "a")
     senderStringA = actorOnSystemA.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)

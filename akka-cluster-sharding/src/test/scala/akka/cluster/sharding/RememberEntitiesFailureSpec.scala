@@ -30,7 +30,6 @@ object RememberEntitiesFailureSpec {
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
       akka.remote.artery.canonical.port = 0
-      akka.remote.classic.netty.tcp.port = 0
       akka.cluster.sharding.distributed-data.durable.keys = []
       # must be ddata or else remember entities store is ignored
       akka.cluster.sharding.state-store-mode = ddata

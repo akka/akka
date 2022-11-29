@@ -15,9 +15,9 @@ import com.typesafe.config.ConfigFactory
 import akka.NotUsed
 import akka.actor.ActorIdentity
 import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
-import akka.remote.AddressUidExtension
 import akka.remote.RARP
 import akka.remote.UniqueAddress
 import akka.remote.artery.SystemMessageDelivery._
@@ -55,9 +55,9 @@ abstract class AbstractSystemMessageDeliverySpec(c: Config) extends ArteryMultiN
 
   import SystemMessageDeliverySpec._
 
-  val addressA = UniqueAddress(address(system), AddressUidExtension(system).longAddressUid)
+  val addressA = UniqueAddress(address(system), system.asInstanceOf[ExtendedActorSystem].uid)
   val systemB = newRemoteSystem(name = Some("systemB"))
-  val addressB = UniqueAddress(address(systemB), AddressUidExtension(systemB).longAddressUid)
+  val addressB = UniqueAddress(address(systemB), systemB.asInstanceOf[ExtendedActorSystem].uid)
   val rootB = RootActorPath(addressB.address)
 
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)

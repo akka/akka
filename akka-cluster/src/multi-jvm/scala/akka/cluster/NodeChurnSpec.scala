@@ -11,7 +11,6 @@ import com.typesafe.config.ConfigFactory
 
 import akka.actor._
 import akka.event.Logging.Info
-import akka.remote.RARP
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.testkit.TestKit
@@ -27,7 +26,6 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
       akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
       akka.cluster.testkit.auto-down-unreachable-after = 1s
       akka.cluster.prune-gossip-tombstones-after = 1s
-      akka.remote.classic.log-frame-size-exceeding = 1200b
       akka.remote.artery.log-frame-size-exceeding = 1200b
       akka.remote.artery.advanced.aeron {
         idle-cpu-level = 1
@@ -106,8 +104,6 @@ abstract class NodeChurnSpec
     }
   }
 
-  def isArteryEnabled: Boolean = RARP(system).provider.remoteSettings.Artery.Enabled
-
   "Cluster with short lived members" must {
 
     "setup stable nodes" taggedAs LongRunningTest in within(15.seconds) {
@@ -120,7 +116,7 @@ abstract class NodeChurnSpec
 
     // FIXME issue #21483
     // note: there must be one test step before pending, otherwise afterTermination will not run
-    if (isArteryEnabled) pending
+    pending
 
     "join and remove transient nodes without growing gossip payload" taggedAs LongRunningTest in {
       // This test is configured with log-frame-size-exceeding and the LogListener

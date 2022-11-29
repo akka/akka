@@ -33,7 +33,6 @@ import akka.cluster.typed.Join
 object ReliableDeliveryShardingSpec {
   val config = ConfigFactory.parseString("""
     akka.actor.provider = cluster
-    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.reliable-delivery.consumer-controller.flow-control-window = 20
     """)

@@ -24,7 +24,6 @@ import akka.actor.Props
 import akka.dispatch.Dispatchers
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
-import akka.remote.RARP
 import akka.testkit.AkkaSpec
 
 /**
@@ -138,7 +137,7 @@ trait MetricsCollectorFactory { this: AkkaSpec =>
  */
 class MockitoSigarMetricsCollector(system: ActorSystem)
     extends SigarMetricsCollector(
-      Address(if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp", system.name),
+      Address("akka", system.name),
       MetricsConfig.defaultDecayFactor,
       MockitoSigarProvider().createSigarInstance) {}
 
@@ -159,7 +158,6 @@ object MetricsConfig {
       }
     }
     akka.actor.provider = remote
-    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
   """
 
@@ -171,7 +169,6 @@ object MetricsConfig {
       }
     }
     akka.actor.provider = remote
-    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
   """
 
@@ -188,7 +185,6 @@ object MetricsConfig {
       }
     }
     akka.actor.provider = "cluster"
-    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
   """
 }

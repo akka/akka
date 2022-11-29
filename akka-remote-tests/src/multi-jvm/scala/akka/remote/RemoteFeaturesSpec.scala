@@ -30,7 +30,7 @@ import akka.routing.RoundRobinPool
 import akka.routing.RoutedActorRef
 import akka.testkit.TestProbe
 
-class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends MultiNodeConfig {
+class RemotingFeaturesConfig(val useUnsafe: Boolean) extends MultiNodeConfig {
 
   val first = role("first")
   val second = role("second")
@@ -42,8 +42,6 @@ class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends Mu
 
   protected val baseConfig = ConfigFactory.parseString(s"""
       akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
-      akka.remote.log-remote-lifecycle-events = off
-      akka.remote.artery.enabled = $artery
       """).withFallback(RemotingMultiNodeSpec.commonConfig)
 
   commonConfig(debugConfig(on = false).withFallback(baseConfig))
@@ -83,8 +81,7 @@ class RemotingFeaturesUnsafeMultiJvmNode2 extends RemotingFeaturesUnsafeSpec
 class RemotingFeaturesUnsafeMultiJvmNode3 extends RemotingFeaturesUnsafeSpec
 class RemotingFeaturesUnsafeMultiJvmNode4 extends RemotingFeaturesUnsafeSpec
 
-abstract class RemotingFeaturesSafeSpec
-    extends RemotingFeaturesSpec(new RemotingFeaturesConfig(useUnsafe = false, artery = true)) {
+abstract class RemotingFeaturesSafeSpec extends RemotingFeaturesSpec(new RemotingFeaturesConfig(useUnsafe = false)) {
 
   import RemoteNodeDeathWatchSpec.ProbeActor
   import multiNodeConfig._
@@ -147,8 +144,7 @@ abstract class RemotingFeaturesSafeSpec
   }
 }
 
-abstract class RemotingFeaturesUnsafeSpec
-    extends RemotingFeaturesSpec(new RemotingFeaturesConfig(useUnsafe = true, artery = true)) {
+abstract class RemotingFeaturesUnsafeSpec extends RemotingFeaturesSpec(new RemotingFeaturesConfig(useUnsafe = true)) {
 
   import RemoteNodeDeathWatchSpec.Ack
   import RemoteNodeDeathWatchSpec.DeathWatchIt

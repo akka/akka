@@ -10,7 +10,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.cluster.MemberStatus
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.util.ccompat._

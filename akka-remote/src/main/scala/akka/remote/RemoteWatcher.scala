@@ -107,16 +107,9 @@ private[akka] class RemoteWatcher(
   def scheduler = context.system.scheduler
 
   val remoteProvider: RemoteActorRefProvider = RARP(context.system).provider
-  val artery = remoteProvider.remoteSettings.Artery.Enabled
 
-  val (heartBeatMsg, selfHeartbeatRspMsg) =
-    if (artery) (ArteryHeartbeat, ArteryHeartbeatRsp(AddressUidExtension(context.system).longAddressUid))
-    else {
-      // For classic remoting the 'int' part is sufficient
-      @nowarn("msg=deprecated")
-      val addressUid = AddressUidExtension(context.system).addressUid
-      (Heartbeat, HeartbeatRsp(addressUid))
-    }
+  val heartBeatMsg = ArteryHeartbeat
+  val selfHeartbeatRspMsg = ArteryHeartbeatRsp(context.system.asInstanceOf[ExtendedActorSystem].uid)
 
   // actors that this node is watching, map of watchee -> Set(watchers)
   @nowarn("msg=deprecated")

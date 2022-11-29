@@ -11,7 +11,7 @@ import language.postfixOps
 
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 import akka.testkit._
 
 object InitialHeartbeatMultiJvmSpec extends MultiNodeConfig {

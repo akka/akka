@@ -4,17 +4,17 @@
 
 package akka.cluster
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.RootActorPath
-
-import scala.concurrent.duration._
-import akka.remote.artery.ArterySettings
 import akka.remote.artery.ThisActorSystemQuarantinedEvent
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter
+import akka.remote.testkit.Direction
 import akka.testkit.LongRunningTest
-import com.typesafe.config.ConfigFactory
 
 object DowningWhenOtherHasQuarantinedThisActorSystemSpec extends MultiNodeConfig {
   val first = role("first")
@@ -53,12 +53,6 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
 
   "Cluster node downed by other" must {
 
-    if (!ArterySettings(system.settings.config.getConfig("akka.remote.artery")).Enabled) {
-      // this feature only works in Artery, because classic remoting will not accept connections from
-      // a quarantined node, and that is too high risk of introducing regressions if changing that
-      pending
-    }
-
     "join cluster" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)
       enterBarrier("after-1")
@@ -66,8 +60,8 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
 
     "down itself" taggedAs LongRunningTest in {
       runOn(first) {
-        testConductor.blackhole(first, second, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.blackhole(third, second, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.blackhole(first, second, Direction.Both).await
+        testConductor.blackhole(third, second, Direction.Both).await
       }
       enterBarrier("blackhole")
 
@@ -90,8 +84,8 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
       enterBarrier("down-second")
 
       runOn(first) {
-        testConductor.passThrough(first, second, ThrottlerTransportAdapter.Direction.Both).await
-        testConductor.passThrough(third, second, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.passThrough(first, second, Direction.Both).await
+        testConductor.passThrough(third, second, Direction.Both).await
       }
       enterBarrier("pass-through")
 

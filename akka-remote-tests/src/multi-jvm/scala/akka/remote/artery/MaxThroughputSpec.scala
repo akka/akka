@@ -50,7 +50,6 @@ object MaxThroughputSpec extends MultiNodeConfig {
          }
        }
        remote.artery {
-         enabled = on
 
          # for serious measurements when running this test on only one machine
          # it is recommended to use external media driver
@@ -173,8 +172,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     var pendingFlowControl = Map.empty[Int, Int]
 
     val compressionEnabled =
-      RARP(context.system).provider.transport.isInstanceOf[ArteryTransport] &&
-      RARP(context.system).provider.remoteSettings.Artery.Enabled
+      RARP(context.system).provider.remoteSettings.Artery.Advanced.Compression.Enabled
 
     def receive = {
       case Run =>

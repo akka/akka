@@ -36,7 +36,6 @@ object DurableShardingSpec {
   def conf: Config =
     ConfigFactory.parseString(s"""
     akka.actor.provider = cluster
-    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"

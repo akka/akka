@@ -17,7 +17,6 @@ import akka.testkit.AkkaSpec
 object TypedActorRemoteDeploySpec {
   val conf = ConfigFactory.parseString("""
       akka.actor.provider = remote
-      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.use-unsafe-remote-features-outside-cluster = on
       akka.actor.allow-java-serialization = on

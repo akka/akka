@@ -15,7 +15,7 @@ import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
 import akka.actor.Address
 import akka.remote.testconductor.{ TestConductorProtocol => TCP }
 import akka.remote.testconductor.TestConductorProtocol.BarrierOp
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.Direction
 
 final case class RoleName(name: String)
 

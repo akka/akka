@@ -40,8 +40,6 @@ object MultiDcJoinMultiJvmSpec extends MultiNodeConfig {
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
 
-      remote.log-remote-lifecycle-events = off
-
       cluster {
         debug.verbose-heartbeat-logging = off
         debug.verbose-gossip-logging = off

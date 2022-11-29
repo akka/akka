@@ -25,7 +25,6 @@ object PersistentShardingMigrationSpec {
        akka.loglevel = INFO
        akka.actor.provider = "cluster"
        akka.remote.artery.canonical.port = 0 
-       akka.remote.classic.netty.tcp.port = 0
        akka.cluster.sharding {
         remember-entities = on
         remember-entities-store = "eventsourced"

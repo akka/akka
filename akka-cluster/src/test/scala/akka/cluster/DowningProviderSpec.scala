@@ -46,10 +46,6 @@ class DowningProviderSpec extends AnyWordSpec with Matchers {
             hostname = 127.0.0.1
             port = 0
           }
-          classic.netty.tcp {
-            hostname = "127.0.0.1"
-            port = 0
-          }
         }
       }
     """).withFallback(ConfigFactory.load())

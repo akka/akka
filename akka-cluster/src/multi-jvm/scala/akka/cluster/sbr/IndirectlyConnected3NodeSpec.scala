@@ -12,7 +12,7 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter
+import akka.remote.testkit.Direction
 
 object IndirectlyConnected3NodeSpec extends MultiNodeConfig {
   val node1 = role("node1")
@@ -68,7 +68,7 @@ class IndirectlyConnected3NodeSpec extends MultiNodeClusterSpec(IndirectlyConnec
       enterBarrier("Cluster formed")
 
       runOn(node1) {
-        testConductor.blackhole(node2, node3, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.blackhole(node2, node3, Direction.Both).await
       }
       enterBarrier("Blackholed")
 

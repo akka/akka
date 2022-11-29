@@ -29,7 +29,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.{ ask, AskTimeoutException }
 import akka.remote.testconductor.RemoteConnection.getAddrString
-import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, TokenBucket, Unthrottled }
+import akka.remote.testkit.{ Blackhole, SetThrottle, TokenBucket, Unthrottled }
 import akka.util.Timeout
 import akka.util.ccompat._
 

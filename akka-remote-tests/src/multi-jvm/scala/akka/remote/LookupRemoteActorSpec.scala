@@ -4,7 +4,6 @@
 
 package akka.remote
 
-import com.typesafe.config.ConfigFactory
 import testkit.MultiNodeConfig
 
 import akka.actor.Actor
@@ -15,24 +14,17 @@ import akka.actor.Props
 import akka.pattern.ask
 import akka.testkit._
 
-class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
+object LookupRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
-      akka.remote.artery.enabled = $artery
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   val leader = role("leader")
   val follower = role("follower")
 
 }
 
-class LookupRemoteActorMultiJvmNode1 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = false))
-class LookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = false))
-
-class ArteryLookupRemoteActorMultiJvmNode1
-    extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
-class ArteryLookupRemoteActorMultiJvmNode2
-    extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
+class LookupRemoteActorMultiJvmNode1 extends LookupRemoteActorSpec
+class LookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec
 
 object LookupRemoteActorSpec {
   class SomeActor extends Actor {
@@ -42,10 +34,9 @@ object LookupRemoteActorSpec {
   }
 }
 
-abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmSpec)
-    extends RemotingMultiNodeSpec(multiNodeConfig) {
+abstract class LookupRemoteActorSpec extends RemotingMultiNodeSpec(LookupRemoteActorMultiJvmSpec) {
   import LookupRemoteActorSpec._
-  import multiNodeConfig._
+  import LookupRemoteActorMultiJvmSpec._
 
   def initialParticipants = 2
 

@@ -776,9 +776,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
   private[akka] def printTree: String
 
   /**
-   * INTERNAL API: random uid assigned at ActorSystem startup
+   * Random uid assigned at ActorSystem startup. When using Akka Cluster this
+   * uid is used together with an [[akka.actor.Address]] to be able to distinguish restarted
+   * actor system using the same host and port.
    */
-  @InternalApi private[akka] def uid: Long
+  def uid: Long
 
   /**
    * INTERNAL API: final step of `terminate()`

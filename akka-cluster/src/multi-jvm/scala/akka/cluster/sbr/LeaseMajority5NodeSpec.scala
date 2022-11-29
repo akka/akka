@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter
+import akka.remote.testkit.Direction
 import com.typesafe.config.ConfigFactory
 
 import akka.cluster.MultiNodeClusterSpec
@@ -122,7 +122,7 @@ class LeaseMajority5NodeSpec extends MultiNodeClusterSpec(LeaseMajority5NodeSpec
       enterBarrier("lease-in-place")
       runOn(node1) {
         for (x <- List(node1, node2, node3); y <- List(node4, node5)) {
-          testConductor.blackhole(x, y, ThrottlerTransportAdapter.Direction.Both).await
+          testConductor.blackhole(x, y, Direction.Both).await
         }
       }
       enterBarrier("blackholed-clean-partition")
@@ -168,7 +168,7 @@ class LeaseMajority5NodeSpec extends MultiNodeClusterSpec(LeaseMajority5NodeSpec
     enterBarrier("lease-in-place-2")
     runOn(node1) {
       for (x <- List(node1); y <- List(node2, node3)) {
-        testConductor.blackhole(x, y, ThrottlerTransportAdapter.Direction.Both).await
+        testConductor.blackhole(x, y, Direction.Both).await
       }
     }
     enterBarrier("blackholed-clean-partition-2")
