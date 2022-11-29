@@ -900,8 +900,9 @@ private[akka] class ActorSystemImpl(
     else {
       val message =
         if (isTypedGuardian)
-          s"cannot create top-level actor [$name] from the outside on a typed ActorSystem.  A classic ActorSystem " +
-          "should be created instead and used to spawn typed actors."
+          s"cannot create top-level actor [$name] from the outside on a typed ActorSystem.  In a typed ActorSystem, " +
+          "top-level actors should be spawned as children of the guardian behavior; if this is not possible (e.g. this " +
+          "actorOf call is in a library), a classic ActorSystem should be created and used to spawn top-level actors."
         else s"cannot create top-level actor [$name] from the outside on ActorSystem with custom user guardian"
 
       throw new UnsupportedOperationException(message)
@@ -912,8 +913,9 @@ private[akka] class ActorSystemImpl(
     else {
       val message =
         if (isTypedGuardian)
-          "cannot create top-level actor from the outside on a typed ActorSystem.  A classic ActorSystem " +
-          "should be created instead and used to spawn typed actors."
+          "cannot create top-level actor from the outside on a typed ActorSystem.  In a typed ActorSystem, " +
+          "top-level actors should be spawned as children of the guardian behavior; if this is not possible (e.g. this " +
+          "actorOf call is in a library), a classic ActorSystem should be created and used to spawn top-level actors."
         else "cannot create top-level actor from the outside on ActorSystem with custom user guardian"
 
       throw new UnsupportedOperationException(message)
@@ -1305,27 +1307,6 @@ private[akka] class ActorSystemImpl(
     def terminationFuture: Future[T] = done.future
   }
 
-  // like a lazy val but without synchronization
-  // 1             -> typed guardian
-  // 2             -> not a typed guardian
-  // anything else -> undetermined, use mild reflection to check
-  //
-  // It's OK to check multiple times (result will be the same), but we want to eventually
-  // stop checking
-  private var _isTypedGuardian: Int = 0
-
   private def isTypedGuardian: Boolean =
-    _isTypedGuardian match {
-      case 1 => true
-      case 2 => false
-      case _ =>
-        if (guardianProps.exists(_.clazz.getName.startsWith("akka.actor.typed"))) {
-          _isTypedGuardian = 1
-          true
-        } else {
-          _isTypedGuardian = 2
-          false
-        }
-    }
-
+    guardianProps.exists(_.clazz.getName.startsWith("akka.actor.typed"))
 }
