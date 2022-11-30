@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
+
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
@@ -377,7 +379,7 @@ private[akka] final case class PublishedEventImpl(
     payload: Any,
     timestamp: Long,
     replicatedMetaData: Option[ReplicatedPublishedEventMetaData],
-    replyTo: Option[ActorRef[EventConsumed]])
+    replyTo: Option[ActorRef[Done]])
     extends PublishedEvent
     with InternalProtocol {
   import scala.compat.java8.OptionConverters._
@@ -399,10 +401,3 @@ private[akka] final case class PublishedEventImpl(
 
   override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava
 }
-
-/**
- * INTERNAL API
- */
-@InternalStableApi
-// FIXME what fields do we actually need here?
-private[akka] final case class EventConsumed(persistenceId: PersistenceId, originSequenceNumber: Long)

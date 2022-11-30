@@ -78,8 +78,3 @@ message PublishedEvent {
   optional ReplicatedPublishedEventMetaData metadata = 5;
   optional string replyTo = 6;
 }
-
-message EventConsumed {
-  required string persistenceId = 1;
-  required int64 sequenceNr = 2;
-}

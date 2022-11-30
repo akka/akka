@@ -8,7 +8,6 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.crdt.Counter
 import akka.persistence.typed.crdt.ORSet
-import akka.persistence.typed.internal.EventConsumed
 import akka.persistence.typed.internal.ReplicatedEventMetadata
 import akka.persistence.typed.internal.ReplicatedSnapshotMetadata
 import akka.persistence.typed.internal.VersionVector
@@ -35,7 +34,6 @@ class ReplicatedEventSourcingSerializationSpec
       serializationTestKit.verifySerialization(ORSet(ReplicaId("DC-A")))
       serializationTestKit.verifySerialization(ORSet.AddDeltaOp(ORSet(ReplicaId("DC-A"))))
       // FIXME DeltaGroup?
-      serializationTestKit.verifySerialization(EventConsumed(PersistenceId("type", "entityid"), 2L))
     }
   }
 

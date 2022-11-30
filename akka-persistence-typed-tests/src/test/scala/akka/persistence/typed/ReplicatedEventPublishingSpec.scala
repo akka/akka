@@ -12,7 +12,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.internal.EventConsumed
 import akka.persistence.typed.internal.{ ReplicatedPublishedEventMetaData, VersionVector }
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 import akka.persistence.typed.scaladsl.Effect
@@ -129,7 +128,7 @@ class ReplicatedEventPublishingSpec
       val actor = spawn(MyReplicatedBehavior.externalReplication(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
 
-      val ackProbe = createTestProbe[EventConsumed]()
+      val ackProbe = createTestProbe[Done]()
       val persistenceId = ReplicationId(EntityType, id, DCB).persistenceId
       // a published event from another replica
       val publishedEvent = internal.PublishedEventImpl(
@@ -140,9 +139,7 @@ class ReplicatedEventPublishingSpec
         Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
         Some(ackProbe.ref))
       actor.asInstanceOf[ActorRef[Any]] ! publishedEvent
-      val ack = ackProbe.receiveMessage()
-      ack.persistenceId should ===(persistenceId)
-      ack.originSequenceNumber should ===(1L)
+      ackProbe.receiveMessage()
 
       actor ! MyReplicatedBehavior.Get(probe.ref)
       probe.expectMessage(Set("one"))
@@ -150,9 +147,7 @@ class ReplicatedEventPublishingSpec
       // also if we publish it again, we ack since we have seen and persisted it
       // even if we deduplicate and don't write anything
       actor.asInstanceOf[ActorRef[Any]] ! publishedEvent
-      val ack2 = ackProbe.receiveMessage()
-      ack2.persistenceId should ===(persistenceId)
-      ack2.originSequenceNumber should ===(1L)
+      ackProbe.receiveMessage()
 
       // nothing changed
       actor ! MyReplicatedBehavior.Get(probe.ref)

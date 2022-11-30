@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
+
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -327,6 +329,7 @@ private[akka] object Running {
             "Ignoring published replicated event with seqNr [{}] from our own replica id [{}]",
             event.sequenceNumber,
             originReplicaId)
+        event.replyTo.foreach(_ ! Done) // probably won't happen
         this
       } else if (!replication.allReplicas.contains(originReplicaId)) {
         log.warnN(
@@ -344,7 +347,7 @@ private[akka] object Running {
               event.sequenceNumber,
               originReplicaId,
               expectedSequenceNumber)
-          event.replyTo.foreach(_ ! EventConsumed(event.persistenceId, event.sequenceNumber))
+          event.replyTo.foreach(_ ! Done)
           this
         } else if (expectedSequenceNumber != event.sequenceNumber) {
           // gap in sequence numbers (message lost or query and direct replication out of sync, should heal up by itself
@@ -398,7 +401,7 @@ private[akka] object Running {
     private def handleExternalReplicatedEventPersist(
         replication: ReplicationSetup,
         event: ReplicatedEvent[E],
-        ackToOnPersisted: Option[ActorRef[EventConsumed]]): Behavior[InternalProtocol] = {
+        ackToOnPersisted: Option[ActorRef[Done]]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
       val isConcurrent: Boolean = event.originVersion <> state.version
       val updatedVersion = event.originVersion.merge(state.version)
@@ -424,12 +427,7 @@ private[akka] object Running {
         case None => Nil
         case Some(ref) =>
           SideEffect { (_: S) =>
-            // FIXME do we really have to create this every time?
-            val pid = ReplicationId(
-              setup.persistenceId.entityTypeHint,
-              setup.persistenceId.entityId,
-              event.originReplica).persistenceId
-            ref ! EventConsumed(pid, event.originSequenceNr)
+            ref ! Done
           } :: Nil
       }
 
