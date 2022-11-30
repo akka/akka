@@ -39,10 +39,14 @@ jobs:
         with:
           jvm: temurin:1.11
 
-      - name: Report MiMa Binary Issues
+      - name: Test/compile
         run: |-
           cp .jvmopts-ci .jvmopts
-          sbt "+~ ${{ matrix.scalaVersion }} Test/compile mimaReportBinaryIssues"
+          sbt "+~ ${{ matrix.scalaVersion }} Test/compile"
+
+      - name: Report MiMa Binary Issues
+        run: |-
+          sbt "+~ ${{ matrix.scalaVersion }} mimaReportBinaryIssues"
 
       - name: Check correct MiMa filter directories
         run: |
