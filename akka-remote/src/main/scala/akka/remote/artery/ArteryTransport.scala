@@ -668,7 +668,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   private[remote] def isShutdown: Boolean = hasBeenShutdown.get()
 
-  @nowarn // ThrottleMode from classic is deprecated, we can replace when removing classic
   override def managementCommand(cmd: Any): Future[Boolean] = {
     cmd match {
       case SetThrottle(address, direction, Blackhole) =>
@@ -677,6 +676,10 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         testState.passThrough(localAddress.address, address, direction)
       case TestManagementCommands.FailInboundStreamOnce(ex) =>
         testState.failInboundStreamOnce(ex)
+      case SetThrottle(_, _, _) =>
+        log.warning("Throttle is not implemented.")
+      case _ =>
+        log.warning("Unhandled management command [{}]", cmd.getClass.getName)
     }
     Future.successful(true)
   }

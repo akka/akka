@@ -15,6 +15,8 @@ import scala.util.control.NoStackTrace
 
 import RemoteConnection.getAddrString
 import language.postfixOps
+import scala.annotation.nowarn
+
 import org.jboss.netty.channel.{
   Channel,
   ChannelHandlerContext,
@@ -125,6 +127,7 @@ trait Conductor { this: TestConductorExt =>
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
    * @param rateMBit is the maximum data rate in MBit
    */
+  @deprecated("Throttle is not implemented, use blackhole and passThrough.", "2.8.0")
   def throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Double): Future[Done] = {
     import Settings.QueryTimeout
     requireTestConductorTranport()
@@ -145,6 +148,7 @@ trait Conductor { this: TestConductorExt =>
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
    */
+  @nowarn("msg=deprecated")
   def blackhole(node: RoleName, target: RoleName, direction: Direction): Future[Done] =
     throttle(node, target, direction, 0f)
 
@@ -167,6 +171,7 @@ trait Conductor { this: TestConductorExt =>
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
    */
+  @nowarn("msg=deprecated")
   def passThrough(node: RoleName, target: RoleName, direction: Direction): Future[Done] =
     throttle(node, target, direction, -1f)
 
