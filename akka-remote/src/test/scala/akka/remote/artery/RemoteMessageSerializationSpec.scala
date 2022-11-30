@@ -15,7 +15,6 @@ import akka.actor.ActorRef
 import akka.actor.Dropped
 import akka.actor.PoisonPill
 import akka.actor.Props
-import akka.remote.artery.OversizedPayloadException
 import akka.remote.RARP
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
