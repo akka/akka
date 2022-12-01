@@ -23,21 +23,6 @@ import scala.util.control.NonFatal
  */
 @InternalApi
 private[akka] object MapAsyncPartitioned {
-  def apply[In, Out, Partition](
-      parallelism: Int,
-      perPartition: Int,
-      partitioner: In => Partition,
-      f: (In, Partition) => Future[Out]): GraphStage[FlowShape[In, Out]] =
-    if (parallelism < 1) throw new IllegalArgumentException("parallelism must be at least 1")
-    else if (perPartition < 1) throw new IllegalArgumentException("perPartition must be at least 1")
-    else if (perPartition >= parallelism) {
-      // no point controlling per-partition, so just use a MapAsync, which has somewhat less overhead
-      val fin = { (x: In) =>
-        f(x, partitioner(x))
-      }
-      MapAsync(parallelism, fin)
-    } else MapAsyncPartitioned(parallelism, perPartition, partitioner, f)
-
   final class Holder[P, I, O](
       var incoming: I,
       var outgoing: Try[O],
