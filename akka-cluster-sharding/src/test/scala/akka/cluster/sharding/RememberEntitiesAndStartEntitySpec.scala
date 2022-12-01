@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -94,13 +95,13 @@ class RememberEntitiesAndStartEntitySpec
       // race condition between this message and region getting the termination message, we may need to retry
       val secondShardIncarnation = awaitAssert {
         sharding ! EntityEnvelope(11, "give-me-shard")
-        expectMsgType[ActorRef]
+        expectMsgType[ActorRef](1.second) // short timeout, retry via awaitAssert
       }
 
       awaitAssert {
         secondShardIncarnation ! GetShardStats
         // the remembered 1 and 11 which we just triggered start of
-        expectMsg(ShardStats("1", 2))
+        expectMsg(1.second, ShardStats("1", 2)) // short timeout, retry via awaitAssert
       }
     }
   }

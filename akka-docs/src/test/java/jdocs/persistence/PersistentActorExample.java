@@ -11,7 +11,6 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.persistence.AbstractPersistentActor;
 import akka.persistence.SnapshotOffer;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 

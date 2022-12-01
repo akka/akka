@@ -4,6 +4,8 @@
 
 package jdocs.stream;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorRef;
@@ -11,19 +13,16 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
+import jdocs.AbstractJavaTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
 

@@ -4,10 +4,9 @@
 
 package jdocs.actor.typed;
 
-import scala.concurrent.ExecutionContextExecutor;
-
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
+import scala.concurrent.ExecutionContextExecutor;
 
 @SuppressWarnings("unused")
 public class DispatcherDocTest {

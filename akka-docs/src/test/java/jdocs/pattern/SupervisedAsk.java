@@ -4,10 +4,7 @@
 
 package jdocs.pattern;
 
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeoutException;
-import java.time.Duration;
-
+import akka.actor.AbstractActor;
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
@@ -18,8 +15,10 @@ import akka.actor.Scheduler;
 import akka.actor.Status;
 import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
-import akka.actor.AbstractActor;
 import akka.pattern.Patterns;
+import java.time.Duration;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeoutException;
 
 public class SupervisedAsk {
 

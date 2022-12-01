@@ -4,24 +4,23 @@
 
 package akka.stream.io;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.stream.IOOperationIncompleteException;
 import akka.stream.IOResult;
 import akka.stream.StreamTest;
-import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.stream.testkit.Utils;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.util.ByteString;
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.io.OutputStream;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 public class OutputStreamSinkTest extends StreamTest {
   public OutputStreamSinkTest() {

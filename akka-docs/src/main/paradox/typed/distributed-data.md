@@ -176,6 +176,10 @@ configurable `akka.cluster.distributed-data.notify-subscribers-interval`.
 The subscriber is automatically unsubscribed if the subscriber is terminated. A subscriber can
 also be de-registered with the `replicatorAdapter.unsubscribe(key)` function.
 
+In addition to subscribing to individual keys it is possible to subscribe to all keys with a given prefix
+by using a `*` at the end of the key `id`. For example `GCounterKey("counter-*")`. Notifications will be
+sent for all matching keys, also new keys added later.
+
 ### Delete
 
 A data entry can be deleted by sending a `Replicator.Delete` message to the local
@@ -190,16 +194,47 @@ A deleted key cannot be reused again, but it is still recommended to delete unus
 data entries because that reduces the replication overhead when new nodes join the cluster.
 Subsequent `Delete`, `Update` and `Get` requests will be replied with `Replicator.DataDeleted`.
 Subscribers will receive `Replicator.Deleted`.
+
+The @ref:[automatic expiry](#expire) is an alternative for removing unused data entries.
  
 @@@ warning
 
 As deleted keys continue to be included in the stored data on each node as well as in gossip
 messages, a continuous series of updates and deletes of top-level entities will result in
 growing memory usage until an ActorSystem runs out of memory. To use Akka Distributed Data
-where frequent adds and removes are required, you should use a fixed number of top-level data
-types that support both updates and removals, for example `ORMap` or `ORSet`.
+where frequent adds and removes are required, you should use @ref:[automatic expiry](#expire) 
+or a fixed number of top-level data types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
+
+### Expire
+
+A data entry can automatically be removed after a period of inactivity, i.e. when there has been no access of
+the entry with `Get`, `Update` or `Delete`.
+
+Expiry is enabled for configured keys:
+
+```
+akka.cluster.distributed-data.expire-keys-after-inactivity {
+ "key-1" = 10 minutes
+ "cache-*" = 2 minutes
+}
+```
+
+Prefix matching is supported by using `*` at the end of a key.
+
+Expiry can be enabled for all entries by specifying:
+
+```
+akka.cluster.distributed-data.expire-keys-after-inactivity {
+  "*" = 10 minutes
+}
+```
+
+Subscribers will receive `Replicator.Expired` when an entry has expired.
+
+Expired entries are completely removed and does not leave any tombstones as is the case for @ref:[Delete](#delete). 
+Expired keys can be reused again. Also @ref:[deleted](#delete) entries can be expired and then completely removed.
 
 ### Consistency
 
@@ -675,6 +710,12 @@ possible to replace that with another implementation by implementing the actor p
 `akka.cluster.ddata.DurableStore` and defining the `akka.cluster.distributed-data.durable.store-actor-class`
 property for the new implementation.
 
+@@@ note { title="Java 17" }
+
+When using LMDB with Java 17 you have to add JVM flags `--add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED`.
+
+@@@
+
 The location of the files for the data is configured with:
 
 Scala
@@ -726,7 +767,7 @@ There is one important caveat when it comes pruning of @ref:[CRDT Garbage](#crdt
 If an old data entry that was never pruned is injected and merged with existing data after
 that the pruning markers have been removed the value will not be correct. The time-to-live
 of the markers is defined by configuration
-`akka.cluster.distributed-data.durable.remove-pruning-marker-after` and is in the magnitude of days.
+`akka.cluster.distributed-data.durable.pruning-marker-time-to-live` and is in the magnitude of days.
 This would be possible if a node with durable data didn't participate in the pruning
 (e.g. it was shutdown) and later started after this time. A node with durable data should not
 be stopped for longer time than this duration and if it is joining again after this

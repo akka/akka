@@ -239,4 +239,7 @@ object PNCounterKey {
 }
 
 @SerialVersionUID(1L)
-final case class PNCounterKey(_id: String) extends Key[PNCounter](_id) with ReplicatedDataSerialization
+final case class PNCounterKey(_id: String) extends Key[PNCounter](_id) with ReplicatedDataSerialization {
+  override def withId(newId: Key.KeyId): PNCounterKey =
+    PNCounterKey(newId)
+}

@@ -4,29 +4,27 @@
 
 package akka.event;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.event.Logging.Error;
-import akka.event.ActorWithMDC.Log;
 import static akka.event.Logging.*;
-
-import akka.testkit.javadsl.TestKit;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-
-import java.util.*;
-import java.time.Duration;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.event.ActorWithMDC.Log;
+import akka.event.Logging.Error;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.javadsl.TestKit;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import java.time.Duration;
+import java.util.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class LoggingAdapterTest extends JUnitSuite {
 

@@ -9,9 +9,13 @@ import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.{ ActorRef, Behavior, Signal }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.japi.function.{ Function => JFunction }
+import akka.pattern.StatusReply
 import com.typesafe.config.Config
 
 import java.util.concurrent.ThreadLocalRandom
+
+import scala.annotation.nowarn
 
 object BehaviorTestKit {
 
@@ -59,6 +63,49 @@ object BehaviorTestKit {
 @DoNotInherit
 @ApiMayChange
 abstract class BehaviorTestKit[T] {
+
+  /**
+   * Constructs a message using the provided 'messageFactory' to inject a single-use "reply to"
+   * [[akka.actor.typed.ActorRef]], and sends the constructed message to the behavior, recording any [[Effect]]s.
+   *
+   * The returned [[ReplyInbox]] allows the message sent to the "reply to" `ActorRef` to be asserted on.
+   */
+  def runAsk[Res](messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res]
+
+  /**
+   * The same as [[runAsk]], but with the response class specified.  This improves type inference in Java
+   * when asserting on the reply in the same statement as the `runAsk` as in:
+   *
+   * ```
+   * testkit.runAsk(Done.class, DoSomethingCommand::new).expectReply(Done.getInstance());
+   * ```
+   *
+   * If explicitly saving the [[ReplyInbox]] in a variable, the version without the class may be preferred.
+   */
+  @nowarn("msg=never used") // responseClass is a pretend param to guide inference
+  def runAsk[Res](responseClass: Class[Res], messageFactory: JFunction[ActorRef[Res], T]): ReplyInbox[Res] =
+    runAsk(messageFactory)
+
+  /**
+   * The same as [[runAsk]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   */
+  def runAskWithStatus[Res](messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res]
+
+  /**
+   * The same as [[runAskWithStatus]], but with the response class specified.  This improves type inference in
+   * Java when asserting on the reply in the same statement as the `runAskWithStatus` as in:
+   *
+   * ```
+   * testkit.runAskWithStatus(Done.class, DoSomethingWithStatusCommand::new).expectValue(Done.getInstance());
+   * ```
+   *
+   * If explicitly saving the [[StatusReplyInbox]] in a variable, the version without the class may be preferred.
+   */
+  @nowarn("msg=never used") // responseClass is a pretend param to guide inference
+  def runAskWithStatus[Res](
+      responseClass: Class[Res],
+      messageFactory: JFunction[ActorRef[StatusReply[Res]], T]): StatusReplyInbox[Res] =
+    runAskWithStatus(messageFactory)
 
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects

@@ -4,6 +4,9 @@
 
 package akka.cluster.sharding.typed;
 
+import static akka.cluster.sharding.typed.ReplicatedShardingTest.ProxyActor.ALL_REPLICAS;
+import static org.junit.Assert.assertEquals;
+
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -24,17 +27,13 @@ import akka.persistence.typed.ReplicaId;
 import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.*;
 import com.typesafe.config.ConfigFactory;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
-
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
-
-import static akka.cluster.sharding.typed.ReplicatedShardingTest.ProxyActor.ALL_REPLICAS;
-import static org.junit.Assert.assertEquals;
 
 public class ReplicatedShardingTest extends JUnitSuite {
 

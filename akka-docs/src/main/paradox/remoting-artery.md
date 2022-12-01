@@ -43,6 +43,12 @@ The Aeron dependency needs to be explicitly added if using the `aeron-udp` trans
   version2="$aeron_version$"
 }
 
+@@@ note { title="Java 17" }
+
+When using Aeron with Java 17 you have to add JVM flag `--add-opens=java.base/sun.nio.ch=ALL-UNNAMED`.
+
+@@@
+
 ## Configuration
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes

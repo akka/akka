@@ -50,7 +50,6 @@ akka-docs-dev/rst_preprocessed/
 akka-docs/_build/
 akka-docs/exts/
 akka-docs/rst_preprocessed/
-akka-osgi/src/main/resources/*.conf
 akka.sublime-project
 akka.sublime-workspace
 akka.tmproj

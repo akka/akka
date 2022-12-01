@@ -4,6 +4,11 @@
 
 package jdocs.stream;
 
+import static akka.pattern.Patterns.ask;
+import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
+import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
+import static junit.framework.TestCase.assertTrue;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.*;
@@ -12,16 +17,8 @@ import akka.stream.javadsl.*;
 import akka.testkit.TestProbe;
 import akka.testkit.javadsl.TestKit;
 import akka.util.Timeout;
-
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import jdocs.AbstractJavaTest;
-import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Author;
-import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,10 +30,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import static akka.pattern.Patterns.ask;
-import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
-import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
-import static junit.framework.TestCase.assertTrue;
+import jdocs.AbstractJavaTest;
+import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Author;
+import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 @SuppressWarnings("ALL")
 public class IntegrationDocTest extends AbstractJavaTest {

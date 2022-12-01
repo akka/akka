@@ -1,0 +1,9 @@
+# #27683 Internal changes for crdt expiry
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.ddata.Replicator.dataEntries")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.ddata.Replicator.dataEntries_=")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.ddata.Replicator.receiveStatus")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.ddata.Replicator.receiveGossip")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.ddata.Replicator#Internal*")
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.protobuf.msg.*")
+
+

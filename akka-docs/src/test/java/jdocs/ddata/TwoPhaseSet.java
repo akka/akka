@@ -4,12 +4,10 @@
 
 package jdocs.ddata;
 
-import java.util.HashSet;
-
-import java.util.Set;
-
 import akka.cluster.ddata.AbstractReplicatedData;
 import akka.cluster.ddata.GSet;
+import java.util.HashSet;
+import java.util.Set;
 
 // #twophaseset
 public class TwoPhaseSet extends AbstractReplicatedData<TwoPhaseSet> {

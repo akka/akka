@@ -17,7 +17,6 @@ import akka.persistence.typed.javadsl.EventSourcedBehaviorWithEnforcedReplies;
 import akka.persistence.typed.javadsl.ReplyEffect;
 import akka.serialization.jackson.CborSerializable;
 import com.fasterxml.jackson.annotation.JsonCreator;
-
 import java.math.BigDecimal;
 
 /**

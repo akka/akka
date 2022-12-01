@@ -339,7 +339,7 @@ object Source {
    * is failed with a [[akka.stream.NeverMaterializedException]]
    */
   def lazySingle[T](create: Creator[T]): Source[T, NotUsed] =
-    lazySource(() => single(create.create())).mapMaterializedValue(_ => NotUsed)
+    scaladsl.Source.lazySingle(() => create.create()).asJava
 
   /**
    * Defers invoking the `create` function to create a future element until there is downstream demand.
@@ -356,13 +356,9 @@ object Source {
    * is failed with a [[akka.stream.NeverMaterializedException]]
    */
   def lazyCompletionStage[T](create: Creator[CompletionStage[T]]): Source[T, NotUsed] =
-    scaladsl.Source
-      .lazySource { () =>
-        val f = create.create().toScala
-        scaladsl.Source.future(f)
-      }
-      .mapMaterializedValue(_ => NotUsed.notUsed())
-      .asJava
+    scaladsl.Source.lazyFuture { () =>
+      create.create().toScala
+    }.asJava
 
   /**
    * Defers invoking the `create` function to create a future source until there is downstream demand.
@@ -2409,7 +2405,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * the mapping function for mapping the first element. The mapping function returns a mapped element to emit
    * downstream and a state to pass to the next mapping function. The state can be the same for each mapping return,
    * be a new immutable state but it is also safe to use a mutable state. The returned `T` MUST NOT be `null` as it is
-   * illegal as stream element - according to the Reactive Streams specification.
+   * illegal as stream element - according to the Reactive Streams specification. A `null` state is not allowed and will fail the stream.
    *
    * For stateless variant see [[map]].
    *
@@ -2473,11 +2469,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param close function that closes the resource, optionally outputting a last element
    */
   def mapWithResource[R, T](
-      create: function.Creator[R],
-      f: function.Function2[R, Out, T],
-      close: function.Function[R, Optional[T]]): javadsl.Source[T, Mat] =
+      create: java.util.function.Supplier[R],
+      f: java.util.function.BiFunction[R, Out, T],
+      close: java.util.function.Function[R, Optional[T]]): javadsl.Source[T, Mat] =
     new Source(
-      delegate.mapWithResource(() => create.create())(
+      delegate.mapWithResource(() => create.get())(
         (resource, out) => f(resource, out),
         resource => close.apply(resource).asScala))
 
@@ -3986,7 +3982,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * If the first element has not passed through this operator before the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]].
+   * with a [[akka.stream.InitialTimeoutException]].
    *
    * '''Emits when''' upstream emits an element
    *
@@ -4003,7 +3999,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * If the first element has not passed through this operator before the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]].
+   * with a [[akka.stream.InitialTimeoutException]].
    *
    * '''Emits when''' upstream emits an element
    *
@@ -4019,7 +4015,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]].
+   * with a [[akka.stream.CompletionTimeoutException]].
    *
    * '''Emits when''' upstream emits an element
    *
@@ -4036,7 +4032,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]].
+   * with a [[akka.stream.CompletionTimeoutException]].
    *
    * '''Emits when''' upstream emits an element
    *
@@ -4052,7 +4048,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * If the time between two processed elements exceeds the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * with a [[akka.stream.StreamIdleTimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
@@ -4070,7 +4066,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * If the time between two processed elements exceeds the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * with a [[akka.stream.StreamIdleTimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
@@ -4087,7 +4083,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
-   * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * the stream is failed with a [[akka.stream.BackpressureTimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
@@ -4105,7 +4101,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
-   * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * the stream is failed with a [[akka.stream.BackpressureTimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element

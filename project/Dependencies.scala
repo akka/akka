@@ -27,16 +27,16 @@ object Dependencies {
   val scalaFortifyVersion = "1.0.22"
   val fortifySCAVersion = "22.1"
   val jacksonCoreVersion = "2.13.4"
-  val jacksonDatabindVersion = jacksonCoreVersion
+  val jacksonDatabindVersion = "2.13.4.2"
 
-  val scala212Version = "2.12.16"
-  val scala213Version = "2.13.8"
+  val scala212Version = "2.12.17"
+  val scala213Version = "2.13.10"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
   val scala3Version = "3.1.3"
   val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
-  val reactiveStreamsVersion = "1.0.3"
+  val reactiveStreamsVersion = "1.0.4"
 
   val sslConfigVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
@@ -53,6 +53,7 @@ object Dependencies {
       "3.1.4"
     }
   }
+
   val scalaTestScalaCheckVersion = Def.setting {
     if (scalaVersion.value.startsWith("3.")) {
       "1-15"
@@ -60,6 +61,7 @@ object Dependencies {
       "1-14"
     }
   }
+
   val scalaCheckVersion = "1.15.1"
 
   val Versions =
@@ -83,16 +85,12 @@ object Dependencies {
 
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion // MIT
 
-    // mirrored in OSGi sample https://github.com/akka/akka-samples/tree/2.6/akka-sample-osgi-dining-hakkers
-    val osgiCore = "org.osgi" % "org.osgi.core" % "6.0.0" // ApacheV2
-    val osgiCompendium = "org.osgi" % "org.osgi.compendium" % "5.0.0" // ApacheV2
-
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
     val jctools = "org.jctools" % "jctools-core" % "3.3.0" // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
+    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // MIT-0
 
     // ssl-config
     val sslConfigCore = Def.setting {
@@ -113,7 +111,7 @@ object Dependencies {
     // Added explicitly for when artery tcp is used
     val agrona = "org.agrona" % "agrona" % agronaVersion // ApacheV2
 
-    val asnOne = ("com.hierynomus" % "asn-one" % "0.5.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val asnOne = ("com.hierynomus" % "asn-one" % "0.6.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonCoreVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonCoreVersion // ApacheV2
@@ -157,8 +155,6 @@ object Dependencies {
         "org.scalatestplus" %% "mockito-3-4" % (scalaTestVersion.value + ".0") % Test
       } // ApacheV2
 
-      val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % Test // ApacheV2
-      val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "3.0.0" % Test // ApacheV2
       val log4j = "log4j" % "log4j" % "1.2.17" % Test // ApacheV2
 
       // in-memory filesystem for file related tests
@@ -179,7 +175,8 @@ object Dependencies {
       val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test // CC0
+      val reactiveStreamsTck = ("org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test)
+        .exclude("org.testng", "testng") // MIT-0
 
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % Test
 
@@ -325,15 +322,6 @@ object Dependencies {
         lz4Java,
         TestDependencies.junit,
         TestDependencies.scalatest.value)
-  val osgi = l ++= Seq(
-        osgiCore,
-        osgiCompendium,
-        TestDependencies.logback,
-        TestDependencies.commonsIo,
-        TestDependencies.pojosr,
-        TestDependencies.tinybundles,
-        TestDependencies.scalatest.value,
-        TestDependencies.junit)
 
   val docs = l ++= Seq(
         TestDependencies.scalatest.value,

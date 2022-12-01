@@ -4,12 +4,11 @@
 
 package akka.actor;
 
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Optional;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class AddressTest extends JUnitSuite {
 

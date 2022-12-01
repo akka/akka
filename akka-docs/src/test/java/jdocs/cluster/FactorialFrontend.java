@@ -4,13 +4,10 @@
 
 package jdocs.cluster;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.time.Duration;
-
+import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
 import akka.actor.Props;
+import akka.actor.ReceiveTimeout;
 import akka.cluster.metrics.AdaptiveLoadBalancingGroup;
 import akka.cluster.metrics.AdaptiveLoadBalancingPool;
 import akka.cluster.metrics.HeapMetricsSelector;
@@ -19,12 +16,14 @@ import akka.cluster.routing.ClusterRouterGroup;
 import akka.cluster.routing.ClusterRouterGroupSettings;
 import akka.cluster.routing.ClusterRouterPool;
 import akka.cluster.routing.ClusterRouterPoolSettings;
-import akka.actor.ActorRef;
-import akka.actor.ReceiveTimeout;
-import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.routing.FromConfig;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 // #frontend
 public class FactorialFrontend extends AbstractActor {

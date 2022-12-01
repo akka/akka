@@ -36,7 +36,7 @@ class EventSourcedSnapshotAdapterSpec
   import akka.actor.typed.scaladsl.adapter._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()}")
 
   val queries: PersistenceTestKitReadJournal =
     PersistenceQuery(system.toClassic)

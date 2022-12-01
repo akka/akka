@@ -4,20 +4,20 @@
 
 package jdocs.actor.fsm;
 
+import static jdocs.actor.fsm.Events.Batch;
+import static jdocs.actor.fsm.Events.Flush.Flush;
+import static jdocs.actor.fsm.Events.Queue;
+import static jdocs.actor.fsm.Events.SetTarget;
+
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
+import java.util.LinkedList;
+import jdocs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.util.LinkedList;
-
-import static jdocs.actor.fsm.Events.Batch;
-import static jdocs.actor.fsm.Events.Queue;
-import static jdocs.actor.fsm.Events.SetTarget;
-import static jdocs.actor.fsm.Events.Flush.Flush;
 
 // #test-code
 public class BuncherTest extends AbstractJavaTest {

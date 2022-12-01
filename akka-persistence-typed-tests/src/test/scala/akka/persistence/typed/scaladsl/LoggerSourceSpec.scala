@@ -25,7 +25,7 @@ class LoggerSourceSpec
     with LogCapturing {
 
   private val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()}")
 
   def behavior: Behavior[String] = Behaviors.setup { ctx =>
     ctx.log.info("setting-up-behavior")

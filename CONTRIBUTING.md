@@ -16,8 +16,8 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `main` – active development branch of Akka 2.6.x
-* `release-2.5` – maintenance branch of Akka 2.5.x
+* `main` – active development branch of Akka 2.8.x
+* `release-2.7` – maintenance branch of Akka 2.7.x
 * similarly `release-2.#` branches contain legacy versions of Akka
 
 ### Tags
@@ -73,7 +73,7 @@ The steps are exactly the same for everyone involved in the project, including t
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
    - Use the `verifyCodeStyle` sbt task to ensure your code is properly formatted and includes the proper copyright headers.
-1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
+1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `feat: Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
 1. If it's a new feature or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka/tree/main/akka-docs). When the feature touches Scala and Java DSL, document both the Scala and Java APIs.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
     - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, as this will cause the PR to be linked properly with the issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
@@ -395,22 +395,19 @@ Each project must also create and maintain a list of all dependencies and their 
 
 Follow these guidelines when creating public commits and writing commit messages.
 
-1. If your work spans multiple local commits (for example; if you do safe point commits while working in a feature branch or work in a branch for a long time doing merges/rebases etc.) then please do not commit it all but rewrite the history by squashing the commits into a single big commit which you write a good commit message for (like discussed in the following sections). For more info read this article: [Git Workflow](https://sandofsky.com/workflow/git-workflow/). Every commit should be able to be used in isolation, cherry picked etc.
+1. While working working in a feature branch or a PR branch for a long time it's useful that the work spans multiple commits, for safe points and simplify reviewing partial changes. When a PR is done it should be squashed into a single big commit which you write a good commit message for (like discussed in the following sections). For more info read this article: [Git Workflow](https://sandofsky.com/workflow/git-workflow/). Every commit should be able to be used in isolation, cherry picked etc.
 
-2. The first line should be a descriptive sentence what the commit is doing, including the ticket number. It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the "imperative present tense" style for commit messages ([more info here](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)).
+3. The first line should be a descriptive sentence what the commit is doing, including the ticket number (if any). It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the "imperative present tense" style for commit messages ([more info here](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)). It's encouraged to use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) prefixes, such as `feat:`, `fix:`, `perf:`, `build:`, `chore:`, `docs:`, but no need to use the scope syntax.
 
    It is **not ok** to only list the ticket number, type "minor fix" or similar.
    If the commit is a small fix, then you are done. If not, go to 3.
 
-3. Following the single line description should be a blank line followed by an enumerated list with the details of the commit.
-
-4. You can request a review by a specific team member  for your commit (depending on the degree of automation we reach, the list may change over time):
-    * "Review by @gituser "- if you want to notify someone on the team. The others can and are encouraged to participate.
+4. Following the single line description should be a blank line followed by an enumerated list with the details of the commit.
 
 Example:
 
 ```
-Enable Travis CI #1
+feat: Adding compression support for Manifests #22222
 
 * Details 1
 * Details 2

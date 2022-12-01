@@ -4,6 +4,8 @@
 
 package jdocs.stream;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -18,14 +20,6 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.TestLatch;
 import akka.testkit.javadsl.TestKit;
-import jdocs.AbstractJavaTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
-import scala.util.Random;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,8 +28,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
-
-import static org.junit.Assert.assertEquals;
+import jdocs.AbstractJavaTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
+import scala.util.Random;
 
 public class RateTransformationDocTest extends AbstractJavaTest {
 

@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.Span
+import org.scalatest.time.Span.convertSpanToDuration
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -195,7 +196,8 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
 
         def remoteEcho = system.actorSelection(RootActorPath(remoteAddress) / "user" / "echo")
 
-        val echoRef = remoteEcho.resolveOne(remainingOrDefault).futureValue
+        // use little less resolve timeout than the patience timeout for good error messages
+        val echoRef = remoteEcho.resolveOne(convertSpanToDuration(patience.timeout) - 200.millis).futureValue
         val localProbe = new TestProbe(localSystem)
 
         echoRef.tell("ping", localProbe.ref)

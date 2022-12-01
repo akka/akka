@@ -4,6 +4,12 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
+import static akka.Done.done;
+import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity;
+import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
@@ -17,21 +23,14 @@ import akka.pattern.StatusReply;
 import akka.persistence.typed.PersistenceId;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static akka.Done.done;
-import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity;
-import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class AccountExampleTest extends JUnitSuite {
 

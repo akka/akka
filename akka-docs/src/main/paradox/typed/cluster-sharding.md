@@ -634,6 +634,13 @@ Reasons for disabling:
 
 For supporting remembered entities in an environment without disk storage use `eventsourced` mode instead.
 
+@@@ note { title="Java 17" }
+
+When using `remember-entities-store=ddata` the remember entities store is persisted to disk by LMDB.
+When running with Java 17 you have to add JVM flags `--add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED`.
+
+@@@
+
 #### Event sourced mode
 
 Enable `eventsourced` mode with:
@@ -731,8 +738,8 @@ See also additional information about how to make @ref:[smooth rolling updates](
 Two requests to inspect the cluster state are available:
 
 @apidoc[akka.cluster.sharding.typed.GetShardRegionState] which will reply with a 
-@apidoc[ShardRegion.CurrentShardRegionState] that contains the identifiers of the shards running in
-a Region and what entities are alive for each of them.
+@scala[@scaladoc[ShardRegion.CurrentShardRegionState](akka.cluster.sharding.ShardRegion.CurrentShardRegionState)]@java[@javadoc[ShardRegion.CurrentShardRegionState](akka.cluster.sharding.ShardRegion)]
+that contains the identifiers of the shards running in a Region and what entities are alive for each of them.
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #get-shard-region-state }
@@ -741,8 +748,8 @@ Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #get-shard-region-state }
 
 @apidoc[akka.cluster.sharding.typed.GetClusterShardingStats] which will query all the regions in the cluster and reply with a
-@apidoc[ShardRegion.ClusterShardingStats] containing the identifiers of the shards running in each region and a count
-of entities that are alive in each shard.
+@scala[@scaladoc[ShardRegion.ClusterShardingStats](akka.cluster.sharding.ShardRegion.ClusterShardingStats)]@java[@javadoc[ShardRegion.ClusterShardingStats](akka.cluster.sharding.ShardRegion)]
+containing the identifiers of the shards running in each region and a count of entities that are alive in each shard.
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #get-cluster-sharding-stats }

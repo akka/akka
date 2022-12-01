@@ -388,6 +388,7 @@ class ReliableDeliveryShardingSpec
             // It is possible the ProducerController re-sends msg-3 again before it has processed its acknowledgement.
             // If the ConsumerController restarts between sending the acknowledgement and receiving that re-sent msg-3,
             // it will deliver msg-3 a second time. We then expect msg-4 next:
+            delivery3cor4.confirmTo ! ConsumerController.Confirmed
             val delivery4 = consumerProbes(1).receiveMessage()
             delivery4.message should ===(TestConsumer.Job("msg-4"))
           case TestConsumer.Job("msg-4") =>
@@ -407,6 +408,7 @@ class ReliableDeliveryShardingSpec
             // It is possible the ProducerController re-sends msg-3 again before it has processed its acknowledgement.
             // If the ConsumerController restarts between sending the acknowledgement and receiving that re-sent msg-3,
             // it will deliver msg-3 a second time. We then expect msg-4 next:
+            delivery3cor4.confirmTo ! ConsumerController.Confirmed
             val delivery4 = consumerProbes(2).receiveMessage()
             delivery4.message should ===(TestConsumer.Job("msg-4"))
           case TestConsumer.Job("msg-4") =>

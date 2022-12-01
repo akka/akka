@@ -9,6 +9,7 @@ import java.util.concurrent.{ Callable, CompletionException, CompletionStage, Co
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
 import java.util.function.BiFunction
 import java.util.function.Consumer
+
 import scala.annotation.nowarn
 import scala.compat.java8.FutureConverters
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
@@ -17,6 +18,7 @@ import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
+
 import akka.AkkaException
 import akka.actor.{ ExtendedActorSystem, Scheduler }
 import akka.dispatch.ExecutionContexts.parasitic
@@ -285,12 +287,14 @@ class CircuitBreaker(
    * Holds reference to current state of CircuitBreaker - *access only via helper methods*
    */
   @volatile
+  @nowarn("msg=never updated")
   private[this] var _currentStateDoNotCallMeDirectly: State = Closed
 
   /**
    * Holds reference to current resetTimeout of CircuitBreaker - *access only via helper methods*
    */
   @volatile
+  @nowarn("msg=never updated")
   private[this] var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
 
   @nowarn private def _preventPrivateUnusedErasure = {

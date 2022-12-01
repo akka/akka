@@ -4,15 +4,13 @@
 
 package jdocs.io.japi;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class EchoServer {
 

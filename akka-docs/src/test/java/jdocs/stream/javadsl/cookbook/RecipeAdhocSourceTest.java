@@ -4,6 +4,9 @@
 
 package jdocs.stream.javadsl.cookbook;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -14,6 +17,10 @@ import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -21,13 +28,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Promise;
 import scala.concurrent.duration.FiniteDuration;
-
-import java.time.Duration;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.Assert.assertEquals;
 
 public class RecipeAdhocSourceTest extends RecipeTest {
   static ActorSystem system;
@@ -208,7 +208,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
         assertEquals(1, startedCount.get());
 
         Thread.sleep(500);
-        assertEquals(true, shutdown.isCompleted());
+        assertTrue(shutdown.isCompleted());
 
         Thread.sleep(500);
         probe.requestNext("a");
@@ -223,7 +223,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
         assertEquals(4, startedCount.get()); // startCount == 4, which means "re"-tried 3 times
 
         Thread.sleep(500);
-        assertEquals(TimeoutException.class, probe.expectError().getClass());
+        assertTrue(probe.expectError() instanceof TimeoutException);
         probe.request(1); // send demand
         probe.expectNoMessage(FiniteDuration.create(200, "milliseconds")); // but no more restart
       }

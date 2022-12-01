@@ -4,18 +4,16 @@
 
 package akka.actor;
 
-import java.time.Duration;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import static org.junit.Assert.assertEquals;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
-
+import java.time.Duration;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
-
-import static org.junit.Assert.assertEquals;
 
 public class ActorSelectionTest extends JUnitSuite {
 

@@ -56,4 +56,7 @@ object FlagKey {
 }
 
 @SerialVersionUID(1L)
-final case class FlagKey(_id: String) extends Key[Flag](_id) with ReplicatedDataSerialization
+final case class FlagKey(_id: String) extends Key[Flag](_id) with ReplicatedDataSerialization {
+  override def withId(newId: Key.KeyId): FlagKey =
+    FlagKey(newId)
+}

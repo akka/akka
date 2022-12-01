@@ -98,4 +98,7 @@ object GSetKey {
 }
 
 @SerialVersionUID(1L)
-final case class GSetKey[A](_id: String) extends Key[GSet[A]](_id) with ReplicatedDataSerialization
+final case class GSetKey[A](_id: String) extends Key[GSet[A]](_id) with ReplicatedDataSerialization {
+  override def withId(newId: Key.KeyId): GSetKey[A] =
+    GSetKey(newId)
+}

@@ -4,11 +4,9 @@
 
 package akka.persistence.journal.japi;
 
-import java.util.function.Consumer;
-
-import scala.concurrent.Future;
-
 import akka.persistence.PersistentRepr;
+import java.util.function.Consumer;
+import scala.concurrent.Future;
 
 interface AsyncRecoveryPlugin {
   // #async-replay-plugin-api

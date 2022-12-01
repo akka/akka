@@ -7,7 +7,6 @@ package jdocs.stream.operators.source;
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.javadsl.Source;
-
 import java.math.BigInteger;
 import java.util.Optional;
 

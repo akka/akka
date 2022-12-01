@@ -7,7 +7,6 @@ package jdocs.stream.operators.source;
 // #sourceCompletionStageSource
 import akka.NotUsed;
 import akka.stream.javadsl.Source;
-
 import java.util.concurrent.CompletionStage;
 
 public class CompletionStageSource {

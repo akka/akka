@@ -63,7 +63,7 @@ fi
 gcloud container clusters create $CLUSTER_NAME \
   --cluster-version $CLUSTER_VERSION  \
   --enable-ip-alias \
-  --image-type cos \
+  --image-type cos_containerd \
   --machine-type n2-standard-8 \
   --num-nodes 5 \
   --no-enable-autoupgrade

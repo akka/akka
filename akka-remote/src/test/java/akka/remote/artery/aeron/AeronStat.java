@@ -16,22 +16,6 @@
 
 package akka.remote.artery.aeron;
 
-import java.io.File;
-import java.io.PrintStream;
-import java.nio.MappedByteBuffer;
-import java.util.Date;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-import java.util.regex.Pattern;
-
-import io.aeron.CncFileDescriptor;
-import io.aeron.CommonContext;
-import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
-import org.agrona.concurrent.status.CountersReader;
-import org.agrona.concurrent.SigInt;
-
 import static io.aeron.CncFileDescriptor.*;
 import static io.aeron.driver.status.PerImageIndicator.PER_IMAGE_TYPE_ID;
 import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
@@ -40,6 +24,21 @@ import static io.aeron.driver.status.ReceiverPos.RECEIVER_POS_TYPE_ID;
 import static io.aeron.driver.status.SendChannelStatus.SEND_CHANNEL_STATUS_TYPE_ID;
 import static io.aeron.driver.status.StreamCounter.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+
+import io.aeron.CncFileDescriptor;
+import io.aeron.CommonContext;
+import io.aeron.status.ChannelEndpointStatus;
+import java.io.File;
+import java.io.PrintStream;
+import java.nio.MappedByteBuffer;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.SigInt;
+import org.agrona.concurrent.status.CountersReader;
 
 /**
  * Tool for printing out Aeron counters. A command-and-control (cnc) file is maintained by media

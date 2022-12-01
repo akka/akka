@@ -161,7 +161,7 @@ object AkkaBuild {
       }
     },
     ThisBuild / ivyLoggingLevel := UpdateLogging.Quiet,
-    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/akka/main/LICENSE"))), // FIXME change s/main/v2.7.0/ when released
+    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/akka/main/LICENSE"))), // FIXME change s/main/v2.8.0/ when released
     homepage := Some(url("https://akka.io/")),
     description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
     scmInfo := Some(

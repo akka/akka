@@ -534,7 +534,7 @@ object Source {
    * the laziness and will trigger the factory immediately.
    */
   def lazySingle[T](create: () => T): Source[T, NotUsed] =
-    lazySource(() => single(create())).mapMaterializedValue(_ => NotUsed)
+    single(()).map(_ => create()).withAttributes(DefaultAttributes.lazySingle)
 
   /**
    * Defers invoking the `create` function to create a future element until there is downstream demand.
@@ -546,10 +546,7 @@ object Source {
    * the laziness and will trigger the factory immediately.
    */
   def lazyFuture[T](create: () => Future[T]): Source[T, NotUsed] =
-    lazySource { () =>
-      val f = create()
-      future(f)
-    }.mapMaterializedValue(_ => NotUsed)
+    single(()).mapAsyncUnordered(1)(_ => create()).withAttributes(DefaultAttributes.lazyFuture)
 
   /**
    * Defers invoking the `create` function to create a future source until there is downstream demand.

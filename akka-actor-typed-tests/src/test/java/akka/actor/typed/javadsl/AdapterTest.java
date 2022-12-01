@@ -4,27 +4,26 @@
 
 package akka.actor.typed.javadsl;
 
-import akka.actor.testkit.typed.javadsl.LogCapturing;
-import akka.actor.typed.internal.adapter.SchedulerAdapter;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-
-import java.time.Duration;
+import static akka.actor.typed.javadsl.Behaviors.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 import akka.actor.ActorSystem;
-import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.AkkaSpec;
+import akka.actor.SupervisorStrategy;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Signal;
 import akka.actor.typed.Terminated;
+import akka.actor.typed.internal.adapter.SchedulerAdapter;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.TestKit;
-import akka.actor.SupervisorStrategy;
-import static akka.actor.typed.javadsl.Behaviors.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import java.time.Duration;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class AdapterTest extends JUnitSuite {
 

@@ -20,21 +20,36 @@ class AkkaVersionSpec extends AnyWordSpec with Matchers {
     "succeed if version is RC and ok" in {
       AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.7-RC10")
       AkkaVersion.require("AkkaVersionSpec", "2.6.0-RC1", "2.6.0-RC1")
+      AkkaVersion.require("AkkaVersionSpec", "2.6.0-RC1", "2.6.0-RC2")
+      AkkaVersion.require("AkkaVersionSpec", "2.6.0-RC1", "2.7.0")
     }
 
     "fail if version is RC and not ok" in {
       intercept[UnsupportedAkkaVersion] {
         AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.6-RC1")
       }
+      intercept[UnsupportedAkkaVersion] {
+        AkkaVersion.require("AkkaVersionSpec", "2.5.6-RC2", "2.5.6-RC1")
+      }
     }
 
     "succeed if version is milestone and ok" in {
       AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.7-M10")
+      AkkaVersion.require("AkkaVersionSpec", "2.5.7-M9", "2.5.7-M9")
+      AkkaVersion.require("AkkaVersionSpec", "2.5.7-M9", "2.5.7-M10")
+      AkkaVersion.require("AkkaVersionSpec", "2.5.7-M9", "2.5.8")
+      AkkaVersion.require("AkkaVersionSpec", "2.5.7-M9", "2.5.7-RC1")
     }
 
     "fail if version is milestone and not ok" in {
       intercept[UnsupportedAkkaVersion] {
         AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.6-M1")
+      }
+      intercept[UnsupportedAkkaVersion] {
+        AkkaVersion.require("AkkaVersionSpec", "2.5.7-M10", "2.5.7-M9")
+      }
+      intercept[UnsupportedAkkaVersion] {
+        AkkaVersion.require("AkkaVersionSpec", "2.5.7-RC1", "2.5.7-M9")
       }
     }
 

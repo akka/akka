@@ -4,12 +4,10 @@
 
 package jdocs.io.japi;
 
-import java.net.InetSocketAddress;
-
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
-import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.io.Tcp;
@@ -17,6 +15,7 @@ import akka.io.Tcp.Bind;
 import akka.io.Tcp.Bound;
 import akka.io.Tcp.Connected;
 import akka.io.TcpMessage;
+import java.net.InetSocketAddress;
 
 public class EchoManager extends AbstractActor {
 

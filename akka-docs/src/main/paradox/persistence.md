@@ -848,6 +848,12 @@ in your Akka configuration. Also note that for the LevelDB Java port, you will n
   version="0.9"
 }
 
+@@@ note { title="Java 17" }
+
+When using LevelDB with Java 17 you have to add JVM flag `--add-opens=java.base/java.nio=ALL-UNNAMED`. 
+
+@@@
+
 @@@ warning
 
 It is not possible to test persistence provided classes (i.e. `PersistentActor`

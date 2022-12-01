@@ -4,11 +4,10 @@
 
 package jdocs.io.japi;
 
-import java.util.concurrent.CountDownLatch;
-
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Terminated;
-import akka.actor.AbstractActor;
+import java.util.concurrent.CountDownLatch;
 
 public class Watcher extends AbstractActor {
 

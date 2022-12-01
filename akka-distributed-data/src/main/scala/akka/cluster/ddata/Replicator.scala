@@ -104,7 +104,8 @@ object ReplicatorSettings {
       deltaCrdtEnabled = config.getBoolean("delta-crdt.enabled"),
       maxDeltaSize = config.getInt("delta-crdt.max-delta-size"),
       preferOldest = config.getBoolean("prefer-oldest"),
-      logDataSizeExceeding = logDataSizeExceeding)
+      logDataSizeExceeding = logDataSizeExceeding,
+      expiryKeys = parseExpiry(config))
   }
 
   /**
@@ -120,6 +121,23 @@ object ReplicatorSettings {
   @InternalApi private[akka] def name(system: ActorSystem, modifier: Option[String]): String = {
     val name = system.settings.config.getString("akka.cluster.distributed-data.name")
     modifier.map(s => s + name.take(1).toUpperCase + name.drop(1)).getOrElse(name)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def parseExpiry(config: Config): Map[KeyId, FiniteDuration] = {
+    import akka.util.ccompat.JavaConverters._
+    val expiryConfig = config.getConfig("expire-keys-after-inactivity")
+    expiryConfig.root
+      .keySet()
+      .iterator()
+      .asScala
+      .map { key =>
+        val quotedKey = s""""$key"""" // must use quotes because of the wildcard *
+        key -> expiryConfig.getDuration(quotedKey, MILLISECONDS).millis
+      }
+      .toMap
   }
 }
 
@@ -150,6 +168,10 @@ object ReplicatorSettings {
  *        in the `Set`.
  * @param preferOldest Update and Get operations are sent to oldest nodes first.
  * @param logDataSizeExceeding Log data size.
+ * @param expiryKeys Map of keys and inactivity duration for entries that will automatically be removed
+ *        without tombstones when they have been inactive for the given duration.
+ *        Prefix matching is supported by using * at the end of a key.
+ *        Matching tombstones will also be removed after the expiry duration.
  */
 final class ReplicatorSettings(
     val roles: Set[String],
@@ -166,7 +188,44 @@ final class ReplicatorSettings(
     val deltaCrdtEnabled: Boolean,
     val maxDeltaSize: Int,
     val preferOldest: Boolean,
-    val logDataSizeExceeding: Option[Int]) {
+    val logDataSizeExceeding: Option[Int],
+    val expiryKeys: Map[KeyId, FiniteDuration]) {
+
+  // for backwards compatibility
+  @deprecated("use full constructor", "2.7.1")
+  def this(
+      roles: Set[String],
+      gossipInterval: FiniteDuration,
+      notifySubscribersInterval: FiniteDuration,
+      maxDeltaElements: Int,
+      dispatcher: String,
+      pruningInterval: FiniteDuration,
+      maxPruningDissemination: FiniteDuration,
+      durableStoreProps: Either[(String, Config), Props],
+      durableKeys: Set[KeyId],
+      pruningMarkerTimeToLive: FiniteDuration,
+      durablePruningMarkerTimeToLive: FiniteDuration,
+      deltaCrdtEnabled: Boolean,
+      maxDeltaSize: Int,
+      preferOldest: Boolean,
+      logDataSizeExceeding: Option[Int]) =
+    this(
+      roles,
+      gossipInterval,
+      notifySubscribersInterval,
+      maxDeltaElements,
+      dispatcher,
+      pruningInterval,
+      maxPruningDissemination,
+      durableStoreProps,
+      durableKeys,
+      pruningMarkerTimeToLive,
+      durablePruningMarkerTimeToLive,
+      deltaCrdtEnabled,
+      maxDeltaSize,
+      preferOldest,
+      logDataSizeExceeding,
+      expiryKeys = Map.empty)
 
   // for backwards compatibility
   @deprecated("use full constructor", "2.6.11")
@@ -418,6 +477,20 @@ final class ReplicatorSettings(
   def withLogDataSizeExceeding(logDataSizeExceeding: Int): ReplicatorSettings =
     copy(logDataSizeExceeding = Some(logDataSizeExceeding))
 
+  /**
+   * Scala API
+   */
+  def withExpiryKeys(expiryKeys: Map[KeyId, FiniteDuration]): ReplicatorSettings =
+    copy(expiryKeys = expiryKeys)
+
+  /**
+   * Java API
+   */
+  def withExpiryKeys(expiryKeys: java.util.Map[String, java.time.Duration]): ReplicatorSettings = {
+    import akka.util.ccompat.JavaConverters._
+    withExpiryKeys(expiryKeys.asScala.iterator.map { case (key, value) => key -> value.asScala }.toMap)
+  }
+
   private def copy(
       roles: Set[String] = roles,
       gossipInterval: FiniteDuration = gossipInterval,
@@ -433,7 +506,8 @@ final class ReplicatorSettings(
       deltaCrdtEnabled: Boolean = deltaCrdtEnabled,
       maxDeltaSize: Int = maxDeltaSize,
       preferOldest: Boolean = preferOldest,
-      logDataSizeExceeding: Option[Int] = logDataSizeExceeding): ReplicatorSettings =
+      logDataSizeExceeding: Option[Int] = logDataSizeExceeding,
+      expiryKeys: Map[KeyId, FiniteDuration] = expiryKeys): ReplicatorSettings =
     new ReplicatorSettings(
       roles,
       gossipInterval,
@@ -449,10 +523,12 @@ final class ReplicatorSettings(
       deltaCrdtEnabled,
       maxDeltaSize,
       preferOldest,
-      logDataSizeExceeding)
+      logDataSizeExceeding,
+      expiryKeys)
 }
 
 object Replicator {
+  private type Timestamp = Long
 
   /**
    * Factory method for the [[akka.actor.Props]] of the [[Replicator]] actor.
@@ -663,6 +739,10 @@ object Replicator {
    * when the value of the given `key` is changed. Current value is also
    * sent as a [[Changed]] message to a new subscriber.
    *
+   * In addition to subscribing to individual keys it is possible to subscribe to all keys with a given prefix
+   * by using a `*` at the end of the key `id`. For example `GCounterKey("counter-*")`. Notifications will be
+   * sent for all matching keys, also new keys added later.
+   *
    * Subscribers will be notified periodically with the configured `notify-subscribers-interval`,
    * and it is also possible to send an explicit `FlushChanges` message to
    * the `Replicator` to notify the subscribers immediately.
@@ -670,6 +750,9 @@ object Replicator {
    * The subscriber will automatically be unregistered if it is terminated.
    *
    * If the key is deleted the subscriber is notified with a [[Deleted]]
+   * message.
+   *
+   * If the key is expired the subscriber is notified with an [[Expired]]
    * message.
    */
   final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
@@ -716,6 +799,11 @@ object Replicator {
    * @see [[Replicator.Subscribe]]
    */
   final case class Deleted[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
+
+  /**
+   * @see [[Replicator.Subscribe]]
+   */
+  final case class Expired[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
 
   object Update {
 
@@ -1103,7 +1191,7 @@ object Replicator {
     }
 
     final case class Status(
-        digests: Map[KeyId, Digest],
+        digests: Map[KeyId, (Digest, Timestamp)],
         chunk: Int,
         totChunks: Int,
         toSystemUid: Option[Long],
@@ -1113,12 +1201,12 @@ object Replicator {
       override def toString: String =
         (digests
           .map {
-            case (key, bytes) => key + " -> " + bytes.map(byte => f"$byte%02x").mkString("")
+            case (key, (bytes, _)) => key + " -> " + bytes.map(byte => f"$byte%02x").mkString("")
           })
           .mkString("Status(", ", ", ")")
     }
     final case class Gossip(
-        updatedData: Map[KeyId, DataEnvelope],
+        updatedData: Map[KeyId, (DataEnvelope, Timestamp)],
         sendBack: Boolean,
         toSystemUid: Option[Long],
         fromSystemUid: Option[Long])
@@ -1398,9 +1486,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   val serializer = SerializationExtension(context.system).serializerFor(classOf[DataEnvelope])
   val maxPruningDisseminationNanos = maxPruningDissemination.toNanos
 
+  val expiryWildcards = settings.expiryKeys.collect { case (k, v) if isWildcard(k) => dropWildcard(k) -> v }
+  val expiryEnabled: Boolean = settings.expiryKeys.nonEmpty
+  // updated on the gossip tick to avoid too many calls to `currentTimeMillis()`
+  private var currentUsedTimestamp = if (expiryEnabled) System.currentTimeMillis() else 0L
+
   val hasDurableKeys = settings.durableKeys.nonEmpty
-  val durable = settings.durableKeys.filterNot(_.endsWith("*"))
-  val durableWildcards = settings.durableKeys.collect { case k if k.endsWith("*") => k.dropRight(1) }
+  val durable = settings.durableKeys.filterNot(isWildcard)
+  val durableWildcards = settings.durableKeys.collect { case k if isWildcard(k) => dropWildcard(k) }
   val durableStore: ActorRef =
     if (hasDurableKeys) {
       val props = settings.durableStoreProps match {
@@ -1482,8 +1575,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   var unreachable = Set.empty[UniqueAddress]
 
   // the actual data
-  var dataEntries = Map.empty[KeyId, (DataEnvelope, Digest)]
-  // keys that have changed, Changed event published to subscribers on FlushChanges
+  var dataEntries = Map.empty[KeyId, (DataEnvelope, Digest, Timestamp)]
+  // keys that have changed, Changed, Deleted, Expired event published to subscribers on FlushChanges
   var changed = Set.empty[KeyId]
 
   // for splitting up gossip in chunks
@@ -1497,6 +1590,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   @nowarn("msg=deprecated")
   val newSubscribers = new mutable.HashMap[KeyId, mutable.Set[ActorRef]] with mutable.MultiMap[KeyId, ActorRef]
   var subscriptionKeys = Map.empty[KeyId, KeyR]
+  @nowarn("msg=deprecated")
+  val wildcardSubscribers = new mutable.HashMap[KeyId, mutable.Set[ActorRef]] with mutable.MultiMap[KeyId, ActorRef]
 
   // To be able to do efficient stashing we use this field instead of sender().
   // Using internal buffer instead of Stash to avoid the overhead of the Stash mailbox.
@@ -1685,6 +1780,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def receiveGet(key: KeyR, consistency: ReadConsistency, req: Option[Any]): Unit = {
     val localValue = getData(key.id)
     log.debug("Received Get for key [{}].", key)
+    updateUsedTimestamp(key.id, currentUsedTimestamp)
     if (isLocalGet(consistency)) {
       val reply = localValue match {
         case Some(DataEnvelope(DeletedData, _, _)) => GetDataDeleted(key, req)
@@ -1774,6 +1870,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         // note that it's important to do deltaPropagationSelector.update before setData,
         // so that the latest delta version is used
         val newEnvelope = setData(key.id, envelope)
+
+        updateUsedTimestamp(key.id, currentUsedTimestamp)
 
         val durable = isDurable(key.id)
         if (isLocalUpdate(writeConsistency)) {
@@ -1895,7 +1993,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def receiveGetKeyIds(): Unit = {
     val keys: Set[KeyId] = dataEntries.iterator
       .collect {
-        case (key, (DataEnvelope(data, _, _), _)) if data != DeletedData => key
+        case (key, (DataEnvelope(data, _, _), _, _)) if data != DeletedData => key
       }
       .to(immutable.Set)
     replyTo ! GetKeyIdsResult(keys)
@@ -1908,6 +2006,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         replyTo ! DataDeleted(key, req)
       case _ =>
         setData(key.id, DeletedEnvelope)
+        updateUsedTimestamp(key.id, currentUsedTimestamp)
         payloadSizeAggregator.remove(key.id)
         val durable = isDurable(key.id)
         if (isLocalUpdate(consistency)) {
@@ -1962,7 +2061,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
 
     val dig =
-      if (subscribers.contains(key) && !changed.contains(key)) {
+      if (hasSubscriber(key) && !changed.contains(key)) {
         val oldDigest = getDigest(key)
         val (dig, payloadSize) = digest(newEnvelope)
         payloadSizeAggregator.updatePayloadSize(key, payloadSize)
@@ -1972,7 +2071,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       } else if (newEnvelope.data == DeletedData) DeletedDigest
       else LazyDigest
 
-    dataEntries = dataEntries.updated(key, (newEnvelope, dig))
+    dataEntries = dataEntries.updated(key, (newEnvelope, dig, getUsedTimestamp(key)))
     if (newEnvelope.data == DeletedData)
       deltaPropagationSelector.delete(key)
     newEnvelope
@@ -1980,13 +2079,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def getDigest(key: KeyId): Digest = {
     dataEntries.get(key) match {
-      case Some((envelope, LazyDigest)) =>
+      case Some((envelope, LazyDigest, usedTimestamp)) =>
         val (d, size) = digest(envelope)
         payloadSizeAggregator.updatePayloadSize(key, size)
-        dataEntries = dataEntries.updated(key, (envelope, d))
+        dataEntries = dataEntries.updated(key, (envelope, d, usedTimestamp))
         d
-      case Some((_, digest)) => digest
-      case None              => NotFoundDigest
+      case Some((_, digest, _)) => digest
+      case None                 => NotFoundDigest
     }
   }
 
@@ -2001,45 +2100,124 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       (dig, bytes.length)
     }
 
-  def getData(key: KeyId): Option[DataEnvelope] = dataEntries.get(key).map { case (envelope, _) => envelope }
+  def getData(key: KeyId): Option[DataEnvelope] =
+    dataEntries.get(key).map { case (envelope, _, _) => envelope }
+
+  def getExpiryDuration(key: KeyId): FiniteDuration = {
+    if (expiryEnabled) {
+      expiryKeys.get(key) match {
+        case Some(d)                         => d
+        case None if expiryWildcards.isEmpty => Duration.Zero
+        case None =>
+          expiryWildcards
+            .collectFirst {
+              case (k, v) if key.startsWith(k) => v
+            }
+            .getOrElse(Duration.Zero)
+      }
+    } else {
+      Duration.Zero
+    }
+  }
+
+  def getUsedTimestamp(key: KeyId): Timestamp = {
+    if (expiryEnabled) {
+      dataEntries.get(key) match {
+        case Some((_, _, usedTimestamp)) => usedTimestamp
+        case None                        => 0L
+      }
+    } else {
+      0L
+    }
+  }
+
+  def isExpired(key: KeyId): Boolean =
+    isExpired(key, getUsedTimestamp(key))
+
+  def isExpired(key: KeyId, timestamp: Timestamp): Boolean = {
+    if (expiryEnabled && timestamp != 0L) {
+      val expiryDuration = getExpiryDuration(key)
+      expiryDuration != Duration.Zero && timestamp <= System.currentTimeMillis() - expiryDuration.toMillis
+    } else {
+      false
+    }
+  }
+
+  def updateUsedTimestamp(key: KeyId, timestamp: Timestamp): Unit = {
+    if (expiryEnabled && timestamp != 0) {
+      dataEntries.get(key).foreach {
+        case (existingEnvelope, existingDigest, existingTimestamp) =>
+          if (timestamp > existingTimestamp)
+            dataEntries = dataEntries.updated(key, (existingEnvelope, existingDigest, timestamp))
+      }
+    }
+  }
 
   def getDeltaSeqNr(key: KeyId, fromNode: UniqueAddress): Long =
     dataEntries.get(key) match {
-      case Some((DataEnvelope(_, _, deltaVersions), _)) => deltaVersions.versionAt(fromNode)
-      case None                                         => 0L
+      case Some((DataEnvelope(_, _, deltaVersions), _, _)) => deltaVersions.versionAt(fromNode)
+      case None                                            => 0L
     }
 
   def isNodeRemoved(node: UniqueAddress, keys: Iterable[KeyId]): Boolean = {
     removedNodes.contains(node) || (keys.exists(key =>
       dataEntries.get(key) match {
-        case Some((DataEnvelope(_, pruning, _), _)) => pruning.contains(node)
-        case None                                   => false
+        case Some((DataEnvelope(_, pruning, _), _, _)) => pruning.contains(node)
+        case None                                      => false
       }))
   }
 
   @nowarn("msg=deprecated")
   def receiveFlushChanges(): Unit = {
-    def notify(keyId: KeyId, subs: mutable.Set[ActorRef]): Unit = {
-      val key = subscriptionKeys(keyId)
+    def notify(keyId: KeyId, subs: Iterator[ActorRef], sendExpiredIfMissing: Boolean): Unit = {
+      val key = subscriptionKeys.get(keyId) match {
+        case Some(r) => r
+        case None =>
+          subscriptionKeys
+            .collectFirst {
+              case (k, r) if isWildcard(k) && keyId.startsWith(dropWildcard(k)) => r.withId(keyId)
+            }
+            .getOrElse(throw new IllegalStateException(s"Subscription notification of [$keyId], but no matching " +
+            s"subscription key in [${subscriptionKeys.keysIterator.mkString(", ")}]"))
+      }
       getData(keyId) match {
         case Some(envelope) =>
           val msg = if (envelope.data == DeletedData) Deleted(key) else Changed(key)(envelope.data)
           subs.foreach { _ ! msg }
         case None =>
+          if (sendExpiredIfMissing) {
+            val msg = Expired(key)
+            subs.foreach {
+              _ ! msg
+            }
+          }
       }
     }
 
-    if (subscribers.nonEmpty) {
-      for (key <- changed; if subscribers.contains(key); subs <- subscribers.get(key))
-        notify(key, subs)
+    if (subscribers.nonEmpty || wildcardSubscribers.nonEmpty) {
+      changed.foreach { key =>
+        if (hasSubscriber(key))
+          notify(key, getSubscribersIterator(key), sendExpiredIfMissing = true)
+      }
     }
 
     // Changed event is sent to new subscribers even though the key has not changed,
-    // i.e. send current value
+    // i.e. send current value. Expired is not sent to new subscribers as the first event.
     if (newSubscribers.nonEmpty) {
       for ((key, subs) <- newSubscribers) {
-        notify(key, subs)
-        subs.foreach { subscribers.addBinding(key, _) }
+        if (isWildcard(key)) {
+          dataEntries.keysIterator.filter(_.startsWith(dropWildcard(key))).foreach { matchingKey =>
+            notify(matchingKey, subs.iterator, sendExpiredIfMissing = false)
+          }
+          subs.foreach {
+            wildcardSubscribers.addBinding(dropWildcard(key), _)
+          }
+        } else {
+          notify(key, subs.iterator, sendExpiredIfMissing = false)
+          subs.foreach {
+            subscribers.addBinding(key, _)
+          }
+        }
       }
       newSubscribers.clear()
     }
@@ -2124,6 +2302,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
 
   def receiveGossipTick(): Unit = {
+    cleanupExpired()
     if (fullStateGossipEnabled)
       selectRandomNode(allNodes.toVector).foreach(gossipTo)
   }
@@ -2132,12 +2311,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val to = replica(address)
     val toSystemUid = Some(address.longUid)
     if (dataEntries.size <= maxDeltaElements) {
-      val status = Status(
-        dataEntries.map { case (key, (_, _)) => (key, getDigest(key)) },
-        chunk = 0,
-        totChunks = 1,
-        toSystemUid,
-        selfFromSystemUid)
+      val status = Status(dataEntries.map {
+        case (key, (_, _, usedTimestamp)) => (key, (getDigest(key), usedTimestamp))
+      }, chunk = 0, totChunks = 1, toSystemUid, selfFromSystemUid)
       to ! status
     } else {
       val totChunks = dataEntries.size / maxDeltaElements
@@ -2150,7 +2326,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         }
         val chunk = (statusCount % totChunks).toInt
         val status = Status(dataEntries.collect {
-          case (key, (_, _)) if math.abs(key.hashCode % totChunks) == chunk => (key, getDigest(key))
+          case (key, (_, _, usedTimestamp)) if math.abs(key.hashCode % totChunks) == chunk =>
+            (key, (getDigest(key), usedTimestamp))
         }, chunk, totChunks, toSystemUid, selfFromSystemUid)
         to ! status
       }
@@ -2163,7 +2340,11 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def replica(node: UniqueAddress): ActorSelection =
     context.actorSelection(self.path.toStringWithAddress(node.address))
 
-  def receiveStatus(otherDigests: Map[KeyId, Digest], chunk: Int, totChunks: Int, fromSystemUid: Option[Long]): Unit = {
+  def receiveStatus(
+      otherDigests: Map[KeyId, (Digest, Timestamp)],
+      chunk: Int,
+      totChunks: Int,
+      fromSystemUid: Option[Long]): Unit = {
     if (log.isDebugEnabled)
       log.debug(
         "Received gossip status from [{}], chunk [{}] of [{}] containing [{}].",
@@ -2172,18 +2353,31 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         totChunks,
         otherDigests.keys.mkString(", "))
 
+    // update the usedTimestamp when needed
+    if (expiryEnabled) {
+      otherDigests.foreach {
+        case (key, (_, usedTimestamp)) =>
+          updateUsedTimestamp(key, usedTimestamp)
+        // if we don't have the key it will be updated with the full Gossip
+      }
+    }
+
     def isOtherDifferent(key: KeyId, otherDigest: Digest): Boolean = {
       val d = getDigest(key)
       d != NotFoundDigest && d != otherDigest
     }
     val otherDifferentKeys = otherDigests.collect {
-      case (key, otherDigest) if isOtherDifferent(key, otherDigest) => key
+      case (key, (otherDigest, _)) if isOtherDifferent(key, otherDigest) => key
     }
     val otherKeys = otherDigests.keySet
     val myKeys =
       if (totChunks == 1) dataEntries.keySet
       else dataEntries.keysIterator.filter(key => math.abs(key.hashCode % totChunks) == chunk).toSet
-    val otherMissingKeys = myKeys.diff(otherKeys)
+    val otherMissingKeys =
+      if (expiryEnabled)
+        myKeys.diff(otherKeys).filterNot(key => isExpired(key))
+      else
+        myKeys.diff(otherKeys)
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
@@ -2201,7 +2395,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           replyTo.path.address,
           myMissingKeys.mkString(", "))
       val status = Status(
-        myMissingKeys.iterator.map(k => k -> NotFoundDigest).toMap,
+        myMissingKeys.iterator.map(k => k -> (NotFoundDigest -> 0L)).toMap,
         chunk,
         totChunks,
         fromSystemUid,
@@ -2219,7 +2413,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val maxMessageSize = payloadSizeAggregator.maxFrameSize - 128
 
     var messages = Vector.empty[Gossip]
-    val collectedEntries = Vector.newBuilder[(KeyId, DataEnvelope)]
+    val collectedEntries = Vector.newBuilder[(KeyId, (DataEnvelope, Timestamp))]
     var sum = 0
 
     def addGossip(): Unit = {
@@ -2242,12 +2436,12 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
       val entrySize = keySize + dataSize + envelopeSize
       if (sum + entrySize <= maxMessageSize) {
-        collectedEntries += (key -> dataEnvelope)
+        collectedEntries += (key -> (dataEnvelope -> getUsedTimestamp(key)))
         sum += entrySize
       } else {
         addGossip()
         collectedEntries.clear()
-        collectedEntries += (key -> dataEnvelope)
+        collectedEntries += (key -> (dataEnvelope -> getUsedTimestamp(key)))
         sum = entrySize
       }
     }
@@ -2260,19 +2454,26 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     messages
   }
 
-  def receiveGossip(updatedData: Map[KeyId, DataEnvelope], sendBack: Boolean, fromSystemUid: Option[Long]): Unit = {
+  def receiveGossip(
+      updatedData: Map[KeyId, (DataEnvelope, Timestamp)],
+      sendBack: Boolean,
+      fromSystemUid: Option[Long]): Unit = {
     if (log.isDebugEnabled)
       log.debug("Received gossip from [{}], containing [{}].", replyTo.path.address, updatedData.keys.mkString(", "))
     var replyKeys = Set.empty[KeyId]
     updatedData.foreach {
-      case (key, envelope) =>
-        val hadData = dataEntries.contains(key)
-        writeAndStore(key, envelope, reply = false)
-        if (sendBack) getData(key) match {
-          case Some(d) =>
-            if (hadData || d.pruning.nonEmpty)
-              replyKeys += key
-          case None =>
+      case (key, (envelope, usedTimestamp)) =>
+        if (!isExpired(key, usedTimestamp)) {
+          val hadData = dataEntries.contains(key)
+          writeAndStore(key, envelope, reply = false)
+          updateUsedTimestamp(key, usedTimestamp)
+
+          if (sendBack) getData(key) match {
+            case Some(d) =>
+              if (hadData || d.pruning.nonEmpty)
+                replyKeys += key
+            case None =>
+          }
         }
     }
     if (sendBack && replyKeys.nonEmpty) {
@@ -2290,17 +2491,45 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def receiveUnsubscribe(key: KeyR, subscriber: ActorRef): Unit = {
-    subscribers.removeBinding(key.id, subscriber)
+    if (isWildcard(key.id))
+      wildcardSubscribers.removeBinding(dropWildcard(key.id), subscriber)
+    else
+      subscribers.removeBinding(key.id, subscriber)
     newSubscribers.removeBinding(key.id, subscriber)
     if (!hasSubscriber(subscriber))
       context.unwatch(subscriber)
-    if (!subscribers.contains(key.id) && !newSubscribers.contains(key.id))
+    if (!hasSubscriber(key.id) && !newSubscribers.contains(key.id))
       subscriptionKeys -= key.id
   }
 
   def hasSubscriber(subscriber: ActorRef): Boolean =
-    subscribers.exists { case (_, s)    => s.contains(subscriber) } ||
-    newSubscribers.exists { case (_, s) => s.contains(subscriber) }
+    subscribers.exists { case (_, s)         => s.contains(subscriber) } ||
+    wildcardSubscribers.exists { case (_, s) => s.contains(subscriber) } ||
+    newSubscribers.exists { case (_, s)      => s.contains(subscriber) }
+
+  private def hasSubscriber(keyId: KeyId): Boolean =
+    subscribers.contains(keyId) || (wildcardSubscribers.nonEmpty && wildcardSubscribers.exists {
+      case (k, _) => keyId.startsWith(k)
+    })
+
+  private def getSubscribersIterator(keyId: KeyId): Iterator[ActorRef] = {
+    val subscribersIter = subscribers.get(keyId).map(_.iterator).getOrElse(Iterator.empty)
+    if (wildcardSubscribers.isEmpty)
+      subscribersIter
+    else
+      subscribersIter ++ wildcardSubscribers
+        .collectFirst {
+          case (k, v) if keyId.startsWith(k) => v
+        }
+        .map(_.iterator)
+        .getOrElse(Iterator.empty)
+  }
+
+  private def isWildcard(keyId: KeyId): Boolean =
+    keyId.endsWith("*")
+
+  private def dropWildcard(keyId: KeyId): KeyId =
+    keyId.dropRight(1)
 
   @nowarn("msg=deprecated")
   def receiveTerminated(ref: ActorRef): Unit = {
@@ -2312,14 +2541,51 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       keys1.foreach { key =>
         subscribers.removeBinding(key, ref)
       }
-      val keys2 = newSubscribers.collect { case (k, s) if s.contains(ref) => k }
+      val keys2 = wildcardSubscribers.collect { case (k, s) if s.contains(ref) => k }
       keys2.foreach { key =>
+        wildcardSubscribers.removeBinding(key, ref)
+      }
+      val keys3 = newSubscribers.collect { case (k, s) if s.contains(ref) => k }
+      keys3.foreach { key =>
         newSubscribers.removeBinding(key, ref)
       }
 
-      (keys1 ++ keys2).foreach { key =>
-        if (!subscribers.contains(key) && !newSubscribers.contains(key))
+      (keys1 ++ keys3).foreach { key =>
+        if (!hasSubscriber(key) && !newSubscribers.contains(key))
           subscriptionKeys -= key
+      }
+    }
+  }
+
+  private def cleanupExpired(): Unit = {
+    if (expiryEnabled) {
+      val now = System.currentTimeMillis()
+      // no need to be more accurate than the gossip tick interval
+      currentUsedTimestamp = now
+      val expiredKeys = dataEntries.collect {
+        // it can be 0L when it was set via a DeltaPropagation or Write first time, don't expire such immediately
+        case (key, (_, _, usedTimestamp))
+            if usedTimestamp != 0L &&
+            getExpiryDuration(key) != Duration.Zero &&
+            usedTimestamp <= now - getExpiryDuration(key).toMillis =>
+          key
+      }
+
+      if (expiredKeys.nonEmpty) {
+        if (log.isDebugEnabled)
+          log.debug("Removing expired keys [{}]", expiredKeys.mkString(", "))
+
+        val durableExpiredKeys = expiredKeys.filter(isDurable).toSet
+        if (durableExpiredKeys.nonEmpty)
+          durableStore ! DurableStore.Expire(durableExpiredKeys)
+
+        expiredKeys.foreach { key =>
+          deltaPropagationSelector.delete(key)
+          payloadSizeAggregator.remove(key)
+          changed += key // notify subscribers, later
+        }
+
+        dataEntries = dataEntries -- expiredKeys
       }
     }
   }
@@ -2405,7 +2671,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val knownNodes = allNodes.union(removedNodes.keySet)
     val newRemovedNodes =
       dataEntries.foldLeft(Set.empty[UniqueAddress]) {
-        case (acc, (_, (DataEnvelope(data: RemovedNodePruning, _, _), _))) =>
+        case (acc, (_, (DataEnvelope(data: RemovedNodePruning, _, _), _, _))) =>
           acc.union(data.modifiedByNodes.filterNot(n => n == selfUniqueAddress || knownNodes(n)))
         case (acc, _) =>
           acc
@@ -2426,7 +2692,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       .to(immutable.Set)
 
     if (removedSet.nonEmpty) {
-      for ((key, (envelope, _)) <- dataEntries; removed <- removedSet) {
+      for ((key, (envelope, _, _)) <- dataEntries; removed <- removedSet) {
 
         def init(): Unit = {
           val newEnvelope = envelope.initRemovedNodePruning(removed, selfUniqueAddress)
@@ -2455,7 +2721,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val pruningPerformed = PruningPerformed(System.currentTimeMillis() + pruningMarkerTimeToLive.toMillis)
     val durablePruningPerformed = PruningPerformed(System.currentTimeMillis() + durablePruningMarkerTimeToLive.toMillis)
     dataEntries.foreach {
-      case (key, (envelope @ DataEnvelope(data: RemovedNodePruning, pruning, _), _)) =>
+      case (key, (envelope @ DataEnvelope(data: RemovedNodePruning, pruning, _), _, _)) =>
         pruning.foreach {
           case (removed, PruningInitialized(owner, seen))
               if owner == selfUniqueAddress
@@ -2474,7 +2740,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def deleteObsoletePruningPerformed(): Unit = {
     val currentTime = System.currentTimeMillis()
     dataEntries.foreach {
-      case (key, (envelope @ DataEnvelope(_: RemovedNodePruning, pruning, _), _)) =>
+      case (key, (envelope @ DataEnvelope(_: RemovedNodePruning, pruning, _), _, _)) =>
         val newEnvelope = pruning.foldLeft(envelope) {
           case (acc, (removed, p: PruningPerformed)) if p.isObsolete(currentTime) =>
             log.debug("Removing obsolete pruning marker for [{}] in [{}]", removed, key)

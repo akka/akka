@@ -5,30 +5,37 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  # scacap/action-surefire-report (see https://github.com/ScaCap/action-surefire-report/pull/88/files)
+  checks: write
+  pull-requests: write
+
 jobs:
 
   akka-timing-sensitive-tests:
     name: Akka Tests taggedAs TimingTest
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka'
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: temurin:1.11
 
       - name: sbt test
         run: |-
-          sbt -jvm-opts .jvmopts-ci \
+          cp .jvmopts-ci .jvmopts
+          sbt \
             -Djava.security.egd=file:/dev/./urandom \
             -Dakka.cluster.assert=on \
             -Dakka.test.timefactor=2 \
@@ -45,7 +52,9 @@ jobs:
       - name: Test Reports
         # Makes it easier to spot failures instead of looking at the logs.
         if: ${{ failure() }}
-        uses: marcospereira/action-surefire-report@v1
+        # https://github.com/ScaCap/action-surefire-report/releases/
+        # v1.0.13
+        uses: scacap/action-surefire-report@482f012643ed0560e23ef605a79e8e87ca081648
         with:
           report_paths: '**/target/test-reports/TEST-*.xml'
           fail_if_no_tests: false
@@ -53,14 +62,14 @@ jobs:
 
       - name: Email on failure
         if: ${{ failure() }}
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@6063705cefe50cb915fc53bb06d4049cae2953b2
         with:
           server_address: smtp.gmail.com
           server_port: 465
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
-          to: akka.official@gmail.com
+          to: ${{secrets.MAIL_SEND_TO}}
           from: Akka CI (GHActions)
           body: |
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!

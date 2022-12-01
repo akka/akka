@@ -14,13 +14,12 @@ import akka.stream.javadsl.Source;
 import akka.testkit.DebugFilter;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
+import java.util.Arrays;
 import jdocs.stream.SilenceSystemOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.runtime.AbstractFunction0;
-
-import java.util.Arrays;
 
 public class RecipeLoggingElements extends RecipeTest {
   static ActorSystem system;

@@ -4,9 +4,8 @@
 
 package jdoc.akka.serialization.jackson.v2a;
 
-import jdoc.akka.serialization.jackson.MySerializable;
-
 import java.util.Optional;
+import jdoc.akka.serialization.jackson.MySerializable;
 
 // #structural
 public class Customer implements MySerializable {

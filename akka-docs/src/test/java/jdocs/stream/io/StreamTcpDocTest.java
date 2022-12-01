@@ -4,27 +4,24 @@
 
 package jdocs.stream.io;
 
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import akka.NotUsed;
-import akka.stream.javadsl.Framing;
-import jdocs.AbstractJavaTest;
-import jdocs.stream.SilenceSystemOut;
-import akka.testkit.javadsl.TestKit;
-import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import akka.actor.ActorSystem;
 import akka.stream.javadsl.*;
+import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Tcp.*;
 import akka.testkit.SocketUtil;
 import akka.testkit.TestProbe;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import java.net.InetSocketAddress;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import jdocs.AbstractJavaTest;
+import jdocs.stream.SilenceSystemOut;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class StreamTcpDocTest extends AbstractJavaTest {
 

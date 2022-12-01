@@ -1004,7 +1004,7 @@ trait FlowOps[+Out, +Mat] {
    * the mapping function for mapping the first element. The mapping function returns a mapped element to emit
    * downstream and a state to pass to the next mapping function. The state can be the same for each mapping return,
    * be a new immutable state but it is also safe to use a mutable state. The returned `T` MUST NOT be `null` as it is
-   * illegal as stream element - according to the Reactive Streams specification.
+   * illegal as stream element - according to the Reactive Streams specification. A `null` state is not allowed and will fail the stream.
    *
    * For stateless variant see [[FlowOps.map]].
    *
@@ -2456,7 +2456,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * If the first element has not passed through this operator before the provided timeout, the stream is failed
-   * with a [[scala.concurrent.TimeoutException]].
+   * with a [[akka.stream.InitialTimeoutException]].
    *
    * '''Emits when''' upstream emits an element
    *
@@ -2470,7 +2470,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
-   * with a [[scala.concurrent.TimeoutException]].
+   * with a [[akka.stream.CompletionTimeoutException]].
    *
    * '''Emits when''' upstream emits an element
    *
@@ -2484,7 +2484,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * If the time between two processed elements exceeds the provided timeout, the stream is failed
-   * with a [[scala.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * with a [[akka.stream.StreamIdleTimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
@@ -2499,7 +2499,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
-   * the stream is failed with a [[scala.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * the stream is failed with a [[akka.stream.BackpressureTimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
@@ -3308,7 +3308,7 @@ trait FlowOps[+Out, +Mat] {
 
   private def internalConcat[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2], detached: Boolean): Repr[U] =
     that match {
-      case source if source eq Source.empty => this.asInstanceOf[Repr[U]]
+      case source if TraversalBuilder.isEmptySource(source) => this.asInstanceOf[Repr[U]]
       case other =>
         TraversalBuilder.getSingleSource(other) match {
           case OptionVal.Some(singleSource) =>

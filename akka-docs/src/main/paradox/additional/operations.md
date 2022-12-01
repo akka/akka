@@ -14,7 +14,7 @@ When starting clusters on cloud systems such as Kubernetes, AWS, Google Cloud, A
 you may want to automate the discovery of nodes for the cluster joining process, using your cloud providers,
 cluster orchestrator, or other form of service discovery (such as managed DNS).
 
-The open source Akka Management library includes the @extref:[Cluster Bootstrap](akka-management:bootstrap/index.html)
+The Akka Management library includes the @extref:[Cluster Bootstrap](akka-management:bootstrap/index.html)
 module which handles just that. Please refer to its documentation for more details.
 
 @@@ note
