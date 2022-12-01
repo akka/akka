@@ -71,7 +71,6 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
     extends GraphStage[FlowShape[In, Out]] {
   import MapAsyncPartitioned._
 
-  // duplicating the checks of the apply method since the constructor is public in the bytecode
   if (parallelism < 1) throw new IllegalArgumentException("parallelism must be at least 1")
   if (perPartition < 1) throw new IllegalArgumentException("perPartition must be at least 1")
   if (perPartition >= parallelism)
