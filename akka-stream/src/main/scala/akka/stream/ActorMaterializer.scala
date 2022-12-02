@@ -590,6 +590,24 @@ final class ActorMaterializerSettings @InternalApi private (
       blockingIoDispatcher)
   }
 
+  // these are the core stream/materializer settings, ad hoc handling of defaults for the stage specific ones
+  // for stream refs and io live with the respective stages
+  private val asAttributes =
+    Attributes(
+      Attributes.InputBuffer(initialInputBufferSize, maxInputBufferSize) ::
+      Attributes.CancellationStrategy.Default :: // FIXME: make configurable, see https://github.com/akka/akka/issues/28000
+      Attributes.NestedMaterializationCancellationPolicy.Default ::
+      ActorAttributes.Dispatcher(dispatcher) ::
+      ActorAttributes.SupervisionStrategy(supervisionDecider) ::
+      ActorAttributes.DebugLogging(debugLogging) ::
+      ActorAttributes
+        .StreamSubscriptionTimeout(subscriptionTimeoutSettings.timeout, subscriptionTimeoutSettings.mode) ::
+      ActorAttributes.OutputBurstLimit(outputBurstLimit) ::
+      ActorAttributes.FuzzingMode(fuzzingMode) ::
+      ActorAttributes.MaxFixedBufferSize(maxFixedBufferSize) ::
+      ActorAttributes.SyncProcessingLimit(syncProcessingLimit) ::
+      Nil)
+
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor
    * that manages an input buffer for all inlets of its shape. This setting configures
@@ -742,24 +760,7 @@ final class ActorMaterializerSettings @InternalApi private (
    * INTERNAL API
    */
   @InternalApi
-  private[akka] def toAttributes: Attributes =
-    Attributes(
-      // these are the core stream/materializer settings, ad hoc handling of defaults for the stage specific ones
-      // for stream refs and io live with the respective stages
-      Attributes.InputBuffer(initialInputBufferSize, maxInputBufferSize) ::
-      Attributes.CancellationStrategy.Default :: // FIXME: make configurable, see https://github.com/akka/akka/issues/28000
-      Attributes.NestedMaterializationCancellationPolicy.Default ::
-      ActorAttributes.Dispatcher(dispatcher) ::
-      ActorAttributes.SupervisionStrategy(supervisionDecider) ::
-      ActorAttributes.DebugLogging(debugLogging) ::
-      ActorAttributes
-        .StreamSubscriptionTimeout(subscriptionTimeoutSettings.timeout, subscriptionTimeoutSettings.mode) ::
-      ActorAttributes.OutputBurstLimit(outputBurstLimit) ::
-      ActorAttributes.FuzzingMode(fuzzingMode) ::
-      ActorAttributes.MaxFixedBufferSize(maxFixedBufferSize) ::
-      ActorAttributes.SyncProcessingLimit(syncProcessingLimit) ::
-
-      Nil)
+  private[akka] def toAttributes: Attributes = asAttributes
 
   override def toString: String =
     s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +

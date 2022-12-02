@@ -7,22 +7,22 @@ package akka.stream
 import java.net.URLEncoder
 import java.time.Duration
 import java.util.Optional
-
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
 import scala.util.control.NonFatal
-
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.japi.function
 import akka.stream.impl.TraversalBuilder
-import akka.util.{ ByteString, OptionVal }
+import akka.util.ByteString
 import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
+
+import scala.annotation.nowarn
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -36,9 +36,22 @@ import akka.util.LineNumbers
  * Operators should in general not access the `attributeList` but instead use `get` to get the expected
  * value of an attribute.
  */
-final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
+final case class Attributes(
+    attributeList: List[Attributes.Attribute] = Nil,
+    private val mandatoryAttributes: Map[Class[_], Attributes.MandatoryAttribute]) {
 
   import Attributes._
+
+  // for binary compatibility
+  @deprecated("Use factories on companion object instead", since = "2.8.0")
+  def this(attributeList: List[Attributes.Attribute]) =
+    this(attributeList, attributeList.foldLeft(Map.empty[Class[_], Attributes.MandatoryAttribute]) {
+      case (acc, attribute) =>
+        attribute match {
+          case m: Attributes.MandatoryAttribute if !acc.contains(m.getClass) => acc.updated(m.getClass, m)
+          case _                                                             => acc
+        }
+    })
 
   /**
    * Note that this must only be used during traversal building and not during materialization
@@ -122,17 +135,11 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * @param c A class that is a subtype of [[MandatoryAttribute]]
    */
   def getMandatoryAttribute[T <: MandatoryAttribute](c: Class[T]): T = {
-    @tailrec
-    def find(list: List[Attribute]): OptionVal[Attribute] = list match {
-      case Nil => OptionVal.None
-      case head :: tail =>
-        if (c.isInstance(head)) OptionVal.Some(head)
-        else find(tail)
-    }
-
-    find(attributeList) match {
-      case OptionVal.Some(t) => t.asInstanceOf[T]
-      case _                 => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
+    try {
+      mandatoryAttributes(c).asInstanceOf[T]
+    } catch {
+      case _: NoSuchElementException =>
+        throw new IllegalStateException(s"Mandatory attribute [$c] not found")
     }
   }
 
@@ -143,16 +150,31 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def and(other: Attributes): Attributes = {
     if (attributeList.isEmpty) other
     else if (other.attributeList.isEmpty) this
-    else if (other.attributeList.tail.isEmpty) Attributes(other.attributeList.head :: attributeList)
-    else Attributes(other.attributeList ::: attributeList)
+    else if (other.attributeList.tail.isEmpty) {
+      // note the inverted order for attributes vs mandatory values here
+      val newAttributes = other.attributeList.head :: attributeList
+      val newMandatory = this.mandatoryAttributes ++ other.mandatoryAttributes
+      Attributes(newAttributes, newMandatory)
+    } else {
+      val newAttributes = other.attributeList ::: attributeList
+      val newMandatory = this.mandatoryAttributes ++ other.mandatoryAttributes
+      Attributes(newAttributes, newMandatory)
+    }
   }
 
   /**
    * Adds given attribute. Added attribute is considered more specific than
    * already existing attributes of the same type.
    */
-  def and(other: Attribute): Attributes =
-    Attributes(other :: attributeList)
+  def and(other: Attribute): Attributes = {
+    other match {
+      case m: MandatoryAttribute =>
+        Attributes(other :: attributeList, mandatoryAttributes + (m.getClass -> m))
+      case regular =>
+        Attributes(regular :: attributeList, mandatoryAttributes)
+    }
+
+  }
 
   /**
    * Extracts Name attributes and concatenates them.
@@ -303,6 +325,11 @@ object Attributes {
    */
   @DoNotInherit
   sealed trait MandatoryAttribute extends Attribute
+
+  def apply() = new Attributes(Nil, Map.empty)
+
+  @nowarn("msg=deprecated")
+  def apply(attributeList: List[Attribute]) = new Attributes(attributeList)
 
   final case class Name(n: String) extends Attribute
 
