@@ -17,8 +17,8 @@ object GroupBy {
       .reduce(_ + _) // for each sub-stream, sum its elements
       .mergeSubstreams // merge back into a stream
       .runForeach(println)
-    //25
     //30
+    //25
     //#groupBy
   }
 
