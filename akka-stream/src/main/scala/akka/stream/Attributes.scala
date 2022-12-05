@@ -35,16 +35,21 @@ import scala.annotation.nowarn
  *
  * Operators should in general not access the `attributeList` but instead use `get` to get the expected
  * value of an attribute.
+ *
+ * Constructor is internal Akka API, use factories in companion to create instances.
  */
-final case class Attributes(
-    attributeList: List[Attributes.Attribute] = Nil,
-    private val mandatoryAttributes: Map[Class[_], Attributes.MandatoryAttribute]) {
+final class Attributes private[akka] (
+    val attributeList: List[Attributes.Attribute],
+    private val mandatoryAttributes: Map[Class[_], Attributes.MandatoryAttribute])
+    extends scala.Product
+    with java.io.Serializable
+    with scala.Equals {
 
   import Attributes._
 
   // for binary compatibility
   @deprecated("Use factories on companion object instead", since = "2.8.0")
-  def this(attributeList: List[Attributes.Attribute]) =
+  def this(attributeList: List[Attributes.Attribute] = Nil) =
     this(attributeList, attributeList.foldLeft(Map.empty[Class[_], Attributes.MandatoryAttribute]) {
       case (acc, attribute) =>
         attribute match {
@@ -154,11 +159,11 @@ final case class Attributes(
       // note the inverted order for attributes vs mandatory values here
       val newAttributes = other.attributeList.head :: attributeList
       val newMandatory = this.mandatoryAttributes ++ other.mandatoryAttributes
-      Attributes(newAttributes, newMandatory)
+      new Attributes(newAttributes, newMandatory)
     } else {
       val newAttributes = other.attributeList ::: attributeList
       val newMandatory = this.mandatoryAttributes ++ other.mandatoryAttributes
-      Attributes(newAttributes, newMandatory)
+      new Attributes(newAttributes, newMandatory)
     }
   }
 
@@ -169,9 +174,9 @@ final case class Attributes(
   def and(other: Attribute): Attributes = {
     other match {
       case m: MandatoryAttribute =>
-        Attributes(other :: attributeList, mandatoryAttributes + (m.getClass -> m))
+        new Attributes(other :: attributeList, mandatoryAttributes + (m.getClass -> m))
       case regular =>
-        Attributes(regular :: attributeList, mandatoryAttributes)
+        new Attributes(regular :: attributeList, mandatoryAttributes)
     }
 
   }
@@ -309,6 +314,22 @@ final case class Attributes(
     attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }
   }
 
+  // for binary compatibility (used to be a case class)
+
+  @deprecated("Use explicit methods on Attributes to interact, not the ones provided by Product", "2.8.0")
+  override def productArity: Int = 1
+
+  @deprecated("Use explicit methods on Attributes to interact, not the ones provided by Product", "2.8.0")
+  override def productElement(n: Int): Any = n match {
+    case 0 => attributeList
+    case _ => throw new IllegalArgumentException()
+  }
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[Attributes]
+
+  @deprecated("Don't use copy on Attributes", "2.8.0")
+  def copy(attributeList: List[Attribute] = attributeList): Attributes =
+    new Attributes(attributeList)
 }
 
 /**
@@ -326,10 +347,16 @@ object Attributes {
   @DoNotInherit
   sealed trait MandatoryAttribute extends Attribute
 
-  def apply() = new Attributes(Nil, Map.empty)
+  def apply(): Attributes = new Attributes(Nil, Map.empty)
 
   @nowarn("msg=deprecated")
-  def apply(attributeList: List[Attribute]) = new Attributes(attributeList)
+  def apply(attributeList: List[Attribute] = Nil) = new Attributes(attributeList)
+
+  // for binary compatibility
+
+  @deprecated("Use explicit methods on Attributes to interact, not the synthetic case class ones", "2.8.0")
+  def unapply(attrs: Attributes): Option[(List[Attribute])] =
+    Some(attrs.attributeList)
 
   final case class Name(n: String) extends Attribute
 
