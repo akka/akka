@@ -42,7 +42,7 @@ final class Attributes private[akka] (
     val attributeList: List[Attributes.Attribute],
     private val mandatoryAttributes: Map[Class[_], Attributes.MandatoryAttribute])
     extends scala.Product
-    with java.io.Serializable
+    with scala.Serializable
     with scala.Equals {
 
   import Attributes._
