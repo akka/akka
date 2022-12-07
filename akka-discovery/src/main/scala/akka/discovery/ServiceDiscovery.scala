@@ -298,8 +298,8 @@ abstract class ServiceDiscovery {
   /**
    * Scala API: Perform lookup using underlying discovery implementation.
    *
-   * Convenience lookup accepting a name. If the name is a valid srv entry a SRV lookup is done, otherwise
-   * if not a regular lookup. For more control use the overload accepting a [[Lookup]]
+   * Convenience lookup accepting a name. If the name is a valid SRV entry, an SRV lookup is done, otherwise
+   * a regular lookup. For more control use the overload accepting a [[Lookup]].
    */
   def lookup(serviceName: String, resolveTimeout: FiniteDuration): Future[Resolved] = {
     val parsedLookup =
@@ -328,8 +328,8 @@ abstract class ServiceDiscovery {
   /**
    * Java API
    *
-   * Convenience lookup accepting a name. If the name is a valid srv entry a SRV lookup is done, otherwise
-   * if not a regular lookup. For more control use the overload accepting a [[Lookup]]
+   * Convenience lookup accepting a name. If the name is a valid SRV entry, an SRV lookup is done, otherwise
+   * a regular lookup. For more control use the overload accepting a [[Lookup]].
    *
    * @param serviceName           A name, see discovery-method's docs for how this is interpreted
    * @param resolveTimeout Timeout. Up to the discovery-method to adhere to this and complete the CompletionStage with a
