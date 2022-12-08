@@ -67,8 +67,10 @@ private[akka] final class BehaviorSetup[C, E, S](
   val journal: ClassicActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  val isSnapshotOptional: Boolean =
-    Persistence(context.system.classicSystem).configFor(snapshotStore).getBoolean("snapshot-is-optional")
+  val (isSnapshotOptional: Boolean, isOnlyOneSnapshot: Boolean) = {
+    val snapshotStoreConfig = Persistence(context.system.classicSystem).configFor(snapshotStore)
+    (snapshotStoreConfig.getBoolean("snapshot-is-optional"), snapshotStoreConfig.getBoolean("only-one-snapshot"))
+  }
 
   if (isSnapshotOptional && (retention match {
         case SnapshotCountRetentionCriteriaImpl(_, _, true) => true

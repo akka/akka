@@ -39,6 +39,18 @@ object RetentionCriteria {
   def snapshotEvery(numberOfEvents: Int, keepNSnapshots: Int): SnapshotCountRetentionCriteria =
     SnapshotCountRetentionCriteriaImpl(numberOfEvents, keepNSnapshots, deleteEventsOnSnapshot = false)
 
+  /**
+   * Save snapshots automatically every `numberOfEvents`.
+   *
+   * Use [[SnapshotCountRetentionCriteria.withDeleteEventsOnSnapshot]] to
+   * delete old events. Events are not deleted by default.
+   *
+   * If multiple events are persisted with a single Effect the snapshot will happen after
+   * all of the events are persisted rather than precisely every `numberOfEvents`.
+   */
+  def snapshotEvery(numberOfEvents: Int): SnapshotCountRetentionCriteria =
+    snapshotEvery(numberOfEvents, keepNSnapshots = 1)
+
 }
 
 @DoNotInherit trait SnapshotCountRetentionCriteria extends RetentionCriteria {
