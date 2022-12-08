@@ -54,6 +54,21 @@ class StatusReplySpec extends AkkaSpec with ScalaFutures {
       }
     }
 
+    "transform scala.util.Try" in {
+      StatusReply.fromTry(scala.util.Success("woho")) should matchPattern {
+        case StatusReply.Success("woho") =>
+      }
+      StatusReply.fromTry(scala.util.Failure(TestException("boho"))) should matchPattern {
+        case StatusReply.Error(StatusReply.ErrorMessage("boho")) =>
+      }
+      StatusReply.fromTryKeepException(scala.util.Success("woho")) should matchPattern {
+        case StatusReply.Success("woho") =>
+      }
+      StatusReply.fromTryKeepException(scala.util.Failure(TestException("boho"))) should matchPattern {
+        case StatusReply.Error(TestException("boho")) =>
+      }
+    }
+
     "flatten a Future[StatusReply]" in {
       import system.dispatcher
       StatusReply.flattenStatusFuture(Future(StatusReply.Success("woho"))).futureValue should ===("woho")
