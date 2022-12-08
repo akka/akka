@@ -1,0 +1,3 @@
+# no longer anonymous subclasses, internal and may change.
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.Attributes$NestedMaterializationCancellationPolicy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.Attributes#NestedMaterializationCancellationPolicy.this")

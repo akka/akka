@@ -40,7 +40,7 @@ import scala.annotation.nowarn
  */
 final class Attributes private[akka] (
     val attributeList: List[Attributes.Attribute],
-    private val mandatoryAttributes: Map[Class[_], Attributes.MandatoryAttribute])
+    private val mandatoryAttributes: Map[Class[AnyRef], Attributes.MandatoryAttribute])
     extends scala.Product
     with scala.Serializable
     with scala.Equals {
@@ -50,13 +50,19 @@ final class Attributes private[akka] (
   // for binary compatibility
   @deprecated("Use factories on companion object instead", since = "2.8.0")
   def this(attributeList: List[Attributes.Attribute] = Nil) =
-    this(attributeList, attributeList.foldLeft(Map.empty[Class[_], Attributes.MandatoryAttribute]) {
-      case (acc, attribute) =>
-        attribute match {
-          case m: Attributes.MandatoryAttribute if !acc.contains(m.getClass) => acc.updated(m.getClass, m)
-          case _                                                             => acc
-        }
-    })
+    this(
+      attributeList,
+      (attributeList.reverseIterator
+        .foldLeft(Map.newBuilder[Class[AnyRef], Attributes.MandatoryAttribute]) {
+          case (builder, attribute) =>
+            attribute match {
+              case m: Attributes.MandatoryAttribute =>
+                builder += (m.getClass.asInstanceOf[Class[AnyRef]] -> m)
+                builder
+              case _ => builder
+            }
+        })
+        .result())
 
   /**
    * Note that this must only be used during traversal building and not during materialization
@@ -127,6 +133,8 @@ final class Attributes private[akka] (
   /**
    * Scala API: Get the most specific of one of the mandatory attributes. Mandatory attributes are guaranteed
    * to always be among the attributes when the attributes are coming from a materialization.
+   *
+   * Note: looks for the exact mandatory attribute class, hierarchies of the same mandatory attribute not supported
    */
   def mandatoryAttribute[T <: MandatoryAttribute: ClassTag]: T = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
@@ -137,11 +145,13 @@ final class Attributes private[akka] (
    * Java API: Get the most specific of one of the mandatory attributes. Mandatory attributes are guaranteed
    * to always be among the attributes when the attributes are coming from a materialization.
    *
+   * Note: looks for the exact mandatory attribute class, hierarchies of the same mandatory attribute not supported
+   *
    * @param c A class that is a subtype of [[MandatoryAttribute]]
    */
   def getMandatoryAttribute[T <: MandatoryAttribute](c: Class[T]): T = {
     try {
-      mandatoryAttributes(c).asInstanceOf[T]
+      mandatoryAttributes(c.asInstanceOf[Class[AnyRef]]).asInstanceOf[T]
     } catch {
       case _: NoSuchElementException =>
         throw new IllegalStateException(s"Mandatory attribute [$c] not found")
@@ -174,7 +184,7 @@ final class Attributes private[akka] (
   def and(other: Attribute): Attributes = {
     other match {
       case m: MandatoryAttribute =>
-        new Attributes(other :: attributeList, mandatoryAttributes + (m.getClass -> m))
+        new Attributes(other :: attributeList, mandatoryAttributes + (m.getClass.asInstanceOf[Class[AnyRef]] -> m))
       case regular =>
         new Attributes(regular :: attributeList, mandatoryAttributes)
     }
@@ -603,9 +613,12 @@ object Attributes {
    * , otherwise these stages will immediately cancel without materializing the nested flow.
    */
   @ApiMayChange
-  class NestedMaterializationCancellationPolicy private[NestedMaterializationCancellationPolicy] (
-      val propagateToNestedMaterialization: Boolean)
-      extends MandatoryAttribute
+  final class NestedMaterializationCancellationPolicy private[NestedMaterializationCancellationPolicy] (
+      val propagateToNestedMaterialization: Boolean,
+      name: String)
+      extends MandatoryAttribute {
+    override def toString: String = name
+  }
 
   @ApiMayChange
   object NestedMaterializationCancellationPolicy {
@@ -616,10 +629,8 @@ object Attributes {
      * nested flow materialization.
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
-    val EagerCancellation
-        : NestedMaterializationCancellationPolicy = new NestedMaterializationCancellationPolicy(false) {
-      override def toString: String = "EagerCancellation"
-    }
+    val EagerCancellation: NestedMaterializationCancellationPolicy =
+      new NestedMaterializationCancellationPolicy(false, "EagerCancellation")
 
     /**
      * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
@@ -627,9 +638,8 @@ object Attributes {
      * nested flow materialization. Once the nested flow is materialized it will be cancelled immediately.
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
-    val PropagateToNested: NestedMaterializationCancellationPolicy = new NestedMaterializationCancellationPolicy(true) {
-      override def toString: String = "PropagateToNested"
-    }
+    val PropagateToNested: NestedMaterializationCancellationPolicy =
+      new NestedMaterializationCancellationPolicy(true, "PropagateToNested")
 
     /**
      * Default [[NestedMaterializationCancellationPolicy]],
