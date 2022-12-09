@@ -212,10 +212,10 @@ private[akka] trait SnapshotInteractions[C, E, S] {
   }
 
   /** Deletes the snapshots up to and including the `sequenceNr`. */
-  protected def internalDeleteSnapshots(fromSequenceNr: Long, toSequenceNr: Long): Unit = {
+  protected def internalDeleteSnapshots(toSequenceNr: Long): Unit = {
     if (toSequenceNr > 0) {
-      val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = fromSequenceNr, maxSequenceNr = toSequenceNr)
-      setup.internalLogger.debug2("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
+      val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = 0L, maxSequenceNr = toSequenceNr)
+      setup.internalLogger.debug("Deleting snapshots to sequenceNr [{}]", toSequenceNr)
       setup.snapshotStore
         .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfClassic)
     }

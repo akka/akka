@@ -716,13 +716,21 @@ private[akka] object Running {
           this
         } else {
           visibleState = state
-          if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
+          def skipRetention(): Boolean = {
+            // only one retention process at a time
+            val inProgress = shouldSnapshotAfterPersist == SnapshotWithRetention && setup.isRetentionInProgress()
+            if (inProgress)
+              setup.internalLogger
+                .info("Skipping retention at seqNr [{}] because previous retention has not completed yet.", state.seqNr)
+            inProgress
+          }
+          if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null || skipRetention()) {
             val newState = applySideEffects(sideEffects, state)
-
             onWriteDone(setup.context, p)
-
             tryUnstashOne(newState)
           } else {
+            if (shouldSnapshotAfterPersist == SnapshotWithRetention)
+              setup.retentionProgressSaveSnapshot(state.seqNr)
             internalSaveSnapshot(state)
             new StoringSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
           }
@@ -803,20 +811,24 @@ private[akka] object Running {
           if (snapshotReason == SnapshotWithRetention) {
             // deletion of old events and snapshots are triggered by the SaveSnapshotSuccess
             setup.retention match {
-              case DisabledRetentionCriteria                          => // no further actions
+              case DisabledRetentionCriteria => // no further actions
               case s @ SnapshotCountRetentionCriteriaImpl(_, _, true) =>
+                setup.retentionProgressSaveSnapshotEnd(state.seqNr, success = true)
                 // deleteEventsOnSnapshot == true, deletion of old events
                 val deleteEventsToSeqNr = {
                   if (setup.isOnlyOneSnapshot) meta.sequenceNr // delete all events up to the snapshot
                   else s.deleteUpperSequenceNr(meta.sequenceNr) // keepNSnapshots batches of events
                 }
                 // snapshot deletion then happens on event deletion success in Running.onDeleteEventsJournalResponse
+                setup.retentionProgressDeleteEvents(state.seqNr, deleteEventsToSeqNr)
                 internalDeleteEvents(meta.sequenceNr, deleteEventsToSeqNr)
               case s @ SnapshotCountRetentionCriteriaImpl(_, _, false) =>
+                setup.retentionProgressSaveSnapshotEnd(state.seqNr, success = true)
                 // deleteEventsOnSnapshot == false, deletion of old snapshots
                 if (!setup.isOnlyOneSnapshot) {
                   val deleteSnapshotsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
-                  internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+                  setup.retentionProgressDeleteSnapshots(deleteSnapshotsToSeqNr)
+                  internalDeleteSnapshots(deleteSnapshotsToSeqNr)
                 }
               case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
             }
@@ -825,6 +837,8 @@ private[akka] object Running {
           Some(SnapshotCompleted(SnapshotMetadata.fromClassic(meta)))
 
         case SaveSnapshotFailure(meta, error) =>
+          if (snapshotReason == SnapshotWithRetention)
+            setup.retentionProgressSaveSnapshotEnd(state.seqNr, success = false)
           setup.internalLogger.warn2("Failed to save snapshot given metadata [{}] due to: {}", meta, error.getMessage)
           Some(SnapshotFailed(SnapshotMetadata.fromClassic(meta), error))
 
@@ -924,20 +938,23 @@ private[akka] object Running {
     val signal = response match {
       case DeleteMessagesSuccess(toSequenceNr) =>
         setup.internalLogger.debug("Persistent events to sequenceNr [{}] deleted successfully.", toSequenceNr)
+        setup.retentionProgressDeleteEventsEnd(toSequenceNr, success = true)
         setup.retention match {
           case DisabledRetentionCriteria => // no further actions
-          case s: SnapshotCountRetentionCriteriaImpl =>
+          case _: SnapshotCountRetentionCriteriaImpl =>
             if (!setup.isOnlyOneSnapshot) {
               // The reason for -1 is that a snapshot at the exact toSequenceNr is still useful and the events
               // after that can be replayed after that snapshot, but replaying the events after toSequenceNr without
               // starting at the snapshot at toSequenceNr would be invalid.
               val deleteSnapshotsToSeqNr = toSequenceNr - 1
-              internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+              setup.retentionProgressDeleteSnapshots(deleteSnapshotsToSeqNr)
+              internalDeleteSnapshots(deleteSnapshotsToSeqNr)
             }
           case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
         }
         Some(DeleteEventsCompleted(toSequenceNr))
       case DeleteMessagesFailure(e, toSequenceNr) =>
+        setup.retentionProgressDeleteEventsEnd(toSequenceNr, success = false)
         Some(DeleteEventsFailed(toSequenceNr, e))
       case _ =>
         None
@@ -958,8 +975,10 @@ private[akka] object Running {
   def onDeleteSnapshotResponse(response: SnapshotProtocol.Response, state: S): Behavior[InternalProtocol] = {
     val signal = response match {
       case DeleteSnapshotsSuccess(criteria) =>
+        setup.retentionProgressDeleteSnapshotsEnd(criteria.maxSequenceNr, success = true)
         Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(SnapshotSelectionCriteria.fromClassic(criteria))))
       case DeleteSnapshotsFailure(criteria, error) =>
+        setup.retentionProgressDeleteSnapshotsEnd(criteria.maxSequenceNr, success = false)
         Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(SnapshotSelectionCriteria.fromClassic(criteria)), error))
       case DeleteSnapshotSuccess(meta) =>
         Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(SnapshotMetadata.fromClassic(meta))))

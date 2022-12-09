@@ -28,24 +28,12 @@ class RetentionCriteriaSpec extends TestSuite with Matchers with AnyWordSpecLike
 
     "have valid sequenceNr range based on keepNSnapshots" in {
       val criteria = RetentionCriteria.snapshotEvery(3, 2).asInstanceOf[SnapshotCountRetentionCriteriaImpl]
-      val expected = List(
-        1 -> (0 -> 0),
-        3 -> (0 -> 0),
-        4 -> (0 -> 0),
-        6 -> (0 -> 0),
-        7 -> (0 -> 1),
-        9 -> (0 -> 3),
-        10 -> (0 -> 4),
-        12 -> (0 -> 6),
-        13 -> (1 -> 7),
-        15 -> (3 -> 9),
-        18 -> (6 -> 12),
-        20 -> (8 -> 14))
+      val expected =
+        List(1 -> 0, 3 -> 0, 4 -> 0, 6 -> 0, 7 -> 1, 9 -> 3, 10 -> 4, 12 -> 6, 13 -> 7, 15 -> 9, 18 -> 12, 20 -> 14)
       expected.foreach {
-        case (seqNr, (lower, upper)) =>
+        case (seqNr, upper) =>
           withClue(s"seqNr=$seqNr:") {
             criteria.deleteUpperSequenceNr(seqNr) should ===(upper)
-            criteria.deleteLowerSequenceNr(upper) should ===(lower)
           }
       }
     }
