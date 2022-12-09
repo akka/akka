@@ -87,6 +87,20 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   private var mdcPhase = PersistenceMdc.Initializing
 
+  if (isOnlyOneSnapshot) {
+    retention match {
+      case SnapshotCountRetentionCriteriaImpl(_, keepNSnapshots, _) if keepNSnapshots > 1 =>
+        // not using internalLogger because it's probably not good to use mdc from the constructor
+        internalLoggerFactory().warn(
+          "Retention has been defined with keepNSnapshots [{}] for persistenceId [{}]," +
+          "but the snapshot store [{}] will only keep one snapshot. You can silence this warning and benefit from " +
+          "a performance optimization by defining the retention criteria without the keepNSnapshots parameter.",
+          keepNSnapshots,
+          persistenceId)
+      case _ =>
+    }
+  }
+
   def internalLogger: Logger = {
     PersistenceMdc.setMdc(persistenceId, mdcPhase)
     internalLoggerFactory()
