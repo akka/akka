@@ -35,6 +35,9 @@ import akka.testkit._
 import akka.util.ByteString
 
 object AeronStreamLatencySpec extends MultiNodeConfig {
+  // important to not use aeron-udp via system property override because that will cause port conflict
+  System.setProperty("akka.remote.artery.transport", "tcp")
+
   val first = role("first")
   val second = role("second")
 
