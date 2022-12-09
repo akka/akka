@@ -4,6 +4,10 @@
 
 package jdocs.akka.typed;
 
+import static jdocs.akka.typed.InteractionPatternsTest.Samples.Buncher;
+import static jdocs.akka.typed.InteractionPatternsTest.Samples.Printer;
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
@@ -34,10 +38,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
-
-import static jdocs.akka.typed.InteractionPatternsTest.Samples.Printer;
-import static jdocs.akka.typed.InteractionPatternsTest.Samples.Buncher;
-import static org.junit.Assert.assertEquals;
 
 public class InteractionPatternsTest extends JUnitSuite {
 

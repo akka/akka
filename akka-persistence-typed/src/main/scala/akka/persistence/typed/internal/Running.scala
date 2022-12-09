@@ -9,8 +9,10 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import scala.collection.immutable
+
 import akka.actor.UnhandledMessage
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.{ Behavior, Signal }
@@ -804,13 +806,18 @@ private[akka] object Running {
               case DisabledRetentionCriteria                          => // no further actions
               case s @ SnapshotCountRetentionCriteriaImpl(_, _, true) =>
                 // deleteEventsOnSnapshot == true, deletion of old events
-                val deleteEventsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
+                val deleteEventsToSeqNr = {
+                  if (setup.isOnlyOneSnapshot) meta.sequenceNr // delete all events up to the snapshot
+                  else s.deleteUpperSequenceNr(meta.sequenceNr) // keepNSnapshots batches of events
+                }
                 // snapshot deletion then happens on event deletion success in Running.onDeleteEventsJournalResponse
                 internalDeleteEvents(meta.sequenceNr, deleteEventsToSeqNr)
               case s @ SnapshotCountRetentionCriteriaImpl(_, _, false) =>
                 // deleteEventsOnSnapshot == false, deletion of old snapshots
-                val deleteSnapshotsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
-                internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+                if (!setup.isOnlyOneSnapshot) {
+                  val deleteSnapshotsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
+                  internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+                }
               case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
             }
           }
@@ -918,13 +925,15 @@ private[akka] object Running {
       case DeleteMessagesSuccess(toSequenceNr) =>
         setup.internalLogger.debug("Persistent events to sequenceNr [{}] deleted successfully.", toSequenceNr)
         setup.retention match {
-          case DisabledRetentionCriteria             => // no further actions
+          case DisabledRetentionCriteria => // no further actions
           case s: SnapshotCountRetentionCriteriaImpl =>
-            // The reason for -1 is that a snapshot at the exact toSequenceNr is still useful and the events
-            // after that can be replayed after that snapshot, but replaying the events after toSequenceNr without
-            // starting at the snapshot at toSequenceNr would be invalid.
-            val deleteSnapshotsToSeqNr = toSequenceNr - 1
-            internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+            if (!setup.isOnlyOneSnapshot) {
+              // The reason for -1 is that a snapshot at the exact toSequenceNr is still useful and the events
+              // after that can be replayed after that snapshot, but replaying the events after toSequenceNr without
+              // starting at the snapshot at toSequenceNr would be invalid.
+              val deleteSnapshotsToSeqNr = toSequenceNr - 1
+              internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+            }
           case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
         }
         Some(DeleteEventsCompleted(toSequenceNr))
