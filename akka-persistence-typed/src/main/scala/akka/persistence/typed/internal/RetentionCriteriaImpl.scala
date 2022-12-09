@@ -21,7 +21,7 @@ import akka.persistence.typed.scaladsl
     with scaladsl.SnapshotCountRetentionCriteria {
 
   require(snapshotEveryNEvents > 0, s"'snapshotEveryNEvents' must be greater than 0, was [$snapshotEveryNEvents]")
-  require(keepNSnapshots > 0 || keepNSnapshots == -1, s"'keepNSnapshots' must be greater than 0, was [$keepNSnapshots]")
+  require(keepNSnapshots > 0, s"'keepNSnapshots' must be greater than 0, was [$keepNSnapshots]")
 
   def snapshotWhen(currentSequenceNr: Long): Boolean =
     currentSequenceNr % snapshotEveryNEvents == 0
