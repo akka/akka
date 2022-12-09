@@ -184,7 +184,7 @@ private[akka] final class BehaviorSetup[C, E, S](
   def isRetentionInProgress(): Boolean =
     retentionInProgress
 
-  def retentionProgressSaveSnapshot(sequenceNr: Long): Unit = {
+  def retentionProgressSaveSnapshotStarted(sequenceNr: Long): Unit = {
     retention match {
       case SnapshotCountRetentionCriteriaImpl(_, _, _) =>
         internalLogger.debug("Starting retention at seqNr [{}], saving snapshot.", sequenceNr)
@@ -193,7 +193,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     }
   }
 
-  def retentionProgressSaveSnapshotEnd(sequenceNr: Long, success: Boolean): Unit = {
+  def retentionProgressSaveSnapshotEnded(sequenceNr: Long, success: Boolean): Unit = {
     retention match {
       case SnapshotCountRetentionCriteriaImpl(_, _, deleteEvents) if retentionInProgress =>
         if (!success) {
@@ -212,7 +212,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     }
   }
 
-  def retentionProgressDeleteEvents(sequenceNr: Long, deleteToSequenceNr: Long): Unit = {
+  def retentionProgressDeleteEventsStarted(sequenceNr: Long, deleteToSequenceNr: Long): Unit = {
     retention match {
       case SnapshotCountRetentionCriteriaImpl(_, _, true) if retentionInProgress =>
         if (deleteToSequenceNr > 0) {
@@ -228,7 +228,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     }
   }
 
-  def retentionProgressDeleteEventsEnd(deleteToSequenceNr: Long, success: Boolean): Unit = {
+  def retentionProgressDeleteEventsEnded(deleteToSequenceNr: Long, success: Boolean): Unit = {
     retention match {
       case SnapshotCountRetentionCriteriaImpl(_, _, true) if retentionInProgress =>
         if (!success) {
@@ -249,7 +249,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     }
   }
 
-  def retentionProgressDeleteSnapshots(deleteToSequenceNr: Long): Unit = {
+  def retentionProgressDeleteSnapshotsStarted(deleteToSequenceNr: Long): Unit = {
     retention match {
       case SnapshotCountRetentionCriteriaImpl(_, _, _) if retentionInProgress =>
         if (deleteToSequenceNr > 0) {
@@ -262,7 +262,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     }
   }
 
-  def retentionProgressDeleteSnapshotsEnd(deleteToSequenceNr: Long, success: Boolean): Unit = {
+  def retentionProgressDeleteSnapshotsEnded(deleteToSequenceNr: Long, success: Boolean): Unit = {
     retention match {
       case SnapshotCountRetentionCriteriaImpl(_, _, _) if retentionInProgress =>
         if (success) {
