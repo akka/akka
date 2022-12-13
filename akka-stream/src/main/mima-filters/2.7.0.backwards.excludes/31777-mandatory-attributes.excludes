@@ -1,3 +1,11 @@
 # no longer anonymous subclasses, internal and may change.
 ProblemFilters.exclude[FinalClassProblem]("akka.stream.Attributes$NestedMaterializationCancellationPolicy")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.Attributes#NestedMaterializationCancellationPolicy.this")
+
+# breaking changes for Scala 3 but very unlikely to be used anywhere
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.Attributes.fromProduct")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.Attributes.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.Attributes._1")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.Attributes$")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.Attributes.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.Attributes.fromProduct")
