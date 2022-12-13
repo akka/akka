@@ -106,7 +106,7 @@ object StatusReply {
    *
    * Also note that Akka does not contain pre-built serializers for arbitrary exceptions.
    */
-  def fromTryKeepException[T](aTry: Try[T]): StatusReply[T] = new StatusReply(aTry)
+  def fromTryKeepException[T](status: Try[T]): StatusReply[T] = new StatusReply(status)
 
   /**
    * Scala API: Turn a try into a status reply.
@@ -115,7 +115,7 @@ object StatusReply {
    *
    * See [[#fromTryKeepException]] for passing the exception along as is.
    */
-  def fromTry[T](aTry: Try[T]): StatusReply[T] = aTry match {
+  def fromTry[T](status: Try[T]): StatusReply[T] = status match {
     case scala.util.Success(value) => success(value)
     case scala.util.Failure(t)     => error[T](t.getMessage)
   }
