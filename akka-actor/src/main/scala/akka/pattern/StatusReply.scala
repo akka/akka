@@ -95,7 +95,7 @@ object StatusReply {
   def error[T](exception: Throwable): StatusReply[T] = Error(exception)
 
   /**
-   * Scala API: Turn a try into a status reply
+   * Scala API: Turn a Try into a status reply.
    *
    * Prefer the string based error response over this one when possible to avoid tightly coupled logic across
    * actors and passing internal failure details on to callers that can not do much to handle them. [[#fromTry]]
@@ -104,7 +104,7 @@ object StatusReply {
    * For cases where types are needed to identify errors and behave differently enumerating them with a specific
    * set of response messages may be a better alternative to encoding them as generic exceptions.
    *
-   * Also note that Akka does not contain pre-build serializers for arbitrary exceptions.
+   * Also note that Akka does not contain pre-built serializers for arbitrary exceptions.
    */
   def fromTryKeepException[T](aTry: Try[T]): StatusReply[T] = new StatusReply(aTry)
 
