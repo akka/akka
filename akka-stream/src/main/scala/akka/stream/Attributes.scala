@@ -335,11 +335,23 @@ final class Attributes private[akka] (
     case _ => throw new IllegalArgumentException()
   }
 
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[Attributes]
-
   @deprecated("Don't use copy on Attributes", "2.8.0")
   def copy(attributeList: List[Attribute] = attributeList): Attributes =
     new Attributes(attributeList)
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[Attributes]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: Attributes =>
+      attributeList == that.attributeList &&
+      mandatoryAttributes == that.mandatoryAttributes
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(attributeList, mandatoryAttributes)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
 }
 
 /**
