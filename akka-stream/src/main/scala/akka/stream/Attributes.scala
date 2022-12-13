@@ -7,22 +7,22 @@ package akka.stream
 import java.net.URLEncoder
 import java.time.Duration
 import java.util.Optional
-
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
 import scala.util.control.NonFatal
-
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.japi.function
 import akka.stream.impl.TraversalBuilder
-import akka.util.{ ByteString, OptionVal }
+import akka.util.ByteString
 import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
+
+import scala.annotation.nowarn
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -35,10 +35,34 @@ import akka.util.LineNumbers
  *
  * Operators should in general not access the `attributeList` but instead use `get` to get the expected
  * value of an attribute.
+ *
+ * Constructor is internal Akka API, use factories in companion to create instances.
  */
-final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
+final class Attributes private[akka] (
+    val attributeList: List[Attributes.Attribute],
+    private val mandatoryAttributes: Map[Class[AnyRef], Attributes.MandatoryAttribute])
+    extends scala.Product
+    with scala.Serializable
+    with scala.Equals {
 
   import Attributes._
+
+  // for binary compatibility
+  @deprecated("Use factories on companion object instead", since = "2.8.0")
+  def this(attributeList: List[Attributes.Attribute] = Nil) =
+    this(
+      attributeList,
+      (attributeList.reverseIterator
+        .foldLeft(Map.newBuilder[Class[AnyRef], Attributes.MandatoryAttribute]) {
+          case (builder, attribute) =>
+            attribute match {
+              case m: Attributes.MandatoryAttribute =>
+                builder += (m.getClass.asInstanceOf[Class[AnyRef]] -> m)
+                builder
+              case _ => builder
+            }
+        })
+        .result())
 
   /**
    * Note that this must only be used during traversal building and not during materialization
@@ -109,6 +133,8 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Scala API: Get the most specific of one of the mandatory attributes. Mandatory attributes are guaranteed
    * to always be among the attributes when the attributes are coming from a materialization.
+   *
+   * Note: looks for the exact mandatory attribute class, hierarchies of the same mandatory attribute not supported
    */
   def mandatoryAttribute[T <: MandatoryAttribute: ClassTag]: T = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
@@ -119,20 +145,16 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Java API: Get the most specific of one of the mandatory attributes. Mandatory attributes are guaranteed
    * to always be among the attributes when the attributes are coming from a materialization.
    *
+   * Note: looks for the exact mandatory attribute class, hierarchies of the same mandatory attribute not supported
+   *
    * @param c A class that is a subtype of [[MandatoryAttribute]]
    */
   def getMandatoryAttribute[T <: MandatoryAttribute](c: Class[T]): T = {
-    @tailrec
-    def find(list: List[Attribute]): OptionVal[Attribute] = list match {
-      case Nil => OptionVal.None
-      case head :: tail =>
-        if (c.isInstance(head)) OptionVal.Some(head)
-        else find(tail)
-    }
-
-    find(attributeList) match {
-      case OptionVal.Some(t) => t.asInstanceOf[T]
-      case _                 => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
+    try {
+      mandatoryAttributes(c.asInstanceOf[Class[AnyRef]]).asInstanceOf[T]
+    } catch {
+      case _: NoSuchElementException =>
+        throw new IllegalStateException(s"Mandatory attribute [$c] not found")
     }
   }
 
@@ -143,16 +165,31 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def and(other: Attributes): Attributes = {
     if (attributeList.isEmpty) other
     else if (other.attributeList.isEmpty) this
-    else if (other.attributeList.tail.isEmpty) Attributes(other.attributeList.head :: attributeList)
-    else Attributes(other.attributeList ::: attributeList)
+    else if (other.attributeList.tail.isEmpty) {
+      // note the inverted order for attributes vs mandatory values here
+      val newAttributes = other.attributeList.head :: attributeList
+      val newMandatory = this.mandatoryAttributes ++ other.mandatoryAttributes
+      new Attributes(newAttributes, newMandatory)
+    } else {
+      val newAttributes = other.attributeList ::: attributeList
+      val newMandatory = this.mandatoryAttributes ++ other.mandatoryAttributes
+      new Attributes(newAttributes, newMandatory)
+    }
   }
 
   /**
    * Adds given attribute. Added attribute is considered more specific than
    * already existing attributes of the same type.
    */
-  def and(other: Attribute): Attributes =
-    Attributes(other :: attributeList)
+  def and(other: Attribute): Attributes = {
+    other match {
+      case m: MandatoryAttribute =>
+        new Attributes(other :: attributeList, mandatoryAttributes + (m.getClass.asInstanceOf[Class[AnyRef]] -> m))
+      case regular =>
+        new Attributes(regular :: attributeList, mandatoryAttributes)
+    }
+
+  }
 
   /**
    * Extracts Name attributes and concatenates them.
@@ -287,6 +324,34 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }
   }
 
+  // for binary compatibility (used to be a case class)
+
+  @deprecated("Use explicit methods on Attributes to interact, not the ones provided by Product", "2.8.0")
+  override def productArity: Int = 1
+
+  @deprecated("Use explicit methods on Attributes to interact, not the ones provided by Product", "2.8.0")
+  override def productElement(n: Int): Any = n match {
+    case 0 => attributeList
+    case _ => throw new IllegalArgumentException()
+  }
+
+  @deprecated("Don't use copy on Attributes", "2.8.0")
+  def copy(attributeList: List[Attribute] = attributeList): Attributes =
+    new Attributes(attributeList)
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[Attributes]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: Attributes =>
+      attributeList == that.attributeList &&
+      mandatoryAttributes == that.mandatoryAttributes
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(attributeList, mandatoryAttributes)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
 }
 
 /**
@@ -303,6 +368,17 @@ object Attributes {
    */
   @DoNotInherit
   sealed trait MandatoryAttribute extends Attribute
+
+  def apply(): Attributes = new Attributes(Nil, Map.empty)
+
+  @nowarn("msg=deprecated")
+  def apply(attributeList: List[Attribute] = Nil) = new Attributes(attributeList)
+
+  // for binary compatibility
+
+  @deprecated("Use explicit methods on Attributes to interact, not the synthetic case class ones", "2.8.0")
+  def unapply(attrs: Attributes): Option[(List[Attribute])] =
+    Some(attrs.attributeList)
 
   final case class Name(n: String) extends Attribute
 
@@ -549,9 +625,12 @@ object Attributes {
    * , otherwise these stages will immediately cancel without materializing the nested flow.
    */
   @ApiMayChange
-  class NestedMaterializationCancellationPolicy private[NestedMaterializationCancellationPolicy] (
-      val propagateToNestedMaterialization: Boolean)
-      extends MandatoryAttribute
+  final class NestedMaterializationCancellationPolicy private[NestedMaterializationCancellationPolicy] (
+      val propagateToNestedMaterialization: Boolean,
+      name: String)
+      extends MandatoryAttribute {
+    override def toString: String = name
+  }
 
   @ApiMayChange
   object NestedMaterializationCancellationPolicy {
@@ -562,10 +641,8 @@ object Attributes {
      * nested flow materialization.
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
-    val EagerCancellation
-        : NestedMaterializationCancellationPolicy = new NestedMaterializationCancellationPolicy(false) {
-      override def toString: String = "EagerCancellation"
-    }
+    val EagerCancellation: NestedMaterializationCancellationPolicy =
+      new NestedMaterializationCancellationPolicy(false, "EagerCancellation")
 
     /**
      * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
@@ -573,9 +650,8 @@ object Attributes {
      * nested flow materialization. Once the nested flow is materialized it will be cancelled immediately.
      * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
      */
-    val PropagateToNested: NestedMaterializationCancellationPolicy = new NestedMaterializationCancellationPolicy(true) {
-      override def toString: String = "PropagateToNested"
-    }
+    val PropagateToNested: NestedMaterializationCancellationPolicy =
+      new NestedMaterializationCancellationPolicy(true, "PropagateToNested")
 
     /**
      * Default [[NestedMaterializationCancellationPolicy]],
