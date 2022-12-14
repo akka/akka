@@ -7,9 +7,13 @@ package akka.persistence.typed.internal
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
+import org.slf4j.Logger
+import org.slf4j.MDC
+
 import akka.actor.Cancellable
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.annotation.InternalApi
 import akka.persistence._
@@ -20,8 +24,6 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.OptionVal
-import org.slf4j.Logger
-import org.slf4j.MDC
 
 /**
  * INTERNAL API
@@ -56,7 +58,8 @@ private[akka] final class BehaviorSetup[C, E, S](
     val stashState: StashState,
     val replication: Option[ReplicationSetup],
     val publishEvents: Boolean,
-    private val internalLoggerFactory: () => Logger) {
+    private val internalLoggerFactory: () => Logger,
+    private var retentionInProgress: Boolean) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
@@ -170,6 +173,110 @@ private[akka] final class BehaviorSetup[C, E, S](
         else if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
         else NoSnapshot
       case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
+    }
+  }
+
+  // The retention process for SnapshotCountRetentionCriteria looks like this:
+  // 1. Save snapshot after persisting events when shouldSnapshotAfterPersist returned SnapshotWithRetention.
+  // 2. Delete events (when deleteEventsOnSnapshot=true), runs in background.
+  // 3. Delete snapshots (when isOnlyOneSnapshot=false), runs in background.
+
+  def isRetentionInProgress(): Boolean =
+    retentionInProgress
+
+  def retentionProgressSaveSnapshotStarted(sequenceNr: Long): Unit = {
+    retention match {
+      case SnapshotCountRetentionCriteriaImpl(_, _, _) =>
+        internalLogger.debug("Starting retention at seqNr [{}], saving snapshot.", sequenceNr)
+        retentionInProgress = true
+      case _ =>
+    }
+  }
+
+  def retentionProgressSaveSnapshotEnded(sequenceNr: Long, success: Boolean): Unit = {
+    retention match {
+      case SnapshotCountRetentionCriteriaImpl(_, _, deleteEvents) if retentionInProgress =>
+        if (!success) {
+          internalLogger.debug("Retention at seqNr [{}] is completed, saving snapshot failed.", sequenceNr)
+          retentionInProgress = false
+        } else if (deleteEvents) {
+          internalLogger.debug("Retention at seqNr [{}], saving snapshot was successful.", sequenceNr)
+        } else if (isOnlyOneSnapshot) {
+          // no delete of events and no delete of snapshots => done
+          internalLogger.debug("Retention at seqNr [{}] is completed, saving snapshot was successful.", sequenceNr)
+          retentionInProgress = false
+        } else {
+          internalLogger.debug("Retention at seqNr [{}], saving snapshot was successful.", sequenceNr)
+        }
+      case _ =>
+    }
+  }
+
+  def retentionProgressDeleteEventsStarted(sequenceNr: Long, deleteToSequenceNr: Long): Unit = {
+    retention match {
+      case SnapshotCountRetentionCriteriaImpl(_, _, true) if retentionInProgress =>
+        if (deleteToSequenceNr > 0) {
+          internalLogger.debug2(
+            "Retention at seqNr [{}], deleting events to seqNr [{}].",
+            sequenceNr,
+            deleteToSequenceNr)
+        } else {
+          internalLogger.debug("Retention is completed, no events to delete.")
+          retentionInProgress = false
+        }
+      case _ =>
+    }
+  }
+
+  def retentionProgressDeleteEventsEnded(deleteToSequenceNr: Long, success: Boolean): Unit = {
+    retention match {
+      case SnapshotCountRetentionCriteriaImpl(_, _, true) if retentionInProgress =>
+        if (!success) {
+          internalLogger.debug(
+            "Retention at seqNr [{}] is completed, deleting events to seqNr [{}] failed.",
+            deleteToSequenceNr)
+          retentionInProgress = false
+        } else if (isOnlyOneSnapshot) {
+          // no delete of snapshots => done
+          internalLogger.debug(
+            "Retention is completed, deleting events to seqNr [{}] was successful.",
+            deleteToSequenceNr)
+          retentionInProgress = false
+        } else {
+          internalLogger.debug("Retention, deleting events to seqNr [{}] was successful.", deleteToSequenceNr)
+        }
+      case _ =>
+    }
+  }
+
+  def retentionProgressDeleteSnapshotsStarted(deleteToSequenceNr: Long): Unit = {
+    retention match {
+      case SnapshotCountRetentionCriteriaImpl(_, _, _) if retentionInProgress =>
+        if (deleteToSequenceNr > 0) {
+          internalLogger.debug("Retention, deleting snapshots to seqNr [{}].", deleteToSequenceNr)
+        } else {
+          internalLogger.debug("Retention is completed, no snapshots to delete.")
+          retentionInProgress = false
+        }
+      case _ =>
+    }
+  }
+
+  def retentionProgressDeleteSnapshotsEnded(deleteToSequenceNr: Long, success: Boolean): Unit = {
+    retention match {
+      case SnapshotCountRetentionCriteriaImpl(_, _, _) if retentionInProgress =>
+        if (success) {
+          // delete snapshot is last step => done
+          internalLogger.debug(
+            "Retention is completed, deleting snapshots to seqNr [{}] was successful.",
+            deleteToSequenceNr)
+          retentionInProgress = false
+        } else {
+          internalLogger.debug("Retention is completed, deleting snapshots to seqNr [{}] failed.", deleteToSequenceNr)
+          retentionInProgress = false
+        }
+
+      case _ =>
     }
   }
 

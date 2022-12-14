@@ -196,7 +196,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             stashState = stashState,
             replication = replication,
             publishEvents = publishEvents,
-            internalLoggerFactory = () => internalLogger())
+            internalLoggerFactory = () => internalLogger(),
+            retentionInProgress = false)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol

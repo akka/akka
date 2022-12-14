@@ -34,16 +34,6 @@ import akka.persistence.typed.scaladsl
     math.max(0, lastSequenceNr - (keepNSnapshots.toLong * snapshotEveryNEvents))
   }
 
-  /**
-   * Should only be used when `BehaviorSetup.isOnlyOneSnapshot` is true.
-   */
-  def deleteLowerSequenceNr(upperSequenceNr: Long): Long = {
-    // We could use 0 as fromSequenceNr to delete all older snapshots, but that might be inefficient for
-    // large ranges depending on how it's implemented in the snapshot plugin. Therefore we use the
-    // same window as defined for how much to keep in the retention criteria
-    math.max(0, upperSequenceNr - (keepNSnapshots.toLong * snapshotEveryNEvents))
-  }
-
   override def withDeleteEventsOnSnapshot: SnapshotCountRetentionCriteriaImpl =
     copy(deleteEventsOnSnapshot = true)
 
