@@ -899,15 +899,29 @@ private[akka] class ActorSystemImpl(
 
   def actorOf(props: Props, name: String): ActorRef =
     if (guardianProps.isEmpty) guardian.underlying.attachChild(props, name, systemService = false)
-    else
-      throw new UnsupportedOperationException(
-        s"cannot create top-level actor [$name] from the outside on ActorSystem with custom user guardian")
+    else {
+      val message =
+        if (isTypedGuardian)
+          s"cannot create top-level actor [$name] from the outside on a typed ActorSystem.  In a typed ActorSystem, " +
+          "top-level actors should be spawned as children of the guardian behavior; if this is not possible (e.g. this " +
+          "actorOf call is in a library), a classic ActorSystem should be created and used to spawn top-level actors."
+        else s"cannot create top-level actor [$name] from the outside on ActorSystem with custom user guardian"
+
+      throw new UnsupportedOperationException(message)
+    }
 
   def actorOf(props: Props): ActorRef =
     if (guardianProps.isEmpty) guardian.underlying.attachChild(props, systemService = false)
-    else
-      throw new UnsupportedOperationException(
-        "cannot create top-level actor from the outside on ActorSystem with custom user guardian")
+    else {
+      val message =
+        if (isTypedGuardian)
+          "cannot create top-level actor from the outside on a typed ActorSystem.  In a typed ActorSystem, " +
+          "top-level actors should be spawned as children of the guardian behavior; if this is not possible (e.g. this " +
+          "actorOf call is in a library), a classic ActorSystem should be created and used to spawn top-level actors."
+        else "cannot create top-level actor from the outside on ActorSystem with custom user guardian"
+
+      throw new UnsupportedOperationException(message)
+    }
 
   def stop(actor: ActorRef): Unit = {
     val path = actor.path
@@ -1294,4 +1308,7 @@ private[akka] class ActorSystemImpl(
      */
     def terminationFuture: Future[T] = done.future
   }
+
+  private def isTypedGuardian: Boolean =
+    guardianProps.exists(_.clazz.getName.startsWith("akka.actor.typed"))
 }
