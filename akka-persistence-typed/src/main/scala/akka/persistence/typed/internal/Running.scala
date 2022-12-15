@@ -302,7 +302,9 @@ private[akka] object Running {
         case Some(replication) =>
           event.replicatedMetaData match {
             case None =>
-              setup.internalLogger.warn("Received published event for [{}] but with no replicated metadata, dropping")
+              setup.internalLogger.warn(
+                "Received published event for [{}] but with no replicated metadata, dropping",
+                event.persistenceId)
               this
             case Some(replicatedEventMetaData) =>
               onPublishedEvent(state, replication, replicatedEventMetaData, event)
