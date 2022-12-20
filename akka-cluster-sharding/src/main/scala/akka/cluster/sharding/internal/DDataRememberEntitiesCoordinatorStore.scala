@@ -74,7 +74,7 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
       onGotAllShards(Set.empty)
 
     case Replicator.GetFailure(AllShardsKey, _) =>
-      log.error(
+      log.warning(
         "The ShardCoordinator was unable to get all shards state within 'waiting-for-state-timeout': {} millis (retrying)",
         readMajority.timeout.toMillis)
       // repeat until GetSuccess

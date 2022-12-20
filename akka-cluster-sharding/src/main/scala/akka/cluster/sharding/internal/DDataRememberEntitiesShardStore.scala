@@ -91,6 +91,8 @@ private[akka] final class DDataRememberEntitiesShardStore(
   // Note that the timeout is actually updatingStateTimeout / 4 so that we fit 3 retries and a response in the timeout before the shard sees it as a failure
   private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout / 4, majorityMinCap)
   private val maxUpdateAttempts = 3
+  // Note: total for all 5 keys
+  private var maxReadAttemptsLeft = 15
   private val keys = stateKeys(typeName, shardId)
 
   if (log.isDebugEnabled) {
@@ -146,13 +148,19 @@ private[akka] final class DDataRememberEntitiesShardStore(
         receiveOne(i, ids)
       case NotFound(_, Some(i: Int)) =>
         receiveOne(i, Set.empty)
-      case GetFailure(key, _) =>
-        log.error(
-          "Unable to get an initial state within 'waiting-for-state-timeout': [{}] using [{}] (key [{}])",
-          readMajority.timeout.pretty,
-          readMajority,
-          key)
-        context.stop(self)
+      case GetFailure(key, Some(i)) =>
+        maxReadAttemptsLeft -= 1
+        if (maxReadAttemptsLeft > 0) {
+          log.warning("Unable to get an initial state within 'waiting-for-state-timeout' for key [{}], retrying", key)
+          replicator ! Get(key, readMajority, Some(i))
+        } else {
+          log.error(
+            "Unable to get an initial state within 'waiting-for-state-timeout' giving up after retrying: [{}] using [{}] (key [{}])",
+            readMajority.timeout.pretty,
+            readMajority,
+            key)
+          context.stop(self)
+        }
       case GetDataDeleted(_, _) =>
         log.error("Unable to get an initial state because it was deleted")
         context.stop(self)
