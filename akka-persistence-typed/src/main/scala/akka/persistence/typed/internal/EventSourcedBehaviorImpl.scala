@@ -372,7 +372,7 @@ final class ReplicatedPublishedEventMetaData(val replicaId: ReplicaId, private[a
 /**
  * INTERNAL API
  */
-@InternalApi
+@InternalStableApi
 private[akka] final case class PublishedEventImpl(
     persistenceId: PersistenceId,
     sequenceNumber: Long,
@@ -398,6 +398,8 @@ private[akka] final case class PublishedEventImpl(
     case Tagged(event, _) => copy(payload = event)
     case _                => this
   }
+
+  def lossyTransport: Boolean = replyTo.isEmpty
 
   override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava
 }

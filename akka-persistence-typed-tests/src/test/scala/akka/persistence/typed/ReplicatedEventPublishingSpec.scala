@@ -154,7 +154,9 @@ class ReplicatedEventPublishingSpec
       probe.expectMessage(Set("one"))
     }
 
-    "ignore a published event from a replica is received but the sequence number is unexpected" in {
+    "ignore a published event from a replica is received over a lossy transport when there is a gap in sequence numbers" in {
+      // The event could be valid, but we cannot accept it since the lossy transport
+      // means an event with seqnr 1 could have been lost, and writing 2 would mean we lose data
       val id = nextEntityId()
       val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
@@ -174,6 +176,32 @@ class ReplicatedEventPublishingSpec
 
       actor ! MyReplicatedBehavior.Get(probe.ref)
       probe.expectMessage(Set("one", "three"))
+    }
+
+    "accept a published event from a replica is received over a non-lossy transport when there is a gap in sequence numbers" in {
+      // scenario:
+      // DCB saw a replicated event from DCA first, so already used 1 as seq nr for that
+      // then does a write of its own that is now replicating over to DCA - DCA has not seen
+      // DCB -> 1 but should still accept the update since the transport is not lossy
+      val id = nextEntityId()
+      val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB)))
+      val probe = createTestProbe[Any]()
+      actor ! MyReplicatedBehavior.Add("one", probe.ref)
+      probe.expectMessage(Done)
+
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
+        ReplicationId(EntityType, id, DCB).persistenceId,
+        2L, // missing 1L
+        "two",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(probe.ref))
+      probe.expectMessage(Done)
+      actor ! MyReplicatedBehavior.Add("three", probe.ref)
+      probe.expectMessage(Done)
+
+      actor ! MyReplicatedBehavior.Get(probe.ref)
+      probe.expectMessage(Set("one", "two", "three"))
     }
 
     "ignore a published event from an unknown replica" in {

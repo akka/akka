@@ -340,19 +340,20 @@ private[akka] object Running {
           replication.allReplicas.mkString(", "))
         this
       } else {
-        val expectedSequenceNumber = state.seenPerReplica.getOrElse(originReplicaId, 0L) + 1
-        if (expectedSequenceNumber > event.sequenceNumber) {
-          // already seen
+        val seenSequenceNr = state.seenPerReplica.getOrElse(originReplicaId, 0L)
+        if (seenSequenceNr >= event.sequenceNumber) {
+          // already seen/deduplication
           if (log.isDebugEnabled)
             log.debugN(
-              "Ignoring published replicated event with seqNr [{}] from replica [{}] because it was already seen ([{}])",
+              "Ignoring published replicated event with seqNr [{}] from replica [{}] because it was already seen (version: {})",
               event.sequenceNumber,
               originReplicaId,
-              expectedSequenceNumber)
+              state.seenPerReplica)
           event.replyTo.foreach(_ ! Done)
           this
-        } else if (expectedSequenceNumber != event.sequenceNumber) {
-          // gap in sequence numbers (message lost or query and direct replication out of sync, should heal up by itself
+        } else if (event.lossyTransport && event.sequenceNumber != (seenSequenceNr + 1)) {
+          // Lossy transport/opportunistic replication cannot allow gaps in sequence
+          // numbers (message lost or query and direct replication out of sync, should heal up by itself
           // once the query catches up)
           if (log.isDebugEnabled) {
             log.debugN(
@@ -360,7 +361,7 @@ private[akka] object Running {
               "because expected replication seqNr was [{}] ",
               event.sequenceNumber,
               originReplicaId,
-              expectedSequenceNumber)
+              seenSequenceNr + 1)
           }
           this
         } else {
