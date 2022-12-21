@@ -13,19 +13,25 @@ import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
-import akka.cluster.ddata.Replicator.Get
-import akka.cluster.ddata.Replicator.GetDataDeleted
-import akka.cluster.ddata.Replicator.GetFailure
-import akka.cluster.ddata.Replicator.GetSuccess
-import akka.cluster.ddata.Replicator.ModifyFailure
-import akka.cluster.ddata.Replicator.NotFound
-import akka.cluster.ddata.Replicator.ReadMajority
-import akka.cluster.ddata.Replicator.StoreFailure
-import akka.cluster.ddata.Replicator.Update
-import akka.cluster.ddata.Replicator.UpdateDataDeleted
-import akka.cluster.ddata.Replicator.UpdateSuccess
-import akka.cluster.ddata.Replicator.UpdateTimeout
-import akka.cluster.ddata.Replicator.WriteMajority
+import akka.cluster.ddata.Replicator.{
+  Get,
+  GetDataDeleted,
+  GetFailure,
+  GetSuccess,
+  ModifyFailure,
+  NotFound,
+  ReadAll,
+  ReadMajority,
+  ReadMajorityPlus,
+  StoreFailure,
+  Update,
+  UpdateDataDeleted,
+  UpdateSuccess,
+  UpdateTimeout,
+  WriteAll,
+  WriteMajority,
+  WriteMajorityPlus
+}
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.EntityId
@@ -87,9 +93,15 @@ private[akka] final class DDataRememberEntitiesShardStore(
   implicit val node: Cluster = Cluster(context.system)
   implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
 
-  private val readMajority = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
+  private val readConsistency = settings.tuningParameters.coordinatorStateReadMajorityPlus match {
+    case Int.MaxValue => ReadAll(settings.tuningParameters.waitingForStateTimeout)
+    case additional   => ReadMajorityPlus(settings.tuningParameters.waitingForStateTimeout, additional, majorityMinCap)
+  }
   // Note that the timeout is actually updatingStateTimeout / 4 so that we fit 3 retries and a response in the timeout before the shard sees it as a failure
-  private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout / 4, majorityMinCap)
+  private val writeConsistency = settings.tuningParameters.coordinatorStateWriteMajorityPlus match {
+    case Int.MaxValue => WriteAll(settings.tuningParameters.updatingStateTimeout / 4)
+    case additional   => WriteMajorityPlus(settings.tuningParameters.updatingStateTimeout / 4, additional, majorityMinCap)
+  }
   private val maxUpdateAttempts = 3
   // Note: total for all 5 keys
   private var maxReadAttemptsLeft = 15
@@ -155,12 +167,12 @@ private[akka] final class DDataRememberEntitiesShardStore(
           log.warning(
             "Remember entities shard store unable to get an initial state within 'waiting-for-state-timeout' for key [{}], retrying",
             key)
-          replicator ! Get(key, readMajority, Some(i))
+          replicator ! Get(key, readConsistency, Some(i))
         } else {
           log.error(
             "Remember entities shard store unable to get an initial state within 'waiting-for-state-timeout' giving up after retrying: [{}] using [{}] (key [{}])",
-            readMajority.timeout.pretty,
-            readMajority,
+            readConsistency.timeout.pretty,
+            readConsistency,
             key)
           context.stop(self)
         }
@@ -197,7 +209,7 @@ private[akka] final class DDataRememberEntitiesShardStore(
     val ddataUpdates: Map[Set[Evt], (Update[ORSet[EntityId]], Int)] =
       allEvts.groupBy(evt => key(evt.id)).map {
         case (key, evts) =>
-          (evts, (Update(key, ORSet.empty[EntityId], writeMajority, Some(evts)) { existing =>
+          (evts, (Update(key, ORSet.empty[EntityId], writeConsistency, Some(evts)) { existing =>
             evts.foldLeft(existing) {
               case (acc, Started(id)) => acc :+ id
               case (acc, Stopped(id)) => acc.remove(id)
@@ -241,7 +253,7 @@ private[akka] final class DDataRememberEntitiesShardStore(
         } else {
           log.error(
             "Remember entities shard store unable to update state, within 'updating-state-timeout'= [{}], gave up after [{}] retries",
-            writeMajority.timeout.pretty,
+            writeConsistency.timeout.pretty,
             maxUpdateAttempts)
           // will trigger shard restart
           context.stop(self)
@@ -270,7 +282,7 @@ private[akka] final class DDataRememberEntitiesShardStore(
   private def loadAllEntities(): Unit = {
     (0 until numberOfKeys).toSet[Int].foreach { i =>
       val key = keys(i)
-      replicator ! Get(key, readMajority, Some(i))
+      replicator ! Get(key, readConsistency, Some(i))
     }
   }
 
