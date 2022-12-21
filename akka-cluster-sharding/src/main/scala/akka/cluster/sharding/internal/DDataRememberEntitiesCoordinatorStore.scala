@@ -46,6 +46,7 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
   private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
 
   private val AllShardsKey = GSetKey[String](s"shard-${typeName}-all")
+  private var retryGetCounter = 0
   private var allShards: Option[Set[ShardId]] = None
   private var coordinatorWaitingForShards: Option[ActorRef] = None
 
@@ -74,9 +75,13 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
       onGotAllShards(Set.empty)
 
     case Replicator.GetFailure(AllShardsKey, _) =>
-      log.warning(
-        "The ShardCoordinator was unable to get all shards state within 'waiting-for-state-timeout': {} millis (retrying)",
-        readMajority.timeout.toMillis)
+      retryGetCounter += 1
+      val template =
+        "Remember entities coordinator store unable to get initial shards within 'waiting-for-state-timeout': {} millis (retrying)"
+      if (retryGetCounter < 5)
+        log.warning(template, readMajority.timeout.toMillis)
+      else
+        log.error(template, readMajority.timeout.toMillis)
       // repeat until GetSuccess
       getAllShards()
 
@@ -85,12 +90,12 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
         _ + shardId)
 
     case Replicator.UpdateSuccess(AllShardsKey, Some((replyTo: ActorRef, shardId: ShardId))) =>
-      log.debug("The coordinator shards state was successfully updated with {}", shardId)
+      log.debug("Remember entities coordinator store shards successfully updated with {}", shardId)
       replyTo ! RememberEntitiesCoordinatorStore.UpdateDone(shardId)
 
     case Replicator.UpdateTimeout(AllShardsKey, Some((replyTo: ActorRef, shardId: ShardId))) =>
       log.error(
-        "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis (retrying), adding shard={}",
+        "Remember entities coordinator store unable to update shards state within 'updating-state-timeout': {} millis (retrying), adding shard={}",
         writeMajority.timeout.toMillis,
         shardId)
       replyTo ! RememberEntitiesCoordinatorStore.UpdateFailed(shardId)
@@ -98,7 +103,7 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
     case Replicator.ModifyFailure(key, error, cause, Some((replyTo: ActorRef, shardId: ShardId))) =>
       log.error(
         cause,
-        "The remember entities store was unable to add shard [{}] (key [{}], failed with error: {})",
+        "Remember entities coordinator store was unable to add shard [{}] (key [{}], failed with error: {})",
         shardId,
         key,
         error)
@@ -106,6 +111,7 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
   }
 
   def onGotAllShards(shardIds: Set[ShardId]): Unit = {
+    retryGetCounter = 0
     coordinatorWaitingForShards match {
       case Some(coordinator) =>
         coordinator ! RememberEntitiesCoordinatorStore.RememberedShards(shardIds)

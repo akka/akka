@@ -116,7 +116,8 @@ private[akka] final class DDataRememberEntitiesShardStore(
   def idle: Receive = {
     case RememberEntitiesShardStore.GetEntities =>
       // not supported, but we may get several if the shard timed out and retried
-      log.debug("Another get entities request after responding to one, not expected/supported, ignoring")
+      log.debug(
+        "Remember entities shard store got another get entities request after responding to one, not expected/supported, ignoring")
     case update: RememberEntitiesShardStore.Update => onUpdate(update)
   }
 
@@ -151,31 +152,36 @@ private[akka] final class DDataRememberEntitiesShardStore(
       case GetFailure(key, Some(i)) =>
         maxReadAttemptsLeft -= 1
         if (maxReadAttemptsLeft > 0) {
-          log.warning("Unable to get an initial state within 'waiting-for-state-timeout' for key [{}], retrying", key)
+          log.warning(
+            "Remember entities shard store unable to get an initial state within 'waiting-for-state-timeout' for key [{}], retrying",
+            key)
           replicator ! Get(key, readMajority, Some(i))
         } else {
           log.error(
-            "Unable to get an initial state within 'waiting-for-state-timeout' giving up after retrying: [{}] using [{}] (key [{}])",
+            "Remember entities shard store unable to get an initial state within 'waiting-for-state-timeout' giving up after retrying: [{}] using [{}] (key [{}])",
             readMajority.timeout.pretty,
             readMajority,
             key)
           context.stop(self)
         }
       case GetDataDeleted(_, _) =>
-        log.error("Unable to get an initial state because it was deleted")
+        log.error("Remember entities shard store unable to get an initial state because it was deleted")
         context.stop(self)
       case update: RememberEntitiesShardStore.Update =>
-        log.warning("Got an update before load of initial entities completed, dropping update: [{}]", update)
+        log.warning(
+          "Remember entities shard store got an update before load of initial entities completed, dropping update: [{}]",
+          update)
       case RememberEntitiesShardStore.GetEntities =>
         if (gotKeys.size == numberOfKeys) {
           // we already got all and was waiting for a request
-          log.debug("Got request from shard, sending remembered entities")
+          log.debug("Remember entities shard store got request from shard, sending remembered entities")
           sender() ! RememberEntitiesShardStore.RememberedEntities(ids)
           context.become(idle)
           unstashAll()
         } else {
           // we haven't seen all ids yet
-          log.debug("Got request from shard, waiting for all remembered entities to arrive")
+          log.debug(
+            "Remember entities shard store got request from shard, waiting for all remembered entities to arrive")
           context.become(waitingForAllEntityIds(gotKeys, ids, Some(sender())))
         }
       case _ =>
@@ -215,7 +221,7 @@ private[akka] final class DDataRememberEntitiesShardStore(
     // updatesLeft used both to keep track of what work remains and for retrying on timeout up to a limit
     def next(updatesLeft: Map[Set[Evt], (Update[ORSet[EntityId]], Int)]): Receive = {
       case UpdateSuccess(_, Some(evts: Set[Evt] @unchecked)) =>
-        log.debug("The DDataShard state was successfully updated for [{}]", evts)
+        log.debug("Remember entities shard store state was successfully updated for [{}]", evts)
         val remainingAfterThis = updatesLeft - evts
         if (remainingAfterThis.isEmpty) {
           requestor ! RememberEntitiesShardStore.UpdateDone(update.started, update.stopped)
@@ -227,31 +233,35 @@ private[akka] final class DDataRememberEntitiesShardStore(
       case UpdateTimeout(_, Some(evts: Set[Evt] @unchecked)) =>
         val (updateForEvts, retriesLeft) = updatesLeft(evts)
         if (retriesLeft > 0) {
-          log.debug("Retrying update because of write timeout, tries left [{}]", retriesLeft)
+          log.debug(
+            "Remember entities shard store retrying update because of write timeout, tries left [{}]",
+            retriesLeft)
           replicator ! updateForEvts
           context.become(next(updatesLeft.updated(evts, (updateForEvts, retriesLeft - 1))))
         } else {
           log.error(
-            "Unable to update state, within 'updating-state-timeout'= [{}], gave up after [{}] retries",
+            "Remember entities shard store unable to update state, within 'updating-state-timeout'= [{}], gave up after [{}] retries",
             writeMajority.timeout.pretty,
             maxUpdateAttempts)
           // will trigger shard restart
           context.stop(self)
         }
       case StoreFailure(_, _) =>
-        log.error("Unable to update state, due to store failure")
+        log.error("Remember entities shard store unable to update state, due to store failure")
         // will trigger shard restart
         context.stop(self)
       case ModifyFailure(_, error, cause, _) =>
-        log.error(cause, "Unable to update state, due to modify failure: {}", error)
+        log.error(cause, "Remember entities shard store unable to update state, due to modify failure: {}", error)
         // will trigger shard restart
         context.stop(self)
       case UpdateDataDeleted(_, _) =>
-        log.error("Unable to update state, due to delete")
+        log.error("Remember entities shard store unable to update state, due to delete")
         // will trigger shard restart
         context.stop(self)
       case update: RememberEntitiesShardStore.Update =>
-        log.warning("Got a new update before write of previous completed, dropping update: [{}]", update)
+        log.warning(
+          "Remember entities shard store got a new update before write of previous completed, dropping update: [{}]",
+          update)
     }
 
     next(allUpdates)
