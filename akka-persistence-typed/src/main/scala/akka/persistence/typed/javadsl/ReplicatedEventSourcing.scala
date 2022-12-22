@@ -122,22 +122,4 @@ object ReplicatedEventSourcing {
     eventSourcedBehaviorFactory(context)
   }
 
-  /**
-   * Initialize a replicated event sourced behavior.
-   *
-   * Events from each replica for the same entityId need to be passed to it by an external stream.
-   * Care must be taken to handle events in any order as events can happen concurrently at different replicas.
-   *
-   * Using a replicated event sourced behavior means there is no longer the single writer guarantee.
-   *
-   * The journal plugin id for the entity itself can be configured using withJournalPluginId after creation.
-   */
-  def externalReplication[Command, Event, State](replicationId: ReplicationId, allReplicas: JSet[ReplicaId])(
-      eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
-      : EventSourcedBehavior[Command, Event, State] = {
-    val context =
-      new ReplicationContextImpl(replicationId, allReplicas.asScala.map(_ -> ReplicationContextImpl.NoPlugin).toMap)
-    eventSourcedBehaviorFactory(context)
-  }
-
 }

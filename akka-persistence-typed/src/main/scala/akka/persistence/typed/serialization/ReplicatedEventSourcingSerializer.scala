@@ -158,8 +158,6 @@ import scala.collection.immutable.TreeMap
       .setTimestamp(impl.timestamp)
 
     impl.replicatedMetaData match {
-      case None =>
-        builder
       case Some(m) =>
         builder.setMetadata(
           ReplicatedEventSourcing.ReplicatedPublishedEventMetaData
@@ -167,6 +165,7 @@ import scala.collection.immutable.TreeMap
             .setReplicaId(m.replicaId.id)
             .setVersionVector(versionVectorToProto(m.version))
             .build())
+      case None =>
     }
 
     impl.replyTo match {
