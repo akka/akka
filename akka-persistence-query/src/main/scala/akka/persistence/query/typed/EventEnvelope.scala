@@ -111,6 +111,15 @@ final class EventEnvelope[Event](
     case _ => false
   }
 
-  override def toString: String =
-    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventOption,$timestamp,$eventMetadata,$entityType,$slice)"
+  override def toString: String = {
+    val eventStr = eventOption match {
+      case Some(evt) => evt.getClass.getName
+      case None      => ""
+    }
+    val metaStr = eventMetadata match {
+      case Some(meta) => meta.getClass.getName
+      case None       => ""
+    }
+    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice)"
+  }
 }
