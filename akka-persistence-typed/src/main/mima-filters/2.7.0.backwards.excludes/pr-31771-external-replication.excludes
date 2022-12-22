@@ -1,0 +1,4 @@
+# serialization protocol changes
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.serialization.ReplicatedEventSourcing#PublishedEventOrBuilder.hasReplyTo")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.serialization.ReplicatedEventSourcing#PublishedEventOrBuilder.getReplyTo")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.serialization.ReplicatedEventSourcing#PublishedEventOrBuilder.getReplyToBytes")

@@ -8,6 +8,8 @@ import java.io.NotSerializableException
 import java.util.{ ArrayList, Collections, Comparator }
 import java.{ lang => jl }
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.ActorRefResolver
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.annotation.InternalApi
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
@@ -64,6 +66,9 @@ import scala.collection.immutable.TreeMap
     with BaseSerializer {
 
   private val wrappedSupport = new WrappedPayloadSupport(system)
+  // lazy because Serializers are initialized early on. `toTyped` might then try to
+  // initialize the classic ActorSystemAdapter extension.
+  private lazy val resolver = ActorRefResolver(system.toTyped)
 
   private val CrdtCounterManifest = "AA"
   private val CrdtCounterUpdatedManifest = "AB"
@@ -117,7 +122,6 @@ import scala.collection.immutable.TreeMap
     case m: Counter.Updated => counterUpdatedToProtoBufByteArray(m)
 
     case m: PublishedEventImpl => publishedEventToProtoByteArray(m)
-
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
@@ -153,9 +157,7 @@ import scala.collection.immutable.TreeMap
       .setPayload(wrappedSupport.payloadBuilder(impl.payload))
       .setTimestamp(impl.timestamp)
 
-    (impl.replicatedMetaData match {
-      case None =>
-        builder
+    impl.replicatedMetaData match {
       case Some(m) =>
         builder.setMetadata(
           ReplicatedEventSourcing.ReplicatedPublishedEventMetaData
@@ -163,7 +165,15 @@ import scala.collection.immutable.TreeMap
             .setReplicaId(m.replicaId.id)
             .setVersionVector(versionVectorToProto(m.version))
             .build())
-    }).build().toByteArray
+      case None =>
+    }
+
+    impl.replyTo match {
+      case Some(ref) => builder.setReplyTo(resolver.toSerializationFormat(ref))
+      case None      =>
+    }
+
+    builder.build().toByteArray
   }
 
   def publishedEventFromBinary(bytes: Array[Byte]): PublishedEventImpl = {
@@ -179,7 +189,9 @@ import scala.collection.immutable.TreeMap
           new ReplicatedPublishedEventMetaData(
             ReplicaId(protoMeta.getReplicaId),
             versionVectorFromProto(protoMeta.getVersionVector)))
-      } else None)
+      } else None,
+      if (!p.hasReplyTo) None
+      else Some(resolver.resolveActorRef(p.getReplyTo)))
   }
 
   def counterFromBinary(bytes: Array[Byte]): Counter =

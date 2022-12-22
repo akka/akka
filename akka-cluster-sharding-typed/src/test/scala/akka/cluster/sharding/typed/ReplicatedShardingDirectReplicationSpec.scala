@@ -43,7 +43,8 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
         1L,
         "event",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)),
+        None)
       system.eventStream ! EventStream.Publish(event)
 
       replicaBProbe.receiveMessage().message should equal(event)
@@ -69,7 +70,8 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
         1L,
         "event",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)),
+        None)
       system.eventStream ! EventStream.Publish(event)
 
       replicaAProbe.expectNoMessage()
@@ -93,7 +95,8 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
         1L,
         "event",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)),
+        None)
       system.eventStream ! EventStream.Publish(event)
 
       replicaAProbe.expectNoMessage()

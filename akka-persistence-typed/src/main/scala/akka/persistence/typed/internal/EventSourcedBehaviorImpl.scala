@@ -4,10 +4,11 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
+
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor.typed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.BackoffSupervisorStrategy
@@ -372,13 +373,14 @@ final class ReplicatedPublishedEventMetaData(val replicaId: ReplicaId, private[a
 /**
  * INTERNAL API
  */
-@InternalApi
+@InternalStableApi
 private[akka] final case class PublishedEventImpl(
     persistenceId: PersistenceId,
     sequenceNumber: Long,
     payload: Any,
     timestamp: Long,
-    replicatedMetaData: Option[ReplicatedPublishedEventMetaData])
+    replicatedMetaData: Option[ReplicatedPublishedEventMetaData],
+    replyTo: Option[ActorRef[Done]])
     extends PublishedEvent
     with InternalProtocol {
   import scala.compat.java8.OptionConverters._
@@ -397,6 +399,8 @@ private[akka] final case class PublishedEventImpl(
     case Tagged(event, _) => copy(payload = event)
     case _                => this
   }
+
+  def lossyTransport: Boolean = replyTo.isEmpty
 
   override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava
 }

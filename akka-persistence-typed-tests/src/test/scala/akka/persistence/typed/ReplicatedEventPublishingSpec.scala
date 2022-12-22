@@ -55,6 +55,31 @@ object ReplicatedEventPublishingSpec {
                 },
               (state, string) => state + string))
       }
+
+    def externalReplication(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
+      Behaviors.setup { ctx =>
+        ReplicatedEventSourcing.externalReplication(ReplicationId(EntityType, entityId, replicaId), allReplicas)(
+          replicationContext =>
+            EventSourcedBehavior[Command, String, Set[String]](
+              replicationContext.persistenceId,
+              Set.empty,
+              (state, command) =>
+                command match {
+                  case Add(string, replyTo) =>
+                    ctx.log.debug("Persisting [{}]", string)
+                    Effect.persist(string).thenRun { _ =>
+                      ctx.log.debug("Ack:ing [{}]", string)
+                      replyTo ! Done
+                    }
+                  case Get(replyTo) =>
+                    replyTo ! state
+                    Effect.none
+                  case Stop =>
+                    Effect.stop()
+                  case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
+                },
+              (state, string) => state + string))
+      }
   }
 }
 
@@ -89,7 +114,8 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        None)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
 
@@ -97,7 +123,40 @@ class ReplicatedEventPublishingSpec
       probe.expectMessage(Set("one", "two", "three"))
     }
 
-    "ignore a published event from a replica is received but the sequence number is unexpected" in {
+    "reply with an ack for a published event if requested" in {
+      val id = nextEntityId()
+      val actor = spawn(MyReplicatedBehavior.externalReplication(id, DCA, Set(DCA, DCB)))
+      val probe = createTestProbe[Any]()
+
+      val ackProbe = createTestProbe[Done]()
+      val persistenceId = ReplicationId(EntityType, id, DCB).persistenceId
+      // a published event from another replica
+      val publishedEvent = internal.PublishedEventImpl(
+        persistenceId,
+        1L,
+        "one",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(ackProbe.ref))
+      actor.asInstanceOf[ActorRef[Any]] ! publishedEvent
+      ackProbe.receiveMessage()
+
+      actor ! MyReplicatedBehavior.Get(probe.ref)
+      probe.expectMessage(Set("one"))
+
+      // also if we publish it again, we ack since we have seen and persisted it
+      // even if we deduplicate and don't write anything
+      actor.asInstanceOf[ActorRef[Any]] ! publishedEvent
+      ackProbe.receiveMessage()
+
+      // nothing changed
+      actor ! MyReplicatedBehavior.Get(probe.ref)
+      probe.expectMessage(Set("one"))
+    }
+
+    "ignore a published event from a replica is received over a lossy transport when there is a gap in sequence numbers" in {
+      // The event could be valid, but we cannot accept it since the lossy transport
+      // means an event with seqnr 1 could have been lost, and writing 2 would mean we lose data
       val id = nextEntityId()
       val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
@@ -110,12 +169,39 @@ class ReplicatedEventPublishingSpec
         2L, // missing 1L
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        None)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
 
       actor ! MyReplicatedBehavior.Get(probe.ref)
       probe.expectMessage(Set("one", "three"))
+    }
+
+    "accept a published event from a replica is received over a non-lossy transport when there is a gap in sequence numbers" in {
+      // scenario:
+      // DCB saw a replicated event from DCA first, so already used 1 as seq nr for that
+      // then does a write of its own that is now replicating over to DCA - DCA has not seen
+      // DCB -> 1 but should still accept the update since the transport is not lossy
+      val id = nextEntityId()
+      val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB)))
+      val probe = createTestProbe[Any]()
+      actor ! MyReplicatedBehavior.Add("one", probe.ref)
+      probe.expectMessage(Done)
+
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
+        ReplicationId(EntityType, id, DCB).persistenceId,
+        2L, // missing 1L
+        "two",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        Some(probe.ref))
+      probe.expectMessage(Done)
+      actor ! MyReplicatedBehavior.Add("three", probe.ref)
+      probe.expectMessage(Done)
+
+      actor ! MyReplicatedBehavior.Get(probe.ref)
+      probe.expectMessage(Set("one", "two", "three"))
     }
 
     "ignore a published event from an unknown replica" in {
@@ -131,7 +217,8 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCC, VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCC, VersionVector.empty)),
+        None)
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
 
@@ -152,14 +239,16 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        None)
       // simulate another published event from that replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
         ReplicationId(EntityType, id, DCB).persistenceId,
         1L,
         "two-again", // ofc this would be the same in the real world, different just so we can detect
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        None)
 
       actor ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -191,7 +280,8 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        None)
 
       incarnation2 ! MyReplicatedBehavior.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -214,7 +304,8 @@ class ReplicatedEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        None)
 
       incarnationA1 ! MyReplicatedBehavior.Stop
       probe.expectTerminated(incarnationA1)
@@ -227,7 +318,8 @@ class ReplicatedEventPublishingSpec
         2L,
         "three",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)),
+        None)
 
       incarnationA2 ! MyReplicatedBehavior.Add("four", probe.ref)
       probe.expectMessage(Done)

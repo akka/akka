@@ -5,6 +5,7 @@
 package akka.persistence.typed.scaladsl
 
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalStableApi
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
@@ -114,4 +115,25 @@ object ReplicatedEventSourcing {
     eventSourcedBehaviorFactory(context).withReplication(context)
   }
 
+  /**
+   * INTERNAL API
+   *
+   * Initialize a replicated event sourced behavior.
+   *
+   * Events from each replica for the same entityId need to be passed to it by an external stream.
+   * Care must be taken to handle events in any order as events can happen concurrently at different replicas.
+   *
+   * Using a replicated event sourced behavior means there is no longer the single writer guarantee.
+   *
+   * The journal plugin id for the entity itself can be configured using withJournalPluginId after creation.
+   */
+  @InternalStableApi
+  private[akka] def externalReplication[Command, Event, State](
+      replicationId: ReplicationId,
+      allReplicas: Set[ReplicaId])(
+      eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
+      : EventSourcedBehavior[Command, Event, State] = {
+    val context = new ReplicationContextImpl(replicationId, allReplicas.map(_ -> ReplicationContextImpl.NoPlugin).toMap)
+    eventSourcedBehaviorFactory(context).withReplication(context)
+  }
 }
