@@ -527,36 +527,6 @@ trait CommonSnapshotTests extends ScalaDslUtils {
 
     }
 
-    "test snapshot events with RetentionCriteria after sending commands" in {
-
-      lazy val tk = new SnapshotTestKit(system)
-
-      val pid = randomPid()
-      val act = system.spawn(
-        eventSourcedBehaviorWithState(pid).withRetention(
-          RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2)),
-        pid)
-
-      act ! Cmd("a")
-      act ! Cmd("b")
-      act ! Cmd("c")
-      act ! Cmd("d")
-      act ! Cmd("e")
-      act ! Cmd("f")
-      act ! Cmd("g")
-      act ! Cmd("h")
-      act ! Cmd("i")
-      act ! Cmd("j")
-      act ! Cmd("k")
-
-      tk.expectNextPersisted(pid, NonEmptyState("ab"))
-      tk.expectNextPersisted(pid, NonEmptyState("abcd"))
-      tk.expectNextPersisted(pid, NonEmptyState("abcdef"))
-      tk.expectNextPersisted(pid, NonEmptyState("abcdefgh"))
-      tk.expectNextPersisted(pid, NonEmptyState("abcdefghij"))
-
-    }
-
     specificTests()
   }
 

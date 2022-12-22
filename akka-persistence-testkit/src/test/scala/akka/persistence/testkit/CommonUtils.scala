@@ -4,16 +4,16 @@
 
 package akka.persistence.testkit
 
-import java.util.UUID
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
+import java.util.UUID
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.persistence._
 import akka.testkit.TestKitBase
 
-trait CommonUtils extends AnyWordSpecLike with TestKitBase {
+trait CommonUtils extends AnyWordSpecLike with TestKitBase with LogCapturing {
 
   protected def randomPid() = UUID.randomUUID().toString
 
