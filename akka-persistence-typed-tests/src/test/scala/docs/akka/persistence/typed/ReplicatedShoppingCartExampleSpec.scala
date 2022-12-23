@@ -42,7 +42,7 @@ object ReplicatedShoppingCartExampleSpec {
 
     def apply(entityId: String, replicaId: ReplicaId, allReplicaIds: Set[ReplicaId]): Behavior[Command] = {
       ReplicatedEventSourcing.commonJournalConfig(
-        ReplicationId("blog", entityId, replicaId),
+        ReplicationId("cart", entityId, replicaId),
         allReplicaIds,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, Event, State](
