@@ -1028,8 +1028,8 @@ trait FlowOps[+Out, +Mat] {
    * @param onComplete a function that transforms the ongoing state into an optional output element
    */
   def statefulMap[S, T](create: () => S)(f: (S, Out) => (S, T), onComplete: S => Option[T]): Repr[T] =
-    via(
-      new StatefulMap[S, Out, T](DefaultAttributes.statefulMap and SourceLocation.forLambda(f), create, f, onComplete))
+    via(new StatefulMap[S, Out, T](create, f, onComplete))
+      .withAttributes(DefaultAttributes.statefulMap and SourceLocation.forLambda(f))
 
   /**
    * Transform each stream element with the help of a resource.
@@ -1064,11 +1064,8 @@ trait FlowOps[+Out, +Mat] {
    */
   def mapWithResource[R, T](create: () => R)(f: (R, Out) => T, close: R => Option[T]): Repr[T] =
     via(
-      new StatefulMap[R, Out, T](
-        DefaultAttributes.mapWithResource and SourceLocation.forLambda(f),
-        create,
-        (resource, out) => (resource, f(resource, out)),
-        resource => close(resource)))
+      new StatefulMap[R, Out, T](create, (resource, out) => (resource, f(resource, out)), resource => close(resource)))
+      .withAttributes(DefaultAttributes.mapWithResource and SourceLocation.forLambda(f))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
