@@ -579,7 +579,9 @@ class EventSourcedBehaviorStashSpec
       c ! "ping"
       probe.expectMessage("pong")
 
+
       c ! "start-stashing"
+      // make sure write completes before sending more commands so that they are not auto-stashed by ESB
       probe.expectMessage("started-stashing")
 
       val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
@@ -612,6 +614,7 @@ class EventSourcedBehaviorStashSpec
       probe.expectMessage("pong")
 
       c ! "start-stashing"
+      // make sure write completes before sending more commands so that they are not auto-stashed by ESB
       probe.expectMessage("started-stashing")
 
       LoggingTestKit.warn("Stash buffer is full, dropping message").expect {
