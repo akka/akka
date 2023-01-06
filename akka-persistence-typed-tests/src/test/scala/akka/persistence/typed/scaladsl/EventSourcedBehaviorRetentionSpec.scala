@@ -279,13 +279,21 @@ class EventSourcedBehaviorRetentionSpec
       snapshotSignalProbe.expectSnapshotCompleted(9)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(3)
 
-      (1 to 10).foreach(_ => persistentActor ! Increment)
+      (1 to 3).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(20, (0 until 20).toVector))
+      replyProbe.expectMessage(State(13, (0 until 13).toVector))
       snapshotSignalProbe.expectSnapshotCompleted(12)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(6)
+
+      (1 to 3).foreach(_ => persistentActor ! Increment)
+      persistentActor ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(16, (0 until 16).toVector))
       snapshotSignalProbe.expectSnapshotCompleted(15)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(9)
+
+      (1 to 4).foreach(_ => persistentActor ! Increment)
+      persistentActor ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(20, (0 until 20).toVector))
       snapshotSignalProbe.expectSnapshotCompleted(18)
       deleteSnapshotSignalProbe.expectDeleteSnapshotCompleted(12)
 
