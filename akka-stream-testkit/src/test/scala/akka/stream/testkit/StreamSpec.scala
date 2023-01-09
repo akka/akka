@@ -4,22 +4,20 @@
 
 package akka.stream.testkit
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.ActorSystem
+import akka.stream.Materializer
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.testkit.scaladsl.StreamTestKit.printDebugDump
+import akka.stream.testkit.scaladsl.StreamTestKit.assertNoChildren
+import akka.stream.testkit.scaladsl.StreamTestKit.stopAllChildren
+import akka.testkit.AkkaSpec
+import akka.testkit.TestKitUtils
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.scalatest.Failed
 
-import akka.actor.{ ActorRef, ActorSystem }
-import akka.stream.impl.StreamSupervisor
-import akka.stream.snapshot.{ MaterializerState, StreamSnapshotImpl }
-import akka.testkit.{ AkkaSpec, TestProbe }
-import akka.testkit.TestKitUtils
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.testkit.scaladsl.StreamTestKit.{ assertNoChildren, stopAllChildren }
-import akka.stream.Materializer
-
 abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
+
   def this(config: Config) =
     this(
       ActorSystem(
@@ -36,30 +34,22 @@ abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
     super.withFixture(test) match {
       case failed: Failed =>
         implicit val ec = system.dispatcher
-        val probe = TestProbe()(system)
-        // FIXME I don't think it always runs under /user anymore (typed)
-        // FIXME correction - I'm not sure this works at _all_ - supposed to dump stream state if test fails
-        val streamSupervisors = system.actorSelection("/user/" + StreamSupervisor.baseName + "*")
-        streamSupervisors.tell(StreamSupervisor.GetChildren, probe.ref)
-        val children: Seq[ActorRef] = probe
-          .receiveWhile(2.seconds) {
-            case StreamSupervisor.Children(children) => children
-          }
-          .flatten
-        println("--- Stream actors debug dump ---")
-        if (children.isEmpty) println("Stream is completed. No debug information is available")
-        else {
-          println("Stream actors alive: " + children)
-          Future
-            .sequence(children.map(MaterializerState.requestFromChild))
-            .foreach(snapshots =>
-              snapshots.foreach(s =>
-                akka.stream.testkit.scaladsl.StreamTestKit.snapshotString(s.asInstanceOf[StreamSnapshotImpl])))
+        Materializer(_system) match {
+          case impl: PhasedFusingActorMaterializer =>
+            println("--- Stream actors debug dump (only works for tests using system materializer) ---")
+            printDebugDump(impl.supervisor)
+            println("--- Stream actors debug dump end ---")
+            // make sure not to leak running streams from failed to next test case
+            stopAllChildren(impl.system, impl.supervisor)
+          case _ =>
         }
         failed
       case other =>
         Materializer(_system) match {
           case impl: PhasedFusingActorMaterializer =>
+            // Note that this is different from assertAllStages stopped since it tries to
+            // *kill* all streams first, before checking if any is stuck. It also does not
+            // work for tests starting their own materializers.
             stopAllChildren(impl.system, impl.supervisor)
             val result = test.apply()
             assertNoChildren(impl.system, impl.supervisor)
