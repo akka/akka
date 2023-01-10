@@ -5,17 +5,16 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-
 import akka.Done
 import akka.stream.ActorAttributes
 import akka.stream.Materializer
 import akka.stream.Supervision
+import akka.stream.SystemMaterializer
 import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
@@ -315,9 +314,6 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "use dedicated blocking-io-dispatcher by default" in {
-      // use a separate materializer to ensure we know what child is our stream
-      implicit val materializer = Materializer(system)
-
       Source
         .unfoldResourceAsync[String, Unit](
           () => Promise[Unit]().future, // never complete
@@ -325,7 +321,10 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           _ => ???)
         .runWith(Sink.ignore)
 
-      materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+      SystemMaterializer(system).materializer
+        .asInstanceOf[PhasedFusingActorMaterializer]
+        .supervisor
+        .tell(StreamSupervisor.GetChildren, testActor)
       val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSourceAsync").get
       assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
     }

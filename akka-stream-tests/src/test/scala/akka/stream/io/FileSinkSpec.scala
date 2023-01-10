@@ -28,8 +28,6 @@ import akka.util.ByteString
 @nowarn
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
   val fs = Jimfs.newFileSystem("FileSinkSpec", Configuration.unix())
 
   val TestLines = {
@@ -161,7 +159,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
       targetFile { f =>
         val forever = Source.maybe.toMat(FileIO.toPath(f))(Keep.left).run()
         try {
-          materializer
+          SystemMaterializer(system).materializer
             .asInstanceOf[PhasedFusingActorMaterializer]
             .supervisor
             .tell(StreamSupervisor.GetChildren, testActor)
@@ -184,7 +182,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
           .toMat(FileIO.toPath(f).addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))(Keep.left)
           .run()
         try {
-          materializer
+          SystemMaterializer(system).materializer
             .asInstanceOf[PhasedFusingActorMaterializer]
             .supervisor
             .tell(StreamSupervisor.GetChildren, testActor)
