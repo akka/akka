@@ -133,9 +133,7 @@ object Dependencies {
       val scalatestJUnit = "org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % Test // ApacheV2
       val scalatestTestNG = "org.scalatestplus" %% "testng-7-5" % (scalaTestVersion + ".0") % Test // ApacheV2
       val scalatestScalaCheck = "org.scalatestplus" %% s"scalacheck-$scalaTestScalaCheckVersion" % (scalaTestVersion + ".0") % Test // ApacheV2
-      val scalatestMockito = Def.setting {
-        "org.scalatestplus" %% "mockito-3-4" % (scalaTestVersion + ".0") % Test
-      } // ApacheV2
+      val scalatestMockito = "org.scalatestplus" %% "mockito-4-5" % (scalaTestVersion + ".0") % Test // ApacheV2
 
       val log4j = "log4j" % "log4j" % "1.2.17" % Test // ApacheV2
 
@@ -258,7 +256,7 @@ object Dependencies {
         TestDependencies.slf4jJul,
         TestDependencies.slf4jLog4j,
         TestDependencies.logback,
-        TestDependencies.scalatestMockito.value)
+        TestDependencies.scalatestMockito)
 
   val distributedData = l ++= Seq(lmdb, TestDependencies.junit, TestDependencies.scalatest)
 
