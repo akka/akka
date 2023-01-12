@@ -131,7 +131,7 @@ object Dependencies {
       // but the version of each module starts with the scalatest
       // version it was intended to work with
       val scalatestJUnit = "org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % Test // ApacheV2
-      val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % (scalaTestVersion + ".0") % Test // ApacheV2
+      val scalatestTestNG = "org.scalatestplus" %% "testng-7-5" % (scalaTestVersion + ".0") % Test // ApacheV2
       val scalatestScalaCheck = "org.scalatestplus" %% s"scalacheck-$scalaTestScalaCheckVersion" % (scalaTestVersion + ".0") % Test // ApacheV2
       val scalatestMockito = Def.setting {
         "org.scalatestplus" %% "mockito-3-4" % (scalaTestVersion + ".0") % Test
