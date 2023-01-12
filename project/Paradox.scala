@@ -48,7 +48,7 @@ object Paradox {
         "scala.version" -> scalaVersion.value,
         "scala.binary.version" -> scalaBinaryVersion.value,
         "akka.version" -> version.value,
-        "scalatest.version" -> Dependencies.scalaTestVersion.value,
+        "scalatest.version" -> Dependencies.scalaTestVersion,
         "sigar_loader.version" -> "1.6.6-rev002",
         "algolia.docsearch.api_key" -> "543bad5ad786495d9ccd445ed34ed082",
         "algolia.docsearch.index_name" -> "akka_io",
