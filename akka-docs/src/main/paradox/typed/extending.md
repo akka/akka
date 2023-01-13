@@ -59,6 +59,8 @@ The `DatabaseConnectionPool` can be looked up in this way any number of times an
 <a id="loading"></a>
 ## Loading from configuration
 
+Loading an extension from configuration is optional. It is an optimization and can be used to eagerly load the extension when the ActorSystem is started. If not done from configuration, the extension is instantiated and registered the first time it is accessed.
+
 To be able to load extensions from your Akka configuration you must add FQCNs of implementations of the `ExtensionId`
 in the `akka.actor.typed.extensions` section of the config you provide to your `ActorSystem`.
 
