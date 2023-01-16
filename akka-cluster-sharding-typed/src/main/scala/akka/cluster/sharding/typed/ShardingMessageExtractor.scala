@@ -4,7 +4,9 @@
 
 package akka.cluster.sharding.typed
 
-import akka.actor.{ InvalidMessageException, WrappedMessage }
+import akka.actor.InvalidMessageException
+import akka.actor.WrappedMessage
+import akka.actor.typed.EntityMessageExtractor
 import akka.util.unused
 
 object ShardingMessageExtractor {
@@ -38,7 +40,7 @@ object ShardingMessageExtractor {
  *           envelope.
  * @tparam M The type of message accepted by the entity actor
  */
-abstract class ShardingMessageExtractor[E, M] {
+abstract class ShardingMessageExtractor[E, M] extends EntityMessageExtractor[E, M] {
 
   /**
    * Extract the entity id from an incoming `message`. If `null` is returned

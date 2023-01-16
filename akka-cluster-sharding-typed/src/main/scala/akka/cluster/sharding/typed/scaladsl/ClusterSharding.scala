@@ -7,9 +7,11 @@ package scaladsl
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.Entity.EntityCommand
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.ExtensionSetup
@@ -39,7 +41,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
    *
    * Not for user extension.
    */
-  @DoNotInherit trait ShardCommand
+  @DoNotInherit trait ShardCommand extends EntityCommand
 
   /**
    * The entity can request passivation by sending the [[Passivate]] message
@@ -384,7 +386,7 @@ object StartEntity {
  *
  * Not for user extension.
  */
-@DoNotInherit trait EntityTypeKey[-T] {
+@DoNotInherit trait EntityTypeKey[-T] extends akka.actor.typed.EntityTypeKey[T] {
 
   /**
    * Name of the entity type.
@@ -527,7 +529,6 @@ object EntityTypeKey {
   @InternalApi private[akka] def asJava: javadsl.EntityRef[M]
 
 }
-
 object ClusterShardingSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => ClusterSharding): ClusterShardingSetup =
     new ClusterShardingSetup(createExtension(_))

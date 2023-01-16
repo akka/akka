@@ -5,6 +5,8 @@
 package akka.cluster.sharding.typed.internal
 
 import java.io.NotSerializableException
+
+import akka.actor.typed.EntityEnvelope
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.internal.protobuf.ShardingMessages
@@ -27,9 +29,13 @@ import java.nio.ByteBuffer
   private val payloadSupport = new WrappedPayloadSupport(system)
 
   private val ShardingEnvelopeManifest = "a"
+  private val EntityEnvelopeManifest = "b"
+  private val StartEntityManifest = "c"
 
   override def manifest(o: AnyRef): String = o match {
-    case _: ShardingEnvelope[_] => ShardingEnvelopeManifest
+    case _: ShardingEnvelope[_]        => ShardingEnvelopeManifest
+    case _: EntityEnvelope[_]          => EntityEnvelopeManifest
+    case _: EntityEnvelope.StartEntity => StartEntityManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -39,7 +45,18 @@ import java.nio.ByteBuffer
       val builder = ShardingMessages.ShardingEnvelope.newBuilder()
       builder.setEntityId(env.entityId)
       builder.setMessage(payloadSupport.payloadBuilder(env.message))
-      builder.build().toByteArray()
+      builder.build().toByteArray
+
+    case env: EntityEnvelope[_] =>
+      val builder = ShardingMessages.EntityEnvelope.newBuilder()
+      builder.setEntityId(env.entityId)
+      builder.setMessage(payloadSupport.payloadBuilder(env.message))
+      builder.build().toByteArray
+
+    case startEntity: EntityEnvelope.StartEntity =>
+      val builder = ShardingMessages.StartEntity.newBuilder()
+      builder.setEntityId(startEntity.entityId)
+      builder.build().toByteArray
 
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
@@ -51,6 +68,18 @@ import java.nio.ByteBuffer
       val entityId = env.getEntityId
       val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
       ShardingEnvelope(entityId, wrappedMsg)
+
+    case EntityEnvelopeManifest =>
+      val env = ShardingMessages.EntityEnvelope.parseFrom(bytes)
+      val entityId = env.getEntityId
+      val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
+      EntityEnvelope(entityId, wrappedMsg)
+
+    case StartEntityManifest =>
+      val msg = ShardingMessages.StartEntity.parseFrom(bytes)
+      val entityId = msg.getEntityId
+      new EntityEnvelope.StartEntity(entityId)
+
     case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
@@ -65,6 +94,15 @@ import java.nio.ByteBuffer
       val codedOutputStream = CodedOutputStream.newInstance(buf)
       builder.build().writeTo(codedOutputStream)
       codedOutputStream.flush()
+
+    case env: EntityEnvelope[_] =>
+      val builder = ShardingMessages.EntityEnvelope.newBuilder()
+      builder.setEntityId(env.entityId)
+      builder.setMessage(payloadSupport.payloadBuilder(env.message))
+      val codedOutputStream = CodedOutputStream.newInstance(buf)
+      builder.build().writeTo(codedOutputStream)
+      codedOutputStream.flush()
+
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
@@ -75,6 +113,13 @@ import java.nio.ByteBuffer
       val entityId = env.getEntityId
       val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
       ShardingEnvelope(entityId, wrappedMsg)
+
+    case EntityEnvelopeManifest =>
+      val env = ShardingMessages.EntityEnvelope.parseFrom(buf)
+      val entityId = env.getEntityId
+      val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
+      EntityEnvelope(entityId, wrappedMsg)
+
     case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
