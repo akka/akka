@@ -123,7 +123,8 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
         pr.metadata,
         entityType,
         slice,
-        filtered = false)
+        filtered = false,
+        source = "")
     }
   }
 

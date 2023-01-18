@@ -39,7 +39,8 @@ class QuerySerializerSpec extends AkkaSpec {
           System.currentTimeMillis(),
           "TestEntity",
           5,
-          filtered = false))
+          filtered = false,
+          source = ""))
     }
 
     "serialize EventEnvelope with Meta" in {
@@ -53,7 +54,8 @@ class QuerySerializerSpec extends AkkaSpec {
           Some("some-meta"),
           "TestEntity",
           5,
-          filtered = false))
+          filtered = false,
+          source = ""))
     }
 
     "serialize EventEnvelope with filtered" in {
@@ -67,7 +69,23 @@ class QuerySerializerSpec extends AkkaSpec {
           Some("some-meta"),
           "TestEntity",
           5,
-          filtered = true))
+          filtered = true,
+          source = ""))
+    }
+
+    "serialize EventEnvelope with source" in {
+      verifySerialization(
+        new EventEnvelope(
+          Sequence(1L),
+          "TestEntity|id1",
+          3L,
+          Some("event1"),
+          System.currentTimeMillis(),
+          Some("some-meta"),
+          "TestEntity",
+          5,
+          filtered = false,
+          source = "query"))
     }
 
     "serialize EventEnvelope with Timestamp Offset" in {
@@ -80,7 +98,8 @@ class QuerySerializerSpec extends AkkaSpec {
           System.currentTimeMillis(),
           "TestEntity",
           5,
-          filtered = false))
+          filtered = false,
+          source = ""))
     }
 
     "serialize EventEnvelope with TimeBasedUUID Offset" in {
@@ -96,7 +115,8 @@ class QuerySerializerSpec extends AkkaSpec {
           System.currentTimeMillis(),
           "TestEntity",
           5,
-          filtered = false))
+          filtered = false,
+          source = ""))
     }
 
     "serialize Sequence Offset" in {

@@ -19,10 +19,10 @@ object EventEnvelope {
       timestamp: Long,
       entityType: String,
       slice: Int,
-      filtered: Boolean): EventEnvelope[Event] =
-    new EventEnvelope(offset, persistenceId, sequenceNr, Option(event), timestamp, None, entityType, slice, filtered)
+      filtered: Boolean,
+      source: String): EventEnvelope[Event] =
+    new EventEnvelope(offset, persistenceId, sequenceNr, Option(event), timestamp, None, entityType, slice, filtered, source)
 
-  @deprecated("Use apply with all parameters", "2.8.0-M4")
   def apply[Event](
       offset: Offset,
       persistenceId: String,
@@ -31,7 +31,7 @@ object EventEnvelope {
       timestamp: Long,
       entityType: String,
       slice: Int): EventEnvelope[Event] =
-    apply(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice, filtered = false)
+    apply(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice, filtered = false, source = "")
 
   def create[Event](
       offset: Offset,
@@ -41,10 +41,9 @@ object EventEnvelope {
       timestamp: Long,
       entityType: String,
       slice: Int,
-      filtered: Boolean): EventEnvelope[Event] =
-    apply(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice, filtered)
+      filtered: Boolean, source: String): EventEnvelope[Event] =
+    apply(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice, filtered, source)
 
-  @deprecated("Use create with all parameters", "2.8.0-M4")
   def create[Event](
       offset: Offset,
       persistenceId: String,
@@ -53,7 +52,7 @@ object EventEnvelope {
       timestamp: Long,
       entityType: String,
       slice: Int): EventEnvelope[Event] =
-    create(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice)
+    create(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice, filtered = false, source = "")
 
   def unapply[Event](arg: EventEnvelope[Event]): Option[(Offset, String, Long, Option[Event], Long)] =
     Some((arg.offset, arg.persistenceId, arg.sequenceNr, arg.eventOption, arg.timestamp))
@@ -83,9 +82,10 @@ final class EventEnvelope[Event](
     val eventMetadata: Option[Any],
     val entityType: String,
     val slice: Int,
-    val filtered: Boolean) {
+    val filtered: Boolean,
+  val source: String) {
 
-  // backwards compatibility when adding filtered
+  // backwards compatibility when adding filtered and source
   @deprecated("Use constructor with all parameters", "2.8.0-M4")
   def this(
       offset: Offset,
@@ -96,7 +96,7 @@ final class EventEnvelope[Event](
       eventMetadata: Option[Any],
       entityType: String,
       slice: Int) =
-    this(offset, persistenceId, sequenceNr, eventOption, timestamp, eventMetadata, entityType, slice, filtered = false)
+    this(offset, persistenceId, sequenceNr, eventOption, timestamp, eventMetadata, entityType, slice, filtered = false, source = "")
 
   def event: Event =
     eventOption match {
@@ -158,6 +158,6 @@ final class EventEnvelope[Event](
       case Some(meta) => meta.getClass.getName
       case None       => ""
     }
-    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice,$filtered)"
+    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice,$filtered,$source)"
   }
 }
