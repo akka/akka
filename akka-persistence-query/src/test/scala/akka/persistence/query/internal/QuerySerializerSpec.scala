@@ -31,7 +31,16 @@ class QuerySerializerSpec extends AkkaSpec {
   "Query serializer" should {
     "serialize EventEnvelope with Sequence Offset" in {
       verifySerialization(
-        EventEnvelope(Sequence(1L), "TestEntity|id1", 3L, "event1", System.currentTimeMillis(), "TestEntity", 5))
+        EventEnvelope(
+          Sequence(1L),
+          "TestEntity|id1",
+          3L,
+          "event1",
+          System.currentTimeMillis(),
+          "TestEntity",
+          5,
+          filtered = false,
+          source = ""))
     }
 
     "serialize EventEnvelope with Meta" in {
@@ -44,7 +53,39 @@ class QuerySerializerSpec extends AkkaSpec {
           System.currentTimeMillis(),
           Some("some-meta"),
           "TestEntity",
-          5))
+          5,
+          filtered = false,
+          source = ""))
+    }
+
+    "serialize EventEnvelope with filtered" in {
+      verifySerialization(
+        new EventEnvelope(
+          Sequence(1L),
+          "TestEntity|id1",
+          3L,
+          Some("event1"),
+          System.currentTimeMillis(),
+          Some("some-meta"),
+          "TestEntity",
+          5,
+          filtered = true,
+          source = ""))
+    }
+
+    "serialize EventEnvelope with source" in {
+      verifySerialization(
+        new EventEnvelope(
+          Sequence(1L),
+          "TestEntity|id1",
+          3L,
+          Some("event1"),
+          System.currentTimeMillis(),
+          Some("some-meta"),
+          "TestEntity",
+          5,
+          filtered = false,
+          source = "query"))
     }
 
     "serialize EventEnvelope with Timestamp Offset" in {
@@ -56,7 +97,9 @@ class QuerySerializerSpec extends AkkaSpec {
           "event1",
           System.currentTimeMillis(),
           "TestEntity",
-          5))
+          5,
+          filtered = false,
+          source = ""))
     }
 
     "serialize EventEnvelope with TimeBasedUUID Offset" in {
@@ -64,7 +107,16 @@ class QuerySerializerSpec extends AkkaSpec {
       val uuidString = "49225740-2019-11ea-a752-ffae2393b6e4"
       val timeUuidOffset = TimeBasedUUID(UUID.fromString(uuidString))
       verifySerialization(
-        EventEnvelope(timeUuidOffset, "TestEntity|id1", 3L, "event1", System.currentTimeMillis(), "TestEntity", 5))
+        EventEnvelope(
+          timeUuidOffset,
+          "TestEntity|id1",
+          3L,
+          "event1",
+          System.currentTimeMillis(),
+          "TestEntity",
+          5,
+          filtered = false,
+          source = ""))
     }
 
     "serialize Sequence Offset" in {

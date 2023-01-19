@@ -1,0 +1,6 @@
+# addition of EventEnvelope.filtered to protobuf
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.hasFiltered")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.getFiltered")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.hasSource")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.getSource")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.getSourceBytes")

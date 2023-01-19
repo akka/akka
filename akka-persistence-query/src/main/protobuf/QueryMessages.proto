@@ -21,4 +21,6 @@ message EventEnvelope {
   required string offset_manifest = 7;
   optional Payload event = 8;
   optional Payload metadata = 9;
+  optional bool filtered = 10;
+  optional string source = 11;
 }

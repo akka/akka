@@ -70,6 +70,8 @@ import akka.serialization.Serializers
         .setTimestamp(env.timestamp)
         .setOffset(offset)
         .setOffsetManifest(offsetManifest)
+        .setFiltered(env.filtered)
+        .setSource(env.source)
 
       env.eventOption.foreach(event => builder.setEvent(payloadBuilder(event, serialization, log)))
       env.eventMetadata.foreach(meta => builder.setMetadata(payloadBuilder(meta, serialization, log)))
@@ -96,6 +98,9 @@ import akka.serialization.Serializers
         if (env.hasMetadata) Option(deserializePayload(env.getMetadata, serialization))
         else None
 
+      val filtered = env.hasFiltered && env.getFiltered
+      val source = if (env.hasSource) env.getSource else ""
+
       new EventEnvelope(
         offset,
         env.getPersistenceId,
@@ -104,7 +109,9 @@ import akka.serialization.Serializers
         env.getTimestamp,
         metaOption,
         env.getEntityType,
-        env.getSlice)
+        env.getSlice,
+        filtered,
+        source)
 
     case _ =>
       fromStorageRepresentation(new String(bytes, UTF_8), manifest)
