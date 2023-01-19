@@ -46,7 +46,7 @@ object Dependencies {
     }
   }
 
-  val scalaTestVersion = "3.2.12"
+  val scalaTestVersion = "3.2.15"
 
   val scalaTestScalaCheckVersion = "1-16"
 
