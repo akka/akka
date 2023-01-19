@@ -2204,15 +2204,10 @@ private[akka] object StatefulMap {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class StatefulMap[S, In, Out](
-    attributes: Attributes,
-    create: () => S,
-    f: (S, In) => (S, Out),
-    onComplete: S => Option[Out])
+private[akka] final class StatefulMap[S, In, Out](create: () => S, f: (S, In) => (S, Out), onComplete: S => Option[Out])
     extends GraphStage[FlowShape[In, Out]] {
   import StatefulMap.NullStateException
 
-  require(attributes != null, "attributes should not be null")
   require(create != null, "create function should not be null")
   require(f != null, "f function should not be null")
   require(onComplete != null, "onComplete function should not be null")
@@ -2220,8 +2215,6 @@ private[akka] final class StatefulMap[S, In, Out](
   private val in = Inlet[In]("StatefulMap.in")
   private val out = Outlet[Out]("StatefulMap.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
-
-  override protected def initialAttributes: Attributes = attributes
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
