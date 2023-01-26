@@ -13,11 +13,14 @@ import akka.util.Helpers
 import akka.{ actor => classic }
 import org.slf4j.Logger
 import org.slf4j.helpers.{ MessageFormatter, SubstituteLoggerFactory }
-
 import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
+
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
+
+import org.slf4j.Marker
+import org.slf4j.event.SubstituteLoggingEvent
 
 /**
  * INTERNAL API
@@ -236,9 +239,28 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
           level = evt.getLevel,
           message = MessageFormatter.arrayFormat(evt.getMessage, evt.getArgumentArray).getMessage,
           cause = Option(evt.getThrowable),
-          marker = Option(evt.getMarker))
+          marker = marker(evt))
       }
       .toList
+  }
+
+  /**
+   * SL4FJ changed the API in SubstituteLoggingEvent from getMarker in 1.7 to getMarkers in 2.0.
+   * Using reflection to be able to support both.
+   */
+  private def marker(evt: SubstituteLoggingEvent): Option[Marker] = {
+    try {
+      val slf4j1Method = evt.getClass.getMethod("getMarker")
+      Option(slf4j1Method.invoke(evt).asInstanceOf[Marker])
+    } catch {
+      case _: NoSuchMethodException =>
+        val slf4j2Method = evt.getClass.getMethod("getMarkers")
+        val markers = slf4j2Method.invoke(evt).asInstanceOf[java.util.List[Marker]]
+        if ((markers eq null) || markers.isEmpty)
+          None
+        else
+          Option(markers.get(0))
+    }
   }
 
   /**

@@ -17,9 +17,11 @@ import akka.util.Timeout
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.event.Level
-
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.reflect.ClassTag
+
+import org.slf4j.Marker
+import org.slf4j.MarkerFactory
 
 object BehaviorTestKitSpec {
   object Parent {
@@ -45,7 +47,7 @@ object BehaviorTestKitSpec {
     case class SpawnAndWatchWith(name: String) extends Command
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
     case class KillSession(session: ActorRef[String], replyTo: ActorRef[Done]) extends Command
-    case class Log(what: String) extends Command
+    case class Log(what: String, marker: Option[Marker]) extends Command
     case class RegisterWithReceptionist(name: String) extends Command
     case class ScheduleCommand(key: Any, delay: FiniteDuration, mode: Effect.TimerScheduled.TimerMode, cmd: Command)
         extends Command
@@ -117,8 +119,13 @@ object BehaviorTestKitSpec {
               val adaptor = context.messageAdapter(f)(ClassTag(messageClass))
               replyTo.foreach(_ ! adaptor.unsafeUpcast)
               Behaviors.same
-            case Log(what) =>
-              context.log.info(what)
+            case Log(what, marker) =>
+              marker match {
+                case Some(m) =>
+                  context.log.info(m, what)
+                case None =>
+                  context.log.info(what)
+              }
               Behaviors.same
             case RegisterWithReceptionist(name: String) =>
               context.system.receptionist ! Receptionist.Register(ServiceKey[Command](name), context.self)
@@ -149,8 +156,8 @@ object BehaviorTestKitSpec {
               val nrCookies = randomNumerator / randomDenominator
 
               context.ask[GiveMeCookies, CookiesForYou](distributor, GiveMeCookies(nrCookies, _)) {
-                case scala.util.Success(cfy) => Log(s"Got ${cfy.nrCookies} cookies from distributor")
-                case scala.util.Failure(ex)  => Log(s"Failed to get cookies: ${ex.getMessage}")
+                case scala.util.Success(cfy) => Log(s"Got ${cfy.nrCookies} cookies from distributor", None)
+                case scala.util.Failure(ex)  => Log(s"Failed to get cookies: ${ex.getMessage}", None)
               }
               Behaviors.same
             case unexpected =>
@@ -250,14 +257,22 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
     "allow retrieving log messages issued by behavior" in {
       val what = "Hello!"
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      testkit.run(Log(what))
+      testkit.run(Log(what, None))
       testkit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, what))
+    }
+
+    "allow retrieving log messages with Marker issued by behavior" in {
+      val what = "Hello!"
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      val someMarker = Some(MarkerFactory.getMarker("test"))
+      testkit.run(Log(what, someMarker))
+      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, what, None, someMarker))
     }
 
     "allow clearing log messages issued by behavior" in {
       val what = "Hi!"
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      testkit.run(Log(what))
+      testkit.run(Log(what, None))
       testkit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, what))
       testkit.clearLog()
       testkit.logEntries() shouldBe Seq.empty
