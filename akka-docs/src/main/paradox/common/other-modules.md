@@ -19,7 +19,7 @@ Alpakka is a Reactive Enterprise Integration library for Java and Scala, based o
 The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 
 
-## [Akka Projections](https://doc.akka.io/docs/akka-projection/current/)
+## @extref[Akka Projections](akka-projection:)
 
 Akka Projections let you process a stream of events or records from a source to a projected model or external system.
 

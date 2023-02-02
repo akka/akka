@@ -365,7 +365,7 @@ be used for replicated event sourced behaviors as well.
 Tagging is useful in practice to build queries that lead to other data representations or aggregations of these event 
 streams that can more directly serve user queries – known as building the “read side” in @ref[CQRS](cqrs.md) based applications.
 
-Creating read side projections is possible through [Akka Projection](https://doc.akka.io/docs/akka-projection/current/)
+Creating read side projections is possible through @extref[Akka Projections](akka-projection:)
 or through direct usage of the @ref[events by tag queries](../persistence-query.md#eventsbytag-and-currenteventsbytag).  
 
 The tagging is invoked in each replicas, which requires some special care in using tags, or else the same event will be
