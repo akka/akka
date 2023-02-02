@@ -54,6 +54,22 @@ To assist in implementing the event handler the Replicated Event Sourcing detect
 
 @scala[The same API as regular `EventSourcedBehavior`s]@java[A very similar API to the regular `EventSourcedBehavior`] is used to define the logic. 
 
+### Consuming events via gRPC transport
+
+Since Akka 2.8.0 a gRPC based transport is the recommended way to set up the replication of events between the replicas.
+
+The functionality is provided through the Akka Projection gRPC module, see the details about 
+how to use it up in the @extref[Akka Projection gRPC documentation](akka-projection:grpc-replicated-event-sourcing-transport.html)
+
+Complete samples of the gRPC transport set up can be found in the Akka Projection github repository:
+
+* [Replicated shopping cart service in Scala](https://github.com/akka/akka-projection/tree/main/samples/replicated/shopping-cart-service-scala)
+* [Replicated shopping cart service in Java](https://github.com/akka/akka-projection/tree/main/samples/replicated/shopping-cart-service-java)
+
+### Consuming events via direct access to replica databases
+
+It is also possible to consume events with a direct connection to the database of each replica.
+
 To enable an entity for Replicated Event Sourcing
 @java[let it extend `ReplicatedEventSourcedBehavior` instead of `EventSourcedBehavior` and] use the factory methods on @scala[`akka.persistence.typed.scaladsl.ReplicatedEventSourcing`]@java[`akka.persistence.typed.javadsl.ReplicatedEventSourcing`]. 
 
