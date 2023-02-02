@@ -28,6 +28,12 @@ One of the rationales behind having a separate query module for Akka Persistence
 query side or read side in the popular CQRS architecture pattern - in which the writing side of the 
 application implemented using Akka persistence, is completely separated from the query side.
 
+@@@ note { title=Alternative }
+When using the R2DBC plugin an alternative to using Akka persistence query or Projection is to
+[store the query representation](https://doc.akka.io/docs/akka-persistence-r2dbc/current/durable-state-store.html#storing-query-representation)
+directly from the write side.
+@@@
+
 ## Using query with Akka Projections
 
 Akka Persistence and Akka Projections together can be used to develop a CQRS application. In the application the 
