@@ -1,5 +1,13 @@
 # Auction example
 
+@@@ note 
+
+This sample uses the direct database replication through `ReplicatedEventSourcing.commonJournalConfig`,
+which is no longer is recommended, however the actual Replicated Event Sourcing auction implementation is still 
+useful as an example of how to design and implement a replicated entity.
+
+@@@
+
 In this example we want to show that real-world applications can be implemented by designing events in a way that they
 don't conflict. In the end, you will end up with a solution based on a custom CRDT.
 
