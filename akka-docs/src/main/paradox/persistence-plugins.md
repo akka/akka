@@ -9,7 +9,6 @@ Plugins maintained within the Akka organization are:
 * [akka-persistence-cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/) (no Durable State support)
 * [akka-persistence-jdbc](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
 * [akka-persistence-r2dbc](https://doc.akka.io/docs/akka-persistence-r2dbc/current/)
-* [akka-persistence-spanner](https://doc.akka.io/docs/akka-persistence-spanner/current/)
 
 Plugins can be selected either by "default" for all persistent actors,
 or "individually", when a persistent actor defines its own set of plugins.

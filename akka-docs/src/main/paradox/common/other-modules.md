@@ -37,11 +37,6 @@ An Akka Persistence journal and snapshot store for use with JDBC-compatible data
 
 An Akka Persistence journal and snapshot store for use with R2DBC-compatible databases. This implementation relies on [R2DBC](https://r2dbc.io/).
 
-## [Google Cloud Spanner Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-spanner/current/)
-
-Use [Google Cloud Spanner](https://cloud.google.com/spanner/) as Akka Persistence journal and snapshot store. This integration relies on [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/).
-
-
 ## Akka Management
 
 * [Akka Management](https://doc.akka.io/docs/akka-management/current/) provides a central HTTP endpoint for Akka management extensions.
