@@ -296,4 +296,4 @@ The @apidoc[SnapshotStoreSpec] in the Persistence TCK provides a capability flag
 
 The following plugins support Replicated Event Sourcing over gRPC:
 
-* [Akka Persistence R2DBC](https://doc.akka.io/docs/akka-persistence-r2dbc/current/) versions 1.0.0+
+* [Akka Persistence R2DBC](https://doc.akka.io/docs/akka-persistence-r2dbc/current/) versions 1.1.0+
