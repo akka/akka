@@ -271,7 +271,7 @@ Scala
 Java
 :  @@snip [ReplicatedStringSet.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedStringSet.java) { #tagging }
 
-In this sample we are using a shared journal, and single tag but only tagging local events to it and therefore ending up
+In this sample we are using direct database replication with a shared journal, and single tag but only tagging local events to it and therefore ending up
 with a single stream of tagged events from all replicas without duplicates.
 
 ## Hot Standby
