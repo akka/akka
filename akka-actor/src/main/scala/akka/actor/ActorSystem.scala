@@ -820,6 +820,12 @@ private[akka] class ActorSystemImpl(
 
   private val _dynamicAccess: DynamicAccess = createDynamicAccess()
 
+  /**
+   * Optimistic optimization: Typed actors will _all_ pick up the system adapter, going through
+   * extension infra only once per thread
+   */
+  private[akka] var typedSystem: OptionVal[AnyRef] = OptionVal.None
+
   final val settings: Settings = {
     val config = Settings.amendSlf4jConfig(
       applicationConfig.withFallback(ConfigFactory.defaultReference(classLoader)),
