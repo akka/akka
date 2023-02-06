@@ -391,7 +391,7 @@ import akka.stream.stage._
         catch {
           case NonFatal(e) => reportStageError(e)
         }
-        afterStageHasRun(activeStage)
+        var wasFinalized = afterStageHasRun(activeStage)
 
         /*
          * "Event chasing" optimization follows from here. This optimization works under the assumption that a Push or
@@ -424,7 +424,8 @@ import akka.stream.stage._
           catch {
             case NonFatal(e) => reportStageError(e)
           }
-          afterStageHasRun(activeStage)
+          if (!wasFinalized)
+            wasFinalized = afterStageHasRun(activeStage)
         }
 
         // Chasing PULL events
@@ -435,7 +436,8 @@ import akka.stream.stage._
           catch {
             case NonFatal(e) => reportStageError(e)
           }
-          afterStageHasRun(activeStage)
+          if (!wasFinalized)
+            wasFinalized = afterStageHasRun(activeStage)
         }
 
         if (chasedPush != NoEvent) {
@@ -574,10 +576,13 @@ import akka.stream.stage._
     queueTail += 1
   }
 
-  def afterStageHasRun(logic: GraphStageLogic): Unit =
+  def afterStageHasRun(logic: GraphStageLogic): Boolean =
     if (isStageCompleted(logic)) {
       runningStages -= 1
       finalizeStage(logic)
+      true
+    } else {
+      false
     }
 
   // Returns true if the given stage is already completed
