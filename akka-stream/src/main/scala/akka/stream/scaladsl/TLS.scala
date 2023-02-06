@@ -4,20 +4,17 @@
 
 package akka.stream.scaladsl
 
-import java.util.Collections
-import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
-import javax.net.ssl.SSLParameters
-
-import scala.util.{ Failure, Success, Try }
-
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream._
 import akka.stream.TLSProtocol._
-import akka.stream.impl.io.{ TlsModule, TlsUtils }
+import akka.stream._
+import akka.stream.impl.io.TlsModule
 import akka.util.ByteString
+
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
+import scala.util.Success
+import scala.util.Try
 
 /**
  * Stream cipher support based upon JSSE.
@@ -55,126 +52,6 @@ import akka.util.ByteString
  * supported with TLS 1.3 where the spec allows it.
  */
 object TLS {
-
-  /**
-   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. The
-   * SSLContext will be used to create an SSLEngine to which then the
-   * `firstSession` parameters are applied before initiating the first
-   * handshake. The `role` parameter determines the SSLEngine’s role; this is
-   * often the same as the underlying transport’s server or client role, but
-   * that is not a requirement and depends entirely on the application
-   * protocol.
-   *
-   * For a description of the `closing` parameter please refer to [[TLSClosing]].
-   *
-   * The `hostInfo` parameter allows to optionally specify a pair of hostname and port
-   * that will be used when creating the SSLEngine with `sslContext.createSslEngine`.
-   * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
-   * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
-   */
-  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
-  def apply(
-      sslContext: SSLContext,
-      sslConfig: Option[AkkaSSLConfig],
-      firstSession: NegotiateNewSession,
-      role: TLSRole,
-      closing: TLSClosing = IgnoreComplete,
-      hostInfo: Option[(String, Int)] = None)
-      : scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] = {
-    def theSslConfig(system: ActorSystem): AkkaSSLConfig =
-      sslConfig.getOrElse(AkkaSSLConfig(system))
-
-    val createSSLEngine = { (system: ActorSystem) =>
-      val config = theSslConfig(system)
-
-      val engine = hostInfo match {
-        case Some((hostname, port)) if !config.config.loose.disableSNI =>
-          sslContext.createSSLEngine(hostname, port)
-        case _ => sslContext.createSSLEngine()
-      }
-
-      config.sslEngineConfigurator.configure(engine, sslContext)
-      engine.setUseClientMode(role == Client)
-
-      val paramsWithSni =
-        if (firstSession.sslParameters.isDefined && hostInfo.isDefined && !config.config.loose.disableSNI) {
-          val newParams = TlsUtils.cloneParameters(firstSession.sslParameters.get)
-          // In Java 7, SNI was automatically enabled by enabling "jsse.enableSNIExtension" and using
-          // `createSSLEngine(hostname, port)`.
-          // In Java 8, SNI is only enabled if the server names are added to the parameters.
-          // See https://github.com/akka/akka/issues/19287.
-          newParams.setServerNames(Collections.singletonList(new SNIHostName(hostInfo.get._1)))
-
-          firstSession.copy(sslParameters = Some(newParams))
-        } else
-          firstSession
-
-      val paramsWithHostnameVerification = if (hostInfo.isDefined && config.useJvmHostnameVerification) {
-        val newParams = paramsWithSni.sslParameters.map(TlsUtils.cloneParameters).getOrElse(new SSLParameters)
-        newParams.setEndpointIdentificationAlgorithm("HTTPS")
-        paramsWithSni.copy(sslParameters = Some(newParams))
-      } else
-        paramsWithSni
-
-      TlsUtils.applySessionParameters(engine, paramsWithHostnameVerification)
-      engine
-    }
-    def verifySession: (ActorSystem, SSLSession) => Try[Unit] =
-      hostInfo match {
-        case Some((hostname, _)) => { (system, session) =>
-          val config = theSslConfig(system)
-          if (config.useJvmHostnameVerification || config.hostnameVerifier.verify(hostname, session))
-            Success(())
-          else
-            Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"))
-        }
-        case None => (_, _) => Success(())
-      }
-
-    scaladsl.BidiFlow.fromGraph(TlsModule(Attributes.none, createSSLEngine, verifySession, closing))
-  }
-
-  /**
-   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. The
-   * SSLContext will be used to create an SSLEngine to which then the
-   * `firstSession` parameters are applied before initiating the first
-   * handshake. The `role` parameter determines the SSLEngine’s role; this is
-   * often the same as the underlying transport’s server or client role, but
-   * that is not a requirement and depends entirely on the application
-   * protocol.
-   *
-   * For a description of the `closing` parameter please refer to [[TLSClosing]].
-   *
-   * The `hostInfo` parameter allows to optionally specify a pair of hostname and port
-   * that will be used when creating the SSLEngine with `sslContext.createSslEngine`.
-   * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
-   * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
-   */
-  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
-  def apply(
-      sslContext: SSLContext,
-      firstSession: NegotiateNewSession,
-      role: TLSRole,
-      closing: TLSClosing,
-      hostInfo: Option[(String, Int)])
-      : scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    apply(sslContext, None, firstSession, role, closing, hostInfo)
-
-  /**
-   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. The
-   * SSLContext will be used to create an SSLEngine to which then the
-   * `firstSession` parameters are applied before initiating the first
-   * handshake. The `role` parameter determines the SSLEngine’s role; this is
-   * often the same as the underlying transport’s server or client role, but
-   * that is not a requirement and depends entirely on the application
-   * protocol.
-   */
-  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
-  def apply(
-      sslContext: SSLContext,
-      firstSession: NegotiateNewSession,
-      role: TLSRole): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    apply(sslContext, None, firstSession, role, IgnoreComplete, None)
 
   /**
    * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]].
@@ -230,7 +107,7 @@ object TLSPlacebo {
 
 import java.security.Principal
 import java.security.cert.Certificate
-import javax.net.ssl.{ SSLPeerUnverifiedException, SSLSession }
+import javax.net.ssl.SSLPeerUnverifiedException
 
 /** Allows access to an SSLSession with Scala types */
 trait ScalaSessionAPI {
