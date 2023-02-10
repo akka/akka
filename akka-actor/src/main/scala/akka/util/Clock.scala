@@ -81,9 +81,13 @@ import akka.annotation.InternalApi
 
   @tailrec private def update(): Unit = {
     val current = time.get()
-    val now = math.max(System.nanoTime(), current) // never backwards
-    if (time.compareAndSet(current, now)) {
-      updatedTime = now
+    val now = System.nanoTime()
+    val newTime =
+      if (now - current >= 0L) now // the diff also handles the case of Long.MaxValue overflow to negative
+      else current
+
+    if (time.compareAndSet(current, newTime)) {
+      updatedTime = newTime
       maxIncrementReached = false
     } else {
       // concurrent update via currentTime(), try again
