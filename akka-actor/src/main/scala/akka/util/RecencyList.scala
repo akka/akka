@@ -4,32 +4,28 @@
 
 package akka.util
 
-import akka.annotation.InternalApi
-
-import scala.collection.{ immutable, mutable }
+import scala.collection.immutable
+import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[akka] object RecencyList {
-  def empty[A]: RecencyList[A] = new RecencyList[A](new NanoClock)
+  def emptyWithNanoClock[A]: RecencyList[A] =
+    RecencyList[A](new NanoClock)
+
+  def apply[A](clock: Clock): RecencyList[A] =
+    new RecencyList[A](clock)
 
   private final class Node[A](val value: A) {
     var lessRecent, moreRecent: OptionVal[Node[A]] = OptionVal.None
     var timestamp: Long = 0L
   }
 
-  trait Clock {
-    def currentTime(): Long
-    def earlierTime(duration: FiniteDuration): Long
-  }
-
-  final class NanoClock extends Clock {
-    override def currentTime(): Long = System.nanoTime()
-    override def earlierTime(duration: FiniteDuration): Long = currentTime() - duration.toNanos
-  }
 }
 
 /**
@@ -40,7 +36,7 @@ private[akka] object RecencyList {
  * Implemented using a doubly-linked list plus hash map for lookup, so that all operations are constant time.
  */
 @InternalApi
-private[akka] final class RecencyList[A](clock: RecencyList.Clock) {
+private[akka] final class RecencyList[A] private (clock: Clock) {
   import RecencyList.Node
 
   private val recency = new DoubleLinkedList[Node[A]](

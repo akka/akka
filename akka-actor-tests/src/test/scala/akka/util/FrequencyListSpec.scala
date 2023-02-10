@@ -9,17 +9,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.duration._
 
-object FrequencyListSpec {
-  // controlled clock for testing recency windows
-  // durations are always in seconds
-  class TestClock extends RecencyList.Clock {
-    private var time = 0L
-    def tick(): Unit = time += 1
-    override def currentTime(): Long = time
-    override def earlierTime(duration: FiniteDuration): Long = currentTime() - duration.toSeconds
-  }
-}
-
 class FrequencyListSpec extends AnyWordSpec with Matchers {
 
   private def check(frequencyList: FrequencyList[String], expectedLeastToMostFrequent: List[String]): Unit = {
@@ -93,7 +82,7 @@ class FrequencyListSpec extends AnyWordSpec with Matchers {
     }
 
     "track overall recency of elements when enabled" in {
-      val clock = new RecencyListSpec.TestClock
+      val clock = new TestClock
       val frequency = new FrequencyList[String](dynamicAging = false, OptionVal.Some(clock))
 
       check(frequency, Nil)

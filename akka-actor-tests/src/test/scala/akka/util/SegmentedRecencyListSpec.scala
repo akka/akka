@@ -9,17 +9,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.duration._
 
-object SegmentedRecencyListSpec {
-  // controlled clock for testing recency windows
-  // durations are always in seconds
-  class TestClock extends RecencyList.Clock {
-    private var time = 0L
-    def tick(): Unit = time += 1
-    override def currentTime(): Long = time
-    override def earlierTime(duration: FiniteDuration): Long = currentTime() - duration.toSeconds
-  }
-}
-
 class SegmentedRecencyListSpec extends AnyWordSpec with Matchers {
 
   private def check(recency: SegmentedRecencyList[String], expectedSegments: List[List[String]]): Unit = {
@@ -120,7 +109,7 @@ class SegmentedRecencyListSpec extends AnyWordSpec with Matchers {
     }
 
     "remove overall least recent elements" in {
-      val clock = new SegmentedRecencyListSpec.TestClock
+      val clock = new TestClock
       val recency = new SegmentedRecencyList[String](initialLimits = List(5, 5), OptionVal.Some(clock))
 
       check(recency, Nil)

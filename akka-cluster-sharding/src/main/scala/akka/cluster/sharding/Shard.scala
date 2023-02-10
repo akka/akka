@@ -6,6 +6,7 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 import java.util
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -33,11 +34,11 @@ import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.event.LoggingAdapter
 import akka.pattern.pipe
+import akka.util.Clock
 import akka.util.MessageBufferMap
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
-
 import scala.collection.immutable.Set
 import scala.concurrent.duration._
 
@@ -458,7 +459,7 @@ private[akka] class Shard(
   private var handOffStopper: Option[ActorRef] = None
   private var preparingForShutdown = false
 
-  private val passivationStrategy = EntityPassivationStrategy(settings)
+  private val passivationStrategy = EntityPassivationStrategy(settings, clock = () => Clock(context.system))
 
   import context.dispatcher
   private val passivateIntervalTask = passivationStrategy.scheduledInterval.map { interval =>
