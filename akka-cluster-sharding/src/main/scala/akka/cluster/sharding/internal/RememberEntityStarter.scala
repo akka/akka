@@ -16,9 +16,89 @@ import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
-
 import scala.collection.immutable.Set
 import scala.concurrent.ExecutionContext
+
+import akka.Done
+import akka.cluster.sharding.internal.RememberEntityStarterManager.IdleAfterDelay
+import akka.cluster.sharding.internal.RememberEntityStarterManager.StartAfterDelay
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object RememberEntityStarterManager {
+  def props(region: ActorRef, settings: ClusterShardingSettings) =
+    Props(new RememberEntityStarterManager(region, settings))
+
+  final case class StartEntities(shard: ActorRef, shardId: ShardRegion.ShardId, ids: Set[ShardRegion.EntityId])
+      extends NoSerializationVerificationNeeded
+
+  private final case class StartAfterDelay(s: StartEntities) extends NoSerializationVerificationNeeded
+
+  private case object IdleAfterDelay extends NoSerializationVerificationNeeded
+}
+
+/**
+ * INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled
+ */
+@InternalApi
+private[akka] final class RememberEntityStarterManager(region: ActorRef, settings: ClusterShardingSettings)
+    extends Actor
+    with ActorLogging
+    with Timers {
+  import RememberEntityStarterManager.StartEntities
+
+  private val delay = settings.tuningParameters.entityRecoveryConstantRateStrategyFrequency
+
+  override def receive: Receive =
+    settings.tuningParameters.entityRecoveryStrategy match {
+      case "all"      => allStrategy
+      case "constant" => constantStrategyIdle
+      case other      => throw new IllegalArgumentException(s"Unknown entityRecoveryStrategy [$other]")
+    }
+
+  private val allStrategy: Receive = {
+    case s: StartEntities => start(s, isConstantStrategy = false)
+    case Done             =>
+  }
+
+  private val constantStrategyIdle: Receive = {
+    case s: StartEntities =>
+      start(s, isConstantStrategy = true)
+      context.become(constantStrategyWaiting(Vector.empty))
+  }
+
+  private def constantStrategyWaiting(workQueue: Vector[StartEntities]): Receive = {
+    case s: StartEntities =>
+      context.become(constantStrategyWaiting(workQueue :+ s))
+
+    case Done =>
+      if (workQueue.isEmpty) {
+        timers.startSingleTimer(IdleAfterDelay, IdleAfterDelay, delay)
+      } else {
+        timers.startSingleTimer("constant", StartAfterDelay(workQueue.head), delay)
+        context.become(constantStrategyWaiting(workQueue.tail))
+      }
+
+    case StartAfterDelay(s) =>
+      start(s, isConstantStrategy = true)
+
+    case IdleAfterDelay =>
+      if (workQueue.isEmpty)
+        context.become(constantStrategyIdle)
+      else {
+        start(workQueue.head, isConstantStrategy = true)
+        context.become(constantStrategyWaiting(workQueue.tail))
+      }
+  }
+
+  private def start(s: StartEntities, isConstantStrategy: Boolean): Unit = {
+    context.actorOf(
+      RememberEntityStarter.props(region, s.shard, s.shardId, s.ids, isConstantStrategy, context.self, settings))
+  }
+
+}
 
 /**
  * INTERNAL API
@@ -30,8 +110,10 @@ private[akka] object RememberEntityStarter {
       shard: ActorRef,
       shardId: ShardRegion.ShardId,
       ids: Set[ShardRegion.EntityId],
+      isConstantStrategy: Boolean,
+      ackWhenDone: ActorRef,
       settings: ClusterShardingSettings) =
-    Props(new RememberEntityStarter(region, shard, shardId, ids, settings))
+    Props(new RememberEntityStarter(region, shard, shardId, ids, isConstantStrategy, ackWhenDone, settings))
 
   private final case class StartBatch(batchSize: Int) extends NoSerializationVerificationNeeded
   private case object ResendUnAcked extends NoSerializationVerificationNeeded
@@ -46,6 +128,8 @@ private[akka] final class RememberEntityStarter(
     shard: ActorRef,
     shardId: ShardRegion.ShardId,
     ids: Set[ShardRegion.EntityId],
+    constantStrategy: Boolean,
+    ackWhenDone: ActorRef,
     settings: ClusterShardingSettings)
     extends Actor
     with ActorLogging
@@ -61,22 +145,22 @@ private[akka] final class RememberEntityStarter(
   private var entitiesMoved = Set.empty[EntityId]
 
   log.debug(
-    "Shard starting [{}] remembered entities using strategy [{}]",
+    "Shard [{}] starting [{}] remembered entities using strategy [{}]",
+    shardId,
     ids.size,
     settings.tuningParameters.entityRecoveryStrategy)
 
-  settings.tuningParameters.entityRecoveryStrategy match {
-    case "all" =>
-      idsLeftToStart = Set.empty
-      startBatch(ids)
-    case "constant" =>
-      import settings.tuningParameters
-      idsLeftToStart = ids
-      timers.startTimerWithFixedDelay(
-        "constant",
-        StartBatch(tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities),
-        tuningParameters.entityRecoveryConstantRateStrategyFrequency)
-      startBatch(tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities)
+  if (constantStrategy) {
+    import settings.tuningParameters
+    idsLeftToStart = ids
+    timers.startTimerWithFixedDelay(
+      "constant",
+      StartBatch(tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities),
+      tuningParameters.entityRecoveryConstantRateStrategyFrequency)
+    startBatch(tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities)
+  } else {
+    idsLeftToStart = Set.empty
+    startBatch(ids)
   }
   timers.startTimerWithFixedDelay("retry", ResendUnAcked, settings.tuningParameters.retryInterval)
 
@@ -95,6 +179,7 @@ private[akka] final class RememberEntityStarter(
         log.info("Found [{}] entities moved to new shard(s)", entitiesMoved.size)
         shard ! Shard.EntitiesMovedToOtherShard(entitiesMoved)
       }
+      ackWhenDone ! Done
       context.stop(self)
     }
   }

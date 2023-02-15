@@ -5,6 +5,7 @@
 package akka.cluster.sharding
 
 import java.net.URLEncoder
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
@@ -12,6 +13,7 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction1
 import scala.util.{ Failure, Success }
+
 import akka.Done
 import akka.actor._
 import akka.annotation.ApiMayChange
@@ -25,6 +27,7 @@ import akka.cluster.MemberStatus
 import akka.cluster.sharding.ClusterShardingSettings.PassivationStrategy
 import akka.cluster.sharding.Shard.ShardStats
 import akka.cluster.sharding.internal.RememberEntitiesProvider
+import akka.cluster.sharding.internal.RememberEntityStarterManager
 import akka.event.Logging
 import akka.pattern.ask
 import akka.pattern.pipe
@@ -649,6 +652,12 @@ private[akka] class ShardRegion(
   var retryCount = 0
   val initRegistrationDelay: FiniteDuration = 100.millis.max(retryInterval / 2 / 2 / 2)
   var nextRegistrationDelay: FiniteDuration = initRegistrationDelay
+
+  private val rememberEntityStarterManager =
+    if (rememberEntitiesProvider.isDefined)
+      context.actorOf(RememberEntityStarterManager.props(context.self, settings), "RememberEntityStarter")
+    else
+      context.system.deadLetters
 
   // for CoordinatedShutdown
   val gracefulShutdownProgress = Promise[Done]()
@@ -1333,7 +1342,8 @@ private[akka] class ShardRegion(
                     extractEntityId,
                     extractShardId,
                     handOffStopMessage,
-                    rememberEntitiesProvider)
+                    rememberEntitiesProvider,
+                    rememberEntityStarterManager)
                   .withDispatcher(context.props.dispatcher),
                 name))
             shardsByRef = shardsByRef.updated(shard, id)
