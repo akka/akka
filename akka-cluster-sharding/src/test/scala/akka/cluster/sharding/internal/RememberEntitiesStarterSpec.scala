@@ -4,17 +4,17 @@
 
 package akka.cluster.sharding.internal
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardRegion
+import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
-
-import akka.Done
-import akka.cluster.sharding.ShardRegion.EntityId
 
 class RememberEntitiesStarterSpec extends AkkaSpec {
 
@@ -29,7 +29,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
     "try start all entities directly with entity-recovery-strategy = all (default)" in {
       val regionProbe = TestProbe()
       val shardProbe = TestProbe()
-      val doneProbe = TestProbe()
       val shardId = nextShardId()
 
       val defaultSettings = ClusterShardingSettings(system)
@@ -41,7 +40,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
           shardId,
           Set("1", "2", "3"),
           isConstantStrategy = false,
-          doneProbe.ref,
           defaultSettings))
 
       watch(rememberEntityStarter)
@@ -61,7 +59,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
     "retry start all entities with no ack with entity-recovery-strategy = all (default)" in {
       val regionProbe = TestProbe()
       val shardProbe = TestProbe()
-      val doneProbe = TestProbe()
       val shardId = nextShardId()
 
       val customSettings = ClusterShardingSettings(
@@ -80,7 +77,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
           shardId,
           Set("1", "2", "3"),
           isConstantStrategy = false,
-          doneProbe.ref,
           customSettings))
 
       watch(rememberEntityStarter)
@@ -95,7 +91,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
       startedOnSecondTry should ===(Set("1", "2", "3"))
 
       // should stop itself, not sending anything to the shard
-      doneProbe.expectMsg(Done)
       expectTerminated(rememberEntityStarter)
       shardProbe.expectNoMessage()
     }
@@ -103,7 +98,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
     "inform the shard when entities has been reallocated to different shard id" in {
       val regionProbe = TestProbe()
       val shardProbe = TestProbe()
-      val doneProbe = TestProbe()
       val shardId = nextShardId()
 
       val customSettings = ClusterShardingSettings(
@@ -122,7 +116,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
           shardId,
           Set("1", "2", "3"),
           isConstantStrategy = false,
-          doneProbe.ref,
           customSettings))
 
       watch(rememberEntityStarter)
@@ -136,14 +129,12 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
       regionProbe.lastSender ! ShardRegion.StartEntityAck(start3.entityId, shardId = "Relocated2")
 
       shardProbe.expectMsg(Shard.EntitiesMovedToOtherShard(Set("2", "3")))
-      doneProbe.expectMsg(Done)
       expectTerminated(rememberEntityStarter)
     }
 
     "try start all entities in a throttled way with entity-recovery-strategy = constant" in {
       val regionProbe = TestProbe()
       val shardProbe = TestProbe()
-      val doneProbe = TestProbe()
       val shardId = nextShardId()
 
       val customSettings = ClusterShardingSettings(
@@ -167,7 +158,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
           shardId,
           Set("1", "2", "3", "4", "5"),
           isConstantStrategy = true,
-          doneProbe.ref,
           customSettings))
 
       def recieveStartAndAck() = {
@@ -191,7 +181,6 @@ class RememberEntitiesStarterSpec extends AkkaSpec {
       recieveStartAndAck()
 
       // the starter should then stop itself, not sending anything more to the shard or region
-      doneProbe.expectMsg(Done)
       expectTerminated(rememberEntityStarter)
       shardProbe.expectNoMessage()
       regionProbe.expectNoMessage()
