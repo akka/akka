@@ -19,7 +19,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
-import akka.cluster.Member
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
@@ -74,12 +73,12 @@ private[akka] object ShardedDaemonProcessImpl {
         cluster.subscriptions ! Subscribe(context.messageAdapter[SelfUp](_ => Tick), classOf[SelfUp])
 
         def isActive(): Boolean = {
-          implicit val ageOrdering: Ordering[Member] = Member.ageOrdering
-          val sortedMembers = settings.role match {
-            case None       => cluster.state.members.toVector.sorted
-            case Some(role) => cluster.state.members.toVector.filter(_.roles.contains(role)).sorted
+          val members = settings.role match {
+            case None       => cluster.state.members
+            case Some(role) => cluster.state.members.filter(_.roles.contains(role))
           }
-          sortedMembers.take(settings.keepAliveFromNumberOfNodes).contains(cluster.selfMember)
+          // members are sorted so this is deterministic (the same) on all nodes
+          members.take(settings.keepAliveFromNumberOfNodes).contains(cluster.selfMember)
         }
 
         Behaviors.withTimers { timers =>
