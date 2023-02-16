@@ -19,10 +19,11 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
+import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.ClusterShardingSettings.{ RememberEntitiesStoreModeDData, StateStoreModeDData }
+import akka.cluster.sharding.typed.ClusterShardingSettings.{RememberEntitiesStoreModeDData, StateStoreModeDData}
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
@@ -46,7 +47,7 @@ private[akka] object ShardedDaemonProcessImpl {
   object KeepAlivePinger {
     sealed trait Event
     private case object Tick extends Event
-    private case object StartAllDone extends Event
+    private case object SendKeepAliveDone extends Event
 
     def apply[T](
         settings: ShardedDaemonProcessSettings,
@@ -70,7 +71,10 @@ private[akka] object ShardedDaemonProcessImpl {
         implicit val system: ActorSystem[_] = context.system
         val cluster = Cluster(system)
 
-        cluster.subscriptions ! Subscribe(context.messageAdapter[SelfUp](_ => Tick), classOf[SelfUp])
+        if (cluster.selfMember.status == MemberStatus.Up)
+          context.self ! Tick
+        else
+          cluster.subscriptions ! Subscribe(context.messageAdapter[SelfUp](_ => Tick), classOf[SelfUp])
 
         def isActive(): Boolean = {
           val members = settings.role match {
@@ -90,13 +94,13 @@ private[akka] object ShardedDaemonProcessImpl {
                   name,
                   sortedIdentities.size)
                 context.pipeToSelf(sendKeepAliveMessages()) { _ =>
-                  StartAllDone
+                  SendKeepAliveDone
                 }
               } else {
                 timers.startSingleTimer(Tick, settings.keepAliveInterval)
               }
               Behaviors.same
-            case StartAllDone =>
+            case SendKeepAliveDone =>
               timers.startSingleTimer(Tick, settings.keepAliveInterval)
               Behaviors.same
           }
