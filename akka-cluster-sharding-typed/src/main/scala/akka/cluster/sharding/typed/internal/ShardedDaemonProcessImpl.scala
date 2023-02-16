@@ -22,7 +22,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.ClusterShardingSettings.{RememberEntitiesStoreModeDData, StateStoreModeDData}
+import akka.cluster.sharding.typed.ClusterShardingSettings.{ RememberEntitiesStoreModeDData, StateStoreModeDData }
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
