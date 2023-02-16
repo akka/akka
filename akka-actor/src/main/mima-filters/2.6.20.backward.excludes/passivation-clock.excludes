@@ -1,0 +1,6 @@
+# internal changes of RecencyList and friends, adding ScheduledClock
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.FrequencyList#withOverallRecency.empty")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.FrequencyList#withOverallRecency.empty$default$1")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.RecencyList$Clock")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.RecencyList$NanoClock")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.SegmentedRecencyList#withOverallRecency.empty")

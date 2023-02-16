@@ -11,9 +11,10 @@ import akka.util.FastFrequencySketch
 import akka.util.FrequencySketch
 import akka.util.OptionVal
 import akka.util.{ FrequencyList, RecencyList, SegmentedRecencyList }
-
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
+
+import akka.util.Clock
 
 /**
  * INTERNAL API
@@ -26,26 +27,26 @@ private[akka] object EntityPassivationStrategy {
     val none: PassivateEntities = immutable.Seq.empty[EntityId]
   }
 
-  def apply(settings: ClusterShardingSettings): EntityPassivationStrategy = {
+  def apply(settings: ClusterShardingSettings, clock: () => Clock): EntityPassivationStrategy = {
     settings.passivationStrategy match {
       case ClusterShardingSettings.IdlePassivationStrategy(timeout, interval) =>
-        new IdleEntityPassivationStrategy(new IdleCheck(timeout, interval))
+        new IdleEntityPassivationStrategy(new IdleCheck(timeout, interval), clock())
       case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(limit, segmented, idle) =>
         val idleCheck = idle.map(idle => new IdleCheck(idle.timeout, idle.interval))
-        if (segmented.isEmpty) new LeastRecentlyUsedEntityPassivationStrategy(limit, idleCheck)
-        else new SegmentedLeastRecentlyUsedEntityPassivationStrategy(limit, segmented, idleCheck)
+        if (segmented.isEmpty) new LeastRecentlyUsedEntityPassivationStrategy(limit, idleCheck, clock())
+        else new SegmentedLeastRecentlyUsedEntityPassivationStrategy(limit, segmented, idleCheck, clock)
       case ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(limit, idle) =>
         val idleCheck = idle.map(idle => new IdleCheck(idle.timeout, idle.interval))
-        new MostRecentlyUsedEntityPassivationStrategy(limit, idleCheck)
+        new MostRecentlyUsedEntityPassivationStrategy(limit, idleCheck, clock())
       case ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(limit, dynamicAging, idle) =>
         val idleCheck = idle.map(idle => new IdleCheck(idle.timeout, idle.interval))
-        new LeastFrequentlyUsedEntityPassivationStrategy(limit, dynamicAging, idleCheck)
+        new LeastFrequentlyUsedEntityPassivationStrategy(limit, dynamicAging, idleCheck, clock)
       case composite: ClusterShardingSettings.CompositePassivationStrategy =>
-        val main = ActiveEntities(composite.mainStrategy, composite.idle.isDefined)
+        val main = ActiveEntities(composite.mainStrategy, composite.idle.isDefined, clock)
         if (main eq NoActiveEntities) DisabledEntityPassivationStrategy
         else {
           val initialLimit = composite.limit
-          val window = ActiveEntities(composite.windowStrategy, composite.idle.isDefined)
+          val window = ActiveEntities(composite.windowStrategy, composite.idle.isDefined, clock)
           val initialWindowProportion = if (window eq NoActiveEntities) 0.0 else composite.initialWindowProportion
           val minimumWindowProportion = if (window eq NoActiveEntities) 0.0 else composite.minimumWindowProportion
           val maximumWindowProportion = if (window eq NoActiveEntities) 0.0 else composite.maximumWindowProportion
@@ -143,11 +144,12 @@ private[akka] final class IdleCheck(val timeout: FiniteDuration, val interval: F
  * @param idleCheck passivate idle entities after the given timeout, checking every interval
  */
 @InternalApi
-private[akka] final class IdleEntityPassivationStrategy(idleCheck: IdleCheck) extends EntityPassivationStrategy {
+private[akka] final class IdleEntityPassivationStrategy(idleCheck: IdleCheck, clock: Clock)
+    extends EntityPassivationStrategy {
 
   import EntityPassivationStrategy.PassivateEntities
 
-  private val recencyList = RecencyList.empty[EntityId]
+  private val recencyList = RecencyList[EntityId](clock)
 
   override val scheduledInterval: Option[FiniteDuration] = Some(idleCheck.interval)
 
@@ -201,12 +203,15 @@ private[akka] abstract class LimitBasedEntityPassivationStrategy(initialLimit: I
  * @param initialLimit initial active entity capacity for a shard region
  * @param idleCheck optionally passivate idle entities after the given timeout, checking every interval
  */
-private[akka] final class LeastRecentlyUsedEntityPassivationStrategy(initialLimit: Int, idleCheck: Option[IdleCheck])
+private[akka] final class LeastRecentlyUsedEntityPassivationStrategy(
+    initialLimit: Int,
+    idleCheck: Option[IdleCheck],
+    clock: Clock)
     extends LimitBasedEntityPassivationStrategy(initialLimit) {
 
   import EntityPassivationStrategy.PassivateEntities
 
-  val active = new LeastRecentlyUsedReplacementPolicy(initialLimit)
+  val active = new LeastRecentlyUsedReplacementPolicy(initialLimit, clock)
 
   override protected def passivateEntitiesOnLimitUpdate(): PassivateEntities = active.updateLimit(perShardLimit)
 
@@ -238,12 +243,13 @@ private[akka] final class LeastRecentlyUsedEntityPassivationStrategy(initialLimi
 private[akka] final class SegmentedLeastRecentlyUsedEntityPassivationStrategy(
     initialLimit: Int,
     proportions: immutable.Seq[Double],
-    idleCheck: Option[IdleCheck])
+    idleCheck: Option[IdleCheck],
+    clock: () => Clock)
     extends LimitBasedEntityPassivationStrategy(initialLimit) {
 
   import EntityPassivationStrategy.PassivateEntities
 
-  val active = new SegmentedLeastRecentlyUsedReplacementPolicy(initialLimit, proportions, idleCheck.isDefined)
+  val active = new SegmentedLeastRecentlyUsedReplacementPolicy(initialLimit, proportions, idleCheck.isDefined, clock)
 
   override protected def passivateEntitiesOnLimitUpdate(): PassivateEntities = active.updateLimit(perShardLimit)
 
@@ -268,12 +274,15 @@ private[akka] final class SegmentedLeastRecentlyUsedEntityPassivationStrategy(
  * @param idleCheck optionally passivate idle entities after the given timeout, checking every interval
  */
 @InternalApi
-private[akka] final class MostRecentlyUsedEntityPassivationStrategy(initialLimit: Int, idleCheck: Option[IdleCheck])
+private[akka] final class MostRecentlyUsedEntityPassivationStrategy(
+    initialLimit: Int,
+    idleCheck: Option[IdleCheck],
+    clock: Clock)
     extends LimitBasedEntityPassivationStrategy(initialLimit) {
 
   import EntityPassivationStrategy.PassivateEntities
 
-  val active = new MostRecentlyUsedReplacementPolicy(initialLimit)
+  val active = new MostRecentlyUsedReplacementPolicy(initialLimit, clock)
 
   override protected def passivateEntitiesOnLimitUpdate(): PassivateEntities = active.updateLimit(perShardLimit)
 
@@ -302,12 +311,13 @@ private[akka] final class MostRecentlyUsedEntityPassivationStrategy(initialLimit
 private[akka] final class LeastFrequentlyUsedEntityPassivationStrategy(
     initialLimit: Int,
     dynamicAging: Boolean,
-    idleCheck: Option[IdleCheck])
+    idleCheck: Option[IdleCheck],
+    clock: () => Clock)
     extends LimitBasedEntityPassivationStrategy(initialLimit) {
 
   import EntityPassivationStrategy.PassivateEntities
 
-  val active = new LeastFrequentlyUsedReplacementPolicy(initialLimit, dynamicAging, idleCheck.isDefined)
+  val active = new LeastFrequentlyUsedReplacementPolicy(initialLimit, dynamicAging, idleCheck.isDefined, clock)
 
   override protected def passivateEntitiesOnLimitUpdate(): PassivateEntities = active.updateLimit(perShardLimit)
 
@@ -327,15 +337,18 @@ private[akka] final class LeastFrequentlyUsedEntityPassivationStrategy(
  */
 @InternalApi
 private[akka] object ActiveEntities {
-  def apply(strategy: ClusterShardingSettings.PassivationStrategy, idleEnabled: Boolean): ActiveEntities =
+  def apply(
+      strategy: ClusterShardingSettings.PassivationStrategy,
+      idleEnabled: Boolean,
+      clock: () => Clock): ActiveEntities =
     strategy match {
       case ClusterShardingSettings.LeastRecentlyUsedPassivationStrategy(_, segmented, _) =>
-        if (segmented.isEmpty) new LeastRecentlyUsedReplacementPolicy(initialLimit = 0)
-        else new SegmentedLeastRecentlyUsedReplacementPolicy(initialLimit = 0, segmented, idleEnabled)
+        if (segmented.isEmpty) new LeastRecentlyUsedReplacementPolicy(initialLimit = 0, clock())
+        else new SegmentedLeastRecentlyUsedReplacementPolicy(initialLimit = 0, segmented, idleEnabled, clock)
       case ClusterShardingSettings.MostRecentlyUsedPassivationStrategy(_, _) =>
-        new MostRecentlyUsedReplacementPolicy(initialLimit = 0)
+        new MostRecentlyUsedReplacementPolicy(initialLimit = 0, clock())
       case ClusterShardingSettings.LeastFrequentlyUsedPassivationStrategy(_, dynamicAging, _) =>
-        new LeastFrequentlyUsedReplacementPolicy(initialLimit = 0, dynamicAging, idleEnabled)
+        new LeastFrequentlyUsedReplacementPolicy(initialLimit = 0, dynamicAging, idleEnabled, clock)
       case _ => NoActiveEntities
     }
 }
@@ -423,11 +436,11 @@ private[akka] object NoActiveEntities extends ActiveEntities {
  * @param initialLimit initial active entity capacity for a shard
  */
 @InternalApi
-private[akka] final class LeastRecentlyUsedReplacementPolicy(initialLimit: Int) extends ActiveEntities {
+private[akka] final class LeastRecentlyUsedReplacementPolicy(initialLimit: Int, clock: Clock) extends ActiveEntities {
   import EntityPassivationStrategy.PassivateEntities
 
   private var limit = initialLimit
-  private val recencyList = RecencyList.empty[EntityId]
+  private val recencyList = RecencyList[EntityId](clock)
 
   override def size: Int = recencyList.size
 
@@ -472,7 +485,8 @@ private[akka] final class LeastRecentlyUsedReplacementPolicy(initialLimit: Int) 
 private[akka] final class SegmentedLeastRecentlyUsedReplacementPolicy(
     initialLimit: Int,
     proportions: immutable.Seq[Double],
-    idleEnabled: Boolean)
+    idleEnabled: Boolean,
+    clock: () => Clock)
     extends ActiveEntities {
 
   import EntityPassivationStrategy.PassivateEntities
@@ -485,7 +499,7 @@ private[akka] final class SegmentedLeastRecentlyUsedReplacementPolicy(
   }
 
   private val segmentedRecencyList =
-    if (idleEnabled) SegmentedRecencyList.withOverallRecency.empty[EntityId](segmentLimits)
+    if (idleEnabled) SegmentedRecencyList.withOverallRecency.empty[EntityId](clock(), segmentLimits)
     else SegmentedRecencyList.empty[EntityId](segmentLimits)
 
   override def size: Int = segmentedRecencyList.size
@@ -522,11 +536,11 @@ private[akka] final class SegmentedLeastRecentlyUsedReplacementPolicy(
  * @param initialLimit initial active entity capacity for a shard
  */
 @InternalApi
-private[akka] final class MostRecentlyUsedReplacementPolicy(initialLimit: Int) extends ActiveEntities {
+private[akka] final class MostRecentlyUsedReplacementPolicy(initialLimit: Int, clock: Clock) extends ActiveEntities {
   import EntityPassivationStrategy.PassivateEntities
 
   private var limit = initialLimit
-  private val recencyList = RecencyList.empty[EntityId]
+  private val recencyList = RecencyList[EntityId](clock)
 
   override def size: Int = recencyList.size
 
@@ -568,7 +582,8 @@ private[akka] final class MostRecentlyUsedReplacementPolicy(initialLimit: Int) e
 private[akka] final class LeastFrequentlyUsedReplacementPolicy(
     initialLimit: Int,
     dynamicAging: Boolean,
-    idleEnabled: Boolean)
+    idleEnabled: Boolean,
+    clock: () => Clock)
     extends ActiveEntities {
 
   import EntityPassivationStrategy.PassivateEntities
@@ -576,7 +591,7 @@ private[akka] final class LeastFrequentlyUsedReplacementPolicy(
   private var limit = initialLimit
 
   private val frequencyList =
-    if (idleEnabled) FrequencyList.withOverallRecency.empty[EntityId](dynamicAging)
+    if (idleEnabled) FrequencyList.withOverallRecency.empty[EntityId](clock(), dynamicAging)
     else FrequencyList.empty[EntityId](dynamicAging)
 
   override def size: Int = frequencyList.size
