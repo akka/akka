@@ -468,7 +468,7 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
   def deciderTest(f: (Boolean, Boolean) => Future[Boolean]): Assertion = {
     val failCount = new AtomicInteger
     val result =
-      Source(Seq(true, false))
+      Source(List(true, false))
         .mapAsyncPartitioned(2, 1)(identity)(f)
         .addAttributes(ActorAttributes.supervisionStrategy {
           case x if x == thisWillNotStand =>
