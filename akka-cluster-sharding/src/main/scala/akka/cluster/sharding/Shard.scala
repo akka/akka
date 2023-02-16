@@ -29,7 +29,6 @@ import akka.cluster.sharding.internal.EntityPassivationStrategy
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
 import akka.cluster.sharding.internal.RememberEntitiesProvider
-import akka.cluster.sharding.internal.RememberEntityStarter
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.event.LoggingAdapter
@@ -39,8 +38,9 @@ import akka.util.MessageBufferMap
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
-import scala.collection.immutable.Set
 import scala.concurrent.duration._
+
+import akka.cluster.sharding.internal.RememberEntityStarterManager
 
 /**
  * INTERNAL API
@@ -95,7 +95,8 @@ private[akka] object Shard {
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
       handOffStopMessage: Any,
-      rememberEntitiesProvider: Option[RememberEntitiesProvider]): Props =
+      rememberEntitiesProvider: Option[RememberEntitiesProvider],
+      rememberEntityStarterManager: ActorRef): Props =
     Props(
       new Shard(
         typeName,
@@ -105,7 +106,8 @@ private[akka] object Shard {
         extractEntityId,
         extractShardId,
         handOffStopMessage,
-        rememberEntitiesProvider)).withDeploy(Deploy.local)
+        rememberEntitiesProvider,
+        rememberEntityStarterManager)).withDeploy(Deploy.local)
 
   case object PassivateIntervalTick extends NoSerializationVerificationNeeded
 
@@ -416,7 +418,8 @@ private[akka] class Shard(
     extractEntityId: ShardRegion.ExtractEntityId,
     @unused extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    rememberEntitiesProvider: Option[RememberEntitiesProvider])
+    rememberEntitiesProvider: Option[RememberEntitiesProvider],
+    rememberEntityStarterManager: ActorRef)
     extends Actor
     with ActorLogging
     with Stash
@@ -593,9 +596,7 @@ private[akka] class Shard(
     if (ids.nonEmpty) {
       entities.alreadyRemembered(ids)
       log.debug("{}: Restarting set of [{}] entities", typeName, ids.size)
-      context.actorOf(
-        RememberEntityStarter.props(context.parent, self, shardId, ids, settings),
-        "RememberEntitiesStarter")
+      rememberEntityStarterManager ! RememberEntityStarterManager.StartEntities(self, shardId, ids)
     }
     shardInitialized()
   }
