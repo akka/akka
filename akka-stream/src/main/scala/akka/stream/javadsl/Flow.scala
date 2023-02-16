@@ -851,10 +851,51 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    *
-   * @see [[#mapAsyncUnordered]]
+   * @see [[#mapAsyncUnordered]] and [[#mapAsyncPartitioned]]
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsync(parallelism)(x => f(x).toScala))
+
+  /**
+   * Transform this stream by partitioning elements based on the provided partitioner as they pass through this
+   * processing step and then applying a given `CompletionStage`-returning function to each element and its
+   * partition key.  The value of the returned future, if successful, will be emitted downstream.
+   *
+   * The number of CompletionStages running at any given time is bounded by the 'parallelism' and 'perPartition'
+   * values.  The CompletionStages may complete in any order, but the results are emitted in the same order as
+   * the corresponding elements were received.
+   *
+   * If the functions 'partitioner' or 'f' throw an exception, or if the 'CompletionStage' is completed with failure,
+   * supervision will be applied to determine a decision.  If the decision is [[akka.stream.Supervision#stop]], the
+   * stream will be completed with failure; otherwise the element will be dropped and the stream continues.
+   *
+   * The function 'partitioner' is always invoked on the elements in the order they arrive.
+   *
+   * The function 'f' is invoked on elements with the same partition key in the order they arrive.  The order of
+   * invocation of 'f' for elements with different partition keys is undefined and subject to factors including, but
+   * not limited to, the distribution of partition keys within the stream.
+   *
+   * '''Emits when''' the CompletionStage returned by the provided function 'f' finishes for the next element in
+   * sequence
+   *
+   * '''Backpressures when''' the number of elements for which no resulting CompletionStage has completed reaches the
+   * configured parallelism and the downstream backpressures or the first CompletionStage has not completed
+   *
+   * '''Completes when''' upstream completes and all CompletionStages have been completed and all elements have
+   * been emitted
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @see [[#mapAsync]] and [[#mapAsyncUnordered]]
+   */
+  def mapAsyncPartitioned[T, P](
+      parallelism: Int,
+      perPartition: Int,
+      partitioner: function.Function[Out, P],
+      f: BiFunction[Out, P, CompletionStage[T]]) =
+    new Flow(delegate.mapAsyncPartitioned(parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
+      f(x, p).toScala
+    })
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -887,7 +928,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    *
-   * @see [[#mapAsync]]
+   * @see [[#mapAsync]] and [[#mapAsyncPartitioned]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))

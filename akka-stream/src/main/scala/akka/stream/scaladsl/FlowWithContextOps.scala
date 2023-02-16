@@ -105,6 +105,24 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
     })
 
   /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.mapAsyncPartitioned]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.mapAsyncPartitioned]]
+   */
+  def mapAsyncPartitioned[Out2, P](parallelism: Int, perPartition: Int)(partitioner: Out => P)(
+      f: (Out, P) => Future[Out2]): Repr[Out2, Ctx] = {
+    val pairPartitioner = { (pair: (Out, Ctx)) =>
+      partitioner(pair._1)
+    }
+    val pairF = { (pair: (Out, Ctx), partition: P) =>
+      val (elem, context) = pair
+      f(elem, partition).map(_ -> context)(ExecutionContexts.parasitic)
+    }
+
+    via(flow.mapAsyncPartitioned(parallelism, perPartition)(pairPartitioner)(pairF))
+  }
+
+  /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.collect]].
    *
    * Note, that the context of elements that are filtered out is skipped as well.

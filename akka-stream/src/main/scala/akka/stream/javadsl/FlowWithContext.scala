@@ -5,6 +5,7 @@
 package akka.stream.javadsl
 
 import java.util.concurrent.CompletionStage
+import java.util.function.BiFunction
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
@@ -166,10 +167,29 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
   def map[Out2](f: function.Function[Out, Out2]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
     viaScala(_.map(f.apply))
 
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.mapAsync]]
+   *
+   * @see [[akka.stream.javadsl.Flow.mapAsync]]
+   */
   def mapAsync[Out2](
       parallelism: Int,
       f: function.Function[Out, CompletionStage[Out2]]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
     viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).toScala))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.mapAsyncPartitioned]]
+   *
+   * @see [[akka.stream.javadsl.Flow.mapAsyncPartitioned]]
+   */
+  def mapAsyncPartitioned[Out2, P](
+      parallelism: Int,
+      perPartition: Int,
+      partitioner: function.Function[Out, P],
+      f: BiFunction[Out, P, CompletionStage[Out2]]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
+    viaScala(_.mapAsyncPartitioned[Out2, P](parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
+      f(x, p).toScala
+    })
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.mapConcat]].

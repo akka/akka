@@ -36,6 +36,8 @@ import akka.stream.stage._
 import akka.util.{ unused, OptionVal }
 import akka.util.ccompat._
 
+// This file is perhaps getting long (Github Issue #31619), please add new operators in other files
+
 /**
  * INTERNAL API
  */
@@ -2384,3 +2386,5 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
   override def toString = "StatefulMapConcat"
 
 }
+
+// This file is perhaps getting long (Github Issue #31619), please add new operators in other files

@@ -1125,11 +1125,55 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    *
-   * @see [[#mapAsyncUnordered]]
+   * @see [[#mapAsyncUnordered]] and [[#mapAsyncPartitioned]]
    */
   def mapAsync[T](parallelism: Int)(f: Out => Future[T]): Repr[T] =
     if (parallelism == 1) mapAsyncUnordered[T](parallelism = 1)(f) // optimization for parallelism 1
     else via(MapAsync(parallelism, f))
+
+  /**
+   * Transform this stream by partitioning elements based on the provided partitioner as they
+   * pass through this step and then applying a given `Future`-returning function to each element
+   * and its partition key.  The value of the returned future, if successful, will be emitted
+   * downstream.
+   *
+   * The number of Futures running at any given time is bounded by the 'parallelism' and 'perPartition'
+   * values.  The futures may complete in any order, but the results are emitted in the same order
+   * as the corresponding elements were received.
+   *
+   * If the functions 'partitioner' or 'f' throw an exception, or the `Future` completes with failure,
+   * supervision will be applied to determine a decision.  If the decision is [[akka.stream.Supervision.Stop]]
+   * the stream will be stopped with failure; otherwise, the element will be dropped and the stream continues.
+   *
+   * The function 'partitioner' is always invoked on the elements in the order they arrive.
+   *
+   * The function 'f' is invoked on elements with the same partition key in the order they arrive.  The order
+   * of invocation of 'f' for elements with different partition keys is undefined and subject to factors
+   * including, but not limited to, the distribution of partition keys within the stream.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the Future returned by 'f' finishes for the next element in sequence
+   *
+   * '''Backpressures when''' the number of elements for which no resulting future has completed reaches the
+   * configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all results have been emitted
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @see [[#mapAsync]] and [[#mapAsyncUnordered]]
+   *
+   * @param parallelism at most this many futures will be incomplete at any time
+   * @param perPartition at most this many futures will be incomplete for a given partition key at any time
+   * @param partitioner function to generate a partition key
+   * @param f function to generate a Future
+   */
+  def mapAsyncPartitioned[T, P](parallelism: Int, perPartition: Int)(partitioner: Out => P)(
+      f: (Out, P) => Future[T]): Repr[T] =
+    if (parallelism == 1) mapAsyncUnordered[T](parallelism = 1) { elem =>
+      f(elem, partitioner(elem))
+    } else via(MapAsyncPartitioned(parallelism, perPartition, partitioner, f))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -1162,7 +1206,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    *
-   * @see [[#mapAsync]]
+   * @see [[#mapAsync]] and [[#mapAsyncPartitioned]]
    */
   def mapAsyncUnordered[T](parallelism: Int)(f: Out => Future[T]): Repr[T] = via(MapAsyncUnordered(parallelism, f))
 

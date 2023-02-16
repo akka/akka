@@ -6,7 +6,7 @@ package akka.stream.javadsl
 
 import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
-import java.util.function.Supplier
+import java.util.function.{ BiFunction, Supplier }
 
 import scala.annotation.{ nowarn, varargs }
 import scala.annotation.unchecked.uncheckedVariance
@@ -333,6 +333,18 @@ final class SubSource[Out, Mat](
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubSource[T, Mat] =
     new SubSource(delegate.mapAsync(parallelism)(x => f(x).toScala))
+
+  /**
+   * @see [[akka.stream.javadsl.Source.mapAsyncPartitioned]]
+   */
+  def mapAsyncPartitioned[T, P](
+      parallelism: Int,
+      perPartition: Int,
+      partitioner: function.Function[Out, P],
+      f: BiFunction[Out, P, CompletionStage[T]]): SubSource[T, Mat] =
+    new SubSource(delegate.mapAsyncPartitioned(parallelism, perPartition)(x => partitioner(x)) { (x, p) =>
+      f(x, p).toScala
+    })
 
   /**
    * Transform this stream by applying the given function to each of the elements
