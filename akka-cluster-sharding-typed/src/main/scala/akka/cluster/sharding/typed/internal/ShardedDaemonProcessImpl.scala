@@ -8,13 +8,18 @@ import java.util.function.IntFunction
 import java.util.Optional
 
 import scala.compat.java8.OptionConverters._
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
+
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
+import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
@@ -31,7 +36,7 @@ import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.SelfUp
 import akka.cluster.typed.Subscribe
-import akka.util.PrettyDuration
+import akka.stream.scaladsl.Source
 
 /**
  * INTERNAL API
@@ -42,37 +47,67 @@ private[akka] object ShardedDaemonProcessImpl {
   object KeepAlivePinger {
     sealed trait Event
     private case object Tick extends Event
-    private case object StartTick extends Event
+    private case object SendKeepAliveDone extends Event
 
     def apply[T](
         settings: ShardedDaemonProcessSettings,
         name: String,
         identities: Set[EntityId],
-        shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Event] =
-      Behaviors.setup { context =>
-        Cluster(context.system).subscriptions ! Subscribe(
-          context.messageAdapter[SelfUp](_ => StartTick),
-          classOf[SelfUp])
-        Behaviors.withTimers { timers =>
-          def triggerStartAll(): Unit = {
-            identities.foreach(id => shardingRef ! StartEntity(id))
+        shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Event] = {
+      val sortedIdentities = identities.toVector.sorted
+
+      def sendKeepAliveMessages()(implicit sys: ActorSystem[_]): Future[Done] = {
+        if (settings.keepAliveThrottleInterval == Duration.Zero) {
+          sortedIdentities.foreach(id => shardingRef ! StartEntity(id))
+          Future.successful(Done)
+        } else {
+          Source(sortedIdentities).throttle(1, settings.keepAliveThrottleInterval).runForeach { id =>
+            shardingRef ! StartEntity(id)
           }
+        }
+      }
+
+      Behaviors.setup[Event] { context =>
+        implicit val system: ActorSystem[_] = context.system
+        val cluster = Cluster(system)
+
+        if (cluster.selfMember.status == MemberStatus.Up)
+          context.self ! Tick
+        else
+          cluster.subscriptions ! Subscribe(context.messageAdapter[SelfUp](_ => Tick), classOf[SelfUp])
+
+        def isActive(): Boolean = {
+          val members = settings.role match {
+            case None       => cluster.state.members
+            case Some(role) => cluster.state.members.filter(_.roles.contains(role))
+          }
+          // members are sorted so this is deterministic (the same) on all nodes
+          members.take(settings.keepAliveFromNumberOfNodes).contains(cluster.selfMember)
+        }
+
+        Behaviors.withTimers { timers =>
           Behaviors.receiveMessage {
-            case StartTick =>
-              triggerStartAll()
-              context.log.debug2(
-                s"Starting Sharded Daemon Process KeepAlivePinger for [{}], with ping interval [{}]",
-                name,
-                PrettyDuration.format(settings.keepAliveInterval))
-              timers.startTimerWithFixedDelay(Tick, settings.keepAliveInterval)
-              Behaviors.same
             case Tick =>
-              triggerStartAll()
-              context.log.debug("Periodic ping sent to [{}] processes", identities.size)
+              if (isActive()) {
+                context.log.debug2(
+                  s"Sending periodic keep alive for Sharded Daemon Process [{}] to [{}] processes.",
+                  name,
+                  sortedIdentities.size)
+                context.pipeToSelf(sendKeepAliveMessages()) { _ =>
+                  SendKeepAliveDone
+                }
+              } else {
+                timers.startSingleTimer(Tick, settings.keepAliveInterval)
+              }
+              Behaviors.same
+            case SendKeepAliveDone =>
+              timers.startSingleTimer(Tick, settings.keepAliveInterval)
               Behaviors.same
           }
         }
       }
+    }
+
   }
 
   final class MessageExtractor[T] extends ShardingMessageExtractor[ShardingEnvelope[T], T] {

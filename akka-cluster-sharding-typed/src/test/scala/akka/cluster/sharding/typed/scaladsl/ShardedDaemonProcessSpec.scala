@@ -16,6 +16,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl.KeepAlivePinger
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 
@@ -31,6 +32,7 @@ object ShardedDaemonProcessSpec {
       
       # ping often/start fast for test
       akka.cluster.sharded-daemon-process.keep-alive-interval = 1s
+      akka.cluster.sharded-daemon-process.keep-alive-throttle-interval = 20ms
 
       akka.coordinated-shutdown.terminate-actor-system = off
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
@@ -62,7 +64,7 @@ class ShardedDaemonProcessSpec
 
   import ShardedDaemonProcessSpec._
 
-  "The ShardedDaemonSet" must {
+  "The ShardedDaemonProcess" must {
 
     "have a single node cluster running first" in {
       val probe = createTestProbe()
@@ -98,6 +100,33 @@ class ShardedDaemonProcessSpec
       ShardedDaemonProcess(system).init("roles", 3, id => MyActor(id, probe.ref), settings, None)
 
       probe.expectNoMessage()
+    }
+
+  }
+
+  "KeepAlivePinger" must {
+    "have a single node cluster running first" in {
+      val probe = createTestProbe()
+      Cluster(system).manager ! Join(Cluster(system).selfMember.address)
+      probe.awaitAssert({
+        Cluster(system).selfMember.status == MemberStatus.Up
+      }, 3.seconds)
+    }
+
+    "throttle keep alive messsages" in {
+      val shardingProbe = createTestProbe[Any]()
+      val settings = ShardedDaemonProcessSettings(system).withKeepAliveThrottleInterval(1.second)
+      val pinger = spawn(KeepAlivePinger(settings, "throttle", Set("1", "2", "3"), shardingProbe.ref))
+      // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
+      shardingProbe.expectMessage(StartEntity("1"))
+      shardingProbe.expectNoMessage(100.millis)
+      shardingProbe.expectMessage(StartEntity("2"))
+      shardingProbe.expectNoMessage(100.millis)
+      shardingProbe.expectMessage(StartEntity("3"))
+      shardingProbe.expectNoMessage(100.millis)
+      shardingProbe.expectMessage(StartEntity("1"))
+
+      testKit.stop(pinger)
     }
 
   }
