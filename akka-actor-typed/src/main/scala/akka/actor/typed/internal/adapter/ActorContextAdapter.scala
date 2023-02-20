@@ -52,7 +52,7 @@ private[akka] object ActorContextAdapter {
     _self.get
   }
 
-  override def system = ActorSystemAdapter(classicContext.system)
+  override def system = ActorSystemAdapter(classicActorContext.system)
 
   override def children: Iterable[ActorRef[Nothing]] = {
     checkCurrentActorThread()
