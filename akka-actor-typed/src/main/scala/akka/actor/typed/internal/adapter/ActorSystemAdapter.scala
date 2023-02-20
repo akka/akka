@@ -152,7 +152,7 @@ private[akka] object ActorSystemAdapter {
 
   object AdapterExtension extends classic.ExtensionId[AdapterExtension] with classic.ExtensionIdProvider {
 
-    override def get(system: classic.ActorSystem): AdapterExtension = apply(system)
+    override def get(system: classic.ActorSystem): AdapterExtension = this.apply(system)
 
     override def lookup = AdapterExtension
     override def createExtension(system: classic.ExtendedActorSystem): AdapterExtension =
