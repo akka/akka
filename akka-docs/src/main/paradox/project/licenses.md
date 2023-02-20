@@ -9,7 +9,7 @@ Parameters
 
 Licensor:             Lightbend, Inc.
 Licensed Work:        Akka 2.7.x
-                      The Licensed Work is (c) 2022 Lightbend Inc.
+                      The Licensed Work is (c) 2022-2023 Lightbend Inc.
 Additional Use Grant:
     If you develop an application using a version of Play Framework that
     utilizes binary versions of akka-streams and its dependencies, you may
