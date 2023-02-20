@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.typed;
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 import akka.actor.typed.ActorSystem;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
