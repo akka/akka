@@ -135,7 +135,7 @@ private[akka] object ActorSystemAdapter {
         system.typedSystem match {
           case OptionVal.Some(typedSystem: ActorSystem[_]) => typedSystem
           case _ =>
-            val typedSystem = AdapterExtension(system).adapter
+            val typedSystem: ActorSystem[_] = AdapterExtension(system).adapter
             system.typedSystem = OptionVal.Some(typedSystem)
             typedSystem
         }

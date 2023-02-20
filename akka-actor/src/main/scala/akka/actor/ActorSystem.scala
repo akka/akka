@@ -821,8 +821,9 @@ private[akka] class ActorSystemImpl(
   private val _dynamicAccess: DynamicAccess = createDynamicAccess()
 
   /**
-   * Optimistic optimization: Typed actors will _all_ pick up the system adapter, going through
-   * extension infra only once per thread
+   * Optimistic optimization: Tries to avoid going through the extension infrastructure if possible when using
+   * the typed system. Will contain a akka.actor.typed.ActorSystem if set, should not be touched by anything but
+   * the typed ActorSystemAdapter.
    */
   private[akka] var typedSystem: OptionVal[AnyRef] = OptionVal.None
 
