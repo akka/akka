@@ -16,7 +16,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
-import akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl.KeepAlivePinger
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 
@@ -116,15 +116,16 @@ class ShardedDaemonProcessSpec
     "throttle keep alive messsages" in {
       val shardingProbe = createTestProbe[Any]()
       val settings = ShardedDaemonProcessSettings(system).withKeepAliveThrottleInterval(1.second)
-      val pinger = spawn(KeepAlivePinger(settings, "throttle", Set("1", "2", "3"), shardingProbe.ref))
+      val pinger = spawn(ShardedDaemonProcessKeepAlivePinger(settings, "throttle", 3, shardingProbe.ref))
       // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
-      shardingProbe.expectMessage(StartEntity("1"))
+      // See ShardedDaemonProcessImpl.DecodedId for details about entity id format
+      shardingProbe.expectMessage(StartEntity("0|3|0"))
       shardingProbe.expectNoMessage(100.millis)
-      shardingProbe.expectMessage(StartEntity("2"))
+      shardingProbe.expectMessage(StartEntity("0|3|1"))
       shardingProbe.expectNoMessage(100.millis)
-      shardingProbe.expectMessage(StartEntity("3"))
+      shardingProbe.expectMessage(StartEntity("0|3|2"))
       shardingProbe.expectNoMessage(100.millis)
-      shardingProbe.expectMessage(StartEntity("1"))
+      shardingProbe.expectMessage(StartEntity("0|3|0"))
 
       testKit.stop(pinger)
     }

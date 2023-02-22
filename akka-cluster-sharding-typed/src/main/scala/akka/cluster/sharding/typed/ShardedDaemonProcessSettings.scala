@@ -140,7 +140,7 @@ trait ShardedDaemonProcessContext {
  * Not for user extension
  */
 @DoNotInherit
-sealed trait ShardedDaemonProcessCommand {}
+trait ShardedDaemonProcessCommand {}
 
 /**
  * Tell the sharded daemon process to rescale to the given number of processes.
@@ -148,5 +148,5 @@ sealed trait ShardedDaemonProcessCommand {}
  * @param newNumberOfProcesses The number of processes to scale up to
  * @param replyTo Reply to this actor once scaling is successfully done, or with details if it failed
  */
-final case class ReScaleProcesses(newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Done]])
+final case class ChangeNumberOfProcesses(newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Done]])
     extends ShardedDaemonProcessCommand

@@ -4,14 +4,10 @@
 
 package akka.cluster.sharding.typed.internal
 
-import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
-import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
@@ -27,17 +23,14 @@ import akka.cluster.sharding.typed.scaladsl
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.cluster.typed.Cluster
-import akka.cluster.typed.SelfUp
-import akka.cluster.typed.Subscribe
-import akka.stream.scaladsl.Source
+import akka.cluster.typed.ClusterSingleton
+import akka.cluster.typed.ClusterSingletonSettings
+import akka.cluster.typed.SingletonActor
 
 import java.util.Optional
 import java.util.function.IntFunction
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
 /**
@@ -46,70 +39,17 @@ import scala.reflect.ClassTag
 @InternalApi
 private[akka] object ShardedDaemonProcessImpl {
 
-  object KeepAlivePinger {
-    sealed trait Event
-    private case object Tick extends Event
-    private case object SendKeepAliveDone extends Event
-
-    def apply[T](
-        settings: ShardedDaemonProcessSettings,
-        name: String,
-        identities: Set[EntityId],
-        shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Event] = {
-      val sortedIdentities = identities.toVector.sorted
-
-      def sendKeepAliveMessages()(implicit sys: ActorSystem[_]): Future[Done] = {
-        if (settings.keepAliveThrottleInterval == Duration.Zero) {
-          sortedIdentities.foreach(id => shardingRef ! StartEntity(id))
-          Future.successful(Done)
-        } else {
-          Source(sortedIdentities).throttle(1, settings.keepAliveThrottleInterval).runForeach { id =>
-            shardingRef ! StartEntity(id)
-          }
-        }
-      }
-
-      Behaviors.setup[Event] { context =>
-        implicit val system: ActorSystem[_] = context.system
-        val cluster = Cluster(system)
-
-        if (cluster.selfMember.status == MemberStatus.Up)
-          context.self ! Tick
-        else
-          cluster.subscriptions ! Subscribe(context.messageAdapter[SelfUp](_ => Tick), classOf[SelfUp])
-
-        def isActive(): Boolean = {
-          val members = settings.role match {
-            case None       => cluster.state.members
-            case Some(role) => cluster.state.members.filter(_.roles.contains(role))
-          }
-          // members are sorted so this is deterministic (the same) on all nodes
-          members.take(settings.keepAliveFromNumberOfNodes).contains(cluster.selfMember)
-        }
-
-        Behaviors.withTimers { timers =>
-          Behaviors.receiveMessage {
-            case Tick =>
-              if (isActive()) {
-                context.log.debug2(
-                  s"Sending periodic keep alive for Sharded Daemon Process [{}] to [{}] processes.",
-                  name,
-                  sortedIdentities.size)
-                context.pipeToSelf(sendKeepAliveMessages()) { _ =>
-                  SendKeepAliveDone
-                }
-              } else {
-                timers.startSingleTimer(Tick, settings.keepAliveInterval)
-              }
-              Behaviors.same
-            case SendKeepAliveDone =>
-              timers.startSingleTimer(Tick, settings.keepAliveInterval)
-              Behaviors.same
-          }
-        }
-      }
+  // entity id format: [r]|[total-count]|[process-n]
+  val Separator = '|'
+  def decodeEntityId(id: String) = {
+    id.split(Separator) match {
+      case Array(rev, count, n) => DecodedId(rev.toInt, count.toInt, n.toInt)
+      case _                    => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
     }
 
+  }
+  final case class DecodedId(revision: Int, totalCount: Int, processNumber: Int) {
+    def encodeEntityId: String = s"$revision$Separator$totalCount$Separator$processNumber"
   }
 
   final class MessageExtractor[T] extends ShardingMessageExtractor[ShardingEnvelope[T], T] {
@@ -117,7 +57,8 @@ private[akka] object ShardedDaemonProcessImpl {
       case ShardingEnvelope(id, _) => id
     }
 
-    def shardId(entityId: String): String = entityId
+    // use process n for shard id
+    def shardId(entityId: String): String = entityId.split(Separator)(2)
 
     def unwrapMessage(message: ShardingEnvelope[T]): T = message.message
   }
@@ -183,7 +124,6 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     // One shard per actor identified by the numeric id encoded in the entity id
     val numberOfShards = numberOfInstances
-    val entityIds = (0 until numberOfInstances).map(_.toString)
 
     val shardingSettings = {
       val shardingBaseSettings =
@@ -215,8 +155,10 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     val nodeRoles = Cluster(system).selfMember.roles
     if (shardingSettings.role.forall(nodeRoles)) {
       val entity = Entity(entityTypeKey) { ctx =>
-        // FIXME when we actually re-scale we need to encode numberOfInstances in entityId
-        behaviorFactory(ShardedDaemonProcessContextImpl(ctx.entityId.toInt, numberOfInstances, name))
+        // FIXME would it be too expensive here to check with the local replicator and verify the revision number
+        // to never start if there is a higher rev number?
+        val decodedId = decodeEntityId(ctx.entityId)
+        behaviorFactory(ShardedDaemonProcessContextImpl(decodedId.processNumber, decodedId.totalCount, name))
       }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor)
 
       val entityWithStop = stopMessage match {
@@ -232,11 +174,18 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       val shardingRef = ClusterSharding(system).init(entityWithShardAllocationStrategy)
 
       system.systemActorOf(
-        KeepAlivePinger(settings, name, entityIds.toSet, shardingRef),
+        ShardedDaemonProcessKeepAlivePinger(settings, name, numberOfInstances, shardingRef),
         s"ShardedDaemonProcessKeepAlive-$name")
     }
-    // FIXME access to coordinator singleton
-    system.deadLetters
+
+    var singletonSettings =
+      ClusterSingletonSettings(system)
+    settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
+    val singleton =
+      SingletonActor(ShardedDaemonProcessCoordinator(numberOfInstances, name), s"ShardedDaemonProcessCoordinator-$name")
+        .withSettings(singletonSettings)
+
+    ClusterSingleton(system).init(singleton)
   }
 
   // Java API
