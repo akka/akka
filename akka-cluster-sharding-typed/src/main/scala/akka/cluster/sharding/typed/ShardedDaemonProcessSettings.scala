@@ -4,14 +4,16 @@
 
 package akka.cluster.sharding.typed
 
+import akka.Done
+import akka.actor.typed.ActorRef
+
 import java.time.Duration
-
 import scala.concurrent.duration.FiniteDuration
-
 import com.typesafe.config.Config
-
 import akka.actor.typed.ActorSystem
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.pattern.StatusReply
 import akka.util.JavaDurationConverters._
 
 object ShardedDaemonProcessSettings {
@@ -117,3 +119,34 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
       keepAliveThrottleInterval)
 
 }
+
+/**
+ * Context with details about the Sharded Daemon Process instance to use when starting it
+ *
+ * Not for user extension
+ */
+@DoNotInherit
+trait ShardedDaemonProcessContext {
+  def processNumber: Int
+  def totalProcesses: Int
+
+  def name: String
+
+}
+
+/**
+ * Commands for interacting with the sharded daemon process
+ *
+ * Not for user extension
+ */
+@DoNotInherit
+sealed trait ShardedDaemonProcessCommand {}
+
+/**
+ * Tell the sharded daemon process to rescale to the given number of processes.
+ *
+ * @param newNumberOfProcesses The number of processes to scale up to
+ * @param replyTo Reply to this actor once scaling is successfully done, or with details if it failed
+ */
+final case class ReScaleProcesses(newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Done]])
+    extends ShardedDaemonProcessCommand

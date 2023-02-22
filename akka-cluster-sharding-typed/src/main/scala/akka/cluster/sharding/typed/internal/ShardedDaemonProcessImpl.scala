@@ -4,14 +4,6 @@
 
 package akka.cluster.sharding.typed.internal
 
-import java.util.function.IntFunction
-import java.util.Optional
-
-import scala.compat.java8.OptionConverters._
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
-
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -23,7 +15,10 @@ import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.ClusterShardingSettings.{ RememberEntitiesStoreModeDData, StateStoreModeDData }
+import akka.cluster.sharding.typed.ClusterShardingSettings.RememberEntitiesStoreModeDData
+import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
+import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
+import akka.cluster.sharding.typed.ShardedDaemonProcessContext
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
@@ -37,6 +32,13 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.SelfUp
 import akka.cluster.typed.Subscribe
 import akka.stream.scaladsl.Source
+
+import java.util.Optional
+import java.util.function.IntFunction
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -130,14 +132,17 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     extends javadsl.ShardedDaemonProcess
     with scaladsl.ShardedDaemonProcess {
 
+  private case class ShardedDaemonProcessContextImpl(processNumber: Int, totalProcesses: Int, name: String)
+      extends ShardedDaemonProcessContext
+
   import ShardedDaemonProcessImpl._
 
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
-      implicit classTag: ClassTag[T]): Unit =
+      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
     init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), None, None)(classTag)
 
   override def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
-      implicit classTag: ClassTag[T]): Unit =
+      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
     init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), Some(stopMessage), None)(
       classTag)
 
@@ -146,7 +151,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       numberOfInstances: Int,
       behaviorFactory: Int => Behavior[T],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit =
+      stopMessage: Option[T])(implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
     init(name, numberOfInstances, behaviorFactory, settings, stopMessage, None)
 
   def init[T](
@@ -155,7 +160,24 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: Int => Behavior[T],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T],
-      shardAllocationStrategy: Option[ShardAllocationStrategy])(implicit classTag: ClassTag[T]): Unit = {
+      shardAllocationStrategy: Option[ShardAllocationStrategy])(
+      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+    initWithContext(
+      name,
+      numberOfInstances,
+      context => behaviorFactory(context.processNumber),
+      settings,
+      stopMessage,
+      None)
+
+  def initWithContext[T](
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: ShardedDaemonProcessContext => Behavior[T],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: Option[T],
+      shardAllocationStrategy: Option[ShardAllocationStrategy])(
+      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] = {
 
     val entityTypeKey = EntityTypeKey[T](s"sharded-daemon-process-$name")
 
@@ -192,9 +214,10 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     val nodeRoles = Cluster(system).selfMember.roles
     if (shardingSettings.role.forall(nodeRoles)) {
-      val entity = Entity(entityTypeKey)(ctx => behaviorFactory(ctx.entityId.toInt))
-        .withSettings(shardingSettings)
-        .withMessageExtractor(new MessageExtractor)
+      val entity = Entity(entityTypeKey) { ctx =>
+        // FIXME when we actually re-scale we need to encode numberOfInstances in entityId
+        behaviorFactory(ShardedDaemonProcessContextImpl(ctx.entityId.toInt, numberOfInstances, name))
+      }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor)
 
       val entityWithStop = stopMessage match {
         case Some(stop) => entity.withStopMessage(stop)
@@ -212,6 +235,8 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         KeepAlivePinger(settings, name, entityIds.toSet, shardingRef),
         s"ShardedDaemonProcessKeepAlive-$name")
     }
+    // FIXME access to coordinator singleton
+    system.deadLetters
   }
 
   // Java API
@@ -219,7 +244,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: IntFunction[Behavior[T]]): Unit =
+      behaviorFactory: IntFunction[Behavior[T]]): ActorRef[ShardedDaemonProcessCommand] =
     init(name, numberOfInstances, n => behaviorFactory(n))(ClassTag(messageClass))
 
   override def init[T](
@@ -227,7 +252,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       name: String,
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
-      stopMessage: T): Unit =
+      stopMessage: T): ActorRef[ShardedDaemonProcessCommand] =
     init(
       name,
       numberOfInstances,
@@ -242,7 +267,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: Optional[T]): Unit =
+      stopMessage: Optional[T]): ActorRef[ShardedDaemonProcessCommand] =
     init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala, None)(ClassTag(messageClass))
 
   def init[T](
@@ -252,7 +277,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T],
-      shardAllocationStrategy: Optional[ShardAllocationStrategy]): Unit =
+      shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand] =
     init(
       name,
       numberOfInstances,
@@ -260,4 +285,21 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       settings,
       stopMessage.asScala,
       shardAllocationStrategy.asScala)(ClassTag(messageClass))
+
+  override def initWithContext[T](
+      messageClass: Class[T],
+      name: EntityId,
+      numberOfInstances: Int,
+      behaviorFactory: java.util.function.Function[ShardedDaemonProcessContext, Behavior[T]],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: Optional[T],
+      shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand] =
+    initWithContext(
+      messageClass,
+      name,
+      numberOfInstances,
+      behaviorFactory,
+      settings,
+      stopMessage,
+      shardAllocationStrategy)
 }

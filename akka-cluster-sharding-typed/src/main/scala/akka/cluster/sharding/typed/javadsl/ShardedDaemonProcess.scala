@@ -4,13 +4,17 @@
 
 package akka.cluster.sharding.typed.javadsl
 
-import java.util.function.IntFunction
-import java.util.Optional
+import akka.actor.typed.ActorRef
 
+import java.util.function.IntFunction
+import java.util.function.{ Function => JFunction }
+import java.util.Optional
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.annotation.DoNotInherit
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
+import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
+import akka.cluster.sharding.typed.ShardedDaemonProcessContext
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 
 object ShardedDaemonProcess {
@@ -43,7 +47,7 @@ abstract class ShardedDaemonProcess {
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: IntFunction[Behavior[T]]): Unit
+      behaviorFactory: IntFunction[Behavior[T]]): ActorRef[ShardedDaemonProcessCommand]
 
   /**
    * Start a specific number of actors that is then kept alive in the cluster.
@@ -57,7 +61,7 @@ abstract class ShardedDaemonProcess {
       name: String,
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
-      stopMessage: T): Unit
+      stopMessage: T): ActorRef[ShardedDaemonProcessCommand]
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
@@ -71,13 +75,13 @@ abstract class ShardedDaemonProcess {
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: Optional[T]): Unit
+      stopMessage: Optional[T]): ActorRef[ShardedDaemonProcessCommand]
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
    * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` create the behavior for that actor.
-   * @param stopMessage if defined sent to the actors when they need to stop because of a rebalance across the nodes of the cluster
-   *                    or cluster shutdown.
+   * @param stopMessage if defined sent to the actors when they need to stop because of a rebalance across the nodes of the cluster,
+   *                    rescale or cluster shutdown.
    * @param shardAllocationStrategy if defined used by entities to control the shard allocation
    */
   def init[T](
@@ -87,6 +91,22 @@ abstract class ShardedDaemonProcess {
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T],
-      shardAllocationStrategy: Optional[ShardAllocationStrategy]): Unit
+      shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand]
 
+  /**
+   * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
+   *
+   * @param behaviorFactory         Given a unique id of `0` until `numberOfInstance` and total number of processes, create the behavior for that actor.
+   * @param stopMessage             if defined sent to the actors when they need to stop because of a rebalance across the nodes of the cluster,
+   *                                rescale or cluster shutdown.
+   * @param shardAllocationStrategy if defined used by entities to control the shard allocation
+   */
+  def initWithContext[T](
+      messageClass: Class[T],
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: JFunction[ShardedDaemonProcessContext, Behavior[T]],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: Optional[T],
+      shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand]
 }
