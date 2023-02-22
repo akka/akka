@@ -5,15 +5,13 @@
 package akka.actor.typed.internal.adapter
 
 import java.util.concurrent.CompletionStage
-
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContextExecutor
-
 import org.slf4j.{ Logger, LoggerFactory }
-
 import akka.{ actor => classic }
 import akka.Done
 import akka.actor
+import akka.actor.ActorSystemImpl
 import akka.actor.{ ActorRefProvider, Address, ExtendedActorSystem, InvalidMessageException }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -33,6 +31,7 @@ import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
 import akka.actor.typed.internal.SystemMessage
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.util.OptionVal
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting a classic ActorSystem to a Behavior (via the context).
@@ -129,7 +128,22 @@ import akka.annotation.InternalApi
 }
 
 private[akka] object ActorSystemAdapter {
-  def apply(system: classic.ActorSystem): ActorSystem[Nothing] = AdapterExtension(system).adapter
+  def apply(system: classic.ActorSystem): ActorSystem[Nothing] = {
+    system match {
+      case system: ActorSystemImpl =>
+        // Optimization to cut out going through adapter lookup if possible
+        system.typedSystem match {
+          case OptionVal.Some(typedSystem: ActorSystem[_]) => typedSystem
+          case _ =>
+            val typedSystem: ActorSystem[_] = AdapterExtension(system).adapter
+            system.typedSystem = OptionVal.Some(typedSystem)
+            typedSystem
+        }
+      case _ =>
+        AdapterExtension(system).adapter
+    }
+
+  }
 
   // to make sure we do never create more than one adapter for the same actor system
   class AdapterExtension(system: classic.ExtendedActorSystem) extends classic.Extension {
@@ -137,7 +151,9 @@ private[akka] object ActorSystemAdapter {
   }
 
   object AdapterExtension extends classic.ExtensionId[AdapterExtension] with classic.ExtensionIdProvider {
-    override def get(system: classic.ActorSystem): AdapterExtension = super.get(system)
+
+    override def get(system: classic.ActorSystem): AdapterExtension = this.apply(system)
+
     override def lookup = AdapterExtension
     override def createExtension(system: classic.ExtendedActorSystem): AdapterExtension =
       new AdapterExtension(system)

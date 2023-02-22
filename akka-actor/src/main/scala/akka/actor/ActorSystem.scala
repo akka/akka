@@ -820,6 +820,13 @@ private[akka] class ActorSystemImpl(
 
   private val _dynamicAccess: DynamicAccess = createDynamicAccess()
 
+  /**
+   * Optimistic optimization: Tries to avoid going through the extension infrastructure if possible when using
+   * the typed system. Will contain a akka.actor.typed.ActorSystem if set, should not be touched by anything but
+   * the typed ActorSystemAdapter.
+   */
+  private[akka] var typedSystem: OptionVal[AnyRef] = OptionVal.None
+
   final val settings: Settings = {
     val config = Settings.amendSlf4jConfig(
       applicationConfig.withFallback(ConfigFactory.defaultReference(classLoader)),

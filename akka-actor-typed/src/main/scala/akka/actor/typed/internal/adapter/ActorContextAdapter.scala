@@ -51,7 +51,9 @@ private[akka] object ActorContextAdapter {
     }
     _self.get
   }
-  final override val system = ActorSystemAdapter(classicActorContext.system)
+
+  override def system = ActorSystemAdapter(classicActorContext.system)
+
   override def children: Iterable[ActorRef[Nothing]] = {
     checkCurrentActorThread()
     classicActorContext.children.map(ActorRefAdapter(_))
