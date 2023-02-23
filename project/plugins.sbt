@@ -19,4 +19,4 @@ addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.30")
 
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.11")
 addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
-addSbtPlugin("com.github.reibitto" % "sbt-welcome" % "0.2.2")
+addSbtPlugin("com.github.reibitto" % "sbt-welcome" % "0.3.1")
