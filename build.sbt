@@ -37,6 +37,7 @@ import spray.boilerplate.BoilerplatePlugin
 initialize := {
   // Load system properties from a file to make configuration from Jenkins easier
   loadSystemProperties("project/akka-build.properties")
+  if (!JdkOptions.isJdk17orHigher) throw new IllegalStateException("Build requires JDK 19")
   initialize.value
 }
 

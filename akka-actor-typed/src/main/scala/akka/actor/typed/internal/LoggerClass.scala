@@ -5,9 +5,10 @@
 package akka.actor.typed.internal
 
 import scala.util.control.NonFatal
-
 import akka.annotation.InternalApi
 import akka.util.OptionVal
+
+import scala.annotation.nowarn
 
 /**
  * INTERNAL API
@@ -16,6 +17,7 @@ import akka.util.OptionVal
 private[akka] object LoggerClass {
 
   // just to get access to the class context
+  @nowarn("msg=deprecated")
   private final class TrickySecurityManager extends SecurityManager {
     def getClassStack: Array[Class[_]] = getClassContext
   }

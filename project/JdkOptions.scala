@@ -22,12 +22,15 @@ object JdkOptions extends AutoPlugin {
 
   val specificationVersion: String = sys.props("java.specification.version")
 
+  private val jdkVersion = VersionNumber(specificationVersion)
   val isJdk8: Boolean =
-    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(s"=1.8"))
+    jdkVersion.matchesSemVer(SemanticSelector(s"=1.8"))
   val isJdk11orHigher: Boolean =
-    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=11"))
+    jdkVersion.matchesSemVer(SemanticSelector(">=11"))
   val isJdk17orHigher: Boolean =
-    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=17"))
+    jdkVersion.matchesSemVer(SemanticSelector(">=17"))
+  val isJdk19orHigher: Boolean =
+    jdkVersion.matchesSemVer(SemanticSelector(">=19"))
 
   val versionSpecificJavaOptions =
     if (isJdk17orHigher) {
@@ -48,15 +51,15 @@ object JdkOptions extends AutoPlugin {
       targetSystemJdk,
       jdk8home,
       fullJavaHomes,
-      if (scalaVersion.startsWith("3.")) Seq("-Xtarget:8")
-      else Seq("-release", "8"),
+      if (scalaVersion.startsWith("3.")) Seq("-Xtarget:19")
+      else Seq("-release", "19"),
       // '-release 8' is not enough, for some reason we need the 8 rt.jar
       // explicitly. To test whether this has the desired effect, compile
       // akka-remote and check the invocation of 'ByteBuffer.clear()' in
       // EnvelopeBuffer.class with 'javap -c': it should refer to
       //""java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not
       // "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer". Issue #27079
-      (java8home: File) => Seq("-release", "8", "-javabootclasspath", java8home + "/jre/lib/rt.jar"))
+      (java8home: File) => Seq("-release", "19", "-javabootclasspath", java8home + "/jre/lib/rt.jar"))
   def targetJdkJavacOptions(
       targetSystemJdk: Boolean,
       jdk8home: Option[File],
@@ -68,7 +71,7 @@ object JdkOptions extends AutoPlugin {
       Nil,
       // '-release 8' would be a neater option here, but is currently not an
       // option because it doesn't provide access to `sun.misc.Unsafe` #27079
-      (java8home: File) => Seq("-source", "8", "-target", "8", "-bootclasspath", java8home + "/jre/lib/rt.jar"))
+      (java8home: File) => Seq("-source", "19", "-target", "19", "-bootclasspath", java8home + "/jre/lib/rt.jar"))
 
   private def selectOptions(
       targetSystemJdk: Boolean,

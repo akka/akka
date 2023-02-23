@@ -5,11 +5,13 @@
 package akka.util
 
 import java.util.concurrent.TimeUnit
-
 import org.openjdk.jmh.annotations.{ Benchmark, Measurement, Scope, State }
+
+import scala.annotation.nowarn
 
 @State(Scope.Benchmark)
 @Measurement(timeUnit = TimeUnit.MICROSECONDS)
+@nowarn("msg=deprecated")
 class StackBench {
 
   class CustomSecurtyManager extends SecurityManager {

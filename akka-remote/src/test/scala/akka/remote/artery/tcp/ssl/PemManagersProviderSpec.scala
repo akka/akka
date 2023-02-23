@@ -7,13 +7,15 @@ package akka.remote.artery.tcp.ssl
 import java.security.PrivateKey
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
-
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import scala.annotation.nowarn
 
 /**
  *
  */
+@nowarn("msg=deprecated")
 class PemManagersProviderSpec extends AnyWordSpec with Matchers {
 
   "A PemManagersProvider" must {

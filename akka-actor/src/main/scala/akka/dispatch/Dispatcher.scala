@@ -54,6 +54,7 @@ class Dispatcher(
     new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, threadFactory))
 
   protected final def executorService: ExecutorServiceDelegate = executorServiceDelegate
+  println(executorServiceDelegate.executor)
 
   /**
    * INTERNAL API

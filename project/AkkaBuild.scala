@@ -111,7 +111,7 @@ object AkkaBuild {
         "-Xlog-reflective-calls",
         // 'blessed' since 2.13.1
         "-language:higherKinds")
-    }
+    } ++ Seq("-J--enable-preview")
   }
 
   private def jvmGCLogOptions(isJdk11OrHigher: Boolean, isJdk8: Boolean): Seq[String] = {
@@ -124,7 +124,13 @@ object AkkaBuild {
   }
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
-  final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
+  final val DefaultJavacOptions = Seq(
+    "-encoding",
+    "UTF-8",
+    "-Xlint:unchecked",
+    "-XDignore.symbol.file",
+    // loom
+    "--enable-preview")
 
   lazy val defaultSettings: Seq[Setting[_]] = Def.settings(
     Dependencies.Versions,
@@ -209,7 +215,9 @@ object AkkaBuild {
         // nio direct memory limit for artery/aeron (probably)
         "-XX:MaxDirectMemorySize=256m",
         // faster random source
-        "-Djava.security.egd=file:/dev/./urandom")
+        "-Djava.security.egd=file:/dev/./urandom",
+        // loom
+        "--enable-preview")
 
       defaults ++ CliOptions.runningOnCi
         .ifTrue(jvmGCLogOptions(JdkOptions.isJdk11orHigher, JdkOptions.isJdk8))

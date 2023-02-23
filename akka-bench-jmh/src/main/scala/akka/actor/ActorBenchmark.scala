@@ -15,7 +15,7 @@ import org.openjdk.jmh.annotations._
 
 object ActorBenchmark {
   // Constants because they are used in annotations
-  final val threads = 8 // update according to cpu
+  final val threads = 10 // update according to cpu
   final val numMessagesPerActorPair = 1000000 // messages per actor pair
 
   final val numActors = 512
@@ -45,7 +45,7 @@ class ActorBenchmark {
       "akka.actor.JCToolsMailbox"))
   var mailbox = ""
 
-  @Param(Array("fjp-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
+  @Param(Array("fjp-dispatcher", "virtual-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
   var dispatcher = ""
 
   implicit var system: ActorSystem = _
@@ -84,6 +84,10 @@ class ActorBenchmark {
             }
             throughput = $tpt
             mailbox-type = "$mailbox"
+         }
+         virtual-dispatcher {
+            type = Dispatcher
+            executor = akka.dispatch.VirtualThreadConfigurator
          }
        }
       """))
