@@ -559,7 +559,6 @@ def fortifySettings(name: String) = {
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
     .enablePlugins(ReproducibleBuildsPlugin)
-    .disablePlugins(WelcomePlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(fortifySettings(name))

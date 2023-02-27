@@ -11,7 +11,6 @@ import sbt.Def
 import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin.autoImport._
-import sbtwelcome.WelcomePlugin.autoImport._
 
 import java.io.FileInputStream
 import java.io.InputStreamReader
@@ -262,35 +261,43 @@ object AkkaBuild {
       }
     })
 
-  lazy val welcomeSettings: Seq[Setting[_]] = Def.settings {
-    import sbtwelcome._
-    Seq(
-      logo := {
+  lazy val welcomeSettings: Seq[Setting[_]] =
+    CliOptions.runningOnCi
+      .ifTrue(Seq())
+      .getOrElse(Seq(onLoadMessage :=
         s"""
-           |_______ ______  ______
-           |___    |___  /_____  /________ _
-           |__  /| |__  //_/__  //_/_  __ `/
-           |_  ___ |_  ,<   _  ,<   / /_/ /
-           |/_/  |_|/_/|_|  /_/|_|  \\__,_/   ${version.value}
            |
-           |""".stripMargin
-
-      },
-      logoColor := scala.Console.BLUE,
-      usefulTasks := Seq(
-          UsefulTask("", "compile", "Compile the current project"),
-          UsefulTask("", "test", "Run all the tests "),
-          UsefulTask("", "testOnly *.AnySpec", "Only run a selected test"),
-          UsefulTask("", "verifyCodeStyle", "Verify code style"),
-          UsefulTask("", "applyCodeStyle", "Apply code style"),
-          UsefulTask("", "sortImports", "Sort the imports"),
-          UsefulTask("", "mimaReportBinaryIssues ", "Check binary issues"),
-          UsefulTask("", "validatePullRequest ", "Validate pull request"),
-          UsefulTask("", "akka-docs/paradox", "Build documentation"),
-          UsefulTask("", "akka-docs/paradoxBrowse", "Browse the generated documentation"),
-          UsefulTask("", "tips:", "prefix commands with `+` to run against cross Scala versions."),
-          UsefulTask("", "Contributing guide:", "https://github.com/akka/akka/blob/main/CONTRIBUTING.md")))
-  }
+           |                        .~!77!^                            :::          :::
+           |                     .^!???????~                          .5GP:        .5GP:
+           |                   :~???????????!              ...        .PGP:      . .5GP:      .     ...
+           |                .~7??????????????!          ~J5PPP5J!Y5Y. .5GP:  .?557..5GP:  .?557..!J5PPP5?!55J
+           |             .^!??????????????????7.      :5GGY!~~!JPGGP. .5GP:.7PGY^  .5GP:.7PGY^ ^5GGJ!~~!YGGG5
+           |           :~7?????????????????????7.     YGG!      ^PGP. .5GP?PG5^    .5GP?PG5^  .PGP^      ~GGY
+           |        .^7?????????????JJYY55555YYJ?.   .5GG^      .PGP. .5GGG5GP7.   .5GGG5GP7. :PGP:      :PGY
+           |      :!????????????JY5PPGGGGGGGGGGGP5^   ~PGP7:..:!5GGP: .PGG~ ~5BP!  .5GG~ ~5BP! !GG5!:..:7PGG5.
+           |   .~7??????????JY5PGGGGGGGGGGGGGGGGGGP^   :?5GGPPPPJJPGG7 5GP:  .7PGY^.5GP:   7PGY^^JPGGPPPP?JPGP!
+           |  :??????????JYPGGGGPPPPPGGGGGGGGGGGGGGJ     .:^^^:.  :^^: :::     .::: :::     .:::  .:^^^:.  :^^.
+           |  ^????????7???7~~^::::::^^~!?Y5GGGGGGG7
+           |   ^!7??7~:.                   .^7YPP57
+           |     ...                           .:.
+           |                                                                                                      
+           | ${version.value}
+           |
+           |
+           | Useful sbt tasks:
+           | > testOnly *.AnySpec         Only run a selected test
+           | > verifyCodeStyle            Verify code style
+           | > applyCodeStyle             Apply code style
+           | > sortImports                Sort the imports
+           | > mimaReportBinaryIssues     Check binary issues
+           | > validatePullRequest        Validate pull request
+           | > akka-docs/paradox          Build documentation
+           | > akka-docs/paradoxBrowse    Browse the generated documentation
+           |
+           | Contributing guide: https://github.com/akka/akka/blob/main/CONTRIBUTING.md
+           | tips: prefix commands with + to run against cross Scala versions.
+           |
+           |""".stripMargin))
 
   private def optionalDir(path: String): Option[File] =
     Option(path).filter(_.nonEmpty).map { path =>
