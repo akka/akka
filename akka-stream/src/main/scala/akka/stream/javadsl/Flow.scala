@@ -1810,7 +1810,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    *
    */
-  @nowarn("msg=deprecated")
   def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recoverWith(pf))
 
@@ -1835,8 +1834,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @deprecated use `recoverWithRetries` instead
    */
-  @Deprecated
-  @deprecated("Use recoverWithRetries instead.", "2.6.6")
   def recoverWith(
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
