@@ -8,6 +8,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
+import akka.actor.typed.scaladsl.Routers
 import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.SelfUniqueAddress
@@ -71,6 +72,11 @@ private class ShardedDaemonProcessCoordinator(
   private val started = Instant.now()
   // FIXME write timeouts from config
   private val writeTimeout = 5.seconds
+  private val readTimeout = 5.seconds
+
+  // FIXME we don't have broadcast support, use topic instead
+  val keepAlivePingers = Routers.group(ShardedDaemonProcessKeepAlivePinger.serviceKeyFor(daemonProcessName))
+
   private def initialState =
     LWWRegister(
       selfUniqueAddress,
@@ -84,7 +90,7 @@ private class ShardedDaemonProcessCoordinator(
   // FIXME stash or deny new requests if rescale in progress?
   def start(): Behavior[ShardedDaemonProcessCommand] = {
     replicatorAdapter.askGet(
-      replyTo => Replicator.Get(key, Replicator.ReadLocal, replyTo),
+      replyTo => Replicator.Get(key, Replicator.ReadMajority(readTimeout), replyTo),
       response => InternalGetResponse(response))
 
     Behaviors.receiveMessagePartial {
@@ -148,7 +154,7 @@ private class ShardedDaemonProcessCoordinator(
       request: ChangeNumberOfProcesses): Behavior[ShardedDaemonProcessCommand] = {
     replicatorAdapter.askUpdate(
       replyTo =>
-        Replicator.Update(key, initialState, Replicator.WriteAll(writeTimeout), replyTo)((register: Register) =>
+        Replicator.Update(key, initialState, Replicator.WriteMajority(writeTimeout), replyTo)((register: Register) =>
           register.withValue(selfUniqueAddress, newState)),
       response => InternalUpdateResponse(response))
 
@@ -170,6 +176,13 @@ private class ShardedDaemonProcessCoordinator(
       request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
     // FIXME delay to let pingers have time to see the updated revision before shutting down shards? or coordinate somehow?
     // once pingers stopped ->
+    pauseAllPingers(state, request)
+    ???
+  }
+
+  private def pauseAllPingers(
+      state: ShardedDaemonProcessCoordinator.ScaleState,
+      request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
     stopAllShards(state, request)
     ???
   }
