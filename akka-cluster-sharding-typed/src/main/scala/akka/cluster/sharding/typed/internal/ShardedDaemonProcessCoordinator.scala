@@ -4,11 +4,13 @@
 
 package akka.cluster.sharding.typed.internal
 
+import akka.actor.ActorPath
 import akka.actor.typed.Behavior
+import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
-import akka.actor.typed.scaladsl.Routers
+import akka.actor.typed.scaladsl.TimerScheduler
 import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.SelfUniqueAddress
@@ -17,6 +19,10 @@ import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.ddata.typed.scaladsl.ReplicatorMessageAdapter
 import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
+import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Pause
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Restart
+import akka.cluster.typed.Cluster
 import akka.pattern.StatusReply
 
 import java.time.Instant
@@ -32,37 +38,49 @@ private[akka] object ShardedDaemonProcessCoordinator {
   private final case class ScaleState(revision: Int, numberOfProcesses: Int, completed: Boolean, started: Instant)
 
   private type Register = LWWRegister[ScaleState]
-  private def keyFor(name: String) = LWWRegisterKey[ScaleState](name)
-  private trait InternalCommand extends ShardedDaemonProcessCommand
+  private def ddataKey(name: String) = LWWRegisterKey[ScaleState](name)
+  private trait InternalMessage extends ShardedDaemonProcessCommand
 
-//   private case class InternalSubscribeResponse(chg: Replicator.SubscribeResponse[Register]) extends InternalCommand
+  private case class InternalGetResponse(rsp: Replicator.GetResponse[Register]) extends InternalMessage
 
-  private case class InternalGetResponse(rsp: Replicator.GetResponse[Register]) extends InternalCommand
+  private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[Register]) extends InternalMessage
 
-  private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[Register]) extends InternalCommand
+  private case class PingerPauseAck(actorPath: ActorPath) extends InternalMessage
+  private case class PingerRestartAck(actorPath: ActorPath) extends InternalMessage
 
-  def apply(initialNumberOfProcesses: Int, daemonProcessName: String): Behavior[ShardedDaemonProcessCommand] =
+  private case object PauseAllKeepalivePingers extends InternalMessage
+  private case object RestartAllKeepalivePingers extends InternalMessage
+
+  def apply(
+      settings: ShardedDaemonProcessSettings,
+      initialNumberOfProcesses: Int,
+      daemonProcessName: String): Behavior[ShardedDaemonProcessCommand] =
     Behaviors.setup { context =>
-      context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
-      val key = keyFor(daemonProcessName)
-      val ddata = DistributedData(context.system)
-      val selfUniqueAddress = ddata.selfUniqueAddress
+      Behaviors.withTimers { timers =>
+        context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
+        val key = ddataKey(daemonProcessName)
+        val ddata = DistributedData(context.system)
+        val selfUniqueAddress = ddata.selfUniqueAddress
 
-      DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, Register] { replicatorAdapter =>
-        new ShardedDaemonProcessCoordinator(
-          context,
-          daemonProcessName,
-          initialNumberOfProcesses,
-          key,
-          selfUniqueAddress,
-          replicatorAdapter).start()
+        DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, Register] { replicatorAdapter =>
+          new ShardedDaemonProcessCoordinator(
+            settings,
+            context,
+            timers,
+            daemonProcessName,
+            initialNumberOfProcesses,
+            key,
+            selfUniqueAddress,
+            replicatorAdapter).start()
+        }
       }
     }
-
 }
 
-private class ShardedDaemonProcessCoordinator(
+private class ShardedDaemonProcessCoordinator private (
+    settings: ShardedDaemonProcessSettings,
     context: ActorContext[ShardedDaemonProcessCommand],
+    timers: TimerScheduler[ShardedDaemonProcessCommand],
     daemonProcessName: String,
     initialNumberOfProcesses: Int,
     key: LWWRegisterKey[ShardedDaemonProcessCoordinator.ScaleState],
@@ -73,9 +91,22 @@ private class ShardedDaemonProcessCoordinator(
   // FIXME write timeouts from config
   private val writeTimeout = 5.seconds
   private val readTimeout = 5.seconds
+  private val pingerRetryTimeout = 3.seconds
 
-  // FIXME we don't have broadcast support, use topic instead
-  val keepAlivePingers = Routers.group(ShardedDaemonProcessKeepAlivePinger.serviceKeyFor(daemonProcessName))
+  private val cluster = Cluster(context.system)
+
+  // topic so we can reach pingers
+  val pingersTopic = context.spawn(ShardedDaemonProcessKeepAlivePinger.topicFor(daemonProcessName), "topic")
+
+  val pauseAdapter = context.messageAdapter[StatusReply[ActorPath]] {
+    case StatusReply.Success(path: ActorPath) => PingerPauseAck(path)
+    case _                                    => ??? // FIXME should we skip the status and just not respond on error?
+  }
+
+  val restartAdapter = context.messageAdapter[StatusReply[ActorPath]] {
+    case StatusReply.Success(path: ActorPath) => PingerRestartAck(path)
+    case _                                    => ??? // FIXME should we skip the status and just not respond on error?
+  }
 
   private def initialState =
     LWWRegister(
@@ -109,7 +140,7 @@ private class ShardedDaemonProcessCoordinator(
             daemonProcessName,
             existingScaleState.revision,
             existingScaleState.started)
-          startRescaling(existingScaleState, None)
+          pauseAllPingers(existingScaleState, None)
         }
 
       case InternalGetResponse(_ @Replicator.NotFound(`key`)) =>
@@ -161,7 +192,7 @@ private class ShardedDaemonProcessCoordinator(
     // wait for update to complete before applying
     Behaviors.receiveMessagePartial {
       case InternalUpdateResponse(_ @Replicator.UpdateSuccess(`key`)) =>
-        startRescaling(newState, Some(request))
+        pauseAllPingers(newState, Some(request))
 
       case InternalUpdateResponse(_ @Replicator.UpdateTimeout(`key`)) =>
         // retry
@@ -171,29 +202,71 @@ private class ShardedDaemonProcessCoordinator(
     }
   }
 
-  private def startRescaling(
-      state: ShardedDaemonProcessCoordinator.ScaleState,
-      request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
-    // FIXME delay to let pingers have time to see the updated revision before shutting down shards? or coordinate somehow?
-    // once pingers stopped ->
-    pauseAllPingers(state, request)
-    ???
-  }
-
+  // first step of rescale, pause all pinger actors so they do not wake the entities up again
+  // when we stop them
   private def pauseAllPingers(
       state: ShardedDaemonProcessCoordinator.ScaleState,
       request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
-    stopAllShards(state, request)
-    ???
+    context.log.debug("Pausing all pingers (with revision [{}])", state.revision - 1)
+    timers.startTimerWithFixedDelay(PauseAllKeepalivePingers, pingerRetryTimeout)
+    pingersTopic ! Topic.Publish(Pause(state.revision - 1, pauseAdapter))
+    waitForAllPingersPaused(state, request, Set.empty)
+  }
+
+  private def waitForAllPingersPaused(
+      state: ShardedDaemonProcessCoordinator.ScaleState,
+      request: Option[ChangeNumberOfProcesses],
+      seenAcks: Set[ActorPath]): Behavior[ShardedDaemonProcessCommand] = {
+    Behaviors.receiveMessagePartial {
+      case PauseAllKeepalivePingers =>
+        context.log.debug("Did not see acks from all pingers paused within [{}], retrying pause", pingerRetryTimeout)
+        pingersTopic ! Topic.Publish(Pause(state.revision - 1, pauseAdapter))
+        Behaviors.same
+      case PingerPauseAck(path) =>
+        val newSeenAcks = seenAcks + path
+        if (newSeenAcks.size == numberOfNodesWithKeepalivePingers()) { // FIXME number is not enough if topology changed
+          context.log.debug("All pingers paused, stopping shards")
+          timers.cancel(PauseAllKeepalivePingers)
+          stopAllShards(state, request)
+        } else waitForAllPingersPaused(state, request, newSeenAcks)
+    }
   }
 
   private def stopAllShards(
       state: ShardedDaemonProcessCoordinator.ScaleState,
       request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
-    // FIXME add support in sharding
+    // FIXME add support in sharding for stop with ack
     // once sharding stopped
-    rescalingComplete(state, request)
-    ???
+    restartAllPingers(state, request)
+  }
+
+  private def restartAllPingers(
+      state: ShardedDaemonProcessCoordinator.ScaleState,
+      request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
+    context.log.debug("Restarting all pingers (with revision [{}]", state.revision)
+    timers.startTimerWithFixedDelay(PauseAllKeepalivePingers, pingerRetryTimeout)
+    pingersTopic ! Topic.Publish(Restart(state.revision, restartAdapter))
+    waitForAllPingersStarted(state, request, Set.empty)
+  }
+
+  private def waitForAllPingersStarted(
+      state: ShardedDaemonProcessCoordinator.ScaleState,
+      request: Option[ChangeNumberOfProcesses],
+      restartedPingers: Set[ActorPath]): Behavior[ShardedDaemonProcessCommand] = {
+    Behaviors.receiveMessagePartial {
+      case RestartAllKeepalivePingers =>
+        context.log
+          .debug("Did not see acks from all pingers restarted within [{}], retrying restart", pingerRetryTimeout)
+        pingersTopic ! Topic.Publish(Restart(state.revision, restartAdapter))
+        Behaviors.same
+      case PingerPauseAck(path) =>
+        context.log.debug("All pingers restarted, completing rescale")
+        val newRestartedPingers = restartedPingers + path
+        if (newRestartedPingers.size == numberOfNodesWithKeepalivePingers()) { // FIXME number is not enough if topology changed
+          timers.cancel(PauseAllKeepalivePingers)
+          rescalingComplete(state, request)
+        } else waitForAllPingersPaused(state, request, newRestartedPingers)
+    }
   }
 
   private def rescalingComplete(
@@ -219,6 +292,12 @@ private class ShardedDaemonProcessCoordinator(
           daemonProcessName)
         rescalingComplete(newState, None)
     }
-
   }
+
+  private def numberOfNodesWithKeepalivePingers(): Int =
+    settings.role match {
+      case Some(role) => cluster.state.members.count(_.hasRole(role))
+      case None       => cluster.state.members.size
+    }
+
 }

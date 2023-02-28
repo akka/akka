@@ -79,11 +79,11 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
   import ShardedDaemonProcessImpl._
 
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+      implicit classTag: ClassTag[T]): Unit =
     init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), None, None)(classTag)
 
   override def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+      implicit classTag: ClassTag[T]): Unit =
     init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), Some(stopMessage), None)(
       classTag)
 
@@ -92,7 +92,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       numberOfInstances: Int,
       behaviorFactory: Int => Behavior[T],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: Option[T])(implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+      stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit =
     init(name, numberOfInstances, behaviorFactory, settings, stopMessage, None)
 
   def init[T](
@@ -101,8 +101,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: Int => Behavior[T],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T],
-      shardAllocationStrategy: Option[ShardAllocationStrategy])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+      shardAllocationStrategy: Option[ShardAllocationStrategy])(implicit classTag: ClassTag[T]): Unit =
     initWithContext(
       name,
       numberOfInstances,
@@ -182,8 +181,9 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       ClusterSingletonSettings(system)
     settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
     val singleton =
-      SingletonActor(ShardedDaemonProcessCoordinator(numberOfInstances, name), s"ShardedDaemonProcessCoordinator-$name")
-        .withSettings(singletonSettings)
+      SingletonActor(
+        ShardedDaemonProcessCoordinator(settings, numberOfInstances, name),
+        s"ShardedDaemonProcessCoordinator-$name").withSettings(singletonSettings)
 
     ClusterSingleton(system).init(singleton)
   }
@@ -193,7 +193,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: IntFunction[Behavior[T]]): ActorRef[ShardedDaemonProcessCommand] =
+      behaviorFactory: IntFunction[Behavior[T]]): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n))(ClassTag(messageClass))
 
   override def init[T](
@@ -201,7 +201,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       name: String,
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
-      stopMessage: T): ActorRef[ShardedDaemonProcessCommand] =
+      stopMessage: T): Unit =
     init(
       name,
       numberOfInstances,
@@ -216,7 +216,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: Optional[T]): ActorRef[ShardedDaemonProcessCommand] =
+      stopMessage: Optional[T]): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala, None)(ClassTag(messageClass))
 
   def init[T](
@@ -226,7 +226,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T],
-      shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand] =
+      shardAllocationStrategy: Optional[ShardAllocationStrategy]): Unit =
     init(
       name,
       numberOfInstances,
@@ -242,13 +242,14 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       behaviorFactory: java.util.function.Function[ShardedDaemonProcessContext, Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T],
-      shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand] =
+      shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand] = {
+    val classTag = ClassTag[T](messageClass)
     initWithContext(
-      messageClass,
       name,
       numberOfInstances,
-      behaviorFactory,
+      behaviorFactory.apply,
       settings,
-      stopMessage,
-      shardAllocationStrategy)
+      stopMessage.asScala,
+      shardAllocationStrategy.asScala)(classTag)
+  }
 }

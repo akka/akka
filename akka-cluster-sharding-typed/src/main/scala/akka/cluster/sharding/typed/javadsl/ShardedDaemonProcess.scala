@@ -47,7 +47,7 @@ abstract class ShardedDaemonProcess {
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: IntFunction[Behavior[T]]): ActorRef[ShardedDaemonProcessCommand]
+      behaviorFactory: IntFunction[Behavior[T]]): Unit
 
   /**
    * Start a specific number of actors that is then kept alive in the cluster.
@@ -61,7 +61,7 @@ abstract class ShardedDaemonProcess {
       name: String,
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
-      stopMessage: T): ActorRef[ShardedDaemonProcessCommand]
+      stopMessage: T): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
@@ -75,7 +75,7 @@ abstract class ShardedDaemonProcess {
       numberOfInstances: Int,
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: Optional[T]): ActorRef[ShardedDaemonProcessCommand]
+      stopMessage: Optional[T]): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
@@ -91,7 +91,7 @@ abstract class ShardedDaemonProcess {
       behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T],
-      shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand]
+      shardAllocationStrategy: Optional[ShardAllocationStrategy]): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.

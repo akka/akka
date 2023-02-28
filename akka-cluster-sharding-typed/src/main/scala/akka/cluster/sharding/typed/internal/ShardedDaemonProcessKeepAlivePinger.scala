@@ -5,11 +5,11 @@
 package akka.cluster.sharding.typed.internal
 
 import akka.Done
+import akka.actor.ActorPath
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
@@ -22,6 +22,7 @@ import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.SelfUp
 import akka.cluster.typed.Subscribe
+import akka.pattern.StatusReply
 import akka.stream.scaladsl.Source
 
 import scala.concurrent.Future
@@ -33,15 +34,15 @@ import scala.concurrent.duration.Duration
 @InternalApi
 private[akka] object ShardedDaemonProcessKeepAlivePinger {
 
-  def serviceKeyFor(name: String): ServiceKey[Message] =
-    ServiceKey[Message](s"sharded-daemon-process-keepalive-$name")
+  def topicFor(name: String): Behavior[Topic.Command[Message]] =
+    Topic[Message](s"sharded-daemon-process-keepalive-$name")
 
   sealed trait Message
 
   // FIXME do we need acks for stop/start?
-  final case class Pause(revision: Int) extends Message
+  final case class Pause(revision: Int, replyTo: ActorRef[StatusReply[ActorPath]]) extends Message
 
-  final case class Start(revision: Int) extends Message
+  final case class Restart(revision: Int, replyTo: ActorRef[StatusReply[ActorPath]]) extends Message
 
   private final case class Tick(revision: Int) extends Message
 
@@ -79,9 +80,9 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
   def init(): Behavior[Message] = {
     val initialRevision = 0
 
-    // register to receptionist so that coordinator can reach us
-    val serviceKey = serviceKeyFor(daemonProcessName)
-    context.system.receptionist ! Receptionist.Register(serviceKey, context.self)
+    // register subscribe to topic so that coordinator can reach us
+    val topic = context.spawn(topicFor(daemonProcessName), "topic")
+    topic ! Topic.Subscribe(context.self)
 
     // defer first tick until our cluster node is up
     // FIXME can revision change before first tick arrives so that it is discarded?
@@ -113,11 +114,12 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
       case SendKeepAliveDone(`currentRevision`) =>
         timers.startSingleTimer(Tick, Tick(currentRevision), settings.keepAliveInterval)
         Behaviors.same
-      case Pause(revision) =>
+      case Pause(revision, replyTo) =>
         context.log.debug2("Pausing sharded daemon process pinger [{}] (revision [{}]", daemonProcessName, revision)
         if (revision <= currentRevision) {
           timers.cancel(Tick)
         }
+        replyTo ! StatusReply.Success(context.self.path)
         paused(revision)
 
       case SendKeepAliveDone(oldRevision) =>
@@ -135,11 +137,21 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           oldRevision,
           currentRevision)
         Behaviors.ignore
-      case Start(revision) =>
+      case Restart(`currentRevision`, replyTo) =>
         context.log.debug2(
-          "Unexpected start message for sharded daemon process pinger [{}] (revision [{}]",
+          "Sharded daemon process pinger [{}] got start for already started revision (revision [{}]",
           daemonProcessName,
-          revision)
+          currentRevision)
+        replyTo ! StatusReply.Success(context.self.path)
+        Behaviors.ignore
+
+      case Restart(otherRevision, replyTo) =>
+        context.log.debugN(
+          "Sharded daemon process pinger [{}] got start for unexpected revision (revision [{}], current [{}])",
+          daemonProcessName,
+          otherRevision,
+          currentRevision)
+        replyTo ! StatusReply.Success(context.self.path)
         Behaviors.ignore
 
     }
@@ -149,18 +161,22 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
    * Rescale in progress, don't ping workers until coordinator says so
    */
   private def paused(pausedRevision: Int): Behavior[Message] = Behaviors.receiveMessage {
-    case Pause(_) => Behaviors.same
-    case Start(revision) if revision >= pausedRevision =>
+    case Pause(_, replyTo) =>
+      replyTo ! StatusReply.Success(context.self.path)
+      Behaviors.same
+    case Restart(revision, replyTo) if revision >= pausedRevision =>
       context.log
         .debug2("Un-pausing sharded daemon process pinger [{}] (revision [{}]", daemonProcessName, pausedRevision)
+      replyTo ! StatusReply.Success(context.self.path)
       context.self ! Tick(pausedRevision)
       start(pausedRevision)
 
-    case Start(revision) =>
+    case Restart(revision, replyTo) =>
       context.log.warn2(
         "Paused sharded daemon process pinger [{}] got unexpected start for old revision [{}], ignoring",
         daemonProcessName,
         revision)
+      replyTo ! StatusReply.Error("Old revision")
       Behaviors.ignore
     case Tick(_)              => Behaviors.ignore
     case SendKeepAliveDone(_) => Behaviors.ignore

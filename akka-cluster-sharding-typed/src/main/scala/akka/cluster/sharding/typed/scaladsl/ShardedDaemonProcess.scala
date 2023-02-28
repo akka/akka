@@ -48,7 +48,7 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
    * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` create the behavior for that actor.
    */
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
+      implicit classTag: ClassTag[T]): Unit
 
   /**
    * Start a specific number of actors that is then kept alive in the cluster.
@@ -59,7 +59,7 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
    *                    or cluster shutdown.
    */
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
+      implicit classTag: ClassTag[T]): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
@@ -74,7 +74,7 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
       numberOfInstances: Int,
       behaviorFactory: Int => Behavior[T],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: Option[T])(implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
+      stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
@@ -92,7 +92,7 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T],
       shardAllocationStrategy: Option[ShardAllocationStrategy])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
+      implicit classTag: ClassTag[T]): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
