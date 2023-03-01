@@ -1100,7 +1100,6 @@ final class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    *
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recoverWith(pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): SubSource[Out, Mat] =
     new SubSource(delegate.recoverWith(pf))
 
