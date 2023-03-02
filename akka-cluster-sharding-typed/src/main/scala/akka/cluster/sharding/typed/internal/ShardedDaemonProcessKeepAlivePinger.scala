@@ -16,6 +16,7 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.annotation.InternalApi
 import akka.cluster.MemberStatus
+import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.StartEntity
@@ -42,7 +43,8 @@ private[akka] object ShardedDaemonProcessKeepAlivePinger {
   // FIXME do we need acks for stop/start?
   final case class Pause(revision: Int, replyTo: ActorRef[StatusReply[ActorPath]]) extends Message
 
-  final case class Restart(revision: Int, replyTo: ActorRef[StatusReply[ActorPath]]) extends Message
+  final case class Restart(revision: Int, newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[ActorPath]])
+      extends Message
 
   private final case class Tick(revision: Int) extends Message
 
@@ -91,11 +93,11 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
     else
       cluster.subscriptions ! Subscribe(context.messageAdapter[SelfUp](_ => Tick(initialRevision)), classOf[SelfUp])
 
-    start(initialRevision)
+    start(initialRevision, initialNumberOfInstances)
   }
 
-  private def start(currentRevision: Int): Behavior[Message] = {
-    val sortedIdentities = sortedIdentitiesFor(currentRevision)
+  private def start(currentRevision: Int, numberOfProcesses: Int): Behavior[Message] = {
+    val sortedIdentities = ShardedDaemonProcessImpl.sortedIdentitiesFor(currentRevision, numberOfProcesses)
 
     Behaviors.receiveMessage {
       case Tick(`currentRevision`) =>
@@ -137,7 +139,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           oldRevision,
           currentRevision)
         Behaviors.ignore
-      case Restart(`currentRevision`, replyTo) =>
+      case Restart(`currentRevision`, _, replyTo) =>
         context.log.debug2(
           "Sharded daemon process pinger [{}] got start for already started revision (revision [{}]",
           daemonProcessName,
@@ -145,7 +147,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
         replyTo ! StatusReply.Success(context.self.path)
         Behaviors.ignore
 
-      case Restart(otherRevision, replyTo) =>
+      case Restart(otherRevision, _, replyTo) =>
         context.log.debugN(
           "Sharded daemon process pinger [{}] got start for unexpected revision (revision [{}], current [{}])",
           daemonProcessName,
@@ -164,14 +166,14 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
     case Pause(_, replyTo) =>
       replyTo ! StatusReply.Success(context.self.path)
       Behaviors.same
-    case Restart(revision, replyTo) if revision >= pausedRevision =>
+    case Restart(revision, newNumberOfProcesses, replyTo) if revision >= pausedRevision =>
       context.log
         .debug2("Un-pausing sharded daemon process pinger [{}] (revision [{}]", daemonProcessName, pausedRevision)
       replyTo ! StatusReply.Success(context.self.path)
       context.self ! Tick(pausedRevision)
-      start(pausedRevision)
+      start(pausedRevision, newNumberOfProcesses)
 
-    case Restart(revision, replyTo) =>
+    case Restart(revision, _, replyTo) =>
       context.log.warn2(
         "Paused sharded daemon process pinger [{}] got unexpected start for old revision [{}], ignoring",
         daemonProcessName,
@@ -190,12 +192,6 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
     // members are sorted so this is deterministic (the same) on all nodes
     members.take(settings.keepAliveFromNumberOfNodes).contains(cluster.selfMember)
   }
-
-  private def sortedIdentitiesFor(revision: Int) =
-    (0 until initialNumberOfInstances)
-      .map(n => ShardedDaemonProcessImpl.DecodedId(revision, initialNumberOfInstances, n).encodeEntityId)
-      .toVector
-      .sorted
 
   private def sendKeepAliveMessages(sortedIdentities: Vector[String]): Future[Done] = {
     if (settings.keepAliveThrottleInterval == Duration.Zero) {

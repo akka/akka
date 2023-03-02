@@ -63,6 +63,17 @@ private[akka] object ShardedDaemonProcessImpl {
     def unwrapMessage(message: ShardingEnvelope[T]): T = message.message
   }
 
+  def sortedIdentitiesFor(revision: Int, numberOfProcesses: Int): Vector[String] =
+    (0 until numberOfProcesses)
+      .map(n => ShardedDaemonProcessImpl.DecodedId(revision, numberOfProcesses, n).encodeEntityId)
+      .toVector
+      .sorted
+
+  private val messageExtractor = new ShardedDaemonProcessImpl.MessageExtractor[Unit]
+
+  def allShardsFor(revision: Int, numberOfProcesses: Int): Set[String] =
+    ShardedDaemonProcessImpl.sortedIdentitiesFor(revision, numberOfProcesses).map(messageExtractor.shardId).toSet
+
 }
 
 /**
@@ -152,26 +163,27 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     }
 
     val nodeRoles = Cluster(system).selfMember.roles
+    val entity = Entity(entityTypeKey) { ctx =>
+      // FIXME would it be too expensive here to check with the local replicator and verify the revision number
+      // to never start if there is a higher rev number?
+      val decodedId = decodeEntityId(ctx.entityId)
+      behaviorFactory(ShardedDaemonProcessContextImpl(decodedId.processNumber, decodedId.totalCount, name))
+    }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor)
+
+    val entityWithStop = stopMessage match {
+      case Some(stop) => entity.withStopMessage(stop)
+      case None       => entity
+    }
+
+    val entityWithShardAllocationStrategy = shardAllocationStrategy match {
+      case Some(strategy) => entityWithStop.withAllocationStrategy(strategy)
+      case None           => entityWithStop
+    }
+
+    val shardingRef = ClusterSharding(system).init(entityWithShardAllocationStrategy)
+
+    // only start pinger if role matches
     if (shardingSettings.role.forall(nodeRoles)) {
-      val entity = Entity(entityTypeKey) { ctx =>
-        // FIXME would it be too expensive here to check with the local replicator and verify the revision number
-        // to never start if there is a higher rev number?
-        val decodedId = decodeEntityId(ctx.entityId)
-        behaviorFactory(ShardedDaemonProcessContextImpl(decodedId.processNumber, decodedId.totalCount, name))
-      }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor)
-
-      val entityWithStop = stopMessage match {
-        case Some(stop) => entity.withStopMessage(stop)
-        case None       => entity
-      }
-
-      val entityWithShardAllocationStrategy = shardAllocationStrategy match {
-        case Some(strategy) => entityWithStop.withAllocationStrategy(strategy)
-        case None           => entityWithStop
-      }
-
-      val shardingRef = ClusterSharding(system).init(entityWithShardAllocationStrategy)
-
       system.systemActorOf(
         ShardedDaemonProcessKeepAlivePinger(settings, name, numberOfInstances, shardingRef),
         s"ShardedDaemonProcessKeepAlive-$name")
@@ -182,7 +194,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
     val singleton =
       SingletonActor(
-        ShardedDaemonProcessCoordinator(settings, numberOfInstances, name),
+        ShardedDaemonProcessCoordinator(settings, numberOfInstances, name, shardingRef),
         s"ShardedDaemonProcessCoordinator-$name").withSettings(singletonSettings)
 
     ClusterSingleton(system).init(singleton)
