@@ -878,7 +878,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recoverWith[T >: Out](pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
     via(new RecoverWith(-1, pf))
 
