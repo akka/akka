@@ -416,6 +416,11 @@ object ShardCoordinator {
     @SerialVersionUID(1L) final case class RegionStopped(shardRegion: ActorRef) extends CoordinatorCommand
 
     /**
+     * Stop all the listed shards, sender will get a ShardStopped ack for each shard once stopped
+     */
+    final case class StopShards(shards: Set[ShardId]) extends CoordinatorCommand
+
+    /**
      * `ShardRegion` requests full handoff to be able to shutdown gracefully.
      */
     @SerialVersionUID(1L) final case class GracefulShutdownReq(shardRegion: ActorRef)
@@ -684,6 +689,7 @@ abstract class ShardCoordinator(
   var waitingForLocalRegionToTerminate = false
   var aliveRegions = Set.empty[ActorRef]
   var regionTerminationInProgress = Set.empty[ActorRef]
+  var waitingForRebalanceAcks = Map.empty[ShardId, Set[ActorRef]]
 
   import context.dispatcher
 
@@ -805,6 +811,43 @@ abstract class ShardCoordinator(
           case _              => //Reallocated to another region
         }
 
+      case StopShards(shardIds) =>
+        if (settings.rememberEntities) {
+          log.error(
+            "{}: Stop shards cannot be combined with remember entities, ignoring command to stop [{}]",
+            typeName,
+            shardIds)
+        } else if (state.regions.nonEmpty && !preparingForShutdown) {
+          waitingForRebalanceAcks = shardIds.foldLeft(waitingForRebalanceAcks) { (acc, shardId) =>
+            if (!state.shards.contains(shardId)) {
+              // shard not running, so ack right away
+              sender() ! ShardStopped(shardId)
+              acc
+            } else {
+              acc.get(shardId) match {
+                case Some(refs) => acc.updated(shardId, refs + sender())
+                case None       => acc.updated(shardId, Set(sender()))
+              }
+            }
+          }
+
+          // except not started and not already rebalancing
+          val shardsToStop =
+            shardIds.filter(shard => state.shards.contains(shard) && !rebalanceInProgress.contains(shard))
+          log.info("{}: Explicitly stopping shards [{}]", typeName, shardsToStop)
+
+          val shardsPerRegion =
+            shardsToStop.flatMap(shardId => state.shards.get(shardId).map(region => region -> shardId)).groupBy(_._1)
+          shardsPerRegion.foreach {
+            case (region, shards) => shutdownShards(region, shards.map(_._2))
+          }
+        } else {
+          log.warning(
+            "{}: Explicit stop shards of shards [{}] ignored (no known regions or sharding shutting down)",
+            typeName,
+            shardIds)
+        }
+
       case RebalanceTick =>
         if (state.regions.nonEmpty && !preparingForShutdown) {
           val shardsFuture = allocationStrategy.rebalance(state.regions, rebalanceInProgress.keySet)
@@ -832,6 +875,14 @@ abstract class ShardCoordinator(
 
         if (ok) {
           log.debug("{}: Shard [{}] deallocation completed successfully.", typeName, shard)
+
+          // ack to external trigger of rebalance/stop
+          waitingForRebalanceAcks.get(shard) match {
+            case Some(waiting) =>
+              waiting.foreach(_ ! ShardStopped(shard))
+              waitingForRebalanceAcks = waitingForRebalanceAcks - shard
+            case None =>
+          }
 
           // The shard could have been removed by ShardRegionTerminated
           if (state.shards.contains(shard)) {
