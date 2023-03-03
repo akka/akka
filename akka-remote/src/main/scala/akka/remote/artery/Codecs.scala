@@ -551,7 +551,7 @@ private[remote] class Decoder(
           }
         } catch {
           case NonFatal(e) =>
-            log.warning("Dropping message due to: {}", e)
+            log.warning(e, "Dropping message due to unexpected error")
             pull(in)
         }
 
