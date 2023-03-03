@@ -40,9 +40,9 @@ systems. The API of Akka’s Actors has borrowed some of its syntax from Erlang.
  
 ## First example
 
-If you are new to Akka you might want to start with reading the @ref:[Getting Started Guide](guide/introduction.md)
-and then come back here to learn more. We also recommend watching the short 
-[introduction video to Akka actors](https://akka.io/blog/news/2019/12/03/akka-typed-actor-intro-video).  
+If you are new to Akka we recommend that you start with reading the @ref:[Getting Started Guide](guide/introduction.md)
+to get you started with a @java[Maven]@scala[sbt] project with the needed dependencies and then come back here to learn 
+more. We also recommend watching the short [introduction video to Akka actors](https://akka.io/blog/news/2019/12/03/akka-typed-actor-intro-video).  
 
 It is helpful to become familiar with the foundational, external and internal
 ecosystem of your Actors, to see what you can leverage and customize as needed, see
