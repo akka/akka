@@ -31,7 +31,7 @@ import akka.stream.testkit.Utils.TE
  * INTERNAL API
  */
 @InternalApi
-private[akka] object NoMaterializer extends Materializer {
+private[akka] case class NoMaterializer(system: ActorSystem) extends Materializer {
   override def withNamePrefix(name: String): Materializer =
     throw new UnsupportedOperationException("NoMaterializer cannot be named")
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
@@ -63,9 +63,6 @@ private[akka] object NoMaterializer extends Materializer {
   override def shutdown(): Unit = throw new UnsupportedOperationException("NoMaterializer cannot shutdown")
 
   override def isShutdown: Boolean = throw new UnsupportedOperationException("NoMaterializer cannot shutdown")
-
-  override def system: ActorSystem =
-    throw new UnsupportedOperationException("NoMaterializer does not have an actorsystem")
 
   override private[akka] def logger = throw new UnsupportedOperationException("NoMaterializer does not have a logger")
 
@@ -328,7 +325,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       }
 
       _interpreter = new GraphInterpreter(
-        NoMaterializer,
+        NoMaterializer(system),
         logger,
         logics,
         connections,
