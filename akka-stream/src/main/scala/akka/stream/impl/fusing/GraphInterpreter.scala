@@ -5,10 +5,8 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
-
 import akka.Done
 import akka.actor.ActorRef
 import akka.annotation.{ InternalApi, InternalStableApi }
@@ -361,12 +359,21 @@ import akka.stream.stage._
         def reportStageError(e: Throwable): Unit = {
           if (activeStage == null) throw e
           else {
-            val loggingEnabled = activeStage.attributes.get[LogLevels] match {
-              case Some(levels) => levels.onFailure != LogLevels.Off
-              case None         => true
+            val logAt = activeStage.attributes.get[LogLevels] match {
+              case Some(levels) => levels.onFailure
+              case None         => LogLevels.Error // default
             }
-            if (loggingEnabled)
-              log.error(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+            logAt match {
+              case LogLevels.Error =>
+                log.error(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+              case LogLevels.Warning =>
+                log.warning(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+              case LogLevels.Info =>
+                log.info("Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+              case LogLevels.Debug =>
+                log.debug("Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+              case _ => // Off, nop
+            }
             activeStage.failStage(e)
 
             // Abort chasing
