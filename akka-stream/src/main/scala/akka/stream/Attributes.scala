@@ -4,6 +4,8 @@
 
 package akka.stream
 
+import akka.actor.ActorSystem
+
 import java.net.URLEncoder
 import java.time.Duration
 import java.util.Optional
@@ -705,6 +707,23 @@ object Attributes {
 
     /** Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#logLevels]] */
     final val Debug: Logging.LogLevel = Logging.DebugLevel
+
+    /** INTERNAL API */
+    @InternalApi
+    private[akka] def defaultErrorLevel(system: ActorSystem): Logging.LogLevel =
+      fromString(system.settings.config.getString("akka.stream.materializer.stage-errors-default-log-level"))
+
+    /** INTERNAL API */
+    @InternalApi
+    private[akka] def fromString(str: String): Logging.LogLevel = {
+      str.toLowerCase match {
+        case "off"     => Off
+        case "error"   => Error
+        case "warning" => Warning
+        case "info"    => Info
+        case "debug"   => Debug
+      }
+    }
   }
 
   /** Java API: Use to disable logging on certain operations when configuring [[Attributes#createLogLevels]] */

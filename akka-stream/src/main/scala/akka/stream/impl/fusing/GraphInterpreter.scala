@@ -10,6 +10,7 @@ import scala.util.control.NonFatal
 import akka.Done
 import akka.actor.ActorRef
 import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.Attributes.LogLevels
@@ -228,6 +229,8 @@ import akka.stream.stage._
   }
 
   private[this] var _subFusingMaterializer: Materializer = _
+  private[this] lazy val defaultErrorReportingLogLevel = LogLevels.defaultErrorLevel(materializer.system)
+
   def subFusingMaterializer: Materializer = _subFusingMaterializer
 
   // An event queue implemented as a circular buffer
@@ -359,18 +362,18 @@ import akka.stream.stage._
         def reportStageError(e: Throwable): Unit = {
           if (activeStage == null) throw e
           else {
-            val logAt = activeStage.attributes.get[LogLevels] match {
+            val logAt: Logging.LogLevel = activeStage.attributes.get[LogLevels] match {
               case Some(levels) => levels.onFailure
-              case None         => LogLevels.Error // default
+              case None         => defaultErrorReportingLogLevel
             }
             logAt match {
-              case LogLevels.Error =>
+              case Logging.ErrorLevel =>
                 log.error(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
-              case LogLevels.Warning =>
+              case Logging.WarningLevel =>
                 log.warning(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
-              case LogLevels.Info =>
+              case Logging.InfoLevel =>
                 log.info("Error in stage [{}]: {}", activeStage.toString, e.getMessage)
-              case LogLevels.Debug =>
+              case Logging.DebugLevel =>
                 log.debug("Error in stage [{}]: {}", activeStage.toString, e.getMessage)
               case _ => // Off, nop
             }
