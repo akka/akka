@@ -731,6 +731,8 @@ Monitoring of each shard region is off by default. Add them by defining the enti
 akka.cluster.sharding.healthcheck.names = ["counter-1", "HelloWorld"]
 ```
 
+The health check is disabled (always returns success true) after a duration of failing checks after the Cluster member is up. Otherwise, it would stall a Kubernetes rolling update when adding a new entity type in the new version.
+
 See also additional information about how to make @ref:[smooth rolling updates](../additional/rolling-updates.md#cluster-sharding).
 
 ## Inspecting cluster sharding state
