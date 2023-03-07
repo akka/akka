@@ -816,7 +816,7 @@ abstract class ShardCoordinator(
           log.error(
             "{}: Stop shards cannot be combined with remember entities, ignoring command to stop [{}]",
             typeName,
-            shardIds)
+            shardIds.mkString(", "))
         } else if (state.regions.nonEmpty && !preparingForShutdown) {
           waitingForRebalanceAcks = shardIds.foldLeft(waitingForRebalanceAcks) { (acc, shardId) =>
             if (!state.shards.contains(shardId)) {
@@ -834,7 +834,7 @@ abstract class ShardCoordinator(
           // except not started and not already rebalancing
           val shardsToStop =
             shardIds.filter(shard => state.shards.contains(shard) && !rebalanceInProgress.contains(shard))
-          log.info("{}: Explicitly stopping shards [{}]", typeName, shardsToStop)
+          log.info("{}: Explicitly stopping shards [{}]", typeName, shardsToStop.mkString(", "))
 
           val shardsPerRegion =
             shardsToStop.flatMap(shardId => state.shards.get(shardId).map(region => region -> shardId)).groupBy(_._1)
@@ -845,7 +845,7 @@ abstract class ShardCoordinator(
           log.warning(
             "{}: Explicit stop shards of shards [{}] ignored (no known regions or sharding shutting down)",
             typeName,
-            shardIds)
+            shardIds.mkString(", "))
         }
 
       case RebalanceTick =>
