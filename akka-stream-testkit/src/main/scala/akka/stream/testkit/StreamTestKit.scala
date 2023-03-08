@@ -143,26 +143,6 @@ object TestPublisher {
 
     /**
      * Expect no messages.
-     * NOTE! Timeout value is automatically multiplied by timeFactor.
-     */
-    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
-    def expectNoMsg(): Self = executeAfterSubscription {
-      probe.expectNoMsg()
-      self
-    }
-
-    /**
-     * Expect no messages for a given duration.
-     * NOTE! Timeout value is automatically multiplied by timeFactor.
-     */
-    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
-    def expectNoMsg(max: FiniteDuration): Self = executeAfterSubscription {
-      probe.expectNoMsg(max)
-      self
-    }
-
-    /**
-     * Expect no messages.
      * Waits for the default period configured as `akka.actor.testkit.expect-no-message-default`.
      */
     def expectNoMessage(): Self = executeAfterSubscription {
@@ -630,30 +610,6 @@ object TestSubscriber {
         case OnNext(`element`) => true
         case OnComplete        => true
       }
-      self
-    }
-
-    /**
-     * Fluent DSL
-     *
-     * Same as `expectNoMsg(remaining)`, but correctly treating the timeFactor.
-     * NOTE! Timeout value is automatically multiplied by timeFactor.
-     */
-    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
-    def expectNoMsg(): Self = {
-      probe.expectNoMsg()
-      self
-    }
-
-    /**
-     * Fluent DSL
-     *
-     * Assert that no message is received for the specified time.
-     * NOTE! Timeout value is automatically multiplied by timeFactor.
-     */
-    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
-    def expectNoMsg(remaining: FiniteDuration): Self = {
-      probe.expectNoMsg(remaining)
       self
     }
 

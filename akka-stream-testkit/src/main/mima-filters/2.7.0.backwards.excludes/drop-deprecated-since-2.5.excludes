@@ -1,0 +1,4 @@
+# Dropping APIs deprecated since 2.5 in 2.8
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.testkit.TestPublisher#ManualProbe.expectNoMsg")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.testkit.TestPublisher#ManualProbe.expectNoMsg")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.testkit.TestSubscriber#ManualProbe.expectNoMsg")
