@@ -48,3 +48,4 @@ ProblemFilters.exclude[MissingClassProblem]("akka.pattern.RestartImpliesFailure"
 ProblemFilters.exclude[MissingClassProblem]("akka.pattern.RestartImpliesFailure$")
 ProblemFilters.exclude[MissingClassProblem]("akka.pattern.StopImpliesFailure")
 ProblemFilters.exclude[MissingClassProblem]("akka.pattern.StopImpliesFailure$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSelection.resolveOneCS")
