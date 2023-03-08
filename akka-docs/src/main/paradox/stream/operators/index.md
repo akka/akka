@@ -63,7 +63,6 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="fold"></a>@ref[fold](Sink/fold.md)|Fold over emitted element with a function, where each invocation will get the new element and the result from the previous fold invocation.|
 |Sink|<a name="foreach"></a>@ref[foreach](Sink/foreach.md)|Invoke a given procedure for each element received.|
 |Sink|<a name="foreachasync"></a>@ref[foreachAsync](Sink/foreachAsync.md)|Invoke a given procedure asynchronously for each element received.|
-|Sink|<a name="foreachparallel"></a>@ref[foreachParallel](Sink/foreachParallel.md)|Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.|
 |Sink|<a name="frommaterializer"></a>@ref[fromMaterializer](Sink/fromMaterializer.md)|Defer the creation of a `Sink` until materialization and access `Materializer` and `Attributes`|
 |Sink|<a name="fromsubscriber"></a>@ref[fromSubscriber](Sink/fromSubscriber.md)|Integration with Reactive Streams, wraps a `org.reactivestreams.Subscriber` as a sink.|
 |Sink|<a name="futuresink"></a>@ref[futureSink](Sink/futureSink.md)|Streams the elements to the given future sink once it successfully completes. |
@@ -445,7 +444,6 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [foldAsync](Source-or-Flow/foldAsync.md)
 * [foreach](Sink/foreach.md)
 * [foreachAsync](Sink/foreachAsync.md)
-* [foreachParallel](Sink/foreachParallel.md)
 * [from](Source/from.md)
 * [fromCompletionStage](Source/fromCompletionStage.md)
 * [fromFile](FileIO/fromFile.md)
