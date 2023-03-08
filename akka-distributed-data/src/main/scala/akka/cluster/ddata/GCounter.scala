@@ -7,7 +7,6 @@ package akka.cluster.ddata
 import java.math.BigInteger
 
 import akka.annotation.InternalApi
-import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 
 object GCounter {
@@ -74,17 +73,11 @@ final class GCounter private[akka] (
    */
   def :+(n: Long)(implicit node: SelfUniqueAddress): GCounter = increment(node.uniqueAddress, n)
 
-  @deprecated("Use `:+` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def +(n: Long)(implicit node: Cluster): GCounter = increment(node.selfUniqueAddress, n)
-
   /**
    * Increment the counter with the delta `n` specified.
    * The delta `n` must be zero or positive.
    */
   def increment(node: SelfUniqueAddress, n: Long): GCounter = increment(node.uniqueAddress, n)
-
-  @deprecated("Use `increment` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def increment(node: Cluster, n: Long = 1): GCounter = increment(node.selfUniqueAddress, n)
 
   /**
    * INTERNAL API
