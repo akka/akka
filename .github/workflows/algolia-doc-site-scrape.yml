@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
-      - uses: darrenjennings/algolia-docsearch-action@0.2.0
+      - uses: darrenjennings/algolia-docsearch-action@75b0f6d
         with:
           algolia_application_id: '${{ secrets.ALGOLIA_APPLICATION_ID }}'
           algolia_api_key: '${{ secrets.ALGOLIA_API_KEY }}'
