@@ -1,0 +1,44 @@
+{
+  "index_name": "akka_io",
+  "start_urls": [
+    {
+      "url": "https://doc.akka.io/docs/akka/current/",
+      "extra_attributes": {
+        "language": [
+          "scala",
+          "java"
+        ]
+      }
+    }
+  ],
+  "stop_urls": [
+    "/release-notes/"
+  ],
+  "selectors": {
+    "lvl0": {
+      "selector": "//div[contains(@class,'nav-toc')]/ul/li[.//a[contains(@class,'active')]]/a",
+      "type": "xpath",
+      "global": true,
+      "default_value": "Documentation"
+    },
+    "lvl1": "#docs h1",
+    "lvl2": "#docs h2",
+    "lvl3": "#docs h3",
+    "lvl4": "#docs h4",
+    "text": "#docs p"
+  },
+  "selectors_exclude": [
+    "#scroller-anchor"
+  ],
+  "min_indexed_level": 2,
+  "only_content_level": true,
+  "custom_settings": {
+    "attributesForFaceting": [
+      "language"
+    ]
+  },
+  "conversation_id": [
+    "371144203"
+  ],
+  "nb_hits": 5936
+}
