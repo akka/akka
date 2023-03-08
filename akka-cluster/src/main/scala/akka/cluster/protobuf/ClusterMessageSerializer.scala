@@ -243,9 +243,6 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       .setTotalInstances(settings.totalInstances)
       .addAllUseRoles(settings.useRoles.asJava)
 
-    // for backwards compatibility
-    settings.useRole.foreach(builder.setUseRole)
-
     builder.build()
   }
 
