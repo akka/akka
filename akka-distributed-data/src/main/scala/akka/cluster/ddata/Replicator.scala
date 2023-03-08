@@ -1623,7 +1623,12 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (hasDurableKeys)
       durableStore ! LoadAll
     // not using LeaderChanged/RoleLeaderChanged because here we need one node independent of data center
-    cluster.subscribe(self, initialStateMode = InitialStateAsEvents, classOf[MemberEvent], classOf[ReachabilityEvent])
+    cluster.subscribe(
+      self,
+      initialStateMode = InitialStateAsEvents,
+      classOf[MemberEvent],
+      ClusterShuttingDown.getClass,
+      classOf[ReachabilityEvent])
   }
 
   override def postStop(): Unit = {
@@ -1765,6 +1770,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     case MemberUp(m)                   => receiveMemberUp(m)
     case MemberExited(m)               => receiveMemberExiting(m)
     case MemberRemoved(m, _)           => receiveMemberRemoved(m)
+    case ClusterShuttingDown           => receiveMemberRemoved(cluster.selfMember)
     case evt: MemberEvent              => receiveOtherMemberEvent(evt.member)
     case UnreachableMember(m)          => receiveUnreachable(m)
     case ReachableMember(m)            => receiveReachable(m)
