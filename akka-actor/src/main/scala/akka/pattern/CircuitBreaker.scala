@@ -68,26 +68,6 @@ object CircuitBreaker {
    *
    * @param scheduler Reference to Akka scheduler
    * @param maxFailures Maximum number of failures before opening the circuit
-   * @param callTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to consider a call a failure
-   * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
-   */
-  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def create(
-      scheduler: Scheduler,
-      maxFailures: Int,
-      callTimeout: FiniteDuration,
-      resetTimeout: FiniteDuration): CircuitBreaker =
-    apply(scheduler, maxFailures, callTimeout, resetTimeout)
-
-  /**
-   * Java API: Create a new CircuitBreaker.
-   *
-   * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
-   * in Future when using withCircuitBreaker. To use another ExecutionContext for the callbacks you can specify the
-   * executor in the constructor.
-   *
-   * @param scheduler Reference to Akka scheduler
-   * @param maxFailures Maximum number of failures before opening the circuit
    * @param callTimeout [[java.time.Duration]] of time after which to consider a call a failure
    * @param resetTimeout [[java.time.Duration]] of time after which to attempt to close the circuit
    */
@@ -173,23 +153,6 @@ class CircuitBreaker(
       randomFactor,
       Set.empty,
       CircuitBreakerNoopTelemetry)(executor)
-  }
-
-  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def this(
-      executor: ExecutionContext,
-      scheduler: Scheduler,
-      maxFailures: Int,
-      callTimeout: FiniteDuration,
-      resetTimeout: FiniteDuration) = {
-    this(
-      scheduler,
-      maxFailures,
-      callTimeout,
-      resetTimeout,
-      maxResetTimeout = 36500.days,
-      exponentialBackoffFactor = 1.0,
-      randomFactor = 0.0)(executor)
   }
 
   def this(
