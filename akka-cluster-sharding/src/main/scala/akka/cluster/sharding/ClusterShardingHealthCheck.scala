@@ -4,21 +4,24 @@
 
 package akka.cluster.sharding
 
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.annotation.ApiMayChange
-import akka.event.Logging
-import akka.pattern.ask
-import akka.util.Timeout
-import akka.annotation.InternalApi
-import akka.pattern.AskTimeoutException
-import akka.util.ccompat.JavaConverters._
-import akka.util.JavaDurationConverters._
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
+
 import com.typesafe.config.Config
+
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.annotation.InternalApi
+import akka.cluster.Cluster
+import akka.cluster.MemberStatus
+import akka.event.Logging
+import akka.pattern.AskTimeoutException
+import akka.pattern.ask
+import akka.util.JavaDurationConverters._
+import akka.util.Timeout
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Internal API
@@ -28,11 +31,19 @@ private[akka] object ClusterShardingHealthCheckSettings {
   def apply(config: Config): ClusterShardingHealthCheckSettings =
     new ClusterShardingHealthCheckSettings(
       config.getStringList("names").asScala.toSet,
-      config.getDuration("timeout").asScala)
+      config.getDuration("timeout").asScala,
+      config.getDuration("disabled-after").asScala)
 }
 
-@ApiMayChange
-final class ClusterShardingHealthCheckSettings(val names: Set[String], val timeout: FiniteDuration)
+final class ClusterShardingHealthCheckSettings(
+    val names: Set[String],
+    val timeout: FiniteDuration,
+    val disableAfter: FiniteDuration) {
+
+  // for binary backwards compatibility
+  @deprecated("Use full constructor", "2.8.0")
+  def this(names: Set[String], timeout: FiniteDuration) = this(names, timeout, 10.seconds)
+}
 
 private object ClusterShardingHealthCheck {
   val Success = Future.successful(true)
@@ -41,7 +52,6 @@ private object ClusterShardingHealthCheck {
 /**
  * INTERNAL API (ctr)
  */
-@ApiMayChange
 final class ClusterShardingHealthCheck private[akka] (
     system: ActorSystem,
     settings: ClusterShardingHealthCheckSettings,
@@ -61,11 +71,23 @@ final class ClusterShardingHealthCheck private[akka] (
 
   // Once the check has passed it always does
   @volatile private var registered = false
+  @volatile private var startedTimestamp = 0L
+
+  private def isMemberUp(): Boolean = {
+    val memberStatus = Cluster(system).selfMember.status
+    memberStatus != MemberStatus.Joining && memberStatus != MemberStatus.Removed
+  }
 
   override def apply(): Future[Boolean] = {
     if (settings.names.isEmpty || registered) {
       ClusterShardingHealthCheck.Success
+    } else if (startedTimestamp != 0L && System
+                 .currentTimeMillis() > startedTimestamp + settings.disableAfter.toMillis) {
+      ClusterShardingHealthCheck.Success
     } else {
+      if (startedTimestamp == 0 && isMemberUp())
+        startedTimestamp = System.currentTimeMillis()
+
       Future
         .traverse(settings.names) { name =>
           shardRegion(name) // this can throw if shard region not registered and it'll fail the check
