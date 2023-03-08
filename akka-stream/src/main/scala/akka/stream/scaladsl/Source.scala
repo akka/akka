@@ -227,14 +227,6 @@ final class Source[+Out, +Mat](
   def asJava: javadsl.Source[Out @uncheckedVariance, Mat @uncheckedVariance] = new javadsl.Source(this)
 
   /**
-   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
-   */
-  @deprecated("Use `Source.combine` on companion object instead", "2.5.5")
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(
-      strategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
-    Source.combine(first, second, rest: _*)(strategy)
-
-  /**
    * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
   **/
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =

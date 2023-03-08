@@ -56,17 +56,4 @@ public class AttributesTest extends StreamTest {
     assertEquals(
         Optional.of(new Attributes.Name("b")), attributes.getAttribute(Attributes.Name.class));
   }
-
-  @Deprecated
-  @Test
-  public void mustGetPossiblyMissingFirstAttributeByClass() {
-    assertEquals(
-        Optional.of(new Attributes.Name("a")), attributes.getFirstAttribute(Attributes.Name.class));
-  }
-
-  @Deprecated
-  @Test
-  public void mustGetMissingFirstAttributeByClass() {
-    assertEquals(Optional.empty(), attributes.getFirstAttribute(Attributes.LogLevels.class));
-  }
 }
