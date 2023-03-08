@@ -51,6 +51,7 @@ object Paradox {
         "akka.version" -> version.value,
         "scalatest.version" -> Dependencies.scalaTestVersion,
         "sigar_loader.version" -> "1.6.6-rev002",
+        "algolia.docsearch.app_id" -> "XUXZ6LW9B1",
         "algolia.docsearch.api_key" -> "5b6260148e92f7c5e38338fcf7eaa3e0",
         "algolia.docsearch.index_name" -> "akka_docs",
         "google.analytics.account" -> "UA-21117439-1",
