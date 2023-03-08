@@ -49,7 +49,9 @@ Key links:
          cd ~/www
          git push origin master
          ```
+  - [ ] If this updated 'current' docs - trigger a re-index of the docs for search through [Run workflow for the scraper](https://github.com/akka/akka/actions/workflows/algolia-doc-site-scrape.yml)
   - [ ] Update version in _config.yml in https://github.com/akka/akka.io    
+  
 
 ### Announcements
 
