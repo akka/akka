@@ -1,5 +1,5 @@
 {
-  "index_name": "akka_io",
+  "index_name": "akka_docs",
   "start_urls": [
     {
       "url": "https://doc.akka.io/docs/akka/current/",
