@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   scrape_index:
+    name: Update search index
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: darrenjennings/algolia-docsearch-action@0.2.0
