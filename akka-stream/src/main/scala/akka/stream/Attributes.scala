@@ -12,7 +12,7 @@ import java.util.Optional
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
-import scala.reflect.{ classTag, ClassTag }
+import scala.reflect.{ClassTag, classTag}
 import scala.util.control.NonFatal
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
@@ -21,6 +21,7 @@ import akka.event.Logging
 import akka.japi.function
 import akka.stream.impl.TraversalBuilder
 import akka.util.ByteString
+import akka.util.Helpers
 import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
 
@@ -716,7 +717,7 @@ object Attributes {
     /** INTERNAL API */
     @InternalApi
     private[akka] def fromString(str: String): Logging.LogLevel = {
-      str.toLowerCase match {
+      Helpers.toRootLowerCase(str) match {
         case "off"     => Off
         case "error"   => Error
         case "warning" => Warning
