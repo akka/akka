@@ -261,7 +261,9 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
 
   private def loggingEnabled = inheritedAttributes.get[LogLevels] match {
     case Some(levels) => levels.onFailure != LogLevels.Off
-    case None         => true
+    case None         =>
+      // Allows for system wide disable at least
+      LogLevels.defaultErrorLevel(materializer.system) != LogLevels.Off
   }
 
   /**

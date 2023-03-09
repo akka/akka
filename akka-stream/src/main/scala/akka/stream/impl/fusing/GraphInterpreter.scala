@@ -5,13 +5,12 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
-
 import akka.Done
 import akka.actor.ActorRef
 import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.Attributes.LogLevels
@@ -230,6 +229,8 @@ import akka.stream.stage._
   }
 
   private[this] var _subFusingMaterializer: Materializer = _
+  private[this] lazy val defaultErrorReportingLogLevel = LogLevels.defaultErrorLevel(materializer.system)
+
   def subFusingMaterializer: Materializer = _subFusingMaterializer
 
   // An event queue implemented as a circular buffer
@@ -361,12 +362,21 @@ import akka.stream.stage._
         def reportStageError(e: Throwable): Unit = {
           if (activeStage == null) throw e
           else {
-            val loggingEnabled = activeStage.attributes.get[LogLevels] match {
-              case Some(levels) => levels.onFailure != LogLevels.Off
-              case None         => true
+            val logAt: Logging.LogLevel = activeStage.attributes.get[LogLevels] match {
+              case Some(levels) => levels.onFailure
+              case None         => defaultErrorReportingLogLevel
             }
-            if (loggingEnabled)
-              log.error(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+            logAt match {
+              case Logging.ErrorLevel =>
+                log.error(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+              case Logging.WarningLevel =>
+                log.warning(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+              case Logging.InfoLevel =>
+                log.info("Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+              case Logging.DebugLevel =>
+                log.debug("Error in stage [{}]: {}", activeStage.toString, e.getMessage)
+              case _ => // Off, nop
+            }
             activeStage.failStage(e)
 
             // Abort chasing
