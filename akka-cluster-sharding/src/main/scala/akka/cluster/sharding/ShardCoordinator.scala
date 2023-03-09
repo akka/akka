@@ -530,6 +530,8 @@ object ShardCoordinator {
 
   private final case class DelayedShardRegionTerminated(region: ActorRef)
 
+  private final case class StopShardTimeout(requestId: Long)
+
   /**
    * Result of `allocateShard` is piped to self with this message.
    */
@@ -689,7 +691,8 @@ abstract class ShardCoordinator(
   var waitingForLocalRegionToTerminate = false
   var aliveRegions = Set.empty[ActorRef]
   var regionTerminationInProgress = Set.empty[ActorRef]
-  var waitingForRebalanceAcks = Map.empty[ShardId, Set[ActorRef]]
+  // each waiting actor together with a request identifier to clear out all waiting for one request on timeout
+  var waitingForShardsToStop: Map[ShardId, Set[(ActorRef, Long)]] = Map.empty
 
   import context.dispatcher
 
@@ -818,29 +821,41 @@ abstract class ShardCoordinator(
             typeName,
             shardIds.mkString(", "))
         } else if (state.regions.nonEmpty && !preparingForShutdown) {
-          waitingForRebalanceAcks = shardIds.foldLeft(waitingForRebalanceAcks) { (acc, shardId) =>
-            if (!state.shards.contains(shardId)) {
-              // shard not running, so ack right away
-              sender() ! ShardStopped(shardId)
-              acc
-            } else {
-              acc.get(shardId) match {
-                case Some(refs) => acc.updated(shardId, refs + sender())
-                case None       => acc.updated(shardId, Set(sender()))
-              }
+          def uniqueRequestId(): Long = {
+            var requestId = System.currentTimeMillis()
+            while (waitingForShardsToStop.exists { case (_, waiting) => waiting.exists(_._2 == requestId) }) {
+              requestId += 1
             }
+            requestId
+          }
+          val requestId = uniqueRequestId()
+          val (runningShards, alreadyStoppedShards) = shardIds.partition(state.shards.contains)
+          alreadyStoppedShards.foreach(shardId => sender() ! ShardStopped(shardId))
+          if (runningShards.nonEmpty) {
+            waitingForShardsToStop = runningShards.foldLeft(waitingForShardsToStop) {
+              case (acc, shard) =>
+                val newWaiting = acc.get(shard) match {
+                  case Some(waiting) => waiting + ((sender(), requestId))
+                  case None          => Set((sender(), requestId))
+                }
+                acc.updated(shard, newWaiting)
+            }
+            // no need to stop already rebalancing
+            val shardsToStop = runningShards.filter(shard => !rebalanceInProgress.contains(shard))
+            log.info(
+              "{}: Explicitly stopping shards [{}] (request id [{}])",
+              typeName,
+              shardsToStop.mkString(", "),
+              requestId)
+            val shardsPerRegion =
+              shardsToStop.flatMap(shardId => state.shards.get(shardId).map(region => region -> shardId)).groupBy(_._1)
+            shardsPerRegion.foreach {
+              case (region, shards) => shutdownShards(region, shards.map(_._2))
+            }
+            val timeout = StopShardTimeout(requestId)
+            timers.startSingleTimer(timeout, timeout, settings.tuningParameters.handOffTimeout)
           }
 
-          // except not started and not already rebalancing
-          val shardsToStop =
-            shardIds.filter(shard => state.shards.contains(shard) && !rebalanceInProgress.contains(shard))
-          log.info("{}: Explicitly stopping shards [{}]", typeName, shardsToStop.mkString(", "))
-
-          val shardsPerRegion =
-            shardsToStop.flatMap(shardId => state.shards.get(shardId).map(region => region -> shardId)).groupBy(_._1)
-          shardsPerRegion.foreach {
-            case (region, shards) => shutdownShards(region, shards.map(_._2))
-          }
         } else {
           log.warning(
             "{}: Explicit stop shards of shards [{}] ignored (no known regions or sharding shutting down)",
@@ -877,10 +892,10 @@ abstract class ShardCoordinator(
           log.debug("{}: Shard [{}] deallocation completed successfully.", typeName, shard)
 
           // ack to external trigger of rebalance/stop
-          waitingForRebalanceAcks.get(shard) match {
+          waitingForShardsToStop.get(shard) match {
             case Some(waiting) =>
-              waiting.foreach(_ ! ShardStopped(shard))
-              waitingForRebalanceAcks = waitingForRebalanceAcks - shard
+              waiting.foreach { case (replyTo, _) => replyTo ! ShardStopped(shard) }
+              waitingForShardsToStop -= shard
             case None =>
           }
 
@@ -985,6 +1000,24 @@ abstract class ShardCoordinator(
           else ref.path.address
         })
         sender() ! reply
+
+      case StopShardTimeout(requestId) =>
+        val timedOutShards = waitingForShardsToStop.collect {
+          case (shard, waiting) if waiting.exists(_._2 == requestId) => shard
+        }
+        if (timedOutShards.nonEmpty) {
+          log.info(
+            "{}: Stop shard request [{}] timed out for shards [{}]",
+            typeName,
+            requestId,
+            timedOutShards.mkString(", "))
+          waitingForShardsToStop = timedOutShards.foldLeft(waitingForShardsToStop) {
+            case (acc, shard) =>
+              val waiting = acc(shard)
+              if (waiting.size == 1) acc - shard
+              else acc.updated(shard, waiting.filterNot { case (_, id) => id == requestId })
+          }
+        }
 
       case ShardCoordinator.Internal.Terminate =>
         terminate()
