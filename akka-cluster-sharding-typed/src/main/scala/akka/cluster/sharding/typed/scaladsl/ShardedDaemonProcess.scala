@@ -91,8 +91,7 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
       behaviorFactory: Int => Behavior[T],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T],
-      shardAllocationStrategy: Option[ShardAllocationStrategy])(
-      implicit classTag: ClassTag[T]): Unit
+      shardAllocationStrategy: Option[ShardAllocationStrategy])(implicit classTag: ClassTag[T]): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
