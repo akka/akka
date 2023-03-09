@@ -66,7 +66,6 @@ lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceQuery,
   persistenceTyped,
   persistenceTestkit,
-  protobuf,
   protobufV3,
   pki,
   remote,
@@ -93,7 +92,7 @@ lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .enablePlugins(PublishRsyncPlugin)
   .settings(rootSettings: _*)
-  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
+  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobufV3, akkaScalaNightly, docs))
   .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
   .settings(akka.AkkaBuild.welcomeSettings)
   .enablePlugins(CopyrightHeaderForBuild)
@@ -314,12 +313,6 @@ lazy val persistenceTypedTests = akkaModule("akka-persistence-typed-tests")
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
 
-lazy val protobuf = akkaModule("akka-protobuf")
-  .settings(AutomaticModuleName.settings("akka.protobuf"))
-  .enablePlugins(ScaladocNoVerificationOfDiagrams)
-  .disablePlugins(MimaPlugin)
-  .settings(autoScalaLibrary := false) // Pure java project
-
 lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .settings(AutomaticModuleName.settings("akka.protobuf.v3"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
@@ -356,7 +349,6 @@ lazy val remote =
       actor,
       stream,
       pki,
-      protobuf % "test",
       actorTests % "test->test",
       testkit % "test->test",
       streamTestkit % "test",
