@@ -232,7 +232,7 @@ private class ShardedDaemonProcessCoordinator private (
       seenAcks: Set[Address]): Behavior[ShardedDaemonProcessCommand] = {
     Behaviors.receiveMessagePartial {
       case PauseAllKeepalivePingers =>
-        context.log.debug(
+        context.log.debug2(
           "Did not see acks from all pingers paused within [{}], retrying pause (seen acks [{}])",
           pingerRetryTimeout,
           seenAcks.mkString(", "))
