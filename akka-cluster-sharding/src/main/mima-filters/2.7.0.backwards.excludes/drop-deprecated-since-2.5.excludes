@@ -1,0 +1,3 @@
+# Dropping APIs deprecated since 2.5 in 2.8
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ClusterShardingSettings.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ClusterShardingSettings.this")

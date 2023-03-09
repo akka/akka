@@ -8,7 +8,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 
 import akka.annotation.InternalApi
-import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.util.{ unused, HashCode }
 
@@ -323,15 +322,8 @@ final class ORSet[A] private[akka] (
   /** Adds an element to the set. */
   def :+(element: A)(implicit node: SelfUniqueAddress): ORSet[A] = add(node, element)
 
-  @deprecated("Use `:+` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def +(element: A)(implicit node: Cluster): ORSet[A] = add(node.selfUniqueAddress, element)
-
   /** Adds an element to the set. */
   def add(node: SelfUniqueAddress, element: A): ORSet[A] = add(node.uniqueAddress, element)
-
-  @Deprecated
-  @deprecated("Use `add` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def add(node: Cluster, element: A): ORSet[A] = add(node.selfUniqueAddress, element)
 
   /**
    * INTERNAL API
@@ -363,18 +355,6 @@ final class ORSet[A] private[akka] (
   def remove(node: SelfUniqueAddress, element: A): ORSet[A] = remove(node.uniqueAddress, element)
 
   /**
-   * Removes an element from the set.
-   */
-  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def -(element: A)(implicit node: Cluster): ORSet[A] = remove(node.selfUniqueAddress, element)
-
-  /**
-   * Removes an element from the set.
-   */
-  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def remove(node: Cluster, element: A): ORSet[A] = remove(node.selfUniqueAddress, element)
-
-  /**
    * INTERNAL API
    */
   @InternalApi private[akka] def remove(node: UniqueAddress, element: A): ORSet[A] = {
@@ -394,9 +374,6 @@ final class ORSet[A] private[akka] (
    * for each element, but it is more efficient.
    */
   def clear(@unused node: SelfUniqueAddress): ORSet[A] = clear()
-
-  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def clear(@unused node: Cluster): ORSet[A] = clear()
 
   /**
    * INTERNAL API

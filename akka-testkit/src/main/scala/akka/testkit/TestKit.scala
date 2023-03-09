@@ -709,23 +709,6 @@ trait TestKitBase {
   }
 
   /**
-   * Assert that no message is received. Waits for the default period configured as
-   * `akka.test.expect-no-message-default`.
-   * That timeout is scaled using the configuration entry "akka.test.timefactor".
-   */
-  @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
-  def expectNoMsg(): Unit = expectNoMessage()
-
-  /**
-   * Assert that no message is received for the specified time.
-   * NOTE! Supplied value is always dilated.
-   */
-  @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
-  def expectNoMsg(max: FiniteDuration): Unit = {
-    expectNoMsg_internal(max.dilated)
-  }
-
-  /**
    * Assert that no message is received for the specified time.
    * Supplied value is not dilated.
    */

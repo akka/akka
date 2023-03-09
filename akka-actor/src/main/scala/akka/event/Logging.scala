@@ -1705,14 +1705,6 @@ object LogMarker {
     apply(name, properties.asScala.toMap)
   }
 
-  @Deprecated
-  @deprecated("use akka.event.LogEventWithMarker#marker instead", since = "2.5.12")
-  def extractFromMDC(mdc: MDC): Option[String] =
-    mdc.get(MDCKey) match {
-      case Some(v) => Some(v.toString)
-      case None    => None
-    }
-
   private[akka] final val Security = apply("SECURITY")
 
   /**

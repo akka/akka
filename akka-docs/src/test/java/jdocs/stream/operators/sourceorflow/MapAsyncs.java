@@ -10,22 +10,14 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.pattern.Patterns;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-
 import docs.stream.operators.sourceorflow.CommonMapAsync;
-
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Stream;
 import scala.compat.java8.FutureConverters;
 
 public class MapAsyncs {

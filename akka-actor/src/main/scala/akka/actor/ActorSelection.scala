@@ -98,33 +98,6 @@ abstract class ActorSelection extends Serializable {
    * supplied `timeout`.
    *
    */
-  @deprecated("Use the overloaded method resolveOne which accepts java.time.Duration instead.", since = "2.5.20")
-  def resolveOneCS(timeout: FiniteDuration): CompletionStage[ActorRef] =
-    FutureConverters.toJava[ActorRef](resolveOne(timeout))
-
-  /**
-   * Java API for [[#resolveOne]]
-   *
-   * Resolve the [[ActorRef]] matching this selection.
-   * The result is returned as a CompletionStage that is completed with the [[ActorRef]]
-   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
-   * no such actor exists or the identification didn't complete within the
-   * supplied `timeout`.
-   *
-   */
-  @deprecated("Use the overloaded method resolveOne which accepts java.time.Duration instead.", since = "2.5.20")
-  def resolveOneCS(timeout: java.time.Duration): CompletionStage[ActorRef] = resolveOne(timeout)
-
-  /**
-   * Java API for [[#resolveOne]]
-   *
-   * Resolve the [[ActorRef]] matching this selection.
-   * The result is returned as a CompletionStage that is completed with the [[ActorRef]]
-   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
-   * no such actor exists or the identification didn't complete within the
-   * supplied `timeout`.
-   *
-   */
   def resolveOne(timeout: java.time.Duration): CompletionStage[ActorRef] = {
     import JavaDurationConverters._
     FutureConverters.toJava[ActorRef](resolveOne(timeout.asScala))
