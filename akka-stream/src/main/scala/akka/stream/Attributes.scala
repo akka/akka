@@ -12,7 +12,7 @@ import java.util.Optional
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{ classTag, ClassTag }
 import scala.util.control.NonFatal
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
