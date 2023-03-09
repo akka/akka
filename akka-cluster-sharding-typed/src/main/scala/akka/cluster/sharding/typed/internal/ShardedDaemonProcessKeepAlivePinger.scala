@@ -16,7 +16,6 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.annotation.InternalApi
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.StartEntity
