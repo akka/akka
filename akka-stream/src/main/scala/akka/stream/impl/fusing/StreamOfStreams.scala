@@ -351,8 +351,7 @@ import akka.util.ccompat.JavaConverters._
               nextElementValue = elem
             }
           } else {
-
-            if (closedSubstreams.contains(key) && !hasBeenPulled(in))
+            if (closedSubstreams.contains(key))
               pull(in)
             else if (activeSubstreamsMap.size + closedSubstreams.size == maxSubstreams)
               throw tooManySubstreamsOpenException
