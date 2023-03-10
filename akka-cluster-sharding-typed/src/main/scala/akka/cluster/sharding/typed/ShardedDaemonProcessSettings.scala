@@ -147,6 +147,8 @@ trait ShardedDaemonProcessCommand {}
  *
  * @param newNumberOfProcesses The number of processes to scale up to
  * @param replyTo Reply to this actor once scaling is successfully done, or with details if it failed
+ *                Note that a successful response may take a long time, depending on how fast
+ *                the daemon process actors stop after getting their stop message.
  */
 final case class ChangeNumberOfProcesses(newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Done]])
     extends ShardedDaemonProcessCommand
