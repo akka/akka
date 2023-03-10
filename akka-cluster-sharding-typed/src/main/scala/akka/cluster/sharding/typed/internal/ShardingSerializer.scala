@@ -15,6 +15,7 @@ import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializerWithStringManifest
 
 import java.nio.ByteBuffer
+import java.time.Instant
 
 /**
  * INTERNAL API
@@ -27,9 +28,11 @@ import java.nio.ByteBuffer
   private val payloadSupport = new WrappedPayloadSupport(system)
 
   private val ShardingEnvelopeManifest = "a"
+  private val DaemonProcessScaleStateManifest = "b"
 
   override def manifest(o: AnyRef): String = o match {
-    case _: ShardingEnvelope[_] => ShardingEnvelopeManifest
+    case _: ShardingEnvelope[_]                        => ShardingEnvelopeManifest
+    case _: ShardedDaemonProcessCoordinator.ScaleState => DaemonProcessScaleStateManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -41,6 +44,16 @@ import java.nio.ByteBuffer
       builder.setMessage(payloadSupport.payloadBuilder(env.message))
       builder.build().toByteArray()
 
+    case state: ShardedDaemonProcessCoordinator.ScaleState =>
+      ShardingMessages.DaemonProcessScaleState
+        .newBuilder()
+        .setRevision(state.revision)
+        .setNumberOfProcesses(state.numberOfProcesses)
+        .setCompleted(state.completed)
+        .setStartedTimestampMillis(state.started.toEpochMilli)
+        .build()
+        .toByteArray()
+
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
@@ -51,6 +64,15 @@ import java.nio.ByteBuffer
       val entityId = env.getEntityId
       val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
       ShardingEnvelope(entityId, wrappedMsg)
+
+    case DaemonProcessScaleStateManifest =>
+      val st = ShardingMessages.DaemonProcessScaleState.parseFrom(bytes)
+      ShardedDaemonProcessCoordinator.ScaleState(
+        st.getRevision,
+        st.getNumberOfProcesses,
+        st.getCompleted,
+        Instant.ofEpochMilli(st.getStartedTimestampMillis))
+
     case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
@@ -65,6 +87,19 @@ import java.nio.ByteBuffer
       val codedOutputStream = CodedOutputStream.newInstance(buf)
       builder.build().writeTo(codedOutputStream)
       codedOutputStream.flush()
+
+    case state: ShardedDaemonProcessCoordinator.ScaleState =>
+      val codedOutputStream = CodedOutputStream.newInstance(buf)
+      ShardingMessages.DaemonProcessScaleState
+        .newBuilder()
+        .setRevision(state.revision)
+        .setNumberOfProcesses(state.numberOfProcesses)
+        .setCompleted(state.completed)
+        .setStartedTimestampMillis(state.started.toEpochMilli)
+        .build()
+        .writeTo(codedOutputStream)
+      codedOutputStream.flush()
+
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
@@ -75,6 +110,15 @@ import java.nio.ByteBuffer
       val entityId = env.getEntityId
       val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
       ShardingEnvelope(entityId, wrappedMsg)
+
+    case DaemonProcessScaleStateManifest =>
+      val st = ShardingMessages.DaemonProcessScaleState.parseFrom(buf)
+      ShardedDaemonProcessCoordinator.ScaleState(
+        st.getRevision,
+        st.getNumberOfProcesses,
+        st.getCompleted,
+        Instant.ofEpochMilli(st.getStartedTimestampMillis))
+
     case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")

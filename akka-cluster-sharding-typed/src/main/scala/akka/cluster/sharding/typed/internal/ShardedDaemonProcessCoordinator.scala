@@ -12,6 +12,7 @@ import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
+import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.scaladsl.adapter.TypedActorRefOps
 import akka.cluster.ddata.LWWRegister
@@ -40,7 +41,7 @@ import java.time.Instant
  */
 private[akka] object ShardedDaemonProcessCoordinator {
 
-  private final case class ScaleState(revision: Int, numberOfProcesses: Int, completed: Boolean, started: Instant)
+  final case class ScaleState(revision: Int, numberOfProcesses: Int, completed: Boolean, started: Instant)
 
   private type Register = LWWRegister[ScaleState]
   private def ddataKey(name: String) = LWWRegisterKey[ScaleState](name)
@@ -67,23 +68,26 @@ private[akka] object ShardedDaemonProcessCoordinator {
       shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[ShardedDaemonProcessCommand] =
     Behaviors.setup { context =>
       Behaviors.withTimers { timers =>
-        context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
-        val key = ddataKey(daemonProcessName)
-        val ddata = DistributedData(context.system)
-        val selfUniqueAddress = ddata.selfUniqueAddress
+        Behaviors.withStash(100) { stash =>
+          context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
+          val key = ddataKey(daemonProcessName)
+          val ddata = DistributedData(context.system)
+          val selfUniqueAddress = ddata.selfUniqueAddress
 
-        DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, Register] { replicatorAdapter =>
-          new ShardedDaemonProcessCoordinator(
-            settings,
-            shardingSettings,
-            context,
-            timers,
-            daemonProcessName,
-            shardingRef.toClassic,
-            initialNumberOfProcesses,
-            key,
-            selfUniqueAddress,
-            replicatorAdapter).start()
+          DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, Register] { replicatorAdapter =>
+            new ShardedDaemonProcessCoordinator(
+              settings,
+              shardingSettings,
+              context,
+              timers,
+              stash,
+              daemonProcessName,
+              shardingRef.toClassic,
+              initialNumberOfProcesses,
+              key,
+              selfUniqueAddress,
+              replicatorAdapter).start()
+          }
         }
       }
     }
@@ -94,6 +98,7 @@ private class ShardedDaemonProcessCoordinator private (
     shardingSettings: ClusterShardingSettings,
     context: ActorContext[ShardedDaemonProcessCommand],
     timers: TimerScheduler[ShardedDaemonProcessCommand],
+    stash: StashBuffer[ShardedDaemonProcessCommand],
     daemonProcessName: String,
     shardingRef: akka.actor.ActorRef,
     initialNumberOfProcesses: Int,
@@ -139,7 +144,7 @@ private class ShardedDaemonProcessCoordinator private (
       replyTo => Replicator.Get(key, Replicator.ReadMajority(settings.rescaleReadStateTimeout), replyTo),
       response => InternalGetResponse(response))
 
-    Behaviors.receiveMessagePartial {
+    Behaviors.receiveMessage {
       case InternalGetResponse(success @ Replicator.GetSuccess(`key`)) =>
         val existingScaleState = success.get(key).value
         if (existingScaleState.completed) {
@@ -160,12 +165,15 @@ private class ShardedDaemonProcessCoordinator private (
 
       case InternalGetResponse(_ @Replicator.NotFound(`key`)) =>
         context.log.debug("{}: No previous state stored for Sharded Daemon Process", daemonProcessName)
-        idle(initialState.value)
+        stash.unstashAll(idle(initialState.value))
 
       case InternalGetResponse(_ @Replicator.GetFailure(`key`)) =>
         context.log.info("{}: Failed fetching initial state for Sharded Daemon Process, retrying", daemonProcessName)
         start()
 
+      case other =>
+        stash.stash(other)
+        Behaviors.same
     }
   }
 

@@ -8,6 +8,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.annotation.InternalApi
+import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
@@ -208,6 +209,9 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     }
 
     if (supportsRescale) {
+      // FIXME do we need to start it on all nodes, regardless of role?
+      DistributedData(system).replicator
+
       var singletonSettings =
         ClusterSingletonSettings(system)
       settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
