@@ -46,7 +46,22 @@ An additional factory method is provided for further configurability and providi
 In use cases where you need to send messages to the daemon process actors it is recommended to use the @ref:[system receptionist](actor-discovery.md)
 either with a single `ServiceKey` which all daemon process actors register themeselves to for broadcasts or individual keys if more fine grained messaging is needed.
 
+## Dynamic scaling of number of workers
+
+Starting the sharded daemon process with `initWithContext` returns an `ActorRef[ShardedDaemonProcessCommand]` that accepts a @apidoc[ChangeNumberOfProcesses] command to rescale the process to a new number of workers.
+
+The rescaling process among other things includes the process actors stopping themselves in response to a stop message 
+so may be a relatively slow operation. If a subsequent request to rescale is sent while one is in progress it is responded
+to with a failure response.
+
 ## Scalability  
 
 This cluster tool is intended for small numbers of consumers and will not scale well to a large set. In large clusters 
 it is recommended to limit the nodes the sharded daemon process will run on using a role.
+
+## Configuration
+
+The following configuration properties are read by the @apidoc[ShardedDaemonProcessSettings]
+when created with a @apidoc[ActorSystem](typed.ActorSystem) parameter:
+
+@@snip [reference.conf](/akka-cluster-sharding-typed/src/main/resources/reference.conf) { #sharded-daemon-process }
