@@ -98,7 +98,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), Some(stopMessage), None)(
       classTag)
 
-  def init[T](
+  override def init[T](
       name: String,
       numberOfInstances: Int,
       behaviorFactory: Int => Behavior[T],
@@ -106,7 +106,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit =
     init(name, numberOfInstances, behaviorFactory, settings, stopMessage, None)
 
-  def init[T](
+  override def init[T](
       name: String,
       numberOfInstances: Int,
       behaviorFactory: Int => Behavior[T],
@@ -119,16 +119,34 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       context => behaviorFactory(context.processNumber),
       settings,
       stopMessage,
-      None)
+      None,
+      supportsRescale = false)
 
-  def initWithContext[T](
+  override def initWithContext[T](
       name: String,
       numberOfInstances: Int,
       behaviorFactory: ShardedDaemonProcessContext => Behavior[T],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T],
       shardAllocationStrategy: Option[ShardAllocationStrategy])(
-      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] = {
+      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+    initWithContext(
+      name,
+      numberOfInstances,
+      behaviorFactory,
+      settings,
+      stopMessage,
+      shardAllocationStrategy,
+      supportsRescale = true)
+
+  private def initWithContext[T](
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: ShardedDaemonProcessContext => Behavior[T],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: Option[T],
+      shardAllocationStrategy: Option[ShardAllocationStrategy],
+      supportsRescale: Boolean)(implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] = {
 
     val entityTypeKey = EntityTypeKey[T](s"sharded-daemon-process-$name")
 
@@ -189,19 +207,23 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         s"ShardedDaemonProcessKeepAlive-$name")
     }
 
-    var singletonSettings =
-      ClusterSingletonSettings(system)
-    settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
-    val singleton =
-      SingletonActor(
-        ShardedDaemonProcessCoordinator(settings, shardingSettings, numberOfInstances, name, shardingRef),
-        s"ShardedDaemonProcessCoordinator-$name").withSettings(singletonSettings)
+    if (supportsRescale) {
+      var singletonSettings =
+        ClusterSingletonSettings(system)
+      settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
+      val singleton =
+        SingletonActor(
+          ShardedDaemonProcessCoordinator(settings, shardingSettings, numberOfInstances, name, shardingRef),
+          s"ShardedDaemonProcessCoordinator-$name").withSettings(singletonSettings)
 
-    ClusterSingleton(system).init(singleton)
+      ClusterSingleton(system).init(singleton)
+    } else {
+      system.deadLetters
+    }
   }
 
   // Java API
-  def init[T](
+  override def init[T](
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
@@ -222,7 +244,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       Some(stopMessage),
       None)(ClassTag(messageClass))
 
-  def init[T](
+  override def init[T](
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
@@ -231,7 +253,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       stopMessage: Optional[T]): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala, None)(ClassTag(messageClass))
 
-  def init[T](
+  override def init[T](
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
