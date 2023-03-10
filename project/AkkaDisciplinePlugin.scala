@@ -25,8 +25,6 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-actor-typed-tests",
     // references to deprecated PARSER fields in generated message formats?
     "akka-cluster-typed",
-    // use of deprecated akka.protobuf.GeneratedMessage
-    "akka-protobuf",
     "akka-protobuf-v3",
     // references to deprecated PARSER fields in generated message formats?
     "akka-remote",
