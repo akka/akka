@@ -92,7 +92,6 @@ class StopShardsSpec extends AkkaSpec(StopShardsSpec.config) with WithLogCapturi
       awaitAssert(Cluster(sysB).selfMember.status shouldEqual MemberStatus.Up, 3.seconds)
 
       // wait for all regions to be registered
-      // FIXME test depends on this right now, stopping should work also when if rebalancing because of topology change?
       pA.awaitAssert({
         regionA.tell(GetCurrentRegions, pA.ref)
         pA.expectMsgType[CurrentRegions].regions should have size (2)
@@ -101,15 +100,12 @@ class StopShardsSpec extends AkkaSpec(StopShardsSpec.config) with WithLogCapturi
 
     "start entities in a few shards, then stop the shards" in {
 
-      val allShards = (1 to 10)
-        .map { i =>
-          regionA.tell(i, pA.ref)
-          val entityRef = pA.expectMsgType[ActorRef]
-          pA.watch(entityRef) // so we can verify terminated later
-          extractShardId(i) -> entityRef
-        }
-        .map(_._1)
-        .toSet
+      val allShards = (1 to 10).map { i =>
+        regionA.tell(i, pA.ref)
+        val entityRef = pA.expectMsgType[ActorRef]
+        pA.watch(entityRef) // so we can verify terminated later
+        extractShardId(i)
+      }.toSet
 
       regionB.tell(ShardCoordinator.Internal.StopShards(allShards), pB.ref)
       (1 to allShards.size).foreach { _ =>

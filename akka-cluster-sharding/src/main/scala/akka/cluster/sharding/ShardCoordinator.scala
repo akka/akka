@@ -36,6 +36,8 @@ import akka.persistence._
 import akka.util.PrettyDuration._
 import akka.util.Timeout
 
+import java.util.UUID
+
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
@@ -530,7 +532,7 @@ object ShardCoordinator {
 
   private final case class DelayedShardRegionTerminated(region: ActorRef)
 
-  private final case class StopShardTimeout(requestId: Long)
+  private final case class StopShardTimeout(requestId: UUID)
 
   /**
    * Result of `allocateShard` is piped to self with this message.
@@ -692,7 +694,7 @@ abstract class ShardCoordinator(
   var aliveRegions = Set.empty[ActorRef]
   var regionTerminationInProgress = Set.empty[ActorRef]
   // each waiting actor together with a request identifier to clear out all waiting for one request on timeout
-  var waitingForShardsToStop: Map[ShardId, Set[(ActorRef, Long)]] = Map.empty
+  var waitingForShardsToStop: Map[ShardId, Set[(ActorRef, UUID)]] = Map.empty
 
   import context.dispatcher
 
@@ -821,14 +823,7 @@ abstract class ShardCoordinator(
             typeName,
             shardIds.mkString(", "))
         } else if (state.regions.nonEmpty && !preparingForShutdown) {
-          def uniqueRequestId(): Long = {
-            var requestId = System.currentTimeMillis()
-            while (waitingForShardsToStop.exists { case (_, waiting) => waiting.exists(_._2 == requestId) }) {
-              requestId += 1
-            }
-            requestId
-          }
-          val requestId = uniqueRequestId()
+          val requestId = UUID.randomUUID()
           val (runningShards, alreadyStoppedShards) = shardIds.partition(state.shards.contains)
           alreadyStoppedShards.foreach(shardId => sender() ! ShardStopped(shardId))
           if (runningShards.nonEmpty) {
