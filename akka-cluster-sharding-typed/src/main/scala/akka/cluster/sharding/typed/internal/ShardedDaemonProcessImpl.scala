@@ -194,7 +194,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
     val singleton =
       SingletonActor(
-        ShardedDaemonProcessCoordinator(settings, numberOfInstances, name, shardingRef),
+        ShardedDaemonProcessCoordinator(settings, shardingSettings, numberOfInstances, name, shardingRef),
         s"ShardedDaemonProcessCoordinator-$name").withSettings(singletonSettings)
 
     ClusterSingleton(system).init(singleton)

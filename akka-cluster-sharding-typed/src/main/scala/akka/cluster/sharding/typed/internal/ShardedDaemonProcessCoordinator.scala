@@ -22,6 +22,7 @@ import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.ddata.typed.scaladsl.ReplicatorMessageAdapter
 import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.typed.ChangeNumberOfProcesses
+import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
@@ -31,7 +32,6 @@ import akka.cluster.typed.Cluster
 import akka.pattern.StatusReply
 
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
 
 /**
  * INTERNAL API
@@ -61,6 +61,7 @@ private[akka] object ShardedDaemonProcessCoordinator {
 
   def apply[T](
       settings: ShardedDaemonProcessSettings,
+      shardingSettings: ClusterShardingSettings,
       initialNumberOfProcesses: Int,
       daemonProcessName: String,
       shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[ShardedDaemonProcessCommand] =
@@ -74,6 +75,7 @@ private[akka] object ShardedDaemonProcessCoordinator {
         DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, Register] { replicatorAdapter =>
           new ShardedDaemonProcessCoordinator(
             settings,
+            shardingSettings,
             context,
             timers,
             daemonProcessName,
@@ -89,6 +91,7 @@ private[akka] object ShardedDaemonProcessCoordinator {
 
 private class ShardedDaemonProcessCoordinator private (
     settings: ShardedDaemonProcessSettings,
+    shardingSettings: ClusterShardingSettings,
     context: ActorContext[ShardedDaemonProcessCommand],
     timers: TimerScheduler[ShardedDaemonProcessCommand],
     daemonProcessName: String,
@@ -99,14 +102,10 @@ private class ShardedDaemonProcessCoordinator private (
     replicatorAdapter: ReplicatorMessageAdapter[ShardedDaemonProcessCommand, ShardedDaemonProcessCoordinator.Register]) {
   import ShardedDaemonProcessCoordinator._
   private val started = Instant.now()
-  // FIXME write timeouts from config
-  private val writeTimeout = 5.seconds
-  private val readTimeout = 5.seconds
 
-  // note this timeout needs to be long because waiting for process passivation should be set related to
-  // the timeout for stopping shards in shard coordinator
-  private val stopShardsTimeout = 1.minute
-  private val pingerRetryTimeout = 3.seconds
+  // Stopping shards can take a lot of time, so don't hammer it with retries (even if the
+  // stop shard command is idempotent)
+  private val stopShardsTimeout = shardingSettings.tuningParameters.handOffTimeout / 4
 
   private val cluster = Cluster(context.system)
 
@@ -137,7 +136,7 @@ private class ShardedDaemonProcessCoordinator private (
 
   def start(): Behavior[ShardedDaemonProcessCommand] = {
     replicatorAdapter.askGet(
-      replyTo => Replicator.Get(key, Replicator.ReadMajority(readTimeout), replyTo),
+      replyTo => Replicator.Get(key, Replicator.ReadMajority(settings.rescaleReadStateTimeout), replyTo),
       response => InternalGetResponse(response))
 
     Behaviors.receiveMessagePartial {
@@ -204,8 +203,8 @@ private class ShardedDaemonProcessCoordinator private (
       previousNumberOfProcesses: Int): Behavior[ShardedDaemonProcessCommand] = {
     replicatorAdapter.askUpdate(
       replyTo =>
-        Replicator.Update(key, initialState, Replicator.WriteMajority(writeTimeout), replyTo)((register: Register) =>
-          register.withValue(selfUniqueAddress, newState)),
+        Replicator.Update(key, initialState, Replicator.WriteMajority(settings.rescaleWriteStateTimeout), replyTo)(
+          (register: Register) => register.withValue(selfUniqueAddress, newState)),
       response => InternalUpdateResponse(response))
 
     // wait for update to complete before applying
@@ -228,7 +227,7 @@ private class ShardedDaemonProcessCoordinator private (
       request: Option[ChangeNumberOfProcesses],
       previousNumberOfProcesses: Int): Behavior[ShardedDaemonProcessCommand] = {
     context.log.debug2("{}: Pausing all pingers (with revision [{}])", daemonProcessName, state.revision - 1)
-    timers.startTimerWithFixedDelay(PauseAllKeepalivePingers, pingerRetryTimeout)
+    timers.startTimerWithFixedDelay(PauseAllKeepalivePingers, settings.rescalePingerPauseTimeout)
     pingersTopic ! Topic.Publish(Pause(state.revision - 1, pingerResponseAdapter))
     waitForAllPingersPaused(state, request, previousNumberOfProcesses, Set.empty)
   }
@@ -243,7 +242,7 @@ private class ShardedDaemonProcessCoordinator private (
         context.log.debugN(
           "{}: Did not see acks from all pingers paused within [{}], retrying pause (seen acks [{}])",
           daemonProcessName,
-          pingerRetryTimeout,
+          settings.rescalePingerPauseTimeout,
           seenAcks.mkString(", "))
         pingersTopic ! Topic.Publish(Pause(state.revision - 1, pingerResponseAdapter))
         Behaviors.same
@@ -298,7 +297,7 @@ private class ShardedDaemonProcessCoordinator private (
       state: ShardedDaemonProcessCoordinator.ScaleState,
       request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
     context.log.debug2("{}: Restarting all pingers (with revision [{}])", daemonProcessName, state.revision)
-    timers.startTimerWithFixedDelay(RestartAllKeepalivePingers, pingerRetryTimeout)
+    timers.startTimerWithFixedDelay(RestartAllKeepalivePingers, settings.rescalePingerPauseTimeout)
     pingersTopic ! Topic.Publish(Restart(state.revision, state.numberOfProcesses, pingerResponseAdapter))
     waitForAllPingersStarted(state, request, Set.empty)
   }
@@ -312,7 +311,7 @@ private class ShardedDaemonProcessCoordinator private (
         context.log.debug2(
           "{}: Did not see acks from all pingers restarted within [{}], retrying restart",
           daemonProcessName,
-          pingerRetryTimeout)
+          settings.rescalePingerPauseTimeout)
         pingersTopic ! Topic.Publish(Restart(state.revision, state.numberOfProcesses, pingerResponseAdapter))
         Behaviors.same
       case PingerAck(path) =>
@@ -341,8 +340,8 @@ private class ShardedDaemonProcessCoordinator private (
     val newState = state.copy(completed = true)
     replicatorAdapter.askUpdate(
       replyTo =>
-        Replicator.Update(key, initialState, Replicator.WriteMajority(writeTimeout), replyTo)((register: Register) =>
-          register.withValue(selfUniqueAddress, newState)),
+        Replicator.Update(key, initialState, Replicator.WriteMajority(settings.rescaleWriteStateTimeout), replyTo)(
+          (register: Register) => register.withValue(selfUniqueAddress, newState)),
       response => InternalUpdateResponse(response))
 
     receiveWhileRescaling("rescalingComplete") {
