@@ -77,7 +77,7 @@ object Dependencies {
     // ssl-config
     val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
 
-    val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
+    val lmdb = "org.lmdbjava" % "lmdbjava" % "0.8.3" // ApacheV2, OpenLDAP Public License
 
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
