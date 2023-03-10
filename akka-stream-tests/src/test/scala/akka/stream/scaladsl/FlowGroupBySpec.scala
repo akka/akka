@@ -680,6 +680,23 @@ class FlowGroupBySpec extends StreamSpec("""
       queue.complete()
     }
 
+    "not throw tooManySubstreamsOpenException for element on closed substream" in {
+      val publisher = TestPublisher.Probe[(Int, Boolean)]()
+      val outProbe =
+        Source.fromPublisher(publisher).groupBy(2, _._1).takeWhile(_._2 != false).mergeSubstreams.runWith(TestSink())
+      outProbe.request(4)
+      publisher.sendNext((1, true))
+      outProbe.expectNext((1, true))
+      publisher.sendNext((2, true))
+      outProbe.expectNext((2, true))
+      publisher.sendNext((2, false)) // substream 2 completed
+      publisher.sendNext((2, false)) // should be dropped, not crash the stream
+      publisher.sendNext((1, true))
+      outProbe.expectNext((1, true))
+
+      outProbe.cancel()
+    }
+
   }
 
 }
