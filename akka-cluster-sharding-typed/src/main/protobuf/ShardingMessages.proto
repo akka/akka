@@ -21,3 +21,9 @@ message DaemonProcessScaleState {
   required bool completed = 3;
   required int64 startedTimestampMillis = 4;
 }
+
+message ChangeNumberOfProcesses {
+  required int32 newNumberOfProcesses = 1;
+  required string replyTo = 2;
+}
+

@@ -4,15 +4,20 @@
 
 package akka.cluster.sharding.typed
 
-import org.scalatest.wordspec.AnyWordSpecLike
+import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessCoordinator
 import akka.cluster.sharding.typed.internal.ShardingSerializer
+import akka.pattern.StatusReply
 import akka.serialization.SerializationExtension
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -47,6 +52,16 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
     "must serialize and deserialize StartEntity" in {
       checkSerialization(scaladsl.StartEntity[Int]("abc"))
       checkSerialization(javadsl.StartEntity.create(classOf[java.lang.Integer], "def"))
+    }
+
+    "must serialize and deserialize ShardedDaemonProcessCoordinator.ScaleState" in {
+      checkSerialization(
+        ShardedDaemonProcessCoordinator.ScaleState(2, 3, true, Instant.now().truncatedTo(ChronoUnit.MILLIS)))
+    }
+
+    "must serialize and deserialize Change" in {
+      val probe = createTestProbe[StatusReply[Done]]()
+      checkSerialization(ChangeNumberOfProcesses(7, probe.ref))
     }
   }
 }

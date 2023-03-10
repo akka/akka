@@ -4,8 +4,12 @@
 
 package akka.cluster.sharding.typed.internal
 
+import akka.actor.typed.ActorRefResolver
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+
 import java.io.NotSerializableException
 import akka.annotation.InternalApi
+import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.internal.protobuf.ShardingMessages
 import akka.protobufv3.internal.CodedOutputStream
@@ -26,13 +30,16 @@ import java.time.Instant
     with BaseSerializer {
 
   private val payloadSupport = new WrappedPayloadSupport(system)
+  private lazy val resolver = ActorRefResolver(system.toTyped)
 
   private val ShardingEnvelopeManifest = "a"
   private val DaemonProcessScaleStateManifest = "b"
+  private val ChangeNumberOfProcessesManifest = "c"
 
   override def manifest(o: AnyRef): String = o match {
     case _: ShardingEnvelope[_]                        => ShardingEnvelopeManifest
     case _: ShardedDaemonProcessCoordinator.ScaleState => DaemonProcessScaleStateManifest
+    case _: ChangeNumberOfProcesses                    => ChangeNumberOfProcessesManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -54,6 +61,14 @@ import java.time.Instant
         .build()
         .toByteArray()
 
+    case change: ChangeNumberOfProcesses =>
+      ShardingMessages.ChangeNumberOfProcesses
+        .newBuilder()
+        .setNewNumberOfProcesses(change.newNumberOfProcesses)
+        .setReplyTo(resolver.toSerializationFormat(change.replyTo))
+        .build()
+        .toByteArray
+
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
@@ -72,6 +87,10 @@ import java.time.Instant
         st.getNumberOfProcesses,
         st.getCompleted,
         Instant.ofEpochMilli(st.getStartedTimestampMillis))
+
+    case ChangeNumberOfProcessesManifest =>
+      val change = ShardingMessages.ChangeNumberOfProcesses.parseFrom(bytes)
+      ChangeNumberOfProcesses(change.getNewNumberOfProcesses, resolver.resolveActorRef(change.getReplyTo))
 
     case _ =>
       throw new NotSerializableException(
@@ -100,6 +119,16 @@ import java.time.Instant
         .writeTo(codedOutputStream)
       codedOutputStream.flush()
 
+    case change: ChangeNumberOfProcesses =>
+      val codedOutputStream = CodedOutputStream.newInstance(buf)
+      ShardingMessages.ChangeNumberOfProcesses
+        .newBuilder()
+        .setNewNumberOfProcesses(change.newNumberOfProcesses)
+        .setReplyTo(resolver.toSerializationFormat(change.replyTo))
+        .build()
+        .writeTo(codedOutputStream)
+      codedOutputStream.flush()
+
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
@@ -118,6 +147,10 @@ import java.time.Instant
         st.getNumberOfProcesses,
         st.getCompleted,
         Instant.ofEpochMilli(st.getStartedTimestampMillis))
+
+    case ChangeNumberOfProcessesManifest =>
+      val change = ShardingMessages.ChangeNumberOfProcesses.parseFrom(buf)
+      ChangeNumberOfProcesses(change.getNewNumberOfProcesses, resolver.resolveActorRef(change.getReplyTo))
 
     case _ =>
       throw new NotSerializableException(
