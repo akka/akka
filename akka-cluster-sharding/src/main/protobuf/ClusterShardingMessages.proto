@@ -102,6 +102,10 @@ message CurrentRegions {
   repeated Address regions = 1;
 }
 
+message StopShards {
+  repeated string shards = 1;
+}
+
 /**
  * Defines a remote address.
  */
@@ -142,3 +146,4 @@ message RememberedShardState {
     repeated string shardId = 1;
     optional bool marker = 2;
 }
+

@@ -763,6 +763,7 @@ private[akka] class ShardRegion(
     case msg: RestartShard                       => deliverMessage(msg, sender())
     case msg: StartEntity                        => deliverStartEntity(msg, sender())
     case msg: SetActiveEntityLimit               => deliverToAllShards(msg, sender())
+    case msg: CoordinatorCommand                 => deliverToCoordinator(msg, sender())
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender())
     case unknownMsg =>
       log.warning("{}: Message does not have an extractor defined in shard so it was ignored: {}", typeName, unknownMsg)
@@ -1270,6 +1271,9 @@ private[akka] class ShardRegion(
 
   def deliverToAllShards(msg: Any, snd: ActorRef): Unit =
     shards.values.foreach(_.tell(msg, snd))
+
+  def deliverToCoordinator(msg: CoordinatorCommand, snd: ActorRef): Unit =
+    coordinator.foreach(_.tell(msg, snd))
 
   def deliverMessage(msg: Any, snd: ActorRef): Unit =
     msg match {
