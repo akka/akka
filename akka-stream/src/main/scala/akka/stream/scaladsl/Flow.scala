@@ -11,12 +11,10 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
-
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -27,6 +25,7 @@ import akka.event.LoggingAdapter
 import akka.event.MarkerLoggingAdapter
 import akka.stream._
 import akka.stream.Attributes.SourceLocation
+import akka.stream.impl.CoupledTerminationBidi
 import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.impl.ProcessorModule
 import akka.stream.impl.SetupFlowStage
@@ -2683,37 +2682,6 @@ trait FlowOps[+Out, +Mat] {
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
 
   /**
-   * This is a simplified version of throttle that spreads events evenly across the given time interval. throttleEven using
-   * best effort approach to meet throttle rate.
-   *
-   * Use this operator when you need just slow down a stream without worrying about exact amount
-   * of time between events.
-   *
-   * If you want to be sure that no time interval has no more than specified number of events you need to use
-   * [[throttle]] with maximumBurst attribute.
-   * @see [[throttle]]
-   */
-  @Deprecated
-  @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")
-  def throttleEven(elements: Int, per: FiniteDuration, mode: ThrottleMode): Repr[Out] =
-    throttle(elements, per, Throttle.AutomaticMaximumBurst, ConstantFun.oneInt, mode)
-
-  /**
-   * This is a simplified version of throttle that spreads events evenly across the given time interval.
-   *
-   * Use this operator when you need just slow down a stream without worrying about exact amount
-   * of time between events.
-   *
-   * If you want to be sure that no time interval has no more than specified number of events you need to use
-   * [[throttle]] with maximumBurst attribute.
-   * @see [[throttle]]
-   */
-  @Deprecated
-  @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")
-  def throttleEven(cost: Int, per: FiniteDuration, costCalculation: (Out) => Int, mode: ThrottleMode): Repr[Out] =
-    throttle(cost, per, Throttle.AutomaticMaximumBurst, costCalculation, mode)
-
-  /**
    * Detaches upstream demand from downstream demand without detaching the
    * stream rates; in other words acts like a buffer of size 1.
    *
@@ -4029,18 +3997,6 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * Transform the materialized value of this graph, leaving all other properties as they were.
    */
   def mapMaterializedValue[Mat2](f: Mat => Mat2): ReprMat[Out, Mat2]
-
-  /**
-   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
-   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
-   * event, and may therefor affect performance.
-   *
-   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
-   */
-  @Deprecated
-  @deprecated("Use monitor() or monitorMat(combine) instead", "2.5.17")
-  def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) => Mat2): ReprMat[Out, Mat2] =
-    viaMat(GraphStages.monitor)(combine)
 
   /**
    * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated

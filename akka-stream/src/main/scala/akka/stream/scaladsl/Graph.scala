@@ -790,12 +790,6 @@ object Partition {
 final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val eagerCancel: Boolean)
     extends GraphStage[UniformFanOutShape[T, T]] {
 
-  /**
-   * Sets `eagerCancel` to `false`.
-   */
-  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter", "2.5.10")
-  def this(outputPorts: Int, partitioner: T => Int) = this(outputPorts, partitioner, false)
-
   val in: Inlet[T] = Inlet[T]("Partition.in")
   val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i => Outlet[T]("Partition.out" + i)) // FIXME BC make this immutable.IndexedSeq as type + Vector as concrete impl
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
@@ -930,10 +924,6 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean,
     extends GraphStage[UniformFanOutShape[T, T]] {
   // one output might seem counter intuitive but saves us from special handling in other places
   require(outputPorts >= 1, "A Balance must have one or more output ports")
-
-  @Deprecated
-  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter", since = "2.5.12")
-  def this(outputPorts: Int, waitForAllDownstreams: Boolean) = this(outputPorts, waitForAllDownstreams, false)
 
   val in: Inlet[T] = Inlet[T]("Balance.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i => Outlet[T]("Balance.out" + i))
@@ -1208,9 +1198,6 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
   override def initialAttributes = DefaultAttributes.zipWithN
   override val shape = new UniformFanInShape[A, O](n)
   def out: Outlet[O] = shape.out
-
-  @deprecated("use `shape.inlets` or `shape.in(id)` instead", "2.5.5")
-  def inSeq: immutable.IndexedSeq[Inlet[A]] = shape.inlets.asInstanceOf[immutable.IndexedSeq[Inlet[A]]]
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler {

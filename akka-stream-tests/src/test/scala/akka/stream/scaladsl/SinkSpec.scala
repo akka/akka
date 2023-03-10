@@ -204,28 +204,11 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       s.traversalBuilder.attributes.get[Name](Name("default")) shouldEqual Name("name")
     }
 
-    "given no attributes of a class when getting first attribute with default value should get default value" in {
-      import Attributes._
-      val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async
-
-      @nowarn("msg=deprecated")
-      val res = s.traversalBuilder.attributes.getFirst[Name](Name("default"))
-      res shouldEqual Name("default")
-    }
-
     "given no attributes of a class when getting last attribute with default value should get default value" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async
 
       s.traversalBuilder.attributes.get[Name](Name("default")) shouldEqual Name("default")
-    }
-
-    "given multiple attributes of a class when getting first attribute with default value should get first attribute" in {
-      import Attributes._
-      val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async.named("name").named("another_name")
-      @nowarn("msg=deprecated")
-      val res = s.traversalBuilder.attributes.getFirst[Name](Name("default"))
-      res shouldEqual Name("name")
     }
 
     "given multiple attributes of a class when getting last attribute with default value should get last attribute" in {
