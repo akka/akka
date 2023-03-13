@@ -74,21 +74,21 @@ abstract class ShardedDaemonProcessRescaleSpec
 
   import ShardedDaemonProcessRescaleSpec._
 
-  val probe: TestProbe[AnyRef] = TestProbe[AnyRef]()
+  val topicProbe: TestProbe[AnyRef] = TestProbe[AnyRef]()
   private var sdp: ActorRef[ShardedDaemonProcessCommand] = _
 
   "Cluster sharding in multi dc cluster" must {
     "form cluster" in {
       formCluster(first, second, third)
       runOn(first) {
-        typedSystem.receptionist ! Receptionist.Register(SnitchServiceKey, probe.ref, probe.ref)
-        probe.expectMessageType[Receptionist.Registered]
+        typedSystem.receptionist ! Receptionist.Register(SnitchServiceKey, topicProbe.ref, topicProbe.ref)
+        topicProbe.expectMessageType[Receptionist.Registered]
       }
       enterBarrier("snitch-registered")
 
-      probe.awaitAssert({
-        typedSystem.receptionist ! Receptionist.Find(SnitchServiceKey, probe.ref)
-        probe.expectMessageType[Receptionist.Listing].serviceInstances(SnitchServiceKey).size should ===(1)
+      topicProbe.awaitAssert({
+        typedSystem.receptionist ! Receptionist.Find(SnitchServiceKey, topicProbe.ref)
+        topicProbe.expectMessageType[Receptionist.Listing].serviceInstances(SnitchServiceKey).size should ===(1)
       }, 5.seconds)
       enterBarrier("snitch-seen")
     }
@@ -99,12 +99,11 @@ abstract class ShardedDaemonProcessRescaleSpec
         4,
         ctx => ProcessActor(ctx.processNumber),
         ShardedDaemonProcessSettings(system.toTyped),
-        Some(ProcessActor.Stop),
-        None)
+        ProcessActor.Stop)
       enterBarrier("sharded-daemon-process-initialized")
       runOn(first) {
         val startedIds = (0 to 3).map { _ =>
-          val event = probe.expectMessageType[ProcessActorEvent](5.seconds)
+          val event = topicProbe.expectMessageType[ProcessActorEvent](5.seconds)
           event.event should ===("Started")
           event.id
         }.toSet
@@ -115,10 +114,20 @@ abstract class ShardedDaemonProcessRescaleSpec
 
     "rescale to 8 workers" in {
       runOn(first) {
+        val probe = TestProbe[AnyRef]()
         sdp ! ChangeNumberOfProcesses(8, probe.ref)
         probe.expectMessage(30.seconds, StatusReply.Ack)
       }
       enterBarrier("sharded-daemon-process-rescaled-to-8")
+    }
+
+    "rescale to 2 workers" in {
+      runOn(second) {
+        val probe = TestProbe[AnyRef]()
+        sdp ! ChangeNumberOfProcesses(8, probe.ref)
+        probe.expectMessage(30.seconds, StatusReply.Ack)
+      }
+      enterBarrier("sharded-daemon-process-rescaled-to-2")
     }
 
     // FIXME test removing one cluster node and verify all are alive (how do we do that?)

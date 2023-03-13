@@ -11,6 +11,7 @@ import java.util.function.{ Function => JFunction }
 import java.util.Optional
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
@@ -95,12 +96,32 @@ abstract class ShardedDaemonProcess {
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
+   * The number of processing actors can be rescaled by interacting with the returned actor.
    *
-   * @param behaviorFactory         Given a unique id of `0` until `numberOfInstance` and total number of processes, create the behavior for that actor.
-   * @param stopMessage             if defined sent to the actors when they need to stop because of a rebalance across the nodes of the cluster,
-   *                                rescale or cluster shutdown.
-   * @param shardAllocationStrategy if defined used by entities to control the shard allocation
+   * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` and total number of processes, create the behavior for that actor.
+   * @param stopMessage     Sent to the actors when they need to stop because of a rebalance across the nodes of the cluster
+   *                        or cluster shutdown.
    */
+  @ApiMayChange
+  def initWithContext[T](
+      messageClass: Class[T],
+      name: String,
+      initialNumberOfInstances: Int,
+      behaviorFactory: JFunction[ShardedDaemonProcessContext, Behavior[T]],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: T): ActorRef[ShardedDaemonProcessCommand]
+
+  /**
+   * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
+   *
+   * @param behaviorFactory         Given a unique sharded daemon process context containing the total number of workers and the id
+   *                                the specific worker being started, create the behavior for that actor.
+   * @param stopMessage             If defined: sent to the actors when they need to stop because of a rebalance across the nodes of the cluster,
+   *                                rescale or cluster shutdown.
+   * @param shardAllocationStrategy If defined: used by entities to control the shard allocation
+   *
+   */
+  @ApiMayChange
   def initWithContext[T](
       messageClass: Class[T],
       name: String,

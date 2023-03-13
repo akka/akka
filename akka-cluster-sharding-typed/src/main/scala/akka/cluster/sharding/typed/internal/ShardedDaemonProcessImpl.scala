@@ -114,7 +114,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T],
       shardAllocationStrategy: Option[ShardAllocationStrategy])(implicit classTag: ClassTag[T]): Unit =
-    initWithContext(
+    internalInitWithContext(
       name,
       numberOfInstances,
       context => behaviorFactory(context.processNumber),
@@ -124,6 +124,14 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       supportsRescale = false)
 
   override def initWithContext[T](
+      name: EntityId,
+      initialNumberOfInstances: Int,
+      behaviorFactory: ShardedDaemonProcessContext => Behavior[T],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: T)(implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
+    initWithContext(name, initialNumberOfInstances, behaviorFactory, settings, Some(stopMessage), None)
+
+  override def initWithContext[T](
       name: String,
       numberOfInstances: Int,
       behaviorFactory: ShardedDaemonProcessContext => Behavior[T],
@@ -131,7 +139,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       stopMessage: Option[T],
       shardAllocationStrategy: Option[ShardAllocationStrategy])(
       implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand] =
-    initWithContext(
+    internalInitWithContext(
       name,
       numberOfInstances,
       behaviorFactory,
@@ -140,7 +148,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       shardAllocationStrategy,
       supportsRescale = true)
 
-  private def initWithContext[T](
+  private def internalInitWithContext[T](
       name: String,
       numberOfInstances: Int,
       behaviorFactory: ShardedDaemonProcessContext => Behavior[T],
@@ -275,19 +283,36 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
   override def initWithContext[T](
       messageClass: Class[T],
-      name: EntityId,
-      numberOfInstances: Int,
+      name: String,
+      initialNumberOfInstances: Int,
+      behaviorFactory: java.util.function.Function[ShardedDaemonProcessContext, Behavior[T]],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: T): ActorRef[ShardedDaemonProcessCommand] =
+    initWithContext[T](
+      messageClass,
+      name,
+      initialNumberOfInstances,
+      behaviorFactory,
+      settings,
+      Optional.of(stopMessage),
+      Optional.empty[ShardAllocationStrategy]())
+
+  override def initWithContext[T](
+      messageClass: Class[T],
+      name: String,
+      initialNumberOfInstances: Int,
       behaviorFactory: java.util.function.Function[ShardedDaemonProcessContext, Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T],
       shardAllocationStrategy: Optional[ShardAllocationStrategy]): ActorRef[ShardedDaemonProcessCommand] = {
     val classTag = ClassTag[T](messageClass)
-    initWithContext(
+    internalInitWithContext(
       name,
-      numberOfInstances,
+      initialNumberOfInstances,
       behaviorFactory.apply,
       settings,
       stopMessage.asScala,
-      shardAllocationStrategy.asScala)(classTag)
+      shardAllocationStrategy.asScala,
+      supportsRescale = true)(classTag)
   }
 }
