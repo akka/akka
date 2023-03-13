@@ -34,12 +34,14 @@ import scala.concurrent.duration.Duration
 @InternalApi
 private[akka] object ShardedDaemonProcessKeepAlivePinger {
 
+  /**
+   * Pub sub topic to reach all keep alive pingers for a given sharded daemon process name
+   */
   def topicFor(name: String): Behavior[Topic.Command[Message]] =
     Topic[Message](s"sharded-daemon-process-keepalive-$name")
 
   sealed trait Message
 
-  // FIXME do we need acks for stop/start?
   final case class Pause(revision: Int, replyTo: ActorRef[StatusReply[ActorPath]]) extends Message
 
   final case class Restart(revision: Int, newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[ActorPath]])
@@ -47,7 +49,7 @@ private[akka] object ShardedDaemonProcessKeepAlivePinger {
 
   private final case class Tick(revision: Int) extends Message
 
-  private case class SendKeepAliveDone(revision: Int) extends Message
+  private final case class SendKeepAliveDone(revision: Int) extends Message
 
   def apply[T](
       settings: ShardedDaemonProcessSettings,
@@ -96,7 +98,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
   }
 
   private def start(currentRevision: Int, numberOfProcesses: Int): Behavior[Message] = {
-    val sortedIdentities = ShardedDaemonProcessImpl.sortedIdentitiesFor(currentRevision, numberOfProcesses)
+    val sortedIdentities = ShardedDaemonProcessId.sortedIdentitiesFor(currentRevision, numberOfProcesses)
 
     Behaviors.receiveMessage {
       case Tick(`currentRevision`) =>

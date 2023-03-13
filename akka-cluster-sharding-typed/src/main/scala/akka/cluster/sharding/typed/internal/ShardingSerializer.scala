@@ -33,13 +33,13 @@ import java.time.Instant
   private lazy val resolver = ActorRefResolver(system.toTyped)
 
   private val ShardingEnvelopeManifest = "a"
-  private val DaemonProcessScaleStateManifest = "b"
+  private val DaemonProcessStateManifest = "b"
   private val ChangeNumberOfProcessesManifest = "c"
 
   override def manifest(o: AnyRef): String = o match {
-    case _: ShardingEnvelope[_]                        => ShardingEnvelopeManifest
-    case _: ShardedDaemonProcessCoordinator.ScaleState => DaemonProcessScaleStateManifest
-    case _: ChangeNumberOfProcesses                    => ChangeNumberOfProcessesManifest
+    case _: ShardingEnvelope[_]       => ShardingEnvelopeManifest
+    case _: ShardedDaemonProcessState => DaemonProcessStateManifest
+    case _: ChangeNumberOfProcesses   => ChangeNumberOfProcessesManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -51,7 +51,7 @@ import java.time.Instant
       builder.setMessage(payloadSupport.payloadBuilder(env.message))
       builder.build().toByteArray()
 
-    case state: ShardedDaemonProcessCoordinator.ScaleState =>
+    case state: ShardedDaemonProcessState =>
       ShardingMessages.DaemonProcessScaleState
         .newBuilder()
         .setRevision(state.revision)
@@ -80,9 +80,9 @@ import java.time.Instant
       val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
       ShardingEnvelope(entityId, wrappedMsg)
 
-    case DaemonProcessScaleStateManifest =>
+    case DaemonProcessStateManifest =>
       val st = ShardingMessages.DaemonProcessScaleState.parseFrom(bytes)
-      ShardedDaemonProcessCoordinator.ScaleState(
+      ShardedDaemonProcessState(
         st.getRevision,
         st.getNumberOfProcesses,
         st.getCompleted,
@@ -107,7 +107,7 @@ import java.time.Instant
       builder.build().writeTo(codedOutputStream)
       codedOutputStream.flush()
 
-    case state: ShardedDaemonProcessCoordinator.ScaleState =>
+    case state: ShardedDaemonProcessState =>
       val codedOutputStream = CodedOutputStream.newInstance(buf)
       ShardingMessages.DaemonProcessScaleState
         .newBuilder()
@@ -140,9 +140,9 @@ import java.time.Instant
       val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
       ShardingEnvelope(entityId, wrappedMsg)
 
-    case DaemonProcessScaleStateManifest =>
+    case DaemonProcessStateManifest =>
       val st = ShardingMessages.DaemonProcessScaleState.parseFrom(buf)
-      ShardedDaemonProcessCoordinator.ScaleState(
+      ShardedDaemonProcessState(
         st.getRevision,
         st.getNumberOfProcesses,
         st.getCompleted,

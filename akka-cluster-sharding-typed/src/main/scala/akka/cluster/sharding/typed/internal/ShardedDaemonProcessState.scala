@@ -1,0 +1,84 @@
+/*
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.cluster.sharding.typed.internal
+
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
+import akka.cluster.ddata.LWWRegister
+import akka.cluster.ddata.LWWRegisterKey
+import akka.cluster.ddata.typed.scaladsl.DistributedData
+import akka.cluster.ddata.typed.scaladsl.Replicator
+import akka.cluster.sharding.typed.ShardedDaemonProcessContext
+
+import java.time.Instant
+
+/**
+ * INTERNAL API
+ */
+private[akka] final case class ShardedDaemonProcessState(
+    revision: Int,
+    numberOfProcesses: Int,
+    completed: Boolean,
+    started: Instant)
+
+/**
+ * INTERNAL API
+ */
+private[akka] object ShardedDaemonProcessState {
+
+  type Register = LWWRegister[ShardedDaemonProcessState]
+
+  def ddataKey(name: String): LWWRegisterKey[ShardedDaemonProcessState] =
+    LWWRegisterKey[ShardedDaemonProcessState](name)
+
+  def verifyRevisionBeforeStarting[T](
+      behaviorFactory: ShardedDaemonProcessContext => Behavior[T]): ShardedDaemonProcessContext => Behavior[T] = {
+    sdpContext =>
+      Behaviors.setup { context =>
+        val revision = sdpContext.revision
+        val key = ddataKey(sdpContext.name)
+
+        context.log.debug2(
+          "{}: Deferred start of worker to verify its revision [{}] is the latest",
+          sdpContext.name,
+          revision)
+
+        // we can't anyway turn reply into T so no need for the usual adapter
+        val distributedData = DistributedData(context.system)
+        distributedData.replicator ! Replicator.Get(key, Replicator.ReadLocal, context.self.unsafeUpcast)
+        Behaviors.receiveMessagePartial {
+          case reply @ Replicator.GetSuccess(`key`) =>
+            val state = reply.get(key).value
+            if (state.revision == revision) {
+              context.log.debug2("{}: Starting worker, revision [{}] is the latest", sdpContext.name, revision)
+              behaviorFactory(sdpContext).unsafeCast
+            } else {
+              context.log.warnN(
+                "{}: Tried to start an old revision of worker ([{}] but latest revision is [{}], started at {})",
+                sdpContext.name,
+                sdpContext.revision,
+                state.revision,
+                state.started)
+              Behaviors.stopped // FIXME do we need to passivate or crash rather than stop?
+            }
+          case Replicator.NotFound(`key`) =>
+            if (revision == 0) {
+              // No state yet but initial revision, safe
+              context.log.debug("{}: Starting worker, revision 0 and no state found", sdpContext.name)
+              behaviorFactory(sdpContext).unsafeCast
+            } else {
+              context.log.error2(
+                "{}: Tried to start revision [{}] of worker but no ddata state found",
+                sdpContext.name,
+                sdpContext.revision)
+              Behaviors.stopped // FIXME do we need to passivate rather?
+            }
+        }
+
+      }
+  }
+
+}

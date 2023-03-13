@@ -8,7 +8,7 @@ import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.cluster.sharding.typed.internal.ShardedDaemonProcessCoordinator
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessState
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.pattern.StatusReply
 import akka.serialization.SerializationExtension
@@ -55,8 +55,7 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
     }
 
     "must serialize and deserialize ShardedDaemonProcessCoordinator.ScaleState" in {
-      checkSerialization(
-        ShardedDaemonProcessCoordinator.ScaleState(2, 3, true, Instant.now().truncatedTo(ChronoUnit.MILLIS)))
+      checkSerialization(ShardedDaemonProcessState(2, 3, true, Instant.now().truncatedTo(ChronoUnit.MILLIS)))
     }
 
     "must serialize and deserialize Change" in {

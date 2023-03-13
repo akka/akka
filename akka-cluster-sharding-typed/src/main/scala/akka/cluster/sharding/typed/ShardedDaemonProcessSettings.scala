@@ -11,6 +11,7 @@ import java.time.Duration
 import scala.concurrent.duration.FiniteDuration
 import com.typesafe.config.Config
 import akka.actor.typed.ActorSystem
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.pattern.StatusReply
@@ -178,9 +179,15 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
  * Not for user extension
  */
 @DoNotInherit
+@ApiMayChange
 trait ShardedDaemonProcessContext {
   def processNumber: Int
   def totalProcesses: Int
+
+  /**
+   * The revision starts at 0 and each time the number of processes is changed, the revision increases with 1
+   */
+  def revision: Long
 
   def name: String
 

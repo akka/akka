@@ -15,6 +15,7 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.scaladsl.adapter.TypedActorRefOps
+import akka.annotation.InternalApi
 import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.SelfUniqueAddress
@@ -39,12 +40,10 @@ import java.time.Instant
  *
  * A ShardedDaemonProcessCoordinator manages dynamic scaling of one setup of ShardedDaemonProcess
  */
+@InternalApi
 private[akka] object ShardedDaemonProcessCoordinator {
+  import ShardedDaemonProcessState._
 
-  final case class ScaleState(revision: Int, numberOfProcesses: Int, completed: Boolean, started: Instant)
-
-  private type Register = LWWRegister[ScaleState]
-  private def ddataKey(name: String) = LWWRegisterKey[ScaleState](name)
   private trait InternalMessage extends ShardedDaemonProcessCommand
 
   private case class InternalGetResponse(rsp: Replicator.GetResponse[Register]) extends InternalMessage
@@ -93,7 +92,19 @@ private[akka] object ShardedDaemonProcessCoordinator {
     }
 }
 
-private class ShardedDaemonProcessCoordinator private (
+/**
+ * Rescaling workflow overview:
+ *
+ * 1. Write to ddata new size and revision, in progress/not complete
+ * 2. Pause all pingers via pub/sub topic, wait for all to ack
+ * 3. Stop shards for all workers via shard coordinator
+ * 4. Start all pingers with new revision, wait for all to ack
+ * 5. Update ddata state, mark rescaling completed
+ *
+ * If coordinator moved before completing it will re-trigger workflow from step 2 on start, worst case stopping all
+ * workers before starting them again.
+ */
+private final class ShardedDaemonProcessCoordinator private (
     settings: ShardedDaemonProcessSettings,
     shardingSettings: ClusterShardingSettings,
     context: ActorContext[ShardedDaemonProcessCommand],
@@ -102,10 +113,11 @@ private class ShardedDaemonProcessCoordinator private (
     daemonProcessName: String,
     shardingRef: akka.actor.ActorRef,
     initialNumberOfProcesses: Int,
-    key: LWWRegisterKey[ShardedDaemonProcessCoordinator.ScaleState],
+    key: LWWRegisterKey[ShardedDaemonProcessState],
     selfUniqueAddress: SelfUniqueAddress,
-    replicatorAdapter: ReplicatorMessageAdapter[ShardedDaemonProcessCommand, ShardedDaemonProcessCoordinator.Register]) {
+    replicatorAdapter: ReplicatorMessageAdapter[ShardedDaemonProcessCommand, ShardedDaemonProcessState.Register]) {
   import ShardedDaemonProcessCoordinator._
+  import ShardedDaemonProcessState._
   private val started = Instant.now()
 
   // Stopping shards can take a lot of time, so don't hammer it with retries (even if the
@@ -132,7 +144,7 @@ private class ShardedDaemonProcessCoordinator private (
   private def initialState =
     LWWRegister(
       selfUniqueAddress,
-      ScaleState(
+      ShardedDaemonProcessState(
         revision = 0,
         numberOfProcesses = initialNumberOfProcesses,
         completed = true,
@@ -177,7 +189,7 @@ private class ShardedDaemonProcessCoordinator private (
     }
   }
 
-  private def idle(currentState: ScaleState): Behavior[ShardedDaemonProcessCommand] = {
+  private def idle(currentState: ShardedDaemonProcessState): Behavior[ShardedDaemonProcessCommand] = {
 
     Behaviors.receiveMessagePartial {
       case request: ChangeNumberOfProcesses =>
@@ -190,7 +202,7 @@ private class ShardedDaemonProcessCoordinator private (
           Behaviors.same
         } else {
           val newState =
-            ScaleState(
+            ShardedDaemonProcessState(
               currentState.revision + 1,
               request.newNumberOfProcesses,
               completed = false,
@@ -206,7 +218,7 @@ private class ShardedDaemonProcessCoordinator private (
   }
 
   private def prepareRescale(
-      newState: ShardedDaemonProcessCoordinator.ScaleState,
+      newState: ShardedDaemonProcessState,
       request: ChangeNumberOfProcesses,
       previousNumberOfProcesses: Int): Behavior[ShardedDaemonProcessCommand] = {
     replicatorAdapter.askUpdate(
@@ -231,7 +243,7 @@ private class ShardedDaemonProcessCoordinator private (
   // first step of rescale, pause all pinger actors so they do not wake the entities up again
   // when we stop them
   private def pauseAllPingers(
-      state: ShardedDaemonProcessCoordinator.ScaleState,
+      state: ShardedDaemonProcessState,
       request: Option[ChangeNumberOfProcesses],
       previousNumberOfProcesses: Int): Behavior[ShardedDaemonProcessCommand] = {
     context.log.debug2("{}: Pausing all pingers (with revision [{}])", daemonProcessName, state.revision - 1)
@@ -241,7 +253,7 @@ private class ShardedDaemonProcessCoordinator private (
   }
 
   private def waitForAllPingersPaused(
-      state: ShardedDaemonProcessCoordinator.ScaleState,
+      state: ShardedDaemonProcessState,
       request: Option[ChangeNumberOfProcesses],
       previousNumberOfProcesses: Int,
       seenAcks: Set[Address]): Behavior[ShardedDaemonProcessCommand] = {
@@ -272,10 +284,10 @@ private class ShardedDaemonProcessCoordinator private (
   }
 
   private def stopAllShards(
-      state: ShardedDaemonProcessCoordinator.ScaleState,
+      state: ShardedDaemonProcessState,
       request: Option[ChangeNumberOfProcesses],
       previousNumberOfProcesses: Int): Behavior[ShardedDaemonProcessCommand] = {
-    val allShards = ShardedDaemonProcessImpl.allShardsFor(state.revision - 1, previousNumberOfProcesses)
+    val allShards = ShardedDaemonProcessId.allShardsFor(state.revision - 1, previousNumberOfProcesses)
     shardingRef.tell(ShardCoordinator.Internal.StopShards(allShards), shardStoppedAdapter)
 
     timers.startSingleTimer(ShardStopTimeout, stopShardsTimeout)
@@ -283,7 +295,7 @@ private class ShardedDaemonProcessCoordinator private (
   }
 
   private def waitForShardsStopping(
-      state: ShardedDaemonProcessCoordinator.ScaleState,
+      state: ShardedDaemonProcessState,
       request: Option[ChangeNumberOfProcesses],
       previousNumberOfProcesses: Int,
       shardsStillRunning: Set[String]): Behavior[ShardedDaemonProcessCommand] = {
@@ -302,7 +314,7 @@ private class ShardedDaemonProcessCoordinator private (
   }
 
   private def restartAllPingers(
-      state: ShardedDaemonProcessCoordinator.ScaleState,
+      state: ShardedDaemonProcessState,
       request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
     context.log.debug2("{}: Restarting all pingers (with revision [{}])", daemonProcessName, state.revision)
     timers.startTimerWithFixedDelay(RestartAllKeepalivePingers, settings.rescalePingerPauseTimeout)
@@ -311,7 +323,7 @@ private class ShardedDaemonProcessCoordinator private (
   }
 
   private def waitForAllPingersStarted(
-      state: ShardedDaemonProcessCoordinator.ScaleState,
+      state: ShardedDaemonProcessState,
       request: Option[ChangeNumberOfProcesses],
       restartedPingers: Set[Address]): Behavior[ShardedDaemonProcessCommand] = {
     receiveWhileRescaling("waitForAllPingersStarted") {
@@ -341,7 +353,7 @@ private class ShardedDaemonProcessCoordinator private (
   }
 
   private def rescalingComplete(
-      state: ShardedDaemonProcessCoordinator.ScaleState,
+      state: ShardedDaemonProcessState,
       request: Option[ChangeNumberOfProcesses],
       ddataWritRetries: Int = 0): Behavior[ShardedDaemonProcessCommand] = {
     request.foreach(req => req.replyTo ! StatusReply.Ack)

@@ -14,6 +14,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
+import akka.cluster.sharding.typed.ShardedDaemonProcessContext
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
@@ -88,7 +89,8 @@ class ShardedDaemonProcessReScaleSpec
       sdp = ShardedDaemonProcess(system).initWithContext[ScalingActor.Command](
         "a",
         4,
-        ctx => ScalingActor(ctx.processNumber, ctx.totalProcesses, workerLifecycleProbe.ref),
+        (ctx: ShardedDaemonProcessContext) =>
+          ScalingActor(ctx.processNumber, ctx.totalProcesses, workerLifecycleProbe.ref),
         ShardedDaemonProcessSettings(system),
         Some(ScalingActor.Stop),
         None)

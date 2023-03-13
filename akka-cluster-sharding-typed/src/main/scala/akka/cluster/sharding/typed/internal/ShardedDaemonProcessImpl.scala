@@ -17,8 +17,6 @@ import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
 import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
 import akka.cluster.sharding.typed.ShardedDaemonProcessContext
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
-import akka.cluster.sharding.typed.ShardingEnvelope
-import akka.cluster.sharding.typed.ShardingMessageExtractor
 import akka.cluster.sharding.typed.javadsl
 import akka.cluster.sharding.typed.scaladsl
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
@@ -38,57 +36,19 @@ import scala.reflect.ClassTag
  * INTERNAL API
  */
 @InternalApi
-private[akka] object ShardedDaemonProcessImpl {
-
-  // entity id format: [r]|[total-count]|[process-n]
-  val Separator = '|'
-  def decodeEntityId(id: String) = {
-    id.split(Separator) match {
-      case Array(rev, count, n) => DecodedId(rev.toInt, count.toInt, n.toInt)
-      case _                    => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
-    }
-
-  }
-  final case class DecodedId(revision: Int, totalCount: Int, processNumber: Int) {
-    def encodeEntityId: String = s"$revision$Separator$totalCount$Separator$processNumber"
-  }
-
-  final class MessageExtractor[T] extends ShardingMessageExtractor[ShardingEnvelope[T], T] {
-    def entityId(message: ShardingEnvelope[T]): String = message match {
-      case ShardingEnvelope(id, _) => id
-    }
-
-    // use process n for shard id
-    def shardId(entityId: String): String = entityId.split(Separator)(2)
-
-    def unwrapMessage(message: ShardingEnvelope[T]): T = message.message
-  }
-
-  def sortedIdentitiesFor(revision: Int, numberOfProcesses: Int): Vector[String] =
-    (0 until numberOfProcesses)
-      .map(n => ShardedDaemonProcessImpl.DecodedId(revision, numberOfProcesses, n).encodeEntityId)
-      .toVector
-      .sorted
-
-  private val messageExtractor = new ShardedDaemonProcessImpl.MessageExtractor[Unit]
-
-  def allShardsFor(revision: Int, numberOfProcesses: Int): Set[String] =
-    ShardedDaemonProcessImpl.sortedIdentitiesFor(revision, numberOfProcesses).map(messageExtractor.shardId).toSet
-
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
 private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     extends javadsl.ShardedDaemonProcess
     with scaladsl.ShardedDaemonProcess {
 
-  private case class ShardedDaemonProcessContextImpl(processNumber: Int, totalProcesses: Int, name: String)
-      extends ShardedDaemonProcessContext
+  import ShardedDaemonProcessId._
+  import ShardedDaemonProcessState.verifyRevisionBeforeStarting
 
-  import ShardedDaemonProcessImpl._
+  private case class ShardedDaemonProcessContextImpl(
+      processNumber: Int,
+      totalProcesses: Int,
+      name: String,
+      revision: Long)
+      extends ShardedDaemonProcessContext
 
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
       implicit classTag: ClassTag[T]): Unit =
@@ -191,10 +151,12 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     val nodeRoles = Cluster(system).selfMember.roles
     val entity = Entity(entityTypeKey) { ctx =>
-      // FIXME would it be too expensive here to check with the local replicator and verify the revision number
-      // to never start if there is a higher rev number?
       val decodedId = decodeEntityId(ctx.entityId)
-      behaviorFactory(ShardedDaemonProcessContextImpl(decodedId.processNumber, decodedId.totalCount, name))
+      val sdContext =
+        ShardedDaemonProcessContextImpl(decodedId.processNumber, decodedId.totalCount, name, decodedId.revision)
+      if (supportsRescale) verifyRevisionBeforeStarting(behaviorFactory)(sdContext)
+      else
+        behaviorFactory(sdContext)
     }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor)
 
     val entityWithStop = stopMessage match {
