@@ -151,13 +151,13 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     val nodeRoles = Cluster(system).selfMember.roles
     val entity = Entity(entityTypeKey) { ctx =>
-      val decodedId = decodeEntityId(ctx.entityId)
+      val decodedId = decodeEntityId(ctx.entityId, supportsRescale)
       val sdContext =
         ShardedDaemonProcessContextImpl(decodedId.processNumber, decodedId.totalCount, name, decodedId.revision)
       if (supportsRescale) verifyRevisionBeforeStarting(behaviorFactory)(sdContext)
       else
         behaviorFactory(sdContext)
-    }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor)
+    }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor(supportsRescale))
 
     val entityWithStop = stopMessage match {
       case Some(stop) => entity.withStopMessage(stop)

@@ -108,10 +108,8 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
 
   def init(): Behavior[Message] = {
     if (!supportsRescale) {
-
-      val initialRevision = 0
-      startTicks(initialRevision)
-      start(initialRevision, initialNumberOfInstances)
+      startTicks(startRevision)
+      start(startRevision, initialNumberOfInstances)
     } else {
       // we have to check ddata state for current revision and number of workers
       DistributedData.withReplicatorMessageAdapter[Message, Register] { replicatorAdapter =>
@@ -156,8 +154,8 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           daemonProcessName,
           initialNumberOfInstances)
         subscribeToTopic()
-        startTicks(revision = 0)
-        start(currentRevision = 0, numberOfProcesses = initialNumberOfInstances)
+        startTicks(startRevision)
+        start(startRevision, numberOfProcesses = initialNumberOfInstances)
 
       case InternalGetResponse(_ @Replicator.GetFailure(`ddataKey`)) =>
         context.log
@@ -169,7 +167,8 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
   }
 
   private def start(currentRevision: Long, numberOfProcesses: Int): Behavior[Message] = {
-    val sortedIdentities = ShardedDaemonProcessId.sortedIdentitiesFor(currentRevision, numberOfProcesses)
+    val sortedIdentities =
+      ShardedDaemonProcessId.sortedIdentitiesFor(currentRevision, numberOfProcesses, supportsRescale)
 
     Behaviors.receiveMessage {
       case Tick(`currentRevision`) =>

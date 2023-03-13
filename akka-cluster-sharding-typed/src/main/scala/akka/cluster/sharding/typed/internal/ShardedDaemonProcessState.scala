@@ -29,6 +29,8 @@ private[akka] final case class ShardedDaemonProcessState(
  */
 private[akka] object ShardedDaemonProcessState {
 
+  val startRevision = 0L
+
   type Register = LWWRegister[ShardedDaemonProcessState]
 
   def ddataKey(name: String): LWWRegisterKey[ShardedDaemonProcessState] =
@@ -65,7 +67,7 @@ private[akka] object ShardedDaemonProcessState {
               Behaviors.stopped // FIXME do we need to passivate or crash rather than stop?
             }
           case Replicator.NotFound(`key`) =>
-            if (revision == 0) {
+            if (revision == startRevision) {
               // No state yet but initial revision, safe
               context.log.debug("{}: Starting worker, revision 0 and no state found", sdpContext.name)
               behaviorFactory(sdpContext).unsafeCast

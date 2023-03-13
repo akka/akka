@@ -145,7 +145,7 @@ private final class ShardedDaemonProcessCoordinator private (
     LWWRegister(
       selfUniqueAddress,
       ShardedDaemonProcessState(
-        revision = 0,
+        revision = ShardedDaemonProcessState.startRevision,
         numberOfProcesses = initialNumberOfProcesses,
         completed = true,
         // not quite correct but also not important
@@ -287,7 +287,8 @@ private final class ShardedDaemonProcessCoordinator private (
       state: ShardedDaemonProcessState,
       request: Option[ChangeNumberOfProcesses],
       previousNumberOfProcesses: Int): Behavior[ShardedDaemonProcessCommand] = {
-    val allShards = ShardedDaemonProcessId.allShardsFor(state.revision - 1, previousNumberOfProcesses)
+    val allShards =
+      ShardedDaemonProcessId.allShardsFor(state.revision - 1, previousNumberOfProcesses, supportsRescale = true)
     shardingRef.tell(ShardCoordinator.Internal.StopShards(allShards), shardStoppedAdapter)
 
     timers.startSingleTimer(ShardStopTimeout, stopShardsTimeout)
