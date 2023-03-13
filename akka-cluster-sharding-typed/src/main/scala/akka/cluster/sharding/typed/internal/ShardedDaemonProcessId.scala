@@ -46,12 +46,12 @@ private[akka] object ShardedDaemonProcessId {
     def unwrapMessage(message: ShardingEnvelope[T]): T = message.message
   }
 
-  def sortedIdentitiesFor(revision: Int, numberOfProcesses: Int): Vector[String] =
+  def sortedIdentitiesFor(revision: Long, numberOfProcesses: Int): Vector[String] =
     (0 until numberOfProcesses).map(n => DecodedId(revision, numberOfProcesses, n).encodeEntityId).toVector.sorted
 
   private val messageExtractor = new MessageExtractor[Unit]
 
-  def allShardsFor(revision: Int, numberOfProcesses: Int): Set[String] =
+  def allShardsFor(revision: Long, numberOfProcesses: Int): Set[String] =
     sortedIdentitiesFor(revision, numberOfProcesses).map(messageExtractor.shardId).toSet
 
 }

@@ -19,7 +19,7 @@ import java.time.Instant
  * INTERNAL API
  */
 private[akka] final case class ShardedDaemonProcessState(
-    revision: Int,
+    revision: Long,
     numberOfProcesses: Int,
     completed: Boolean,
     started: Instant)

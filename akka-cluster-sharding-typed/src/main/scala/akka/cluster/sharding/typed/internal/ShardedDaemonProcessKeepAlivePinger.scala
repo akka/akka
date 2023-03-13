@@ -16,8 +16,11 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.annotation.InternalApi
 import akka.cluster.MemberStatus
+import akka.cluster.ddata.typed.scaladsl.DistributedData
+import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessState.Register
 import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.SelfUp
@@ -42,24 +45,30 @@ private[akka] object ShardedDaemonProcessKeepAlivePinger {
 
   sealed trait Message
 
-  final case class Pause(revision: Int, replyTo: ActorRef[StatusReply[ActorPath]]) extends Message
+  // control from the coordinator
+  final case class Pause(revision: Long, replyTo: ActorRef[StatusReply[ActorPath]]) extends Message
 
-  final case class Restart(revision: Int, newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[ActorPath]])
+  final case class Resume(revision: Long, newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[ActorPath]])
       extends Message
 
-  private final case class Tick(revision: Int) extends Message
+  // internal messages
+  private final case class Tick(revision: Long) extends Message
 
-  private final case class SendKeepAliveDone(revision: Int) extends Message
+  private final case class SendKeepAliveDone(revision: Long) extends Message
+
+  private final case class InternalGetResponse(rsp: Replicator.GetResponse[Register]) extends Message
 
   def apply[T](
       settings: ShardedDaemonProcessSettings,
       daemonProcessName: String,
+      supportsRescale: Boolean,
       initialNumberOfInstances: Int,
       shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Message] =
     Behaviors.setup[Message] { context =>
       Behaviors.withTimers { timers =>
         new ShardedDaemonProcessKeepAlivePinger(
           settings,
+          supportsRescale,
           context,
           timers,
           daemonProcessName,
@@ -71,42 +80,105 @@ private[akka] object ShardedDaemonProcessKeepAlivePinger {
 
 private final class ShardedDaemonProcessKeepAlivePinger[T](
     settings: ShardedDaemonProcessSettings,
+    supportsRescale: Boolean,
     context: ActorContext[ShardedDaemonProcessKeepAlivePinger.Message],
     timers: TimerScheduler[ShardedDaemonProcessKeepAlivePinger.Message],
     daemonProcessName: String,
     initialNumberOfInstances: Int,
     shardingRef: ActorRef[ShardingEnvelope[T]]) {
   import ShardedDaemonProcessKeepAlivePinger._
+  import ShardedDaemonProcessState._
 
   private val cluster = Cluster(context.system)
+  private lazy val ddataKey = ShardedDaemonProcessState.ddataKey(daemonProcessName)
 
-  def init(): Behavior[Message] = {
-    val initialRevision = 0
+  private def startTicks(revision: Long): Unit = {
+    // defer first tick until our cluster node is up
+    if (cluster.selfMember.status == MemberStatus.Up)
+      context.self ! Tick(revision)
+    else
+      cluster.subscriptions ! Subscribe(context.messageAdapter[SelfUp](_ => Tick(revision)), classOf[SelfUp])
+  }
 
+  private def subscribeToTopic(): Unit = {
     // register subscribe to topic so that coordinator can reach us
     val topic = context.spawn(topicFor(daemonProcessName), "topic")
     topic ! Topic.Subscribe(context.self)
-
-    // defer first tick until our cluster node is up
-    // FIXME can revision change before first tick arrives so that it is discarded?
-    if (cluster.selfMember.status == MemberStatus.Up)
-      context.self ! Tick(initialRevision)
-    else
-      cluster.subscriptions ! Subscribe(context.messageAdapter[SelfUp](_ => Tick(initialRevision)), classOf[SelfUp])
-
-    start(initialRevision, initialNumberOfInstances)
   }
 
-  private def start(currentRevision: Int, numberOfProcesses: Int): Behavior[Message] = {
+  def init(): Behavior[Message] = {
+    if (!supportsRescale) {
+
+      val initialRevision = 0
+      startTicks(initialRevision)
+      start(initialRevision, initialNumberOfInstances)
+    } else {
+      // we have to check ddata state for current revision and number of workers
+      DistributedData.withReplicatorMessageAdapter[Message, Register] { replicatorAdapter =>
+        replicatorAdapter.askGet(
+          replyTo => Replicator.Get(ddataKey, Replicator.ReadMajority(settings.rescaleReadStateTimeout), replyTo),
+          response => InternalGetResponse(response))
+
+        waitForInitialDdataState()
+      }
+    }
+  }
+
+  private def waitForInitialDdataState(): Behavior[Message] = {
+
+    Behaviors.receiveMessagePartial {
+      case InternalGetResponse(success @ Replicator.GetSuccess(`ddataKey`)) =>
+        val state = success.get(ddataKey).value
+        subscribeToTopic()
+        if (state.completed) {
+          context.log.debugN(
+            "{}: Starting pinger with [{}] workers, revision [{}] from [{}]",
+            daemonProcessName,
+            state.numberOfProcesses,
+            state.revision,
+            state.started)
+          startTicks(state.revision)
+          start(state.revision, state.numberOfProcesses)
+        } else {
+          context.log.debugN(
+            "{}: Pinger found non completed state with [{}] workers, revision [{}] from [{}]",
+            daemonProcessName,
+            state.revision,
+            state.started)
+          // FIXME what about ticks here?
+          // FIXME is pausing the right thing?
+          paused(state.revision - 1)
+        }
+
+      case InternalGetResponse(_ @Replicator.NotFound(`ddataKey`)) =>
+        context.log.debug(
+          "{}: No previous state stored for Sharded Daemon Process, starting from revision [0] with the initial [{}] workers",
+          daemonProcessName,
+          initialNumberOfInstances)
+        subscribeToTopic()
+        startTicks(revision = 0)
+        start(currentRevision = 0, numberOfProcesses = initialNumberOfInstances)
+
+      case InternalGetResponse(_ @Replicator.GetFailure(`ddataKey`)) =>
+        context.log
+          .debug("{}: Failed fetching initial state for Sharded Daemon Process pinger, retrying", daemonProcessName)
+        init()
+
+    }
+
+  }
+
+  private def start(currentRevision: Long, numberOfProcesses: Int): Behavior[Message] = {
     val sortedIdentities = ShardedDaemonProcessId.sortedIdentitiesFor(currentRevision, numberOfProcesses)
 
     Behaviors.receiveMessage {
       case Tick(`currentRevision`) =>
         if (shouldPing()) {
-          context.log.debug2(
-            s"Sending periodic keep alive for Sharded Daemon Process [{}] to [{}] processes.",
+          context.log.debugN(
+            s"Sending periodic keep alive for Sharded Daemon Process [{}] to [{}] processes (revision [{}]).",
             daemonProcessName,
-            sortedIdentities.size)
+            sortedIdentities.size,
+            currentRevision)
           context.pipeToSelf(sendKeepAliveMessages(sortedIdentities)) { _ =>
             SendKeepAliveDone(currentRevision)
           }
@@ -118,7 +190,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
         timers.startSingleTimer(Tick, Tick(currentRevision), settings.keepAliveInterval)
         Behaviors.same
       case Pause(revision, replyTo) =>
-        context.log.debug2("Pausing sharded daemon process pinger [{}] (revision [{}]", daemonProcessName, revision)
+        context.log.debug2("Pausing sharded daemon process pinger [{}] (revision [{}])", daemonProcessName, revision)
         if (revision <= currentRevision) {
           timers.cancel(Tick)
         }
@@ -140,7 +212,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           oldRevision,
           currentRevision)
         Behaviors.ignore
-      case Restart(`currentRevision`, _, replyTo) =>
+      case Resume(`currentRevision`, _, replyTo) =>
         context.log.debug2(
           "Sharded daemon process pinger [{}] got start for already started revision (revision [{}]",
           daemonProcessName,
@@ -148,7 +220,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
         replyTo ! StatusReply.Success(context.self.path)
         Behaviors.ignore
 
-      case Restart(otherRevision, _, replyTo) =>
+      case Resume(otherRevision, _, replyTo) =>
         context.log.debugN(
           "Sharded daemon process pinger [{}] got start for unexpected revision (revision [{}], current [{}])",
           daemonProcessName,
@@ -157,32 +229,44 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
         replyTo ! StatusReply.Success(context.self.path)
         Behaviors.ignore
 
+      case unexpected =>
+        context.log.warn(
+          "{}: Unexpected message to pinger in state 'start': {}",
+          daemonProcessName,
+          unexpected.getClass)
+        Behaviors.unhandled
+
     }
   }
 
   /**
    * Rescale in progress, don't ping workers until coordinator says so
    */
-  private def paused(pausedRevision: Int): Behavior[Message] = Behaviors.receiveMessage {
+  private def paused(pausedRevision: Long): Behavior[Message] = Behaviors.receiveMessage {
     case Pause(_, replyTo) =>
       replyTo ! StatusReply.Success(context.self.path)
       Behaviors.same
-    case Restart(revision, newNumberOfProcesses, replyTo) if revision >= pausedRevision =>
-      context.log
-        .debug2("Un-pausing sharded daemon process pinger [{}] (revision [{}]", daemonProcessName, pausedRevision)
-      replyTo ! StatusReply.Success(context.self.path)
-      context.self ! Tick(pausedRevision)
-      start(pausedRevision, newNumberOfProcesses)
+    case Resume(revision, newNumberOfProcesses, replyTo) =>
+      if (revision >= pausedRevision) {
+        context.log.debug2("{}: Un-pausing sharded daemon process pinger (revision [{}])", daemonProcessName, revision)
+        replyTo ! StatusReply.Success(context.self.path)
+        context.self ! Tick(revision)
+        start(revision, newNumberOfProcesses)
+      } else {
+        context.log.warn2(
+          "{}, Paused sharded daemon process pinger, got unexpected start for old revision [{}], ignoring",
+          daemonProcessName,
+          revision)
+        replyTo ! StatusReply.Error("Old revision")
+        Behaviors.ignore
+      }
 
-    case Restart(revision, _, replyTo) =>
-      context.log.warn2(
-        "Paused sharded daemon process pinger [{}] got unexpected start for old revision [{}], ignoring",
-        daemonProcessName,
-        revision)
-      replyTo ! StatusReply.Error("Old revision")
-      Behaviors.ignore
     case Tick(_)              => Behaviors.ignore
     case SendKeepAliveDone(_) => Behaviors.ignore
+
+    case unexpected =>
+      context.log.warn("{}: Unexpected message to pinger in state 'paused': {}", daemonProcessName, unexpected.getClass)
+      Behaviors.unhandled
   }
 
   private def shouldPing(): Boolean = {

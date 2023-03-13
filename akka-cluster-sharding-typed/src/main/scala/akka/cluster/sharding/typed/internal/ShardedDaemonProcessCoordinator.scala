@@ -29,7 +29,7 @@ import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Pause
-import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Restart
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Resume
 import akka.cluster.typed.Cluster
 import akka.pattern.StatusReply
 
@@ -318,7 +318,7 @@ private final class ShardedDaemonProcessCoordinator private (
       request: Option[ChangeNumberOfProcesses]): Behavior[ShardedDaemonProcessCommand] = {
     context.log.debug2("{}: Restarting all pingers (with revision [{}])", daemonProcessName, state.revision)
     timers.startTimerWithFixedDelay(RestartAllKeepalivePingers, settings.rescalePingerPauseTimeout)
-    pingersTopic ! Topic.Publish(Restart(state.revision, state.numberOfProcesses, pingerResponseAdapter))
+    pingersTopic ! Topic.Publish(Resume(state.revision, state.numberOfProcesses, pingerResponseAdapter))
     waitForAllPingersStarted(state, request, Set.empty)
   }
 
@@ -332,7 +332,7 @@ private final class ShardedDaemonProcessCoordinator private (
           "{}: Did not see acks from all pingers restarted within [{}], retrying restart",
           daemonProcessName,
           settings.rescalePingerPauseTimeout)
-        pingersTopic ! Topic.Publish(Restart(state.revision, state.numberOfProcesses, pingerResponseAdapter))
+        pingersTopic ! Topic.Publish(Resume(state.revision, state.numberOfProcesses, pingerResponseAdapter))
         Behaviors.same
       case PingerAck(path) =>
         context.log.debug("{}: All pingers restarted, completing rescale", daemonProcessName)

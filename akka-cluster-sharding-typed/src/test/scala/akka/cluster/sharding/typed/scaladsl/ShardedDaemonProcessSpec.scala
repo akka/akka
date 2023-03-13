@@ -116,7 +116,7 @@ class ShardedDaemonProcessSpec
     "throttle keep alive messsages" in {
       val shardingProbe = createTestProbe[Any]()
       val settings = ShardedDaemonProcessSettings(system).withKeepAliveThrottleInterval(1.second)
-      val pinger = spawn(ShardedDaemonProcessKeepAlivePinger(settings, "throttle", 3, shardingProbe.ref))
+      val pinger = spawn(ShardedDaemonProcessKeepAlivePinger(settings, "throttle", false, 3, shardingProbe.ref))
       // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
       // See ShardedDaemonProcessImpl.DecodedId for details about entity id format
       shardingProbe.expectMessage(StartEntity("0|3|0"))

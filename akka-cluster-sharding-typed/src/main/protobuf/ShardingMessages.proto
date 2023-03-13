@@ -16,7 +16,7 @@ message ShardingEnvelope {
 }
 
 message DaemonProcessScaleState {
-  required int32 revision = 1;
+  required int64 revision = 1;
   required int32 numberOfProcesses = 2;
   required bool completed = 3;
   required int64 startedTimestampMillis = 4;
@@ -27,3 +27,13 @@ message ChangeNumberOfProcesses {
   required string replyTo = 2;
 }
 
+message PauseKeepalive {
+  required int64 revision = 1;
+  required string replyTo = 2;
+}
+
+message ResumeKeepalive {
+  required int64 revision = 1;
+  required int32 numberOfWorkers = 2;
+  required string replyTo = 3;
+}

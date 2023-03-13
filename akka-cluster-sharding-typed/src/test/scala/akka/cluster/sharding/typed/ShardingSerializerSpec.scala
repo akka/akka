@@ -4,13 +4,12 @@
 
 package akka.cluster.sharding.typed
 
-import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessState
 import akka.cluster.sharding.typed.internal.ShardingSerializer
-import akka.pattern.StatusReply
 import akka.serialization.SerializationExtension
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -24,6 +23,7 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
   "The typed ShardingSerializer" must {
 
     val serialization = SerializationExtension(ActorSystemAdapter.toClassic(system))
+    val probe = createTestProbe[AnyRef]()
 
     def checkSerialization(obj: AnyRef): Unit = {
       serialization.findSerializerFor(obj) match {
@@ -58,9 +58,14 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
       checkSerialization(ShardedDaemonProcessState(2, 3, true, Instant.now().truncatedTo(ChronoUnit.MILLIS)))
     }
 
-    "must serialize and deserialize Change" in {
-      val probe = createTestProbe[StatusReply[Done]]()
+    "must serialize and deserialize ChangeNumberOfProcesses" in {
       checkSerialization(ChangeNumberOfProcesses(7, probe.ref))
+    }
+    "must serialize and deserialize keepalive Pause" in {
+      checkSerialization(ShardedDaemonProcessKeepAlivePinger.Pause(7, probe.ref))
+    }
+    "must serialize and deserialize keepalive Resume" in {
+      checkSerialization(ShardedDaemonProcessKeepAlivePinger.Resume(7, 8, probe.ref))
     }
   }
 }

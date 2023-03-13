@@ -174,7 +174,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     // only start pinger if role matches
     if (shardingSettings.role.forall(nodeRoles)) {
       system.systemActorOf(
-        ShardedDaemonProcessKeepAlivePinger(settings, name, numberOfInstances, shardingRef),
+        ShardedDaemonProcessKeepAlivePinger(settings, name, supportsRescale, numberOfInstances, shardingRef),
         s"ShardedDaemonProcessKeepAlive-$name")
     }
 
