@@ -1,0 +1,7 @@
+version: 3
+
+# https://github.com/fossas/fossa-cli/blob/master/docs/references/files/fossa-yml.md
+
+paths:
+  exclude:
+    - ./akka-bench-jmh
