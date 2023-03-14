@@ -233,7 +233,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
         context.log.warn2(
           "{}: Unexpected message to pinger in state 'start': {}",
           daemonProcessName,
-          unexpected.getClass)
+          unexpected.getClass.getName)
         Behaviors.unhandled
 
     }
@@ -266,7 +266,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
 
     case unexpected =>
       context.log
-        .warn2("{}: Unexpected message to pinger in state 'paused': {}", daemonProcessName, unexpected.getClass)
+        .warn2("{}: Unexpected message to pinger in state 'paused': {}", daemonProcessName, unexpected.getClass.getName)
       Behaviors.unhandled
   }
 

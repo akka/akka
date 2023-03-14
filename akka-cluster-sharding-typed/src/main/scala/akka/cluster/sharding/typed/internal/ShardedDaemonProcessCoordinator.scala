@@ -397,7 +397,7 @@ private final class ShardedDaemonProcessCoordinator private (
         request.replyTo ! StatusReply.error("Rescale in progress, retry later")
         Behaviors.same
       case msg =>
-        context.log.debugN("{}: Unexpected message in step {}: {}", daemonProcessName, stepName, msg.getClass)
+        context.log.debugN("{}: Unexpected message in step {}: {}", daemonProcessName, stepName, msg.getClass.getName)
         Behaviors.same
     })
 
