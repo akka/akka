@@ -57,7 +57,7 @@ private[akka] object ShardedDaemonProcessKeepAlivePinger {
   final case class Resumed(pingerActor: ActorRef[Message]) extends ClusterShardingTypedSerializable
 
   // internal messages
-  private final case object Tick extends Message
+  private case object Tick extends Message
 
   private final case class SendKeepAliveDone(revision: Long) extends Message
 
