@@ -5,7 +5,6 @@
 package akka.cluster.sharding.typed.internal
 
 import akka.Done
-import akka.actor.ActorPath
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -23,6 +22,8 @@ import akka.cluster.ddata.typed.scaladsl.ReplicatorMessageAdapter
 import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.ClusterShardingSettings
+import akka.cluster.sharding.typed.GetNumberOfProcesses
+import akka.cluster.sharding.typed.NumberOfProcesses
 import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
@@ -30,6 +31,7 @@ import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.pattern.StatusReply
 import akka.stream.scaladsl.Source
 
+import java.time.Instant
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
@@ -48,18 +50,20 @@ private[akka] object ShardedDaemonProcessCoordinator {
   private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[ShardedDaemonProcessState])
       extends InternalMessage
 
-  private case class PingerPauseAck(actorPath: ActorPath) extends InternalMessage
-  private case class PingerResumeAck(actorPath: ActorPath) extends InternalMessage
-  private case class PingerNack(ex: Throwable) extends InternalMessage
-
-  private case object PauseAllKeepalivePingers extends InternalMessage
-  private case object RestartAllKeepalivePingers extends InternalMessage
   private case class ShardStopped(shard: String) extends InternalMessage
 
   private case object Tick extends InternalMessage
   private case object SendKeepAliveDone extends InternalMessage
 
   private object ShardStopTimeout extends InternalMessage
+
+  final case class GetNumberOfProcessesReply(
+      numberOfProcesses: Int,
+      started: Instant,
+      rescaleInProgress: Boolean,
+      revision: Long)
+      extends NumberOfProcesses
+      with ClusterShardingTypedSerializable
 
   def apply[T](
       settings: ShardedDaemonProcessSettings,
@@ -215,6 +219,13 @@ private final class ShardedDaemonProcessCoordinator private (
         timers.startSingleTimer(Tick, settings.keepAliveInterval)
         Behaviors.same
 
+      case GetNumberOfProcesses(replyTo) =>
+        replyTo ! GetNumberOfProcessesReply(
+          currentState.numberOfProcesses,
+          currentState.started,
+          !currentState.completed,
+          currentState.revision)
+        Behaviors.same
     }
   }
 
@@ -232,7 +243,7 @@ private final class ShardedDaemonProcessCoordinator private (
       response => InternalUpdateResponse(response))
 
     // wait for update to complete before applying
-    receiveWhileRescaling("prepareRescale") {
+    receiveWhileRescaling("prepareRescale", newState) {
       case InternalUpdateResponse(_ @Replicator.UpdateSuccess(`key`)) =>
         // this is a bit weird, we use our own state, rather than the result of the update but we also know
         // there is a single(ton) writer so no surprises here
@@ -249,6 +260,7 @@ private final class ShardedDaemonProcessCoordinator private (
           context.log.debug("{}: Failed updating scale state for sharded daemon process, retrying", daemonProcessName)
         }
         prepareRescale(newState, request, previousNumberOfProcesses, updateRetry + 1)
+
     }
   }
 
@@ -270,7 +282,7 @@ private final class ShardedDaemonProcessCoordinator private (
       previousNumberOfProcesses: Int,
       shardsStillRunning: Set[String]): Behavior[ShardedDaemonProcessCommand] = {
 
-    receiveWhileRescaling("waitForShardsStopping") {
+    receiveWhileRescaling("waitForShardsStopping", state) {
       case ShardStopped(shard) =>
         val newShardsStillRunning = shardsStillRunning - shard
         if (newShardsStillRunning.isEmpty) {
@@ -295,7 +307,7 @@ private final class ShardedDaemonProcessCoordinator private (
           (ShardedDaemonProcessState: ShardedDaemonProcessState) => ShardedDaemonProcessState.merge(newState)),
       response => InternalUpdateResponse(response))
 
-    receiveWhileRescaling("rescalingComplete") {
+    receiveWhileRescaling("rescalingComplete", state) {
       case InternalUpdateResponse(_ @Replicator.UpdateSuccess(`key`)) =>
         context.self ! Tick
         idle(newState)
@@ -316,13 +328,17 @@ private final class ShardedDaemonProcessCoordinator private (
     }
   }
 
-  private def receiveWhileRescaling(stepName: String)(
+  private def receiveWhileRescaling(stepName: String, state: ShardedDaemonProcessState)(
       pf: PartialFunction[ShardedDaemonProcessCommand, Behavior[ShardedDaemonProcessCommand]])
       : Behavior[ShardedDaemonProcessCommand] =
     Behaviors.receiveMessage(pf.orElse {
       case request: ChangeNumberOfProcesses =>
         request.replyTo ! StatusReply.error("Rescale in progress, retry later")
         Behaviors.same
+      case GetNumberOfProcesses(replyTo) =>
+        replyTo ! GetNumberOfProcessesReply(state.numberOfProcesses, state.started, !state.completed, state.revision)
+        Behaviors.same
+
       case msg =>
         context.log.debugN("{}: Unexpected message in step {}: {}", daemonProcessName, stepName, msg.getClass.getName)
         Behaviors.same

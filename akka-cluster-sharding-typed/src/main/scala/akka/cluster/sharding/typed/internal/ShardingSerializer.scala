@@ -10,7 +10,9 @@ import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import java.io.NotSerializableException
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ChangeNumberOfProcesses
+import akka.cluster.sharding.typed.GetNumberOfProcesses
 import akka.cluster.sharding.typed.ShardingEnvelope
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessCoordinator.GetNumberOfProcessesReply
 import akka.cluster.sharding.typed.internal.protobuf.ShardingMessages
 import akka.protobufv3.internal.CodedOutputStream
 import akka.remote.serialization.WrappedPayloadSupport
@@ -35,11 +37,15 @@ import java.time.Instant
   private val ShardingEnvelopeManifest = "a"
   private val DaemonProcessStateManifest = "b"
   private val ChangeNumberOfProcessesManifest = "c"
+  private val GetNumberOfProcessesManifest = "d"
+  private val GetNumberOfProcessesReplyManifest = "e"
 
   override def manifest(o: AnyRef): String = o match {
     case _: ShardingEnvelope[_]       => ShardingEnvelopeManifest
     case _: ShardedDaemonProcessState => DaemonProcessStateManifest
     case _: ChangeNumberOfProcesses   => ChangeNumberOfProcessesManifest
+    case _: GetNumberOfProcesses      => GetNumberOfProcessesManifest
+    case _: GetNumberOfProcessesReply => GetNumberOfProcessesReplyManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -69,6 +75,23 @@ import java.time.Instant
         .build()
         .toByteArray()
 
+    case get: GetNumberOfProcesses =>
+      ShardingMessages.GetNumberOfProcesses
+        .newBuilder()
+        .setReplyTo(resolver.toSerializationFormat(get.replyTo))
+        .build()
+        .toByteArray()
+
+    case reply: GetNumberOfProcessesReply =>
+      ShardingMessages.GetNumberOfProcessesReply
+        .newBuilder()
+        .setRevision(reply.revision)
+        .setRescaleInProgress(reply.rescaleInProgress)
+        .setNumberOfProcesses(reply.numberOfProcesses)
+        .setStartedTimestampMillis(reply.started.toEpochMilli)
+        .build()
+        .toByteArray()
+
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
@@ -91,6 +114,18 @@ import java.time.Instant
     case ChangeNumberOfProcessesManifest =>
       val change = ShardingMessages.ChangeNumberOfProcesses.parseFrom(bytes)
       ChangeNumberOfProcesses(change.getNewNumberOfProcesses, resolver.resolveActorRef(change.getReplyTo))
+
+    case GetNumberOfProcessesManifest =>
+      val get = ShardingMessages.GetNumberOfProcesses.parseFrom(bytes)
+      GetNumberOfProcesses(resolver.resolveActorRef(get.getReplyTo))
+
+    case GetNumberOfProcessesReplyManifest =>
+      val reply = ShardingMessages.GetNumberOfProcessesReply.parseFrom(bytes)
+      GetNumberOfProcessesReply(
+        reply.getNumberOfProcesses,
+        Instant.ofEpochMilli(reply.getStartedTimestampMillis),
+        reply.getRescaleInProgress,
+        reply.getRevision)
 
     case _ =>
       throw new NotSerializableException(
@@ -129,6 +164,27 @@ import java.time.Instant
         .writeTo(codedOutputStream)
       codedOutputStream.flush()
 
+    case get: GetNumberOfProcesses =>
+      val codedOutputStream = CodedOutputStream.newInstance(buf)
+      ShardingMessages.GetNumberOfProcesses
+        .newBuilder()
+        .setReplyTo(resolver.toSerializationFormat(get.replyTo))
+        .build()
+        .writeTo(codedOutputStream)
+      codedOutputStream.flush()
+
+    case reply: GetNumberOfProcessesReply =>
+      val codedOutputStream = CodedOutputStream.newInstance(buf)
+      ShardingMessages.GetNumberOfProcessesReply
+        .newBuilder()
+        .setRevision(reply.revision)
+        .setRescaleInProgress(reply.rescaleInProgress)
+        .setNumberOfProcesses(reply.numberOfProcesses)
+        .setStartedTimestampMillis(reply.started.toEpochMilli)
+        .build()
+        .writeTo(codedOutputStream)
+      codedOutputStream.flush()
+
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
@@ -151,6 +207,18 @@ import java.time.Instant
     case ChangeNumberOfProcessesManifest =>
       val change = ShardingMessages.ChangeNumberOfProcesses.parseFrom(buf)
       ChangeNumberOfProcesses(change.getNewNumberOfProcesses, resolver.resolveActorRef(change.getReplyTo))
+
+    case GetNumberOfProcessesManifest =>
+      val get = ShardingMessages.GetNumberOfProcesses.parseFrom(buf)
+      GetNumberOfProcesses(resolver.resolveActorRef(get.getReplyTo))
+
+    case GetNumberOfProcessesReplyManifest =>
+      val reply = ShardingMessages.GetNumberOfProcessesReply.parseFrom(buf)
+      GetNumberOfProcessesReply(
+        reply.getNumberOfProcesses,
+        Instant.ofEpochMilli(reply.getStartedTimestampMillis),
+        reply.getRescaleInProgress,
+        reply.getRevision)
 
     case _ =>
       throw new NotSerializableException(

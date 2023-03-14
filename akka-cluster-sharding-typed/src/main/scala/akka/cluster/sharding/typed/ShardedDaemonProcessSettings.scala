@@ -4,19 +4,15 @@
 
 package akka.cluster.sharding.typed
 
-import akka.Done
-import akka.actor.typed.ActorRef
-
-import java.time.{ Duration => JDuration }
-import scala.concurrent.duration.FiniteDuration
-import com.typesafe.config.Config
 import akka.actor.typed.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.cluster.sharding.typed.internal.ClusterShardingTypedSerializable
-import akka.pattern.StatusReply
 import akka.util.JavaDurationConverters._
+import com.typesafe.config.Config
+
+import java.time.{ Duration => JDuration }
+import scala.concurrent.duration.FiniteDuration
 
 object ShardedDaemonProcessSettings {
 
@@ -193,23 +189,3 @@ trait ShardedDaemonProcessContext {
   def name: String
 
 }
-
-/**
- * Commands for interacting with the sharded daemon process
- *
- * Not for user extension
- */
-@DoNotInherit
-trait ShardedDaemonProcessCommand {}
-
-/**
- * Tell the sharded daemon process to rescale to the given number of processes.
- *
- * @param newNumberOfProcesses The number of processes to scale up to
- * @param replyTo Reply to this actor once scaling is successfully done, or with details if it failed
- *                Note that a successful response may take a long time, depending on how fast
- *                the daemon process actors stop after getting their stop message.
- */
-final case class ChangeNumberOfProcesses(newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Done]])
-    extends ShardedDaemonProcessCommand
-    with ClusterShardingTypedSerializable

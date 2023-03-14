@@ -124,13 +124,23 @@ abstract class ShardedDaemonProcessRescaleSpec
     "rescale to 2 workers" in {
       runOn(second) {
         val probe = TestProbe[AnyRef]()
-        sdp ! ChangeNumberOfProcesses(8, probe.ref)
+        sdp ! ChangeNumberOfProcesses(2, probe.ref)
         probe.expectMessage(30.seconds, StatusReply.Ack)
       }
       enterBarrier("sharded-daemon-process-rescaled-to-2")
     }
 
-    // FIXME test removing one cluster node and verify all are alive (how do we do that?)
+    "query the state" in {
+      runOn(third) {
+        val probe = TestProbe[NumberOfProcesses]()
+        sdp ! GetNumberOfProcesses(probe.ref)
+        val reply = probe.receiveMessage()
+        reply.numberOfProcesses should ===(2)
+        reply.revision should ===(2)
+        reply.rescaleInProgress === (false)
+      }
+      enterBarrier("sharded-daemon-process-query")
+    }
 
   }
 }

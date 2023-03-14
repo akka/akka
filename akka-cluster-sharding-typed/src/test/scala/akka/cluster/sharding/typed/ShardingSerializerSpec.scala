@@ -7,6 +7,7 @@ package akka.cluster.sharding.typed
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessCoordinator
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessState
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.serialization.SerializationExtension
@@ -59,6 +60,16 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
 
     "must serialize and deserialize ChangeNumberOfProcesses" in {
       checkSerialization(ChangeNumberOfProcesses(7, probe.ref))
+    }
+
+    "must serialize and deserialize GetNumberOfProcesses" in {
+      checkSerialization(GetNumberOfProcesses(probe.ref))
+    }
+
+    "must serialize and deserialize GetNumberOfProcessesReply" in {
+      checkSerialization(
+        ShardedDaemonProcessCoordinator
+          .GetNumberOfProcessesReply(8, Instant.now().truncatedTo(ChronoUnit.MILLIS), false, 4L))
     }
 
   }

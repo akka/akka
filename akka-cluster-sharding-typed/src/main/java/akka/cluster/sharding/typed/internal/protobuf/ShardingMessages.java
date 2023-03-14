@@ -2394,6 +2394,1451 @@ public final class ShardingMessages {
 
   }
 
+  public interface GetNumberOfProcessesOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:akka.cluster.sharding.typed.GetNumberOfProcesses)
+      akka.protobufv3.internal.MessageOrBuilder {
+
+    /**
+     * <code>required string replyTo = 1;</code>
+     * @return Whether the replyTo field is set.
+     */
+    boolean hasReplyTo();
+    /**
+     * <code>required string replyTo = 1;</code>
+     * @return The replyTo.
+     */
+    java.lang.String getReplyTo();
+    /**
+     * <code>required string replyTo = 1;</code>
+     * @return The bytes for replyTo.
+     */
+    akka.protobufv3.internal.ByteString
+        getReplyToBytes();
+  }
+  /**
+   * Protobuf type {@code akka.cluster.sharding.typed.GetNumberOfProcesses}
+   */
+  public  static final class GetNumberOfProcesses extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.GetNumberOfProcesses)
+      GetNumberOfProcessesOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use GetNumberOfProcesses.newBuilder() to construct.
+    private GetNumberOfProcesses(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private GetNumberOfProcesses() {
+      replyTo_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new GetNumberOfProcesses();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private GetNumberOfProcesses(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      int mutable_bitField0_ = 0;
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000001;
+              replyTo_ = bs;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_descriptor;
+    }
+
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.class, akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.Builder.class);
+    }
+
+    private int bitField0_;
+    public static final int REPLYTO_FIELD_NUMBER = 1;
+    private volatile java.lang.Object replyTo_;
+    /**
+     * <code>required string replyTo = 1;</code>
+     * @return Whether the replyTo field is set.
+     */
+    public boolean hasReplyTo() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>required string replyTo = 1;</code>
+     * @return The replyTo.
+     */
+    public java.lang.String getReplyTo() {
+      java.lang.Object ref = replyTo_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          replyTo_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string replyTo = 1;</code>
+     * @return The bytes for replyTo.
+     */
+    public akka.protobufv3.internal.ByteString
+        getReplyToBytes() {
+      java.lang.Object ref = replyTo_;
+      if (ref instanceof java.lang.String) {
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        replyTo_ = b;
+        return b;
+      } else {
+        return (akka.protobufv3.internal.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasReplyTo()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, replyTo_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, replyTo_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses)) {
+        return super.equals(obj);
+      }
+      akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses other = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses) obj;
+
+      if (hasReplyTo() != other.hasReplyTo()) return false;
+      if (hasReplyTo()) {
+        if (!getReplyTo()
+            .equals(other.getReplyTo())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasReplyTo()) {
+        hash = (37 * hash) + REPLYTO_FIELD_NUMBER;
+        hash = (53 * hash) + getReplyTo().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(byte[] data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(
+        byte[] data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(
+        akka.protobufv3.internal.CodedInputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parseFrom(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code akka.cluster.sharding.typed.GetNumberOfProcesses}
+     */
+    public static final class Builder extends
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:akka.cluster.sharding.typed.GetNumberOfProcesses)
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_descriptor;
+      }
+
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.class, akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.Builder.class);
+      }
+
+      // Construct using akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        replyTo_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_descriptor;
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses getDefaultInstanceForType() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses build() {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses buildPartial() {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.replyTo_ = replyTo_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
+        if (other instanceof akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses) {
+          return mergeFrom((akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses other) {
+        if (other == akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.getDefaultInstance()) return this;
+        if (other.hasReplyTo()) {
+          bitField0_ |= 0x00000001;
+          replyTo_ = other.replyTo_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        if (!hasReplyTo()) {
+          return false;
+        }
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private java.lang.Object replyTo_ = "";
+      /**
+       * <code>required string replyTo = 1;</code>
+       * @return Whether the replyTo field is set.
+       */
+      public boolean hasReplyTo() {
+        return ((bitField0_ & 0x00000001) != 0);
+      }
+      /**
+       * <code>required string replyTo = 1;</code>
+       * @return The replyTo.
+       */
+      public java.lang.String getReplyTo() {
+        java.lang.Object ref = replyTo_;
+        if (!(ref instanceof java.lang.String)) {
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            replyTo_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string replyTo = 1;</code>
+       * @return The bytes for replyTo.
+       */
+      public akka.protobufv3.internal.ByteString
+          getReplyToBytes() {
+        java.lang.Object ref = replyTo_;
+        if (ref instanceof String) {
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          replyTo_ = b;
+          return b;
+        } else {
+          return (akka.protobufv3.internal.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string replyTo = 1;</code>
+       * @param value The replyTo to set.
+       * @return This builder for chaining.
+       */
+      public Builder setReplyTo(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        replyTo_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string replyTo = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearReplyTo() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        replyTo_ = getDefaultInstance().getReplyTo();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string replyTo = 1;</code>
+       * @param value The bytes for replyTo to set.
+       * @return This builder for chaining.
+       */
+      public Builder setReplyToBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        replyTo_ = value;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:akka.cluster.sharding.typed.GetNumberOfProcesses)
+    }
+
+    // @@protoc_insertion_point(class_scope:akka.cluster.sharding.typed.GetNumberOfProcesses)
+    private static final akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses();
+    }
+
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<GetNumberOfProcesses>
+        PARSER = new akka.protobufv3.internal.AbstractParser<GetNumberOfProcesses>() {
+      @java.lang.Override
+      public GetNumberOfProcesses parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new GetNumberOfProcesses(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<GetNumberOfProcesses> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<GetNumberOfProcesses> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface GetNumberOfProcessesReplyOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:akka.cluster.sharding.typed.GetNumberOfProcessesReply)
+      akka.protobufv3.internal.MessageOrBuilder {
+
+    /**
+     * <code>required int64 revision = 1;</code>
+     * @return Whether the revision field is set.
+     */
+    boolean hasRevision();
+    /**
+     * <code>required int64 revision = 1;</code>
+     * @return The revision.
+     */
+    long getRevision();
+
+    /**
+     * <code>required int32 numberOfProcesses = 2;</code>
+     * @return Whether the numberOfProcesses field is set.
+     */
+    boolean hasNumberOfProcesses();
+    /**
+     * <code>required int32 numberOfProcesses = 2;</code>
+     * @return The numberOfProcesses.
+     */
+    int getNumberOfProcesses();
+
+    /**
+     * <code>required bool rescaleInProgress = 3;</code>
+     * @return Whether the rescaleInProgress field is set.
+     */
+    boolean hasRescaleInProgress();
+    /**
+     * <code>required bool rescaleInProgress = 3;</code>
+     * @return The rescaleInProgress.
+     */
+    boolean getRescaleInProgress();
+
+    /**
+     * <code>required int64 startedTimestampMillis = 4;</code>
+     * @return Whether the startedTimestampMillis field is set.
+     */
+    boolean hasStartedTimestampMillis();
+    /**
+     * <code>required int64 startedTimestampMillis = 4;</code>
+     * @return The startedTimestampMillis.
+     */
+    long getStartedTimestampMillis();
+  }
+  /**
+   * Protobuf type {@code akka.cluster.sharding.typed.GetNumberOfProcessesReply}
+   */
+  public  static final class GetNumberOfProcessesReply extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.GetNumberOfProcessesReply)
+      GetNumberOfProcessesReplyOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use GetNumberOfProcessesReply.newBuilder() to construct.
+    private GetNumberOfProcessesReply(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private GetNumberOfProcessesReply() {
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new GetNumberOfProcessesReply();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private GetNumberOfProcessesReply(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      int mutable_bitField0_ = 0;
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 8: {
+              bitField0_ |= 0x00000001;
+              revision_ = input.readInt64();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              numberOfProcesses_ = input.readInt32();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              rescaleInProgress_ = input.readBool();
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              startedTimestampMillis_ = input.readInt64();
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_descriptor;
+    }
+
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply.class, akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply.Builder.class);
+    }
+
+    private int bitField0_;
+    public static final int REVISION_FIELD_NUMBER = 1;
+    private long revision_;
+    /**
+     * <code>required int64 revision = 1;</code>
+     * @return Whether the revision field is set.
+     */
+    public boolean hasRevision() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>required int64 revision = 1;</code>
+     * @return The revision.
+     */
+    public long getRevision() {
+      return revision_;
+    }
+
+    public static final int NUMBEROFPROCESSES_FIELD_NUMBER = 2;
+    private int numberOfProcesses_;
+    /**
+     * <code>required int32 numberOfProcesses = 2;</code>
+     * @return Whether the numberOfProcesses field is set.
+     */
+    public boolean hasNumberOfProcesses() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <code>required int32 numberOfProcesses = 2;</code>
+     * @return The numberOfProcesses.
+     */
+    public int getNumberOfProcesses() {
+      return numberOfProcesses_;
+    }
+
+    public static final int RESCALEINPROGRESS_FIELD_NUMBER = 3;
+    private boolean rescaleInProgress_;
+    /**
+     * <code>required bool rescaleInProgress = 3;</code>
+     * @return Whether the rescaleInProgress field is set.
+     */
+    public boolean hasRescaleInProgress() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <code>required bool rescaleInProgress = 3;</code>
+     * @return The rescaleInProgress.
+     */
+    public boolean getRescaleInProgress() {
+      return rescaleInProgress_;
+    }
+
+    public static final int STARTEDTIMESTAMPMILLIS_FIELD_NUMBER = 4;
+    private long startedTimestampMillis_;
+    /**
+     * <code>required int64 startedTimestampMillis = 4;</code>
+     * @return Whether the startedTimestampMillis field is set.
+     */
+    public boolean hasStartedTimestampMillis() {
+      return ((bitField0_ & 0x00000008) != 0);
+    }
+    /**
+     * <code>required int64 startedTimestampMillis = 4;</code>
+     * @return The startedTimestampMillis.
+     */
+    public long getStartedTimestampMillis() {
+      return startedTimestampMillis_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasRevision()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasNumberOfProcesses()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasRescaleInProgress()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasStartedTimestampMillis()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeInt64(1, revision_);
+      }
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeInt32(2, numberOfProcesses_);
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        output.writeBool(3, rescaleInProgress_);
+      }
+      if (((bitField0_ & 0x00000008) != 0)) {
+        output.writeInt64(4, startedTimestampMillis_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeInt64Size(1, revision_);
+      }
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeInt32Size(2, numberOfProcesses_);
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBoolSize(3, rescaleInProgress_);
+      }
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeInt64Size(4, startedTimestampMillis_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply)) {
+        return super.equals(obj);
+      }
+      akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply other = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply) obj;
+
+      if (hasRevision() != other.hasRevision()) return false;
+      if (hasRevision()) {
+        if (getRevision()
+            != other.getRevision()) return false;
+      }
+      if (hasNumberOfProcesses() != other.hasNumberOfProcesses()) return false;
+      if (hasNumberOfProcesses()) {
+        if (getNumberOfProcesses()
+            != other.getNumberOfProcesses()) return false;
+      }
+      if (hasRescaleInProgress() != other.hasRescaleInProgress()) return false;
+      if (hasRescaleInProgress()) {
+        if (getRescaleInProgress()
+            != other.getRescaleInProgress()) return false;
+      }
+      if (hasStartedTimestampMillis() != other.hasStartedTimestampMillis()) return false;
+      if (hasStartedTimestampMillis()) {
+        if (getStartedTimestampMillis()
+            != other.getStartedTimestampMillis()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasRevision()) {
+        hash = (37 * hash) + REVISION_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getRevision());
+      }
+      if (hasNumberOfProcesses()) {
+        hash = (37 * hash) + NUMBEROFPROCESSES_FIELD_NUMBER;
+        hash = (53 * hash) + getNumberOfProcesses();
+      }
+      if (hasRescaleInProgress()) {
+        hash = (37 * hash) + RESCALEINPROGRESS_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getRescaleInProgress());
+      }
+      if (hasStartedTimestampMillis()) {
+        hash = (37 * hash) + STARTEDTIMESTAMPMILLIS_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getStartedTimestampMillis());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(byte[] data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(
+        byte[] data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(
+        akka.protobufv3.internal.CodedInputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parseFrom(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code akka.cluster.sharding.typed.GetNumberOfProcessesReply}
+     */
+    public static final class Builder extends
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:akka.cluster.sharding.typed.GetNumberOfProcessesReply)
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReplyOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_descriptor;
+      }
+
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply.class, akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply.Builder.class);
+      }
+
+      // Construct using akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        revision_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        numberOfProcesses_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        rescaleInProgress_ = false;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        startedTimestampMillis_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000008);
+        return this;
+      }
+
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_descriptor;
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply getDefaultInstanceForType() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply build() {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply buildPartial() {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.revision_ = revision_;
+          to_bitField0_ |= 0x00000001;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.numberOfProcesses_ = numberOfProcesses_;
+          to_bitField0_ |= 0x00000002;
+        }
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.rescaleInProgress_ = rescaleInProgress_;
+          to_bitField0_ |= 0x00000004;
+        }
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          result.startedTimestampMillis_ = startedTimestampMillis_;
+          to_bitField0_ |= 0x00000008;
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
+        if (other instanceof akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply) {
+          return mergeFrom((akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply other) {
+        if (other == akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply.getDefaultInstance()) return this;
+        if (other.hasRevision()) {
+          setRevision(other.getRevision());
+        }
+        if (other.hasNumberOfProcesses()) {
+          setNumberOfProcesses(other.getNumberOfProcesses());
+        }
+        if (other.hasRescaleInProgress()) {
+          setRescaleInProgress(other.getRescaleInProgress());
+        }
+        if (other.hasStartedTimestampMillis()) {
+          setStartedTimestampMillis(other.getStartedTimestampMillis());
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        if (!hasRevision()) {
+          return false;
+        }
+        if (!hasNumberOfProcesses()) {
+          return false;
+        }
+        if (!hasRescaleInProgress()) {
+          return false;
+        }
+        if (!hasStartedTimestampMillis()) {
+          return false;
+        }
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private long revision_ ;
+      /**
+       * <code>required int64 revision = 1;</code>
+       * @return Whether the revision field is set.
+       */
+      public boolean hasRevision() {
+        return ((bitField0_ & 0x00000001) != 0);
+      }
+      /**
+       * <code>required int64 revision = 1;</code>
+       * @return The revision.
+       */
+      public long getRevision() {
+        return revision_;
+      }
+      /**
+       * <code>required int64 revision = 1;</code>
+       * @param value The revision to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRevision(long value) {
+        bitField0_ |= 0x00000001;
+        revision_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int64 revision = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRevision() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        revision_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private int numberOfProcesses_ ;
+      /**
+       * <code>required int32 numberOfProcesses = 2;</code>
+       * @return Whether the numberOfProcesses field is set.
+       */
+      public boolean hasNumberOfProcesses() {
+        return ((bitField0_ & 0x00000002) != 0);
+      }
+      /**
+       * <code>required int32 numberOfProcesses = 2;</code>
+       * @return The numberOfProcesses.
+       */
+      public int getNumberOfProcesses() {
+        return numberOfProcesses_;
+      }
+      /**
+       * <code>required int32 numberOfProcesses = 2;</code>
+       * @param value The numberOfProcesses to set.
+       * @return This builder for chaining.
+       */
+      public Builder setNumberOfProcesses(int value) {
+        bitField0_ |= 0x00000002;
+        numberOfProcesses_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 numberOfProcesses = 2;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearNumberOfProcesses() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        numberOfProcesses_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private boolean rescaleInProgress_ ;
+      /**
+       * <code>required bool rescaleInProgress = 3;</code>
+       * @return Whether the rescaleInProgress field is set.
+       */
+      public boolean hasRescaleInProgress() {
+        return ((bitField0_ & 0x00000004) != 0);
+      }
+      /**
+       * <code>required bool rescaleInProgress = 3;</code>
+       * @return The rescaleInProgress.
+       */
+      public boolean getRescaleInProgress() {
+        return rescaleInProgress_;
+      }
+      /**
+       * <code>required bool rescaleInProgress = 3;</code>
+       * @param value The rescaleInProgress to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRescaleInProgress(boolean value) {
+        bitField0_ |= 0x00000004;
+        rescaleInProgress_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required bool rescaleInProgress = 3;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRescaleInProgress() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        rescaleInProgress_ = false;
+        onChanged();
+        return this;
+      }
+
+      private long startedTimestampMillis_ ;
+      /**
+       * <code>required int64 startedTimestampMillis = 4;</code>
+       * @return Whether the startedTimestampMillis field is set.
+       */
+      public boolean hasStartedTimestampMillis() {
+        return ((bitField0_ & 0x00000008) != 0);
+      }
+      /**
+       * <code>required int64 startedTimestampMillis = 4;</code>
+       * @return The startedTimestampMillis.
+       */
+      public long getStartedTimestampMillis() {
+        return startedTimestampMillis_;
+      }
+      /**
+       * <code>required int64 startedTimestampMillis = 4;</code>
+       * @param value The startedTimestampMillis to set.
+       * @return This builder for chaining.
+       */
+      public Builder setStartedTimestampMillis(long value) {
+        bitField0_ |= 0x00000008;
+        startedTimestampMillis_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int64 startedTimestampMillis = 4;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearStartedTimestampMillis() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        startedTimestampMillis_ = 0L;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:akka.cluster.sharding.typed.GetNumberOfProcessesReply)
+    }
+
+    // @@protoc_insertion_point(class_scope:akka.cluster.sharding.typed.GetNumberOfProcessesReply)
+    private static final akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply();
+    }
+
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<GetNumberOfProcessesReply>
+        PARSER = new akka.protobufv3.internal.AbstractParser<GetNumberOfProcessesReply>() {
+      @java.lang.Override
+      public GetNumberOfProcessesReply parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new GetNumberOfProcessesReply(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<GetNumberOfProcessesReply> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<GetNumberOfProcessesReply> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_akka_cluster_sharding_typed_ShardingEnvelope_descriptor;
   private static final 
@@ -2409,6 +3854,16 @@ public final class ShardingMessages {
   private static final 
     akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_akka_cluster_sharding_typed_ChangeNumberOfProcesses_fieldAccessorTable;
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
+    internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_descriptor;
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_fieldAccessorTable;
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
+    internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_descriptor;
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_fieldAccessorTable;
 
   public static akka.protobufv3.internal.Descriptors.FileDescriptor
       getDescriptor() {
@@ -2426,8 +3881,13 @@ public final class ShardingMessages {
       "rocesses\030\002 \002(\005\022\021\n\tcompleted\030\003 \002(\010\022\036\n\026sta" +
       "rtedTimestampMillis\030\004 \002(\003\"H\n\027ChangeNumbe" +
       "rOfProcesses\022\034\n\024newNumberOfProcesses\030\001 \002" +
-      "(\005\022\017\n\007replyTo\030\002 \002(\tB1\n-akka.cluster.shar" +
-      "ding.typed.internal.protobufH\001"
+      "(\005\022\017\n\007replyTo\030\002 \002(\t\"\'\n\024GetNumberOfProces" +
+      "ses\022\017\n\007replyTo\030\001 \002(\t\"\203\001\n\031GetNumberOfProc" +
+      "essesReply\022\020\n\010revision\030\001 \002(\003\022\031\n\021numberOf" +
+      "Processes\030\002 \002(\005\022\031\n\021rescaleInProgress\030\003 \002" +
+      "(\010\022\036\n\026startedTimestampMillis\030\004 \002(\003B1\n-ak" +
+      "ka.cluster.sharding.typed.internal.proto" +
+      "bufH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -2452,6 +3912,18 @@ public final class ShardingMessages {
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_akka_cluster_sharding_typed_ChangeNumberOfProcesses_descriptor,
         new java.lang.String[] { "NewNumberOfProcesses", "ReplyTo", });
+    internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_descriptor,
+        new java.lang.String[] { "ReplyTo", });
+    internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_descriptor,
+        new java.lang.String[] { "Revision", "NumberOfProcesses", "RescaleInProgress", "StartedTimestampMillis", });
     akka.remote.ContainerFormats.getDescriptor();
   }
 
