@@ -28,16 +28,36 @@ trait ShardedDaemonProcessCommand {}
  *                Note that a successful response may take a long time, depending on how fast
  *                the daemon process actors stop after getting their stop message.
  */
-final case class ChangeNumberOfProcesses(newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Done]])
+final class ChangeNumberOfProcesses(val newNumberOfProcesses: Int, val replyTo: ActorRef[StatusReply[Done]])
     extends ShardedDaemonProcessCommand
     with ClusterShardingTypedSerializable
+
+object ChangeNumberOfProcesses {
+
+  /**
+   * Scala API: Tell the sharded daemon process to rescale to the given number of processes.
+   *
+   * @param newNumberOfProcesses The number of processes to scale up to
+   * @param replyTo              Reply to this actor once scaling is successfully done, or with details if it failed
+   *                             Note that a successful response may take a long time, depending on how fast
+   *                             the daemon process actors stop after getting their stop message.
+   */
+  def apply(newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Done]]): ChangeNumberOfProcesses =
+    new ChangeNumberOfProcesses(newNumberOfProcesses, replyTo)
+
+}
 
 /**
  * Query the sharded daemon process for the current scale
  */
-final case class GetNumberOfProcesses(replyTo: ActorRef[NumberOfProcesses])
+final class GetNumberOfProcesses(val replyTo: ActorRef[NumberOfProcesses])
     extends ShardedDaemonProcessCommand
     with ClusterShardingTypedSerializable
+
+object GetNumberOfProcesses {
+  def apply(replyTo: ActorRef[NumberOfProcesses]): GetNumberOfProcesses =
+    new GetNumberOfProcesses(replyTo)
+}
 
 /**
  * Reply for [[GetNumberOfProcesses]]

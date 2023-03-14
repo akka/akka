@@ -219,8 +219,8 @@ private final class ShardedDaemonProcessCoordinator private (
         timers.startSingleTimer(Tick, settings.keepAliveInterval)
         Behaviors.same
 
-      case GetNumberOfProcesses(replyTo) =>
-        replyTo ! GetNumberOfProcessesReply(
+      case get: GetNumberOfProcesses =>
+        get.replyTo ! GetNumberOfProcessesReply(
           currentState.numberOfProcesses,
           currentState.started,
           !currentState.completed,
@@ -335,8 +335,12 @@ private final class ShardedDaemonProcessCoordinator private (
       case request: ChangeNumberOfProcesses =>
         request.replyTo ! StatusReply.error("Rescale in progress, retry later")
         Behaviors.same
-      case GetNumberOfProcesses(replyTo) =>
-        replyTo ! GetNumberOfProcessesReply(state.numberOfProcesses, state.started, !state.completed, state.revision)
+      case get: GetNumberOfProcesses =>
+        get.replyTo ! GetNumberOfProcessesReply(
+          state.numberOfProcesses,
+          state.started,
+          !state.completed,
+          state.revision)
         Behaviors.same
 
       case msg =>
