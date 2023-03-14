@@ -14,6 +14,7 @@ import akka.actor.typed.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.cluster.sharding.typed.internal.ClusterShardingTypedSerializable
 import akka.pattern.StatusReply
 import akka.util.JavaDurationConverters._
 
@@ -211,3 +212,4 @@ trait ShardedDaemonProcessCommand {}
  */
 final case class ChangeNumberOfProcesses(newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Done]])
     extends ShardedDaemonProcessCommand
+    with ClusterShardingTypedSerializable

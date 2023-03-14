@@ -23,6 +23,7 @@ private[akka] final case class ShardedDaemonProcessState(
     numberOfProcesses: Int,
     completed: Boolean,
     started: Instant)
+    extends ClusterShardingTypedSerializable
 
 /**
  * INTERNAL API

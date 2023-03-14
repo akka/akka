@@ -46,10 +46,13 @@ private[akka] object ShardedDaemonProcessKeepAlivePinger {
   sealed trait Message
 
   // control from the coordinator
-  final case class Pause(revision: Long, replyTo: ActorRef[StatusReply[ActorPath]]) extends Message
+  final case class Pause(revision: Long, replyTo: ActorRef[StatusReply[ActorPath]])
+      extends Message
+      with ClusterShardingTypedSerializable
 
   final case class Resume(revision: Long, newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[ActorPath]])
       extends Message
+      with ClusterShardingTypedSerializable
 
   // internal messages
   private final case class Tick(revision: Long) extends Message
