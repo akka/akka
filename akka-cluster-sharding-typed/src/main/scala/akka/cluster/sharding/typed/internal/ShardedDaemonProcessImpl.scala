@@ -179,7 +179,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     }
 
     if (supportsRescale) {
-      // FIXME do we need to start it on all nodes, regardless of role?
+      // started on all nodes even if using roles to be able to share the default replicator
       DistributedData(system).replicator
 
       var singletonSettings =
