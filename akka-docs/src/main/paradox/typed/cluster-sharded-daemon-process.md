@@ -54,9 +54,8 @@ The rescaling process among other things includes the process actors stopping th
 so may be a relatively slow operation. If a subsequent request to rescale is sent while one is in progress it is responded
 to with a failure response.
 
-A rolling upgrade switching from a static number of workers to a dynamic number is possible unless the
-sharded daemon process was limited to a role. With roles the same process may end up running parallel instances until the 
-rolling upgrade has completed. It is not safe to roll from dynamic to static.
+A rolling upgrade switching from a static number of workers to a dynamic number is possible. 
+It is not safe to do a rolling upgrade from dynamic number of workers to static without a full cluster shutdown.
 
 ## Scalability  
 

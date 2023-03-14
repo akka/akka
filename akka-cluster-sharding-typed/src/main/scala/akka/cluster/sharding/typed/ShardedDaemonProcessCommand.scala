@@ -30,7 +30,20 @@ trait ShardedDaemonProcessCommand {}
  */
 final class ChangeNumberOfProcesses(val newNumberOfProcesses: Int, val replyTo: ActorRef[StatusReply[Done]])
     extends ShardedDaemonProcessCommand
-    with ClusterShardingTypedSerializable
+    with ClusterShardingTypedSerializable {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ChangeNumberOfProcesses =>
+      newNumberOfProcesses == that.newNumberOfProcesses &&
+      replyTo == that.replyTo
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(newNumberOfProcesses, replyTo)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+}
 
 object ChangeNumberOfProcesses {
 
@@ -52,7 +65,19 @@ object ChangeNumberOfProcesses {
  */
 final class GetNumberOfProcesses(val replyTo: ActorRef[NumberOfProcesses])
     extends ShardedDaemonProcessCommand
-    with ClusterShardingTypedSerializable
+    with ClusterShardingTypedSerializable {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: GetNumberOfProcesses =>
+      replyTo == that.replyTo
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(replyTo)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+}
 
 object GetNumberOfProcesses {
   def apply(replyTo: ActorRef[NumberOfProcesses]): GetNumberOfProcesses =

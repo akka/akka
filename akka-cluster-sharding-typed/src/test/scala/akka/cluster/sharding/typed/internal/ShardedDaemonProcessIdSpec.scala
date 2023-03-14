@@ -14,16 +14,27 @@ class ShardedDaemonProcessIdSpec extends AnyWordSpecLike with Matchers {
 
     "decode single int in id as id for non-rescaling" in {
       // number of processes and revision not used so 0 in this case
-      ShardedDaemonProcessId.decodeEntityId("1", supportsRescale = false) should ===(DecodedId(0L, 0, 1))
+      ShardedDaemonProcessId.decodeEntityId("1", supportsRescale = false, 8) should ===(DecodedId(0L, 8, 1))
     }
 
     "decode composed id as id for rescaling" in {
-      ShardedDaemonProcessId.decodeEntityId("1|4|3", supportsRescale = true) should ===(DecodedId(1L, 4, 3))
+      ShardedDaemonProcessId.decodeEntityId("1|4|3", supportsRescale = true, 8) should ===(DecodedId(1L, 4, 3))
     }
 
     "decode single int in id as id for rescaling (to support rolling upgrade)" in {
-      // number of processes and revision not used so 0 in this case
-      ShardedDaemonProcessId.decodeEntityId("1", supportsRescale = true) should ===(DecodedId(-1L, -1, 1))
+      ShardedDaemonProcessId.decodeEntityId("1", supportsRescale = true, 8) should ===(DecodedId(0L, 8, 1))
+    }
+
+    "encode initial revision with old scheme (to support rolling upgrade)" in {
+      val id = DecodedId(0L, 8, 4)
+      id.encodeEntityId(true) should ===("4")
+      id.encodeEntityId(false) should ===("4")
+    }
+
+    "encode non 0 revisions with new scheme" in {
+      val id = DecodedId(1L, 8, 4)
+      id.encodeEntityId(true) should ===("1|8|4")
+      id.encodeEntityId(false) should ===("4")
     }
 
     "spread out workers over shards for non-rescaling" in {

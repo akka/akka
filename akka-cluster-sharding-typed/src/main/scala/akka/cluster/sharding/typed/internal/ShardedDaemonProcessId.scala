@@ -23,21 +23,27 @@ private[akka] object ShardedDaemonProcessId {
    */
   val Separator = '|'
 
-  def decodeEntityId(id: String, supportsRescale: Boolean) =
+  def decodeEntityId(id: String, supportsRescale: Boolean, initialNumberOfProcesses: Int) =
     if (supportsRescale) {
       id.split(Separator) match {
         case Array(rev, count, n) => DecodedId(rev.toLong, count.toInt, n.toInt)
-        case Array(n)             => DecodedId(-1L, -1, n.toInt) // ping from old/supportsRescale=false node during rolling upgrade
-        case _                    => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
+        case Array(n) =>
+          DecodedId(0L, initialNumberOfProcesses, n.toInt) // ping from old/supportsRescale=false node during rolling upgrade
+        case _ => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
       }
     } else {
-      DecodedId(0L, 0, id.toInt) // for non-dynamic-scaling workers, total count not used
+      DecodedId(0L, initialNumberOfProcesses, id.toInt) // for non-dynamic-scaling workers
     }
 
   final case class DecodedId(revision: Long, totalCount: Int, processNumber: Int) {
-    def encodeEntityId(supportsRescale: Boolean): String =
-      if (supportsRescale) s"$revision$Separator$totalCount$Separator$processNumber"
-      else processNumber.toString
+    def encodeEntityId(supportsRescale: Boolean): String = {
+      if (supportsRescale) {
+        if (revision == 0L) {
+          // to safely do rolling updates, we encode revision 0 using the old static scheme
+          processNumber.toString
+        } else s"$revision$Separator$totalCount$Separator$processNumber"
+      } else processNumber.toString
+    }
   }
 
   final class MessageExtractor[T](supportsRescale: Boolean) extends ShardingMessageExtractor[ShardingEnvelope[T], T] {

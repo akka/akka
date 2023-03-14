@@ -149,7 +149,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     }
 
     val entity = Entity(entityTypeKey) { ctx =>
-      val decodedId = decodeEntityId(ctx.entityId, supportsRescale)
+      val decodedId = decodeEntityId(ctx.entityId, supportsRescale, initialNumberOfProcesses = numberOfInstances)
       val sdContext =
         ShardedDaemonProcessContextImpl(decodedId.processNumber, decodedId.totalCount, name, decodedId.revision)
       if (supportsRescale) verifyRevisionBeforeStarting(behaviorFactory)(sdContext)
