@@ -4,21 +4,21 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
-import scala.concurrent.duration._
-
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
+import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
-import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessCoordinator
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.duration._
 
 object ShardedDaemonProcessSpec {
   // single node cluster config
@@ -116,7 +116,9 @@ class ShardedDaemonProcessSpec
     "send keep alive messages (rescalable)" in {
       val shardingProbe = createTestProbe[Any]()
       val settings = ShardedDaemonProcessSettings(system)
-      val pinger = spawn(ShardedDaemonProcessKeepAlivePinger(settings, "throttle", true, 3, shardingProbe.ref))
+      val shardingSettings = ClusterShardingSettings(system)
+      val pinger =
+        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, true, 3, "throttle-a", shardingProbe.ref))
       // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
       // See ShardedDaemonProcessImpl.DecodedId for details about entity id format
       shardingProbe.expectMessage(StartEntity("0|3|0"))
@@ -130,7 +132,9 @@ class ShardedDaemonProcessSpec
     "throttle keep alive messages (non-rescalable)" in {
       val shardingProbe = createTestProbe[Any]()
       val settings = ShardedDaemonProcessSettings(system).withKeepAliveThrottleInterval(1.second)
-      val pinger = spawn(ShardedDaemonProcessKeepAlivePinger(settings, "throttle", false, 3, shardingProbe.ref))
+      val shardingSettings = ClusterShardingSettings(system)
+      val pinger =
+        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, true, 2, "throttle-b", shardingProbe.ref))
       // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
       // See ShardedDaemonProcessImpl.DecodedId for details about entity id format
       shardingProbe.expectMessage(StartEntity("0"))

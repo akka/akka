@@ -26,22 +26,3 @@ message ChangeNumberOfProcesses {
   required int32 newNumberOfProcesses = 1;
   required string replyTo = 2;
 }
-
-message PauseKeepalive {
-  required int64 revision = 1;
-  required string replyTo = 2;
-}
-
-message Paused {
-  required string pingerActor = 1;
-}
-
-message ResumeKeepalive {
-  required int64 revision = 1;
-  required int32 numberOfWorkers = 2;
-  required string replyTo = 3;
-}
-
-message Resumed {
-  required string pingerActor = 1;
-}

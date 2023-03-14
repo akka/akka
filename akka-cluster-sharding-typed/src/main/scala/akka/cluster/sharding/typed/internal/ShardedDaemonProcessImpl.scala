@@ -22,7 +22,6 @@ import akka.cluster.sharding.typed.scaladsl
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingleton
 import akka.cluster.typed.ClusterSingletonSettings
 import akka.cluster.typed.SingletonActor
@@ -149,7 +148,6 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         shardingBaseSettings.leaseSettings)
     }
 
-    val nodeRoles = Cluster(system).selfMember.roles
     val entity = Entity(entityTypeKey) { ctx =>
       val decodedId = decodeEntityId(ctx.entityId, supportsRescale)
       val sdContext =
@@ -171,29 +169,24 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     val shardingRef = ClusterSharding(system).init(entityWithShardAllocationStrategy)
 
-    // only start pinger if role matches
-    if (shardingSettings.role.forall(nodeRoles)) {
-      system.systemActorOf(
-        ShardedDaemonProcessKeepAlivePinger(settings, name, supportsRescale, numberOfInstances, shardingRef),
-        s"ShardedDaemonProcessKeepAlive-$name")
-    }
+    // started on all nodes even if using roles to be able to share the default replicator
+    DistributedData(system).replicator
 
-    if (supportsRescale) {
-      // started on all nodes even if using roles to be able to share the default replicator
-      DistributedData(system).replicator
+    var singletonSettings =
+      ClusterSingletonSettings(system)
+    settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
+    val singleton =
+      SingletonActor(
+        ShardedDaemonProcessCoordinator(
+          settings,
+          shardingSettings,
+          supportsRescale,
+          numberOfInstances,
+          name,
+          shardingRef),
+        s"ShardedDaemonProcessCoordinator-$name").withSettings(singletonSettings)
 
-      var singletonSettings =
-        ClusterSingletonSettings(system)
-      settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
-      val singleton =
-        SingletonActor(
-          ShardedDaemonProcessCoordinator(settings, shardingSettings, numberOfInstances, name, shardingRef),
-          s"ShardedDaemonProcessCoordinator-$name").withSettings(singletonSettings)
-
-      ClusterSingleton(system).init(singleton)
-    } else {
-      system.deadLetters
-    }
+    ClusterSingleton(system).init(singleton)
   }
 
   // Java API

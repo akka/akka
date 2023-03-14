@@ -7,7 +7,6 @@ package akka.cluster.sharding.typed
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessState
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.serialization.SerializationExtension
@@ -62,20 +61,5 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
       checkSerialization(ChangeNumberOfProcesses(7, probe.ref))
     }
 
-    "must serialize and deserialize keepalive Pause" in {
-      checkSerialization(ShardedDaemonProcessKeepAlivePinger.Pause(7, probe.ref))
-    }
-
-    "must serialize and deserialize keepalive Paused" in {
-      checkSerialization(ShardedDaemonProcessKeepAlivePinger.Paused(probe.ref))
-    }
-
-    "must serialize and deserialize keepalive Resume" in {
-      checkSerialization(ShardedDaemonProcessKeepAlivePinger.Resume(7, 8, probe.ref))
-    }
-
-    "must serialize and deserialize keepalive Resumed" in {
-      checkSerialization(ShardedDaemonProcessKeepAlivePinger.Resumed(probe.ref))
-    }
   }
 }
