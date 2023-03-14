@@ -206,7 +206,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           daemonProcessName,
           oldRevision,
           currentRevision)
-        Behaviors.ignore
+        Behaviors.same
 
       case Tick(oldRevision) =>
         context.log.debugN(
@@ -214,14 +214,14 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           daemonProcessName,
           oldRevision,
           currentRevision)
-        Behaviors.ignore
+        Behaviors.same
       case Resume(`currentRevision`, _, replyTo) =>
         context.log.debug2(
           "Sharded daemon process pinger [{}] got start for already started revision (revision [{}]",
           daemonProcessName,
           currentRevision)
         replyTo ! StatusReply.Success(Resumed(context.self))
-        Behaviors.ignore
+        Behaviors.same
 
       case Resume(otherRevision, _, replyTo) =>
         context.log.debugN(
@@ -230,7 +230,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           otherRevision,
           currentRevision)
         replyTo ! StatusReply.Success(Resumed(context.self))
-        Behaviors.ignore
+        Behaviors.same
 
       case unexpected =>
         context.log.warn2(
@@ -261,11 +261,11 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           daemonProcessName,
           revision)
         replyTo ! StatusReply.Error("Old revision")
-        Behaviors.ignore
+        Behaviors.same
       }
 
-    case Tick(_)              => Behaviors.ignore
-    case SendKeepAliveDone(_) => Behaviors.ignore
+    case Tick(_)              => Behaviors.same
+    case SendKeepAliveDone(_) => Behaviors.same
 
     case unexpected =>
       context.log
