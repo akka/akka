@@ -383,8 +383,6 @@ private final class ShardedDaemonProcessCoordinator private (
             daemonProcessName,
             ddataWritRetries)
         }
-        // FIXME should we eventually give up?
-
         rescalingComplete(newState, None, ddataWritRetries + 1)
     }
   }
