@@ -17,9 +17,6 @@ import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.scaladsl.adapter.TypedActorRefOps
 import akka.annotation.InternalApi
-import akka.cluster.ddata.LWWRegister
-import akka.cluster.ddata.LWWRegisterKey
-import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.ddata.typed.scaladsl.ReplicatorMessageAdapter
@@ -33,7 +30,6 @@ import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.pattern.StatusReply
 import akka.stream.scaladsl.Source
 
-import java.time.Instant
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
@@ -44,13 +40,13 @@ import scala.concurrent.duration.Duration
  */
 @InternalApi
 private[akka] object ShardedDaemonProcessCoordinator {
-  import ShardedDaemonProcessState._
 
   private trait InternalMessage extends ShardedDaemonProcessCommand
 
-  private case class InternalGetResponse(rsp: Replicator.GetResponse[Register]) extends InternalMessage
+  private case class InternalGetResponse(rsp: Replicator.GetResponse[ShardedDaemonProcessState]) extends InternalMessage
 
-  private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[Register]) extends InternalMessage
+  private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[ShardedDaemonProcessState])
+      extends InternalMessage
 
   private case class PingerPauseAck(actorPath: ActorPath) extends InternalMessage
   private case class PingerResumeAck(actorPath: ActorPath) extends InternalMessage
@@ -79,11 +75,8 @@ private[akka] object ShardedDaemonProcessCoordinator {
             Behaviors.withStash(100) {
               stash =>
                 context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
-                val key = ddataKey(daemonProcessName)
-                val ddata = DistributedData(context.system)
-                val selfUniqueAddress = ddata.selfUniqueAddress
-
-                DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, Register] {
+                val key = ShardedDaemonProcessStateKey(daemonProcessName)
+                DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, ShardedDaemonProcessState] {
                   replicatorAdapter =>
                     new ShardedDaemonProcessCoordinator(
                       settings,
@@ -96,7 +89,6 @@ private[akka] object ShardedDaemonProcessCoordinator {
                       shardingRef.toClassic,
                       initialNumberOfProcesses,
                       key,
-                      selfUniqueAddress,
                       replicatorAdapter).start()
                 }
             }
@@ -128,12 +120,9 @@ private final class ShardedDaemonProcessCoordinator private (
     daemonProcessName: String,
     shardingRef: akka.actor.ActorRef,
     initialNumberOfProcesses: Int,
-    key: LWWRegisterKey[ShardedDaemonProcessState],
-    selfUniqueAddress: SelfUniqueAddress,
-    replicatorAdapter: ReplicatorMessageAdapter[ShardedDaemonProcessCommand, ShardedDaemonProcessState.Register]) {
+    key: ShardedDaemonProcessStateKey,
+    replicatorAdapter: ReplicatorMessageAdapter[ShardedDaemonProcessCommand, ShardedDaemonProcessState]) {
   import ShardedDaemonProcessCoordinator._
-  import ShardedDaemonProcessState._
-  private val started = Instant.now()
 
   // Stopping shards can take a lot of time, so don't hammer it with retries (even if the
   // stop shard command is idempotent)
@@ -145,15 +134,7 @@ private final class ShardedDaemonProcessCoordinator private (
     }
     .toClassic
 
-  private def initialState =
-    LWWRegister(
-      selfUniqueAddress,
-      ShardedDaemonProcessState(
-        revision = ShardedDaemonProcessState.startRevision,
-        numberOfProcesses = initialNumberOfProcesses,
-        completed = true,
-        // not quite correct but also not important
-        started = started))
+  private def initialState = ShardedDaemonProcessState.initialState(initialNumberOfProcesses)
 
   def start(): Behavior[ShardedDaemonProcessCommand] = {
     replicatorAdapter.askGet(
@@ -162,7 +143,7 @@ private final class ShardedDaemonProcessCoordinator private (
 
     Behaviors.receiveMessage {
       case InternalGetResponse(success @ Replicator.GetSuccess(`key`)) =>
-        val existingScaleState = success.get(key).value
+        val existingScaleState = success.get(key)
         if (existingScaleState.completed) {
           context.log.debugN(
             "{}: Previous completed state found for Sharded Daemon Process rev [{}] from [{}]",
@@ -183,7 +164,7 @@ private final class ShardedDaemonProcessCoordinator private (
       case InternalGetResponse(_ @Replicator.NotFound(`key`)) =>
         context.log.debug("{}: No previous state stored for Sharded Daemon Process", daemonProcessName)
         stash.stash(Tick)
-        stash.unstashAll(idle(initialState.value))
+        stash.unstashAll(idle(initialState))
 
       case InternalGetResponse(_ @Replicator.GetFailure(`key`)) =>
         context.log.info("{}: Failed fetching initial state for Sharded Daemon Process, retrying", daemonProcessName)
@@ -207,12 +188,7 @@ private final class ShardedDaemonProcessCoordinator private (
           request.replyTo ! StatusReply.Ack
           Behaviors.same
         } else {
-          val newState =
-            ShardedDaemonProcessState(
-              currentState.revision + 1,
-              request.newNumberOfProcesses,
-              completed = false,
-              started = Instant.now())
+          val newState = currentState.startScalingTo(request.newNumberOfProcesses)
           context.log.infoN(
             "{}: Starting rescaling of Sharded Daemon Process to [{}] processes, rev [{}]",
             daemonProcessName,
@@ -242,6 +218,8 @@ private final class ShardedDaemonProcessCoordinator private (
     }
   }
 
+  // we can come here from an explicit rescale request, or because a previous rescale was interrupted by the singleton
+  // moving between nodes and when started anew there was an incomplete scale read from ddata
   private def prepareRescale(
       newState: ShardedDaemonProcessState,
       request: ChangeNumberOfProcesses,
@@ -250,12 +228,14 @@ private final class ShardedDaemonProcessCoordinator private (
     replicatorAdapter.askUpdate(
       replyTo =>
         Replicator.Update(key, initialState, Replicator.WriteMajority(settings.rescaleWriteStateTimeout), replyTo)(
-          (register: Register) => register.withValue(selfUniqueAddress, newState)),
+          (existingState: ShardedDaemonProcessState) => existingState.merge(newState)),
       response => InternalUpdateResponse(response))
 
     // wait for update to complete before applying
     receiveWhileRescaling("prepareRescale") {
       case InternalUpdateResponse(_ @Replicator.UpdateSuccess(`key`)) =>
+        // this is a bit weird, we use our own state, rather than the result of the update but we also know
+        // there is a single(ton) writer so no surprises here
         stopAllShards(newState, Some(request), previousNumberOfProcesses)
 
       case InternalUpdateResponse(_ @Replicator.UpdateTimeout(`key`)) =>
@@ -308,11 +288,11 @@ private final class ShardedDaemonProcessCoordinator private (
       request: Option[ChangeNumberOfProcesses],
       ddataWritRetries: Int = 0): Behavior[ShardedDaemonProcessCommand] = {
     request.foreach(req => req.replyTo ! StatusReply.Ack)
-    val newState = state.copy(completed = true)
+    val newState = state.completeScaling()
     replicatorAdapter.askUpdate(
       replyTo =>
         Replicator.Update(key, initialState, Replicator.WriteMajority(settings.rescaleWriteStateTimeout), replyTo)(
-          (register: Register) => register.withValue(selfUniqueAddress, newState)),
+          (ShardedDaemonProcessState: ShardedDaemonProcessState) => ShardedDaemonProcessState.merge(newState)),
       response => InternalUpdateResponse(response))
 
     receiveWhileRescaling("rescalingComplete") {

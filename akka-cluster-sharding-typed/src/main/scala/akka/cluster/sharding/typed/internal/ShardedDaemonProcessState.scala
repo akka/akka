@@ -7,8 +7,9 @@ package akka.cluster.sharding.typed.internal
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
-import akka.cluster.ddata.LWWRegister
-import akka.cluster.ddata.LWWRegisterKey
+import akka.annotation.InternalApi
+import akka.cluster.ddata.Key
+import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.sharding.typed.ShardedDaemonProcessContext
@@ -23,7 +24,34 @@ private[akka] final case class ShardedDaemonProcessState(
     numberOfProcesses: Int,
     completed: Boolean,
     started: Instant)
-    extends ClusterShardingTypedSerializable
+    extends ReplicatedData
+    with ClusterShardingTypedSerializable {
+  type T = ShardedDaemonProcessState
+
+  override def merge(that: ShardedDaemonProcessState): ShardedDaemonProcessState =
+    if (this.revision == that.revision) {
+      if (this.completed) this
+      else that
+    } else if (this.revision > that.revision)
+      this
+    else that
+
+  def startScalingTo(newNumberOfProcesses: Int): ShardedDaemonProcessState =
+    copy(revision = revision + 1L, completed = false, numberOfProcesses = newNumberOfProcesses, started = Instant.now())
+  def completeScaling(): ShardedDaemonProcessState = copy(completed = true)
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class ShardedDaemonProcessStateKey(_id: String)
+    extends Key[ShardedDaemonProcessState](_id)
+    with ClusterShardingTypedSerializable {
+  override def withId(newId: Key.KeyId): ShardedDaemonProcessStateKey =
+    ShardedDaemonProcessStateKey(newId)
+}
 
 /**
  * INTERNAL API
@@ -32,10 +60,13 @@ private[akka] object ShardedDaemonProcessState {
 
   val startRevision = 0L
 
-  type Register = LWWRegister[ShardedDaemonProcessState]
-
-  def ddataKey(name: String): LWWRegisterKey[ShardedDaemonProcessState] =
-    LWWRegisterKey[ShardedDaemonProcessState](name)
+  def initialState(initialNumberOfProcesses: Int) =
+    ShardedDaemonProcessState(
+      revision = ShardedDaemonProcessState.startRevision,
+      numberOfProcesses = initialNumberOfProcesses,
+      completed = true,
+      // not quite correct but also not important, only informational
+      started = Instant.now())
 
   def verifyRevisionBeforeStarting[T](
       behaviorFactory: ShardedDaemonProcessContext => Behavior[T]): ShardedDaemonProcessContext => Behavior[T] = {
@@ -50,7 +81,7 @@ private[akka] object ShardedDaemonProcessState {
             sdpContext.processNumber)
           Behaviors.stopped
         } else {
-          val key = ddataKey(sdpContext.name)
+          val key = ShardedDaemonProcessStateKey(sdpContext.name)
           context.log.debug2(
             "{}: Deferred start of worker to verify its revision [{}] is the latest",
             sdpContext.name,
@@ -61,7 +92,7 @@ private[akka] object ShardedDaemonProcessState {
           distributedData.replicator ! Replicator.Get(key, Replicator.ReadLocal, context.self.unsafeUpcast)
           Behaviors.receiveMessagePartial {
             case reply @ Replicator.GetSuccess(`key`) =>
-              val state = reply.get(key).value
+              val state = reply.get(key)
               if (state.revision == revision) {
                 context.log.infoN(
                   "{}: Starting Sharded Daemon Process [{}] out of a total [{}] (revision [{}])",
