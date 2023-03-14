@@ -3107,6 +3107,616 @@ public final class ShardingMessages {
 
   }
 
+  public interface PausedOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:akka.cluster.sharding.typed.Paused)
+      akka.protobufv3.internal.MessageOrBuilder {
+
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return Whether the pingerActor field is set.
+     */
+    boolean hasPingerActor();
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return The pingerActor.
+     */
+    java.lang.String getPingerActor();
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return The bytes for pingerActor.
+     */
+    akka.protobufv3.internal.ByteString
+        getPingerActorBytes();
+  }
+  /**
+   * Protobuf type {@code akka.cluster.sharding.typed.Paused}
+   */
+  public  static final class Paused extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.Paused)
+      PausedOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use Paused.newBuilder() to construct.
+    private Paused(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private Paused() {
+      pingerActor_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new Paused();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private Paused(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      int mutable_bitField0_ = 0;
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000001;
+              pingerActor_ = bs;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Paused_descriptor;
+    }
+
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Paused_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused.class, akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused.Builder.class);
+    }
+
+    private int bitField0_;
+    public static final int PINGERACTOR_FIELD_NUMBER = 1;
+    private volatile java.lang.Object pingerActor_;
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return Whether the pingerActor field is set.
+     */
+    public boolean hasPingerActor() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return The pingerActor.
+     */
+    public java.lang.String getPingerActor() {
+      java.lang.Object ref = pingerActor_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          pingerActor_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return The bytes for pingerActor.
+     */
+    public akka.protobufv3.internal.ByteString
+        getPingerActorBytes() {
+      java.lang.Object ref = pingerActor_;
+      if (ref instanceof java.lang.String) {
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        pingerActor_ = b;
+        return b;
+      } else {
+        return (akka.protobufv3.internal.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasPingerActor()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, pingerActor_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, pingerActor_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused)) {
+        return super.equals(obj);
+      }
+      akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused other = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused) obj;
+
+      if (hasPingerActor() != other.hasPingerActor()) return false;
+      if (hasPingerActor()) {
+        if (!getPingerActor()
+            .equals(other.getPingerActor())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasPingerActor()) {
+        hash = (37 * hash) + PINGERACTOR_FIELD_NUMBER;
+        hash = (53 * hash) + getPingerActor().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(byte[] data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(
+        byte[] data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(
+        akka.protobufv3.internal.CodedInputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parseFrom(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code akka.cluster.sharding.typed.Paused}
+     */
+    public static final class Builder extends
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:akka.cluster.sharding.typed.Paused)
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.PausedOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Paused_descriptor;
+      }
+
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Paused_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused.class, akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused.Builder.class);
+      }
+
+      // Construct using akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        pingerActor_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Paused_descriptor;
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused getDefaultInstanceForType() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused build() {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused buildPartial() {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.pingerActor_ = pingerActor_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
+        if (other instanceof akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused) {
+          return mergeFrom((akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused other) {
+        if (other == akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused.getDefaultInstance()) return this;
+        if (other.hasPingerActor()) {
+          bitField0_ |= 0x00000001;
+          pingerActor_ = other.pingerActor_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        if (!hasPingerActor()) {
+          return false;
+        }
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private java.lang.Object pingerActor_ = "";
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @return Whether the pingerActor field is set.
+       */
+      public boolean hasPingerActor() {
+        return ((bitField0_ & 0x00000001) != 0);
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @return The pingerActor.
+       */
+      public java.lang.String getPingerActor() {
+        java.lang.Object ref = pingerActor_;
+        if (!(ref instanceof java.lang.String)) {
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            pingerActor_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @return The bytes for pingerActor.
+       */
+      public akka.protobufv3.internal.ByteString
+          getPingerActorBytes() {
+        java.lang.Object ref = pingerActor_;
+        if (ref instanceof String) {
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          pingerActor_ = b;
+          return b;
+        } else {
+          return (akka.protobufv3.internal.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @param value The pingerActor to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPingerActor(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        pingerActor_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPingerActor() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        pingerActor_ = getDefaultInstance().getPingerActor();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @param value The bytes for pingerActor to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPingerActorBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        pingerActor_ = value;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:akka.cluster.sharding.typed.Paused)
+    }
+
+    // @@protoc_insertion_point(class_scope:akka.cluster.sharding.typed.Paused)
+    private static final akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused();
+    }
+
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Paused>
+        PARSER = new akka.protobufv3.internal.AbstractParser<Paused>() {
+      @java.lang.Override
+      public Paused parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new Paused(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<Paused> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<Paused> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Paused getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   public interface ResumeKeepaliveOrBuilder extends
       // @@protoc_insertion_point(interface_extends:akka.cluster.sharding.typed.ResumeKeepalive)
       akka.protobufv3.internal.MessageOrBuilder {
@@ -3922,6 +4532,616 @@ public final class ShardingMessages {
 
   }
 
+  public interface ResumedOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:akka.cluster.sharding.typed.Resumed)
+      akka.protobufv3.internal.MessageOrBuilder {
+
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return Whether the pingerActor field is set.
+     */
+    boolean hasPingerActor();
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return The pingerActor.
+     */
+    java.lang.String getPingerActor();
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return The bytes for pingerActor.
+     */
+    akka.protobufv3.internal.ByteString
+        getPingerActorBytes();
+  }
+  /**
+   * Protobuf type {@code akka.cluster.sharding.typed.Resumed}
+   */
+  public  static final class Resumed extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.Resumed)
+      ResumedOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use Resumed.newBuilder() to construct.
+    private Resumed(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private Resumed() {
+      pingerActor_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new Resumed();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private Resumed(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      int mutable_bitField0_ = 0;
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000001;
+              pingerActor_ = bs;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Resumed_descriptor;
+    }
+
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Resumed_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed.class, akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed.Builder.class);
+    }
+
+    private int bitField0_;
+    public static final int PINGERACTOR_FIELD_NUMBER = 1;
+    private volatile java.lang.Object pingerActor_;
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return Whether the pingerActor field is set.
+     */
+    public boolean hasPingerActor() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return The pingerActor.
+     */
+    public java.lang.String getPingerActor() {
+      java.lang.Object ref = pingerActor_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          pingerActor_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string pingerActor = 1;</code>
+     * @return The bytes for pingerActor.
+     */
+    public akka.protobufv3.internal.ByteString
+        getPingerActorBytes() {
+      java.lang.Object ref = pingerActor_;
+      if (ref instanceof java.lang.String) {
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        pingerActor_ = b;
+        return b;
+      } else {
+        return (akka.protobufv3.internal.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasPingerActor()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, pingerActor_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, pingerActor_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed)) {
+        return super.equals(obj);
+      }
+      akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed other = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed) obj;
+
+      if (hasPingerActor() != other.hasPingerActor()) return false;
+      if (hasPingerActor()) {
+        if (!getPingerActor()
+            .equals(other.getPingerActor())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasPingerActor()) {
+        hash = (37 * hash) + PINGERACTOR_FIELD_NUMBER;
+        hash = (53 * hash) + getPingerActor().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(byte[] data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(
+        byte[] data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(
+        akka.protobufv3.internal.CodedInputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parseFrom(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code akka.cluster.sharding.typed.Resumed}
+     */
+    public static final class Builder extends
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:akka.cluster.sharding.typed.Resumed)
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ResumedOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Resumed_descriptor;
+      }
+
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Resumed_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed.class, akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed.Builder.class);
+      }
+
+      // Construct using akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        pingerActor_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_Resumed_descriptor;
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed getDefaultInstanceForType() {
+        return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed build() {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed buildPartial() {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.pingerActor_ = pingerActor_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
+        if (other instanceof akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed) {
+          return mergeFrom((akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed other) {
+        if (other == akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed.getDefaultInstance()) return this;
+        if (other.hasPingerActor()) {
+          bitField0_ |= 0x00000001;
+          pingerActor_ = other.pingerActor_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        if (!hasPingerActor()) {
+          return false;
+        }
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private java.lang.Object pingerActor_ = "";
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @return Whether the pingerActor field is set.
+       */
+      public boolean hasPingerActor() {
+        return ((bitField0_ & 0x00000001) != 0);
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @return The pingerActor.
+       */
+      public java.lang.String getPingerActor() {
+        java.lang.Object ref = pingerActor_;
+        if (!(ref instanceof java.lang.String)) {
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            pingerActor_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @return The bytes for pingerActor.
+       */
+      public akka.protobufv3.internal.ByteString
+          getPingerActorBytes() {
+        java.lang.Object ref = pingerActor_;
+        if (ref instanceof String) {
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          pingerActor_ = b;
+          return b;
+        } else {
+          return (akka.protobufv3.internal.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @param value The pingerActor to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPingerActor(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        pingerActor_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPingerActor() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        pingerActor_ = getDefaultInstance().getPingerActor();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string pingerActor = 1;</code>
+       * @param value The bytes for pingerActor to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPingerActorBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        pingerActor_ = value;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:akka.cluster.sharding.typed.Resumed)
+    }
+
+    // @@protoc_insertion_point(class_scope:akka.cluster.sharding.typed.Resumed)
+    private static final akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed();
+    }
+
+    public static akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Resumed>
+        PARSER = new akka.protobufv3.internal.AbstractParser<Resumed>() {
+      @java.lang.Override
+      public Resumed parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new Resumed(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<Resumed> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<Resumed> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.Resumed getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_akka_cluster_sharding_typed_ShardingEnvelope_descriptor;
   private static final 
@@ -3943,10 +5163,20 @@ public final class ShardingMessages {
     akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_akka_cluster_sharding_typed_PauseKeepalive_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
+    internal_static_akka_cluster_sharding_typed_Paused_descriptor;
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_akka_cluster_sharding_typed_Paused_fieldAccessorTable;
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_akka_cluster_sharding_typed_ResumeKeepalive_descriptor;
   private static final 
     akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_akka_cluster_sharding_typed_ResumeKeepalive_fieldAccessorTable;
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
+    internal_static_akka_cluster_sharding_typed_Resumed_descriptor;
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_akka_cluster_sharding_typed_Resumed_fieldAccessorTable;
 
   public static akka.protobufv3.internal.Descriptors.FileDescriptor
       getDescriptor() {
@@ -3965,11 +5195,12 @@ public final class ShardingMessages {
       "rtedTimestampMillis\030\004 \002(\003\"H\n\027ChangeNumbe" +
       "rOfProcesses\022\034\n\024newNumberOfProcesses\030\001 \002" +
       "(\005\022\017\n\007replyTo\030\002 \002(\t\"3\n\016PauseKeepalive\022\020\n" +
-      "\010revision\030\001 \002(\003\022\017\n\007replyTo\030\002 \002(\t\"M\n\017Resu" +
-      "meKeepalive\022\020\n\010revision\030\001 \002(\003\022\027\n\017numberO" +
-      "fWorkers\030\002 \002(\005\022\017\n\007replyTo\030\003 \002(\tB1\n-akka." +
-      "cluster.sharding.typed.internal.protobuf" +
-      "H\001"
+      "\010revision\030\001 \002(\003\022\017\n\007replyTo\030\002 \002(\t\"\035\n\006Paus" +
+      "ed\022\023\n\013pingerActor\030\001 \002(\t\"M\n\017ResumeKeepali" +
+      "ve\022\020\n\010revision\030\001 \002(\003\022\027\n\017numberOfWorkers\030" +
+      "\002 \002(\005\022\017\n\007replyTo\030\003 \002(\t\"\036\n\007Resumed\022\023\n\013pin" +
+      "gerActor\030\001 \002(\tB1\n-akka.cluster.sharding." +
+      "typed.internal.protobufH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -4000,12 +5231,24 @@ public final class ShardingMessages {
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_akka_cluster_sharding_typed_PauseKeepalive_descriptor,
         new java.lang.String[] { "Revision", "ReplyTo", });
-    internal_static_akka_cluster_sharding_typed_ResumeKeepalive_descriptor =
+    internal_static_akka_cluster_sharding_typed_Paused_descriptor =
       getDescriptor().getMessageTypes().get(4);
+    internal_static_akka_cluster_sharding_typed_Paused_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_akka_cluster_sharding_typed_Paused_descriptor,
+        new java.lang.String[] { "PingerActor", });
+    internal_static_akka_cluster_sharding_typed_ResumeKeepalive_descriptor =
+      getDescriptor().getMessageTypes().get(5);
     internal_static_akka_cluster_sharding_typed_ResumeKeepalive_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_akka_cluster_sharding_typed_ResumeKeepalive_descriptor,
         new java.lang.String[] { "Revision", "NumberOfWorkers", "ReplyTo", });
+    internal_static_akka_cluster_sharding_typed_Resumed_descriptor =
+      getDescriptor().getMessageTypes().get(6);
+    internal_static_akka_cluster_sharding_typed_Resumed_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_akka_cluster_sharding_typed_Resumed_descriptor,
+        new java.lang.String[] { "PingerActor", });
     akka.remote.ContainerFormats.getDescriptor();
   }
 

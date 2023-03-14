@@ -50,7 +50,8 @@ private[akka] object ShardedDaemonProcessCoordinator {
 
   private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[Register]) extends InternalMessage
 
-  private case class PingerAck(actorPath: ActorPath) extends InternalMessage
+  private case class PingerPauseAck(actorPath: ActorPath) extends InternalMessage
+  private case class PingerResumeAck(actorPath: ActorPath) extends InternalMessage
   private case class PingerNack(ex: Throwable) extends InternalMessage
 
   private case object PauseAllKeepalivePingers extends InternalMessage
@@ -129,10 +130,11 @@ private final class ShardedDaemonProcessCoordinator private (
   // topic for broadcasting to keepalive pingers
   private val pingersTopic = context.spawn(ShardedDaemonProcessKeepAlivePinger.topicFor(daemonProcessName), "topic")
 
-  private val pingerResponseAdapter = context.messageAdapter[StatusReply[ActorPath]] {
-    case StatusReply.Success(path: ActorPath) => PingerAck(path)
-    case StatusReply.Error(ex)                => PingerNack(ex)
-    case _                                    => throw new IllegalArgumentException("Unexpected response") // compiler completeness pleaser
+  private val pingerResponseAdapter = context.messageAdapter[StatusReply[_]] {
+    case StatusReply.Success(ack: ShardedDaemonProcessKeepAlivePinger.Paused)  => PingerPauseAck(ack.pingerActor.path)
+    case StatusReply.Success(ack: ShardedDaemonProcessKeepAlivePinger.Resumed) => PingerResumeAck(ack.pingerActor.path)
+    case StatusReply.Error(ex)                                                 => PingerNack(ex)
+    case _                                                                     => throw new IllegalArgumentException("Unexpected response") // compiler completeness pleaser
   }
 
   private val shardStoppedAdapter = context
@@ -266,7 +268,7 @@ private final class ShardedDaemonProcessCoordinator private (
           seenAcks.mkString(", "))
         pingersTopic ! Topic.Publish(Pause(state.revision - 1, pingerResponseAdapter))
         Behaviors.same
-      case PingerAck(path) =>
+      case PingerPauseAck(path) =>
         val newSeenAcks = seenAcks + (if (path.address.hasLocalScope) cluster.selfMember.address else path.address)
         if (newSeenAcks.subsetOf(nodesWithKeepalivePingers())) {
           context.log.debug("{}: All pingers paused, stopping shards", daemonProcessName)
@@ -335,7 +337,7 @@ private final class ShardedDaemonProcessCoordinator private (
           settings.rescalePingerPauseTimeout)
         pingersTopic ! Topic.Publish(Resume(state.revision, state.numberOfProcesses, pingerResponseAdapter))
         Behaviors.same
-      case PingerAck(path) =>
+      case PingerResumeAck(path) =>
         context.log.debug("{}: All pingers restarted, completing rescale", daemonProcessName)
         val newRestartedPingers = restartedPingers + (if (path.address.hasLocalScope) cluster.selfMember.address
                                                       else path.address)

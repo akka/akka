@@ -5,7 +5,6 @@
 package akka.cluster.sharding.typed.internal
 
 import akka.Done
-import akka.actor.ActorPath
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -46,13 +45,15 @@ private[akka] object ShardedDaemonProcessKeepAlivePinger {
   sealed trait Message
 
   // control from the coordinator
-  final case class Pause(revision: Long, replyTo: ActorRef[StatusReply[ActorPath]])
+  final case class Pause(revision: Long, replyTo: ActorRef[StatusReply[Paused]])
       extends Message
       with ClusterShardingTypedSerializable
+  final case class Paused(pingerActor: ActorRef[Message]) extends ClusterShardingTypedSerializable
 
-  final case class Resume(revision: Long, newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[ActorPath]])
+  final case class Resume(revision: Long, newNumberOfProcesses: Int, replyTo: ActorRef[StatusReply[Resumed]])
       extends Message
       with ClusterShardingTypedSerializable
+  final case class Resumed(pingerActor: ActorRef[Message]) extends ClusterShardingTypedSerializable
 
   // internal messages
   private final case class Tick(revision: Long) extends Message
@@ -196,7 +197,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
         if (revision <= currentRevision) {
           timers.cancel(Tick)
         }
-        replyTo ! StatusReply.Success(context.self.path)
+        replyTo ! StatusReply.Success(Paused(context.self))
         paused(revision)
 
       case SendKeepAliveDone(oldRevision) =>
@@ -219,7 +220,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           "Sharded daemon process pinger [{}] got start for already started revision (revision [{}]",
           daemonProcessName,
           currentRevision)
-        replyTo ! StatusReply.Success(context.self.path)
+        replyTo ! StatusReply.Success(Resumed(context.self))
         Behaviors.ignore
 
       case Resume(otherRevision, _, replyTo) =>
@@ -228,7 +229,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           daemonProcessName,
           otherRevision,
           currentRevision)
-        replyTo ! StatusReply.Success(context.self.path)
+        replyTo ! StatusReply.Success(Resumed(context.self))
         Behaviors.ignore
 
       case unexpected =>
@@ -246,12 +247,12 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
    */
   private def paused(pausedRevision: Long): Behavior[Message] = Behaviors.receiveMessage {
     case Pause(_, replyTo) =>
-      replyTo ! StatusReply.Success(context.self.path)
+      replyTo ! StatusReply.Success(Paused(context.self))
       Behaviors.same
     case Resume(revision, newNumberOfProcesses, replyTo) =>
       if (revision >= pausedRevision) {
         context.log.debug2("{}: Un-pausing sharded daemon process pinger (revision [{}])", daemonProcessName, revision)
-        replyTo ! StatusReply.Success(context.self.path)
+        replyTo ! StatusReply.Success(Resumed(context.self))
         context.self ! Tick(revision)
         start(revision, newNumberOfProcesses)
       } else {

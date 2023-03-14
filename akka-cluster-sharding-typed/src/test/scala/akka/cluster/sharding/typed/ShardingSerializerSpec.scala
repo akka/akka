@@ -61,11 +61,21 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
     "must serialize and deserialize ChangeNumberOfProcesses" in {
       checkSerialization(ChangeNumberOfProcesses(7, probe.ref))
     }
+
     "must serialize and deserialize keepalive Pause" in {
       checkSerialization(ShardedDaemonProcessKeepAlivePinger.Pause(7, probe.ref))
     }
+
+    "must serialize and deserialize keepalive Paused" in {
+      checkSerialization(ShardedDaemonProcessKeepAlivePinger.Paused(probe.ref))
+    }
+
     "must serialize and deserialize keepalive Resume" in {
       checkSerialization(ShardedDaemonProcessKeepAlivePinger.Resume(7, 8, probe.ref))
+    }
+
+    "must serialize and deserialize keepalive Resumed" in {
+      checkSerialization(ShardedDaemonProcessKeepAlivePinger.Resumed(probe.ref))
     }
   }
 }

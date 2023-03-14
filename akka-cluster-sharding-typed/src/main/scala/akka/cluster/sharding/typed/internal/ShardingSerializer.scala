@@ -12,7 +12,9 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Pause
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Paused
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Resume
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessKeepAlivePinger.Resumed
 import akka.cluster.sharding.typed.internal.protobuf.ShardingMessages
 import akka.protobufv3.internal.CodedOutputStream
 import akka.remote.serialization.WrappedPayloadSupport
@@ -39,13 +41,17 @@ import java.time.Instant
   private val ChangeNumberOfProcessesManifest = "c"
   private val PauseManifest = "d"
   private val ResumeManifest = "e"
+  private val PausedManifest = "f"
+  private val ResumedManifest = "g"
 
   override def manifest(o: AnyRef): String = o match {
     case _: ShardingEnvelope[_]       => ShardingEnvelopeManifest
     case _: ShardedDaemonProcessState => DaemonProcessStateManifest
     case _: ChangeNumberOfProcesses   => ChangeNumberOfProcessesManifest
     case _: Pause                     => PauseManifest
+    case _: Paused                    => PausedManifest
     case _: Resume                    => ResumeManifest
+    case _: Resumed                   => ResumedManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -83,12 +89,26 @@ import java.time.Instant
         .build()
         .toByteArray()
 
+    case paused: Paused =>
+      ShardingMessages.Paused
+        .newBuilder()
+        .setPingerActor(resolver.toSerializationFormat(paused.pingerActor))
+        .build()
+        .toByteArray()
+
     case resume: Resume =>
       ShardingMessages.ResumeKeepalive
         .newBuilder()
         .setRevision(resume.revision)
         .setNumberOfWorkers(resume.newNumberOfProcesses)
         .setReplyTo(resolver.toSerializationFormat(resume.replyTo))
+        .build()
+        .toByteArray()
+
+    case resumed: Resumed =>
+      ShardingMessages.Resumed
+        .newBuilder()
+        .setPingerActor(resolver.toSerializationFormat(resumed.pingerActor))
         .build()
         .toByteArray()
 
@@ -119,9 +139,17 @@ import java.time.Instant
       val pause = ShardingMessages.PauseKeepalive.parseFrom(bytes)
       Pause(pause.getRevision, resolver.resolveActorRef(pause.getReplyTo))
 
+    case PausedManifest =>
+      val paused = ShardingMessages.Paused.parseFrom(bytes)
+      Paused(resolver.resolveActorRef(paused.getPingerActor))
+
     case ResumeManifest =>
       val resume = ShardingMessages.ResumeKeepalive.parseFrom(bytes)
       Resume(resume.getRevision, resume.getNumberOfWorkers, resolver.resolveActorRef(resume.getReplyTo))
+
+    case ResumedManifest =>
+      val resumed = ShardingMessages.Resumed.parseFrom(bytes)
+      Resumed(resolver.resolveActorRef(resumed.getPingerActor))
 
     case _ =>
       throw new NotSerializableException(
@@ -170,6 +198,15 @@ import java.time.Instant
         .writeTo(codedOutputStream)
       codedOutputStream.flush()
 
+    case paused: Paused =>
+      val codedOutputStream = CodedOutputStream.newInstance(buf)
+      ShardingMessages.Paused
+        .newBuilder()
+        .setPingerActor(resolver.toSerializationFormat(paused.pingerActor))
+        .build()
+        .writeTo(codedOutputStream)
+      codedOutputStream.flush()
+
     case resume: Resume =>
       val codedOutputStream = CodedOutputStream.newInstance(buf)
       ShardingMessages.ResumeKeepalive
@@ -177,6 +214,15 @@ import java.time.Instant
         .setRevision(resume.revision)
         .setNumberOfWorkers(resume.newNumberOfProcesses)
         .setReplyTo(resolver.toSerializationFormat(resume.replyTo))
+        .build()
+        .writeTo(codedOutputStream)
+      codedOutputStream.flush()
+
+    case resumed: Resumed =>
+      val codedOutputStream = CodedOutputStream.newInstance(buf)
+      ShardingMessages.Resumed
+        .newBuilder()
+        .setPingerActor(resolver.toSerializationFormat(resumed.pingerActor))
         .build()
         .writeTo(codedOutputStream)
       codedOutputStream.flush()
@@ -208,9 +254,17 @@ import java.time.Instant
       val pause = ShardingMessages.PauseKeepalive.parseFrom(buf)
       Pause(pause.getRevision, resolver.resolveActorRef(pause.getReplyTo))
 
+    case PausedManifest =>
+      val paused = ShardingMessages.Paused.parseFrom(buf)
+      Paused(resolver.resolveActorRef(paused.getPingerActor))
+
     case ResumeManifest =>
       val resume = ShardingMessages.ResumeKeepalive.parseFrom(buf)
       Resume(resume.getRevision, resume.getNumberOfWorkers, resolver.resolveActorRef(resume.getReplyTo))
+
+    case ResumedManifest =>
+      val resumed = ShardingMessages.Resumed.parseFrom(buf)
+      Resumed(resolver.resolveActorRef(resumed.getPingerActor))
 
     case _ =>
       throw new NotSerializableException(
