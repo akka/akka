@@ -54,6 +54,8 @@ The rescaling process among other things includes the process actors stopping th
 so may be a relatively slow operation. If a subsequent request to rescale is sent while one is in progress it is responded
 to with a failure response.
 
+Switching over to dynamic scaling from the original static number of workers is possible in a rolling upgrade.
+
 ## Scalability  
 
 This cluster tool is intended for small numbers of consumers and will not scale well to a large set. In large clusters 

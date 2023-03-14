@@ -104,7 +104,7 @@ class ShardedDaemonProcessSpec
 
   }
 
-  "KeepAlivePinger" must {
+  "Coordinator" must {
     "have a single node cluster running first" in {
       val probe = createTestProbe()
       Cluster(system).manager ! Join(Cluster(system).selfMember.address)
@@ -134,7 +134,7 @@ class ShardedDaemonProcessSpec
       val settings = ShardedDaemonProcessSettings(system).withKeepAliveThrottleInterval(1.second)
       val shardingSettings = ClusterShardingSettings(system)
       val pinger =
-        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, true, 2, "throttle-b", shardingProbe.ref))
+        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, false, 3, "throttle-b", shardingProbe.ref))
       // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
       // See ShardedDaemonProcessImpl.DecodedId for details about entity id format
       shardingProbe.expectMessage(StartEntity("0"))

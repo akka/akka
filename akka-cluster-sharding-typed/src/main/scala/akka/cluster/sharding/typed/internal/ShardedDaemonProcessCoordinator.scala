@@ -24,12 +24,12 @@ import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.ddata.typed.scaladsl.ReplicatorMessageAdapter
 import akka.cluster.sharding.ShardCoordinator
-import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardedDaemonProcessCommand
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
+import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.pattern.StatusReply
 import akka.stream.scaladsl.Source
 
