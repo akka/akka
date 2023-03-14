@@ -7,7 +7,7 @@ package akka.cluster.sharding.typed
 import akka.Done
 import akka.actor.typed.ActorRef
 
-import java.time.Duration
+import java.time.{ Duration => JDuration }
 import scala.concurrent.duration.FiniteDuration
 import com.typesafe.config.Config
 import akka.actor.typed.ActorSystem
@@ -77,7 +77,7 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
    *
    * Note: How the sharded set is kept alive may change in the future meaning this setting may go away.
    */
-  def withKeepAliveInterval(keepAliveInterval: Duration): ShardedDaemonProcessSettings =
+  def withKeepAliveInterval(keepAliveInterval: JDuration): ShardedDaemonProcessSettings =
     copy(keepAliveInterval = keepAliveInterval.asScala)
 
   /**
@@ -111,7 +111,7 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
   /**
    * Java API: Keep alive messages are sent with this delay between each message.
    */
-  def withKeepAliveThrottleInterval(keepAliveThrottleInterval: Duration): ShardedDaemonProcessSettings =
+  def withKeepAliveThrottleInterval(keepAliveThrottleInterval: JDuration): ShardedDaemonProcessSettings =
     copy(keepAliveThrottleInterval = keepAliveThrottleInterval.asScala)
 
   /**
@@ -123,7 +123,7 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
   /**
    * Java API: Timeout before the sharded daemon process coordinator times out and retries reading state on startup
    */
-  def withRescaleReadStateTimeout(rescaleReadStateTimeout: Duration): ShardedDaemonProcessSettings =
+  def withRescaleReadStateTimeout(rescaleReadStateTimeout: JDuration): ShardedDaemonProcessSettings =
     copy(rescaleReadStateTimeout = rescaleReadStateTimeout.asScala)
 
   /**
@@ -135,7 +135,7 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
   /**
    * Java API: Timeout before the sharded daemon process coordinator times out and retries updating state on rescale
    */
-  def withRescaleWriteStateTimeout(rescaleWriteStateTimeout: Duration): ShardedDaemonProcessSettings =
+  def withRescaleWriteStateTimeout(rescaleWriteStateTimeout: JDuration): ShardedDaemonProcessSettings =
     copy(rescaleWriteStateTimeout = rescaleWriteStateTimeout.asScala)
 
   /**
@@ -149,7 +149,7 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
    * Java API: Timeout before the sharded daemon process coordinator times out and retries pausing or resuming
    * keepalive pingers on rescale
    */
-  def withRescalePingerPauseTimeout(rescalePingerPauseTimeout: Duration): ShardedDaemonProcessSettings =
+  def withRescalePingerPauseTimeout(rescalePingerPauseTimeout: JDuration): ShardedDaemonProcessSettings =
     copy(rescalePingerPauseTimeout = rescalePingerPauseTimeout.asScala)
 
   private def copy(
