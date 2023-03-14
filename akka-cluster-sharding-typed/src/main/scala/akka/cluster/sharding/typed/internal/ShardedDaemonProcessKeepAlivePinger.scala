@@ -182,7 +182,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
       case Tick =>
         if (shouldPing()) {
           context.log.debugN(
-            s"Sending periodic keep alive for Sharded Daemon Process [{}] to [{}] processes (revision [{}]).",
+            "Sending periodic keep alive for Sharded Daemon Process [{}] to [{}] processes (revision [{}]).",
             daemonProcessName,
             sortedIdentities.size,
             currentRevision)
@@ -257,7 +257,7 @@ private final class ShardedDaemonProcessKeepAlivePinger[T](
           "{}, Paused sharded daemon process pinger, got unexpected start for old revision [{}], ignoring",
           daemonProcessName,
           revision)
-        replyTo ! StatusReply.Error("Old revision")
+        replyTo ! StatusReply.Error(s"Old revision (got Resume($revision) but expected $pausedRevision or higher)")
         Behaviors.same
       }
 
