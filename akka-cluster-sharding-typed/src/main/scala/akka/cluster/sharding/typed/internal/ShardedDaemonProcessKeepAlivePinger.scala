@@ -8,6 +8,7 @@ import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
@@ -67,19 +68,22 @@ private[akka] object ShardedDaemonProcessKeepAlivePinger {
       daemonProcessName: String,
       supportsRescale: Boolean,
       initialNumberOfInstances: Int,
-      shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Message] =
-    Behaviors.setup[Message] { context =>
-      Behaviors.withTimers { timers =>
-        new ShardedDaemonProcessKeepAlivePinger(
-          settings,
-          supportsRescale,
-          context,
-          timers,
-          daemonProcessName,
-          initialNumberOfInstances,
-          shardingRef).init()
-      }
-    }
+      shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Message] = {
+    Behaviors
+      .supervise(Behaviors.setup[Message] { context =>
+        Behaviors.withTimers { timers =>
+          new ShardedDaemonProcessKeepAlivePinger(
+            settings,
+            supportsRescale,
+            context,
+            timers,
+            daemonProcessName,
+            initialNumberOfInstances,
+            shardingRef).init()
+        }
+      })
+      .onFailure(SupervisorStrategy.restart)
+  }
 }
 
 private final class ShardedDaemonProcessKeepAlivePinger[T](
