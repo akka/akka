@@ -24,7 +24,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
-object ShardedDaemonProcessReScaleSpec {
+object ShardedDaemonProcessRescaleSpec {
   // single node cluster config
   def config = ConfigFactory.parseString("""
       akka.actor.provider = cluster
@@ -65,12 +65,12 @@ object ShardedDaemonProcessReScaleSpec {
 
 }
 
-class ShardedDaemonProcessReScaleSpec
-    extends ScalaTestWithActorTestKit(ShardedDaemonProcessReScaleSpec.config)
+class ShardedDaemonProcessRescaleSpec
+    extends ScalaTestWithActorTestKit(ShardedDaemonProcessRescaleSpec.config)
     with AnyWordSpecLike
     with LogCapturing {
 
-  import ShardedDaemonProcessReScaleSpec._
+  import ShardedDaemonProcessRescaleSpec._
 
   private var sdp: ActorRef[ShardedDaemonProcessCommand] = _
   private val workerLifecycleProbe: TestProbe[Any] = createTestProbe[Any]()
