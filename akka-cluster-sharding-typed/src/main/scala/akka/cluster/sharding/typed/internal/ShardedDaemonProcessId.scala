@@ -27,6 +27,7 @@ private[akka] object ShardedDaemonProcessId {
     if (supportsRescale) {
       id.split(Separator) match {
         case Array(rev, count, n) => DecodedId(rev.toLong, count.toInt, n.toInt)
+        case Array(n)             => DecodedId(-1L, -1, n.toInt) // ping from old/supportsRescale=false node during rolling upgrade
         case _                    => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
       }
     } else {
@@ -46,8 +47,11 @@ private[akka] object ShardedDaemonProcessId {
 
     // use process n for shard id
     def shardId(entityId: String): String = {
-      if (supportsRescale) entityId.split(Separator)(2)
-      else entityId
+      if (supportsRescale) entityId.split(Separator) match {
+        case Array(_, _, id) => id
+        case Array(id)       => id // ping from old/supportsRescale=false node during rolling upgrade
+        case id              => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
+      } else entityId
     }
 
     def unwrapMessage(message: ShardingEnvelope[T]): T = message.message

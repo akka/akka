@@ -42,43 +42,51 @@ private[akka] object ShardedDaemonProcessState {
     sdpContext =>
       Behaviors.setup { context =>
         val revision = sdpContext.revision
-        val key = ddataKey(sdpContext.name)
 
-        context.log.debug2(
-          "{}: Deferred start of worker to verify its revision [{}] is the latest",
-          sdpContext.name,
-          revision)
+        if (revision == -1) {
+          context.log.debug2(
+            "{}: Ping from old non-rescaling node during rolling upgrade, not starting worker [{}]",
+            sdpContext.name,
+            sdpContext.processNumber)
+          Behaviors.stopped
+        } else {
+          val key = ddataKey(sdpContext.name)
+          context.log.debug2(
+            "{}: Deferred start of worker to verify its revision [{}] is the latest",
+            sdpContext.name,
+            revision)
 
-        // we can't anyway turn reply into T so no need for the usual adapter
-        val distributedData = DistributedData(context.system)
-        distributedData.replicator ! Replicator.Get(key, Replicator.ReadLocal, context.self.unsafeUpcast)
-        Behaviors.receiveMessagePartial {
-          case reply @ Replicator.GetSuccess(`key`) =>
-            val state = reply.get(key).value
-            if (state.revision == revision) {
-              context.log.debug2("{}: Starting worker, revision [{}] is the latest", sdpContext.name, revision)
-              behaviorFactory(sdpContext).unsafeCast
-            } else {
-              context.log.warnN(
-                "{}: Tried to start an old revision of worker ([{}] but latest revision is [{}], started at {})",
-                sdpContext.name,
-                sdpContext.revision,
-                state.revision,
-                state.started)
-              Behaviors.stopped // FIXME do we need to passivate or crash rather than stop?
-            }
-          case Replicator.NotFound(`key`) =>
-            if (revision == startRevision) {
-              // No state yet but initial revision, safe
-              context.log.debug("{}: Starting worker, revision 0 and no state found", sdpContext.name)
-              behaviorFactory(sdpContext).unsafeCast
-            } else {
-              context.log.error2(
-                "{}: Tried to start revision [{}] of worker but no ddata state found",
-                sdpContext.name,
-                sdpContext.revision)
-              Behaviors.stopped // FIXME do we need to passivate rather?
-            }
+          // we can't anyway turn reply into T so no need for the usual adapter
+          val distributedData = DistributedData(context.system)
+          distributedData.replicator ! Replicator.Get(key, Replicator.ReadLocal, context.self.unsafeUpcast)
+          Behaviors.receiveMessagePartial {
+            case reply @ Replicator.GetSuccess(`key`) =>
+              val state = reply.get(key).value
+              if (state.revision == revision) {
+                context.log.debug2("{}: Starting worker, revision [{}] is the latest", sdpContext.name, revision)
+                behaviorFactory(sdpContext).unsafeCast
+              } else {
+                context.log.warnN(
+                  "{}: Tried to start an old revision of worker ([{}] but latest revision is [{}], started at {})",
+                  sdpContext.name,
+                  sdpContext.revision,
+                  state.revision,
+                  state.started)
+                Behaviors.stopped // FIXME do we need to passivate or crash rather than stop?
+              }
+            case Replicator.NotFound(`key`) =>
+              if (revision == startRevision) {
+                // No state yet but initial revision, safe
+                context.log.debug("{}: Starting worker, revision 0 and no state found", sdpContext.name)
+                behaviorFactory(sdpContext).unsafeCast
+              } else {
+                context.log.error2(
+                  "{}: Tried to start revision [{}] of worker but no ddata state found",
+                  sdpContext.name,
+                  sdpContext.revision)
+                Behaviors.stopped // FIXME do we need to passivate rather?
+              }
+          }
         }
 
       }
