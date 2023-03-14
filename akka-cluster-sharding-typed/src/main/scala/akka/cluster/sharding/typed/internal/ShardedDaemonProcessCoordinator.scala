@@ -9,6 +9,7 @@ import akka.actor.ActorPath
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
@@ -70,33 +71,39 @@ private[akka] object ShardedDaemonProcessCoordinator {
       supportsRescale: Boolean,
       initialNumberOfProcesses: Int,
       daemonProcessName: String,
-      shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[ShardedDaemonProcessCommand] =
-    Behaviors.setup { context =>
-      Behaviors.withTimers { timers =>
-        Behaviors.withStash(100) { stash =>
-          context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
-          val key = ddataKey(daemonProcessName)
-          val ddata = DistributedData(context.system)
-          val selfUniqueAddress = ddata.selfUniqueAddress
+      shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[ShardedDaemonProcessCommand] = {
+    Behaviors
+      .supervise[ShardedDaemonProcessCommand](Behaviors.setup { context =>
+        Behaviors.withTimers {
+          timers =>
+            Behaviors.withStash(100) {
+              stash =>
+                context.log.debug("ShardedDaemonProcessCoordinator for [{}] starting", daemonProcessName)
+                val key = ddataKey(daemonProcessName)
+                val ddata = DistributedData(context.system)
+                val selfUniqueAddress = ddata.selfUniqueAddress
 
-          DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, Register] { replicatorAdapter =>
-            new ShardedDaemonProcessCoordinator(
-              settings,
-              shardingSettings,
-              supportsRescale,
-              context,
-              timers,
-              stash,
-              daemonProcessName,
-              shardingRef.toClassic,
-              initialNumberOfProcesses,
-              key,
-              selfUniqueAddress,
-              replicatorAdapter).start()
-          }
+                DistributedData.withReplicatorMessageAdapter[ShardedDaemonProcessCommand, Register] {
+                  replicatorAdapter =>
+                    new ShardedDaemonProcessCoordinator(
+                      settings,
+                      shardingSettings,
+                      supportsRescale,
+                      context,
+                      timers,
+                      stash,
+                      daemonProcessName,
+                      shardingRef.toClassic,
+                      initialNumberOfProcesses,
+                      key,
+                      selfUniqueAddress,
+                      replicatorAdapter).start()
+                }
+            }
         }
-      }
-    }
+      })
+      .onFailure(SupervisorStrategy.restart)
+  }
 }
 
 /**
