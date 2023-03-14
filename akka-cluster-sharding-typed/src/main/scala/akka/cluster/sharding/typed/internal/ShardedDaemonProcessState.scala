@@ -63,7 +63,11 @@ private[akka] object ShardedDaemonProcessState {
             case reply @ Replicator.GetSuccess(`key`) =>
               val state = reply.get(key).value
               if (state.revision == revision) {
-                context.log.debug2("{}: Starting worker, revision [{}] is the latest", sdpContext.name, revision)
+                context.log.infoN(
+                  "{}: Starting Sharded Daemon Process [{}] out of a total [{}] (revision [{}])",
+                  sdpContext.name,
+                  sdpContext.totalProcesses,
+                  revision)
                 behaviorFactory(sdpContext).unsafeCast
               } else {
                 context.log.warnN(
@@ -72,12 +76,16 @@ private[akka] object ShardedDaemonProcessState {
                   sdpContext.revision,
                   state.revision,
                   state.started)
-                Behaviors.stopped // FIXME do we need to passivate or crash rather than stop?
+                Behaviors.stopped
               }
             case Replicator.NotFound(`key`) =>
               if (revision == startRevision) {
                 // No state yet but initial revision, safe
-                context.log.debug("{}: Starting worker, revision 0 and no state found", sdpContext.name)
+                context.log.infoN(
+                  "{}: Starting Sharded Daemon Process [{}] out of a total [{}] (revision [{}] and no state found)",
+                  sdpContext.name,
+                  sdpContext.totalProcesses,
+                  revision)
                 behaviorFactory(sdpContext).unsafeCast
               } else {
                 context.log.error2(

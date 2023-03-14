@@ -222,7 +222,8 @@ private final class ShardedDaemonProcessCoordinator private (
   private def prepareRescale(
       newState: ShardedDaemonProcessState,
       request: ChangeNumberOfProcesses,
-      previousNumberOfProcesses: Int): Behavior[ShardedDaemonProcessCommand] = {
+      previousNumberOfProcesses: Int,
+      updateRetry: Int = 0): Behavior[ShardedDaemonProcessCommand] = {
     replicatorAdapter.askUpdate(
       replyTo =>
         Replicator.Update(key, initialState, Replicator.WriteMajority(settings.rescaleWriteStateTimeout), replyTo)(
@@ -236,9 +237,12 @@ private final class ShardedDaemonProcessCoordinator private (
 
       case InternalUpdateResponse(_ @Replicator.UpdateTimeout(`key`)) =>
         // retry
-        // FIXME should we count retries and eventually give up?
-        context.log.debug("{}: Failed updating scale state for sharded daemon process, retrying", daemonProcessName)
-        prepareRescale(newState, request, previousNumberOfProcesses)
+        if (updateRetry > 5) {
+          context.log.warn2("{}: Failed updating scale state for sharded daemon process, retrying, retry [{}]", daemonProcessName, updateRetry)
+        } else {
+          context.log.debug("{}: Failed updating scale state for sharded daemon process, retrying", daemonProcessName)
+        }
+        prepareRescale(newState, request, previousNumberOfProcesses, updateRetry + 1)
     }
   }
 
