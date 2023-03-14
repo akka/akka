@@ -92,7 +92,7 @@ private[akka] object ShardedDaemonProcessState {
                   "{}: Tried to start revision [{}] of worker but no ddata state found",
                   sdpContext.name,
                   sdpContext.revision)
-                Behaviors.stopped // FIXME do we need to passivate rather?
+                Behaviors.stopped
               }
           }
         }
