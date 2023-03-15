@@ -81,8 +81,8 @@ class PartitionedBufferSpec extends StreamSpec {
       val partitionBuffer = new PartitionedBuffer[Int, Int](6)
 
       // odd/even
-      partitionBuffer.addPartition(0, Buffer(2, 8))
-      partitionBuffer.addPartition(1, Buffer(2, 8))
+      partitionBuffer.addPartition(0, Buffer(4, 8))
+      partitionBuffer.addPartition(1, Buffer(4, 8))
 
       (0 to 5).foreach(n => partitionBuffer.enqueue(n % 2, n))
 
@@ -90,7 +90,6 @@ class PartitionedBufferSpec extends StreamSpec {
 
       partitionBuffer.peek() should ===(5)
 
-      // FIXME now the partition buffer for parition 0 should be empty but it is not
       partitionBuffer.peekPartition(0) shouldBe empty // nothing left in partition 0, we dequeued all
       partitionBuffer.peekPartition(1) should contain(5)
     }

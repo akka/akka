@@ -342,7 +342,7 @@ private[impl] final class PartitionedBuffer[K, V](size: Int) {
       case Some(pbuf) =>
         // value could have been removed through dropOnlyPartitionHead
         if (pbuf.peek() == value) {
-          pbuf.dequeue()
+          pbuf.dropHead()
           if (pbuf.isEmpty) {
             partitionBuffers.remove(key)
           }
@@ -356,7 +356,7 @@ private[impl] final class PartitionedBuffer[K, V](size: Int) {
   def dropOnlyPartitionHead(key: K): Boolean =
     partitionBuffers.get(key) match {
       case Some(pbuf) =>
-        pbuf.dequeue()
+        pbuf.dropHead()
         if (pbuf.isEmpty) {
           partitionBuffers.remove(key)
         }
