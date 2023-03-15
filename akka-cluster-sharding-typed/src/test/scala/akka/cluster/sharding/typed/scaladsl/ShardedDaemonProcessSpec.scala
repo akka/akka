@@ -117,12 +117,12 @@ class ShardedDaemonProcessSpec
       }, 3.seconds)
     }
 
-    "send keep alive messages to original id scheme when revision is 0 (rescalable)" in {
+    "send keep alive messages to original id scheme when revision is 0" in {
       val shardingProbe = createTestProbe[Any]()
       val settings = ShardedDaemonProcessSettings(system)
       val shardingSettings = ClusterShardingSettings(system)
       val pinger =
-        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, true, 3, "throttle-a", shardingProbe.ref))
+        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, 3, "throttle-a", shardingProbe.ref))
       // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
       // See ShardedDaemonProcessImpl.DecodedId for details about entity id format
       shardingProbe.expectMessage(StartEntity("0"))
@@ -133,7 +133,7 @@ class ShardedDaemonProcessSpec
       testKit.stop(pinger)
     }
 
-    "send keep alive messages with new scheme when revision is > 0 (rescalable)" in {
+    "send keep alive messages with new scheme when revision is > 0" in {
       val name = "throttle-b"
       val key = ShardedDaemonProcessStateKey(name)
       val ddataProbe = createTestProbe[Replicator.UpdateResponse[ShardedDaemonProcessState]]()
@@ -146,7 +146,7 @@ class ShardedDaemonProcessSpec
       val settings = ShardedDaemonProcessSettings(system)
       val shardingSettings = ClusterShardingSettings(system)
       val pinger =
-        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, true, 3, name, shardingProbe.ref))
+        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, 3, name, shardingProbe.ref))
       // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
       // See ShardedDaemonProcessImpl.DecodedId for details about entity id format
       shardingProbe.expectMessage(StartEntity("1|3|0"))
@@ -157,12 +157,12 @@ class ShardedDaemonProcessSpec
       testKit.stop(pinger)
     }
 
-    "throttle keep alive messages (non-rescalable)" in {
+    "throttle keep alive messages" in {
       val shardingProbe = createTestProbe[Any]()
       val settings = ShardedDaemonProcessSettings(system).withKeepAliveThrottleInterval(1.second)
       val shardingSettings = ClusterShardingSettings(system)
       val pinger =
-        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, false, 3, "throttle-c", shardingProbe.ref))
+        spawn(ShardedDaemonProcessCoordinator(settings, shardingSettings, 3, "throttle-c", shardingProbe.ref))
       // note that StartEntity.apply is actually a ShardingEnvelope wrapping the StartEntity message
       // See ShardedDaemonProcessImpl.DecodedId for details about entity id format
       shardingProbe.expectMessage(StartEntity("0"))

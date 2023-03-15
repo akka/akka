@@ -149,13 +149,13 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     }
 
     val entity = Entity(entityTypeKey) { ctx =>
-      val decodedId = decodeEntityId(ctx.entityId, supportsRescale, initialNumberOfProcesses = numberOfInstances)
+      val decodedId = decodeEntityId(ctx.entityId, initialNumberOfProcesses = numberOfInstances)
       val sdContext =
         ShardedDaemonProcessContextImpl(decodedId.processNumber, decodedId.totalCount, name, decodedId.revision)
       if (supportsRescale) verifyRevisionBeforeStarting(behaviorFactory)(sdContext)
       else
         behaviorFactory(sdContext)
-    }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor(supportsRescale))
+    }.withSettings(shardingSettings).withMessageExtractor(new MessageExtractor())
 
     val entityWithStop = stopMessage match {
       case Some(stop) => entity.withStopMessage(stop)
@@ -177,13 +177,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     settings.role.foreach(role => singletonSettings = singletonSettings.withRole(role))
     val singleton =
       SingletonActor(
-        ShardedDaemonProcessCoordinator(
-          settings,
-          shardingSettings,
-          supportsRescale,
-          numberOfInstances,
-          name,
-          shardingRef),
+        ShardedDaemonProcessCoordinator(settings, shardingSettings, numberOfInstances, name, shardingRef),
         s"ShardedDaemonProcessCoordinator-$name").withSettings(singletonSettings)
 
     ClusterSingleton(system).init(singleton)

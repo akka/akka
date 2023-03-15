@@ -75,7 +75,6 @@ private[akka] object ShardedDaemonProcessCoordinator {
   def apply[T](
       settings: ShardedDaemonProcessSettings,
       shardingSettings: ClusterShardingSettings,
-      supportsRescale: Boolean,
       initialNumberOfProcesses: Int,
       daemonProcessName: String,
       shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[ShardedDaemonProcessCommand] = {
@@ -90,7 +89,6 @@ private[akka] object ShardedDaemonProcessCoordinator {
                 new ShardedDaemonProcessCoordinator(
                   settings,
                   shardingSettings,
-                  supportsRescale,
                   context,
                   timers,
                   daemonProcessName,
@@ -121,7 +119,6 @@ private[akka] object ShardedDaemonProcessCoordinator {
 private final class ShardedDaemonProcessCoordinator private (
     settings: ShardedDaemonProcessSettings,
     shardingSettings: ClusterShardingSettings,
-    supportsRescale: Boolean,
     context: ActorContext[ShardedDaemonProcessCommand],
     timers: TimerScheduler[ShardedDaemonProcessCommand],
     daemonProcessName: String,
@@ -225,10 +222,7 @@ private final class ShardedDaemonProcessCoordinator private (
 
       case Tick =>
         val sortedIdentities =
-          ShardedDaemonProcessId.sortedIdentitiesFor(
-            currentState.revision,
-            currentState.numberOfProcesses,
-            supportsRescale)
+          ShardedDaemonProcessId.sortedIdentitiesFor(currentState.revision, currentState.numberOfProcesses)
         context.log.debugN(
           "Sending periodic keep alive for Sharded Daemon Process [{}] to [{}] processes (revision [{}]).",
           daemonProcessName,
@@ -295,7 +289,7 @@ private final class ShardedDaemonProcessCoordinator private (
       request: Option[ChangeNumberOfProcesses],
       previousNumberOfProcesses: Int): Behavior[ShardedDaemonProcessCommand] = {
     val allShards =
-      ShardedDaemonProcessId.allShardsFor(state.revision - 1, previousNumberOfProcesses, supportsRescale = true)
+      ShardedDaemonProcessId.allShardsFor(state.revision - 1, previousNumberOfProcesses)
     shardingRef.tell(ShardCoordinator.Internal.StopShards(allShards), shardStoppedAdapter)
 
     timers.startSingleTimer(ShardStopTimeout, stopShardsTimeout)

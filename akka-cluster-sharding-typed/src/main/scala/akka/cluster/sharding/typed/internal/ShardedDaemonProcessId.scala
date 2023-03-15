@@ -23,55 +23,44 @@ private[akka] object ShardedDaemonProcessId {
    */
   val Separator = '|'
 
-  def decodeEntityId(id: String, supportsRescale: Boolean, initialNumberOfProcesses: Int) =
-    if (supportsRescale) {
-      id.split(Separator) match {
-        case Array(rev, count, n) => DecodedId(rev.toLong, count.toInt, n.toInt)
-        case Array(n) =>
-          DecodedId(0L, initialNumberOfProcesses, n.toInt) // ping from old/supportsRescale=false node during rolling upgrade
-        case _ => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
-      }
-    } else {
-      DecodedId(0L, initialNumberOfProcesses, id.toInt) // for non-dynamic-scaling workers
+  def decodeEntityId(id: String, initialNumberOfProcesses: Int) =
+    id.split(Separator) match {
+      case Array(rev, count, n) => DecodedId(rev.toLong, count.toInt, n.toInt)
+      case Array(n) =>
+        DecodedId(0L, initialNumberOfProcesses, n.toInt) // ping from old/supportsRescale=false node during rolling upgrade
+      case _ => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
     }
 
   final case class DecodedId(revision: Long, totalCount: Int, processNumber: Int) {
-    def encodeEntityId(supportsRescale: Boolean): String = {
-      if (supportsRescale) {
-        if (revision == 0L) {
-          // to safely do rolling updates, we encode revision 0 using the old static scheme
-          processNumber.toString
-        } else s"$revision$Separator$totalCount$Separator$processNumber"
-      } else processNumber.toString
-    }
+    def encodeEntityId(): String =
+      if (revision == 0L) {
+        // to safely do rolling updates, we encode revision 0 using the old static scheme
+        processNumber.toString
+      } else s"$revision$Separator$totalCount$Separator$processNumber"
   }
 
-  final class MessageExtractor[T](supportsRescale: Boolean) extends ShardingMessageExtractor[ShardingEnvelope[T], T] {
+  final class MessageExtractor[T] extends ShardingMessageExtractor[ShardingEnvelope[T], T] {
     def entityId(message: ShardingEnvelope[T]): String = message match {
       case ShardingEnvelope(id, _) => id
     }
 
     // use process n for shard id
-    def shardId(entityId: String): String = {
-      if (supportsRescale) entityId.split(Separator) match {
+    def shardId(entityId: String): String =
+      entityId.split(Separator) match {
         case Array(_, _, id) => id
         case Array(id)       => id // ping from old/supportsRescale=false node during rolling upgrade
         case id              => throw new IllegalArgumentException(s"Unexpected id for sharded daemon process: '$id'")
-      } else entityId
-    }
+      }
 
     def unwrapMessage(message: ShardingEnvelope[T]): T = message.message
   }
 
-  def sortedIdentitiesFor(revision: Long, numberOfProcesses: Int, supportsRescale: Boolean): Vector[String] =
-    (0 until numberOfProcesses)
-      .map(n => DecodedId(revision, numberOfProcesses, n).encodeEntityId(supportsRescale))
-      .toVector
-      .sorted
+  def sortedIdentitiesFor(revision: Long, numberOfProcesses: Int): Vector[String] =
+    (0 until numberOfProcesses).map(n => DecodedId(revision, numberOfProcesses, n).encodeEntityId()).toVector.sorted
 
-  def allShardsFor(revision: Long, numberOfProcesses: Int, supportsRescale: Boolean): Set[String] = {
-    val messageExtractor = new MessageExtractor[Unit](supportsRescale)
-    sortedIdentitiesFor(revision, numberOfProcesses, supportsRescale).map(messageExtractor.shardId).toSet
+  def allShardsFor(revision: Long, numberOfProcesses: Int): Set[String] = {
+    val messageExtractor = new MessageExtractor[Unit]()
+    sortedIdentitiesFor(revision, numberOfProcesses).map(messageExtractor.shardId).toSet
   }
 
 }
