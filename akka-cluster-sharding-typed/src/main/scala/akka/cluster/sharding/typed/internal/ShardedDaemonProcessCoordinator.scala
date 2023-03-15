@@ -32,6 +32,10 @@ import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.pattern.StatusReply
+import akka.stream.KillSwitches
+import akka.stream.UniqueKillSwitch
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 
 import java.time.Instant
@@ -194,7 +198,9 @@ private final class ShardedDaemonProcessCoordinator private (
     }
   }
 
-  private def idle(currentState: ShardedDaemonProcessState): Behavior[ShardedDaemonProcessCommand] = {
+  private def idle(
+      currentState: ShardedDaemonProcessState,
+      runningThrottledPingKillswitch: Option[UniqueKillSwitch] = None): Behavior[ShardedDaemonProcessCommand] = {
 
     Behaviors.receiveMessagePartial {
       case request: ChangeNumberOfProcesses =>
@@ -206,6 +212,7 @@ private final class ShardedDaemonProcessCoordinator private (
           request.replyTo ! StatusReply.Ack
           Behaviors.same
         } else {
+          runningThrottledPingKillswitch.foreach(_.shutdown())
           val newState = currentState.startScalingTo(request.newNumberOfProcesses)
           context.log.infoN(
             "{}: Starting rescaling of Sharded Daemon Process to [{}] processes, rev [{}]",
@@ -227,8 +234,14 @@ private final class ShardedDaemonProcessCoordinator private (
           daemonProcessName,
           sortedIdentities.size,
           currentState.revision)
-        context.pipeToSelf(sendKeepAliveMessages(sortedIdentities))(_ => SendKeepAliveDone)
-        Behaviors.same
+        sendKeepAliveMessages(sortedIdentities) match {
+          case None =>
+            timers.startSingleTimer(Tick, settings.keepAliveInterval)
+            Behaviors.same
+          case Some((killSwitch, futureDone)) =>
+            context.pipeToSelf(futureDone)(_ => SendKeepAliveDone)
+            idle(currentState, Some(killSwitch))
+        }
 
       case SendKeepAliveDone =>
         timers.startSingleTimer(Tick, settings.keepAliveInterval)
@@ -361,15 +374,18 @@ private final class ShardedDaemonProcessCoordinator private (
         Behaviors.same
     })
 
-  private def sendKeepAliveMessages(sortedIdentities: Vector[String]): Future[Done] = {
+  private def sendKeepAliveMessages(sortedIdentities: Vector[String]): Option[(UniqueKillSwitch, Future[Done])] = {
     if (settings.keepAliveThrottleInterval == Duration.Zero) {
       sortedIdentities.foreach(id => shardingRef ! StartEntity(id))
-      Future.successful(Done)
+      None
     } else {
       implicit val system: ActorSystem[_] = context.system
-      Source(sortedIdentities).throttle(1, settings.keepAliveThrottleInterval).runForeach { id =>
-        shardingRef ! StartEntity(id)
-      }
+      Some(
+        Source(sortedIdentities)
+          .viaMat(KillSwitches.single)(Keep.right)
+          .throttle(1, settings.keepAliveThrottleInterval)
+          .toMat(Sink.foreach(id => shardingRef ! StartEntity(id)))(Keep.both)
+          .run())
     }
   }
 }
