@@ -7,6 +7,7 @@ package akka.stream.impl.fusing
 import akka.annotation.InternalApi
 import akka.stream.Attributes.SourceLocation
 import akka.stream._
+import akka.stream.impl.BoundedBuffer
 import akka.stream.impl.ChainedBuffer
 import akka.stream.impl.PartitionedBuffer
 import akka.stream.impl.Stages.DefaultAttributes
@@ -96,14 +97,13 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
           new Holder[Partition, In, Out](incoming = elem, outgoing = NotYetThere, partition = partition, cb = futureCB)
 
         if (!buffer.containsPartition(partition)) {
-          // Note we create any number of partitions as long as there is space
           if (buffer.capacity == 0) {
-            // should never happen because then we don't pull
-            throw new IllegalStateException(s"Saw new partition [$partition] but no buffer space left") // should never happen because then we don't pull?
+            // should never happen because then we don't pull if we are out of capacity (parallelism)
+            throw new IllegalStateException(s"Saw new partition [$partition] but no buffer space left")
           } else {
             // Note: each partition gets a max parallelism, same as number of partitions
             // as all elements could be for one partition
-            val partitionBuffer = createNewPartitionBuffer(partition, parallelism)
+            val partitionBuffer = createNewPartitionBuffer(partition)
             buffer.addPartition(partition, partitionBuffer)
           }
         }
@@ -162,14 +162,8 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
         // else already pulled and waiting for next element
       }
 
-      private def createNewPartitionBuffer(
-          partition: Partition,
-          overflowCapacity: Int): ChainedBuffer[Holder[Partition, In, Out]] = {
-        // This will execute, on the stream thread when a new partition is pushed into the stream
-        import akka.stream.impl.BoundedBuffer
-        import akka.stream.impl.ChainedBuffer
-        val tailCapacity = (overflowCapacity - perPartition).max(1)
-
+      private def createNewPartitionBuffer(partition: Partition): ChainedBuffer[Holder[Partition, In, Out]] = {
+        val tailCapacity = (parallelism - perPartition).max(1)
         val headBuffer = BufferImpl[Holder[Partition, In, Out]](perPartition, inheritedAttributes)
         val tailBuffer = new BoundedBuffer.DynamicQueue[Holder[Partition, In, Out]](tailCapacity)
 
@@ -185,6 +179,7 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
         // the head of this partition is dropped after being completed.
 
         val future = f(holder.incoming, partition)
+        // slight optimization, clear the in-element reference once we have used it so it can be gc:d
         holder.clearIncoming()
 
         future.value match {
