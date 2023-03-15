@@ -10,4 +10,4 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi
-trait ClusterShardingTypedSerializable
+private[akka] trait ClusterShardingTypedSerializable
