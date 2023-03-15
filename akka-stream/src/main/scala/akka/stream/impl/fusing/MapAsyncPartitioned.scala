@@ -18,7 +18,6 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import scala.util.control.NonFatal
 
 /**
  * Internal API
@@ -94,18 +93,14 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
       override def onPull(): Unit = pushNextIfPossible()
 
       override def onPush(): Unit = {
-        try {
-          val elem = grab(in)
-          val holder = new Holder[Partition, In, Out](
-            incoming = elem,
-            outgoing = NotYetThere,
-            partition = partitioner(elem),
-            cb = futureCB)
+        val elem = grab(in)
+        val holder = new Holder[Partition, In, Out](
+          incoming = elem,
+          outgoing = NotYetThere,
+          partition = partitioner(elem),
+          cb = futureCB)
 
-          buffer.enqueue(holder)
-        } catch {
-          case NonFatal(ex) => failStage(ex) // partitioner threw
-        }
+        buffer.enqueue(holder)
 
         pullIfNeeded()
       }
@@ -125,13 +120,8 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
                 buffer.dropOnlyPartitionHead(partition)
                 dropCompletedThenPushIfPossible(partition)
 
-              case Failure(NonFatal(ex)) =>
-                // Could happen if this finds the failed future before the async callback runs
-                failStage(ex)
-
               case Failure(ex) =>
-                // fatal exception in the buffer, not sure if this can actually happen, but for completeness...
-                throw ex
+                throw ex // Could happen if this finds the failed future before the async callback runs
             }
         }
       }
@@ -144,21 +134,16 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
           // We peek instead of dequeue so that we can push out an element before
           //  removing from the queue (since a dequeue or dropHead can cause re-entry)
           val holder = buffer.peek()
-          holder.outgoing match {
-            case Success(elem) =>
-              if (elem != null) {
-                push(out, elem)
-                buffer.dropHead()
-                pullIfNeeded()
-              } else {
-                // elem is null
-                buffer.dropHead()
-                pullIfNeeded()
-                pushNextIfPossible()
-              }
-
-            case Failure(NonFatal(ex)) => failStage(ex)
-            case Failure(ex)           => throw ex
+          val elem = holder.outgoing.get // throw if failed
+          if (elem != null) {
+            push(out, elem)
+            buffer.dropHead()
+            pullIfNeeded()
+          } else {
+            // elem is null
+            buffer.dropHead()
+            pullIfNeeded()
+            pushNextIfPossible()
           }
         }
 
@@ -188,23 +173,17 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
         // this will execute when the holder moves from the tail buffer to the head buffer (viz. ready to be
         //  scheduled).  This might be on enqueueing into the partitioned buffer, or it might be when
         //  the head of this partition is dropped after being completed.
-        try {
-          val future = f(holder.incoming, partition)
-          holder.clearIncoming()
 
-          future.value match {
-            case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
-            case Some(v) =>
-              // future already completed, so don't schedule on dispatcher
-              holder.setOutgoing(v)
-              v match {
-                case Failure(ex) => failStage(ex)
-                case _           => dropCompletedThenPushIfPossible(partition)
-              }
-          }
-        } catch {
-          // executes if f throws, not a failed future
-          case NonFatal(ex) => failStage(ex)
+        val future = f(holder.incoming, partition)
+        holder.clearIncoming()
+
+        future.value match {
+          case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
+          case Some(v) =>
+            // future already completed, so don't schedule on dispatcher
+            holder.setOutgoing(v)
+            v.get // throw if error
+            dropCompletedThenPushIfPossible(partition)
         }
       }
 
