@@ -7,6 +7,7 @@ package akka.stream.impl
 import java.{ util => ju }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.stream._
+
 import scala.collection.mutable
 
 /**
@@ -305,56 +306,72 @@ private[impl] final class ChainedBuffer[T](headBuffer: Buffer[T], tailBuffer: Bu
  * * if element A has been dequeued, it was dequeued from the sub-buffer
  */
 @InternalApi
-private[impl] final class PartitionedBuffer[K, V](
-    linearBuffer: Buffer[(K, V)],
-    val partitioner: V => K,
-    makePartitionBuffer: (K, Int) => Buffer[V])
-    extends Buffer[V] {
+private[impl] final class PartitionedBuffer[K, V](size: Int) {
+
+  private val linearBuffer = Buffer[(K, V)](size, size)
+
+  private val partitionBuffers: mutable.Map[K, Buffer[V]] = mutable.Map.empty
+
   def capacity: Int = linearBuffer.capacity
   def used: Int = linearBuffer.used
   def isFull: Boolean = linearBuffer.isFull
   def isEmpty: Boolean = linearBuffer.isEmpty
   def nonEmpty: Boolean = linearBuffer.nonEmpty
 
-  def enqueue(elem: V): Unit = {
-    val key = partitioner(elem)
+  def containsPartition(key: K): Boolean = partitionBuffers.contains(key)
+
+  def enqueue(key: K, elem: V): Unit = {
     linearBuffer.enqueue(key -> elem)
 
     partitionBuffers.get(key) match {
       case Some(pbuf) => pbuf.enqueue(elem)
       case None =>
-        val pbuf = makePartitionBuffer(key, linearBuffer.capacity)
-        partitionBuffers += (key -> pbuf)
-        pbuf.enqueue(elem)
+        throw new IllegalStateException(
+          s"Enqueuing to key $key that does not have a buffer, make sure to addPartition for each key before enqueuing")
     }
   }
 
-  def dequeue(): V = {
-    val (key, ret) = linearBuffer.dequeue()
+  def addPartition(key: K, buffer: Buffer[V]): Unit = {
+    partitionBuffers += (key -> buffer)
+  }
 
-    partitionBuffers.get(key).foreach { pbuf =>
-      if (pbuf.peek() == ret) {
+  def dequeue(): V = {
+    val (key, value) = linearBuffer.dequeue()
+
+    partitionBuffers.get(key) match {
+      case Some(pbuf) =>
+        // value could have been removed through dropOnlyPartitionHead
+        if (pbuf.peek() == value) {
+          pbuf.dequeue()
+          if (pbuf.isEmpty) {
+            partitionBuffers.remove(key)
+          }
+        }
+      case None =>
+    }
+
+    value
+  }
+
+  def dropOnlyPartitionHead(key: K): Boolean =
+    partitionBuffers.get(key) match {
+      case Some(pbuf) =>
         pbuf.dequeue()
         if (pbuf.isEmpty) {
           partitionBuffers.remove(key)
         }
-      }
-    }
-
-    ret
-  }
-
-  def dropOnlyPartitionHead(key: K): Unit =
-    partitionBuffers.get(key).foreach { pbuf =>
-      pbuf.dequeue()
-      if (pbuf.isEmpty) {
-        partitionBuffers.remove(key)
-      }
+        true
+      case None => false
     }
 
   def peek(): V = linearBuffer.peek()._2
 
   def peekPartition(key: K): Option[V] = {
+    val pbuf = partitionBuffers.get(key)
+    pbuf.map(_.peek())
+  }
+
+  def partitionHead(key: K): Option[V] = {
     val pbuf = partitionBuffers.get(key)
     pbuf.map(_.peek())
   }
@@ -386,5 +403,4 @@ private[impl] final class PartitionedBuffer[K, V](
     // not entirely accurate, but this would require either a peekTail or a dequeue/enqueue cycle
     throw new UnsupportedOperationException("cannot drop tail of a partitioned buffer")
 
-  private val partitionBuffers: mutable.Map[K, Buffer[V]] = mutable.Map.empty
 }

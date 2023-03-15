@@ -84,6 +84,14 @@ class FixedBufferSpec extends StreamSpec {
         buf.isFull should be(false)
       }
 
+      "peek shows head of queue" in {
+        val buf = FixedSizeBuffer[Int](size)
+        for (n <- 1 to size) {
+          buf.enqueue(n)
+          buf.peek() should ===(1)
+        }
+      }
+
       "work properly with full-range filling/draining cycles" in {
         val buf = FixedSizeBuffer[Int](size)
 

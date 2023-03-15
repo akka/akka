@@ -77,10 +77,7 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
       val buffer: PartitionedBuffer[Partition, Holder[Partition, In, Out]] =
-        new PartitionedBuffer[Partition, Holder[Partition, In, Out]](
-          linearBuffer = BufferImpl(parallelism, inheritedAttributes),
-          partitioner = _.partition,
-          makePartitionBuffer = createNewPartitionBuffer _)
+        new PartitionedBuffer[Partition, Holder[Partition, In, Out]](size = parallelism)
 
       private val futureCB = getAsyncCallback[Holder[Partition, In, Out]] { holder =>
         holder.outgoing match {
@@ -94,13 +91,23 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
 
       override def onPush(): Unit = {
         val elem = grab(in)
-        val holder = new Holder[Partition, In, Out](
-          incoming = elem,
-          outgoing = NotYetThere,
-          partition = partitioner(elem),
-          cb = futureCB)
+        val partition = partitioner(elem)
+        val holder =
+          new Holder[Partition, In, Out](incoming = elem, outgoing = NotYetThere, partition = partition, cb = futureCB)
 
-        buffer.enqueue(holder)
+        if (!buffer.containsPartition(partition)) {
+          // Note we create any number of partitions as long as there is space
+          if (buffer.capacity == 0) {
+            // should never happen because then we don't pull
+            throw new IllegalStateException(s"Saw new partition [$partition] but no buffer space left") // should never happen because then we don't pull?
+          } else {
+            // Note: each partition gets a max parallelism, same as number of partitions
+            // as all elements could be for one partition
+            val partitionBuffer = createNewPartitionBuffer(partition, parallelism)
+            buffer.addPartition(partition, partitionBuffer)
+          }
+        }
+        buffer.enqueue(partition, holder)
 
         pullIfNeeded()
       }
@@ -117,6 +124,8 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
               case NotYetThere => pushNextIfPossible()
 
               case Success(_) =>
+                // dropped from per-partition queue, to be able to execute next, but result is kept in the
+                // main linear buffer for when out is ready
                 buffer.dropOnlyPartitionHead(partition)
                 dropCompletedThenPushIfPossible(partition)
 
@@ -156,6 +165,7 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
       private def createNewPartitionBuffer(
           partition: Partition,
           overflowCapacity: Int): ChainedBuffer[Holder[Partition, In, Out]] = {
+        // This will execute, on the stream thread when a new partition is pushed into the stream
         import akka.stream.impl.BoundedBuffer
         import akka.stream.impl.ChainedBuffer
         val tailCapacity = (overflowCapacity - perPartition).max(1)
@@ -170,19 +180,19 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
       }
 
       private def executeFutureTask(holder: Holder[Partition, In, Out], partition: Partition): Unit = {
-        // this will execute when the holder moves from the tail buffer to the head buffer (viz. ready to be
-        //  scheduled).  This might be on enqueueing into the partitioned buffer, or it might be when
-        //  the head of this partition is dropped after being completed.
+        // This will execute, on the stream thread, when the holder moves from the tail buffer to the head buffer
+        // (viz. ready to be scheduled). This might be on enqueueing into the partitioned buffer, or it might be when
+        // the head of this partition is dropped after being completed.
 
         val future = f(holder.incoming, partition)
         holder.clearIncoming()
 
         future.value match {
-          case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
-          case Some(v) =>
+          case None              => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
+          case Some(Failure(ex)) => throw ex
+          case Some(v)           =>
             // future already completed, so don't schedule on dispatcher
             holder.setOutgoing(v)
-            v.get // throw if error
             dropCompletedThenPushIfPossible(partition)
         }
       }
