@@ -5,17 +5,18 @@
 package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Attributes.{ SourceLocation }
-import akka.stream.impl.{ Buffer => BufferImpl, PartitionedBuffer }
+import akka.stream.impl.PartitionedBuffer
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.stage._
-import akka.util.OptionVal
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
@@ -29,16 +30,6 @@ private[akka] object MapAsyncPartitioned {
       val partition: P,
       val cb: AsyncCallback[Holder[P, I, O]])
       extends (Try[O] => Unit) {
-    private var cachedSupervisionDirective: OptionVal[Supervision.Directive] = OptionVal.None
-
-    def supervisionDirectiveFor(decider: Supervision.Decider, ex: Throwable): Supervision.Directive =
-      cachedSupervisionDirective match {
-        case OptionVal.Some(d) => d
-        case _ =>
-          val d = decider(ex)
-          cachedSupervisionDirective = OptionVal.Some(d)
-          d
-      }
 
     def clearIncoming(): Unit = {
       incoming = null.asInstanceOf[I]
@@ -85,12 +76,11 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
       var buffer: PartitionedBuffer[Partition, Holder[Partition, In, Out]] = _
 
       private val futureCB = getAsyncCallback[Holder[Partition, In, Out]] { holder =>
         holder.outgoing match {
-          case Failure(ex) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop => failStage(ex)
+          case Failure(ex) => failStage(ex)
           case _ =>
             dropCompletedThenPushIfPossible(holder.partition)
         }
@@ -101,7 +91,8 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
           linearBuffer = BufferImpl(parallelism, inheritedAttributes),
           partitioner = _.partition,
           makePartitionBuffer = { (p, overflowCapacity) =>
-            import akka.stream.impl.{ BoundedBuffer, ChainedBuffer }
+            import akka.stream.impl.BoundedBuffer
+            import akka.stream.impl.ChainedBuffer
             val tailCapacity = (overflowCapacity - perPartition).max(1)
 
             new ChainedBuffer[Holder[Partition, In, Out]](
@@ -121,30 +112,13 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
                         // future already completed, so don't schedule on dispatcher
                         holder.setOutgoing(v)
                         v match {
-                          case Failure(ex) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop =>
-                            failStage(ex)
-
-                          case _ =>
-                            dropCompletedThenPushIfPossible(p)
+                          case Failure(ex) => failStage(ex)
+                          case _           => dropCompletedThenPushIfPossible(p)
                         }
                     }
                   } catch {
                     // executes if f throws, not a failed future
-                    case NonFatal(ex) =>
-                      val directive = holder.supervisionDirectiveFor(decider, ex)
-                      if (directive == Supervision.Stop) failStage(ex)
-                      else {
-                        holder.clearIncoming()
-                        if (holder.outgoing == NotYetThere) {
-                          holder.setOutgoing(Failure(ex))
-                          dropCompletedThenPushIfPossible(p)
-                        } else {
-                          failStage(
-                            new IllegalStateException(
-                              "Should only get here if f throws, not if future was created",
-                              ex))
-                        }
-                      }
+                    case NonFatal(ex) => failStage(ex)
                   }
               })
           })
@@ -163,8 +137,7 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
 
           buffer.enqueue(holder)
         } catch {
-          case NonFatal(ex) =>
-            if (decider(ex) == Supervision.Stop) failStage(ex)
+          case NonFatal(ex) => failStage(ex) // partitioner threw
         }
 
         pullIfNeeded()
@@ -179,14 +152,15 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
           case None => pushNextIfPossible()
           case Some(holder) =>
             holder.outgoing match {
-              case NotYetThere                                                                              => pushNextIfPossible()
-              case Failure(NonFatal(ex)) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop =>
-                // Could happen if this finds the failed future before the async callback runs
-                failStage(ex)
+              case NotYetThere => pushNextIfPossible()
 
-              case Failure(NonFatal(_)) | Success(_) =>
+              case Success(_) =>
                 buffer.dropOnlyPartitionHead(partition)
                 dropCompletedThenPushIfPossible(partition)
+
+              case Failure(NonFatal(ex)) =>
+                // Could happen if this finds the failed future before the async callback runs
+                failStage(ex)
 
               case Failure(ex) =>
                 // fatal exception in the buffer, not sure if this can actually happen, but for completeness...
@@ -216,14 +190,8 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
                 pushNextIfPossible()
               }
 
-            case Failure(NonFatal(ex)) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop =>
-              failStage(ex)
-
-            case Failure(NonFatal(_)) =>
-              buffer.dropHead()
-              pushNextIfPossible() // try the next element
-
-            case Failure(ex) => throw ex
+            case Failure(NonFatal(ex)) => failStage(ex)
+            case Failure(ex)           => throw ex
           }
         }
 

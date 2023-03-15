@@ -18,7 +18,7 @@ Up to `parallelism` futures can be processed concurrently; additionally no more 
 Regardless of completion order, results will be emitted in order of the incoming elements which gave rise to the @scala[future] @java[`CompletionStage`].
 
 If a @scala[`Future`] @java[`CompletionStage`] completes with `null`, that result is not emitted.
-If a @scala[`Future`] @java[`CompletionStage`] completes with failure, the stream's supervision strategy may fail the stream or drop the element.
+If a @scala[`Future`] @java[`CompletionStage`] completes with failure, the stream's is failed.
 
 If `parallelism` is 1, this stage is equivalent to @ref[`mapAsyncUnordered`](mapAsyncUnordered.md).  If `perPartition` is greater-than or equal to `parallelism`, this stage is equivalent to @ref[`mapAsync`](mapAsync.md).
 
