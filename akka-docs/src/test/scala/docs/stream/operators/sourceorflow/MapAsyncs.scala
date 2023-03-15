@@ -185,7 +185,7 @@ object MapAsyncPartitioned extends App {
         println(s"Received event $event at offset $count from message broker")
         event
     }
-    .mapAsyncPartitioned(10, 1)(partitioner) { (event, partition) =>
+    .mapAsyncPartitioned(parallelism = 10, perPartition = 1)(partitioner) { (event, partition) =>
       println(s"Processing event $event from partition $partition")
 
       // processing result is "partition-sequenceNr"
