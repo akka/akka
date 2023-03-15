@@ -7,6 +7,7 @@ package akka.stream.impl.fusing
 import akka.annotation.InternalApi
 import akka.stream.Attributes.SourceLocation
 import akka.stream._
+import akka.stream.impl.ChainedBuffer
 import akka.stream.impl.PartitionedBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.{ Buffer => BufferImpl }
@@ -76,7 +77,11 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      var buffer: PartitionedBuffer[Partition, Holder[Partition, In, Out]] = _
+      val buffer: PartitionedBuffer[Partition, Holder[Partition, In, Out]] =
+        new PartitionedBuffer[Partition, Holder[Partition, In, Out]](
+          linearBuffer = BufferImpl(parallelism, inheritedAttributes),
+          partitioner = _.partition,
+          makePartitionBuffer = createNewPartitionBuffer _)
 
       private val futureCB = getAsyncCallback[Holder[Partition, In, Out]] { holder =>
         holder.outgoing match {
@@ -84,44 +89,6 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
           case _ =>
             dropCompletedThenPushIfPossible(holder.partition)
         }
-      }
-
-      override def preStart(): Unit = {
-        buffer = new PartitionedBuffer[Partition, Holder[Partition, In, Out]](
-          linearBuffer = BufferImpl(parallelism, inheritedAttributes),
-          partitioner = _.partition,
-          makePartitionBuffer = { (p, overflowCapacity) =>
-            import akka.stream.impl.BoundedBuffer
-            import akka.stream.impl.ChainedBuffer
-            val tailCapacity = (overflowCapacity - perPartition).max(1)
-
-            new ChainedBuffer[Holder[Partition, In, Out]](
-              BufferImpl(perPartition, inheritedAttributes),
-              new BoundedBuffer.DynamicQueue(tailCapacity), {
-                holder =>
-                  // this will execute when the holder moves from the tail buffer to the head buffer (viz. ready to be
-                  //  scheduled).  This might be on enqueueing into the partitioned buffer, or it might be when
-                  //  the head of this partition is dropped after being completed.
-                  try {
-                    val future = f(holder.incoming, p)
-                    holder.clearIncoming()
-
-                    future.value match {
-                      case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
-                      case Some(v) =>
-                        // future already completed, so don't schedule on dispatcher
-                        holder.setOutgoing(v)
-                        v match {
-                          case Failure(ex) => failStage(ex)
-                          case _           => dropCompletedThenPushIfPossible(p)
-                        }
-                    }
-                  } catch {
-                    // executes if f throws, not a failed future
-                    case NonFatal(ex) => failStage(ex)
-                  }
-              })
-          })
       }
 
       override def onPull(): Unit = pushNextIfPossible()
@@ -199,6 +166,46 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
         if (isClosed(in) && buffer.isEmpty) completeStage()
         else if (buffer.used < parallelism && !hasBeenPulled(in)) tryPull(in)
         // else already pulled and waiting for next element
+      }
+
+      private def createNewPartitionBuffer(
+          partition: Partition,
+          overflowCapacity: Int): ChainedBuffer[Holder[Partition, In, Out]] = {
+        import akka.stream.impl.BoundedBuffer
+        import akka.stream.impl.ChainedBuffer
+        val tailCapacity = (overflowCapacity - perPartition).max(1)
+
+        val headBuffer = BufferImpl[Holder[Partition, In, Out]](perPartition, inheritedAttributes)
+        val tailBuffer = new BoundedBuffer.DynamicQueue[Holder[Partition, In, Out]](tailCapacity)
+
+        new ChainedBuffer[Holder[Partition, In, Out]](
+          headBuffer,
+          tailBuffer,
+          onEnqueueToHead = executeFutureTask(_, partition))
+      }
+
+      private def executeFutureTask(holder: Holder[Partition, In, Out], partition: Partition): Unit = {
+        // this will execute when the holder moves from the tail buffer to the head buffer (viz. ready to be
+        //  scheduled).  This might be on enqueueing into the partitioned buffer, or it might be when
+        //  the head of this partition is dropped after being completed.
+        try {
+          val future = f(holder.incoming, partition)
+          holder.clearIncoming()
+
+          future.value match {
+            case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
+            case Some(v) =>
+              // future already completed, so don't schedule on dispatcher
+              holder.setOutgoing(v)
+              v match {
+                case Failure(ex) => failStage(ex)
+                case _           => dropCompletedThenPushIfPossible(partition)
+              }
+          }
+        } catch {
+          // executes if f throws, not a failed future
+          case NonFatal(ex) => failStage(ex)
+        }
       }
 
       setHandlers(in, out, this)
