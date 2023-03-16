@@ -540,9 +540,11 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
             else if (head != finalOffset) {
               // If our final consumer goes away, we roll forward the buffer so a subsequent consumer does not
               // see the already consumed elements. This feature is quite handy.
-              while (head != finalOffset) {
+              var n = 0 // no need to loop more than the bufferSize because that would just clear the same index
+              while (head != finalOffset && n < bufferSize) {
                 queue(head & Mask) = null
                 head += 1
+                n += 1
               }
               head = finalOffset
               if (!hasBeenPulled(in)) pull(in)
