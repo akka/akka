@@ -99,6 +99,19 @@ abstract class ShardedDaemonProcess {
    * The number of processing actors can be rescaled by interacting with the returned actor.
    *
    * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` and total number of processes, create the behavior for that actor.
+   */
+  @ApiMayChange
+  def initWithContext[T](
+      messageClass: Class[T],
+      name: String,
+      initialNumberOfInstances: Int,
+      behaviorFactory: JFunction[ShardedDaemonProcessContext, Behavior[T]]): ActorRef[ShardedDaemonProcessCommand]
+
+  /**
+   * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
+   * The number of processing actors can be rescaled by interacting with the returned actor.
+   *
+   * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` and total number of processes, create the behavior for that actor.
    * @param stopMessage     Sent to the actors when they need to stop because of a rebalance across the nodes of the cluster
    *                        or cluster shutdown.
    */
@@ -109,7 +122,7 @@ abstract class ShardedDaemonProcess {
       initialNumberOfInstances: Int,
       behaviorFactory: JFunction[ShardedDaemonProcessContext, Behavior[T]],
       settings: ShardedDaemonProcessSettings,
-      stopMessage: T): ActorRef[ShardedDaemonProcessCommand]
+      stopMessage: Optional[T]): ActorRef[ShardedDaemonProcessCommand]
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.

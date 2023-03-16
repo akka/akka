@@ -100,6 +100,20 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
    *
    * @param behaviorFactory Given a unique sharded daemon process context containing the total number of workers and the id
    *                        the specific worker being started, create the behavior for that actor.
+   */
+  @ApiMayChange
+  def initWithContext[T](
+      name: String,
+      initialNumberOfInstances: Int,
+      behaviorFactory: ShardedDaemonProcessContext => Behavior[T])(
+      implicit classTag: ClassTag[T]): ActorRef[ShardedDaemonProcessCommand]
+
+  /**
+   * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
+   * The number of processing actors can be rescaled by interacting with the returned actor.
+   *
+   * @param behaviorFactory Given a unique sharded daemon process context containing the total number of workers and the id
+   *                        the specific worker being started, create the behavior for that actor.
    * @param stopMessage     Sent to the actors when they need to stop because of a worker resize, re-balance across the
    *                        nodes of the cluster or cluster shutdown.
    */
