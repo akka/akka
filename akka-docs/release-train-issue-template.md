@@ -17,7 +17,7 @@ Key links:
 ### Cutting the release
 
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
-- [ ] For minor or major versions, update the Change date in the LICENSE file and update the `licenses` url in the build.
+- [ ] For minor or major versions, update the version and change date in the LICENSE file.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka/milestones?direction=asc&sort=due_date)
 - [ ] Make sure all important PRs have been merged
