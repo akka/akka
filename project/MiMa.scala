@@ -15,8 +15,8 @@ object MiMa extends AutoPlugin {
   //  akka-pki artifact was added in Akka 2.6.6
   private val firstPatchOf26 = 6
   private val latestPatchOf26 = 20
-  private val firstPatchOf27 = 0
-  private val latestPatchOf27 = 0
+  private val firstPatchOf28 = 0
+  private val latestPatchOf28 = 0
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
@@ -30,10 +30,10 @@ object MiMa extends AutoPlugin {
     checkMimaFilterDirectories := checkFilterDirectories(baseDirectory.value))
 
   def checkFilterDirectories(moduleRoot: File): Unit = {
-    val nextVersionFilterDir = moduleRoot / "src" / "main" / "mima-filters" / s"2.7.${latestPatchOf27 + 1}.backwards.excludes"
+    val nextVersionFilterDir = moduleRoot / "src" / "main" / "mima-filters" / s"2.8.${latestPatchOf28 + 1}.backwards.excludes"
     if (nextVersionFilterDir.exists()) {
       throw new IllegalArgumentException(s"Incorrect mima filter directory exists: '$nextVersionFilterDir' " +
-      s"should be with number from current release '${moduleRoot / "src" / "main" / "mima-filters" / s"2.7.$latestPatchOf27.backwards.excludes"}")
+      s"should be with number from current release '${moduleRoot / "src" / "main" / "mima-filters" / s"2.8.$latestPatchOf28.backwards.excludes"}")
     }
   }
 
@@ -41,14 +41,14 @@ object MiMa extends AutoPlugin {
       projectName: String,
       organization: String,
       scalaBinaryVersion: String): Set[sbt.ModuleID] = {
-    val akka27Previous = expandVersions(2, 7, firstPatchOf27 to latestPatchOf27)
+    val akka28Previous = expandVersions(2, 8, firstPatchOf28 to latestPatchOf28)
     val versions: Seq[String] =
       if (scalaBinaryVersion.startsWith("3")) {
         // was experimental before 2.7.0
-        akka27Previous
+        akka28Previous
       } else {
         val akka26Previous = expandVersions(2, 6, firstPatchOf26 to latestPatchOf26)
-        akka26Previous ++ akka27Previous
+        akka26Previous ++ akka28Previous
       }
 
     // check against all binary compatible artifacts
