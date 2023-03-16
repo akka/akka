@@ -4,20 +4,26 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorAttributes, Supervision }
+import akka.Done
+import akka.dispatch.ExecutionContexts
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.{ TestLatch, TestProbe }
+import akka.stream.testkit.scaladsl.TestSource
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
+import akka.testkit.WithLogCapturing
 import org.scalatest.compatible.Assertion
 
-import scala.concurrent.{ Await, Future, Promise }
-import scala.concurrent.duration._
-import scala.util.{ Left, Right }
-
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
-class FlowMapAsyncPartitionedSpec extends StreamSpec {
+class FlowMapAsyncPartitionedSpec extends StreamSpec with WithLogCapturing {
   import Utils.TE
 
   "A Flow with mapAsyncPartitioned" must {
@@ -113,33 +119,51 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
   }
 
   "not backpressure based on perPartition limit" in {
-    val promises = Array.fill(10)(Promise[Int]())
-    val probes = Array.fill(10)(TestProbe())
+    val processingProbe = TestProbe()
+    case class Elem(n: Int, promise: Promise[Done])
+    val (sourceProbe, result) =
+      TestSource[Int]()
+        .viaMat(Flow[Int].mapAsyncPartitioned(10, 1)(_ < 9) {
+          case (n, _) =>
+            val promise = Promise[Done]()
+            processingProbe.ref ! Elem(n, promise)
+            promise.future.map(_ => n)(ExecutionContexts.parasitic)
+        })(Keep.left)
+        .toMat(Sink.seq[Int])(Keep.both)
+        .run()
 
-    val sinkProbe =
-      Source(0 until 10)
-        .mapAsyncPartitioned(10, 1)(_ < 9) { (elem, _) =>
-          probes(elem).ref ! elem
-          promises(elem).future
-        }
-        .runWith(TestSink())
+    // we get to send all right away (goes into buffers)
+    (0 to 10).foreach(n => sourceProbe.sendNext(n))
 
-    sinkProbe.expectSubscription().request(10)
-    probes(0).expectMsg(0) // true partition
-    probes(9).expectMsg(9) // false partition
-    // all in the true partition, but should not be started
-    (1 until 9).foreach { x =>
-      probes(x).expectNoMessage(10.millis)
+    // only these two in flight, based in perPartition
+    // partition true
+    val elem0 = processingProbe.expectMsgType[Elem]
+    elem0.n should ===(0)
+
+    // partition false
+    val elem9 = processingProbe.expectMsgType[Elem]
+    elem9.n should ===(9)
+
+    processingProbe.expectNoMessage(10.millis) // both perPartition busy
+
+    // unlock partition true, should let us work through all
+    elem0.promise.success(Done)
+    (1 to 8).foreach { n =>
+      val elemN = processingProbe.expectMsgType[Elem]
+      elemN.n should ===(n)
+      elemN.promise.success(Done)
     }
 
-    // complete promises in reverse order, key thing is completing all greater-than zero before completing zero
-    (1 to 9).foreach { negOff =>
-      promises(10 - negOff).success(negOff)
-      sinkProbe.expectNoMessage(10.millis)
-    }
+    // unlock partition false
+    elem9.promise.success(Done)
+    val elem10 = processingProbe.expectMsgType[Elem]
+    elem10.n should ===(10)
+    elem10.promise.success(Done)
 
-    promises(0).success(10)
-    sinkProbe.toStrict(100.millis) should contain theSameElementsInOrderAs (1 to 10).reverse
+    sourceProbe.sendComplete()
+
+    // results are in order
+    result.futureValue should ===((0 to 10).toVector)
   }
 
   "signal future already failed" in {
@@ -214,9 +238,10 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
     latch.countDown()
   }
 
-  "fail ASAP midstream when stop supervision is in place" in {
-    import scala.collection.immutable
+  "fail ASAP midstream" in {
     import system.dispatcher
+
+    import scala.collection.immutable
 
     val promises = (0 until 6).map(_ => Promise[Int]()).toArray
     val probe =
@@ -252,28 +277,6 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
     }
   }
 
-  "drop failed elements midstream when resume supervision is in place" in {
-    import scala.collection.immutable
-    import system.dispatcher
-
-    val promises = (0 until 6).map(_ => Promise[Int]()).toArray
-    val elements =
-      Source(0 until 6)
-        .mapAsyncPartitioned(5, 1)(_ % 7) { (elem, _) =>
-          promises(elem).future.map(n => ('A' + n).toChar)
-        }
-        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
-        .runWith(Sink.seq)
-
-    val failure = new Exception("BOOM TWEE!")
-    scala.util.Random.shuffle((0 until 6): immutable.Seq[Int]).foreach { n =>
-      if (n == 2) promises(n).failure(failure)
-      else promises(n).success(n)
-    }
-
-    elements.futureValue should contain theSameElementsInOrderAs "ABDEF"
-  }
-
   "signal error when constructing future" in {
     import system.dispatcher
 
@@ -296,57 +299,6 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
     sub.request(10)
     c.expectError().getMessage shouldBe "BOOM TRE!"
     latch.countDown()
-  }
-
-  "resume after failed future if resume supervision is in place" in {
-    import system.dispatcher
-
-    val elements =
-      Source(1 to 5)
-        .mapAsyncPartitioned(4, 1)(_ % 2) { (elem, _) =>
-          Future {
-            if (elem == 3) throw new TE("BOOM TRZY!")
-            else elem
-          }
-        }
-        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
-        .runWith(Sink.seq)
-
-    elements.futureValue should contain theSameElementsInOrderAs Seq(1, 2, 4, 5)
-  }
-
-  "resume after already failed future if resume supervision is in place" in {
-    val expected =
-      Source(1 to 5)
-        .mapAsyncPartitioned(4, 2)(_ % 2) { (elem, _) =>
-          if (elem == 3) Future.failed(new TE("BOOM TRI!"))
-          else Future.successful(elem)
-        }
-        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
-        .runWith(Sink.seq)
-
-    expected.futureValue should contain theSameElementsInOrderAs Seq(1, 2, 4, 5)
-  }
-
-  "resume after multiple failures if resume supervision is in place" in {
-    import system.dispatcher
-
-    val expected =
-      Source(1 to 10)
-        .mapAsyncPartitioned(4, 2)(_ % 3) { (elem, _) =>
-          if (elem % 4 < 3) {
-            val ex = new TE("BOOM!")
-            scala.util.Random.nextInt(3) match {
-              case 0 => Future.failed(ex)
-              case 1 => Future { throw ex }
-              case 2 => throw ex
-            }
-          } else Future.successful(elem)
-        }
-        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
-        .runWith(Sink.seq)
-
-    expected.futureValue should contain theSameElementsInOrderAs (1 to 10).filter(_ % 4 == 3)
   }
 
   "ignore null-completed futures" in {
@@ -483,28 +435,4 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec {
     failCount.get() shouldBe 1
   }
 
-  "not invoke the decider twice for the same failed future" in {
-    import system.dispatcher
-
-    deciderTest { (elem, _) =>
-      Future {
-        if (elem) throw thisWillNotStand
-        else elem
-      }
-    }
-  }
-
-  "not invoke the decider twice for the same pre-failed future" in {
-    deciderTest { (elem, _) =>
-      if (elem) Future.failed(thisWillNotStand)
-      else Future.successful(elem)
-    }
-  }
-
-  "not invoke the decider twice for the same failure to produce a future" in {
-    deciderTest { (elem, _) =>
-      if (elem) throw thisWillNotStand
-      else Future.successful(elem)
-    }
-  }
 }

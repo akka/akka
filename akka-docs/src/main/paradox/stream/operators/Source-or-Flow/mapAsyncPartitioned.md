@@ -1,6 +1,6 @@
 # mapAsyncPartitioned
 
-Pass incoming elements to a function that extracts a partitioning key from the element, then to a function that returns a @scala[`Future`] @java[`CompletionStage`] result, bounding the number of incomplete @scala[futures] @java[`CompletionStage` s] per partitioning key.
+Pass incoming elements to a function that extracts a partitioning key from the element, then to a function that returns a @scala[`Future`] @java[`CompletionStage`] result, bounding the number of incomplete @scala[Futures] @java[CompletionStages] per partitioning key.
 
 @ref[Asynchronous operators](../index.md#asynchronous-operators)
 
@@ -11,24 +11,21 @@ Pass incoming elements to a function that extracts a partitioning key from the e
 
 ## Description
 
-Pass incoming elements to a function that assigns a partitioning key, then to function that returns a @scala[`Future`] @java[`CompletionStage`] result.  When the @scala[future] @java[`CompletionStage`] completes successfully, the result is passed downstream.
+Pass incoming elements to a function that assigns a partitioning key, then to function that returns a @scala[`Future`] @java[`CompletionStage`] result. When the @scala[Future] @java[CompletionStage] completes successfully, the result is passed downstream.
 
-Up to `parallelism` futures can be processed concurrently; additionally no more than `perPartition` @scala[futures] @java[`CompletionStage` s] with the same partitioning key will be incomplete at any time.
+Up to `parallelism` futures can be processed concurrently; additionally no more than `perPartition` @scala[Futures] @java[CompletionStages] with the same partitioning key will be incomplete at any time. When `perPartition` is limiting elements, the operator will still pull in and buffer up to a total `parallelism` of elements before it applies backpressure upstream.
 
 Regardless of completion order, results will be emitted in order of the incoming elements which gave rise to the @scala[future] @java[`CompletionStage`].
 
-If a @scala[`Future`] @java[`CompletionStage`] completes with `null`, that result is not emitted.
-If a @scala[`Future`] @java[`CompletionStage`] completes with failure, the stream's supervision strategy may fail the stream or drop the element.
+If a @scala[`Future`] @java[`CompletionStage`] completes with `null`, that result is dropped and not emitted.
+If a @scala[`Future`] @java[`CompletionStage`] completes with failure, the stream's is failed.
 
-If `parallelism` is 1, this stage is equivalent to @ref[`mapAsyncUnordered`](mapAsyncUnordered.md).  If `perPartition` is greater-than or equal to `parallelism`, this stage is equivalent to @ref[`mapAsync`](mapAsync.md).
-
-@@@ warning
-Care may need to be taken using this operator between a fan-out and a fan-in (including within a @apidoc[SubFlow](SubFlow)) to ensure that the fan-in preserves ordering.
-@@@
+If `parallelism` is 1 this stage is equivalent to @ref[`mapAsyncUnordered`](mapAsyncUnordered.md) which should be preferred for such uses. 
+It is not possible to specify a `perPartition` greater or equal to `parallelism`, for such scenarios with no limit per partition, instead use @ref[`mapAsync`](mapAsync.md).
 
 ## Examples
 
-Imagine you are consuming messages from a broker (for instance, Apache Kafka via [Alpakka Kafka](https://doc.akka.io/docs/alpakka-kafka/current/)).  This broker's semantics are such that acknowledging one message implies an acknowledgement of all messages delivered before that message; this in turn means that in order to ensure at-least-once processing of messages from the broker, they must be acknowledged in the order they were received.  These messages represent business events produced by some other service(s) and each concerns a particular entity.  You may process messages for different entities simultaneously, but can only process one message for a given entity at a time:
+Imagine you are consuming messages from a broker (for instance, Apache Kafka via [Alpakka Kafka](https://doc.akka.io/docs/alpakka-kafka/current/)). This broker's semantics are such that acknowledging one message implies an acknowledgement of all messages delivered before that message; this in turn means that in order to ensure at-least-once processing of messages from the broker, they must be acknowledged in the order they were received. These messages represent business events produced by some other service(s) and each concerns a particular entity. You may process messages for different entities simultaneously, but can only process one message for a given entity at a time:
 
 Scala
 :   @@snip [MapAsyncs.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapAsyncs.scala) { #mapAsyncPartitioned }
@@ -121,10 +118,10 @@ Notes:
 
 @@@div { .callout }
 
-**emits** when the @scala[`Future`] @java[`CompletionStage`] returned by the provided function completes successfully and all @scala[futures] @java[`CompletionStage` s] from elements preceding this one have completed and been emitted (if successful)
+**emits** when the next in order @scala[`Future`] @java[`CompletionStage`] returned by the provided function completes successfully
 
-**backpressures** when the number of elements for which no @scala[`Future`] @java[`CompletionStage`] has completed reaches the configured parallelism and the downstream backpressures
+**backpressures** when downstream backgpressures and completed and incomplete @scala[`Future`] @java[`CompletionStage`] has reached the configured `parallelism`
 
-**completes** when upstream completes and all @scala[`Future` s] @java[`CompletionStage` s] have completed and all results have been emitted
+**completes** when upstream completes and all @scala[Futures] @java[CompletionStages] have completed and all results have been emitted
 
 @@@

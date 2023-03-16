@@ -5,18 +5,20 @@
 package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Attributes.{ SourceLocation }
-import akka.stream.impl.{ Buffer => BufferImpl, PartitionedBuffer }
+import akka.stream.impl.BoundedBuffer
+import akka.stream.impl.ChainedBuffer
+import akka.stream.impl.PartitionedBuffer
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.stage._
-import akka.util.OptionVal
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.NonFatal
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * Internal API
@@ -29,16 +31,6 @@ private[akka] object MapAsyncPartitioned {
       val partition: P,
       val cb: AsyncCallback[Holder[P, I, O]])
       extends (Try[O] => Unit) {
-    private var cachedSupervisionDirective: OptionVal[Supervision.Directive] = OptionVal.None
-
-    def supervisionDirectiveFor(decider: Supervision.Decider, ex: Throwable): Supervision.Directive =
-      cachedSupervisionDirective match {
-        case OptionVal.Some(d) => d
-        case _ =>
-          val d = decider(ex)
-          cachedSupervisionDirective = OptionVal.Some(d)
-          d
-      }
 
     def clearIncoming(): Unit = {
       incoming = null.asInstanceOf[I]
@@ -85,87 +77,37 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
-      var buffer: PartitionedBuffer[Partition, Holder[Partition, In, Out]] = _
+      val buffer: PartitionedBuffer[Partition, Holder[Partition, In, Out]] =
+        new PartitionedBuffer[Partition, Holder[Partition, In, Out]](size = parallelism)
 
       private val futureCB = getAsyncCallback[Holder[Partition, In, Out]] { holder =>
         holder.outgoing match {
-          case Failure(ex) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop => failStage(ex)
+          case Failure(ex) => failStage(ex)
           case _ =>
             dropCompletedThenPushIfPossible(holder.partition)
         }
       }
 
-      override def preStart(): Unit = {
-        buffer = new PartitionedBuffer[Partition, Holder[Partition, In, Out]](
-          linearBuffer = BufferImpl(parallelism, inheritedAttributes),
-          partitioner = _.partition,
-          makePartitionBuffer = { (p, overflowCapacity) =>
-            import akka.stream.impl.{ BoundedBuffer, ChainedBuffer }
-            val tailCapacity = (overflowCapacity - perPartition).max(1)
-
-            new ChainedBuffer[Holder[Partition, In, Out]](
-              BufferImpl(perPartition, inheritedAttributes),
-              new BoundedBuffer.DynamicQueue(tailCapacity), {
-                holder =>
-                  // this will execute when the holder moves from the tail buffer to the head buffer (viz. ready to be
-                  //  scheduled).  This might be on enqueueing into the partitioned buffer, or it might be when
-                  //  the head of this partition is dropped after being completed.
-                  try {
-                    val future = f(holder.incoming, p)
-                    holder.clearIncoming()
-
-                    future.value match {
-                      case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
-                      case Some(v) =>
-                        // future already completed, so don't schedule on dispatcher
-                        holder.setOutgoing(v)
-                        v match {
-                          case Failure(ex) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop =>
-                            failStage(ex)
-
-                          case _ =>
-                            dropCompletedThenPushIfPossible(p)
-                        }
-                    }
-                  } catch {
-                    // executes if f throws, not a failed future
-                    case NonFatal(ex) =>
-                      val directive = holder.supervisionDirectiveFor(decider, ex)
-                      if (directive == Supervision.Stop) failStage(ex)
-                      else {
-                        holder.clearIncoming()
-                        if (holder.outgoing == NotYetThere) {
-                          holder.setOutgoing(Failure(ex))
-                          dropCompletedThenPushIfPossible(p)
-                        } else {
-                          failStage(
-                            new IllegalStateException(
-                              "Should only get here if f throws, not if future was created",
-                              ex))
-                        }
-                      }
-                  }
-              })
-          })
-      }
-
       override def onPull(): Unit = pushNextIfPossible()
 
       override def onPush(): Unit = {
-        try {
-          val elem = grab(in)
-          val holder = new Holder[Partition, In, Out](
-            incoming = elem,
-            outgoing = NotYetThere,
-            partition = partitioner(elem),
-            cb = futureCB)
+        val elem = grab(in)
+        val partition = partitioner(elem)
+        val holder =
+          new Holder[Partition, In, Out](incoming = elem, outgoing = NotYetThere, partition = partition, cb = futureCB)
 
-          buffer.enqueue(holder)
-        } catch {
-          case NonFatal(ex) =>
-            if (decider(ex) == Supervision.Stop) failStage(ex)
+        if (!buffer.containsPartition(partition)) {
+          if (buffer.capacity == 0) {
+            // should never happen because then we don't pull if we are out of capacity (parallelism)
+            throw new IllegalStateException(s"Saw new partition [$partition] but no buffer space left")
+          } else {
+            // Note: each partition gets a max parallelism, same as number of partitions
+            // as all elements could be for one partition
+            val partitionBuffer = createNewPartitionBuffer(partition)
+            buffer.addPartition(partition, partitionBuffer)
+          }
         }
+        buffer.enqueue(partition, holder)
 
         pullIfNeeded()
       }
@@ -179,18 +121,16 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
           case None => pushNextIfPossible()
           case Some(holder) =>
             holder.outgoing match {
-              case NotYetThere                                                                              => pushNextIfPossible()
-              case Failure(NonFatal(ex)) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop =>
-                // Could happen if this finds the failed future before the async callback runs
-                failStage(ex)
+              case NotYetThere => pushNextIfPossible()
 
-              case Failure(NonFatal(_)) | Success(_) =>
+              case Success(_) =>
+                // dropped from per-partition queue, to be able to execute next, but result is kept in the
+                // main linear buffer for when out is ready
                 buffer.dropOnlyPartitionHead(partition)
                 dropCompletedThenPushIfPossible(partition)
 
               case Failure(ex) =>
-                // fatal exception in the buffer, not sure if this can actually happen, but for completeness...
-                throw ex
+                throw ex // Could happen if this finds the failed future before the async callback runs
             }
         }
       }
@@ -203,27 +143,16 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
           // We peek instead of dequeue so that we can push out an element before
           //  removing from the queue (since a dequeue or dropHead can cause re-entry)
           val holder = buffer.peek()
-          holder.outgoing match {
-            case Success(elem) =>
-              if (elem != null) {
-                push(out, elem)
-                buffer.dropHead()
-                pullIfNeeded()
-              } else {
-                // elem is null
-                buffer.dropHead()
-                pullIfNeeded()
-                pushNextIfPossible()
-              }
-
-            case Failure(NonFatal(ex)) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop =>
-              failStage(ex)
-
-            case Failure(NonFatal(_)) =>
-              buffer.dropHead()
-              pushNextIfPossible() // try the next element
-
-            case Failure(ex) => throw ex
+          val elem = holder.outgoing.get // throw if failed
+          if (elem != null) {
+            push(out, elem)
+            buffer.dropHead()
+            pullIfNeeded()
+          } else {
+            // elem is null
+            buffer.dropHead()
+            pullIfNeeded()
+            pushNextIfPossible()
           }
         }
 
@@ -231,6 +160,36 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
         if (isClosed(in) && buffer.isEmpty) completeStage()
         else if (buffer.used < parallelism && !hasBeenPulled(in)) tryPull(in)
         // else already pulled and waiting for next element
+      }
+
+      private def createNewPartitionBuffer(partition: Partition): ChainedBuffer[Holder[Partition, In, Out]] = {
+        val tailCapacity = (parallelism - perPartition).max(1)
+        val headBuffer = BufferImpl[Holder[Partition, In, Out]](perPartition, inheritedAttributes)
+        val tailBuffer = new BoundedBuffer.DynamicQueue[Holder[Partition, In, Out]](tailCapacity)
+
+        new ChainedBuffer[Holder[Partition, In, Out]](
+          headBuffer,
+          tailBuffer,
+          onEnqueueToHead = executeFutureTask(_, partition))
+      }
+
+      private def executeFutureTask(holder: Holder[Partition, In, Out], partition: Partition): Unit = {
+        // This will execute, on the stream thread, when the holder moves from the tail buffer to the head buffer
+        // (viz. ready to be scheduled). This might be on enqueueing into the partitioned buffer, or it might be when
+        // the head of this partition is dropped after being completed.
+
+        val future = f(holder.incoming, partition)
+        // slight optimization, clear the in-element reference once we have used it so it can be gc:d
+        holder.clearIncoming()
+
+        future.value match {
+          case None              => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
+          case Some(Failure(ex)) => throw ex
+          case Some(v)           =>
+            // future already completed, so don't schedule on dispatcher
+            holder.setOutgoing(v)
+            dropCompletedThenPushIfPossible(partition)
+        }
       }
 
       setHandlers(in, out, this)
