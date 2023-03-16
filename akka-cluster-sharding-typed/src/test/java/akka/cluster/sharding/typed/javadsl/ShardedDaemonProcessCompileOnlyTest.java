@@ -69,7 +69,6 @@ public class ShardedDaemonProcessCompileOnlyTest {
         ShardedDaemonProcessSettings.create(system)
             .withKeepAliveFromNumberOfNodes(7)
             .withKeepAliveInterval(Duration.ofSeconds(2))
-            .withRescalePingerPauseTimeout(Duration.ofSeconds(2))
             .withKeepAliveThrottleInterval(Duration.ofMillis(200))
             .withShardingSettings(ClusterShardingSettings.create(system));
 

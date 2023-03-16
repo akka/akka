@@ -322,9 +322,7 @@ private final class ShardedDaemonProcessCoordinator private (
     request.foreach(req => req.replyTo ! StatusReply.Ack)
     val newState = state.completeScaling()
     replicatorAdapter.askUpdate(
-      replyTo =>
-        Replicator.Update(key, initialState, Replicator.WriteMajority(settings.rescaleWriteStateTimeout), replyTo)(
-          (_) => newState),
+      replyTo => Replicator.Update(key, initialState, stateWriteConsistency, replyTo)((_) => newState),
       response => InternalUpdateResponse(response))
 
     receiveWhileRescaling("rescalingComplete", state) {

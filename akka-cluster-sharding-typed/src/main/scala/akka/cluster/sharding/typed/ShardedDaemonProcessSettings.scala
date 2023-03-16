@@ -32,18 +32,12 @@ object ShardedDaemonProcessSettings {
     val keepAliveInterval = config.getDuration("keep-alive-interval").asScala
     val keepAliveFromNumberOfNodes = config.getInt("keep-alive-from-number-of-nodes")
     val keepAliveThrottleInterval = config.getDuration("keep-alive-throttle-interval").asScala
-    val rescaleWriteStateTimeout = config.getDuration("rescale-write-state-timeout").asScala
-    val rescaleReadStateTimeout = config.getDuration("rescale-read-state-timeout").asScala
-    val rescalePingerPauseTimeout = config.getDuration("rescale-pinger-pause-timeout").asScala
     new ShardedDaemonProcessSettings(
       keepAliveInterval,
       None,
       None,
       keepAliveFromNumberOfNodes,
-      keepAliveThrottleInterval,
-      rescaleWriteStateTimeout,
-      rescaleReadStateTimeout,
-      rescalePingerPauseTimeout)
+      keepAliveThrottleInterval)
   }
 
 }
@@ -56,10 +50,7 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
     val shardingSettings: Option[ClusterShardingSettings],
     val role: Option[String],
     val keepAliveFromNumberOfNodes: Int,
-    val keepAliveThrottleInterval: FiniteDuration,
-    val rescaleWriteStateTimeout: FiniteDuration,
-    val rescaleReadStateTimeout: FiniteDuration,
-    val rescalePingerPauseTimeout: FiniteDuration) {
+    val keepAliveThrottleInterval: FiniteDuration) {
 
   /**
    * Scala API: The interval each parent of the sharded set is pinged from each node in the cluster.
@@ -111,62 +102,18 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
   def withKeepAliveThrottleInterval(keepAliveThrottleInterval: JDuration): ShardedDaemonProcessSettings =
     copy(keepAliveThrottleInterval = keepAliveThrottleInterval.asScala)
 
-  /**
-   * Scala API: Timeout before the sharded daemon process coordinator times out and retries reading state on startup
-   */
-  def withRescaleReadStateTimeout(rescaleReadStateTimeout: FiniteDuration): ShardedDaemonProcessSettings =
-    copy(rescaleReadStateTimeout = rescaleReadStateTimeout)
-
-  /**
-   * Java API: Timeout before the sharded daemon process coordinator times out and retries reading state on startup
-   */
-  def withRescaleReadStateTimeout(rescaleReadStateTimeout: JDuration): ShardedDaemonProcessSettings =
-    copy(rescaleReadStateTimeout = rescaleReadStateTimeout.asScala)
-
-  /**
-   * Scala API: Timeout before the sharded daemon process coordinator times out and retries updating state on rescale
-   */
-  def withRescaleWriteStateTimeout(rescaleWriteStateTimeout: FiniteDuration): ShardedDaemonProcessSettings =
-    copy(rescaleWriteStateTimeout = rescaleWriteStateTimeout)
-
-  /**
-   * Java API: Timeout before the sharded daemon process coordinator times out and retries updating state on rescale
-   */
-  def withRescaleWriteStateTimeout(rescaleWriteStateTimeout: JDuration): ShardedDaemonProcessSettings =
-    copy(rescaleWriteStateTimeout = rescaleWriteStateTimeout.asScala)
-
-  /**
-   * Scala API: Timeout before the sharded daemon process coordinator times out and retries pausing or resuming
-   * keepalive pingers on rescale
-   */
-  def withRescalePingerPauseTimeout(rescalePingerPauseTimeout: FiniteDuration): ShardedDaemonProcessSettings =
-    copy(rescalePingerPauseTimeout = rescalePingerPauseTimeout)
-
-  /**
-   * Java API: Timeout before the sharded daemon process coordinator times out and retries pausing or resuming
-   * keepalive pingers on rescale
-   */
-  def withRescalePingerPauseTimeout(rescalePingerPauseTimeout: JDuration): ShardedDaemonProcessSettings =
-    copy(rescalePingerPauseTimeout = rescalePingerPauseTimeout.asScala)
-
   private def copy(
       keepAliveInterval: FiniteDuration = keepAliveInterval,
       shardingSettings: Option[ClusterShardingSettings] = shardingSettings,
       role: Option[String] = role,
       keepAliveFromNumberOfNodes: Int = keepAliveFromNumberOfNodes,
-      keepAliveThrottleInterval: FiniteDuration = keepAliveThrottleInterval,
-      rescaleWriteStateTimeout: FiniteDuration = rescaleWriteStateTimeout,
-      rescaleReadStateTimeout: FiniteDuration = rescaleReadStateTimeout,
-      rescalePingerPauseTimeout: FiniteDuration = rescalePingerPauseTimeout): ShardedDaemonProcessSettings =
+      keepAliveThrottleInterval: FiniteDuration = keepAliveThrottleInterval): ShardedDaemonProcessSettings =
     new ShardedDaemonProcessSettings(
       keepAliveInterval,
       shardingSettings,
       role,
       keepAliveFromNumberOfNodes,
-      keepAliveThrottleInterval,
-      rescaleWriteStateTimeout,
-      rescaleReadStateTimeout,
-      rescalePingerPauseTimeout)
+      keepAliveThrottleInterval)
 
 }
 
