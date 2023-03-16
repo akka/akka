@@ -7,24 +7,6 @@ package akka.stream.impl
 import akka.stream.testkit.StreamSpec
 
 class PartitionedBufferSpec extends StreamSpec {
-  val doNothing: Any => Unit = _ => ()
-
-  /*
-  val capacityPerPartition = scala.util.Random.nextInt((linearCapacity / 2).max(1)) + 1
-  val numPartitions = {
-    val q = linearCapacity / capacityPerPartition
-    if (q * capacityPerPartition == linearCapacity) q else q + 1
-  }
-  def makePartitionBuffer[T](hardCapacity: Int, callback: T => Unit): Buffer[T] =
-    if (capacityPerPartition < hardCapacity) {
-      val headBuffer = FixedSizeBuffer[T](capacityPerPartition)
-      val tailBuffer = new BoundedBuffer.DynamicQueue[T](hardCapacity - capacityPerPartition)
-
-      new ChainedBuffer(headBuffer, tailBuffer, callback)
-    } else {
-      FixedSizeBuffer[T](hardCapacity)
-    }
-   */
 
   "PartitionedBuffer" must {
     "have capacity 4" in {
