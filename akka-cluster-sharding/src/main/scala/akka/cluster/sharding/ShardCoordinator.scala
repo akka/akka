@@ -1358,7 +1358,10 @@ abstract class ShardCoordinator(
 
   def shutdownShards(shuttingDownRegion: ActorRef, shards: Set[ShardId]): Unit = {
     if ((log: BusLogging).isInfoEnabled && (shards.nonEmpty)) {
-      log.info("{}: Starting shutting down shards [{}] due to region shutting down.", typeName, shards.mkString(","))
+      log.info(
+        "{}: Starting shutting down shards [{}] due to region shutting down or explicit stopping of shards.",
+        typeName,
+        shards.mkString(","))
     }
     shards.foreach { shard =>
       startShardRebalanceIfNeeded(shard, shuttingDownRegion, handOffTimeout, isRebalance = false)

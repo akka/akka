@@ -14,3 +14,26 @@ message ShardingEnvelope {
   required string entityId = 1;
   required Payload message = 2;
 }
+
+message DaemonProcessScaleState {
+  required int64 revision = 1;
+  required int32 numberOfProcesses = 2;
+  required bool completed = 3;
+  required int64 startedTimestampMillis = 4;
+}
+
+message ChangeNumberOfProcesses {
+  required int32 newNumberOfProcesses = 1;
+  required string replyTo = 2;
+}
+
+message GetNumberOfProcesses {
+  required string replyTo = 1;
+}
+
+message GetNumberOfProcessesReply {
+  required int64 revision = 1;
+  required int32 numberOfProcesses = 2;
+  required bool rescaleInProgress = 3;
+  required int64 startedTimestampMillis = 4;
+}

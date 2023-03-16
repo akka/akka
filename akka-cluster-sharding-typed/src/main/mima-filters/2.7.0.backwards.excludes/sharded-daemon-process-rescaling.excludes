@@ -1,0 +1,8 @@
+# new APIs and some internal changes
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl$KeepAlivePinger$")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl$KeepAlivePinger$Event")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl$KeepAlivePinger$Tick$")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.javadsl.ShardedDaemonProcess.initWithContext")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess.initWithContext")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl$")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl$MessageExtractor")

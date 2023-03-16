@@ -4,15 +4,15 @@
 
 package akka.cluster.sharding.typed
 
-import java.time.Duration
-
-import scala.concurrent.duration.FiniteDuration
-
-import com.typesafe.config.Config
-
 import akka.actor.typed.ActorSystem
+import akka.annotation.ApiMayChange
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
+import com.typesafe.config.Config
+
+import java.time.{ Duration => JDuration }
+import scala.concurrent.duration.FiniteDuration
 
 object ShardedDaemonProcessSettings {
 
@@ -32,7 +32,6 @@ object ShardedDaemonProcessSettings {
     val keepAliveInterval = config.getDuration("keep-alive-interval").asScala
     val keepAliveFromNumberOfNodes = config.getInt("keep-alive-from-number-of-nodes")
     val keepAliveThrottleInterval = config.getDuration("keep-alive-throttle-interval").asScala
-
     new ShardedDaemonProcessSettings(
       keepAliveInterval,
       None,
@@ -66,7 +65,7 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
    *
    * Note: How the sharded set is kept alive may change in the future meaning this setting may go away.
    */
-  def withKeepAliveInterval(keepAliveInterval: Duration): ShardedDaemonProcessSettings =
+  def withKeepAliveInterval(keepAliveInterval: JDuration): ShardedDaemonProcessSettings =
     copy(keepAliveInterval = keepAliveInterval.asScala)
 
   /**
@@ -100,7 +99,7 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
   /**
    * Java API: Keep alive messages are sent with this delay between each message.
    */
-  def withKeepAliveThrottleInterval(keepAliveThrottleInterval: Duration): ShardedDaemonProcessSettings =
+  def withKeepAliveThrottleInterval(keepAliveThrottleInterval: JDuration): ShardedDaemonProcessSettings =
     copy(keepAliveThrottleInterval = keepAliveThrottleInterval.asScala)
 
   private def copy(
@@ -115,5 +114,25 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
       role,
       keepAliveFromNumberOfNodes,
       keepAliveThrottleInterval)
+
+}
+
+/**
+ * Context with details about the Sharded Daemon Process instance to use when starting it
+ *
+ * Not for user extension
+ */
+@DoNotInherit
+@ApiMayChange
+trait ShardedDaemonProcessContext {
+  def processNumber: Int
+  def totalProcesses: Int
+
+  /**
+   * The revision starts at 0 and each time the number of processes is changed, the revision increases with 1
+   */
+  def revision: Long
+
+  def name: String
 
 }
