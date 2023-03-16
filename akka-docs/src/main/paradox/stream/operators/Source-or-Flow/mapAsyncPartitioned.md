@@ -11,7 +11,7 @@ Pass incoming elements to a function that extracts a partitioning key from the e
 
 ## Description
 
-Pass incoming elements to a function that assigns a partitioning key, then to function that returns a @scala[`Future`] @java[`CompletionStage`] result. When the @scala[Future] @java[`CompletionStage`] completes successfully, the result is passed downstream.
+Pass incoming elements to a function that assigns a partitioning key, then to function that returns a @scala[`Future`] @java[`CompletionStage`] result. When the @scala[Future] @java[CompletionStage] completes successfully, the result is passed downstream.
 
 Up to `parallelism` futures can be processed concurrently; additionally no more than `perPartition` @scala[Futures] @java[CompletionStages] with the same partitioning key will be incomplete at any time. When `perPartition` is limiting elements, the operator will still pull in and buffer up to a total `parallelism` of elements before it applies backpressure upstream.
 
@@ -122,6 +122,6 @@ Notes:
 
 **backpressures** when downstream backgpressures and completed and incomplete @scala[`Future`] @java[`CompletionStage`] has reached the configured `parallelism`
 
-**completes** when upstream completes and all @scala[Futures] @java[CompletionStage] have completed and all results have been emitted
+**completes** when upstream completes and all @scala[Futures] @java[CompletionStages] have completed and all results have been emitted
 
 @@@
