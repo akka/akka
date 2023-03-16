@@ -632,6 +632,7 @@ private[akka] class ShardRegion(
 
   // sort by age, oldest first
   val ageOrdering = Member.ageOrdering
+  // membersByAge is only used for tracking where coordinator is running
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
   // membersByAge contains members with these status
   private val memberStatusOfInterest: Set[MemberStatus] =
@@ -711,7 +712,7 @@ private[akka] class ShardRegion(
   }
 
   def matchingRole(member: Member): Boolean =
-    member.hasRole(targetDcRole) && role.forall(member.hasRole)
+    member.hasRole(targetDcRole) && coordinatorSingletonRole.forall(member.hasRole)
 
   /**
    * When leaving the coordinator singleton is started rather quickly on next

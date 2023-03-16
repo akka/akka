@@ -1248,6 +1248,17 @@ final class ClusterShardingSettings(
   private[akka] def shouldHostShard(cluster: Cluster): Boolean =
     role.forall(cluster.selfMember.roles.contains)
 
+  /** If true, this node should run the shard coordinator, otherwise just a shard proxy or shard region on this node. */
+  @InternalApi
+  private[akka] def shouldHostCoordinator(cluster: Cluster): Boolean =
+      coordinatorSingletonRole.forall(cluster.selfMember.roles.contains)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def coordinatorSingletonRole: Option[String] =
+    if (coordinatorSingletonOverrideRole) role else coordinatorSingletonSettings.role
+
   @InternalApi
   private[akka] val passivationStrategy: ClusterShardingSettings.PassivationStrategy =
     ClusterShardingSettings.PassivationStrategy(this)

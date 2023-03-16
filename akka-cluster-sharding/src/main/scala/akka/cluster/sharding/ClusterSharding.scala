@@ -31,6 +31,7 @@ import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.ReplicatorSettings
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.internal.CustomStateStoreModeProvider
 import akka.cluster.sharding.internal.DDataRememberEntitiesProvider
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesProvider
@@ -308,6 +309,12 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       }
     } else {
       log.debug("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...", typeName)
+
+      if (settings.shouldHostCoordinator(cluster)) {
+        // when using another coordinator role than the shard role the coordinator may have to be started
+        val startCoordinatorMsg = StartCoordinatorIfNeeded(typeName, settings, allocationStrategy)
+        guardian ! startCoordinatorMsg
+      }
 
       startProxy(
         typeName,
@@ -692,6 +699,11 @@ private[akka] object ClusterShardingGuardian {
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId)
       extends NoSerializationVerificationNeeded
+  final case class StartCoordinatorIfNeeded(
+      typeName: String,
+      settings: ClusterShardingSettings,
+      allocationStrategy: ShardAllocationStrategy)
+      extends NoSerializationVerificationNeeded
   final case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
 }
 
@@ -714,35 +726,107 @@ private[akka] class ClusterShardingGuardian extends Actor {
   private def coordinatorPath(encName: String): String =
     (self.path / coordinatorSingletonManagerName(encName) / "singleton" / "coordinator").toStringWithoutAddress
 
-  private def replicatorSettings(shardingSettings: ClusterShardingSettings) = {
+  private def replicatorSettings(role: Option[String], settings: ClusterShardingSettings) = {
     val configuredSettings =
       ReplicatorSettings(context.system.settings.config.getConfig("akka.cluster.sharding.distributed-data"))
     // Use members within the data center and with the given role (if any)
-    val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter) ++ shardingSettings.role
+    val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter) ++ role
     val settingsWithRoles = configuredSettings.withRoles(replicatorRoles)
-    if (shardingSettings.rememberEntities)
+    if (settings.rememberEntities)
       settingsWithRoles
     else
       settingsWithRoles.withDurableKeys(Set.empty[String])
   }
 
-  private def replicator(settings: ClusterShardingSettings): ActorRef = {
-    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData ||
-        settings.stateStoreMode == ClusterShardingSettings.RememberEntitiesStoreCustom) {
-      // one Replicator per role
-      replicatorByRole.get(settings.role) match {
-        case Some(ref) => ref
-        case None =>
-          val name = settings.role match {
-            case Some(r) => URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
-            case None    => "replicator"
-          }
-          val ref = context.actorOf(Replicator.props(replicatorSettings(settings)), name)
-          replicatorByRole = replicatorByRole.updated(settings.role, ref)
-          ref
-      }
-    } else
-      context.system.deadLetters
+  private def replicator(role: Option[String], settings: ClusterShardingSettings): ActorRef = {
+    // one Replicator per role
+    replicatorByRole.get(role) match {
+      case Some(ref) => ref
+      case None =>
+        val name = role match {
+          case Some(r) => URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
+          case None    => "replicator"
+        }
+        val ref = context.actorOf(Replicator.props(replicatorSettings(role, settings)), name)
+        replicatorByRole = replicatorByRole.updated(role, ref)
+        ref
+    }
+  }
+
+  private def rememberEntitiesStoreProvider(
+      typeName: String,
+      settings: ClusterShardingSettings): Option[RememberEntitiesProvider] = {
+    if (!settings.rememberEntities) None
+    else {
+      // with the deprecated persistence state store mode we always use the event sourced provider for shard regions
+      // and no store for coordinator (the coordinator is a PersistentActor in that case)
+      val rememberEntitiesProvider =
+        if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
+          ClusterShardingSettings.RememberEntitiesStoreEventsourced
+        } else {
+          settings.rememberEntitiesStore
+        }
+      Some(rememberEntitiesProvider match {
+        case ClusterShardingSettings.RememberEntitiesStoreDData =>
+          // must run Replicator for DDataRememberEntities on both shard and coordinator roles (if different)
+          val role = if (settings.role == settings.coordinatorSingletonRole) settings.role else None
+          val rep = replicator(role, settings)
+          new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
+        case ClusterShardingSettings.RememberEntitiesStoreEventsourced =>
+          new EventSourcedRememberEntitiesProvider(typeName, settings)
+        case ClusterShardingSettings.RememberEntitiesStoreCustom =>
+          new CustomStateStoreModeProvider(typeName, context.system, settings)
+        case unknown =>
+          throw new IllegalArgumentException(s"Unknown store type: $unknown") // compiler exhaustiveness check pleaser
+      })
+    }
+  }
+
+  private def startCoordinatorIfNeeded(
+      typeName: String,
+      allocationStrategy: ShardAllocationStrategy,
+      rememberEntitiesStoreProvider: Option[RememberEntitiesProvider],
+      settings: ClusterShardingSettings): Unit = {
+    import settings.tuningParameters.coordinatorFailureBackoff
+
+    val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
+    val cName = coordinatorSingletonManagerName(encName)
+    if (settings.shouldHostCoordinator(cluster) && context.child(cName).isEmpty) {
+      val coordinatorProps =
+        if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
+          ShardCoordinator.props(typeName, settings, allocationStrategy)
+        } else {
+          val rep = replicator(settings.coordinatorSingletonRole, settings)
+          ShardCoordinator.props(
+            typeName,
+            settings,
+            allocationStrategy,
+            rep,
+            majorityMinCap,
+            rememberEntitiesStoreProvider)
+        }
+      val singletonProps =
+        BackoffOpts
+          .onStop(
+            childProps = coordinatorProps,
+            childName = "coordinator",
+            minBackoff = coordinatorFailureBackoff,
+            maxBackoff = coordinatorFailureBackoff * 5,
+            randomFactor = 0.2)
+          .withFinalStopMessage(_ == ShardCoordinator.Internal.Terminate)
+          .props
+          .withDeploy(Deploy.local)
+
+      val singletonSettings =
+        settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(settings.coordinatorSingletonRole)
+
+      context.actorOf(
+        ClusterSingletonManager
+          .props(singletonProps, terminationMessage = ShardCoordinator.Internal.Terminate, singletonSettings)
+          .withDispatcher(context.props.dispatcher),
+        name = cName)
+    }
+
   }
 
   def receive: Receive = {
@@ -755,69 +839,11 @@ private[akka] class ClusterShardingGuardian extends Actor {
         allocationStrategy,
         handOffStopMessage) =>
       try {
-        import settings.role
-        import settings.tuningParameters.coordinatorFailureBackoff
-
-        val rep = replicator(settings)
-        val rememberEntitiesStoreProvider: Option[RememberEntitiesProvider] =
-          if (!settings.rememberEntities) None
-          else {
-            // with the deprecated persistence state store mode we always use the event sourced provider for shard regions
-            // and no store for coordinator (the coordinator is a PersistentActor in that case)
-            val rememberEntitiesProvider =
-              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
-                ClusterShardingSettings.RememberEntitiesStoreEventsourced
-              } else {
-                settings.rememberEntitiesStore
-              }
-            Some(rememberEntitiesProvider match {
-              case ClusterShardingSettings.RememberEntitiesStoreDData =>
-                new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
-              case ClusterShardingSettings.RememberEntitiesStoreEventsourced =>
-                new EventSourcedRememberEntitiesProvider(typeName, settings)
-              case ClusterShardingSettings.RememberEntitiesStoreCustom =>
-                new CustomStateStoreModeProvider(typeName, context.system, settings)
-              case unknown =>
-                throw new IllegalArgumentException(s"Unknown store type: $unknown") // compiler exhaustiveness check pleaser
-            })
-          }
-
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
-        val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
         val shardRegion = context.child(encName).getOrElse {
-          if (context.child(cName).isEmpty) {
-            val coordinatorProps =
-              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
-                ShardCoordinator.props(typeName, settings, allocationStrategy)
-              } else {
-                ShardCoordinator
-                  .props(typeName, settings, allocationStrategy, rep, majorityMinCap, rememberEntitiesStoreProvider)
-              }
-            val singletonProps =
-              BackoffOpts
-                .onStop(
-                  childProps = coordinatorProps,
-                  childName = "coordinator",
-                  minBackoff = coordinatorFailureBackoff,
-                  maxBackoff = coordinatorFailureBackoff * 5,
-                  randomFactor = 0.2)
-                .withFinalStopMessage(_ == ShardCoordinator.Internal.Terminate)
-                .props
-                .withDeploy(Deploy.local)
-
-            val singletonSettings = if (settings.coordinatorSingletonOverrideRole) {
-              settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(role)
-            } else {
-              settings.coordinatorSingletonSettings.withSingletonName("singleton")
-            }
-
-            context.actorOf(
-              ClusterSingletonManager
-                .props(singletonProps, terminationMessage = ShardCoordinator.Internal.Terminate, singletonSettings)
-                .withDispatcher(context.props.dispatcher),
-              name = cName)
-          }
+          val remEntitiesStoreProvider = rememberEntitiesStoreProvider(typeName, settings)
+          startCoordinatorIfNeeded(typeName, allocationStrategy, remEntitiesStoreProvider, settings)
 
           context.actorOf(
             ShardRegion
@@ -829,7 +855,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 extractEntityId = extractEntityId,
                 extractShardId = extractShardId,
                 handOffStopMessage = handOffStopMessage,
-                rememberEntitiesStoreProvider)
+                remEntitiesStoreProvider)
               .withDispatcher(context.props.dispatcher),
             name = encName)
         }
@@ -844,6 +870,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
     case StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId) =>
       try {
+
         val encName = URLEncoder.encode(s"${typeName}Proxy", ByteString.UTF_8)
         val cPath = coordinatorPath(URLEncoder.encode(typeName, ByteString.UTF_8))
         // it must be possible to start several proxies, one per data center
@@ -870,6 +897,15 @@ private[akka] class ClusterShardingGuardian extends Actor {
           // don't restart
           // could be InvalidActorNameException if it has already been started
           sender() ! Status.Failure(e)
+      }
+
+    case StartCoordinatorIfNeeded(typeName, settings, allocationStrategy) =>
+      try {
+        val remEntitiesStoreProvider = rememberEntitiesStoreProvider(typeName, settings)
+        startCoordinatorIfNeeded(typeName, allocationStrategy, remEntitiesStoreProvider, settings)
+      } catch {
+        case NonFatal(_) =>
+        // don't restart
       }
 
   }
