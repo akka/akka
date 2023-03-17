@@ -41,7 +41,7 @@ object MiMa extends AutoPlugin {
       projectName: String,
       organization: String,
       scalaBinaryVersion: String): Set[sbt.ModuleID] = {
-    val akka28Previous = expandVersions(2, 8, firstPatchOf28 to latestPatchOf28)
+    val akka28Previous = expandVersions(2, 8, firstPatchOf28 to latestPatchOf28) :+ "2.7.0"
     val versions: Seq[String] =
       if (scalaBinaryVersion.startsWith("3")) {
         // was experimental before 2.7.0
