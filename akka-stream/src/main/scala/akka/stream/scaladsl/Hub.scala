@@ -417,6 +417,31 @@ object BroadcastHub {
   def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](bufferSize))
 
   /**
+   * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
+   * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
+   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
+   * broadcast elements from the original [[Sink]].
+   *
+   * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
+   * [[Source]] for consuming the [[Sink]] of that materialization.
+   *
+   * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
+   * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
+   * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
+   * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
+   * cancelled are simply removed from the dynamic set of consumers.
+   *
+   * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
+   *   This is only used initially when the operator is starting up, i.e. it is not honored when consumers have
+   *   been removed (canceled).
+   * @param bufferSize Buffer size used by the producer. Gives an upper bound on how "far" from each other two
+   *                   concurrent consumers can be in terms of element. If this buffer is full, the producer
+   *                   is backpressured. Must be a power of two and less than 4096.
+   */
+  def sink[T](startAfterNrOfConsumers: Int, bufferSize: Int): Sink[T, Source[T, NotUsed]] =
+    Sink.fromGraph(new BroadcastHub[T](startAfterNrOfConsumers, bufferSize))
+
+  /**
    * Creates a [[Sink]] with default buffer size 256 that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
    * value. This [[Source]] can be materialized arbitrary many times and each materialization will receive the
@@ -439,11 +464,13 @@ object BroadcastHub {
 /**
  * INTERNAL API
  */
-private[akka] class BroadcastHub[T](bufferSize: Int)
+private[akka] class BroadcastHub[T](startAfterNrOfConsumers: Int, bufferSize: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
+  require(startAfterNrOfConsumers >= 0, "startAfterNrOfConsumers must >= 0")
   require(bufferSize > 0, "Buffer size must be positive")
   require(bufferSize < 4096, "Buffer size larger then 4095 is not allowed")
   require((bufferSize & bufferSize - 1) == 0, "Buffer size must be a power of two")
+  def this(bufferSize: Int) = this(0, bufferSize)
 
   private val Mask = bufferSize - 1
   private val WheelMask = (bufferSize * 2) - 1
@@ -475,6 +502,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     private[this] val callbackPromise: Promise[AsyncCallback[HubEvent]] = Promise()
     private[this] val noRegistrationsState = Open(callbackPromise.future, Nil)
     val state = new AtomicReference[HubState](noRegistrationsState)
+    private var initialized = false
 
     // Start from values that will almost immediately overflow. This has no effect on performance, any starting
     // number will do, however, this protects from regressions as these values *almost surely* overflow and fail
@@ -504,7 +532,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     override def preStart(): Unit = {
       setKeepGoing(true)
       callbackPromise.success(getAsyncCallback[HubEvent](onEvent))
-      pull(in)
+      if (startAfterNrOfConsumers == 0) {
+        pull(in)
+      }
     }
 
     // Cannot complete immediately if there is no space in the queue to put the completion marker
@@ -515,8 +545,29 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
       if (!isFull) pull(in)
     }
 
+    private def tryPull(): Unit = {
+      if (initialized && !isClosed(in) && !hasBeenPulled(in) && !isFull) {
+        pull(in)
+      }
+    }
+
     private def onEvent(ev: HubEvent): Unit = {
       ev match {
+        case Advance(id, previousOffset) =>
+          val newOffset = previousOffset + DemandThreshold
+          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
+          val consumer = findAndRemoveConsumer(id, previousOffset)
+          addConsumer(consumer, newOffset)
+          checkUnblock(previousOffset)
+        case NeedWakeup(id, previousOffset, currentOffset) =>
+          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
+          val consumer = findAndRemoveConsumer(id, previousOffset)
+          addConsumer(consumer, currentOffset)
+
+          // Also check if the consumer is now unblocked since we published an element since it went asleep.
+          if (currentOffset != tail) consumer.callback.invoke(Wakeup)
+          checkUnblock(previousOffset)
+
         case RegistrationPending =>
           state.getAndSet(noRegistrationsState).asInstanceOf[Open].registrations.foreach { consumer =>
             val startFrom = head
@@ -531,6 +582,10 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
               case _ => ()
             }
           }
+          if (activeConsumers >= startAfterNrOfConsumers) {
+            initialized = true
+          }
+          tryPull()
 
         case UnRegister(id, previousOffset, finalOffset) =>
           if (findAndRemoveConsumer(id, previousOffset) != null)
@@ -547,24 +602,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
                 n += 1
               }
               head = finalOffset
-              if (!hasBeenPulled(in)) pull(in)
+              tryPull()
             }
           } else checkUnblock(previousOffset)
-
-        case Advance(id, previousOffset) =>
-          val newOffset = previousOffset + DemandThreshold
-          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
-          val consumer = findAndRemoveConsumer(id, previousOffset)
-          addConsumer(consumer, newOffset)
-          checkUnblock(previousOffset)
-        case NeedWakeup(id, previousOffset, currentOffset) =>
-          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
-          val consumer = findAndRemoveConsumer(id, previousOffset)
-          addConsumer(consumer, currentOffset)
-
-          // Also check if the consumer is now unblocked since we published an element since it went asleep.
-          if (currentOffset != tail) consumer.callback.invoke(Wakeup)
-          checkUnblock(previousOffset)
       }
     }
 
@@ -619,7 +659,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     private def checkUnblock(offsetOfConsumerRemoved: Int): Unit = {
       if (unblockIfPossible(offsetOfConsumerRemoved)) {
         if (isClosed(in)) complete()
-        else if (!hasBeenPulled(in)) pull(in)
+        else tryPull()
       }
     }
 
@@ -1101,6 +1141,9 @@ object PartitionHub {
     startAfterNrOfConsumers: Int,
     bufferSize: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
+  require(partitioner != null, "partitioner must not be null")
+  require(startAfterNrOfConsumers >= 0, "startAfterNrOfConsumers must >= 0")
+  require(bufferSize > 0, "Buffer size must be positive")
   import PartitionHub.ConsumerInfo
   import PartitionHub.Internal._
 
@@ -1226,19 +1269,19 @@ object PartitionHub {
             val newConsumers = (consumerInfo.consumers :+ consumer).sortBy(_.id)
             consumerInfo = new ConsumerInfoImpl(newConsumers)
             queue.init(consumer.id)
-            if (newConsumers.size >= startAfterNrOfConsumers) {
-              initialized = true
-            }
-
             consumer.callback.invoke(Initialize)
-
-            if (initialized && pending.nonEmpty) {
-              pending.foreach(publish)
-              pending = Vector.empty[T]
-            }
-
-            tryPull()
           }
+
+          if (consumerInfo.size >= startAfterNrOfConsumers) {
+            initialized = true
+          }
+
+          if (initialized && pending.nonEmpty) {
+            pending.foreach(publish)
+            pending = Vector.empty[T]
+          }
+
+          tryPull()
 
         case UnRegister(id) =>
           val newConsumers = consumerInfo.consumers.filterNot(_.id == id)
