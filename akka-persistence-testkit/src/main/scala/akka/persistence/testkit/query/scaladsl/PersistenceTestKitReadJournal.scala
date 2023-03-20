@@ -124,7 +124,11 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
         entityType,
         slice,
         filtered = false,
-        source = "")
+        source = "",
+        pr.payload match {
+          case Tagged(_, tags) => Some(tags)
+          case _               => Some(Set.empty)
+        })
     }
   }
 

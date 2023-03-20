@@ -61,6 +61,24 @@ class CurrentEventsBySlicesSpec
         .futureValue
         .map(_.event) should ===(Seq("evt-1", "evt-2", "evt-3", "evt-4", "evt-5"))
     }
+
+    "include tags in events by slices" in {
+      val probe = createTestProbe[Done]()
+      val ref1 = spawn(testBehaviour("TagTest|pid-1"))
+      ref1 ! Command("tag-me-evt-1", probe.ref)
+      ref1 ! Command("evt-2", probe.ref)
+      probe.receiveMessages(2)
+      val ref2 = spawn(testBehaviour("TagTest|pid-2"))
+      ref2 ! Command("evt-3", probe.ref)
+      ref2 ! Command("tag-me-evt-4", probe.ref)
+      probe.receiveMessages(2)
+
+      queries
+        .currentEventsBySlices[String]("TagTest", 0, Persistence(system).numberOfSlices - 1, NoOffset)
+        .runWith(Sink.seq)
+        .futureValue
+        .map(_.tags) should ===(Seq(Some(Set("tag")), Some(Set.empty), Some(Set.empty), Some(Set("tag"))))
+    }
   }
 
 }

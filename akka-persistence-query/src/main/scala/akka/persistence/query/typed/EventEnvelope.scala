@@ -5,12 +5,40 @@
 package akka.persistence.query.typed
 
 import java.util.Optional
-
+import java.util.{ Set => JSet }
 import akka.annotation.ApiMayChange
 import akka.persistence.query.Offset
 import akka.util.HashCode
+import akka.util.ccompat.JavaConverters._
+
+import scala.compat.java8.OptionConverters._
 
 object EventEnvelope {
+
+  def apply[Event](
+      offset: Offset,
+      persistenceId: String,
+      sequenceNr: Long,
+      event: Event,
+      timestamp: Long,
+      entityType: String,
+      slice: Int,
+      filtered: Boolean,
+      source: String,
+      tags: Set[String]): EventEnvelope[Event] =
+    new EventEnvelope(
+      offset,
+      persistenceId,
+      sequenceNr,
+      Option(event),
+      timestamp,
+      None,
+      entityType,
+      slice,
+      filtered,
+      source,
+      Some(tags))
+
   def apply[Event](
       offset: Offset,
       persistenceId: String,
@@ -52,6 +80,19 @@ object EventEnvelope {
       entityType: String,
       slice: Int,
       filtered: Boolean,
+      source: String,
+      tags: JSet[String]): EventEnvelope[Event] =
+    apply(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice, filtered, source, tags.asScala.toSet)
+
+  def create[Event](
+      offset: Offset,
+      persistenceId: String,
+      sequenceNr: Long,
+      event: Event,
+      timestamp: Long,
+      entityType: String,
+      slice: Int,
+      filtered: Boolean,
       source: String): EventEnvelope[Event] =
     apply(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice, filtered, source)
 
@@ -81,6 +122,8 @@ object EventEnvelope {
  *
  * It is an improved `EventEnvelope` compared to [[akka.persistence.query.EventEnvelope]].
  *
+ * @param tags Some set with tags if journal does support extracting, None if not
+ *
  * API May Change
  */
 @ApiMayChange
@@ -94,7 +137,32 @@ final class EventEnvelope[Event](
     val entityType: String,
     val slice: Int,
     val filtered: Boolean,
-    val source: String) {
+    val source: String,
+    val tags: Option[Set[String]]) {
+
+  def this(
+      offset: Offset,
+      persistenceId: String,
+      sequenceNr: Long,
+      eventOption: Option[Event],
+      timestamp: Long,
+      eventMetadata: Option[Any],
+      entityType: String,
+      slice: Int,
+      filtered: Boolean,
+      source: String) =
+    this(
+      offset,
+      persistenceId,
+      sequenceNr,
+      eventOption,
+      timestamp,
+      eventMetadata,
+      entityType,
+      slice,
+      filtered,
+      source,
+      tags = None)
 
   def this(
       offset: Offset,
@@ -152,6 +220,12 @@ final class EventEnvelope[Event](
     eventMetadata.map(_.asInstanceOf[AnyRef]).asJava
   }
 
+  /**
+   * Java API: empty if the journal does not support extracting tags, non empty optional with tags or empty set
+   * if journal does read tags
+   */
+  def getOptionalTags(): Optional[JSet[String]] = tags.map(_.asJava).asJava
+
   override def hashCode(): Int = {
     var result = HashCode.SEED
     result = HashCode.hash(result, offset)
@@ -164,7 +238,8 @@ final class EventEnvelope[Event](
     case other: EventEnvelope[_] =>
       offset == other.offset && persistenceId == other.persistenceId && sequenceNr == other.sequenceNr &&
       eventOption == other.eventOption && timestamp == other.timestamp && eventMetadata == other.eventMetadata &&
-      entityType == other.entityType && slice == other.slice && filtered == other.filtered
+      entityType == other.entityType && slice == other.slice && filtered == other.filtered &&
+      tags == other.tags
     case _ => false
   }
 
@@ -177,6 +252,10 @@ final class EventEnvelope[Event](
       case Some(meta) => meta.getClass.getName
       case None       => ""
     }
-    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice,$filtered,$source)"
+    val tagsStr = tags match {
+      case Some(actualTags) => ", " + actualTags.mkString(", ")
+      case None             => ""
+    }
+    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice,$filtered,$source$tagsStr)"
   }
 }
