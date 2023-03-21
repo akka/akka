@@ -105,7 +105,9 @@ import akka.util.ccompat.JavaConverters._
 
       val filtered = env.hasFiltered && env.getFiltered
       val source = if (env.hasSource) env.getSource else ""
-      val tags = env.getTagsList.iterator.asScala.toSet
+      val tags =
+        if (env.getTagsList.isEmpty) Set.empty[String]
+        else env.getTagsList.iterator.asScala.toSet
 
       new EventEnvelope(
         offset,
