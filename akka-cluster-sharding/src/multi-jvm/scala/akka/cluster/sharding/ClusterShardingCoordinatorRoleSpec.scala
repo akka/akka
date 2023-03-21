@@ -68,7 +68,7 @@ class DDataRememberClusterShardingCoordinatorRoleSpecMultiJvmNode2
 class DDataRememberClusterShardingCoordinatorRoleSpecMultiJvmNode3
     extends DDataRememberClusterShardingCoordinatorRoleSpec
 class DDataRememberClusterShardingCoordinatorRoleSpecMultiJvmNode4
-  extends DDataRememberClusterShardingCoordinatorRoleSpec
+    extends DDataRememberClusterShardingCoordinatorRoleSpec
 
 abstract class ClusterShardingCoordinatorRoleSpec(multiNodeConfig: ClusterShardingCoordinatorRoleSpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)

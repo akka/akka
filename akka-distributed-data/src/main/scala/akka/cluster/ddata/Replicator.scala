@@ -1455,7 +1455,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   require(!cluster.isTerminated, "Cluster node must not be terminated")
   require(
     roles.subsetOf(cluster.selfRoles),
-    s"This cluster member [$selfAddress] with roles [${cluster.selfRoles.mkString(", ")}] doesn't have all the roles [${roles.mkString(", ")}]")
+    s"This cluster member [$selfAddress] with roles [${cluster.selfRoles
+      .mkString(", ")}] doesn't have all the roles [${roles.mkString(", ")}]")
 
   private val payloadSizeAggregator = {
     val sizeExceeding = settings.logDataSizeExceeding.getOrElse(Int.MaxValue)

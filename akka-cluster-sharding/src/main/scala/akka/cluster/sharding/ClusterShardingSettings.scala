@@ -1251,7 +1251,7 @@ final class ClusterShardingSettings(
   /** If true, this node should run the shard coordinator, otherwise just a shard proxy or shard region on this node. */
   @InternalApi
   private[akka] def shouldHostCoordinator(cluster: Cluster): Boolean =
-      coordinatorSingletonRole.forall(cluster.selfMember.roles.contains)
+    coordinatorSingletonRole.forall(cluster.selfMember.roles.contains)
 
   /**
    * INTERNAL API
