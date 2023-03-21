@@ -73,7 +73,7 @@ class QuerySerializerSpec extends AkkaSpec {
           source = ""))
     }
 
-    "serialize EventEnvelope with source" in {
+    "serialize EventEnvelope with source and tags" in {
       verifySerialization(
         new EventEnvelope(
           Sequence(1L),
@@ -85,7 +85,8 @@ class QuerySerializerSpec extends AkkaSpec {
           "TestEntity",
           5,
           filtered = false,
-          source = "query"))
+          source = "query",
+          tags = Set("tag1", "tag2")))
     }
 
     "serialize EventEnvelope with Timestamp Offset" in {
