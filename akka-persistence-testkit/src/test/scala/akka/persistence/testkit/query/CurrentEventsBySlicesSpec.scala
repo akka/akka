@@ -77,7 +77,8 @@ class CurrentEventsBySlicesSpec
         .currentEventsBySlices[String]("TagTest", 0, Persistence(system).numberOfSlices - 1, NoOffset)
         .runWith(Sink.seq)
         .futureValue
-        .map(_.tags) should ===(Seq(Some(Set("tag")), Some(Set.empty), Some(Set.empty), Some(Set("tag"))))
+        .map(e => (e.event, e.tags)) should ===(
+        Seq(("tag-me-evt-1", Set("tag")), ("evt-2", Set.empty), ("evt-3", Set.empty), ("tag-me-evt-4", Set("tag"))))
     }
   }
 

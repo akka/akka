@@ -118,7 +118,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
         Sequence(pr.sequenceNr),
         pr.persistenceId,
         pr.sequenceNr,
-        Some(pr.payload.asInstanceOf[Event]),
+        Some(unwrapTaggedPayload(pr.payload).asInstanceOf[Event]),
         pr.timestamp,
         pr.metadata,
         entityType,
@@ -126,8 +126,8 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
         filtered = false,
         source = "",
         pr.payload match {
-          case Tagged(_, tags) => Some(tags)
-          case _               => Some(Set.empty)
+          case Tagged(_, tags) => tags
+          case _               => Set.empty
         })
     }
   }

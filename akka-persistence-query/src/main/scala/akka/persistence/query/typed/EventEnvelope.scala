@@ -11,8 +11,6 @@ import akka.persistence.query.Offset
 import akka.util.HashCode
 import akka.util.ccompat.JavaConverters._
 
-import scala.compat.java8.OptionConverters._
-
 object EventEnvelope {
 
   def apply[Event](
@@ -37,7 +35,7 @@ object EventEnvelope {
       slice,
       filtered,
       source,
-      Some(tags))
+      tags)
 
   def apply[Event](
       offset: Offset,
@@ -122,8 +120,6 @@ object EventEnvelope {
  *
  * It is an improved `EventEnvelope` compared to [[akka.persistence.query.EventEnvelope]].
  *
- * @param tags Some set with tags if journal does support extracting, None if not
- *
  * API May Change
  */
 @ApiMayChange
@@ -138,7 +134,7 @@ final class EventEnvelope[Event](
     val slice: Int,
     val filtered: Boolean,
     val source: String,
-    val tags: Option[Set[String]]) {
+    val tags: Set[String]) {
 
   def this(
       offset: Offset,
@@ -162,7 +158,7 @@ final class EventEnvelope[Event](
       slice,
       filtered,
       source,
-      tags = None)
+      tags = Set.empty)
 
   def this(
       offset: Offset,
@@ -224,7 +220,7 @@ final class EventEnvelope[Event](
    * Java API: empty if the journal does not support extracting tags, non empty optional with tags or empty set
    * if journal does read tags
    */
-  def getOptionalTags(): Optional[JSet[String]] = tags.map(_.asJava).asJava
+  def getTags(): JSet[String] = tags.asJava
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -252,10 +248,7 @@ final class EventEnvelope[Event](
       case Some(meta) => meta.getClass.getName
       case None       => ""
     }
-    val tagsStr = tags match {
-      case Some(actualTags) => ", " + actualTags.mkString(", ")
-      case None             => ""
-    }
-    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice,$filtered,$source$tagsStr)"
+    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$eventStr,$timestamp,$metaStr,$entityType,$slice,$filtered,$source,${tags
+      .mkString("[", ", ", "]")})"
   }
 }
