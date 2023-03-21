@@ -37,7 +37,7 @@ object EventsByPersistenceIdSpec {
         Effect.persist(command.evt).thenRun { _ =>
           command.ack ! Done
         },
-      (state, _) => state)
+      (state, _) => state).withTagger(evt => if (evt.startsWith("tag-me-")) Set("tag") else Set.empty)
   }
 
 }

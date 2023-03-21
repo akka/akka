@@ -1,0 +1,5 @@
+# new field in protobuf/wire protocol
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.getTagsList")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.getTagsCount")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.getTags")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.query.internal.protobuf.QueryMessages#EventEnvelopeOrBuilder.getTagsBytes")

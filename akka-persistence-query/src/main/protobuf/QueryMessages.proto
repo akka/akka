@@ -23,4 +23,5 @@ message EventEnvelope {
   optional Payload metadata = 9;
   optional bool filtered = 10;
   optional string source = 11;
+  repeated string tags = 12;
 }

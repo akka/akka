@@ -24,6 +24,7 @@ import akka.serialization.BaseSerializer
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.serialization.Serializers
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
@@ -73,6 +74,10 @@ import akka.serialization.Serializers
         .setFiltered(env.filtered)
         .setSource(env.source)
 
+      if (env.tags.nonEmpty) {
+        builder.addAllTags(env.tags.asJava)
+      }
+
       env.eventOption.foreach(event => builder.setEvent(payloadBuilder(event, serialization, log)))
       env.eventMetadata.foreach(meta => builder.setMetadata(payloadBuilder(meta, serialization, log)))
 
@@ -100,6 +105,9 @@ import akka.serialization.Serializers
 
       val filtered = env.hasFiltered && env.getFiltered
       val source = if (env.hasSource) env.getSource else ""
+      val tags =
+        if (env.getTagsList.isEmpty) Set.empty[String]
+        else env.getTagsList.iterator.asScala.toSet
 
       new EventEnvelope(
         offset,
@@ -111,7 +119,8 @@ import akka.serialization.Serializers
         env.getEntityType,
         env.getSlice,
         filtered,
-        source)
+        source,
+        tags)
 
     case _ =>
       fromStorageRepresentation(new String(bytes, UTF_8), manifest)
