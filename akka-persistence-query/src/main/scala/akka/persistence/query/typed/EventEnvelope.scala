@@ -217,8 +217,7 @@ final class EventEnvelope[Event](
   }
 
   /**
-   * Java API: empty if the journal does not support extracting tags, non empty optional with tags or empty set
-   * if journal does read tags
+   * Java API:
    */
   def getTags(): JSet[String] = tags.asJava
 
