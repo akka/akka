@@ -6,8 +6,10 @@ package akka.persistence.testkit.query.internal
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.journal.Tagged
-import akka.persistence.query.{ EventEnvelope, Sequence }
+import akka.persistence.query.Sequence
+import akka.persistence.query.typed.EventEnvelope
 import akka.persistence.testkit.{ EventStorage, PersistenceTestKitPlugin }
+import akka.persistence.typed.PersistenceId
 import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageLogicWithLogging, OutHandler }
 
@@ -15,14 +17,15 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageLogicWithLoggi
  * INTERNAL API
  */
 @InternalApi
-final private[akka] class EventsByPersistenceIdStage(
+final private[akka] class EventsByPersistenceIdStage[Event](
     persistenceId: String,
     fromSequenceNr: Long,
     toSequenceNr: Long,
-    storage: EventStorage)
-    extends GraphStage[SourceShape[EventEnvelope]] {
-  val out: Outlet[EventEnvelope] = Outlet("EventsByPersistenceIdSource")
-  override def shape: SourceShape[EventEnvelope] = SourceShape(out)
+    storage: EventStorage,
+    sliceForPid: String => Int)
+    extends GraphStage[SourceShape[EventEnvelope[Event]]] {
+  val out: Outlet[EventEnvelope[Event]] = Outlet("EventsByPersistenceIdSource")
+  override def shape: SourceShape[EventEnvelope[Event]] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogicWithLogging(shape) with OutHandler {
@@ -50,10 +53,29 @@ final private[akka] class EventsByPersistenceIdStage(
           log.debug("tryPush available. Query for {} {} result {}", currentSequenceNr, currentSequenceNr, event)
           event.headOption match {
             case Some(pr) =>
-              push(out, EventEnvelope(Sequence(pr.sequenceNr), pr.persistenceId, pr.sequenceNr, pr.payload match {
-                case Tagged(payload, _) => payload
-                case payload            => payload
-              }, pr.timestamp, pr.metadata))
+              val entityType = PersistenceId.extractEntityType(pr.persistenceId)
+              val unwrappedPayload: Option[Event] = Some(pr.payload match {
+                case Tagged(payload, _) => payload.asInstanceOf[Event]
+                case payload            => payload.asInstanceOf[Event]
+              })
+              val tags: Set[String] = pr.payload match {
+                case Tagged(_, tags) => tags
+                case _               => Set.empty
+              }
+              val envelope =
+                new EventEnvelope[Event](
+                  offset = Sequence(pr.sequenceNr),
+                  persistenceId = pr.persistenceId,
+                  sequenceNr = pr.sequenceNr,
+                  eventOption = unwrappedPayload,
+                  timestamp = pr.timestamp,
+                  eventMetadata = pr.metadata,
+                  entityType = entityType,
+                  slice = sliceForPid(pr.persistenceId),
+                  filtered = false,
+                  source = "",
+                  tags = tags)
+              push(out, envelope)
               if (currentSequenceNr == toSequenceNr) {
                 completeStage()
               } else {

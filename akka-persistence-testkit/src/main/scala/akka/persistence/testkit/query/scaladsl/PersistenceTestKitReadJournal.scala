@@ -16,6 +16,7 @@ import akka.persistence.query.scaladsl.{
   ReadJournal
 }
 import akka.persistence.query.{ EventEnvelope, Sequence }
+import akka.persistence.query.typed.{ EventEnvelope => TypedEventEnvelope }
 import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage
@@ -24,6 +25,8 @@ import akka.util.unused
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 import akka.persistence.Persistence
+import akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdTypedQuery
+import akka.persistence.query.scaladsl.EventsByPersistenceIdTypedQuery
 import akka.persistence.query.typed
 import akka.persistence.query.typed.scaladsl.CurrentEventsBySliceQuery
 import akka.persistence.typed.PersistenceId
@@ -32,15 +35,23 @@ import scala.collection.immutable
 
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"
+
+  private def tagsFor(payload: Any): Set[String] = payload match {
+    case Tagged(_, tags) => tags
+    case _               => Set.empty
+  }
 }
 
 final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused config: Config, configPath: String)
     extends ReadJournal
     with EventsByPersistenceIdQuery
+    with EventsByPersistenceIdTypedQuery
     with CurrentEventsByPersistenceIdQuery
+    with CurrentEventsByPersistenceIdTypedQuery
     with CurrentEventsByTagQuery
     with CurrentEventsBySliceQuery
     with PagedPersistenceIdsQuery {
+  import PersistenceTestKitReadJournal._
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -62,8 +73,29 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
       persistenceId: String,
       fromSequenceNr: Long = 0,
       toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
-    Source.fromGraph(new EventsByPersistenceIdStage(persistenceId, fromSequenceNr, toSequenceNr, storage))
+    Source
+      .fromGraph(
+        new EventsByPersistenceIdStage[Any](
+          persistenceId,
+          fromSequenceNr,
+          toSequenceNr,
+          storage,
+          persistence.sliceForPersistenceId))
+      .map(env =>
+        EventEnvelope(env.offset, env.persistenceId, env.sequenceNr, env.event, env.timestamp, env.eventMetadata))
   }
+
+  override def eventsByPersistenceIdTyped[Event](
+      persistenceId: String,
+      fromSequenceNr: Long,
+      toSequenceNr: Long): Source[TypedEventEnvelope[Event], NotUsed] =
+    Source.fromGraph(
+      new EventsByPersistenceIdStage[Event](
+        persistenceId,
+        fromSequenceNr,
+        toSequenceNr,
+        storage,
+        persistence.sliceForPersistenceId))
 
   override def currentEventsByPersistenceId(
       persistenceId: String,
@@ -77,6 +109,27 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
         unwrapTaggedPayload(pr.payload),
         pr.timestamp,
         pr.metadata)
+    }
+  }
+
+  override def currentEventsByPersistenceIdTyped[Event](
+      persistenceId: String,
+      fromSequenceNr: Long,
+      toSequenceNr: Long): Source[TypedEventEnvelope[Event], NotUsed] = {
+    val slice = persistence.sliceForPersistenceId(persistenceId)
+    val entityType = PersistenceId.extractEntityType(persistenceId)
+    Source(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue)).map { pr =>
+      TypedEventEnvelope(
+        Sequence(pr.sequenceNr),
+        persistenceId,
+        pr.sequenceNr,
+        unwrapTaggedPayload(pr.payload).asInstanceOf[Event],
+        pr.timestamp,
+        entityType,
+        slice,
+        filtered = false,
+        source = "",
+        tags = tagsFor(pr.payload))
     }
   }
 
