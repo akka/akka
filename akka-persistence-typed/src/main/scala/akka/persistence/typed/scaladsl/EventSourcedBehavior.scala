@@ -191,6 +191,13 @@ object EventSourcedBehavior {
   def withTagger(tagger: Event => Set[String]): EventSourcedBehavior[Command, Event, State]
 
   /**
+   * The `tagger` function should give event tags, which will be used in persistence query.
+   * The state passed to the tagger allows for toggling a tag with one event but keep all events after it tagged
+   * based on a property or the type of the state.
+   */
+  def withTaggerForState(tagger: (State, Event) => Set[String]): EventSourcedBehavior[Command, Event, State]
+
+  /**
    * Transform the event to another type before giving to the journal. Can be used to wrap events
    * in types Journals understand but is of a different type than `Event`.
    */

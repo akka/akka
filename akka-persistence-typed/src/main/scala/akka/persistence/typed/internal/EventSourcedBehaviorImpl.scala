@@ -96,7 +96,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     loggerClass: Class[_],
     journalPluginId: Option[String] = None,
     snapshotPluginId: Option[String] = None,
-    tagger: Event => Set[String] = (_: Event) => Set.empty[String],
+    tagger: (State, Event) => Set[String] = (_: State, _: Event) => Set.empty[String],
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
     snapshotAdapter: SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State],
     snapshotWhen: (State, Event, Long) => Boolean = ConstantFun.scalaAnyThreeToFalse,
@@ -270,6 +270,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(retention = criteria)
 
   override def withTagger(tagger: Event => Set[String]): EventSourcedBehavior[Command, Event, State] =
+    copy(tagger = (_, event) => tagger(event))
+
+  override def withTaggerForState(tagger: (State, Event) => Set[String]): EventSourcedBehavior[Command, Event, State] =
     copy(tagger = tagger)
 
   override def eventAdapter(adapter: EventAdapter[Event, _]): EventSourcedBehavior[Command, Event, State] =

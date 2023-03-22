@@ -137,22 +137,23 @@ private[akka] object Unpersistent {
           case Persist(event) =>
             sequenceNr += 1
             state = eventHandler(state, event)
-            onEvent(event, sequenceNr, tagger(event))
+            onEvent(event, sequenceNr, tagger(state, event))
             shouldSnapshot = shouldSnapshot || snapshotRequested(event)
             sideEffect(sideEffects)
 
           case PersistAll(events) =>
-            val eventsWithSeqNrs =
+            val eventsWithSeqNrsAndTags =
               events.map { event =>
                 sequenceNr += 1
                 state = eventHandler(state, event)
-                event -> sequenceNr
+                val tags = tagger(state, event)
+                (event, sequenceNr, tags)
               }
 
-            eventsWithSeqNrs.foreach {
-              case (event, seqNr) =>
+            eventsWithSeqNrsAndTags.foreach {
+              case (event, seqNr, tags) =>
                 // technically doesn't persist them atomically, but in tests that shouldn't matter
-                onEvent(event, seqNr, tagger(event))
+                onEvent(event, seqNr, tags)
                 shouldSnapshot = shouldSnapshot || snapshotRequested(event)
             }
 

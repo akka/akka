@@ -47,7 +47,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     val eventHandler: EventSourcedBehavior.EventHandler[S, E],
     val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
     private val signalHandler: PartialFunction[(S, Signal), Unit],
-    val tagger: E => Set[String],
+    val tagger: (S, E) => Set[String],
     val eventAdapter: EventAdapter[E, Any],
     val snapshotAdapter: SnapshotAdapter[S],
     val snapshotWhen: (S, E, Long) => Boolean,
