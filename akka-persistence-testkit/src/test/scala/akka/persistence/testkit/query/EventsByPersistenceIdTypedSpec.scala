@@ -10,6 +10,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.persistence.Persistence
 import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.TimestampOffset
 import akka.persistence.query.typed.EventEnvelope
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
@@ -85,6 +86,7 @@ class EventsByPersistenceIdTypedSpec
       ackProbe.expectMessage(Done)
 
       val envelope = probe.expectNext()
+      envelope.offset shouldBe a[TimestampOffset]
       envelope.event should ===("tag-me-d-4")
       envelope.tags should ===(Set("tag"))
       envelope.filtered should ===(false)

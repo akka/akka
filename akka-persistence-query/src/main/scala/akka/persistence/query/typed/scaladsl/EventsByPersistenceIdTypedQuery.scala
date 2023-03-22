@@ -2,10 +2,11 @@
  * Copyright (C) 2015-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.query.scaladsl
+package akka.persistence.query.typed.scaladsl
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
+import akka.persistence.query.scaladsl.ReadJournal
 import akka.persistence.query.typed.EventEnvelope
 import akka.stream.scaladsl.Source
 
@@ -29,7 +30,7 @@ trait EventsByPersistenceIdTypedQuery extends ReadJournal {
    * Corresponding query that is completed when it reaches the end of the currently
    * stored events is provided by [[CurrentEventsByPersistenceIdTypedQuery#currentEventsByPersistenceIdTyped]].
    *
-   * This is a new version of the [[CurrentEventsByPersistenceIdQuery#currentEventsByPersistenceId]] using a new
+   * This is a new version of the [[akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery#currentEventsByPersistenceId]] using a new
    * envelope type [[akka.persistence.query.typed.EventEnvelope]].
    *
    * @tparam Event the type of the event payload

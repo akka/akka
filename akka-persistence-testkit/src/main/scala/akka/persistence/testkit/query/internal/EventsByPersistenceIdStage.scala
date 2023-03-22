@@ -6,12 +6,18 @@ package akka.persistence.testkit.query.internal
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.journal.Tagged
-import akka.persistence.query.Sequence
 import akka.persistence.query.typed.EventEnvelope
-import akka.persistence.testkit.{ EventStorage, PersistenceTestKitPlugin }
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.testkit.EventStorage
+import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.typed.PersistenceId
-import akka.stream.{ Attributes, Outlet, SourceShape }
-import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageLogicWithLogging, OutHandler }
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.GraphStageLogicWithLogging
+import akka.stream.stage.OutHandler
+import akka.stream.Attributes
+import akka.stream.Outlet
+import akka.stream.SourceShape
 
 /**
  * INTERNAL API
@@ -58,13 +64,9 @@ final private[akka] class EventsByPersistenceIdStage[Event](
                 case Tagged(payload, _) => payload.asInstanceOf[Event]
                 case payload            => payload.asInstanceOf[Event]
               })
-              val tags: Set[String] = pr.payload match {
-                case Tagged(_, tags) => tags
-                case _               => Set.empty
-              }
               val envelope =
                 new EventEnvelope[Event](
-                  offset = Sequence(pr.sequenceNr),
+                  offset = PersistenceTestKitReadJournal.timestampOffsetFor(pr),
                   persistenceId = pr.persistenceId,
                   sequenceNr = pr.sequenceNr,
                   eventOption = unwrappedPayload,
@@ -74,7 +76,7 @@ final private[akka] class EventsByPersistenceIdStage[Event](
                   slice = sliceForPid(pr.persistenceId),
                   filtered = false,
                   source = "",
-                  tags = tags)
+                  tags = PersistenceTestKitReadJournal.tagsFor(pr.payload))
               push(out, envelope)
               if (currentSequenceNr == toSequenceNr) {
                 completeStage()

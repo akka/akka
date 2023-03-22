@@ -5,6 +5,7 @@
 package akka.persistence.testkit.query.scaladsl
 import akka.NotUsed
 import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.persistence.journal.Tagged
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Offset
@@ -25,20 +26,38 @@ import akka.util.unused
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 import akka.persistence.Persistence
-import akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdTypedQuery
-import akka.persistence.query.scaladsl.EventsByPersistenceIdTypedQuery
+import akka.persistence.PersistentRepr
+import akka.persistence.query.TimestampOffset
 import akka.persistence.query.typed
+import akka.persistence.query.typed.scaladsl.CurrentEventsByPersistenceIdTypedQuery
 import akka.persistence.query.typed.scaladsl.CurrentEventsBySliceQuery
+import akka.persistence.query.typed.scaladsl.EventsByPersistenceIdTypedQuery
 import akka.persistence.typed.PersistenceId
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.collection.immutable
 
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"
 
-  private def tagsFor(payload: Any): Set[String] = payload match {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def tagsFor(payload: Any): Set[String] = payload match {
     case Tagged(_, tags) => tags
     case _               => Set.empty
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def timestampOffsetFor(pr: PersistentRepr) = {
+    val timestamp = Instant.ofEpochMilli(pr.timestamp) // Note: we don't really have microsecond granularity here
+    val readTimestamp = Instant.now().truncatedTo(ChronoUnit.MICROS)
+    TimestampOffset(timestamp, readTimestamp, Map(pr.persistenceId -> pr.sequenceNr))
   }
 }
 
@@ -72,7 +91,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
   override def eventsByPersistenceId(
       persistenceId: String,
       fromSequenceNr: Long = 0,
-      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
+      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] =
     Source
       .fromGraph(
         new EventsByPersistenceIdStage[Any](
@@ -81,9 +100,15 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
           toSequenceNr,
           storage,
           persistence.sliceForPersistenceId))
-      .map(env =>
-        EventEnvelope(env.offset, env.persistenceId, env.sequenceNr, env.event, env.timestamp, env.eventMetadata))
-  }
+      .map(
+        env =>
+          EventEnvelope(
+            Sequence(env.sequenceNr),
+            env.persistenceId,
+            env.sequenceNr,
+            env.event,
+            env.timestamp,
+            env.eventMetadata))
 
   override def eventsByPersistenceIdTyped[Event](
       persistenceId: String,
@@ -100,7 +125,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
   override def currentEventsByPersistenceId(
       persistenceId: String,
       fromSequenceNr: Long = 0,
-      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
+      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] =
     Source(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue)).map { pr =>
       EventEnvelope(
         Sequence(pr.sequenceNr),
@@ -110,7 +135,6 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
         pr.timestamp,
         pr.metadata)
     }
-  }
 
   override def currentEventsByPersistenceIdTyped[Event](
       persistenceId: String,
@@ -119,8 +143,10 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     val slice = persistence.sliceForPersistenceId(persistenceId)
     val entityType = PersistenceId.extractEntityType(persistenceId)
     Source(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue)).map { pr =>
+      val timestamp = Instant.ofEpochMilli(pr.timestamp) // Note: we don't really have microsecond granularity here
+      val readTimestamp = Instant.now().truncatedTo(ChronoUnit.MICROS)
       TypedEventEnvelope(
-        Sequence(pr.sequenceNr),
+        TimestampOffset(timestamp, readTimestamp, Map(pr.persistenceId -> pr.sequenceNr)),
         persistenceId,
         pr.sequenceNr,
         unwrapTaggedPayload(pr.payload).asInstanceOf[Event],
@@ -168,7 +194,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     Source(prs).map { pr =>
       val slice = persistence.sliceForPersistenceId(pr.persistenceId)
       new typed.EventEnvelope[Event](
-        Sequence(pr.sequenceNr),
+        timestampOffsetFor(pr),
         pr.persistenceId,
         pr.sequenceNr,
         Some(unwrapTaggedPayload(pr.payload).asInstanceOf[Event]),
@@ -178,10 +204,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
         slice,
         filtered = false,
         source = "",
-        pr.payload match {
-          case Tagged(_, tags) => tags
-          case _               => Set.empty
-        })
+        tagsFor(pr.payload))
     }
   }
 

@@ -5,7 +5,6 @@
 package akka.persistence.testkit.query
 
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -13,6 +12,7 @@ import akka.actor.typed.ActorRef
 import akka.persistence.Persistence
 import akka.persistence.query.NoOffset
 import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.TimestampOffset
 import akka.persistence.testkit.query.EventsByPersistenceIdSpec.Command
 import akka.persistence.testkit.query.EventsByPersistenceIdSpec.testBehaviour
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
@@ -73,11 +73,13 @@ class CurrentEventsBySlicesSpec
       ref2 ! Command("tag-me-evt-4", probe.ref)
       probe.receiveMessages(2)
 
-      queries
+      val result = queries
         .currentEventsBySlices[String]("TagTest", 0, Persistence(system).numberOfSlices - 1, NoOffset)
         .runWith(Sink.seq)
         .futureValue
-        .map(e => (e.event, e.tags)) should ===(
+
+      result.head.offset shouldBe a[TimestampOffset]
+      result.map(e => (e.event, e.tags)) should ===(
         Seq(("tag-me-evt-1", Set("tag")), ("evt-2", Set.empty), ("evt-3", Set.empty), ("tag-me-evt-4", Set("tag"))))
     }
   }
