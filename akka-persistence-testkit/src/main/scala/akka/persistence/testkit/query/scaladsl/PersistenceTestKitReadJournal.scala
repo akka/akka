@@ -55,8 +55,12 @@ object PersistenceTestKitReadJournal {
    */
   @InternalApi
   private[akka] def timestampOffsetFor(pr: PersistentRepr) = {
-    val timestamp = Instant.ofEpochMilli(pr.timestamp) // Note: we don't really have microsecond granularity here
-    val readTimestamp = Instant.now().truncatedTo(ChronoUnit.MICROS)
+    // Note: we don't really have microsecond granularity here, but the testkit uses an increasing unique timestamp
+    // (see akka.persistence.testkit.internal.CurrentTime )
+    val timestamp = Instant.ofEpochMilli(pr.timestamp)
+    val now = Instant.now().truncatedTo(ChronoUnit.MICROS)
+    // make read timestamp is always after or same as write
+    val readTimestamp = if (now.isBefore(timestamp)) timestamp else now
     TimestampOffset(timestamp, readTimestamp, Map(pr.persistenceId -> pr.sequenceNr))
   }
 }
