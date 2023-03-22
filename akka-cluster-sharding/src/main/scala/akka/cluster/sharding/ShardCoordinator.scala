@@ -1535,10 +1535,8 @@ private[akka] class DDataShardCoordinator(
     extends ShardCoordinator(settings, allocationStrategy)
     with Stash
     with Timers {
-
   import DDataShardCoordinator._
   import ShardCoordinator.Internal._
-
   import akka.cluster.ddata.Replicator.Update
 
   private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")

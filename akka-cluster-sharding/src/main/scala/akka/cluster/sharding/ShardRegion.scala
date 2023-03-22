@@ -632,6 +632,7 @@ private[akka] class ShardRegion(
 
   // sort by age, oldest first
   val ageOrdering = Member.ageOrdering
+  // membersByAge is only used for tracking where coordinator is running
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
   // membersByAge contains members with these status
   private val memberStatusOfInterest: Set[MemberStatus] =
@@ -710,8 +711,8 @@ private[akka] class ShardRegion(
     case None    => ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
   }
 
-  def matchingRole(member: Member): Boolean =
-    member.hasRole(targetDcRole) && role.forall(member.hasRole)
+  def matchingCoordinatorRole(member: Member): Boolean =
+    member.hasRole(targetDcRole) && coordinatorSingletonRole.forall(member.hasRole)
 
   /**
    * When leaving the coordinator singleton is started rather quickly on next
@@ -773,7 +774,7 @@ private[akka] class ShardRegion(
     changeMembers(
       immutable.SortedSet
         .empty(ageOrdering)
-        .union(state.members.filter(m => memberStatusOfInterest(m.status) && matchingRole(m))))
+        .union(state.members.filter(m => memberStatusOfInterest(m.status) && matchingCoordinatorRole(m))))
   }
 
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
@@ -787,7 +788,7 @@ private[akka] class ShardRegion(
     case MemberRemoved(m, _) =>
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         context.stop(self)
-      else if (matchingRole(m))
+      else if (matchingCoordinatorRole(m))
         changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
 
     case MemberDowned(m) =>
@@ -808,7 +809,7 @@ private[akka] class ShardRegion(
   }
 
   private def addMember(m: Member): Unit = {
-    if (matchingRole(m) && memberStatusOfInterest(m.status)) {
+    if (matchingCoordinatorRole(m) && memberStatusOfInterest(m.status)) {
       // replace, it's possible that the status, or upNumber is changed
       changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress) + m)
     }

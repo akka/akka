@@ -82,7 +82,6 @@ private[akka] final class DDataRememberEntitiesShardStore(
     extends Actor
     with Stash
     with ActorLogging {
-
   import DDataRememberEntitiesShardStore._
 
   implicit val ec: ExecutionContext = context.dispatcher
