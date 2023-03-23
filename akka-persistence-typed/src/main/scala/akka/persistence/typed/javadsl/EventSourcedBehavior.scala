@@ -163,9 +163,19 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
   def recovery: Recovery = Recovery.default
 
   /**
-   * The `tagger` function should give event tags, which will be used in persistence query
+   * Return tags to store for the given event, the tags can then be used in persistence query.
+   *
+   * If [[tagsFor(Event, State)]] is overriden this method is ignored.
    */
   def tagsFor(@unused event: Event): java.util.Set[String] = Collections.emptySet()
+
+  /**
+   * Return tags to store for the given event and state, the tags can then be used in persistence query.
+   * The state passed to the tagger allows for toggling a tag with one event but keep all events after it tagged
+   * based on a property or the type of the state.
+   */
+  def tagsFor(@unused state: State, event: Event): java.util.Set[String] =
+    tagsFor(event)
 
   /**
    * Transform the event in another type before giving to the journal. Can be used to wrap events
@@ -192,9 +202,9 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       : scaladsl.EventSourcedBehavior[Command, Event, State] = {
     val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
-    val tagger: Event => Set[String] = { event =>
+    val tagger: (State, Event) => Set[String] = { (state, event) =>
       import akka.util.ccompat.JavaConverters._
-      val tags = tagsFor(event)
+      val tags = tagsFor(state, event)
       if (tags.isEmpty) Set.empty
       else tags.asScala.toSet
     }
@@ -209,7 +219,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       getClass)
       .snapshotWhen(snapshotWhen)
       .withRetention(retentionCriteria.asScala)
-      .withTagger(tagger)
+      .withTaggerForState(tagger)
       .eventAdapter(eventAdapter())
       .snapshotAdapter(snapshotAdapter())
       .withJournalPluginId(journalPluginId)

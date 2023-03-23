@@ -64,7 +64,7 @@ class EventSourcedBehaviorWatchSpec
       eventHandler = (state, evt) => state + evt,
       WriterIdentity.newIdentity(),
       pf,
-      _ => Set.empty[String],
+      (_, _) => Set.empty[String],
       NoOpEventAdapter.instance[String],
       NoOpSnapshotAdapter.instance[String],
       snapshotWhen = ConstantFun.scalaAnyThreeToFalse,

@@ -423,7 +423,7 @@ private[akka] object Running {
       replication.setContext(recoveryRunning = false, event.originReplica, concurrent = isConcurrent)
 
       val stateAfterApply = state.applyEvent(setup, event.event)
-      val eventToPersist = adaptEvent(event.event)
+      val eventToPersist = adaptEvent(stateAfterApply.state, event.event)
       val eventAdapterManifest = setup.eventAdapter.manifest(event.event)
 
       replication.clearContext()
@@ -469,7 +469,7 @@ private[akka] object Running {
         setup.replication.foreach(r => r.setContext(recoveryRunning = false, r.replicaId, concurrent = false))
 
         val stateAfterApply = state.applyEvent(setup, event)
-        val eventToPersist = adaptEvent(event)
+        val eventToPersist = adaptEvent(stateAfterApply.state, event)
         val eventAdapterManifest = setup.eventAdapter.manifest(event)
 
         val newState2 = setup.replication match {
@@ -541,7 +541,6 @@ private[akka] object Running {
             if (shouldSnapshotAfterPersist == NoSnapshot)
               shouldSnapshotAfterPersist = setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
             val evtManifest = setup.eventAdapter.manifest(event)
-            val adaptedEvent = adaptEvent(event)
             val eventMetadata = metadataTemplate match {
               case Some(template) =>
                 val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
@@ -556,6 +555,8 @@ private[akka] object Running {
             }
 
             currentState = currentState.applyEvent(setup, event)
+
+            val adaptedEvent = adaptEvent(currentState.state, event)
 
             eventsToPersist = EventToPersist(adaptedEvent, evtManifest, eventMetadata) :: eventsToPersist
           }
@@ -620,8 +621,8 @@ private[akka] object Running {
       }
     }
 
-    def adaptEvent(event: E): Any = {
-      val tags = setup.tagger(event)
+    def adaptEvent(state: S, event: E): Any = {
+      val tags = setup.tagger(state, event)
       val adaptedEvent = setup.eventAdapter.toJournal(event)
       if (tags.isEmpty)
         adaptedEvent

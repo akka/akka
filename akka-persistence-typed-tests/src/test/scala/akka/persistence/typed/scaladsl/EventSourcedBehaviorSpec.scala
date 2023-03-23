@@ -540,6 +540,28 @@ class EventSourcedBehaviorSpec
       events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Incremented(1), 0L))
     }
 
+    "tag events based on state" in {
+      val pid = nextPid()
+      val c = spawn(
+        Behaviors.setup[Command](ctx =>
+          counter(ctx, pid).withTaggerForState((state, _) =>
+            if (state.value <= 1) Set.empty
+            else Set("higher-than-one"))))
+      val replyProbe = TestProbe[State]()
+
+      c ! Increment
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(1, Vector(0)))
+
+      c ! Increment
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(2, Vector(0, 1)))
+
+      val events = queries.currentEventsByTag("higher-than-one", Offset.noOffset).runWith(Sink.seq).futureValue
+      events should have size 1
+      events.head shouldEqual EventEnvelope(Sequence(2), pid.id, 2, Incremented(1), 0L)
+    }
+
     "handle scheduled message arriving before recovery completed " in {
       val c = spawn(Behaviors.withTimers[Command] { timers =>
         timers.startSingleTimer(Increment, 1.millis)

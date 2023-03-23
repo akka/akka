@@ -1,0 +1,5 @@
+# internal
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.Running#HandlingCommands.adaptEvent")
+# Bin incompatible, but no way around it because Java DSL is based on inheritance, hopefully nobody made
+# a method like this
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.scaladsl.EventSourcedBehavior.withTaggerForState")
