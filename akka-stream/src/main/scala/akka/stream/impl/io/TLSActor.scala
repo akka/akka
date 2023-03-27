@@ -425,7 +425,8 @@ import akka.util.ByteString
             // if you see this, and can reproduce consistently, please report back to the Akka team
             // with a reproducer or details about the client causing it
             if (loops > 1000)
-              throw new IllegalStateException(s"Stuck in unwrap loop, bailing out, last handshake status [$status]")
+              throw new IllegalStateException(
+                s"Stuck in unwrap loop, bailing out, last handshake status [$status] (https://github.com/akka/akka/issues/29922)")
             if (transportInBuffer.hasRemaining) doUnwrap(ignoreOutput = false, loops + 1)
             else flushToUser()
         }
