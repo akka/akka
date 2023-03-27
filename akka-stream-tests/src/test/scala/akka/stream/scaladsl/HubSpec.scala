@@ -295,6 +295,52 @@ class HubSpec extends StreamSpec {
       f2.futureValue should ===(1 to 10)
     }
 
+    "broadcast elements to downstream after at least one subscriber" in {
+      val broadcast = Source(1 to 10).runWith(BroadcastHub.sink[Int](1, 256))
+      val resultOne = broadcast.runWith(Sink.seq) // nothing happening yet
+
+      Await.result(resultOne, 1.second) should be(1 to 10) // fails
+    }
+
+    "broadcast all elements to all consumers" in {
+      val sourceQueue = Source.queue[Int](10) // used to block the source until we say so
+      val (queue, broadcast) = sourceQueue.toMat(BroadcastHub.sink(2, 256))(Keep.both).run()
+      val resultOne = broadcast.runWith(Sink.seq) // nothing happening yet
+      for (i <- 1 to 5) {
+        queue.offer(i)
+      }
+      val resultTwo = broadcast.runWith(Sink.seq)
+      for (i <- 6 to 10) {
+        queue.offer(i)
+      }
+      queue.complete() // only now is the source emptied
+
+      Await.result(resultOne, 1.second) should be(1 to 10)
+      Await.result(resultTwo, 1.second) should be(1 to 10)
+    }
+
+    "broadcast all elements to all consumers with hot upstream" in {
+      val broadcast = Source(1 to 10).runWith(BroadcastHub.sink[Int](2, 256))
+      val resultOne = broadcast.runWith(Sink.seq) // nothing happening yet
+      val resultTwo = broadcast.runWith(Sink.seq)
+
+      Await.result(resultOne, 1.second) should be(1 to 10)
+      Await.result(resultTwo, 1.second) should be(1 to 10)
+    }
+
+    "broadcast all elements to all consumers with hot upstream even some subscriber unsubscribe" in {
+      val broadcast = Source(1 to 10).runWith(BroadcastHub.sink[Int](2, 256))
+      val sub = broadcast.runWith(TestSink.apply())
+      sub.request(1)
+      Thread.sleep(1000)
+      sub.cancel()
+      val resultOne = broadcast.runWith(Sink.seq) // nothing happening yet
+      val resultTwo = broadcast.runWith(Sink.seq) // nothing happening yet
+
+      Await.result(resultOne, 1.second) should be(1 to 10)
+      Await.result(resultTwo, 1.second) should be(1 to 10)
+    }
+
     "send the same prefix to consumers attaching around the same time if one cancels earlier" in {
       val (firstElem, source) = Source.maybe[Int].concat(Source(2 to 20)).toMat(BroadcastHub.sink(8))(Keep.both).run()
 
