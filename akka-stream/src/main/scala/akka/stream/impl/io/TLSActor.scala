@@ -395,7 +395,7 @@ import akka.util.ByteString
   }
 
   @tailrec
-  private def doUnwrap(ignoreOutput: Boolean): Unit = {
+  private def doUnwrap(ignoreOutput: Boolean, loops: Int = 0): Unit = {
     val oldInPosition = transportInBuffer.position()
     val result = engine.unwrap(transportInBuffer, userOutBuffer)
     if (ignoreOutput) userOutBuffer.clear()
@@ -419,8 +419,14 @@ import akka.util.ByteString
               userOutBuffer.position() == 0 &&
               transportInBuffer.position() == oldInPosition =>
             throw new IllegalStateException("SSLEngine trying to loop NEED_UNWRAP without producing output")
-          case _ =>
-            if (transportInBuffer.hasRemaining) doUnwrap(ignoreOutput = false)
+          case status =>
+            // https://github.com/akka/akka/issues/29922
+            // A second workaround for an infinite loop we have not been able to reproduce/isolate,
+            // if you see this, and can reproduce consistently, please report back to the Akka team
+            // with a reproducer or details about the client causing it
+            if (loops > 1000)
+              throw new IllegalStateException(s"Stuck in unwrap loop, bailing out, last handshake status [$status]")
+            if (transportInBuffer.hasRemaining) doUnwrap(ignoreOutput = false, loops + 1)
             else flushToUser()
         }
       case CLOSED =>
