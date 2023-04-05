@@ -28,7 +28,7 @@ class ExternalShardAllocationCompileOnlySpec {
   val TypeKey = EntityTypeKey[Counter.Command]("Counter")
 
   val entity = Entity(TypeKey)(createBehavior = entityContext => Counter(entityContext.entityId))
-    .withAllocationStrategy(new ExternalShardAllocationStrategy(system, TypeKey.name))
+    .withAllocationStrategy(ExternalShardAllocationStrategy(system, TypeKey.name))
   // #entity
 
   val shardRegion: ActorRef[ShardingEnvelope[Counter.Command]] =

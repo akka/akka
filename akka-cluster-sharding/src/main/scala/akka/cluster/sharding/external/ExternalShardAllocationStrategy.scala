@@ -34,6 +34,18 @@ object ExternalShardAllocationStrategy {
 
   type ShardRegion = ActorRef
 
+  /**
+   * Scala API
+   */
+  def apply(systemProvider: ClassicActorSystemProvider, typeName: String): ExternalShardAllocationStrategy =
+    new ExternalShardAllocationStrategy(systemProvider, typeName)
+
+  /**
+   * Java API
+   */
+  def create(systemProvider: ClassicActorSystemProvider, typeName: String): ExternalShardAllocationStrategy =
+    apply(systemProvider, typeName)
+
   // local only messages
   private[akka] final case class GetShardLocation(shard: ShardId)
   private[akka] case object GetShardLocations
