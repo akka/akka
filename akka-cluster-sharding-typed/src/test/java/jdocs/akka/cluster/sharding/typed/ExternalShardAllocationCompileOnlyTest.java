@@ -17,8 +17,6 @@ import akka.cluster.sharding.typed.ShardingEnvelope;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
-import akka.util.Timeout;
-import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
 public class ExternalShardAllocationCompileOnlyTest {
@@ -35,8 +33,7 @@ public class ExternalShardAllocationCompileOnlyTest {
         sharding.init(
             Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId()))
                 .withAllocationStrategy(
-                    new ExternalShardAllocationStrategy(
-                        system, typeKey.name(), Timeout.create(Duration.ofSeconds(5)))));
+                    ExternalShardAllocationStrategy.create(system, typeKey.name())));
     // #entity
 
     // #client
