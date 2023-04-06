@@ -5,17 +5,22 @@ project.description: How to deploy Akka Cluster to Kubernetes and Docker.
 
 ## Deploying to Kubernetes
 
-You can deploy to Kubernetes according to the guide and example project for [Deploying Akka Cluster to Kubernetes](https://doc.akka.io/docs/akka-management/current/kubernetes-deployment/index.html).
+You can deploy to Kubernetes according to the guide and example project for @extref:[Deploying Akka Cluster to Kubernetes](akka-management:kubernetes-deployment/index.html).
 
 ### Cluster bootstrap
 
-To take advantage of running inside Kubernetes while forming a cluster, 
-[Akka Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/) helps forming or joining a cluster using Akka Discovery to discover peer nodes. 
+To take advantage of running inside Kubernetes while forming a cluster,
+@extref:[Akka Cluster Bootstrap](akka-management:bootstrap/) helps forming or joining a cluster using Akka Discovery to discover peer nodes. 
 with the Kubernetes API or Kubernetes via DNS.  
 
 You can look at the
 @extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
 to see what this looks like in practice.
+
+### Rolling updates
+
+Enable the @extref:[Kubernetes Rolling Updates feature from Akka Management](akka-management:rolling-updates.html)
+for smooth rolling updates.
  
 ### Resource limits
 

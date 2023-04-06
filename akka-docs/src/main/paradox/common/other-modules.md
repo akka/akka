@@ -39,11 +39,12 @@ An Akka Persistence journal and snapshot store for use with R2DBC-compatible dat
 
 ## Akka Management
 
-* [Akka Management](https://doc.akka.io/docs/akka-management/current/) provides a central HTTP endpoint for Akka management extensions.
-* [Akka Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/) helps bootstrapping an Akka cluster using Akka Discovery.
-* [Akka Management Cluster HTTP](https://doc.akka.io/docs/akka-management/current/cluster-http-management.html) provides HTTP endpoints for introspecting and managing Akka clusters.
-* [Akka Discovery for Kubernetes, Consul, Marathon, and AWS](https://doc.akka.io/docs/akka-management/current/discovery/)
-* [Kubernetes Lease](https://doc.akka.io/docs/akka-management/current/kubernetes-lease.html)
+* @extref:[Akka Management](akka-management:) provides a central HTTP endpoint for Akka management extensions.
+* @extref:[Akka Cluster Bootstrap](akka-management:bootstrap/) helps bootstrapping an Akka cluster using Akka Discovery.
+* @extref:[Akka Management Kubernetes Rolling Updates](akka-management:rolling-updates.html) for smooth rolling updates.
+* @extref:[Akka Management Cluster HTTP](akka-management:cluster-http-management.html) provides HTTP endpoints for introspecting and managing Akka clusters.
+* @extref:[Akka Discovery for Kubernetes, Consul, Marathon, and AWS](akka-management:discovery/)
+* @extref:[Kubernetes Lease](akka-management:kubernetes-lease.html)
 
 ## Akka Resilience Enhancements
 
