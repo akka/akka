@@ -500,6 +500,18 @@ import scala.util.control.NonFatal
   }
 
   @InternalApi
+  private[akka] object NeverSource extends GraphStage[SourceShape[Nothing]] {
+    private val out = Outlet[Nothing]("NeverSource.out")
+    val shape: SourceShape[Nothing] = SourceShape(out)
+    override def initialAttributes: Attributes = DefaultAttributes.neverSource
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic with OutHandler =
+      new GraphStageLogic(shape) with OutHandler {
+        override def onPull(): Unit = ()
+        setHandler(out, this)
+      }
+  }
+
+  @InternalApi
   private[akka] object NeverSink extends GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
     private val in = Inlet[Any]("NeverSink.in")
     val shape: SinkShape[Any] = SinkShape(in)
