@@ -168,7 +168,7 @@ private[akka] object AsyncDnsResolver {
         { answerTo ! Status.Failure(failToResolve(name, settings.NameServers)) }
       } else {
         // spawn an actor to actually use a resolver
-        spawner: (Props => ActorRef) =>
+        (spawner: (Props => ActorRef)) =>
           {
             val propsForSpawn = props(settings, requestIdInjector, name, mode, answerTo, cacheActor)
             spawner(propsForSpawn) ! ResolveWithFirstResolver(resolvers)
@@ -197,7 +197,7 @@ private[akka] object AsyncDnsResolver {
         mode: RequestType,
         answerTo: ActorRef,
         cacheActor: ActorRef,
-        settings: DnsSettings): Any => Unit = { _: Any =>
+        settings: DnsSettings): Any => Unit = { (_: Any) =>
       Try {
         val address = InetAddress.getByName(name) // only checks validity, since known to be IP address
         address match {
@@ -226,7 +226,7 @@ private[akka] object AsyncDnsResolver {
       with Stash {
     import DnsResolutionActor._
 
-    private implicit val timeout = Timeout(settings.ResolveTimeout)
+    private implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
 
     private def failToResolve(): Unit =
       answerWithFailure(DnsResolutionActor.failToResolve(name, settings.NameServers))
