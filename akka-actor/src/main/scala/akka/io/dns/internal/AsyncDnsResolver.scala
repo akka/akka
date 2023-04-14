@@ -297,8 +297,8 @@ private[akka] object AsyncDnsResolver {
 
     private def activelyResolving(searchName: String): Receive = {
       // stash resolution requests because we won't do anything with them while actively resolving
-      case _: DnsResolutionActor.Resolve => log.info("stashing Resolve"); stash()
-      case _: ResolveWithFirstResolver   => log.info("stashing ResolveWithFirstResolver"); stash()
+      case _: DnsResolutionActor.Resolve => stash()
+      case _: ResolveWithFirstResolver   => stash()
 
       case resolved: DnsProtocol.Resolved =>
         // Check whether this is the final resolution or we need to unstash and try another resolution
@@ -374,13 +374,13 @@ private[akka] object AsyncDnsResolver {
 
             ipv4Recs.flatMap { v4 =>
               ipv6Recs.map { v6 =>
-                DnsProtocol.Resolved(name, v4.rrs ++ v6.rrs, v4.additionalRecs ++ v6.additionalRecs)
+                DnsProtocol.Resolved(searchName, v4.rrs ++ v6.rrs, v4.additionalRecs ++ v6.additionalRecs)
               }(ExecutionContexts.parasitic)
             }(ExecutionContexts.parasitic)
 
           case Srv =>
             sendQuestion(resolver, requestId => SrvQuestion(requestId, searchName)).map { answer =>
-              DnsProtocol.Resolved(name, answer.rrs, answer.additionalRecs)
+              DnsProtocol.Resolved(searchName, answer.rrs, answer.additionalRecs)
             }(ExecutionContexts.parasitic)
         }
 
