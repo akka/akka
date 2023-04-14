@@ -10,7 +10,6 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success, Try }
-import scala.util.control.NonFatal
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory, Props, ReceiveTimeout, Stash, Status }
 import akka.annotation.InternalApi
@@ -87,8 +86,9 @@ private[io] final class AsyncDnsResolver(
           log.debug("{} cached {}", mode, resolved)
           sender() ! resolved
         case None =>
-          context.actorOf(DnsResolutionActor.props(settings, resolvers, requestIdInjector, name, mode, sender()))
-        // resolution actor will handle replying
+          // spawns an actor if not an IP address
+          DnsResolutionActor
+            .startResolution(settings, resolvers, requestIdInjector, name, mode, sender(), self)(context.actorOf _)
       }
 
     case CachePut(name, mode, resolved, ttl) =>
@@ -152,27 +152,72 @@ private[akka] object AsyncDnsResolver {
   }
 
   private object DnsResolutionActor {
-    def props(
+    // synchronously invokes the provided spawning function
+    def startResolution(
         settings: DnsSettings,
         resolvers: List[ActorRef],
         requestIdInjector: ActorRef,
         name: String,
         mode: RequestType,
-        answerTo: ActorRef) =
-      Props(new DnsResolutionActor(settings, resolvers, requestIdInjector, name, mode, answerTo))
+        answerTo: ActorRef,
+        cacheActor: ActorRef): (Props => ActorRef) => Unit = {
+
+      if (isInetAddress(name)) {
+        eagerResolverForInetAddress(name, mode, answerTo, cacheActor, settings)
+      } else if (resolvers.isEmpty) {
+        _ => { answerTo ! Status.Failure(failToResolve(name, settings.NameServers)) }
+      } else {
+        // spawn an actor to actually use a resolver
+        spawner: (Props => ActorRef) => {
+          val propsForSpawn = props(settings, requestIdInjector, name, mode, answerTo, cacheActor)
+          spawner(propsForSpawn) ! ResolveWithFirstResolver(resolvers)
+        }
+      }
+    }
+
+    def props(
+        settings: DnsSettings,
+        requestIdInjector: ActorRef,
+        name: String,
+        mode: RequestType,
+        answerTo: ActorRef,
+        cacheActor: ActorRef): Props =
+      Props(new DnsResolutionActor(settings, requestIdInjector, name, mode, answerTo, cacheActor))
 
     final case class AnswerWithFailure(ex: Throwable)
     final case class ResolveWithFirstResolver(remainingResolvers: List[ActorRef])
     final case class Resolve(searchName: String, resolver: ActorRef)
+
+    private def failToResolve(name: String, nameServers: List[InetSocketAddress]): ResolveFailedException =
+      ResolveFailedException(s"Failed to resolve $name with nameservers ${nameServers}")
+
+    private def eagerResolverForInetAddress(name: String, mode: RequestType, answerTo: ActorRef, cacheActor: ActorRef, settings: DnsSettings): Any => Unit = { _: Any =>
+      Try {
+        val address = InetAddress.getByName(name) // only checks validity, since known to be IP address
+        address match {
+          case _: Inet4Address => ARecord(name, Ttl.effectivelyForever, address)
+          case ipv6: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6)
+          case unexpected => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
+        }
+      }.fold(
+        ex => { answerTo ! Status.Failure(ex) },
+        record => {
+          val resolved = DnsProtocol.Resolved(name, record :: Nil)
+          // records are exactly one, TTL will be PositiveCachePolicy
+          cacheActor ! CachePut(name, mode, resolved, settings.PositiveCachePolicy)
+          answerTo ! resolved
+        }
+      )
+    }
   }
 
   private class DnsResolutionActor(
       settings: DnsSettings,
-      resolvers: List[ActorRef],
       requestIdInjector: ActorRef,
       name: String,
       mode: RequestType,
-      answerTo: ActorRef)
+      answerTo: ActorRef,
+      cacheActor: ActorRef)
       extends Actor
       with ActorLogging
       with Stash {
@@ -180,24 +225,8 @@ private[akka] object AsyncDnsResolver {
 
     private implicit val timeout = Timeout(settings.ResolveTimeout)
 
-    if (isInetAddress(name)) {
-      // eagerly resolve
-      Try {
-        val address = InetAddress.getByName(name) // only checks validity, since known to be IP address
-        address match {
-          case _: Inet4Address    => ARecord(name, Ttl.effectivelyForever, address)
-          case ipv6: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6)
-          case unexpected         => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
-        }
-      }.fold(answerWithFailure(_), record => { self ! DnsProtocol.Resolved(name, record :: Nil) })
-    } else if (resolvers.isEmpty) {
-      failToResolve()
-    } else {
-      self ! ResolveWithFirstResolver(resolvers)
-    }
-
-    private def failToResolve(): Unit =
-      answerWithFailure(ResolveFailedException(s"Failed to resolve $name with nameservers ${settings.NameServers}"))
+    private def failToResolve(): Unit = 
+      answerWithFailure(DnsResolutionActor.failToResolve(name, settings.NameServers))
 
     private def answerWithFailure(ex: Throwable): Unit = answer(Status.Failure(ex))
 
@@ -230,9 +259,9 @@ private[akka] object AsyncDnsResolver {
       case resolved: DnsProtocol.Resolved =>
         if (resolved.records.nonEmpty) {
           val minTtl = (settings.PositiveCachePolicy +: resolved.records.map(_.ttl)).min
-          context.parent ! CachePut(name, mode, resolved, minTtl)
+          cacheActor ! CachePut(name, mode, resolved, minTtl)
         } else if (settings.NegativeCachePolicy != Never) {
-          context.parent ! CachePut(name, mode, resolved, settings.NegativeCachePolicy)
+          cacheActor ! CachePut(name, mode, resolved, settings.NegativeCachePolicy)
         }
 
         log.debug("{} resolved {}", mode, resolved)
