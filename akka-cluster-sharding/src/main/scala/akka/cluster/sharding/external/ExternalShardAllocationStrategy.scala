@@ -111,6 +111,11 @@ class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider
 
   private var shardState: ActorRef = _
 
+  // Eagerly initialize the DistributedData extension on all nodes. Otherwise, if not used for other things,
+  // the DistributedData Replicator is started via the DDataStateActor by the shard coordinator on one node,
+  // but not on other nodes.
+  DistributedData(systemProvider)
+
   private[akka] def createShardStateActor(): ActorRef = {
     system
       .asInstanceOf[ExtendedActorSystem]
