@@ -204,6 +204,27 @@ private[akka] trait StashSupport {
       theStash = theStash.tail
     }
 
+  private[akka] def unstash(filterPredicate: Any => Boolean): Unit = {
+    if (theStash.nonEmpty) {
+      val buf = Vector.newBuilder[Envelope]
+      try {
+        val i = theStash.reverseIterator
+        var found = false
+        while (i.hasNext) {
+          val envelope = i.next()
+          if (!found && filterPredicate(envelope.message)) {
+            enqueueFirst(envelope)
+            found = true
+          } else {
+            buf += envelope
+          }
+        }
+      } finally {
+        theStash = buf.result().reverse
+      }
+    }
+  }
+
   /**
    *  Prepends all messages in the stash to the mailbox, and then clears the stash.
    *
