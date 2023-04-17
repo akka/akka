@@ -8,7 +8,7 @@ import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{ Failure, Try }
+import scala.util.Try
 
 import com.typesafe.config.ConfigFactory
 
