@@ -1,0 +1,3 @@
+# internals
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.typed.internal.receptionist.LocalReceptionist#State.subscriberAdded")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.typed.internal.receptionist.LocalReceptionist#State.subscriptionRemoved")
