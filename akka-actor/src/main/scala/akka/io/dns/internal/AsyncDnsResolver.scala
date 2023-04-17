@@ -86,9 +86,27 @@ private[io] final class AsyncDnsResolver(
           log.debug("{} cached {}", mode, resolved)
           sender() ! resolved
         case None =>
-          // spawns an actor if not an IP address
-          DnsResolutionActor.startResolution(settings, resolvers, requestIdInjector, name, mode, sender(), self)(
-            context.actorOf _)
+          // check if we're being asked to resolve an IP address, in which case no need to do anything async
+          if (isInetAddress(name)) {
+            Try {
+              InetAddress.getByName(name) match { // only a validity check, doesn't do blocking I/O
+                case ipv4: Inet4Address => ARecord(name, Ttl.effectivelyForever, ipv4)
+                case ipv6: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6)
+                case unexpected         => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
+              }
+            }.fold(ex => { sender() ! Status.Failure(ex) }, record => {
+              val resolved = DnsProtocol.Resolved(name, record :: Nil)
+              cache.put(name -> mode, resolved, record.ttl)
+              sender() ! resolved
+            })
+          } else if (resolvers.isEmpty) {
+            sender() ! Status.Failure(failToResolve(name, nameServers))
+          } else {
+            // spawn an actor to manage this resolution (apply search names, failover to other resolvers, etc.)
+            val resolutionActor =
+              context.actorOf(DnsResolutionActor.props(settings, requestIdInjector, name, mode, sender(), self))
+            resolutionActor ! DnsResolutionActor.ResolveWithFirstResolver(resolvers)
+          }
       }
 
     case CachePut(name, mode, resolved, ttl) =>
@@ -119,6 +137,9 @@ private[akka] object AsyncDnsResolver {
 
   private val Empty =
     Future.successful(Answer(-1, immutable.Seq.empty[ResourceRecord], immutable.Seq.empty[ResourceRecord]))
+
+  private def failToResolve(name: String, nameServers: List[InetSocketAddress]): ResolveFailedException =
+    ResolveFailedException(s"Failed to resolve $name with nameservers ${nameServers}")
 
   case class ResolveFailedException(msg: String) extends Exception(msg)
 
@@ -152,30 +173,6 @@ private[akka] object AsyncDnsResolver {
   }
 
   private object DnsResolutionActor {
-    // synchronously invokes the provided spawning function
-    def startResolution(
-        settings: DnsSettings,
-        resolvers: List[ActorRef],
-        requestIdInjector: ActorRef,
-        name: String,
-        mode: RequestType,
-        answerTo: ActorRef,
-        cacheActor: ActorRef): (Props => ActorRef) => Unit = {
-
-      if (isInetAddress(name)) {
-        eagerResolverForInetAddress(name, mode, answerTo, cacheActor, settings)
-      } else if (resolvers.isEmpty) { _ =>
-        { answerTo ! Status.Failure(failToResolve(name, settings.NameServers)) }
-      } else {
-        // spawn an actor to actually use a resolver
-        (spawner: (Props => ActorRef)) =>
-          {
-            val propsForSpawn = props(settings, requestIdInjector, name, mode, answerTo, cacheActor)
-            spawner(propsForSpawn) ! ResolveWithFirstResolver(resolvers)
-          }
-      }
-    }
-
     def props(
         settings: DnsSettings,
         requestIdInjector: ActorRef,
@@ -188,30 +185,6 @@ private[akka] object AsyncDnsResolver {
     final case class AnswerWithFailure(ex: Throwable)
     final case class ResolveWithFirstResolver(remainingResolvers: List[ActorRef])
     final case class Resolve(searchName: String, resolver: ActorRef)
-
-    private def failToResolve(name: String, nameServers: List[InetSocketAddress]): ResolveFailedException =
-      ResolveFailedException(s"Failed to resolve $name with nameservers ${nameServers}")
-
-    private def eagerResolverForInetAddress(
-        name: String,
-        mode: RequestType,
-        answerTo: ActorRef,
-        cacheActor: ActorRef,
-        settings: DnsSettings): Any => Unit = { (_: Any) =>
-      Try {
-        val address = InetAddress.getByName(name) // only checks validity, since known to be IP address
-        address match {
-          case _: Inet4Address    => ARecord(name, Ttl.effectivelyForever, address)
-          case ipv6: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6)
-          case unexpected         => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
-        }
-      }.fold(ex => { answerTo ! Status.Failure(ex) }, record => {
-        val resolved = DnsProtocol.Resolved(name, record :: Nil)
-        // records are exactly one, TTL will be PositiveCachePolicy
-        cacheActor ! CachePut(name, mode, resolved, settings.PositiveCachePolicy)
-        answerTo ! resolved
-      })
-    }
   }
 
   private class DnsResolutionActor(
@@ -229,7 +202,7 @@ private[akka] object AsyncDnsResolver {
     private implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
 
     private def failToResolve(): Unit =
-      answerWithFailure(DnsResolutionActor.failToResolve(name, settings.NameServers))
+      answerWithFailure(AsyncDnsResolver.failToResolve(name, settings.NameServers))
 
     private def answerWithFailure(ex: Throwable): Unit = answer(Status.Failure(ex))
 
@@ -259,40 +232,9 @@ private[akka] object AsyncDnsResolver {
     override def receive: Receive = notActivelyResolving
 
     private val notActivelyResolving: Receive = {
-      case resolved: DnsProtocol.Resolved =>
-        if (resolved.records.nonEmpty) {
-          val minTtl = (settings.PositiveCachePolicy +: resolved.records.map(_.ttl)).min
-          cacheActor ! CachePut(name, mode, resolved, minTtl)
-        } else if (settings.NegativeCachePolicy != Never) {
-          cacheActor ! CachePut(name, mode, resolved, settings.NegativeCachePolicy)
-        }
-
-        log.debug("{} resolved {}", mode, resolved)
-
-        answer(resolved)
-
-      case ResolveWithFirstResolver(remainingResolvers) =>
-        remainingResolvers.headOption match {
-          case Some(resolver) =>
-            // send a Resolve message for each of the search names (in order... thank you self-send guarantee)
-            // then send a ResolveWithFirstResolver to move on to the next resolver
-            // all but the first of these will be stashed by the `activelyResolving` behavior
-            namesToResolve.foreach { searchName =>
-              self ! DnsResolutionActor.Resolve(searchName, resolver)
-            }
-
-            self ! ResolveWithFirstResolver(remainingResolvers.tail)
-
-          case _ => failToResolve() // exhausted the resolvers
-        }
-
-      case DnsResolutionActor.Resolve(searchName, resolver) =>
-        log.debug("Attempting to resolve {} with {}", searchName, resolver)
-
-        implicit val ec = context.dispatcher // In order to get pipeTo
-        resolvedFut(searchName, resolver, None).pipeTo(self)
-
-        context.become(activelyResolving(searchName))
+      case resolved: DnsProtocol.Resolved                   => handleResolved(resolved)
+      case ResolveWithFirstResolver(remainingResolvers)     => nextResolver(remainingResolvers)
+      case DnsResolutionActor.Resolve(searchName, resolver) => startResolution(searchName, resolver)
     }
 
     private def activelyResolving(searchName: String): Receive = {
@@ -307,8 +249,7 @@ private[akka] object AsyncDnsResolver {
           unstashAll()
           context.become(resolveNextName(resolved))
         } else {
-          // will update parent cache, answer, and stop
-          notActivelyResolving(resolved)
+          handleResolved(resolved)
         }
 
       case Status.Failure(ex) =>
@@ -325,18 +266,12 @@ private[akka] object AsyncDnsResolver {
     }
 
     // will not move on to the next server, since we have a fallback resolution
-    def resolveNextName(fallbackResolution: DnsProtocol.Resolved): Receive = {
-      case _: ResolveWithFirstResolver =>
-        // We're done with this server, so answer, update parent cache (maybe), and stop
-        notActivelyResolving(fallbackResolution)
+    private def resolveNextName(fallbackResolution: DnsProtocol.Resolved): Receive = {
+      case _: ResolveWithFirstResolver => handleResolved(fallbackResolution)
 
-      case DnsResolutionActor.Resolve(searchName, resolver) =>
-        log.debug("Attempting to resolve {} with {}", searchName, resolver)
-
-        implicit val ec = context.dispatcher // In order to get pipeTo
-        resolvedFut(searchName, resolver, Some(fallbackResolution)).pipeTo(self)
-
-        context.become(activelyResolving(searchName))
+      case resolve: DnsResolutionActor.Resolve =>
+        // Handle the resolution
+        startResolution(resolve.searchName, resolve.resolver)
     }
 
     // drop pending resolves for the current resolver until we get a switch to the next resolver
@@ -344,8 +279,7 @@ private[akka] object AsyncDnsResolver {
       case _: DnsResolutionActor.Resolve => () // do nothing aka drop it
       case switchResolver: ResolveWithFirstResolver =>
         context.setReceiveTimeout(Duration.Undefined)
-
-        notActivelyResolving(switchResolver)
+        nextResolver(switchResolver.remainingResolvers)
         context.become(notActivelyResolving)
 
       case ReceiveTimeout =>
@@ -354,41 +288,67 @@ private[akka] object AsyncDnsResolver {
         failToResolve()
     }
 
+    private def handleResolved(resolved: DnsProtocol.Resolved): Unit = {
+      if (resolved.records.nonEmpty) {
+        val minTtl = (settings.PositiveCachePolicy +: resolved.records.map(_.ttl)).min
+        cacheActor ! CachePut(name, mode, resolved, minTtl)
+      } else if (settings.NegativeCachePolicy != Never) {
+        cacheActor ! CachePut(name, mode, resolved, settings.NegativeCachePolicy)
+      }
+
+      log.debug("{} resolved {}", mode, resolved)
+
+      answer(resolved) // stops this actor
+    }
+
+    private def startResolution(searchName: String, resolver: ActorRef): Unit = {
+      log.debug("Attempting to resolve {} with {}", searchName, resolver)
+
+      implicit val ec = context.dispatcher // for pipeTo
+      resolvedFut(searchName, resolver).pipeTo(self)
+
+      context.become(activelyResolving(searchName))
+    }
+
+    private def nextResolver(resolvers: List[ActorRef]): Unit = {
+      resolvers.headOption match {
+        case Some(resolver) =>
+          // send a Resolve message for each of the search names and then a ResolveWithFirstResolver to
+          // signal that those were all the names.  All but the first Resolve will be stashed by `activelyResolving`
+          namesToResolve.foreach { searchName =>
+            self ! DnsResolutionActor.Resolve(searchName, resolver)
+          }
+
+          self ! ResolveWithFirstResolver(resolvers.tail)
+
+        case None => failToResolve() // exhausted the resolvers
+      }
+    }
+
     private def sendQuestion(resolver: ActorRef, inject: Short => DnsQuestion): Future[Answer] =
       (requestIdInjector ? DnsQuestionPreInjection(resolver, inject, timeout)).mapTo[Answer]
 
-    private def resolvedFut(
-        searchName: String,
-        resolver: ActorRef,
-        fallbackResolved: Option[DnsProtocol.Resolved]): Future[DnsProtocol.Resolved] = {
-      val questionFut =
-        mode match {
-          case Ip(ipv4, ipv6) =>
-            val ipv4Recs =
-              if (ipv4) sendQuestion(resolver, requestId => Question4(requestId, searchName))
-              else Empty
+    private def resolvedFut(searchName: String, resolver: ActorRef): Future[DnsProtocol.Resolved] =
+      mode match {
+        case Ip(ipv4, ipv6) =>
+          val ipv4Recs =
+            if (ipv4) sendQuestion(resolver, requestId => Question4(requestId, searchName))
+            else Empty
 
-            val ipv6Recs =
-              if (ipv6) sendQuestion(resolver, requestId => Question6(requestId, searchName))
-              else Empty
+          val ipv6Recs =
+            if (ipv6) sendQuestion(resolver, requestId => Question6(requestId, searchName))
+            else Empty
 
-            ipv4Recs.flatMap { v4 =>
-              ipv6Recs.map { v6 =>
-                DnsProtocol.Resolved(searchName, v4.rrs ++ v6.rrs, v4.additionalRecs ++ v6.additionalRecs)
-              }(ExecutionContexts.parasitic)
+          ipv4Recs.flatMap { v4 =>
+            ipv6Recs.map { v6 =>
+              DnsProtocol.Resolved(searchName, v4.rrs ++ v6.rrs, v4.additionalRecs ++ v6.additionalRecs)
             }(ExecutionContexts.parasitic)
+          }(ExecutionContexts.parasitic)
 
-          case Srv =>
-            sendQuestion(resolver, requestId => SrvQuestion(requestId, searchName)).map { answer =>
-              DnsProtocol.Resolved(searchName, answer.rrs, answer.additionalRecs)
-            }(ExecutionContexts.parasitic)
-        }
-
-      fallbackResolved.fold(questionFut) { fallback =>
-        questionFut.recover {
-          case _ => fallback
-        }(ExecutionContexts.parasitic)
+        case Srv =>
+          sendQuestion(resolver, requestId => SrvQuestion(requestId, searchName)).map { answer =>
+            DnsProtocol.Resolved(searchName, answer.rrs, answer.additionalRecs)
+          }(ExecutionContexts.parasitic)
       }
-    }
   }
 }
