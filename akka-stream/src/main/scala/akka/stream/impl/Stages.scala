@@ -80,6 +80,7 @@ import akka.stream.Attributes._
     val mergePrioritized = name("mergePrioritized")
     val flattenMerge = name("flattenMerge")
     val recoverWith = name("recoverWith")
+    val onErrorComplete = name("onErrorComplete")
     val broadcast = name("broadcast")
     val wireTap = name("wireTap")
     val balance = name("balance")

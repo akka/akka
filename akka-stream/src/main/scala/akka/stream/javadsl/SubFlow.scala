@@ -1020,6 +1020,57 @@ final class SubFlow[In, Out, Mat](
     new SubFlow(delegate.recoverWith(pf))
 
   /**
+   * onErrorComplete allows to complete the stream when an upstream error occurs.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or failed with exception is an instance of the provided type
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def onErrorComplete(): SubFlow[In, Out, Mat] = onErrorComplete(classOf[Throwable])
+
+  /**
+   * onErrorComplete allows to complete the stream when an upstream error occurs.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or failed with exception is an instance of the provided type
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def onErrorComplete(clazz: Class[_ <: Throwable]): SubFlow[In, Out, Mat] = onErrorComplete(ex => clazz.isInstance(ex))
+
+  /**
+   * onErrorComplete allows to complete the stream when an upstream error occurs.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or failed with predicate return ture
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def onErrorComplete(predicate: java.util.function.Predicate[_ >: Throwable]): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.onErrorComplete {
+      case ex: Throwable if predicate.test(ex) => true
+    })
+
+  /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
