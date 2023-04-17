@@ -227,7 +227,7 @@ class AskSpec extends AkkaSpec("""
       }))
 
       val f = (act ? "ask").mapTo[String]
-      val (promiseActorRef, "ask") = p.expectMsgType[(ActorRef, String)]
+      val (promiseActorRef, _) = p.expectMsgType[(ActorRef, String)]
 
       watch(promiseActorRef)
       promiseActorRef ! "complete"
@@ -248,12 +248,12 @@ class AskSpec extends AkkaSpec("""
       }), "myName")
 
       (act ? "ask").mapTo[String]
-      val (promiseActorRef, "ask") = p.expectMsgType[(ActorRef, String)]
+      val (promiseActorRef, _) = p.expectMsgType[(ActorRef, String)]
 
       promiseActorRef.path.name should startWith("myName")
 
       (system.actorSelection("/user/myName") ? "ask").mapTo[String]
-      val (promiseActorRefForSelection, "ask") = p.expectMsgType[(ActorRef, String)]
+      val (promiseActorRefForSelection, _) = p.expectMsgType[(ActorRef, String)]
       promiseActorRefForSelection.path.name should startWith("_user_myName")
     }
   }
