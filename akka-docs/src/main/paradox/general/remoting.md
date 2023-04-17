@@ -58,10 +58,10 @@ See @ref:[Akka behind NAT or in a Docker container](../remoting-artery.md#remote
 In a Kubernetes environment, many people turn to a service mesh such as Istio, Linkerd or Consul to authenticate and
 encrypt their network communications, however this is not an option for Akka cluster communication.
 The goal of a service mesh is to ensure that services do not need to be aware of where and how the services they
-talk to are deployed, and so service meshes hide this, so the service thinks its only talking to one logical service,
+talk to are deployed, a service mesh hide this, a client thinks its only talking to one logical service,
 while the service mesh handles concerns such as load balancing, encryption, authentication and authorization, and so on.
-Akka clusters however need to understand how and where they are deployed, in order to implement their stateful
-features such as sharding, replication and peer-to-peer messaging. So, when deploying a service that uses
+Akka clusters however need to understand how and where the individual nodes are deployed, in order to implement their stateful
+features such as sharding, replication and peer-to-peer messaging. When deploying a service that uses
 Akka Cluster to a service mesh, the Akka Cluster communication must bypass the service mesh.
 
 ## Marking Points for Scaling Up with Routers

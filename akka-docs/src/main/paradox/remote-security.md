@@ -145,7 +145,7 @@ cluster should have a standard [cert-manager installation](https://cert-manager.
 
 ### Understanding the certificates
 
-First off, a few concepts. cert-manager has a concept of `Certificates` and `Issuers`. A Certificate is a
+First off, a few concepts: cert-manager has a concept of `Certificates` and `Issuers`. A Certificate is a
 Custom Resource Definition (CRD) that you deploy that cert-manager will reconcile into a Kubernetes `Secret` containing
 a TLS certificate. The `Certificate` references an `Issuer`, and the `Issuer` describes how Certificates that reference
 it should be issued.
