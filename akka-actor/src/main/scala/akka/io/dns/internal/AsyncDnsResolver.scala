@@ -182,7 +182,6 @@ private[akka] object AsyncDnsResolver {
         cacheActor: ActorRef): Props =
       Props(new DnsResolutionActor(settings, requestIdInjector, name, mode, answerTo, cacheActor))
 
-    final case class AnswerWithFailure(ex: Throwable)
     final case class ResolveWithFirstResolver(remainingResolvers: List[ActorRef])
     final case class Resolve(searchName: String, resolver: ActorRef)
   }
