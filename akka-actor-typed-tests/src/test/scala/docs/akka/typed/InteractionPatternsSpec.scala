@@ -25,6 +25,14 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   private class DummyContext[T](val self: ActorRef[T])
 
+  // #per-session-child
+  // dummy data types just for this sample
+  case class Keys()
+
+  case class Wallet()
+
+  // #per-session-child
+
   "The interaction patterns docs" must {
 
     "contain a sample for fire and forget" in {
@@ -346,12 +354,6 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
   }
 
   "contain a sample for per session child" in {
-    // #per-session-child
-    // dummy data types just for this sample
-    case class Keys()
-    case class Wallet()
-
-    // #per-session-child
 
     object KeyCabinet {
       case class GetKeys(whoseKeys: String, replyTo: ActorRef[Keys])
