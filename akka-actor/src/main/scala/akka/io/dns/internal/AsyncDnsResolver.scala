@@ -8,10 +8,9 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success, Try }
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory, Props, ReceiveTimeout, Stash, Status }
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory, Props, Status }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.io.SimpleDnsCache
@@ -105,7 +104,7 @@ private[io] final class AsyncDnsResolver(
             // spawn an actor to manage this resolution (apply search names, failover to other resolvers, etc.)
             val resolutionActor =
               context.actorOf(DnsResolutionActor.props(settings, requestIdInjector, name, mode, sender(), self))
-            resolutionActor ! DnsResolutionActor.ResolveWithFirstResolver(resolvers)
+            resolutionActor ! DnsResolutionActor.Resolve(resolvers)
           }
       }
 
@@ -182,8 +181,7 @@ private[akka] object AsyncDnsResolver {
         cacheActor: ActorRef): Props =
       Props(new DnsResolutionActor(settings, requestIdInjector, name, mode, answerTo, cacheActor))
 
-    final case class ResolveWithFirstResolver(remainingResolvers: List[ActorRef])
-    final case class Resolve(searchName: String, resolver: ActorRef)
+    final case class Resolve(withResolvers: List[ActorRef])
   }
 
   private class DnsResolutionActor(
@@ -194,8 +192,7 @@ private[akka] object AsyncDnsResolver {
       answerTo: ActorRef,
       cacheActor: ActorRef)
       extends Actor
-      with ActorLogging
-      with Stash {
+      with ActorLogging {
     import DnsResolutionActor._
 
     private implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
@@ -228,25 +225,22 @@ private[akka] object AsyncDnsResolver {
       }
     }
 
-    override def receive: Receive = notActivelyResolving
-
-    private val notActivelyResolving: Receive = {
-      case resolved: DnsProtocol.Resolved                   => handleResolved(resolved)
-      case ResolveWithFirstResolver(remainingResolvers)     => nextResolver(remainingResolvers)
-      case DnsResolutionActor.Resolve(searchName, resolver) => startResolution(searchName, resolver)
+    override def receive: Receive = {
+      case Resolve(withResolvers) =>
+        if (withResolvers.nonEmpty) startResolution(namesToResolve, withResolvers.head, withResolvers.tail)
+        else failToResolve() // (vacuously) exhausted the resolvers
     }
 
-    private def activelyResolving(searchName: String): Receive = {
-      // stash resolution requests because we won't do anything with them while actively resolving
-      case _: DnsResolutionActor.Resolve => stash()
-      case _: ResolveWithFirstResolver   => stash()
-
+    private def activelyResolving(
+        searchName: String,
+        resolver: ActorRef,
+        nextNamesToTry: List[String],
+        nextResolversToTry: List[ActorRef]): Receive = {
       case resolved: DnsProtocol.Resolved =>
-        // Check whether this is the final resolution or we need to unstash and try another resolution
         log.info("resolved {}", resolved)
         if (resolved.records.isEmpty) {
-          unstashAll()
-          context.become(resolveNextName(resolved))
+          if (nextNamesToTry.nonEmpty) startResolution(nextNamesToTry, resolver, nextResolversToTry)
+          else handleResolved(resolved) // empty but successful response
         } else {
           handleResolved(resolved)
         }
@@ -259,32 +253,30 @@ private[akka] object AsyncDnsResolver {
             log.info("Resolve of {} failed.  Trying next name server.  Exception: {}", name, ex.getMessage)
         }
 
-        unstashAll()
-        context.setReceiveTimeout(settings.ResolveTimeout)
-        context.become(nextNameServer)
+        // failed, move on to next name server
+        if (nextResolversToTry.nonEmpty)
+          startResolution(namesToResolve, nextResolversToTry.head, nextResolversToTry.tail)
+        else failToResolve() // exhausted the resolvers
     }
 
-    // will not move on to the next server, since we have a fallback resolution
-    private def resolveNextName(fallbackResolution: DnsProtocol.Resolved): Receive = {
-      case _: ResolveWithFirstResolver => handleResolved(fallbackResolution)
+    private def startResolution(
+        namesToTry: List[String],
+        resolverToUse: ActorRef,
+        fallbackResolvers: List[ActorRef]): Unit = {
+      if (namesToTry.nonEmpty) {
+        val searchName = namesToTry.head
 
-      case resolve: DnsResolutionActor.Resolve =>
-        // Handle the resolution
-        startResolution(resolve.searchName, resolve.resolver)
-    }
+        log.debug("Attempting to resolve {} with {}", searchName, resolverToUse)
 
-    // drop pending resolves for the current resolver until we get a switch to the next resolver
-    private val nextNameServer: Receive = {
-      case _: DnsResolutionActor.Resolve => () // do nothing aka drop it
-      case switchResolver: ResolveWithFirstResolver =>
-        context.setReceiveTimeout(Duration.Undefined)
-        nextResolver(switchResolver.remainingResolvers)
-        context.become(notActivelyResolving)
+        implicit val ec = context.dispatcher // for pipeTo
+        resolvedFut(searchName, resolverToUse).pipeTo(self)
 
-      case ReceiveTimeout =>
+        context.become(activelyResolving(searchName, resolverToUse, namesToTry.tail, fallbackResolvers))
+      } else {
         // shouldn't happen
-        log.warning("Expected there to be a stashed ResolveWithFirstResolver message, but there wasn't")
+        log.warning("startResolution called with empty list of namesToTry")
         failToResolve()
+      }
     }
 
     private def handleResolved(resolved: DnsProtocol.Resolved): Unit = {
@@ -298,30 +290,6 @@ private[akka] object AsyncDnsResolver {
       log.debug("{} resolved {}", mode, resolved)
 
       answer(resolved) // stops this actor
-    }
-
-    private def startResolution(searchName: String, resolver: ActorRef): Unit = {
-      log.debug("Attempting to resolve {} with {}", searchName, resolver)
-
-      implicit val ec = context.dispatcher // for pipeTo
-      resolvedFut(searchName, resolver).pipeTo(self)
-
-      context.become(activelyResolving(searchName))
-    }
-
-    private def nextResolver(resolvers: List[ActorRef]): Unit = {
-      resolvers.headOption match {
-        case Some(resolver) =>
-          // send a Resolve message for each of the search names and then a ResolveWithFirstResolver to
-          // signal that those were all the names.  All but the first Resolve will be stashed by `activelyResolving`
-          namesToResolve.foreach { searchName =>
-            self ! DnsResolutionActor.Resolve(searchName, resolver)
-          }
-
-          self ! ResolveWithFirstResolver(resolvers.tail)
-
-        case None => failToResolve() // exhausted the resolvers
-      }
     }
 
     private def sendQuestion(resolver: ActorRef, inject: Short => DnsQuestion): Future[Answer] =
