@@ -24,7 +24,7 @@ class PipeToSpec extends AkkaSpec {
     }
 
     "work with an implicit ExecutionContext" in {
-      import system.dispatcher  // installs an EC in implicit scope
+      import system.dispatcher // installs an EC in implicit scope
 
       val p = TestProbe()
       future42().pipeTo(p.ref)
