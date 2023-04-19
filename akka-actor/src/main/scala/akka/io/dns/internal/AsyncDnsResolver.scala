@@ -102,9 +102,9 @@ private[io] final class AsyncDnsResolver(
             sender() ! Status.Failure(failToResolve(name, nameServers))
           } else {
             // spawn an actor to manage this resolution (apply search names, failover to other resolvers, etc.)
-            val resolutionActor =
-              context.actorOf(DnsResolutionActor.props(settings, requestIdInjector, name, mode, sender(), self))
-            resolutionActor ! DnsResolutionActor.Resolve(resolvers)
+            // this actor's parenting style is "don't care about the lifecycle of our children"
+            context.actorOf(
+              DnsResolutionActor.props(settings, requestIdInjector, name, mode, sender(), self, resolvers))
           }
       }
 
@@ -178,10 +178,9 @@ private[akka] object AsyncDnsResolver {
         name: String,
         mode: RequestType,
         answerTo: ActorRef,
-        cacheActor: ActorRef): Props =
-      Props(new DnsResolutionActor(settings, requestIdInjector, name, mode, answerTo, cacheActor))
-
-    final case class Resolve(withResolvers: List[ActorRef])
+        cacheActor: ActorRef,
+        resolvers: List[ActorRef]): Props =
+      Props(new DnsResolutionActor(settings, requestIdInjector, name, mode, answerTo, cacheActor, resolvers))
   }
 
   private class DnsResolutionActor(
@@ -190,10 +189,10 @@ private[akka] object AsyncDnsResolver {
       name: String,
       mode: RequestType,
       answerTo: ActorRef,
-      cacheActor: ActorRef)
+      cacheActor: ActorRef,
+      resolvers: List[ActorRef])
       extends Actor
       with ActorLogging {
-    import DnsResolutionActor._
 
     private implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
 
@@ -206,6 +205,13 @@ private[akka] object AsyncDnsResolver {
       answerTo ! withMsg
 
       context.stop(self)
+    }
+
+    // Not strictly necessary, since our parent checks this before spawning, but belt-and-suspenders
+    if (resolvers.isEmpty) {
+      failToResolve() // (vacuously) exhausted the resolvers
+      // fail fast
+      throw new IllegalArgumentException("resolvers should not be empty")
     }
 
     // the fully-qualified domain names (FQDNs), in the order we want to attempt for any given resolver
@@ -225,11 +231,10 @@ private[akka] object AsyncDnsResolver {
       }
     }
 
-    override def receive: Receive = {
-      case Resolve(withResolvers) =>
-        if (withResolvers.nonEmpty) startResolution(namesToResolve, withResolvers.head, withResolvers.tail)
-        else failToResolve() // (vacuously) exhausted the resolvers
-    }
+    // Don't expect a message until startResolution `become`s activelyResolving
+    override def receive: Receive = PartialFunction.empty
+    // safe, already verified that resolvers is non-empty
+    startResolution(namesToResolve, resolvers.head, resolvers.tail)
 
     private def activelyResolving(
         searchName: String,
@@ -237,7 +242,6 @@ private[akka] object AsyncDnsResolver {
         nextNamesToTry: List[String],
         nextResolversToTry: List[ActorRef]): Receive = {
       case resolved: DnsProtocol.Resolved =>
-        log.info("resolved {}", resolved)
         if (resolved.records.isEmpty) {
           if (nextNamesToTry.nonEmpty) startResolution(nextNamesToTry, resolver, nextResolversToTry)
           else handleResolved(resolved) // empty but successful response
