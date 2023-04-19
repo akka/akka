@@ -18,8 +18,9 @@ import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol._
 import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
+import akka.io.dns.internal.DnsClient
 import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
-import akka.testkit.{ AkkaSpec, TestProbe, WithLogCapturing }
+import akka.testkit.{ AkkaSpec, TestActor, TestProbe, WithLogCapturing }
 
 class AsyncDnsResolverSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
@@ -33,6 +34,7 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
           ndots = 1
           positive-ttl = forever
           negative-ttl = never
+          id-strategy = NOT-IN-ANY-WAY-RANDOM-test-sequential
         """)
 
   trait Setup {
@@ -222,6 +224,85 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       dnsClient1.reply(Answer(2, im.Seq(ipv4Record)))
 
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
+    }
+
+    "attempt to drop a failed question" in new Setup {
+      val configWithExtraShortTimeout =
+        defaultConfig.withValue("resolve-timeout", ConfigValueFactory.fromAnyRef("1 ms"))
+      override val r = resolver(List(dnsClient1.ref), configWithExtraShortTimeout)
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      val q4 = Question4(1, "cats.com")
+      dnsClient1.expectMsg(q4)
+
+      // ask times out because no reply
+      dnsClient1.expectMsg(DnsClient.DropRequest(q4))
+      // respond in order to keep up appearances
+      dnsClient1.reply(DnsClient.Dropped(1))
+    }
+
+    "not reuse the request ids of pending requests" in new Setup {
+      val catatonicDnsClient = TestProbe()
+      @volatile var qCount: Int = 0
+      @volatile var usedIds: Set[Short] = Set.empty
+
+      catatonicDnsClient.setAutoPilot(new TestActor.AutoPilot {
+        def run(sender: ActorRef, msg: Any): TestActor.AutoPilot = {
+          msg match {
+            case Question4(id, _) =>
+              usedIds = usedIds + id
+              qCount += 1
+
+            case _ => ()
+          }
+          TestActor.KeepRunning
+        }
+      })
+
+      override val r = resolver(List(catatonicDnsClient.ref), defaultConfig)
+
+      var resolvesSent: Int = 0
+
+      // want to send up to 100 (or barring that, as many Resolves as we can) in 100 millis
+      try {
+        awaitCond(p = {
+          if (resolvesSent < 100) {
+            r ! Resolve(s"{$resolvesSent}outof${resolvesSent + 1}cats.com", Ip(ipv4 = true, ipv6 = false))
+            resolvesSent += 1
+            false // not done yet
+          } else true
+        }, max = 100.millis, interval = 100.micros)
+      } catch {
+        case _: AssertionError =>
+          // not actually a problem if we didn't send 100 messages, but not being able to send multiple renders the test invalid
+          resolvesSent shouldBe >(1)
+      }
+
+      awaitAssert(a = {
+        usedIds.size shouldBe resolvesSent
+        qCount shouldBe resolvesSent
+      }, max = 300.millis, interval = 1.milli)
+
+      // Since we don't reply, the resolves may timeout, but that will still leave them pending
+    }
+
+    "reuse in-progress resolutions" in new Setup {
+      val asker1 = TestProbe()
+      val asker2 = TestProbe()
+
+      override val r = resolver(List(dnsClient1.ref), defaultConfig)
+
+      val resolve = Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+
+      r.tell(resolve, asker1.ref)
+      dnsClient1.expectMsg(Question4(1, "cats.com"))
+      // don't reply, but try again
+      r.tell(resolve, asker2.ref)
+      dnsClient1.expectNoMessage(50.millis)
+      dnsClient1.reply(Answer(1, Nil))
+
+      asker1.expectMsg(Resolved("cats.com", im.Seq.empty))
+      asker2.expectMsg(Resolved("cats.com", im.Seq.empty))
     }
   }
 
