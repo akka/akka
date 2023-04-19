@@ -12,13 +12,22 @@ import akka.testkit.TestProbe
 
 class PipeToSpec extends AkkaSpec {
 
-  import system.dispatcher
+  // Do not try this at home, kids.  In real code, this should be a `Future.successful`
+  def future42(): Future[Int] = Future(42)(system.dispatcher)
 
   "PipeTo" must {
 
     "work" in {
       val p = TestProbe()
-      Future(42).pipeTo(p.ref)
+      future42().pipeTo(p.ref)
+      p.expectMsg(42)
+    }
+
+    "work with an implicit ExecutionContext" in {
+      import system.dispatcher  // installs an EC in implicit scope
+
+      val p = TestProbe()
+      future42().pipeTo(p.ref)
       p.expectMsg(42)
     }
 
@@ -31,20 +40,20 @@ class PipeToSpec extends AkkaSpec {
     "pick up an implicit sender()" in {
       val p = TestProbe()
       implicit val s = testActor
-      Future(42).pipeTo(p.ref)
+      future42().pipeTo(p.ref)
       p.expectMsg(42)
       p.lastSender should ===(s)
     }
 
     "work in Java form" in {
       val p = TestProbe()
-      pipe(Future(42)) to p.ref
+      pipe(future42()) to p.ref
       p.expectMsg(42)
     }
 
     "work in Java form with sender()" in {
       val p = TestProbe()
-      pipe(Future(42)).to(p.ref, testActor)
+      pipe(future42()).to(p.ref, testActor)
       p.expectMsg(42)
       p.lastSender should ===(testActor)
     }
@@ -56,7 +65,16 @@ class PipeToSpec extends AkkaSpec {
     "work" in {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
-      Future(42).pipeToSelection(sel)
+      future42().pipeToSelection(sel)
+      p.expectMsg(42)
+    }
+
+    "work with an implicit ExecutionContext" in {
+      import system.dispatcher
+
+      val p = TestProbe()
+      val sel = system.actorSelection(p.ref.path)
+      future42().pipeToSelection(sel)
       p.expectMsg(42)
     }
 
@@ -71,7 +89,7 @@ class PipeToSpec extends AkkaSpec {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
       implicit val s = testActor
-      Future(42).pipeToSelection(sel)
+      future42().pipeToSelection(sel)
       p.expectMsg(42)
       p.lastSender should ===(s)
     }
@@ -79,14 +97,14 @@ class PipeToSpec extends AkkaSpec {
     "work in Java form" in {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
-      pipe(Future(42)) to sel
+      pipe(future42()) to sel
       p.expectMsg(42)
     }
 
     "work in Java form with sender()" in {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
-      pipe(Future(42)).to(sel, testActor)
+      pipe(future42()).to(sel, testActor)
       p.expectMsg(42)
       p.lastSender should ===(testActor)
     }
