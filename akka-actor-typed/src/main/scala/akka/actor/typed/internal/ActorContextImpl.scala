@@ -9,12 +9,17 @@ import java.time.Duration
 import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
+
+import scala.annotation.{ nowarn, switch }
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
+import scala.util.Failure
+import scala.util.Success
 import scala.util.Try
-import scala.annotation.{ nowarn, switch }
+
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
 import akka.actor.Address
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.annotation.InternalApi
@@ -24,9 +29,6 @@ import akka.util.BoxedType
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import akka.util.Timeout
-
-import scala.util.Failure
-import scala.util.Success
 
 /**
  * INTERNAL API
@@ -274,7 +276,7 @@ import scala.util.Success
   def pipeToSelf[Value](
       future: CompletionStage[Value],
       applyToResult: akka.japi.function.Function2[Value, Throwable, T]): Unit = {
-    future.whenComplete { (value, ex) =>
+    future.handle[Unit] { (value, ex) =>
       if (ex != null)
         self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
       else self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))

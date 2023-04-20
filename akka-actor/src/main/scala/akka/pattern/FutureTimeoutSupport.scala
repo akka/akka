@@ -6,7 +6,6 @@ package akka.pattern
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
-import java.util.function.BiConsumer
 
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.concurrent.duration.FiniteDuration
@@ -68,11 +67,9 @@ trait FutureTimeoutSupport {
       using.scheduleOnce(duration) {
         try {
           val future = value
-          future.whenComplete(new BiConsumer[T, Throwable] {
-            override def accept(t: T, ex: Throwable): Unit = {
-              if (t != null) p.complete(t)
-              if (ex != null) p.completeExceptionally(ex)
-            }
+          future.handle[Unit]((t: T, ex: Throwable) => {
+            if (t != null) p.complete(t)
+            if (ex != null) p.completeExceptionally(ex)
           })
         } catch {
           case NonFatal(ex) => p.completeExceptionally(ex)
