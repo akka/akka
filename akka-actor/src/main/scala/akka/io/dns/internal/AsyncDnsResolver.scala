@@ -7,16 +7,15 @@ package akka.io.dns.internal
 import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
-import scala.util.Try
-import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory, Props, Status }
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.io.SimpleDnsCache
 import akka.io.dns._
-import akka.io.dns.CachePolicy.{ Never, Ttl }
+import akka.io.dns.CachePolicy.{ CachePolicy, Never, Ttl }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.dns.internal.DnsClient._
 import akka.pattern.{ ask, pipe }
@@ -36,8 +35,6 @@ private[io] final class AsyncDnsResolver(
     with ActorLogging {
 
   import AsyncDnsResolver._
-
-  implicit val ec: ExecutionContextExecutor = context.dispatcher
 
   // avoid ever looking up localhost by pre-populating cache
   {
@@ -75,14 +72,9 @@ private[io] final class AsyncDnsResolver(
     settings.SearchDomains,
     settings.NDots)
 
-  private var requestId: Short = 0
-
-  private def nextId(): Short = {
-    requestId = (requestId + 1).toShort
-    requestId
-  }
-
   private val resolvers: List[ActorRef] = clientFactory(context, nameServers)
+
+  private val requestIdInjector: ActorRef = context.actorOf(injectorProps, "requestIdInjector")
 
   // only supports DnsProtocol, not the deprecated Dns protocol
   // AsyncDnsManager converts between the protocols to support the deprecated protocol
@@ -93,133 +85,32 @@ private[io] final class AsyncDnsResolver(
           log.debug("{} cached {}", mode, resolved)
           sender() ! resolved
         case None =>
-          resolveWithResolvers(name, mode, resolvers)
-            .map { resolved =>
-              if (resolved.records.nonEmpty) {
-                val minTtl = (positiveCachePolicy +: resolved.records.map(_.ttl)).min
-                cache.put((name, mode), resolved, minTtl)
-              } else if (negativeCachePolicy != Never) cache.put((name, mode), resolved, negativeCachePolicy)
-              log.debug(s"{} resolved {}", mode, resolved)
-              resolved
-            }
-            .pipeTo(sender())
-      }
-  }
-
-  private def resolveWithResolvers(
-      name: String,
-      requestType: RequestType,
-      resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] =
-    if (isInetAddress(name)) {
-      Future.fromTry {
-        Try {
-          val address = InetAddress.getByName(name) // only checks validity, since known to be IP address
-          val record = address match {
-            case _: Inet4Address           => ARecord(name, Ttl.effectivelyForever, address)
-            case ipv6address: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6address)
-            case unexpected                => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
-          }
-          DnsProtocol.Resolved(name, record :: Nil)
-        }
-      }
-    } else {
-      resolvers match {
-        case Nil =>
-          Future.failed(ResolveFailedException(s"Failed to resolve $name with nameservers: $nameServers"))
-        case head :: tail =>
-          resolveWithSearch(name, requestType, head).recoverWith {
-            case NonFatal(t) =>
-              t match {
-                case _: AskTimeoutException =>
-                  log.info("Resolve of {} timed out after {}. Trying next name server", name, timeout.duration.pretty)
-                case _ =>
-                  log.info("Resolve of {} failed. Trying next name server {}", name, t.getMessage)
+          // check if we're being asked to resolve an IP address, in which case no need to do anything async
+          if (isInetAddress(name)) {
+            Try {
+              InetAddress.getByName(name) match { // only a validity check, doesn't do blocking I/O
+                case ipv4: Inet4Address => ARecord(name, Ttl.effectivelyForever, ipv4)
+                case ipv6: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6)
+                case unexpected         => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
               }
-              resolveWithResolvers(name, requestType, tail)
+            }.fold(ex => { sender() ! Status.Failure(ex) }, record => {
+              val resolved = DnsProtocol.Resolved(name, record :: Nil)
+              cache.put(name -> mode, resolved, record.ttl)
+              sender() ! resolved
+            })
+          } else if (resolvers.isEmpty) {
+            sender() ! Status.Failure(failToResolve(name, nameServers))
+          } else {
+            // spawn an actor to manage this resolution (apply search names, failover to other resolvers, etc.)
+            // this actor's parenting style is "don't care about the lifecycle of our children"
+            context.actorOf(
+              DnsResolutionActor.props(settings, requestIdInjector, name, mode, sender(), self, resolvers))
           }
       }
-    }
 
-  private def sendQuestion(resolver: ActorRef, message: DnsQuestion): Future[Answer] = {
-    val result = (resolver ? message).mapTo[Answer]
-    result.failed.foreach { _ =>
-      resolver ! DropRequest(message.id)
-    }
-    result
+    case CachePut(name, mode, resolved, ttl) =>
+      cache.put(name -> mode, resolved, ttl)
   }
-
-  private def resolveWithSearch(
-      name: String,
-      requestType: RequestType,
-      resolver: ActorRef): Future[DnsProtocol.Resolved] = {
-    if (settings.SearchDomains.nonEmpty) {
-      val nameWithSearch = settings.SearchDomains.map(sd => name + "." + sd)
-      // ndots is a heuristic used to try and work out whether the name passed in is a fully qualified domain name,
-      // or a name relative to one of the search names. The idea is to prevent the cost of doing a lookup that is
-      // obviously not going to resolve. So, if a host has less than ndots dots in it, then we don't try and resolve it,
-      // instead, we go directly to the search domains, or at least that's what the man page for resolv.conf says. In
-      // practice, Linux appears to implement something slightly different, if the name being searched contains less
-      // than ndots dots, then it should be searched last, rather than first. This means if the heuristic wrongly
-      // identifies a domain as being relative to the search domains, it will still be looked up if it doesn't resolve
-      // at any of the search domains, albeit with the latency of having to have done all the searches first.
-      val toResolve = if (name.count(_ == '.') >= settings.NDots) {
-        name :: nameWithSearch
-      } else {
-        nameWithSearch :+ name
-      }
-      resolveFirst(toResolve, requestType, resolver)
-    } else {
-      resolve(name, requestType, resolver)
-    }
-  }
-
-  private def resolveFirst(
-      searchNames: List[String],
-      requestType: RequestType,
-      resolver: ActorRef): Future[DnsProtocol.Resolved] = {
-    searchNames match {
-      case searchName :: Nil =>
-        resolve(searchName, requestType, resolver)
-      case searchName :: remaining =>
-        resolve(searchName, requestType, resolver).flatMap { resolved =>
-          if (resolved.records.isEmpty) resolveFirst(remaining, requestType, resolver)
-          else Future.successful(resolved)
-        }
-      case Nil =>
-        // This can't happen
-        Future.failed(new IllegalStateException("Failed to 'resolveFirst': 'searchNames' must not be empty"))
-    }
-  }
-
-  private def resolve(name: String, requestType: RequestType, resolver: ActorRef): Future[DnsProtocol.Resolved] = {
-    log.debug("Attempting to resolve {} with {}", name, resolver)
-    val caseFoldedName = Helpers.toRootLowerCase(name)
-    requestType match {
-      case Ip(ipv4, ipv6) =>
-        val ipv4Recs: Future[Answer] =
-          if (ipv4)
-            sendQuestion(resolver, Question4(nextId(), caseFoldedName))
-          else
-            Empty
-
-        val ipv6Recs =
-          if (ipv6)
-            sendQuestion(resolver, Question6(nextId(), caseFoldedName))
-          else
-            Empty
-
-        for {
-          ipv4 <- ipv4Recs
-          ipv6 <- ipv6Recs
-        } yield DnsProtocol.Resolved(name, ipv4.rrs ++ ipv6.rrs, ipv4.additionalRecs ++ ipv6.additionalRecs)
-
-      case Srv =>
-        sendQuestion(resolver, SrvQuestion(nextId(), caseFoldedName)).map(answer => {
-          DnsProtocol.Resolved(name, answer.rrs, answer.additionalRecs)
-        })
-    }
-  }
-
 }
 
 /**
@@ -246,5 +137,189 @@ private[akka] object AsyncDnsResolver {
   private val Empty =
     Future.successful(Answer(-1, immutable.Seq.empty[ResourceRecord], immutable.Seq.empty[ResourceRecord]))
 
+  private def failToResolve(name: String, nameServers: List[InetSocketAddress]): ResolveFailedException =
+    ResolveFailedException(s"Failed to resolve $name with nameservers ${nameServers}")
+
   case class ResolveFailedException(msg: String) extends Exception(msg)
+
+  private final case class CachePut(name: String, mode: RequestType, resolved: DnsProtocol.Resolved, ttl: CachePolicy)
+
+  private final case class DnsQuestionPreInjection(resolver: ActorRef, inject: Short => DnsQuestion, timeout: Timeout)
+
+  private val injectorProps = Props(new RequestIdInjector())
+
+  // tracks and injects a request ID before forwarding to the resolver
+  private class RequestIdInjector extends Actor {
+    private var requestId: Short = 0
+
+    private def nextId(): Short = {
+      requestId = (requestId + 1).toShort
+      requestId
+    }
+
+    override def receive: Receive = {
+      case DnsQuestionPreInjection(resolver, inject, timeout) =>
+        implicit val tmout = timeout
+        val question = inject(nextId())
+        val forwardAnswerTo = sender()
+        val result = (resolver ? question).mapTo[Answer]
+
+        result.onComplete {
+          case Success(answer) => forwardAnswerTo ! answer
+          case Failure(_)      => resolver ! DropRequest(question.id)
+        }(ExecutionContexts.parasitic)
+    }
+  }
+
+  private object DnsResolutionActor {
+    def props(
+        settings: DnsSettings,
+        requestIdInjector: ActorRef,
+        name: String,
+        mode: RequestType,
+        answerTo: ActorRef,
+        cacheActor: ActorRef,
+        resolvers: List[ActorRef]): Props =
+      Props(new DnsResolutionActor(settings, requestIdInjector, name, mode, answerTo, cacheActor, resolvers))
+  }
+
+  private class DnsResolutionActor(
+      settings: DnsSettings,
+      requestIdInjector: ActorRef,
+      name: String,
+      mode: RequestType,
+      answerTo: ActorRef,
+      cacheActor: ActorRef,
+      resolvers: List[ActorRef])
+      extends Actor
+      with ActorLogging {
+
+    private implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
+
+    private def failToResolve(): Unit =
+      answerWithFailure(AsyncDnsResolver.failToResolve(name, settings.NameServers))
+
+    private def answerWithFailure(ex: Throwable): Unit = answer(Status.Failure(ex))
+
+    private def answer(withMsg: Any): Unit = {
+      answerTo ! withMsg
+
+      context.stop(self)
+    }
+
+    // Not strictly necessary, since our parent checks this before spawning, but belt-and-suspenders
+    if (resolvers.isEmpty) {
+      failToResolve() // (vacuously) exhausted the resolvers
+      // fail fast
+      throw new IllegalArgumentException("resolvers should not be empty")
+    }
+
+    // the fully-qualified domain names (FQDNs), in the order we want to attempt for any given resolver
+    private val namesToResolve = {
+      val nameWithSearch = settings.SearchDomains.map(sd => s"${name}.${sd}")
+
+      // ndots is a heuristic used to attempt to work out if `name` is an FQDN or a name relative to a search
+      // name.  The goal is to not incur the cost of a lookup that's unlikely to resolve because we need to
+      // relativize it.  If the name being searched contains less than ndots dots, then we look it up last,
+      // rather than first.
+      if (name.count(_ == '.') >= settings.NDots) {
+        // assume fully-qualified, so try `name` first
+        (name :: nameWithSearch).map(Helpers.toRootLowerCase)
+      } else {
+        // assume relative, so try `name` last
+        (nameWithSearch :+ name).map(Helpers.toRootLowerCase)
+      }
+    }
+
+    // Don't expect a message until startResolution `become`s activelyResolving
+    override def receive: Receive = PartialFunction.empty
+    // safe, already verified that resolvers is non-empty
+    startResolution(namesToResolve, resolvers.head, resolvers.tail)
+
+    private def activelyResolving(
+        searchName: String,
+        resolver: ActorRef,
+        nextNamesToTry: List[String],
+        nextResolversToTry: List[ActorRef]): Receive = {
+      case resolved: DnsProtocol.Resolved =>
+        if (resolved.records.isEmpty) {
+          if (nextNamesToTry.nonEmpty) startResolution(nextNamesToTry, resolver, nextResolversToTry)
+          else handleResolved(resolved) // empty but successful response
+        } else {
+          handleResolved(resolved)
+        }
+
+      case Status.Failure(ex) =>
+        ex match {
+          case _: AskTimeoutException =>
+            log.info("Resolve of {} timed out after {}.  Trying next name server", searchName, timeout.duration.pretty)
+          case _ =>
+            log.info("Resolve of {} failed.  Trying next name server.  Exception: {}", name, ex.getMessage)
+        }
+
+        // failed, move on to next name server
+        if (nextResolversToTry.nonEmpty)
+          startResolution(namesToResolve, nextResolversToTry.head, nextResolversToTry.tail)
+        else failToResolve() // exhausted the resolvers
+    }
+
+    private def startResolution(
+        namesToTry: List[String],
+        resolverToUse: ActorRef,
+        fallbackResolvers: List[ActorRef]): Unit = {
+      if (namesToTry.nonEmpty) {
+        val searchName = namesToTry.head
+
+        log.debug("Attempting to resolve {} with {}", searchName, resolverToUse)
+
+        implicit val ec = context.dispatcher // for pipeTo
+        resolvedFut(searchName, resolverToUse).pipeTo(self)
+
+        context.become(activelyResolving(searchName, resolverToUse, namesToTry.tail, fallbackResolvers))
+      } else {
+        // shouldn't happen
+        log.warning("startResolution called with empty list of namesToTry")
+        failToResolve()
+      }
+    }
+
+    private def handleResolved(resolved: DnsProtocol.Resolved): Unit = {
+      if (resolved.records.nonEmpty) {
+        val minTtl = (settings.PositiveCachePolicy +: resolved.records.map(_.ttl)).min
+        cacheActor ! CachePut(name, mode, resolved, minTtl)
+      } else if (settings.NegativeCachePolicy != Never) {
+        cacheActor ! CachePut(name, mode, resolved, settings.NegativeCachePolicy)
+      }
+
+      log.debug("{} resolved {}", mode, resolved)
+
+      answer(resolved) // stops this actor
+    }
+
+    private def sendQuestion(resolver: ActorRef, inject: Short => DnsQuestion): Future[Answer] =
+      (requestIdInjector ? DnsQuestionPreInjection(resolver, inject, timeout)).mapTo[Answer]
+
+    private def resolvedFut(searchName: String, resolver: ActorRef): Future[DnsProtocol.Resolved] =
+      mode match {
+        case Ip(ipv4, ipv6) =>
+          val ipv4Recs =
+            if (ipv4) sendQuestion(resolver, requestId => Question4(requestId, searchName))
+            else Empty
+
+          val ipv6Recs =
+            if (ipv6) sendQuestion(resolver, requestId => Question6(requestId, searchName))
+            else Empty
+
+          ipv4Recs.flatMap { v4 =>
+            ipv6Recs.map { v6 =>
+              DnsProtocol.Resolved(searchName, v4.rrs ++ v6.rrs, v4.additionalRecs ++ v6.additionalRecs)
+            }(ExecutionContexts.parasitic)
+          }(ExecutionContexts.parasitic)
+
+        case Srv =>
+          sendQuestion(resolver, requestId => SrvQuestion(requestId, searchName)).map { answer =>
+            DnsProtocol.Resolved(searchName, answer.rrs, answer.additionalRecs)
+          }(ExecutionContexts.parasitic)
+      }
+  }
 }
