@@ -1,0 +1,10 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+
+# No need to enforce an editor config for Java/Scala files, as the build automatically styles
+[*.conf]
+indent_style = space
+indent_size = 2
