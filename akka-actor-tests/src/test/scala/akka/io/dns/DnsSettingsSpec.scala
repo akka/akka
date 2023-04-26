@@ -24,6 +24,7 @@ class DnsSettingsSpec extends AkkaSpec {
           ndots = 1
           positive-ttl = forever
           negative-ttl = never
+          id-strategy = ""
         """)
 
   "DNS settings" must {

@@ -1,0 +1,8 @@
+# All are internal API
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.internal.DnsClient#DropRequest.id")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.internal.DnsClient#DropRequest.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.internal.DnsClient#DropRequest.copy$default$1")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.internal.DnsClient#DropRequest.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.internal.DnsClient#DropRequest.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.io.dns.internal.DnsClient#DropRequest.unapply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.internal.DnsClient#DropRequest._1")

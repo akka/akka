@@ -7,8 +7,10 @@ package akka.io.dns.internal
 import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
 import scala.collection.immutable
+import scala.collection.mutable
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory, Props, Status }
 import akka.annotation.InternalApi
@@ -74,12 +76,14 @@ private[io] final class AsyncDnsResolver(
 
   private val resolvers: List[ActorRef] = clientFactory(context, nameServers)
 
-  private val requestIdInjector: ActorRef = context.actorOf(injectorProps, "requestIdInjector")
+  private val requestIdInjector: ActorRef = context.actorOf(injectorProps(settings), "requestIdInjector")
+
+  private val inflightRequests: mutable.Map[DnsProtocol.Resolve, Set[ActorRef]] = mutable.Map.empty
 
   // only supports DnsProtocol, not the deprecated Dns protocol
   // AsyncDnsManager converts between the protocols to support the deprecated protocol
   override def receive: Receive = {
-    case DnsProtocol.Resolve(name, mode) =>
+    case resolve @ DnsProtocol.Resolve(name, mode) =>
       cache.get((name, mode)) match {
         case Some(resolved) =>
           log.debug("{} cached {}", mode, resolved)
@@ -101,15 +105,29 @@ private[io] final class AsyncDnsResolver(
           } else if (resolvers.isEmpty) {
             sender() ! Status.Failure(failToResolve(name, nameServers))
           } else {
-            // spawn an actor to manage this resolution (apply search names, failover to other resolvers, etc.)
-            // this actor's parenting style is "don't care about the lifecycle of our children"
-            context.actorOf(
-              DnsResolutionActor.props(settings, requestIdInjector, name, mode, sender(), self, resolvers))
+            inflightRequests.get(resolve) match {
+              case Some(otherRequestors) =>
+                // Currently resolving this same question, so add to the waiting list
+                inflightRequests.update(resolve, otherRequestors + sender())
+
+              case None =>
+                // spawn an actor to manage this resolution (apply search names, failover to other resolvers, etc.)
+                context.actorOf(
+                  DnsResolutionActor.props(settings, requestIdInjector, resolve, sender(), self, resolvers))
+                inflightRequests += (resolve -> Set.empty)
+            }
           }
       }
 
-    case CachePut(name, mode, resolved, ttl) =>
-      cache.put(name -> mode, resolved, ttl)
+    case ResolutionFinished(resolve, resolved, ttl) =>
+      inflightRequests.get(resolve).foreach { requestors =>
+        requestors.foreach(_ ! resolved)
+      }
+      inflightRequests.remove(resolve)
+
+      ttl.foreach { t =>
+        cache.put(resolve.name -> resolve.requestType, resolved, t)
+      }
   }
 }
 
@@ -142,32 +160,89 @@ private[akka] object AsyncDnsResolver {
 
   case class ResolveFailedException(msg: String) extends Exception(msg)
 
-  private final case class CachePut(name: String, mode: RequestType, resolved: DnsProtocol.Resolved, ttl: CachePolicy)
+  // ttl is defined if this resolution should be cached
+  private final case class ResolutionFinished(
+      resolve: DnsProtocol.Resolve,
+      resolved: DnsProtocol.Resolved,
+      ttl: Option[CachePolicy])
 
+  // RequestIdInjector handles these
   private final case class DnsQuestionPreInjection(resolver: ActorRef, inject: Short => DnsQuestion, timeout: Timeout)
+  private final case class DidntDrop(id: Short)
 
-  private val injectorProps = Props(new RequestIdInjector())
+  private def injectorProps(settings: DnsSettings): Props = Props(new RequestIdInjector(settings.idGenerator))
+
+  // Drop the request if this many attempts to generate an id fail to find a definitely-safe id
+  val MaxIdGenerationAttempts: Int = 2 * Short.MaxValue.toInt - 1
 
   // tracks and injects a request ID before forwarding to the resolver
-  private class RequestIdInjector extends Actor {
-    private var requestId: Short = 0
 
-    private def nextId(): Short = {
-      requestId = (requestId + 1).toShort
-      requestId
-    }
+  private class RequestIdInjector(idGenerator: () => Short) extends Actor with ActorLogging {
+    // immutable set: Scala optimizes for the case where it's small
+    //  (since there isn't typically much request concurrency, this will tend to have 4 or fewer elements)
+    private var activeRequestIds: Set[Short] = Set.empty
+
+    private def generateCandidateId(): Short = idGenerator()
+
+    @annotation.tailrec
+    private def nextId(count: Int): Short =
+      if (count == MaxIdGenerationAttempts) {
+        throw new IllegalStateException(s"Too many DNS request IDs in use!  Made [$count] generation attempts.")
+      } else {
+        val requestId = generateCandidateId()
+
+        if (activeRequestIds.contains(requestId)) nextId(count + 1)
+        else requestId
+      }
 
     override def receive: Receive = {
       case DnsQuestionPreInjection(resolver, inject, timeout) =>
         implicit val tmout = timeout
-        val question = inject(nextId())
-        val forwardAnswerTo = sender()
-        val result = (resolver ? question).mapTo[Answer]
 
-        result.onComplete {
-          case Success(answer) => forwardAnswerTo ! answer
-          case Failure(_)      => resolver ! DropRequest(question.id)
-        }(ExecutionContexts.parasitic)
+        try {
+          val question = inject(nextId(count = 0))
+          val forwardAnswerTo = sender()
+          val result = (resolver ? question).mapTo[Answer]
+          activeRequestIds = activeRequestIds + question.id
+
+          result.onComplete {
+            case Success(answer) =>
+              // getting an answer implies that the id of our question is now free...
+              forwardAnswerTo ! answer
+              self ! Dropped(question.id)
+
+            case Failure(_) =>
+              implicit val ec = context.dispatcher // needed for pipeTo
+
+              (resolver ? DropRequest(question))
+                .mapTo[Dropped]
+                .recover {
+                  case _ => DidntDrop(question.id)
+                }
+                .pipeTo(self)
+          }(ExecutionContexts.parasitic)
+        } catch {
+          case NonFatal(ex) =>
+            log.warning(ex, "Not forwarding DNS question to resolver [{}]", resolver)
+        }
+
+      case Dropped(id) =>
+        // id is now free
+        activeRequestIds = activeRequestIds - id
+
+      case DidntDrop(id) =>
+        // only safe thing is to assume that this id is toxic for the rest of time
+        // note that if this is just a symptom of an overloaded resolver, assuming
+        //  toxicity is another way of introducing some backpressure by increasing
+        //  the time spent hunting for an id
+        //
+        // after 2^15 cumulative DidntDrop messages, the chance a resolution fails to find an id
+        // is then 1 in 2^(2^17) (assuming no ids are legitimately considered active)
+        log.warning(
+          "Cannot be sure that DNS request ID [{}] will ever be safe to use again. " +
+          "This is basically harmless but slightly increases the chance of future DNS " +
+          "resolution failures.",
+          id)
     }
   }
 
@@ -175,19 +250,17 @@ private[akka] object AsyncDnsResolver {
     def props(
         settings: DnsSettings,
         requestIdInjector: ActorRef,
-        name: String,
-        mode: RequestType,
+        resolve: DnsProtocol.Resolve,
         answerTo: ActorRef,
         cacheActor: ActorRef,
         resolvers: List[ActorRef]): Props =
-      Props(new DnsResolutionActor(settings, requestIdInjector, name, mode, answerTo, cacheActor, resolvers))
+      Props(new DnsResolutionActor(settings, requestIdInjector, resolve, answerTo, cacheActor, resolvers))
   }
 
   private class DnsResolutionActor(
       settings: DnsSettings,
       requestIdInjector: ActorRef,
-      name: String,
-      mode: RequestType,
+      resolve: DnsProtocol.Resolve,
       answerTo: ActorRef,
       cacheActor: ActorRef,
       resolvers: List[ActorRef])
@@ -206,6 +279,9 @@ private[akka] object AsyncDnsResolver {
 
       context.stop(self)
     }
+
+    private def name: String = resolve.name
+    private def mode: RequestType = resolve.requestType
 
     // Not strictly necessary, since our parent checks this before spawning, but belt-and-suspenders
     if (resolvers.isEmpty) {
@@ -284,16 +360,20 @@ private[akka] object AsyncDnsResolver {
     }
 
     private def handleResolved(resolved: DnsProtocol.Resolved): Unit = {
+      val resolve = DnsProtocol.Resolve(name, mode)
       if (resolved.records.nonEmpty) {
         val minTtl = (settings.PositiveCachePolicy +: resolved.records.map(_.ttl)).min
-        cacheActor ! CachePut(name, mode, resolved, minTtl)
+        cacheActor ! ResolutionFinished(resolve, resolved, Some(minTtl))
       } else if (settings.NegativeCachePolicy != Never) {
-        cacheActor ! CachePut(name, mode, resolved, settings.NegativeCachePolicy)
+        cacheActor ! ResolutionFinished(resolve, resolved, Some(settings.NegativeCachePolicy))
+      } else {
+        // don't cache anything, but a subsequent resolve will start another resolution process
+        cacheActor ! ResolutionFinished(resolve, resolved, None)
       }
 
       log.debug("{} resolved {}", mode, resolved)
 
-      answer(resolved) // stops this actor
+      answer(resolved)
     }
 
     private def sendQuestion(resolver: ActorRef, inject: Short => DnsQuestion): Future[Answer] =
