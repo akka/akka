@@ -114,7 +114,7 @@ private[io] final class AsyncDnsResolver(
                 // spawn an actor to manage this resolution (apply search names, failover to other resolvers, etc.)
                 context.actorOf(
                   DnsResolutionActor.props(settings, requestIdInjector, resolve, sender(), self, resolvers))
-                inflightRequests.addOne(resolve -> Set.empty)
+                inflightRequests += (resolve -> Set.empty)
             }
           }
       }
