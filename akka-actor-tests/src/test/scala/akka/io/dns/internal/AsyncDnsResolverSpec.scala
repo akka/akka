@@ -18,7 +18,6 @@ import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol._
 import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
-import akka.io.dns.internal.DnsClient
 import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
 import akka.testkit.{ AkkaSpec, TestActor, TestProbe, WithLogCapturing }
 
