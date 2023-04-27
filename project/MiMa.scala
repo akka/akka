@@ -16,7 +16,7 @@ object MiMa extends AutoPlugin {
   private val firstPatchOf26 = 6
   private val latestPatchOf26 = 20
   private val firstPatchOf28 = 0
-  private val latestPatchOf28 = 0
+  private val latestPatchOf28 = 1
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
