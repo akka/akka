@@ -1,5 +1,11 @@
 # Security Announcements
 
+@@@note
+
+Security announcements has moved to a shared page for all Akka projects and can now be found at [akka.io/security](https://akka.io/security)
+
+@@@
+
 ## Receiving Security Advisories
 
 The best way to receive any and all security announcements is to subscribe to the [Akka security list](https://groups.google.com/forum/#!forum/akka-security).
