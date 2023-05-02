@@ -757,9 +757,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
             case None =>
               import akka.pattern.pipe
               // easiest to just try again via JoinTo when the promise has been completed
-              val pipeMessage = promise.future
-                .map(_ => ClusterUserAction.JoinTo(address))
-                .recover(_ => ClusterUserAction.JoinTo(address))
+              val pipeMessage = promise.future.map(_ => ClusterUserAction.JoinTo(address)).recover {
+                case _ => ClusterUserAction.JoinTo(address)
+              }
               pipe(pipeMessage).to(self)
               None
           }
