@@ -759,8 +759,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
               logError("Can't join because later appVersion was completed with failure: {}", exc)
               None
             case None =>
-              logDebug("appVersion from setAppVersion Future is not completed yet. Will continue the join to " +
-                "[{}] when the appVersion Future has been completed.", address)
+              logDebug(
+                "appVersion from setAppVersion Future is not completed yet. Will continue the join to " +
+                "[{}] when the appVersion Future has been completed.",
+                address)
               import akka.pattern.pipe
               // easiest to just try again via JoinTo when the promise has been completed
               val pipeMessage = promise.future.map(_ => ClusterUserAction.JoinTo(address)).recover {
