@@ -747,14 +747,20 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       stopSeedNodeProcess()
 
       val appVersionOpt = laterAppVersion match {
-        case None => Some(cluster.settings.AppVersion)
+        case None =>
+          logDebug("Using appVersion [{}] from config.", cluster.settings.AppVersion)
+          Some(cluster.settings.AppVersion)
         case Some(promise) =>
           promise.future.value match {
-            case Some(Success(version)) => Some(version)
+            case Some(Success(version)) =>
+              logDebug("Using appVersion [{}] from completed setAppVersion Future.", version)
+              Some(version)
             case Some(Failure(exc)) =>
               logError("Can't join because later appVersion was completed with failure: {}", exc)
               None
             case None =>
+              logDebug("appVersion from setAppVersion Future is not completed yet. Will continue the join to " +
+                "[{}] when the appVersion Future has been completed.", address)
               import akka.pattern.pipe
               // easiest to just try again via JoinTo when the promise has been completed
               val pipeMessage = promise.future.map(_ => ClusterUserAction.JoinTo(address)).recover {
