@@ -4,7 +4,10 @@
 
 package akka.cluster.typed
 
+import java.util.concurrent.CompletionStage
+
 import scala.collection.immutable
+import scala.concurrent.Future
 
 import akka.actor.Address
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
@@ -14,6 +17,7 @@ import akka.cluster._
 import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
 import akka.cluster.typed.internal.AdapterClusterImpl
 import akka.japi.Util
+import akka.util.Version
 
 /**
  * Messages for subscribing to changes in the cluster state
@@ -116,6 +120,30 @@ final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends Cluste
    */
   def this(seedNodes: java.util.List[Address]) = this(Util.immutableSeq(seedNodes))
 
+}
+
+/**
+ * Scala API: If the `appVersion` is read from an external system (e.g. Kubernetes) it can be defined after
+ * system startup but before joining by completing the `appVersion` `Future`. In that case,
+ * `SetAppVersionLater` should be sent before [[Join]] or [[JoinSeedNodes]] It's fine to send
+ * `Join` or `JoinSeedNodes` immediately afterwards (before the `Future` is completed. The join will
+ * then wait for the `appVersion` to be completed.
+ */
+final case class SetAppVersionLater(appVersion: Future[Version]) extends ClusterCommand
+
+object SetAppVersionLater {
+
+  /**
+   * Java API: If the `appVersion` is read from an external system (e.g. Kubernetes) it can be defined after
+   * system startup but before joining by completing the `appVersion` `CompletionStage`. In that case,
+   * `SetAppVersionLater` should be sent before [[Join]] or [[JoinSeedNodes]] It's fine to send
+   * `Join` or `JoinSeedNodes` immediately afterwards (before the `CompletionStage` is completed. The join will
+   * then wait for the `appVersion` to be completed.
+   */
+  def create(appVersion: CompletionStage[Version]): SetAppVersionLater = {
+    import scala.compat.java8.FutureConverters._
+    SetAppVersionLater(appVersion.toScala)
+  }
 }
 
 /**

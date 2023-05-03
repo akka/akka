@@ -9,8 +9,10 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import scala.annotation.nowarn
+import scala.util.Failure
+import scala.util.Success
+
 import com.typesafe.config.Config
 
 import akka.Done
@@ -65,6 +67,19 @@ private[cluster] object ClusterUserAction {
    */
   @SerialVersionUID(1L)
   case object PrepareForShutdown extends ClusterMessage
+
+  /**
+   * The `appVersion` is defined after system startup but before joining.
+   * The `appVersion` is defined via the `SetAppVersion` message.
+   * Subsequent  `JoinTo` will be deferred until after `SetAppVersion` has been
+   * received.
+   */
+  case object SetAppVersionLater
+
+  /**
+   * Command to set the `appVersion` after system startup but before joining.
+   */
+  final case class SetAppVersion(appVersion: Version)
 }
 
 /**
@@ -383,6 +398,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
   var exitingConfirmed = Set.empty[UniqueAddress]
 
+  var laterAppVersion: Option[Promise[Version]] = None
+
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
    */
@@ -470,6 +487,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case JoinSeedNodes(newSeedNodes) =>
         resetJoinSeedNodesDeadline()
         joinSeedNodes(newSeedNodes)
+      case ClusterUserAction.SetAppVersionLater =>
+        setAppVersionLater()
+      case ClusterUserAction.SetAppVersion(version) =>
+        setAppVersion(version)
       case msg: SubscriptionMessage =>
         publisher.forward(msg)
       case Welcome(from, gossip) =>
@@ -493,6 +514,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         resetJoinSeedNodesDeadline()
         becomeUninitialized()
         joinSeedNodes(newSeedNodes)
+      case ClusterUserAction.SetAppVersionLater =>
+        setAppVersionLater()
+      case ClusterUserAction.SetAppVersion(version) =>
+        setAppVersion(version)
       case msg: SubscriptionMessage => publisher.forward(msg)
       case _: Tick =>
         if (joinSeedNodesDeadline.exists(_.isOverdue()))
@@ -504,6 +529,20 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           else join(joinWith)
         }
     }: Actor.Receive).orElse(receiveExitingCompleted)
+
+  private def setAppVersionLater(): Unit = {
+    laterAppVersion match {
+      case Some(_) => // already set, ignore duplicate
+      case None    => laterAppVersion = Some(Promise())
+    }
+  }
+
+  private def setAppVersion(version: Version): Unit = {
+    laterAppVersion match {
+      case Some(promise) => promise.trySuccess(version)
+      case None          => laterAppVersion = Some(Promise().success(version))
+    }
+  }
 
   private def resetJoinSeedNodesDeadline(): Unit = {
     joinSeedNodesDeadline = ShutdownAfterUnsuccessfulJoinSeedNodes match {
@@ -568,6 +607,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
       case JoinSeedNodes(nodes) =>
         logInfo("Trying to join seed nodes [{}] when already part of a cluster, ignoring", nodes.mkString(", "))
+      case ClusterUserAction.SetAppVersionLater =>
+        logInfo("Trying to set appVersion later when already part of a cluster, ignoring")
+      case ClusterUserAction.SetAppVersion(version) =>
+        logInfo("Trying to set appVersion [{}] when already part of a cluster, ignoring", version)
       case ExitingConfirmed(address) => receiveExitingConfirmed(address)
     }: Actor.Receive).orElse(receiveExitingCompleted)
 
@@ -703,17 +746,46 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       // to support manual join when joining to seed nodes is stuck (no seed nodes available)
       stopSeedNodeProcess()
 
-      if (address == selfAddress) {
-        becomeInitialized()
-        joining(selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
-      } else {
-        val joinDeadline = RetryUnsuccessfulJoinAfter match {
-          case d: FiniteDuration => Some(Deadline.now + d)
-          case _                 => None
+      val appVersionOpt = laterAppVersion match {
+        case None =>
+          logDebug("Using appVersion [{}] from config.", cluster.settings.AppVersion)
+          Some(cluster.settings.AppVersion)
+        case Some(promise) =>
+          promise.future.value match {
+            case Some(Success(version)) =>
+              logDebug("Using appVersion [{}] from completed setAppVersion Future.", version)
+              Some(version)
+            case Some(Failure(exc)) =>
+              logError("Can't join because later appVersion was completed with failure: {}", exc)
+              None
+            case None =>
+              logDebug(
+                "appVersion from setAppVersion Future is not completed yet. Will continue the join to " +
+                "[{}] when the appVersion Future has been completed.",
+                address)
+              import akka.pattern.pipe
+              // easiest to just try again via JoinTo when the promise has been completed
+              val pipeMessage = promise.future.map(_ => ClusterUserAction.JoinTo(address)).recover {
+                case _ => ClusterUserAction.JoinTo(address)
+              }
+              pipe(pipeMessage).to(self)
+              None
+          }
+      }
+
+      appVersionOpt.foreach { appVersion =>
+        if (address == selfAddress) {
+          becomeInitialized()
+          joining(selfUniqueAddress, cluster.selfRoles, appVersion)
+        } else {
+          val joinDeadline = RetryUnsuccessfulJoinAfter match {
+            case d: FiniteDuration => Some(Deadline.now + d)
+            case _                 => None
+          }
+          context.become(tryingToJoin(address, joinDeadline))
+          logDebug("Trying to join [{}]", address)
+          clusterCore(address) ! Join(selfUniqueAddress, cluster.selfRoles, appVersion)
         }
-        context.become(tryingToJoin(address, joinDeadline))
-        logDebug("Trying to join [{}]", address)
-        clusterCore(address) ! Join(selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
       }
     }
   }
@@ -734,6 +806,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * current gossip state, including the new joining member.
    */
   def joining(joiningNode: UniqueAddress, roles: Set[String], appVersion: Version): Unit = {
+    def isSelfAppVersionDefined = laterAppVersion match {
+      case None => true
+      case Some(promise) =>
+        promise.future.value match {
+          case None    => false
+          case Some(v) => v.isSuccess
+        }
+    }
+
     if (!preparingForShutdown) {
       val selfStatus = latestGossip.member(selfUniqueAddress).status
       if (joiningNode.address.protocol != selfAddress.protocol)
@@ -751,6 +832,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           "Trying to join [{}] to [{}] member, ignoring. Use a member that is Up instead.",
           joiningNode,
           selfStatus)
+      else if (laterAppVersion.nonEmpty && !isSelfAppVersionDefined)
+        logInfo(
+          "Trying to join [{}] but [{}] has not defined appVersion yet, ignoring. Try again later.",
+          joiningNode,
+          selfAddress)
       else {
         val localMembers = latestGossip.members
 
@@ -786,10 +872,16 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
             // add joining node as Joining
             // add self in case someone else joins before self has joined (Set discards duplicates)
+            val selfAppVersion = laterAppVersion match {
+              case None          => cluster.settings.AppVersion
+              case Some(promise) =>
+                // promise is known to be completed, checked above
+                promise.future.value.get.get
+            }
             val newMembers = localMembers + Member(joiningNode, roles, appVersion) + Member(
                 selfUniqueAddress,
                 cluster.selfRoles,
-                cluster.settings.AppVersion)
+                selfAppVersion)
             val newGossip = latestGossip.copy(members = newMembers)
 
             updateLatestGossip(newGossip)

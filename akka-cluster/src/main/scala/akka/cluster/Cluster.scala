@@ -5,6 +5,7 @@
 package akka.cluster
 
 import java.io.Closeable
+import java.util.concurrent.CompletionStage
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -13,8 +14,11 @@ import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import scala.annotation.nowarn
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.ConfigurationException
@@ -29,6 +33,7 @@ import akka.event.MarkerLoggingAdapter
 import akka.japi.Util
 import akka.pattern._
 import akka.remote.{ UniqueAddress => _, _ }
+import akka.util.Version
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -358,6 +363,37 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   def joinSeedNodes(seedNodes: java.util.List[Address]): Unit =
     joinSeedNodes(Util.immutableSeq(seedNodes))
+
+  /**
+   * Scala API: If the `appVersion` is read from an external system (e.g. Kubernetes) it can be defined after
+   * system startup but before joining by completing the `appVersion` `Future`. In that case, `setAppVersionLater`
+   * should be called before calling `join` or `joinSeedNodes`. It's fine to call `join` or `joinSeedNodes`
+   * immediately afterwards (before the `Future` is completed. The join will then wait for the `appVersion`
+   * to be completed.
+   */
+  def setAppVersionLater(appVersion: Future[Version]): Unit = {
+    clusterCore ! ClusterUserAction.SetAppVersionLater
+    import system.dispatcher
+    appVersion.onComplete {
+      case Success(version) =>
+        clusterCore ! ClusterUserAction.SetAppVersion(version)
+      case Failure(exc) =>
+        logWarning("Later appVersion failed. Fallback to configured appVersion [{}]. {}", settings.AppVersion, exc)
+        clusterCore ! ClusterUserAction.SetAppVersion(settings.AppVersion)
+    }
+  }
+
+  /**
+   * Java API: If the `appVersion` is read from an external system (e.g. Kubernetes) it can be defined after
+   * system startup but before joining by completing the `appVersion` `CompletionStage`. In that case,
+   * `setAppVersionLater` should be called before calling `join` or `joinSeedNodes`. It's fine to call
+   * `join` or `joinSeedNodes` immediately afterwards (before the `CompletionStage` is completed. The join will
+   * then wait for the `appVersion` to be completed.
+   */
+  def setAppVersionLater(appVersion: CompletionStage[Version]): Unit = {
+    import scala.compat.java8.FutureConverters._
+    setAppVersionLater(appVersion.toScala)
+  }
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
