@@ -70,6 +70,7 @@ object StyleGuideDocExamples {
     object Counter {
       sealed trait Command
       case object Increment extends Command
+      case object Decrement extends Command
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
 
@@ -79,18 +80,37 @@ object StyleGuideDocExamples {
     }
 
     class Counter(context: ActorContext[Counter.Command]) extends AbstractBehavior[Counter.Command](context) {
+
       import Counter._
 
       private var n = 0
+
+      private def withDecrement(ctx: ActorContext[Counter.Command], msg: Command): Behavior[Counter.Command] = {
+        msg match {
+          case Decrement =>
+            n -= 1
+            context.log.info("Decremented counter to [{}]", n)
+            this
+          case other => onMessage(other)
+        }
+      }
 
       override def onMessage(msg: Command): Behavior[Counter.Command] = {
         msg match {
           case Increment =>
             n += 1
-            context.log.debug("Incremented counter to [{}]", n)
-            this
+            context.log.info("Incremented counter to [{}]", n)
+            if (n == 5) {
+              context.log.info("Now with decrement [{}]", n)
+              Behaviors.receive(withDecrement)
+            } else {
+              this
+            }
           case GetValue(replyTo) =>
             replyTo ! Value(n)
+            this
+          case other =>
+            context.log.info(s"$other is not supported")
             this
         }
       }
