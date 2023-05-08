@@ -399,9 +399,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                     case _: NoSuchMethodException =>
                       if (bindingName == "") {
                         // compatibility with (public) serializerOf method without bindingName
-                        throw new NoSuchMethodException(
-                          s"The serializer [$fqn] doesn't have a matching constructor, " +
-                          s"see API documentation of ${classOf[Serializer].getName}")
+                        throw new NoSuchMethodException(s"The serializer [$fqn] doesn't have a matching constructor, " +
+                        s"see API documentation of ${classOf[Serializer].getName}")
                       } else
                         system.dynamicAccess
                           .createInstanceFor[Serializer](

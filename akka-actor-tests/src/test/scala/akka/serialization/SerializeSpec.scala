@@ -686,11 +686,13 @@ private[akka] class Constructor4Serializer extends ConstructorSerializer {
   override def identifier = 100004
 }
 
-private[akka] class Constructor5Serializer(@unused system: ExtendedActorSystem, @unused binding: String) extends ConstructorSerializer {
+private[akka] class Constructor5Serializer(@unused system: ExtendedActorSystem, @unused binding: String)
+    extends ConstructorSerializer {
   override def identifier = 100005
 }
 
-private[akka] class Constructor6Serializer(@unused system: ActorSystem, @unused binding: String) extends ConstructorSerializer {
+private[akka] class Constructor6Serializer(@unused system: ActorSystem, @unused binding: String)
+    extends ConstructorSerializer {
   override def identifier = 100006
 }
 
