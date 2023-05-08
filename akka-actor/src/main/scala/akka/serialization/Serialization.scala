@@ -389,13 +389,38 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
 
     system.dynamicAccess.createInstanceFor[Serializer](fqn, List(classOf[ExtendedActorSystem] -> system)).recoverWith {
       case _: NoSuchMethodException =>
-        system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil).recoverWith {
-          case e: NoSuchMethodException =>
-            if (bindingName == "") throw e // compatibility with (public) serializerOf method without bindingName
-            else
-              system.dynamicAccess.createInstanceFor[Serializer](
-                fqn,
-                List(classOf[ExtendedActorSystem] -> system, classOf[String] -> bindingName))
+        system.dynamicAccess.createInstanceFor[Serializer](fqn, List(classOf[ActorSystem] -> system)).recoverWith {
+          case _: NoSuchMethodException =>
+            system.dynamicAccess
+              .createInstanceFor[Serializer](fqn, List(classOf[ClassicActorSystemProvider] -> system))
+              .recoverWith {
+                case _: NoSuchMethodException =>
+                  system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil).recoverWith {
+                    case e: NoSuchMethodException =>
+                      if (bindingName == "")
+                        throw e // compatibility with (public) serializerOf method without bindingName
+                      else
+                        system.dynamicAccess
+                          .createInstanceFor[Serializer](
+                            fqn,
+                            List(classOf[ExtendedActorSystem] -> system, classOf[String] -> bindingName))
+                          .recoverWith {
+                            case _: NoSuchMethodException =>
+                              system.dynamicAccess
+                                .createInstanceFor[Serializer](
+                                  fqn,
+                                  List(classOf[ActorSystem] -> system, classOf[String] -> bindingName))
+                                .recoverWith {
+                                  case _: NoSuchMethodException =>
+                                    system.dynamicAccess.createInstanceFor[Serializer](
+                                      fqn,
+                                      List(
+                                        classOf[ClassicActorSystemProvider] -> system,
+                                        classOf[String] -> bindingName))
+                                }
+                          }
+                  }
+              }
         }
     }
   }
