@@ -396,10 +396,13 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
               .recoverWith {
                 case _: NoSuchMethodException =>
                   system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil).recoverWith {
-                    case e: NoSuchMethodException =>
-                      if (bindingName == "")
-                        throw e // compatibility with (public) serializerOf method without bindingName
-                      else
+                    case _: NoSuchMethodException =>
+                      if (bindingName == "") {
+                        // compatibility with (public) serializerOf method without bindingName
+                        throw new NoSuchMethodException(
+                          s"The serializer [$fqn] doesn't have a matching constructor, " +
+                          s"see API documentation of ${classOf[Serializer].getName}")
+                      } else
                         system.dynamicAccess
                           .createInstanceFor[Serializer](
                             fqn,
@@ -412,11 +415,18 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                                   List(classOf[ActorSystem] -> system, classOf[String] -> bindingName))
                                 .recoverWith {
                                   case _: NoSuchMethodException =>
-                                    system.dynamicAccess.createInstanceFor[Serializer](
-                                      fqn,
-                                      List(
-                                        classOf[ClassicActorSystemProvider] -> system,
-                                        classOf[String] -> bindingName))
+                                    system.dynamicAccess
+                                      .createInstanceFor[Serializer](
+                                        fqn,
+                                        List(
+                                          classOf[ClassicActorSystemProvider] -> system,
+                                          classOf[String] -> bindingName))
+                                      .recoverWith {
+                                        case _: NoSuchMethodException =>
+                                          Failure(new NoSuchMethodException(
+                                            s"The serializer [$fqn] for binding [$bindingName] doesn't have a matching " +
+                                            s"constructor, see API documentation of ${classOf[Serializer].getName}"))
+                                      }
                                 }
                           }
                   }
