@@ -97,6 +97,7 @@ private[akka] object ShardedDaemonProcessState {
                 context.log.infoN(
                   "{}: Starting Sharded Daemon Process [{}] out of a total [{}] (revision [{}])",
                   sdpContext.name,
+                  sdpContext.processNumber,
                   sdpContext.totalProcesses,
                   revision)
                 behaviorFactory(sdpContext).unsafeCast
@@ -115,6 +116,7 @@ private[akka] object ShardedDaemonProcessState {
                 context.log.infoN(
                   "{}: Starting Sharded Daemon Process [{}] out of a total [{}] (revision [{}] and no state found)",
                   sdpContext.name,
+                  sdpContext.processNumber,
                   sdpContext.totalProcesses,
                   revision)
                 behaviorFactory(sdpContext).unsafeCast
