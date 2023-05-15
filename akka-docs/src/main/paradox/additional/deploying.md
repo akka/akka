@@ -19,8 +19,9 @@ to see what this looks like in practice.
 
 ### Rolling updates
 
-Enable the @extref:[Kubernetes Rolling Updates feature from Akka Management](akka-management:rolling-updates.html)
-for smooth rolling updates.
+Enable the @extref:[Kubernetes Rolling Updates](akka-management:rolling-updates.html#kubernetes-rolling-updates)
+and @extref:[app-version from Deployment](akka-management:rolling-updates.html#app-version-from-deployment)
+features from Akka Management for smooth rolling updates.
  
 ### Resource limits
 
