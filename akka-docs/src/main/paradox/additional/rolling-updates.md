@@ -58,6 +58,10 @@ akka.cluster.app-version = 1.2.3
 To understand which is old and new it compares the version numbers using normal conventions,
 see @apidoc[akka.util.Version] for more details.
 
+When using [Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) with `RollingUpdate`
+strategy you should enable the @extref:[app-version from Deployment feature from Akka Management](akka-management:rolling-updates.html#app-version-from-deployment)
+to automatically define the `app-version` from the Kubernetes `deployment.kubernetes.io/revision` annotation.
+
 Rebalance is also disabled during rolling updates, since shards from stopped nodes are anyway supposed to be
 started on new nodes. Messages to shards that were stopped on the old nodes will allocate corresponding shards
 on the new nodes, without waiting for rebalance actions. 
@@ -79,7 +83,7 @@ Otherwise, in the worst case cluster singletons may be migrated from node to nod
 overhead several times.
 
 When using [Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) with `RollingUpdate`
-strategy you should enable the @extref:[Kubernetes Rolling Updates feature from Akka Management](akka-management:rolling-updates.html)
+strategy you should enable the @extref:[Kubernetes Rolling Updates feature from Akka Management](akka-management:rolling-updates.html#kubernetes-rolling-updates)
 to delete pods in the preferred order.
 
 ## Cluster Shutdown
