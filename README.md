@@ -1,4 +1,4 @@
-Akka [![Latest version](https://index.scala-lang.org/akka/akka/akka-actor/latest.svg)](https://index.scala-lang.org/akka/akka/akka-actor)[![Build status](https://github.com/akka/akka/actions/workflows/publish.yml/badge.svg)](https://github.com/akka/akka/actions/workflows/publish.yml)
+Akka [![Latest version](https://index.scala-lang.org/akka/akka/akka-actor/latest.svg)](https://index.scala-lang.org/akka/akka/akka-actor)
 ====
 
 We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
