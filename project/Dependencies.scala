@@ -42,9 +42,9 @@ object Dependencies {
 
   val scalaTestVersion = "3.2.16"
 
-  val scalaTestScalaCheckVersion = "1-16"
+  val scalaTestScalaCheckVersion = "1-17"
 
-  val scalaCheckVersion = "1.15.4"
+  val scalaCheckVersion = "1.17.0"
 
   val Versions =
     Seq(crossScalaVersions := allScalaVersions, scalaVersion := allScalaVersions.head, java8CompatVersion := {
@@ -122,10 +122,13 @@ object Dependencies {
       // The 'scalaTestPlus' projects are independently versioned,
       // but the version of each module starts with the scalatest
       // version it was intended to work with
+      // Used for the Junit Suite - running Junit tests from scalatest
       val scalatestJUnit = "org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % Test // ApacheV2
+      // Used for running the streams TCK which is testng based
       val scalatestTestNG = "org.scalatestplus" %% "testng-7-5" % (scalaTestVersion + ".0") % Test // ApacheV2
       val scalatestScalaCheck = "org.scalatestplus" %% s"scalacheck-$scalaTestScalaCheckVersion" % (scalaTestVersion + ".0") % Test // ApacheV2
-      val scalatestMockito = "org.scalatestplus" %% "mockito-4-5" % (scalaTestVersion + ".0") % Test // ApacheV2
+      // Used in one place in cluster metrics, but we can't get away without mockito because of a package private constructor
+      val scalatestMockito = "org.scalatestplus" %% "mockito-4-11" % (scalaTestVersion + ".0") % Test // ApacheV2
 
       val log4j = "log4j" % "log4j" % "1.2.17" % Test // ApacheV2
 
