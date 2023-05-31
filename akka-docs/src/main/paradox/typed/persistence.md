@@ -45,17 +45,6 @@ The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/ak
 is a good starting point for learning Event Sourcing, together with the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) 
 that illustrates how to implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
 
-@@@ note
-
-The General Data Protection Regulation (GDPR) requires that personal information must be deleted at the request of users.
-Deleting or modifying events that carry personal information would be difficult. Data shredding can be used to forget
-information instead of deleting or modifying it. This is achieved by encrypting the data with a key for a given data
-subject id (person) and deleting the key when that data subject is to be forgotten. Lightbend's
-[GDPR for Akka Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
-provides tools to facilitate in building GDPR capable systems.
-
-@@@
-
 ### Event Sourcing concepts
 
 See an [introduction to Event Sourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559%28v=pandp.10%29) at MSDN.

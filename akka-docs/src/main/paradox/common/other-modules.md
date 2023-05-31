@@ -46,15 +46,10 @@ An Akka Persistence journal and snapshot store for use with R2DBC-compatible dat
 * @extref:[Akka Discovery for Kubernetes, Consul, Marathon, and AWS](akka-management:discovery/)
 * @extref:[Kubernetes Lease](akka-management:kubernetes-lease.html)
 
-## Akka Resilience Enhancements
+## Akka Diagnostics
 
-* [Akka Thread Starvation Detector](https://doc.akka.io/docs/akka-enhancements/current/starvation-detector.html)
-* [Akka Configuration Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html)
-* [Akka Diagnostics Recorder](https://doc.akka.io/docs/akka-enhancements/current/diagnostics-recorder.html)
-
-## Akka Persistence Enhancements
-
-* [Akka GDPR for Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
+* [Akka Thread Starvation Detector](https://doc.akka.io/docs/akka-diagnostics/current/starvation-detector.html)
+* [Akka Configuration Checker](https://doc.akka.io/docs/akka-diagnostics/current/config-checker.html)
 
 ## Community Projects
 
