@@ -9,13 +9,15 @@ import java.time.{Duration => JDuration}
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import com.typesafe.config.Config
+
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.actor.Cancellable
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
@@ -45,12 +47,16 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.StageLogging
+import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
+import akka.util.unused
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object EventsBySliceFirehose extends ExtensionId[EventsBySliceFirehose] with ExtensionIdProvider {
+@InternalApi private[akka] object EventsBySliceFirehose
+    extends ExtensionId[EventsBySliceFirehose]
+    with ExtensionIdProvider {
 
   override def get(system: ActorSystem): EventsBySliceFirehose = super.get(system)
 
@@ -61,9 +67,37 @@ import akka.util.OptionVal
   override def createExtension(system: ExtendedActorSystem): EventsBySliceFirehose =
     new EventsBySliceFirehose(system)
 
+  object Settings {
+    def apply(system: ActorSystem, pluginId: String): Settings =
+      apply(system.settings.config.getConfig(pluginId))
+
+    def apply(config: Config): Settings =
+      Settings(
+        delegateQueryPluginId = config.getString("delegate-query-plugin-id"),
+        broadcastBufferSize = config.getInt("broadcast-buffer-size"),
+        firehoseLingerTimeout = config.getDuration("firehose-linger-timeout").asScala,
+        catchupOverlap = config.getDuration("catchup-overlap"),
+        slowConsumerReaperInterval = config.getDuration("slow-consumer-reaper-interval").asScala,
+        slowConsumerBehindThreshold = config.getDuration("slow-consumer-behind-threshold"),
+        abortSlowConsumerAfter = config.getDuration("abort-slow-consumer-after"))
+  }
+
+  final case class Settings(
+      delegateQueryPluginId: String,
+      broadcastBufferSize: Int,
+      firehoseLingerTimeout: FiniteDuration,
+      catchupOverlap: JDuration,
+      slowConsumerReaperInterval: FiniteDuration,
+      slowConsumerBehindThreshold: JDuration,
+      abortSlowConsumerAfter: JDuration) {
+    require(
+      delegateQueryPluginId != null && delegateQueryPluginId.nonEmpty,
+      "Configuration of delegate-query-plugin-id must defined.")
+  }
+
   final class SlowConsumerException(message: String) extends RuntimeException(message) with NoStackTrace
 
-  final case class FirehoseKey(entityType: String, sliceRange: Range)
+  final case class FirehoseKey(pluginId: String, entityType: String, sliceRange: Range)
 
   final case class ConsumerTracking(
       consumerId: String,
@@ -74,6 +108,7 @@ import akka.util.OptionVal
 
   final class Firehose(
       val firehoseKey: FirehoseKey,
+      val settings: Settings,
       val firehoseHub: Source[EventEnvelope[Any], NotUsed],
       firehoseKillSwitch: KillSwitch,
       log: LoggingAdapter) {
@@ -142,8 +177,7 @@ import akka.util.OptionVal
         val slowConsumers = consumerTrackingValues.collect {
           case t
               if t.firehoseOnly &&
-              isDurationGreaterThan(t.timestamp, fastestConsumer.timestamp, JDuration.ofSeconds(5)) // FIXME config
-              =>
+              isDurationGreaterThan(t.timestamp, fastestConsumer.timestamp, settings.slowConsumerBehindThreshold) =>
             t.consumerId -> t
         }.toMap
 
@@ -193,7 +227,7 @@ import akka.util.OptionVal
           tracking.slowConsumerCandidate match {
             case None => false
             case Some(detectedTimestamp) =>
-              isDurationGreaterThan(detectedTimestamp, now, JDuration.ofSeconds(3)) // FIXME config
+              isDurationGreaterThan(detectedTimestamp, now, settings.abortSlowConsumerAfter)
           }
         }
 
@@ -248,27 +282,17 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka]  class EventsBySliceFirehose(system: ActorSystem) extends Extension {
+@InternalApi private[akka] class EventsBySliceFirehose(system: ActorSystem) extends Extension {
   import EventsBySliceFirehose._
   private val log = Logging(system, classOf[EventsBySliceFirehose])
   private val firehoses = new ConcurrentHashMap[FirehoseKey, Firehose]()
 
-  // FIXME config
-  system.scheduler.scheduleWithFixedDelay(2.seconds, 2.seconds) { () =>
-    import akka.util.ccompat.JavaConverters._
-    firehoses.values().asScala.foreach { firehose =>
-      if (!firehose.isShutdown)
-        firehose.detectSlowConsumers(Instant.now)
-    }
-  }(system.dispatcher)
-
-  @tailrec final def getFirehose(entityType: String, sliceRange: Range): Firehose = {
-    val key = FirehoseKey(entityType, sliceRange)
-    val firehose = firehoses.computeIfAbsent(key, key => createFirehose(key))
+  @tailrec final def getFirehose(firehoseKey: FirehoseKey): Firehose = {
+    val firehose = firehoses.computeIfAbsent(firehoseKey, key => createFirehose(key))
     if (firehose.isShutdown) {
       // concurrency race condition, but it should be removed
-      firehoses.remove(key, firehose)
-      getFirehose(entityType, sliceRange) // try again
+      firehoses.remove(firehoseKey, firehose)
+      getFirehose(firehoseKey) // try again
     } else
       firehose
   }
@@ -278,46 +302,63 @@ import akka.util.OptionVal
 
     log.debug("Create firehose entityType [{}], sliceRange [{}]", key.entityType, key.sliceRange)
 
-    val bufferSize = 256 // FIXME config
+    val settings = Settings(sys, key.pluginId)
 
     val firehoseKillSwitch = KillSwitches.shared("firehoseKillSwitch")
 
-    val firehoseHub =
-      eventsBySlices[Any](
+    val firehoseHub: Source[EventEnvelope[Any], NotUsed] =
+      underlyingEventsBySlices[Any](
+        settings.delegateQueryPluginId,
         key.entityType,
         key.sliceRange.min,
         key.sliceRange.max,
         TimestampOffset(Instant.now(), Map.empty),
-        firehose = true).via(firehoseKillSwitch.flow).runWith(BroadcastHub.sink[EventEnvelope[Any]](bufferSize))
+        firehose = true)
+        .via(firehoseKillSwitch.flow)
+        .runWith(BroadcastHub.sink[EventEnvelope[Any]](settings.broadcastBufferSize))
 
-    // FIXME hub will be closed when last consumer is closed, need to detect that and start again (difficult concurrency)?
+    val firehose = new Firehose(key, settings, firehoseHub, firehoseKillSwitch, log)
 
-    new Firehose(key, firehoseHub, firehoseKillSwitch, log)
+    val reaperInterval = settings.slowConsumerReaperInterval
+    // var because it is used inside the scheduled block to cancel itself
+    var reaperTask: Cancellable = null
+    reaperTask = system.scheduler.scheduleWithFixedDelay(reaperInterval, reaperInterval) { () =>
+      if (reaperTask == null)
+        () // theoretical possibility but would only mean that the first tick is ignored
+      else if (firehose.isShutdown)
+        reaperTask.cancel()
+      else
+        firehose.detectSlowConsumers(Instant.now)
+    }(system.dispatcher)
+
+    firehose
   }
 
   def eventsBySlices[Event](
+      pluginId: String,
       entityType: String,
       minSlice: Int,
       maxSlice: Int,
       offset: Offset): Source[EventEnvelope[Event], NotUsed] = {
     val sliceRange = minSlice to maxSlice
-    val firehose = getFirehose(entityType, sliceRange)
+    val firehoseKey = FirehoseKey(pluginId, entityType, sliceRange)
+    val firehose = getFirehose(firehoseKey)
+    val settings = firehose.settings
     val consumerId = UUID.randomUUID().toString
 
     def consumerTerminated(): Unit = {
       if (firehose.consumerTerminated(consumerId) == 0) {
         // Don't shutdown firehose immediately because Projection it should survive Projection restart
-        system.scheduler.scheduleOnce(2.seconds) {
-          // FIXME config ^
+        system.scheduler.scheduleOnce(settings.firehoseLingerTimeout) {
           if (firehose.shutdownFirehoseIfNoConsumers())
-            firehoses.remove(FirehoseKey(entityType, sliceRange))
+            firehoses.remove(firehoseKey)
         }(system.dispatcher)
       }
     }
 
     val catchupKillSwitch = KillSwitches.shared("catchupKillSwitch")
     val catchupSource =
-      eventsBySlices[Any](entityType, minSlice, maxSlice, offset, firehose = false).via(catchupKillSwitch.flow)
+      underlyingEventsBySlices[Any](settings.delegateQueryPluginId, entityType, minSlice, maxSlice, offset, firehose = false).via(catchupKillSwitch.flow)
 
     val consumerKillSwitch = KillSwitches.shared("consumerKillSwitch")
 
@@ -350,16 +391,15 @@ import akka.util.OptionVal
   }
 
   // can be overridden in tests
-  @nowarn("msg=never used") // firehose param used in tests
-  protected def eventsBySlices[Event](
+  protected def underlyingEventsBySlices[Event](
+    pluginId: String,
       entityType: String,
       minSlice: Int,
       maxSlice: Int,
       offset: Offset,
-      firehose: Boolean): Source[EventEnvelope[Event], NotUsed] = {
-    val queryPluginId = "akka.persistence.r2dbc.query"
+      @unused firehose: Boolean): Source[EventEnvelope[Event], NotUsed] = {
     PersistenceQuery(system)
-      .readJournalFor[EventsBySliceQuery](queryPluginId)
+      .readJournalFor[EventsBySliceQuery](pluginId)
       .eventsBySlices(entityType, minSlice, maxSlice, offset)
   }
 
@@ -378,7 +418,10 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class CatchupOrFirehose(consumerId: String, firehose: EventsBySliceFirehose.Firehose, catchupKillSwitch: KillSwitch)
+@InternalApi private[akka] class CatchupOrFirehose(
+    consumerId: String,
+    firehose: EventsBySliceFirehose.Firehose,
+    catchupKillSwitch: KillSwitch)
     extends GraphStage[FanInShape2[EventEnvelope[Any], EventEnvelope[Any], EventEnvelope[Any]]] {
   import CatchupOrFirehose._
   import EventsBySliceFirehose.isDurationGreaterThan
@@ -391,6 +434,7 @@ import akka.util.OptionVal
   val firehoseInlet: Inlet[EventEnvelope[Any]] = shape.in0
   val catchupInlet: Inlet[EventEnvelope[Any]] = shape.in1
 
+  private def settings = firehose.settings
   private def entityType = firehose.firehoseKey.entityType
   private def sliceRange = firehose.firehoseKey.sliceRange
 
@@ -439,7 +483,7 @@ import akka.util.OptionVal
               if (log.isDebugEnabled) // FIXME trace
                 log.debug(
                   s"Firehose entityType [$entityType] sliceRange [$sliceRange] consumer [$consumerId] push from " +
-                    s"catchup [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
+                  s"catchup [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
               push(out, env)
               true
             case _ =>
@@ -546,9 +590,8 @@ import akka.util.OptionVal
               // don't look at pub-sub or backtracking events
               if (env.source == "") {
                 val timestamp = timestampOffset(env).timestamp
-                if (isDurationGreaterThan(caughtUpTimestamp, timestamp, JDuration.ofSeconds(10))) {
+                if (isDurationGreaterThan(caughtUpTimestamp, timestamp, settings.catchupOverlap)) {
                   firehose.updateConsumerFirehoseOnly(consumerId)
-                  // FIXME config duration ^
                   log.debug(
                     "Firehose entityType [{}] sliceRange [{}] consumer [{}] switching to firehose only [{}]",
                     entityType,

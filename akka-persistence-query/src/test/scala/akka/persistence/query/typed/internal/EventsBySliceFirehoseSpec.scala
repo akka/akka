@@ -4,13 +4,14 @@
 
 package akka.persistence.query.typed.internal
 
-import java.time.{Duration => JDuration}
+import java.time.{ Duration => JDuration }
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
 import akka.NotUsed
@@ -21,7 +22,9 @@ import akka.persistence.query.Offset
 import akka.persistence.query.TestClock
 import akka.persistence.query.TimestampOffset
 import akka.persistence.query.typed.EventEnvelope
+import akka.persistence.query.typed.internal.EventsBySliceFirehose.FirehoseKey
 import akka.persistence.query.typed.internal.EventsBySliceFirehose.SlowConsumerException
+import akka.persistence.query.typed.scaladsl.EventsBySliceFirehoseReadJournal
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
@@ -36,9 +39,21 @@ object EventsBySliceFirehoseSpec {
   final case class PersistenceId(entityTypeHint: String, entityId: String) {
     def id: String = s"$entityTypeHint|$entityId"
   }
+
+  private val config = ConfigFactory.parseString("""
+  akka.persistence.query.events-by-slice-firehose {
+    # test-query-plugin is not used by this test, but must be defined
+    delegate-query-plugin-id = test-query-plugin
+
+    firehose-linger-timeout = 2s
+
+    # disable reaper in this test, will be triggered by code
+    slow-consumer-reaper-interval = 1 day
+  }
+  """)
 }
 
-class EventsBySliceFirehoseSpec extends AkkaSpec with Eventually {
+class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.config) with Eventually {
   import EventsBySliceFirehoseSpec._
 
   private val entityType = "EntityA"
@@ -81,15 +96,19 @@ class EventsBySliceFirehoseSpec extends AkkaSpec with Eventually {
     class ConsumerSetup {
       private val catchupPublisherPromise = Promise[TestPublisher.Probe[EventEnvelope[Any]]]()
       val catchupSource: Source[EventEnvelope[Any], NotUsed] =
-        TestSource[EventEnvelope[Any]]()
-          .mapMaterializedValue { probe =>
-            catchupPublisherPromise.success(probe)
-            NotUsed
-          }
+        TestSource[EventEnvelope[Any]]().mapMaterializedValue { probe =>
+          catchupPublisherPromise.success(probe)
+          NotUsed
+        }
 
       lazy val outProbe =
         eventsBySliceFirehose
-          .eventsBySlices[Any](entityType, sliceRange.min, sliceRange.max, NoOffset)
+          .eventsBySlices[Any](
+            EventsBySliceFirehoseReadJournal.Identifier,
+            entityType,
+            sliceRange.min,
+            sliceRange.max,
+            NoOffset)
           .runWith(TestSink())
 
       lazy val catchupPublisher = {
@@ -111,18 +130,17 @@ class EventsBySliceFirehoseSpec extends AkkaSpec with Eventually {
     val firehoseRunning = new AtomicBoolean
     private val firehosePublisherPromise = Promise[TestPublisher.Probe[EventEnvelope[Any]]]()
     private val firehoseSource: Source[EventEnvelope[Any], NotUsed] =
-      TestSource[EventEnvelope[Any]]()
-        .watchTermination()(Keep.both)
-        .mapMaterializedValue {
-          case (probe, termination) =>
-            firehoseRunning.set(true)
-            termination.onComplete(_ => firehoseRunning.set(false))(ExecutionContexts.parasitic)
-            firehosePublisherPromise.success(probe)
-            NotUsed
-        }
+      TestSource[EventEnvelope[Any]]().watchTermination()(Keep.both).mapMaterializedValue {
+        case (probe, termination) =>
+          firehoseRunning.set(true)
+          termination.onComplete(_ => firehoseRunning.set(false))(ExecutionContexts.parasitic)
+          firehosePublisherPromise.success(probe)
+          NotUsed
+      }
 
     val eventsBySliceFirehose = new EventsBySliceFirehose(system.classicSystem) {
-      override protected def eventsBySlices[Event](
+      override protected def underlyingEventsBySlices[Event](
+          pluginId: String,
           entityType: String,
           minSlice: Int,
           maxSlice: Int,
@@ -200,7 +218,8 @@ class EventsBySliceFirehoseSpec extends AkkaSpec with Eventually {
       outProbe(0).expectNext(allEnvelopes(1))
       outProbe(1).expectNext(allEnvelopes(1))
 
-      val firehose = eventsBySliceFirehose.getFirehose(entityType, sliceRange)
+      val firehose = eventsBySliceFirehose.getFirehose(
+        FirehoseKey(EventsBySliceFirehoseReadJournal.Identifier, entityType, sliceRange))
       firehose.consumerTracking.size shouldBe 2
       import akka.util.ccompat.JavaConverters._
       firehose.consumerTracking.values.asScala.foreach { tracking =>
@@ -256,8 +275,8 @@ class EventsBySliceFirehoseSpec extends AkkaSpec with Eventually {
       outProbe(0).request(100)
       moreEnvelopes.foreach(firehosePublisher.sendNext)
       outProbe(0).expectNextN(moreEnvelopes.size) shouldBe moreEnvelopes
-      val firehose = eventsBySliceFirehose.getFirehose(entityType, sliceRange)
-      // FIXME disable scheduled detectSlowConsumers in this test
+      val firehose = eventsBySliceFirehose.getFirehose(
+        FirehoseKey(EventsBySliceFirehoseReadJournal.Identifier, entityType, sliceRange))
       firehose.detectSlowConsumers(clock.instant())
       clock.tick(JDuration.ofSeconds(2))
       firehose.detectSlowConsumers(clock.instant())

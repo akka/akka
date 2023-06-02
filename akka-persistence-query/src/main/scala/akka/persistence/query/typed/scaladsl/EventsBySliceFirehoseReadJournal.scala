@@ -37,15 +37,14 @@ final class EventsBySliceFirehoseReadJournal(system: ExtendedActorSystem, config
   private val queryPluginId = "akka.persistence.r2dbc.query"
 
   private lazy val eventsBySliceQuery =
-    PersistenceQuery(system)
-      .readJournalFor[EventsBySliceQuery](queryPluginId)
+    PersistenceQuery(system).readJournalFor[EventsBySliceQuery](queryPluginId)
 
   override def eventsBySlices[Event](
       entityType: String,
       minSlice: Int,
       maxSlice: Int,
       offset: Offset): Source[EventEnvelope[Event], NotUsed] = {
-    EventsBySliceFirehose(system).eventsBySlices(entityType, minSlice, maxSlice, offset)
+    EventsBySliceFirehose(system).eventsBySlices(cfgPath, entityType, minSlice, maxSlice, offset)
   }
 
   override def sliceForPersistenceId(persistenceId: String): Int =

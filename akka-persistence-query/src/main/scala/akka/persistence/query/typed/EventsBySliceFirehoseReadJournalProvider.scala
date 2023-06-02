@@ -16,8 +16,8 @@ final class EventsBySliceFirehoseReadJournalProvider(system: ExtendedActorSystem
 
   override def scaladslReadJournal(): scaladsl.EventsBySliceFirehoseReadJournal = scaladslReadJournalInstance
 
-  private lazy val javadslReadJournalInstance = new javadsl.EventsBySliceFirehoseReadJournal(
-    new scaladsl.EventsBySliceFirehoseReadJournal(system, config, cfgPath))
+  private lazy val javadslReadJournalInstance =
+    new javadsl.EventsBySliceFirehoseReadJournal(new scaladsl.EventsBySliceFirehoseReadJournal(system, config, cfgPath))
 
   override def javadslReadJournal(): javadsl.EventsBySliceFirehoseReadJournal = javadslReadJournalInstance
 }

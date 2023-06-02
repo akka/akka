@@ -5,7 +5,7 @@
 package akka.persistence.query
 
 import java.time.Clock
-import java.time.{Duration => JDuration}
+import java.time.{ Duration => JDuration }
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
