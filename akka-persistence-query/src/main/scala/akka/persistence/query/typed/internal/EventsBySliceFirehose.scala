@@ -4,6 +4,7 @@
 
 package akka.persistence.query.typed.internal
 
+import scala.collection.mutable
 import java.time.Instant
 import java.time.{ Duration => JDuration }
 import java.util.UUID
@@ -77,6 +78,7 @@ import akka.util.unused
         broadcastBufferSize = config.getInt("broadcast-buffer-size"),
         firehoseLingerTimeout = config.getDuration("firehose-linger-timeout").asScala,
         catchupOverlap = config.getDuration("catchup-overlap"),
+        deduplicationCapacity = config.getInt("deduplication-capacity"),
         slowConsumerReaperInterval = config.getDuration("slow-consumer-reaper-interval").asScala,
         slowConsumerBehindThreshold = config.getDuration("slow-consumer-behind-threshold"),
         abortSlowConsumerAfter = config.getDuration("abort-slow-consumer-after"))
@@ -87,6 +89,7 @@ import akka.util.unused
       broadcastBufferSize: Int,
       firehoseLingerTimeout: FiniteDuration,
       catchupOverlap: JDuration,
+    deduplicationCapacity: Int,
       slowConsumerReaperInterval: FiniteDuration,
       slowConsumerBehindThreshold: JDuration,
       abortSlowConsumerAfter: JDuration) {
@@ -369,12 +372,7 @@ import akka.util.unused
 
     val consumerKillSwitch = KillSwitches.shared("consumerKillSwitch")
 
-    val firehoseSource = firehose.firehoseHub.map { env =>
-      // don't look at pub-sub or backtracking events
-      if (env.source == "")
-        firehose.updateConsumerTracking(consumerId, timestampOffset(env).timestamp, consumerKillSwitch)
-      env
-    }
+    val firehoseSource = firehose.firehoseHub
 
     import GraphDSL.Implicits._
     val catchupOrFirehose = GraphDSL.createGraph(catchupSource) { implicit b => r =>
@@ -385,7 +383,12 @@ import akka.util.unused
 
     firehoseSource
       .via(catchupOrFirehose)
-      .map(_.asInstanceOf[EventEnvelope[Event]])
+      .map { env =>
+        // don't look at pub-sub or backtracking events
+        if (env.source == "")
+          firehose.updateConsumerTracking(consumerId, timestampOffset(env).timestamp, consumerKillSwitch)
+        env.asInstanceOf[EventEnvelope[Event]]
+      }
       .via(consumerKillSwitch.flow)
       .watchTermination()(Keep.right)
       .mapMaterializedValue { termination =>
@@ -420,6 +423,8 @@ import akka.util.unused
   private case object CatchUpOnly extends Mode
   private final case class Both(caughtUpTimestamp: Instant) extends Mode
   private case object FirehoseOnly extends Mode
+
+  private case class DeduplicationCacheEntry(pid: String, seqNr: Long, source: String)
 }
 
 /**
@@ -456,6 +461,10 @@ import akka.util.unused
 
       private var mode: Mode = CatchUpOnly
 
+      // cache of seen pid/seqNr
+      private var deduplicationCache = mutable.LinkedHashSet.empty[DeduplicationCacheEntry]
+      private val deduplicationCacheEvictThreshold = (settings.deduplicationCapacity * 1.1).toInt
+
       override protected def logSource: Class[_] = classOf[CatchupOrFirehose]
 
       setHandler(out, new OutHandler {
@@ -469,30 +478,36 @@ import akka.util.unused
       setHandler(catchupInlet, catchupHandler)
 
       private def tryPushOutput(): Unit = {
-        def tryPushFirehoseValue(): Boolean =
+        def tryPushFirehoseValue(deduplicate: Boolean): Boolean =
           firehoseHandler.value match {
             case OptionVal.Some(env) =>
               firehoseHandler.value = OptionVal.None
-              if (log.isDebugEnabled) // FIXME trace
-                log.debug(
-                  s"Firehose entityType [$entityType] sliceRange [$sliceRange] consumer [$consumerId] push from " +
-                  s" firehose [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
-              push(out, env)
-              true
+              if (!(deduplicate && isDuplicate(env))) {
+                if (log.isDebugEnabled) // FIXME trace
+                  log.debug(
+                    s"Firehose entityType [$entityType] sliceRange [$sliceRange] consumer [$consumerId] push from " +
+                      s" firehose [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
+                push(out, env)
+                true
+              } else
+                false
             case _ =>
               false
           }
 
-        def tryPushCatchupValue(): Boolean =
+        def tryPushCatchupValue(deduplicate: Boolean): Boolean =
           catchupHandler.value match {
             case OptionVal.Some(env) =>
               catchupHandler.value = OptionVal.None
-              if (log.isDebugEnabled) // FIXME trace
-                log.debug(
-                  s"Firehose entityType [$entityType] sliceRange [$sliceRange] consumer [$consumerId] push from " +
-                  s"catchup [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
-              push(out, env)
-              true
+              if (!(deduplicate && isDuplicate(env))) {
+                if (log.isDebugEnabled) // FIXME trace
+                  log.debug(
+                    s"Firehose entityType [$entityType] sliceRange [$sliceRange] consumer [$consumerId] push from " +
+                      s"catchup [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
+                push(out, env)
+                true
+              } else
+                false
             case _ =>
               false
           }
@@ -501,17 +516,40 @@ import akka.util.unused
           mode match {
             case FirehoseOnly =>
               // there can be one final value from catchup when switching to FirehoseOnly
-              if (!tryPushCatchupValue())
-                tryPushFirehoseValue()
+              if (!tryPushCatchupValue(deduplicate = false))
+                tryPushFirehoseValue(deduplicate = false)
             case Both(_) =>
-              if (!tryPushFirehoseValue())
-                tryPushCatchupValue()
+              if (!tryPushFirehoseValue(deduplicate = true))
+                tryPushCatchupValue(deduplicate = true)
             case CatchUpOnly =>
-              tryPushCatchupValue()
+              tryPushCatchupValue(deduplicate = false)
           }
         }
 
         if (willShutDown) completeStage()
+      }
+
+      def isDuplicate(env: EventEnvelope[Any]): Boolean = {
+        if (settings.deduplicationCapacity == 0)
+          false
+        else {
+          val entry = DeduplicationCacheEntry(env.persistenceId, env.sequenceNr, env.source)
+          val result = {
+            if (deduplicationCache.contains(entry)) {
+              true
+            } else {
+              deduplicationCache.add(entry)
+              false
+            }
+          }
+
+          if (deduplicationCache.size >= deduplicationCacheEvictThreshold) {
+            // weird that add modifies the instance but drop returns a new instance
+            deduplicationCache = deduplicationCache.drop(deduplicationCache.size - settings.deduplicationCapacity)
+          }
+
+          result
+        }
       }
 
       private def tryPullAllIfNeeded(): Unit = {
@@ -607,6 +645,7 @@ import akka.util.unused
                     timestamp)
                   catchupKillSwitch.shutdown()
                   mode = FirehoseOnly
+                  deduplicationCache = mutable.LinkedHashSet.empty[DeduplicationCacheEntry]
                 }
               }
 

@@ -4,7 +4,7 @@
 
 package akka.persistence.query.typed.internal
 
-import java.time.{ Duration => JDuration }
+import java.time.{Duration => JDuration}
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -33,6 +33,7 @@ import akka.stream.testkit.TestSubscriber.OnNext
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
+import akka.testkit.WithLogCapturing
 
 object EventsBySliceFirehoseSpec {
   // real PersistenceId is in akka-persistence-typed, and no dependency to that from here
@@ -40,20 +41,31 @@ object EventsBySliceFirehoseSpec {
     def id: String = s"$entityTypeHint|$entityId"
   }
 
-  private val config = ConfigFactory.parseString("""
+  private val config = ConfigFactory.parseString(s"""
+  akka.loglevel = DEBUG
+  akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+
   akka.persistence.query.events-by-slice-firehose {
     # test-query-plugin is not used by this test, but must be defined
     delegate-query-plugin-id = test-query-plugin
 
     firehose-linger-timeout = 2s
 
+    # don't deplicate in this test
+    deduplication-capacity = 0
+
     # disable reaper in this test, will be triggered by code
     slow-consumer-reaper-interval = 1 day
+  }
+
+  events-by-slice-firehose-with-deduplication = $${akka.persistence.query.events-by-slice-firehose}
+  events-by-slice-firehose-with-deduplication {
+    deduplication-capacity = 10000
   }
   """)
 }
 
-class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.config) with Eventually {
+class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.config) with WithLogCapturing with Eventually {
   import EventsBySliceFirehoseSpec._
 
   private val entityType = "EntityA"
@@ -93,6 +105,8 @@ class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.confi
 
     def sliceRange = 0 to 1023
 
+    def pluginId: String = EventsBySliceFirehoseReadJournal.Identifier
+
     class ConsumerSetup {
       private val catchupPublisherPromise = Promise[TestPublisher.Probe[EventEnvelope[Any]]]()
       val catchupSource: Source[EventEnvelope[Any], NotUsed] =
@@ -104,7 +118,7 @@ class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.confi
       lazy val outProbe =
         eventsBySliceFirehose
           .eventsBySlices[Any](
-            EventsBySliceFirehoseReadJournal.Identifier,
+            pluginId,
             entityType,
             sliceRange.min,
             sliceRange.max,
@@ -223,8 +237,7 @@ class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.confi
       firehose.consumerTracking.size shouldBe 2
       import akka.util.ccompat.JavaConverters._
       firehose.consumerTracking.values.asScala.foreach { tracking =>
-        // allEnvelopes(0) from firehosePublisher
-        tracking.timestamp shouldBe allEnvelopes(0).offset.asInstanceOf[TimestampOffset].timestamp
+        tracking.timestamp shouldBe allEnvelopes(1).offset.asInstanceOf[TimestampOffset].timestamp
       }
 
       // only requesting for outProbe(0)
@@ -365,6 +378,46 @@ class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.confi
 
       // FIXME add another (more integration test) that verifies similar that consumers can be added to the
       // EventsBySliceFirehose extension after the firehose has been shutdown
+    }
+
+    "deduplicate when emitting from both" in new Setup {
+      override def pluginId = "events-by-slice-firehose-with-deduplication"
+
+      catchupPublisher.sendNext(allEnvelopes(0))
+      catchupPublisher.sendNext(allEnvelopes(1))
+      outProbe.request(10)
+      outProbe.expectNext(allEnvelopes(0))
+      outProbe.expectNext(allEnvelopes(1))
+
+      firehosePublisher.sendNext(allEnvelopes(2))
+      outProbe.expectNoMessage()
+
+      catchupPublisher.sendNext(allEnvelopes(2))
+      outProbe.expectNext(allEnvelopes(2)) // still from catchup
+
+      firehosePublisher.sendNext(allEnvelopes(3))
+      outProbe.expectNext(allEnvelopes(3)) // from firehose
+
+      catchupPublisher.sendNext(allEnvelopes(3))
+      outProbe.expectNoMessage() // duplicate from catchup
+
+      clock.setInstant(allEnvelopes.last.offset.asInstanceOf[TimestampOffset].timestamp)
+      val env4 = createEnvelope(PersistenceId(entityType, "a"), 2, "a2")
+      catchupPublisher.sendNext(env4)
+      firehosePublisher.sendNext(env4)
+      outProbe.expectNext(env4)
+      outProbe.expectNoMessage() // deduplicate
+
+      clock.tick(JDuration.ofSeconds(60))
+      val env5 = createEnvelope(PersistenceId(entityType, "b"), 2, "b2")
+      catchupPublisher.sendNext(env5)
+      outProbe.expectNext(env5)
+
+      val env6 = createEnvelope(PersistenceId(entityType, "b"), 3, "b3")
+      catchupPublisher.sendNext(env6)
+      outProbe.expectNoMessage() // catchup closed
+      firehosePublisher.sendNext(env6)
+      outProbe.expectNext(env6)
     }
   }
 
