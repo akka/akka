@@ -5,7 +5,7 @@
 package akka.persistence.query.typed.internal
 
 import java.time.Instant
-import java.time.{Duration => JDuration}
+import java.time.{ Duration => JDuration }
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -359,7 +359,13 @@ import akka.util.unused
 
     val catchupKillSwitch = KillSwitches.shared("catchupKillSwitch")
     val catchupSource =
-      underlyingEventsBySlices[Any](settings.delegateQueryPluginId, entityType, minSlice, maxSlice, offset, firehose = false).via(catchupKillSwitch.flow)
+      underlyingEventsBySlices[Any](
+        settings.delegateQueryPluginId,
+        entityType,
+        minSlice,
+        maxSlice,
+        offset,
+        firehose = false).via(catchupKillSwitch.flow)
 
     val consumerKillSwitch = KillSwitches.shared("consumerKillSwitch")
 
@@ -393,7 +399,7 @@ import akka.util.unused
 
   // can be overridden in tests
   protected def underlyingEventsBySlices[Event](
-    pluginId: String,
+      pluginId: String,
       entityType: String,
       minSlice: Int,
       maxSlice: Int,
