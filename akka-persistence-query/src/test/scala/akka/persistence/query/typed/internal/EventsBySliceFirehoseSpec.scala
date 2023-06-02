@@ -4,7 +4,7 @@
 
 package akka.persistence.query.typed.internal
 
-import java.time.{Duration => JDuration}
+import java.time.{ Duration => JDuration }
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -56,6 +56,8 @@ object EventsBySliceFirehoseSpec {
 
     # disable reaper in this test, will be triggered by code
     slow-consumer-reaper-interval = 1 day
+
+    verbose-debug-logging = on
   }
 
   events-by-slice-firehose-with-deduplication = $${akka.persistence.query.events-by-slice-firehose}
@@ -65,7 +67,10 @@ object EventsBySliceFirehoseSpec {
   """)
 }
 
-class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.config) with WithLogCapturing with Eventually {
+class EventsBySliceFirehoseSpec
+    extends AkkaSpec(EventsBySliceFirehoseSpec.config)
+    with WithLogCapturing
+    with Eventually {
   import EventsBySliceFirehoseSpec._
 
   private val entityType = "EntityA"
@@ -117,12 +122,7 @@ class EventsBySliceFirehoseSpec extends AkkaSpec(EventsBySliceFirehoseSpec.confi
 
       lazy val outProbe =
         eventsBySliceFirehose
-          .eventsBySlices[Any](
-            pluginId,
-            entityType,
-            sliceRange.min,
-            sliceRange.max,
-            NoOffset)
+          .eventsBySlices[Any](pluginId, entityType, sliceRange.min, sliceRange.max, NoOffset)
           .runWith(TestSink())
 
       lazy val catchupPublisher = {

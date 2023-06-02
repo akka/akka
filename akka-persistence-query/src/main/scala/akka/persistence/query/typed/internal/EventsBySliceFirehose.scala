@@ -81,7 +81,8 @@ import akka.util.unused
         deduplicationCapacity = config.getInt("deduplication-capacity"),
         slowConsumerReaperInterval = config.getDuration("slow-consumer-reaper-interval").asScala,
         slowConsumerBehindThreshold = config.getDuration("slow-consumer-behind-threshold"),
-        abortSlowConsumerAfter = config.getDuration("abort-slow-consumer-after"))
+        abortSlowConsumerAfter = config.getDuration("abort-slow-consumer-after"),
+        verboseLogging = config.getBoolean("verbose-debug-logging"))
   }
 
   final case class Settings(
@@ -89,10 +90,11 @@ import akka.util.unused
       broadcastBufferSize: Int,
       firehoseLingerTimeout: FiniteDuration,
       catchupOverlap: JDuration,
-    deduplicationCapacity: Int,
+      deduplicationCapacity: Int,
       slowConsumerReaperInterval: FiniteDuration,
       slowConsumerBehindThreshold: JDuration,
-      abortSlowConsumerAfter: JDuration) {
+      abortSlowConsumerAfter: JDuration,
+      verboseLogging: Boolean) {
     require(
       delegateQueryPluginId != null && delegateQueryPluginId.nonEmpty,
       "Configuration of delegate-query-plugin-id must defined.")
@@ -120,24 +122,28 @@ import akka.util.unused
     @volatile private var firehoseIsShutdown = false
 
     private def entityType = firehoseKey.entityType
-    private def sliceRange = firehoseKey.sliceRange
+    private val sliceRangeStr = s"${firehoseKey.sliceRange.min}-${firehoseKey.sliceRange.max}"
 
     def consumerStarted(consumerId: String, consumerKillSwitch: KillSwitch): Unit = {
-      log.debug("Firehose entityType [{}] sliceRange [{}] consumer [{}] started", entityType, sliceRange, consumerId)
+      log.debug("Firehose entityType [{}] sliceRange [{}] consumer [{}] started", entityType, sliceRangeStr, consumerId)
       consumerTracking.putIfAbsent(
         consumerId,
         ConsumerTracking(consumerId, Instant.EPOCH, firehoseOnly = false, consumerKillSwitch, None))
     }
 
     def consumerTerminated(consumerId: String): Int = {
-      log.debug("Firehose entityType [{}] sliceRange [{}] consumer [{}] terminated", entityType, sliceRange, consumerId)
+      log.debug(
+        "Firehose entityType [{}] sliceRange [{}] consumer [{}] terminated",
+        entityType,
+        sliceRangeStr,
+        consumerId)
       consumerTracking.remove(consumerId)
       consumerTracking.size
     }
 
     def shutdownFirehoseIfNoConsumers(): Boolean = {
       if (consumerTracking.isEmpty) {
-        log.debug("Firehose entityType [{}] sliceRange [{}] is shutting down, no consumers", entityType, sliceRange)
+        log.debug("Firehose entityType [{}] sliceRange [{}] is shutting down, no consumers", entityType, sliceRangeStr)
         firehoseIsShutdown = true
         firehoseKillSwitch.shutdown()
         true
@@ -205,9 +211,9 @@ import akka.util.unused
         }
 
         val newConsumerTrackingValues = consumerTracking.values.iterator.asScala.toVector
+        val hasSlowConsumerCandidates = newConsumerTrackingValues.exists(_.slowConsumerCandidate.isDefined)
 
-        // FIXME trace
-        if (log.isDebugEnabled && newConsumerTrackingValues.iterator.map(_.timestamp).toSet.size > 1) {
+        if ((settings.verboseLogging && log.isDebugEnabled) || (hasSlowConsumerCandidates && log.isInfoEnabled)) {
           newConsumerTrackingValues.foreach { tracking =>
             val diffFastest = fastestConsumer.timestamp.toEpochMilli - tracking.timestamp.toEpochMilli
             val diffFastestStr =
@@ -219,9 +225,14 @@ import akka.util.unused
               if (diffSlowest > 0) s"behind slowest [$diffSlowest] ms" // not possible
               else if (diffSlowest < 0) s"ahead of slowest [${-diffSlowest}] ms"
               else "same as slowest"
-            log.debug(
-              s"Firehose entityType [$entityType] sliceRange [$sliceRange] consumer [${tracking.consumerId}], " +
-              s"$diffFastestStr, $diffSlowestStr, firehoseOnly [${tracking.firehoseOnly}]")
+
+            val logMessage = s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] consumer [${tracking.consumerId}], " +
+              s"$diffFastestStr, $diffSlowestStr, firehoseOnly [${tracking.firehoseOnly}]"
+
+            if (hasSlowConsumerCandidates)
+              log.info(logMessage)
+            else
+              log.debug(logMessage)
           }
         }
 
@@ -241,7 +252,7 @@ import akka.util.unused
               .between(slowConsumers.valuesIterator.maxBy(_.timestamp).timestamp, fastestConsumer.timestamp)
               .toMillis
             log.info(
-              s"Firehose entityType [$entityType] sliceRange [$sliceRange], [${slowConsumers.size}] " +
+              s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr], [${slowConsumers.size}] " +
               s"slow consumers are aborted [${slowConsumers.keysIterator.mkString(", ")}], " +
               s"behind by at least [$behind] ms. [$firehoseConsumerCount] firehose consumers, " +
               s"[${newConsumerTrackingValues.size - firehoseConsumerCount}] catchup consumers.")
@@ -303,8 +314,9 @@ import akka.util.unused
 
   private def createFirehose(key: FirehoseKey): Firehose = {
     implicit val sys: ActorSystem = system
+    val sliceRangeStr = s"${key.sliceRange.min}-${key.sliceRange.max}"
 
-    log.debug("Create firehose entityType [{}], sliceRange [{}]", key.entityType, key.sliceRange)
+    log.debug("Create firehose entityType [{}], sliceRange [{}]", key.entityType, sliceRangeStr)
 
     val settings = Settings(sys, key.pluginId)
 
@@ -438,6 +450,8 @@ import akka.util.unused
   import CatchupOrFirehose._
   import EventsBySliceFirehose.isDurationGreaterThan
   import EventsBySliceFirehose.timestampOffset
+  import firehose.settings
+  import firehose.firehoseKey.entityType
 
   override def initialAttributes = Attributes.name("CatchupOrFirehose")
   override val shape: FanInShape2[EventEnvelope[Any], EventEnvelope[Any], EventEnvelope[Any]] =
@@ -446,9 +460,7 @@ import akka.util.unused
   val firehoseInlet: Inlet[EventEnvelope[Any]] = shape.in0
   val catchupInlet: Inlet[EventEnvelope[Any]] = shape.in1
 
-  private def settings = firehose.settings
-  private def entityType = firehose.firehoseKey.entityType
-  private def sliceRange = firehose.firehoseKey.sliceRange
+  private val sliceRangeStr = s"${firehose.firehoseKey.sliceRange.min}-${firehose.firehoseKey.sliceRange.max}"
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with StageLogging {
@@ -483,10 +495,10 @@ import akka.util.unused
             case OptionVal.Some(env) =>
               firehoseHandler.value = OptionVal.None
               if (!(deduplicate && isDuplicate(env))) {
-                if (log.isDebugEnabled) // FIXME trace
+                if (settings.verboseLogging && log.isDebugEnabled)
                   log.debug(
-                    s"Firehose entityType [$entityType] sliceRange [$sliceRange] consumer [$consumerId] push from " +
-                      s" firehose [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
+                    s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] consumer [$consumerId] push from " +
+                    s" firehose [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
                 push(out, env)
                 true
               } else
@@ -500,10 +512,10 @@ import akka.util.unused
             case OptionVal.Some(env) =>
               catchupHandler.value = OptionVal.None
               if (!(deduplicate && isDuplicate(env))) {
-                if (log.isDebugEnabled) // FIXME trace
+                if (settings.verboseLogging && log.isDebugEnabled)
                   log.debug(
-                    s"Firehose entityType [$entityType] sliceRange [$sliceRange] consumer [$consumerId] push from " +
-                      s"catchup [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
+                    s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] consumer [$consumerId] push from " +
+                    s"catchup [${env.persistenceId}] seqNr [${env.sequenceNr}], source [${env.source}]")
                 push(out, env)
                 true
               } else
@@ -624,7 +636,7 @@ import akka.util.unused
                 log.debug(
                   "Firehose entityType [{}] sliceRange [{}] consumer [{}] caught up at [{}]",
                   entityType,
-                  sliceRange,
+                  sliceRangeStr,
                   consumerId,
                   timestamp)
                 mode = Both(timestamp)
@@ -640,7 +652,7 @@ import akka.util.unused
                   log.debug(
                     "Firehose entityType [{}] sliceRange [{}] consumer [{}] switching to firehose only [{}]",
                     entityType,
-                    sliceRange,
+                    sliceRangeStr,
                     consumerId,
                     timestamp)
                   catchupKillSwitch.shutdown()
@@ -664,7 +676,7 @@ import akka.util.unused
           log.debug(
             "Firehose entityType [{}] sliceRange [{}] consumer [{}] catchup closed",
             entityType,
-            sliceRange,
+            sliceRangeStr,
             consumerId)
         }
       }
