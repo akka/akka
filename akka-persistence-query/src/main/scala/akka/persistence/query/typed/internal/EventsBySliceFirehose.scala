@@ -231,6 +231,7 @@ import akka.util.unused
           }
         }
 
+        // FIXME is confirmedSlowConsumers.size < firehoseConsumerCount needed? The idea was to not abort if all are slow.
         if (confirmedSlowConsumers.nonEmpty && confirmedSlowConsumers.size < firehoseConsumerCount) {
           if (log.isInfoEnabled) {
             val behind = JDuration
