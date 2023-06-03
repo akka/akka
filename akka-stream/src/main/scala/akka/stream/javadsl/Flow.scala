@@ -477,6 +477,17 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.viaMat(flow)(combinerToScala(combine)))
 
   /**
+   * Transform this Flow by applying a function to each *incoming* upstream element before
+   * it is passed to the [[Flow]]
+   *
+   * '''Backpressures when''' original [[Flow]] backpressures
+   *
+   * '''Cancels when''' original [[Flow]] cancels
+   */
+  def contramap[In2](f: function.Function[In2, In]): javadsl.Flow[In2, Out, Mat] =
+    new Flow(delegate.contramap(elem => f(elem)))
+
+  /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
    *     +------------------------------+
