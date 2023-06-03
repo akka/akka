@@ -41,7 +41,7 @@ class HillClimbingAdmissionOptimizerSpec extends AnyWordSpec with Matchers {
       val optimizer = create(initialStep = step, stepDecay = decay)
       for (i <- 1 to 100) {
         optimizer.recordPassive()
-        if (i % 10 == 0) optimizer.calculateAdjustment() shouldBe math.pow(decay, i / 10 - 1) * -step
+        if (i % 10 == 0) optimizer.calculateAdjustment() shouldBe math.pow(decay, i.toDouble / 10 - 1) * -step
       }
     }
 
@@ -54,7 +54,7 @@ class HillClimbingAdmissionOptimizerSpec extends AnyWordSpec with Matchers {
         if (i > 40) optimizer.recordActive() else optimizer.recordPassive()
         if (i % 10 == 0) {
           val shift = if (i < 60) 1 else 6
-          optimizer.calculateAdjustment() shouldBe math.pow(decay, i / 10 - shift) * -step
+          optimizer.calculateAdjustment() shouldBe math.pow(decay, i.toDouble / 10 - shift) * -step
         }
       }
     }
