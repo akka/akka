@@ -4,13 +4,13 @@
 
 package akka.persistence.query.typed.internal
 
-import scala.collection.mutable
 import java.time.Instant
 import java.time.{ Duration => JDuration }
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
@@ -80,7 +80,7 @@ import akka.util.unused
         catchupOverlap = config.getDuration("catchup-overlap"),
         deduplicationCapacity = config.getInt("deduplication-capacity"),
         slowConsumerReaperInterval = config.getDuration("slow-consumer-reaper-interval").asScala,
-        slowConsumerBehindThreshold = config.getDuration("slow-consumer-behind-threshold"),
+        slowConsumerLagThreshold = config.getDuration("slow-consumer-lag-threshold"),
         abortSlowConsumerAfter = config.getDuration("abort-slow-consumer-after"),
         verboseLogging = config.getBoolean("verbose-debug-logging"))
   }
@@ -92,7 +92,7 @@ import akka.util.unused
       catchupOverlap: JDuration,
       deduplicationCapacity: Int,
       slowConsumerReaperInterval: FiniteDuration,
-      slowConsumerBehindThreshold: JDuration,
+      slowConsumerLagThreshold: JDuration,
       abortSlowConsumerAfter: JDuration,
       verboseLogging: Boolean) {
     require(
@@ -106,10 +106,14 @@ import akka.util.unused
 
   final case class ConsumerTracking(
       consumerId: String,
-      timestamp: Instant,
+      history: Vector[TimestampOffset],
       firehoseOnly: Boolean,
       consumerKillSwitch: KillSwitch,
-      slowConsumerCandidate: Option[Instant])
+      slowConsumerCandidate: Option[Instant]) {
+    def offsetTimestamp: Instant =
+      if (history.isEmpty) Instant.EPOCH
+      else history.last.timestamp
+  }
 
   final class Firehose(
       val firehoseKey: FirehoseKey,
@@ -124,11 +128,16 @@ import akka.util.unused
     private def entityType = firehoseKey.entityType
     private val sliceRangeStr = s"${firehoseKey.sliceRange.min}-${firehoseKey.sliceRange.max}"
 
+    private def consumerTrackingValues(): Vector[ConsumerTracking] = {
+      import akka.util.ccompat.JavaConverters._
+      consumerTracking.values.iterator.asScala.filter(h => h.history.nonEmpty && h.firehoseOnly).toVector
+    }
+
     def consumerStarted(consumerId: String, consumerKillSwitch: KillSwitch): Unit = {
       log.debug("Firehose entityType [{}] sliceRange [{}] consumer [{}] started", entityType, sliceRangeStr, consumerId)
       consumerTracking.putIfAbsent(
         consumerId,
-        ConsumerTracking(consumerId, Instant.EPOCH, firehoseOnly = false, consumerKillSwitch, None))
+        ConsumerTracking(consumerId, history = Vector.empty, firehoseOnly = false, consumerKillSwitch, None))
     }
 
     def consumerTerminated(consumerId: String): Int = {
@@ -156,113 +165,187 @@ import akka.util.unused
 
     @tailrec def updateConsumerTracking(
         consumerId: String,
-        timestamp: Instant,
+        now: Instant,
+        offset: TimestampOffset,
         consumerKillSwitch: KillSwitch): Unit = {
 
       val existingTracking = consumerTracking.get(consumerId)
       val tracking = existingTracking match {
         case null =>
-          ConsumerTracking(consumerId, timestamp, firehoseOnly = false, consumerKillSwitch, None)
+          ConsumerTracking(consumerId, history = Vector(offset), firehoseOnly = false, consumerKillSwitch, None)
         case existing =>
-          if (timestamp.isAfter(existing.timestamp))
-            existing.copy(timestamp = timestamp)
-          else
-            existing
+          val newHistory =
+            if (existing.history.size <= settings.broadcastBufferSize)
+              existing.history :+ offset
+            else
+              existing.history.tail :+ offset // drop one, add one
+          existing.copy(history = newHistory)
       }
 
-      if (!consumerTracking.replace(consumerId, existingTracking, tracking)) {
+      if (consumerTracking.replace(consumerId, existingTracking, tracking)) {
+        logUpdateConsumerTracking(consumerId, now, tracking)
+      } else {
         // concurrent update, try again
-        updateConsumerTracking(consumerId, timestamp, consumerKillSwitch)
+        updateConsumerTracking(consumerId, now, offset, consumerKillSwitch)
       }
     }
 
-    def detectSlowConsumers(now: Instant): Unit = {
-      import akka.util.ccompat.JavaConverters._
-      val consumerTrackingValues = consumerTracking.values.iterator.asScala.toVector
-      if (consumerTrackingValues.size > 1) {
-        val slowestConsumer = consumerTrackingValues.minBy(_.timestamp)
-        val fastestConsumer = consumerTrackingValues.maxBy(_.timestamp)
+    private def logUpdateConsumerTracking(consumerId: String, now: Instant, tracking: ConsumerTracking): Unit = {
+      if (settings.verboseLogging && log.isDebugEnabled) {
+        val trackingValues = consumerTrackingValues()
+        if (trackingValues.size > 1) {
+          val slowestConsumer = trackingValues.minBy(_.offsetTimestamp)
+          val fastestConsumer = trackingValues.maxBy(_.offsetTimestamp)
+          val behind = elementsBehind(fastestConsumer.history, slowestConsumer.history)
+          if (behind > 0) {
+            val diffSlowestFastestsMillis = fastestConsumer.offsetTimestamp.toEpochMilli - slowestConsumer.offsetTimestamp.toEpochMilli
+            val fastestLagMillis = now.toEpochMilli - fastestConsumer.offsetTimestamp.toEpochMilli
 
-        val slowConsumers = consumerTrackingValues.collect {
-          case t
-              if t.firehoseOnly &&
-              isDurationGreaterThan(t.timestamp, fastestConsumer.timestamp, settings.slowConsumerBehindThreshold) =>
-            t.consumerId -> t
-        }.toMap
-
-        val changedConsumerTrackingValues = consumerTrackingValues.flatMap { tracking =>
-          if (slowConsumers.contains(tracking.consumerId)) {
-            if (tracking.slowConsumerCandidate.isDefined)
-              None // keep original
-            else
-              Some(tracking.copy(slowConsumerCandidate = Some(now)))
-          } else if (tracking.slowConsumerCandidate.isDefined) {
-            Some(tracking.copy(slowConsumerCandidate = None)) // not slow any more
-          } else {
-            None
-          }
-        }
-
-        changedConsumerTrackingValues.foreach { tracking =>
-          consumerTracking.merge(
-            tracking.consumerId,
-            tracking,
-            (existing, _) => existing.copy(slowConsumerCandidate = tracking.slowConsumerCandidate))
-        }
-
-        val newConsumerTrackingValues = consumerTracking.values.iterator.asScala.toVector
-        val hasSlowConsumerCandidates = newConsumerTrackingValues.exists(_.slowConsumerCandidate.isDefined)
-
-        if ((settings.verboseLogging && log.isDebugEnabled) || (hasSlowConsumerCandidates && log.isInfoEnabled)) {
-          newConsumerTrackingValues.foreach { tracking =>
-            val diffFastest = fastestConsumer.timestamp.toEpochMilli - tracking.timestamp.toEpochMilli
+            val diffFastest = fastestConsumer.offsetTimestamp.toEpochMilli - tracking.offsetTimestamp.toEpochMilli
             val diffFastestStr =
               if (diffFastest > 0) s"behind fastest [$diffFastest] ms"
               else if (diffFastest < 0) s"ahead of fastest [$diffFastest] ms" // not possible
               else "same as fastest"
-            val diffSlowest = slowestConsumer.timestamp.toEpochMilli - tracking.timestamp.toEpochMilli
+            val diffSlowest = slowestConsumer.offsetTimestamp.toEpochMilli - tracking.offsetTimestamp.toEpochMilli
             val diffSlowestStr =
               if (diffSlowest > 0) s"behind slowest [$diffSlowest] ms" // not possible
               else if (diffSlowest < 0) s"ahead of slowest [${-diffSlowest}] ms"
               else "same as slowest"
+            val consumerBehind = elementsBehind(fastestConsumer.history, tracking.history)
 
-            val logMessage = s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] consumer [${tracking.consumerId}], " +
-              s"$diffFastestStr, $diffSlowestStr, firehoseOnly [${tracking.firehoseOnly}]"
-
-            if (hasSlowConsumerCandidates)
-              log.info(logMessage)
-            else
-              log.debug(logMessage)
+            log.debug(
+              s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] updateConsumerTracking [$consumerId], " +
+              s"behind [$consumerBehind] events from fastest, " +
+              s"$diffFastestStr, $diffSlowestStr, " +
+              s"slowest [${fastestConsumer.consumerId}] is behind [$behind] " +
+              s"of fastest [${slowestConsumer.consumerId}], [$diffSlowestFastestsMillis] ms. " +
+              s"Consumer lag of fastest [$fastestLagMillis] ms.")
           }
         }
+      }
+    }
 
-        val firehoseConsumerCount = newConsumerTrackingValues.count(_.firehoseOnly)
-        val confirmedSlowConsumers = newConsumerTrackingValues.filter { tracking =>
-          tracking.slowConsumerCandidate match {
-            case None => false
-            case Some(detectedTimestamp) =>
-              isDurationGreaterThan(detectedTimestamp, now, settings.abortSlowConsumerAfter)
+    def detectSlowConsumers(now: Instant): Unit = {
+      val trackingValues = consumerTrackingValues()
+      if (trackingValues.size > 1) {
+        val slowestConsumer = trackingValues.minBy(_.offsetTimestamp)
+        val fastestConsumer = trackingValues.maxBy(_.offsetTimestamp)
+
+        val behind = elementsBehind(fastestConsumer.history, slowestConsumer.history)
+        val fastestLagMillis = now.toEpochMilli - fastestConsumer.offsetTimestamp.toEpochMilli
+
+        if (behind >= settings.broadcastBufferSize / 2 && fastestLagMillis > 5000) { // FIXME config fastestLagMillis
+          logDetectSlowConsumers(trackingValues, slowestConsumer, fastestConsumer, behind, fastestLagMillis)
+
+          val changedConsumerTrackingValues = trackingValues.flatMap { tracking =>
+            val consumerBehind = elementsBehind(fastestConsumer.history, tracking.history)
+            if (consumerBehind >= settings.broadcastBufferSize / 2) {
+              if (tracking.slowConsumerCandidate.isDefined)
+                None // keep original
+              else
+                Some(tracking.copy(slowConsumerCandidate = Some(now)))
+            } else if (tracking.slowConsumerCandidate.isDefined) {
+              Some(tracking.copy(slowConsumerCandidate = None)) // not slow any more
+            } else {
+              None
+            }
           }
+
+          changedConsumerTrackingValues.foreach { tracking =>
+            consumerTracking.merge(
+              tracking.consumerId,
+              tracking,
+              (existing, _) => existing.copy(slowConsumerCandidate = tracking.slowConsumerCandidate))
+          }
+
+          val newTrackingValues = consumerTrackingValues()
+
+          val confirmedSlowConsumers = newTrackingValues.filter { tracking =>
+            tracking.slowConsumerCandidate match {
+              case None => false
+              case Some(detectedTimestamp) =>
+                isDurationGreaterThan(detectedTimestamp, now, settings.abortSlowConsumerAfter)
+            }
+          }
+
+          if (confirmedSlowConsumers.nonEmpty) {
+            if (log.isInfoEnabled) {
+              val behindMillis = fastestConsumer.offsetTimestamp.toEpochMilli - confirmedSlowConsumers
+                  .maxBy(_.offsetTimestamp)
+                  .offsetTimestamp
+                  .toEpochMilli
+              log.info(
+                s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr], [${confirmedSlowConsumers.size}] " +
+                s"slow consumers are aborted [${confirmedSlowConsumers.map(_.consumerId).mkString(", ")}], " +
+                s"behind by [$behind] events [$behindMillis] ms.")
+            }
+
+            confirmedSlowConsumers.foreach { tracking =>
+              tracking.consumerKillSwitch.abort(
+                new SlowConsumerException(s"Consumer [${tracking.consumerId}] is too slow."))
+            }
+          }
+
+        } else if (behind < 0) {
+          // can happen if fastest is a new consumer, but ignoring should be ok
+          log.debug(
+            s"Firehose entityType [{}] sliceRange [{}] missing history for fastest consumer [{}] corresponding to slowest consumer [{}]",
+            entityType,
+            sliceRangeStr,
+            fastestConsumer.consumerId,
+            slowestConsumer.consumerId)
+        } else if (settings.verboseLogging) {
+          logDetectSlowConsumers(trackingValues, slowestConsumer, fastestConsumer, behind, fastestLagMillis)
         }
 
-        // FIXME is confirmedSlowConsumers.size < firehoseConsumerCount needed? The idea was to not abort if all are slow.
-        if (confirmedSlowConsumers.nonEmpty && confirmedSlowConsumers.size < firehoseConsumerCount) {
-          if (log.isInfoEnabled) {
-            val behind = JDuration
-              .between(slowConsumers.valuesIterator.maxBy(_.timestamp).timestamp, fastestConsumer.timestamp)
-              .toMillis
-            log.info(
-              s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr], [${slowConsumers.size}] " +
-              s"slow consumers are aborted [${slowConsumers.keysIterator.mkString(", ")}], " +
-              s"behind by at least [$behind] ms. [$firehoseConsumerCount] firehose consumers, " +
-              s"[${newConsumerTrackingValues.size - firehoseConsumerCount}] catchup consumers.")
-          }
+      }
+    }
 
-          confirmedSlowConsumers.foreach { tracking =>
-            tracking.consumerKillSwitch.abort(
-              new SlowConsumerException(s"Consumer [${tracking.consumerId}] is too slow."))
-          }
+    private def logDetectSlowConsumers(
+        consumerTrackingValues: Vector[ConsumerTracking],
+        slowestConsumer: ConsumerTracking,
+        fastestConsumer: ConsumerTracking,
+        behind: Int,
+        fastestLagMillis: Long): Unit = {
+      if (behind > 0) {
+        val behindMillis = fastestConsumer.offsetTimestamp.toEpochMilli - slowestConsumer.offsetTimestamp.toEpochMilli
+        log.debug(
+          s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] detectSlowConsumers, " +
+          s"slowest [${slowestConsumer.consumerId}] is behind [$behind] " +
+          s"of fastest [${fastestConsumer.consumerId}], [$behindMillis] ms. " +
+          s"Consumer lag of fastest [$fastestLagMillis] ms")
+
+        consumerTrackingValues.foreach { tracking =>
+          val diffFastest = fastestConsumer.offsetTimestamp.toEpochMilli - tracking.offsetTimestamp.toEpochMilli
+          val diffFastestStr =
+            if (diffFastest > 0) s"behind fastest [$diffFastest] ms"
+            else if (diffFastest < 0) s"ahead of fastest [$diffFastest] ms" // not possible
+            else "same as fastest"
+          val diffSlowest = slowestConsumer.offsetTimestamp.toEpochMilli - tracking.offsetTimestamp.toEpochMilli
+          val diffSlowestStr =
+            if (diffSlowest > 0) s"behind slowest [$diffSlowest] ms" // not possible
+            else if (diffSlowest < 0) s"ahead of slowest [${-diffSlowest}] ms"
+            else "same as slowest"
+          val consumerBehind = elementsBehind(fastestConsumer.history, tracking.history)
+
+          val logMessage = s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] consumer [${tracking.consumerId}], " +
+            s"behind [$consumerBehind] events from fastest, " +
+            s"$diffFastestStr, $diffSlowestStr, firehoseOnly [${tracking.firehoseOnly}]"
+
+          log.debug(logMessage)
         }
+      }
+    }
+
+    private def elementsBehind(fastest: Vector[TimestampOffset], slowest: Vector[TimestampOffset]): Int = {
+      if (fastest.last == slowest.last) {
+        0
+      } else {
+        val i = fastest.indexOf(slowest.last)
+        if (i >= 0)
+          fastest.size - i - 1
+        else
+          -1
       }
     }
 
@@ -398,7 +481,7 @@ import akka.util.unused
       .map { env =>
         // don't look at pub-sub or backtracking events
         if (env.source == "")
-          firehose.updateConsumerTracking(consumerId, timestampOffset(env).timestamp, consumerKillSwitch)
+          firehose.updateConsumerTracking(consumerId, Instant.now(), timestampOffset(env), consumerKillSwitch)
         env.asInstanceOf[EventEnvelope[Event]]
       }
       .via(consumerKillSwitch.flow)
@@ -447,11 +530,12 @@ import akka.util.unused
     firehose: EventsBySliceFirehose.Firehose,
     catchupKillSwitch: KillSwitch)
     extends GraphStage[FanInShape2[EventEnvelope[Any], EventEnvelope[Any], EventEnvelope[Any]]] {
+  import firehose.firehoseKey.entityType
+  import firehose.settings
+
   import CatchupOrFirehose._
   import EventsBySliceFirehose.isDurationGreaterThan
   import EventsBySliceFirehose.timestampOffset
-  import firehose.settings
-  import firehose.firehoseKey.entityType
 
   override def initialAttributes = Attributes.name("CatchupOrFirehose")
   override val shape: FanInShape2[EventEnvelope[Any], EventEnvelope[Any], EventEnvelope[Any]] =

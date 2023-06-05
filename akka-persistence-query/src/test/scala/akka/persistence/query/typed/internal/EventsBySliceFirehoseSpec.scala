@@ -49,6 +49,8 @@ object EventsBySliceFirehoseSpec {
     # test-query-plugin is not used by this test, but must be defined
     delegate-query-plugin-id = test-query-plugin
 
+    broadcast-buffer-size = 64
+
     firehose-linger-timeout = 2s
 
     # don't deplicate in this test
@@ -237,7 +239,7 @@ class EventsBySliceFirehoseSpec
       firehose.consumerTracking.size shouldBe 2
       import akka.util.ccompat.JavaConverters._
       firehose.consumerTracking.values.asScala.foreach { tracking =>
-        tracking.timestamp shouldBe allEnvelopes(1).offset.asInstanceOf[TimestampOffset].timestamp
+        tracking.offsetTimestamp shouldBe allEnvelopes(1).offset.asInstanceOf[TimestampOffset].timestamp
       }
 
       // only requesting for outProbe(0)
@@ -248,7 +250,7 @@ class EventsBySliceFirehoseSpec
       outProbe(0).expectNextN(moreEnvelopes.size) shouldBe moreEnvelopes
       firehose.consumerTracking.size shouldBe 2
       firehose.consumerTracking.values.asScala
-        .count(_.timestamp == moreEnvelopes.last.offset.asInstanceOf[TimestampOffset].timestamp) shouldBe 1
+        .count(_.offsetTimestamp == moreEnvelopes.last.offset.asInstanceOf[TimestampOffset].timestamp) shouldBe 1
     }
 
     "abort slow consumers" in new Setup {
@@ -274,8 +276,8 @@ class EventsBySliceFirehoseSpec
 
       // switch to firehose only
       clock.tick(JDuration.ofSeconds(60))
-      // less than BroadcastHub buffer size
-      val moreEnvelopes = (1 to 30).map { n =>
+      // more than half BroadcastHub buffer size
+      val moreEnvelopes = (1 to 40).map { n =>
         clock.tick(JDuration.ofSeconds(1))
         createEnvelope(PersistenceId(entityType, "x"), n, s"x$n")
       }
@@ -290,6 +292,7 @@ class EventsBySliceFirehoseSpec
       outProbe(0).expectNextN(moreEnvelopes.size) shouldBe moreEnvelopes
       val firehose = eventsBySliceFirehose.getFirehose(
         FirehoseKey(EventsBySliceFirehoseReadJournal.Identifier, entityType, sliceRange))
+      clock.tick(JDuration.ofSeconds(6)) // simulate consumer lag
       firehose.detectSlowConsumers(clock.instant())
       clock.tick(JDuration.ofSeconds(2))
       firehose.detectSlowConsumers(clock.instant())
