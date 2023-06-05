@@ -20,13 +20,11 @@ jobs:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.4.0
-
-      - name: Set up JDK 17
-        uses: coursier/setup-action@v1.3.0
+      - uses: actions/setup-java@v3
         with:
-          jvm: temurin:1.17
+          distribution: temurin
+          java-version: 17
+          cache: sbt
 
       - name: FOSSA policy check
         run: |-

@@ -24,10 +24,11 @@ jobs:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Set up JDK 11
-        uses: coursier/setup-action@v1.3.0
+      - uses: actions/setup-java@v3
         with:
-          jvm: temurin:1.11.0.17
+          distribution: temurin
+          java-version: 11.0.17
+          cache: sbt
 
       - name: Publish
         run: |-
