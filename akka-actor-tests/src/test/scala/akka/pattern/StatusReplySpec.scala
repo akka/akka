@@ -54,6 +54,10 @@ class StatusReplySpec extends AkkaSpec with ScalaFutures {
       }
     }
 
+    "include exception type in toString for non text-error" in {
+      StatusReply.Error(TestException("boho!")).toString should include("TestException")
+    }
+
     "transform scala.util.Try" in {
       StatusReply.fromTry(scala.util.Success("woho")) should matchPattern {
         case StatusReply.Success("woho") =>
