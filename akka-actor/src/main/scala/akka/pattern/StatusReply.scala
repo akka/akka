@@ -13,6 +13,7 @@ import akka.Done
 import akka.actor.InvalidMessageException
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
+import akka.pattern.StatusReply.ErrorMessage
 
 /**
  * Generic top-level message type for replies that signal failure or success. Convenient to use together with the
@@ -53,8 +54,9 @@ final class StatusReply[+T] private (private val status: Try[T]) {
   override def hashCode(): Int = status.hashCode
 
   override def toString: String = status match {
-    case ScalaSuccess(t)  => s"Success($t)"
-    case ScalaFailure(ex) => s"Error(${ex.getMessage})"
+    case ScalaSuccess(t)                => s"Success($t)"
+    case ScalaFailure(ex: ErrorMessage) => s"Error(${ex.getMessage})"
+    case ScalaFailure(ex)               => s"Error(${ex.getClass.getName}: ${ex.getMessage})"
   }
 
 }
