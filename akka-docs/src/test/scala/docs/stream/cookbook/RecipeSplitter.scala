@@ -14,7 +14,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class RecipeSplitter extends AnyWordSpec with BeforeAndAfterAll with Matchers with ScalaFutures {
 
-  implicit val system = ActorSystem("Test")
+  implicit val system: ActorSystem = ActorSystem("Test")
 
   "Splitter" should {
     " simple split " in {
