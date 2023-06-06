@@ -163,6 +163,17 @@ final class Flow[-In, +Out, +Mat](
   }
 
   /**
+   * Transform this Flow by applying a function to each *incoming* upstream element before
+   * it is passed to the [[Flow]]
+   *
+   * '''Backpressures when''' original [[Flow]] backpressures
+   *
+   * '''Cancels when''' original [[Flow]] cancels
+   */
+  def contramap[In2](f: In2 => In): Flow[In2, Out, Mat] =
+    Flow.fromFunction(f).viaMat(this)(Keep.right)
+
+  /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]].
    * {{{
    * +------+        +-------+

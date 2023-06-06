@@ -208,6 +208,14 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
       expectMsg("3")
     }
 
+    "perform contramap operation" in {
+      val flow = Flow[Int].contramap(Integer.parseInt)
+      val sub = Source(List("1", "2", "3")).via(flow).runWith(TestSink())
+      sub.request(3)
+      sub.expectNextN(List(1, 2, 3))
+      sub.expectComplete()
+    }
+
     "perform transformation operation and subscribe Subscriber" in {
       val flow = Flow[Int].map(_.toString)
       val c1 = TestSubscriber.manualProbe[String]()
