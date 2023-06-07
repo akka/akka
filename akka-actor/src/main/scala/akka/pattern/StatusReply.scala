@@ -56,7 +56,7 @@ final class StatusReply[+T] private (private val status: Try[T]) {
   override def toString: String = status match {
     case ScalaSuccess(t)                => s"Success($t)"
     case ScalaFailure(ex: ErrorMessage) => s"Error(${ex.getMessage})"
-    case ScalaFailure(ex)               => s"Error(${ex.getClass.getName}: ${ex.getMessage})"
+    case ScalaFailure(ex)               => s"Error($ex)"
   }
 
 }
