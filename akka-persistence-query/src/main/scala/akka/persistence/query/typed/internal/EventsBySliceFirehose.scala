@@ -681,11 +681,8 @@ import akka.util.unused
 
         def updateFirehoseOffset(env: EventEnvelope[Any]): Unit = {
           // don't look at pub-sub or backtracking events
-          if (env.source == "") {
-            val offset = timestampOffset(env)
-            if (offset.timestamp.isAfter(firehoseOffset.timestamp))
-              firehoseOffset = offset // update when newer
-          }
+          if (env.source == "")
+            firehoseOffset = timestampOffset(env)
         }
 
         override def onPush(): Unit = {
