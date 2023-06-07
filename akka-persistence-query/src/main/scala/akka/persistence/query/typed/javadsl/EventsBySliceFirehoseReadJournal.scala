@@ -25,7 +25,7 @@ object EventsBySliceFirehoseReadJournal {
   val Identifier: String = scaladsl.EventsBySliceFirehoseReadJournal.Identifier
 }
 
-class EventsBySliceFirehoseReadJournal(delegate: scaladsl.EventsBySliceFirehoseReadJournal)
+final class EventsBySliceFirehoseReadJournal(delegate: scaladsl.EventsBySliceFirehoseReadJournal)
     extends ReadJournal
     with EventsBySliceQuery
     with EventTimestampQuery
