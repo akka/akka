@@ -170,23 +170,28 @@ import akka.util.unused
         consumerKillSwitch: KillSwitch): Unit = {
 
       val existingTracking = consumerTracking.get(consumerId)
-      val tracking = existingTracking match {
+      existingTracking match {
         case null =>
-          ConsumerTracking(consumerId, history = Vector(offset), firehoseOnly = false, consumerKillSwitch, None)
+          val newTracking =
+            ConsumerTracking(consumerId, history = Vector(offset), firehoseOnly = false, consumerKillSwitch, None)
+          if (consumerTracking.putIfAbsent(consumerId, newTracking) == null)
+            logUpdateConsumerTracking(consumerId, now, newTracking)
+          else
+            // concurrent update, try again
+            updateConsumerTracking(consumerId, now, offset, consumerKillSwitch)
+
         case existing =>
           val newHistory =
             if (existing.history.size <= settings.broadcastBufferSize)
               existing.history :+ offset
             else
               existing.history.tail :+ offset // drop one, add one
-          existing.copy(history = newHistory)
-      }
-
-      if (consumerTracking.replace(consumerId, existingTracking, tracking)) {
-        logUpdateConsumerTracking(consumerId, now, tracking)
-      } else {
-        // concurrent update, try again
-        updateConsumerTracking(consumerId, now, offset, consumerKillSwitch)
+          val newTracking = existing.copy(history = newHistory)
+          if (consumerTracking.replace(consumerId, existingTracking, newTracking))
+            logUpdateConsumerTracking(consumerId, now, newTracking)
+          else
+            // concurrent update, try again
+            updateConsumerTracking(consumerId, now, offset, consumerKillSwitch)
       }
     }
 
