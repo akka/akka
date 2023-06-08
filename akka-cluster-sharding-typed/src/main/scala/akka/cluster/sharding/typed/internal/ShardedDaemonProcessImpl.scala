@@ -79,7 +79,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       context => behaviorFactory(context.processNumber),
       Some(settings),
       stopMessage,
-      None,
+      shardAllocationStrategy,
       supportsRescale = false)
 
   override def initWithContext[T](
