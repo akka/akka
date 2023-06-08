@@ -10,6 +10,7 @@ import scala.concurrent.Future
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.annotation.DoNotInherit
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.Member
@@ -37,14 +38,16 @@ object ConsistentHashingShardAllocationStrategy {
  * A good explanation of Consistent Hashing:
  * https://tom-e-white.com/2007/11/consistent-hashing.html
  *
+ * Not intended for public inheritance/implementation
  */
+@DoNotInherit
 class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
     extends ActorSystemDependentAllocationStrategy
     with ClusterShardAllocationMixin {
   import ConsistentHashingShardAllocationStrategy.emptyRebalanceResult
 
   private var cluster: Cluster = _
-  private var log: LoggingAdapter = _
+  private var _log: LoggingAdapter = _
 
   private val virtualNodesFactor = 10
   private var hashedByNodes: Vector[Address] = Vector.empty
@@ -52,8 +55,12 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
 
   override def start(system: ActorSystem): Unit = {
     cluster = Cluster(system)
-    log = Logging(system, classOf[ConsistentHashingShardAllocationStrategy])
+    _log = Logging(system, classOf[ConsistentHashingShardAllocationStrategy])
   }
+
+  // can be overridden for tests without real Cluster, i.e. without `start(system)`
+  protected def log: LoggingAdapter =
+    _log
 
   override protected def clusterState: CurrentClusterState = cluster.state
   override protected def selfMember: Member = cluster.selfMember

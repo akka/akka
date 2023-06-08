@@ -18,6 +18,8 @@ import akka.cluster.ClusterSettings
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.UniqueAddress
+import akka.event.Logging
+import akka.event.LoggingAdapter
 import akka.testkit.AkkaSpec
 import akka.util.Version
 
@@ -59,6 +61,8 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
       override protected def clusterState: ClusterEvent.CurrentClusterState =
         CurrentClusterState(SortedSet(memberA, memberB, memberC))
       override protected def selfMember: Member = memberA
+      override protected val log: LoggingAdapter =
+        Logging(system, classOf[ConsistentHashingShardAllocationStrategy])
     }
 
   "ConsistentHashingShardAllocationStrategy" must {
@@ -193,6 +197,9 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
             CurrentClusterState(SortedSet(member1, member2, member3))
 
           override protected def selfMember: Member = member1
+
+          override protected val log: LoggingAdapter =
+            Logging(system, classOf[ConsistentHashingShardAllocationStrategy])
         }
       val allocations = Map(regionA -> Vector("0", "1", "2", "3", "10", "14"), regionB -> Vector.empty)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty[String])
@@ -205,6 +212,8 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
           override protected def clusterState: CurrentClusterState =
             CurrentClusterState(SortedSet(memberA, memberB, memberC), unreachable = Set(memberB))
           override protected def selfMember: Member = memberB
+          override protected val log: LoggingAdapter =
+            Logging(system, classOf[ConsistentHashingShardAllocationStrategy])
         }
       val allocations =
         Map(regionA -> Vector("0", "1", "2", "3", "10", "14"), regionB -> Vector.empty, regionC -> Vector.empty)
@@ -225,6 +234,8 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
           override protected def clusterState: CurrentClusterState =
             CurrentClusterState(SortedSet(member1, member2, member3), unreachable = Set.empty)
           override protected def selfMember: Member = member2
+          override protected val log: LoggingAdapter =
+            Logging(system, classOf[ConsistentHashingShardAllocationStrategy])
         }
       val allocations =
         Map(regionA -> Vector("0", "1", "2", "3", "10", "14"), regionB -> Vector.empty, regionC -> Vector.empty)
