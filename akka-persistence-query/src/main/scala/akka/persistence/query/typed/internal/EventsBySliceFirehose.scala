@@ -669,7 +669,7 @@ import akka.util.unused
       def isCaughtUp(env: EventEnvelope[Any]): Boolean = {
         if (env.source == "") {
           val offset = timestampOffset(env)
-          firehoseHandler.firehoseOffset.timestamp != Instant.EPOCH && 
+          firehoseHandler.firehoseOffset.timestamp != Instant.EPOCH &&
           !firehoseHandler.firehoseOffset.timestamp.isAfter(offset.timestamp)
         } else
           false // don't look at pub-sub or backtracking events
