@@ -54,6 +54,28 @@ import akka.util.unused
 
 /**
  * INTERNAL API
+ *
+ * The purpose is to share the stream of events from the database and fan out to connected consumer
+ * streams. Thereby less queries and loading of events from the database. The shared stream is called
+ * the firehose stream.
+ *
+ * The fan out of the firehose stream is via a `BroadcastHub` that consumer streams dynamically attach to.
+ *
+ * A new consumer starts a catchup stream since the start offset typically is behind the live
+ * firehose stream. In the beginning it will emit events only from the catchup stream. Offset progress
+ * for the firehose stream is tracked and when the catchup stream has caught up with the firehose
+ * stream it will switch over to emitting from firehose stream and close the catchup stream. During
+ * an overlap period of time it will use events from both catchup and firehose streams to make sure
+ * that no events are missed. During this overlap time there is best effort deduplication.
+ *
+ * The `BroadcastHub` has a limited buffer that holds events between the slowest and fastest consumer.
+ * When the buffer is full the fastest consumer can't progress faster than the slowest. Short periods of
+ * slow down can be fine, but after a while the slow consumers are detected and aborted. They have to
+ * connect again and try catching up, but without slowing down other streams.
+ *
+ * The firehose stream is started on demand when the first consumer is attaching. It will be stopped
+ * when the last consumer is stopped, but it stays around for a while to make it more efficient for
+ * new or restarted consumers to attach again.
  */
 @InternalApi private[akka] object EventsBySliceFirehose
     extends ExtensionId[EventsBySliceFirehose]
@@ -74,7 +96,7 @@ import akka.util.unused
 
     def apply(config: Config): Settings =
       Settings(
-        delegateQueryPluginId = config.getString("delegate-query-plugin-id"),
+        delegateQueryPluginId = delegateQueryPluginId(config),
         broadcastBufferSize = config.getInt("broadcast-buffer-size"),
         firehoseLingerTimeout = config.getDuration("firehose-linger-timeout").asScala,
         catchupOverlap = config.getDuration("catchup-overlap"),
@@ -83,6 +105,9 @@ import akka.util.unused
         slowConsumerLagThreshold = config.getDuration("slow-consumer-lag-threshold"),
         abortSlowConsumerAfter = config.getDuration("abort-slow-consumer-after"),
         verboseLogging = config.getBoolean("verbose-debug-logging"))
+
+    def delegateQueryPluginId(config: Config): String =
+      config.getString("delegate-query-plugin-id")
   }
 
   final case class Settings(

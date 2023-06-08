@@ -27,6 +27,23 @@ object EventsBySliceFirehoseReadJournal {
 
 }
 
+/**
+ * This wrapper of [[EventsBySliceQuery]] gives better scalability when many consumers retrieve the
+ * same event events, for example many Projections of the same entity type. The purpose is to share
+ * the stream of events from the database and fan out to connected consumer streams. Thereby less
+ * queries and loading of events from the database.
+ *
+ * It is retrieved with:
+ * {{{
+ * val queries = PersistenceQuery(system).readJournalFor[EventsBySliceQuery](EventsBySliceFirehoseReadJournal.Identifier)
+ * }}}
+ *
+ * Corresponding Java API is in [[akka.persistence.query.typed.javadsl.EventsBySliceFirehoseReadJournal]].
+ *
+ * Configuration settings can be defined in the configuration section with the
+ * absolute path corresponding to the identifier, which is `"akka.persistence.query.events-by-slice-firehose"`
+ * for the default [[EventsBySliceFirehoseReadJournal#Identifier]]. See `reference.conf`.
+ */
 @nowarn("msg=never used")
 final class EventsBySliceFirehoseReadJournal(system: ExtendedActorSystem, config: Config, cfgPath: String)
     extends ReadJournal
