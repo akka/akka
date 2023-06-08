@@ -1,0 +1,5 @@
+# Internals
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy$")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy$RegionEntry")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy$RegionEntry$")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy$ShardSuitabilityOrdering$")
