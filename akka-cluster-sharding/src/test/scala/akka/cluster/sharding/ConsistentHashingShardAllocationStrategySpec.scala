@@ -122,7 +122,7 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.allocateShard(regionA, "10", allocations).futureValue should ===(regionA)
 
       val allocations2 = Map(regionA -> Vector("10"), regionB -> Vector("1", "2"), regionC -> Vector("0"))
-      allocationStrategy.rebalance(allocations2, Set.empty).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations2, Set.empty).futureValue should ===(Set.empty[String])
     }
 
     "rebalance when node is added" in {
@@ -168,7 +168,7 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
 
       val allocations3 =
         Map(regionA -> Vector("10", "14"), regionB -> Vector("1"), regionC -> Vector("0", "3"), regionD -> Vector("2"))
-      allocationStrategy.rebalance(allocations3, Set.empty).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations3, Set.empty).futureValue should ===(Set.empty[String])
     }
 
     "not rebalance those that are in progress" in {
@@ -181,7 +181,7 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("0", "1"))
       allocationStrategy.rebalance(allocations, Set("0", "1")).futureValue should ===(Set("2", "3"))
       // 10 and 14 are already at right place
-      allocationStrategy.rebalance(allocations, Set("0", "1", "2", "3")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("0", "1", "2", "3")).futureValue should ===(Set.empty[String])
     }
 
     "not rebalance when rolling update in progress" in {
