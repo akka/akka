@@ -15,6 +15,8 @@ object MiMa extends AutoPlugin {
   //  akka-pki artifact was added in Akka 2.6.6
   private val firstPatchOf26 = 6
   private val latestPatchOf26 = 20
+  private val firstPatchOf27 = 0
+  private val latestPatchOf27 = 0
   private val firstPatchOf28 = 0
   private val latestPatchOf28 = 2
 
@@ -48,7 +50,8 @@ object MiMa extends AutoPlugin {
         akka28Previous
       } else {
         val akka26Previous = expandVersions(2, 6, firstPatchOf26 to latestPatchOf26)
-        akka26Previous ++ akka28Previous
+        val akka27Previous = expandVersions(2, 7, firstPatchOf27 to latestPatchOf27)
+        akka26Previous ++ akka27Previous ++ akka28Previous
       }
 
     // check against all binary compatible artifacts
