@@ -14,6 +14,7 @@ import com.typesafe.config.Config
 
 import akka.NotUsed
 import akka.actor.ExtendedActorSystem
+import akka.persistence.Persistence
 import akka.persistence.query.Offset
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.scaladsl._
@@ -33,11 +34,8 @@ final class EventsBySliceFirehoseReadJournal(system: ExtendedActorSystem, config
     with EventTimestampQuery
     with LoadEventQuery {
 
-  // FIXME config
-  private val queryPluginId = "akka.persistence.r2dbc.query"
-
-  private lazy val eventsBySliceQuery =
-    PersistenceQuery(system).readJournalFor[EventsBySliceQuery](queryPluginId)
+  private lazy val persistenceExt = Persistence(system)
+  private lazy val settings = EventsBySliceFirehose.Settings(system, cfgPath)
 
   override def eventsBySlices[Event](
       entityType: String,
@@ -48,23 +46,33 @@ final class EventsBySliceFirehoseReadJournal(system: ExtendedActorSystem, config
   }
 
   override def sliceForPersistenceId(persistenceId: String): Int =
-    eventsBySliceQuery.sliceForPersistenceId(persistenceId)
+    persistenceExt.sliceForPersistenceId(persistenceId)
 
   override def sliceRanges(numberOfRanges: Int): immutable.Seq[Range] =
-    eventsBySliceQuery.sliceRanges(numberOfRanges)
+    persistenceExt.sliceRanges(numberOfRanges)
 
-  override def timestampOf(persistenceId: String, sequenceNr: Long): Future[Option[Instant]] =
+  override def timestampOf(persistenceId: String, sequenceNr: Long): Future[Option[Instant]] = {
     eventsBySliceQuery match {
       case q: EventTimestampQuery => q.timestampOf(persistenceId, sequenceNr)
       case _ =>
         throw new IllegalArgumentException(
-          s"Underlying ReadJournal [$queryPluginId] doesn't implement EventTimestampQuery")
+          s"Underlying ReadJournal [${settings.delegateQueryPluginId}] doesn't implement EventTimestampQuery")
     }
+  }
 
   override def loadEnvelope[Event](persistenceId: String, sequenceNr: Long): Future[EventEnvelope[Event]] =
     eventsBySliceQuery match {
       case q: LoadEventQuery => q.loadEnvelope(persistenceId, sequenceNr)
       case _ =>
-        throw new IllegalArgumentException(s"Underlying ReadJournal [$queryPluginId] doesn't implement LoadEventQuery")
+        throw new IllegalArgumentException(
+          s"Underlying ReadJournal [${settings.delegateQueryPluginId}] " +
+          "doesn't implement LoadEventQuery")
     }
+
+  private def eventsBySliceQuery: EventsBySliceQuery = {
+    val delegateQueryPluginId =
+      EventsBySliceFirehose.Settings.delegateQueryPluginId(system.settings.config.getConfig(cfgPath))
+    PersistenceQuery(system).readJournalFor[EventsBySliceQuery](delegateQueryPluginId)
+  }
+
 }
