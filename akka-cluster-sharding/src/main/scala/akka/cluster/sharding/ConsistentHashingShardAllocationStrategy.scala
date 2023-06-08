@@ -17,6 +17,8 @@ import akka.cluster.sharding.ShardCoordinator.ActorSystemDependentAllocationStra
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin
 import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabilityOrdering
+import akka.event.Logging
+import akka.event.LoggingAdapter
 import akka.routing.ConsistentHash
 
 object ConsistentHashingShardAllocationStrategy {
@@ -41,7 +43,8 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
     with ClusterShardAllocationMixin {
   import ConsistentHashingShardAllocationStrategy.emptyRebalanceResult
 
-  @volatile private var cluster: Cluster = _
+  private var cluster: Cluster = _
+  private var log: LoggingAdapter = _
 
   private val virtualNodesFactor = 10
   private var hashedByNodes: Vector[Address] = Vector.empty
@@ -49,6 +52,7 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
 
   override def start(system: ActorSystem): Unit = {
     cluster = Cluster(system)
+    log = Logging(system, classOf[ConsistentHashingShardAllocationStrategy])
   }
 
   override protected def clusterState: CurrentClusterState = cluster.state
@@ -59,8 +63,7 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
       shardId: ShardId,
       currentShardAllocations: Map[ActorRef, IndexedSeq[ShardId]]): Future[ActorRef] = {
     val nodes = nodesForRegions(currentShardAllocations)
-    if (nodes != hashedByNodes)
-      updateHashing(nodes)
+    updateHashing(nodes)
     val node = consistentHashing.nodeFor(shardId)
     currentShardAllocations.keysIterator.find(region => nodeForRegion(region) == node) match {
       case Some(region) => Future.successful(region)
@@ -79,8 +82,7 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
     } else {
 
       val nodes = nodesForRegions(currentShardAllocations)
-      if (nodes != hashedByNodes)
-        updateHashing(nodes)
+      updateHashing(nodes)
 
       val regionByNode = currentShardAllocations.keysIterator.map(region => nodeForRegion(region) -> region).toMap
 
@@ -98,8 +100,14 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
               val node = consistentHashing.nodeFor(shardId)
               regionByNode.get(node) match {
                 case Some(region) =>
-                  if (region != currentRegion)
+                  if (region != currentRegion) {
+                    log.debug(
+                      "Rebalance needed for shard [{}], from [{}] to [{}]",
+                      shardId,
+                      nodeForRegion(currentRegion),
+                      node)
                     result += shardId
+                  }
                 case None =>
                   throw new IllegalStateException(s"currentShardAllocations should include region for node [$node]")
               }
@@ -121,8 +129,13 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
     else region.path.address
 
   private def updateHashing(nodes: Vector[Address]): Unit = {
-    hashedByNodes = nodes
-    consistentHashing = ConsistentHash(nodes, virtualNodesFactor)
+    val sortedNodes = nodes.sorted
+    if (sortedNodes != hashedByNodes) {
+      if (log.isDebugEnabled)
+        log.debug("Update consistent hashing nodes [{}]", sortedNodes.mkString(", "))
+      hashedByNodes = sortedNodes
+      consistentHashing = ConsistentHash(sortedNodes, virtualNodesFactor)
+    }
   }
 
 }

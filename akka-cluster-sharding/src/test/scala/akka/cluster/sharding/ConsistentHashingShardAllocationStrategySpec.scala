@@ -137,6 +137,13 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
         regionC -> Vector("0", "3"),
         regionD -> Vector.empty)
       allocationStrategy.rebalance(allocations2, Set.empty).futureValue should ===(Set("2"))
+
+      val allocations3 = Map(
+        regionB -> Vector("2", "1"),
+        regionA -> Vector("10", "14"),
+        regionD -> Vector.empty,
+        regionC -> Vector("3", "0"))
+      allocationStrategy.rebalance(allocations3, Set.empty).futureValue should ===(Set("2"))
     }
 
     "not rebalance more than limit" in {
