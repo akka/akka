@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 
@@ -68,10 +69,11 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
   override protected def clusterState: CurrentClusterState = cluster.state
   override protected def selfMember: Member = cluster.selfMember
 
+  @nowarn("msg=never used")
   override def allocateShard(
       requester: ActorRef,
       shardId: ShardId,
-      currentShardAllocations: Map[ActorRef, IndexedSeq[ShardId]]): Future[ActorRef] = {
+      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
     val nodes = nodesForRegions(currentShardAllocations)
     updateHashing(nodes)
     val node = consistentHashing.nodeFor(shardId)
@@ -83,7 +85,7 @@ class ConsistentHashingShardAllocationStrategy(rebalanceLimit: Int)
   }
 
   override def rebalance(
-      currentShardAllocations: Map[ActorRef, IndexedSeq[ShardId]],
+      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
 
     val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(ShardSuitabilityOrdering)
