@@ -29,7 +29,7 @@ object ConsistentHashingShardAllocationStrategy {
 /**
  * [[akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy]] that is using consistent
  * hashing. This can be useful when shards with the same shard id for different entity types
- * should be best effort collocated to the same nodes.
+ * should be best effort colocated to the same nodes.
  *
  * When adding or removing nodes it will rebalance according to the new consistent hashing,
  * but that means that only a few shards will be rebalanced and others remain on the same
@@ -37,6 +37,9 @@ object ConsistentHashingShardAllocationStrategy {
  *
  * A good explanation of Consistent Hashing:
  * https://tom-e-white.com/2007/11/consistent-hashing.html
+ *
+ * Create a new instance of this for each entity types, i.e. a `ConsistentHashingShardAllocationStrategy`
+ * instance must not be shared between different entity types.
  *
  * Not intended for public inheritance/implementation
  */

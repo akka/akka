@@ -239,6 +239,44 @@ support a greater number of shards.
 is an example project that can be downloaded, and with instructions of how to run, that demonstrates how to use
 external sharding to co-locate Kafka partition consumption with shards.
 
+### Colocate Shards
+
+When using the default shard allocation strategy the shards for different entity types are allocated independent of
+each other, i.e. the same shard identifier for the different entity types may be allocated to different nodes.
+Colocating shards can be useful if it's known that certain entities interact or share resources with some other
+entities and that can be defined by using the same shard identifier.
+
+To colocate such shards you can use the @apidoc[akka.cluster.sharding.ConsistentHashingShardAllocationStrategy].
+
+Let's look at an example where the purpose is to colocate `Device` entities with the `Building` entity they belong to.
+To use the same shard identifier we need to use a custom @apidoc[akka.cluster.sharding.typed.ShardingMessageExtractor]
+for the `Device` and `Building` entities:
+
+Scala
+: @@snip [ConsistentHashingShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ConsistentHashingShardAllocationCompileOnlySpec.scala) { #building #device }
+
+Java
+: @@snip [ConsistentHashingShardAllocationCompileOnlyTest](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ConsistentHashingShardAllocationCompileOnlyTest.java) { #building #device }
+
+Set the allocation strategy and message extractor on your @apidoc[typed.*.Entity]:
+
+Scala
+: @@snip [ConsistentHashingShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ConsistentHashingShardAllocationCompileOnlySpec.scala) { #init }
+
+Java
+: @@snip [ConsistentHashingShardAllocationCompileOnlyTest](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ConsistentHashingShardAllocationCompileOnlyTest.java) { #init }
+
+@@@ note
+Create a new instance of the `ConsistentHashingShardAllocationStrategy` for each entity type, i.e. a `ConsistentHashingShardAllocationStrategy` instance must not be shared between different entity types.
+@@@
+
+The allocation strategy is using [Consistent Hashing](https://tom-e-white.com/2007/11/consistent-hashing.html)
+of the Cluster membership ring to assign a shard to a node. When adding or removing nodes it will rebalance
+according to the new consistent hashing, but that means that only a few shards will be rebalanced and others
+remain on the same location. When there are changes to the Cluster membership the shards may be on different
+nodes for a while, but eventually, when the membership is stable, the shards with the same identifier will
+end up on the same node.
+
 ### Custom shard allocation
 
 An optional custom shard allocation strategy can be passed into the optional parameter when initializing an entity type 
