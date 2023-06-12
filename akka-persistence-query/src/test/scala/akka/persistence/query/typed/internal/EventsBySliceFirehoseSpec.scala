@@ -234,8 +234,8 @@ class EventsBySliceFirehoseSpec
       outProbe(0).expectNext(allEnvelopes(1))
       outProbe(1).expectNext(allEnvelopes(1))
 
-      val firehose = eventsBySliceFirehose.getFirehose(
-        FirehoseKey(EventsBySliceFirehoseQuery.Identifier, entityType, sliceRange))
+      val firehose =
+        eventsBySliceFirehose.getFirehose(FirehoseKey(EventsBySliceFirehoseQuery.Identifier, entityType, sliceRange))
       firehose.consumerTracking.size shouldBe 2
       import akka.util.ccompat.JavaConverters._
       firehose.consumerTracking.values.asScala.foreach { tracking =>
@@ -290,8 +290,8 @@ class EventsBySliceFirehoseSpec
       outProbe(0).request(100)
       moreEnvelopes.foreach(firehosePublisher.sendNext)
       outProbe(0).expectNextN(moreEnvelopes.size) shouldBe moreEnvelopes
-      val firehose = eventsBySliceFirehose.getFirehose(
-        FirehoseKey(EventsBySliceFirehoseQuery.Identifier, entityType, sliceRange))
+      val firehose =
+        eventsBySliceFirehose.getFirehose(FirehoseKey(EventsBySliceFirehoseQuery.Identifier, entityType, sliceRange))
       clock.tick(JDuration.ofSeconds(6)) // simulate consumer lag
       firehose.detectSlowConsumers(clock.instant())
       clock.tick(JDuration.ofSeconds(2))
