@@ -85,7 +85,7 @@ class ConsistentHashingShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.allocateShard(regionA, "10", allocations).futureValue should ===(regionA)
       allocationStrategy.allocateShard(regionA, "14", allocations).futureValue should ===(regionA)
 
-      val allocations2 = allocations.removed(regionC)
+      val allocations2 = allocations - regionC
       allocationStrategy.allocateShard(regionA, "0", allocations2).futureValue should ===(regionA)
       allocationStrategy.allocateShard(regionA, "1", allocations2).futureValue should ===(regionB)
       allocationStrategy.allocateShard(regionA, "2", allocations2).futureValue should ===(regionB)
