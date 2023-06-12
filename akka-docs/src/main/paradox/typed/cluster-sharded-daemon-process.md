@@ -61,7 +61,7 @@ It is not safe to do a rolling upgrade from dynamic number of workers to static 
 
 When using the default shard allocation strategy the processes for different names are allocated independent of
 each other, i.e. the same process index for different process names may be allocated to different nodes.
-Colocating processes can be useful to share resources, such as Projections with @ref:[EventsBySliceFirehoseReadJournal](../persistence-query.md#eventsbyslice-and-currenteventsbyslice)
+Colocating processes can be useful to share resources, such as Projections with @ref:[EventsBySliceFirehoseQuery](../persistence-query.md#eventsbyslice-and-currenteventsbyslice)
 
 To colocate such processes you can use the @apidoc[akka.cluster.sharding.ConsistentHashingShardAllocationStrategy]
 as `shardAllocationStrategy` parameter of the `init` or `initWithContext` methods. 

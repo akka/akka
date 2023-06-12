@@ -176,7 +176,7 @@ The purpose is to evenly distribute all persistence ids over the slices.
 
 See @apidoc[akka.persistence.query.typed.*.EventsBySliceQuery] and @apidoc[akka.persistence.query.typed.*.CurrentEventsBySliceQuery]. 
 
-@apidoc[akka.persistence.query.typed.*.EventsBySliceFirehoseReadJournal] can give better scalability when many
+@apidoc[akka.persistence.query.typed.*.EventsBySliceFirehoseQuery] can give better scalability when many
 consumers retrieve the same events, for example many Projections of the same entity type. The purpose is
 to share the stream of events from the database and fan out to connected consumer streams. Thereby fewer queries
 and loading of events from the database. It is typically used together with @ref:[Sharded Daemon Process with colocated processes](typed/cluster-sharded-daemon-process.md#colocate-processes).

@@ -24,7 +24,7 @@ import akka.persistence.query.TimestampOffset
 import akka.persistence.query.typed.EventEnvelope
 import akka.persistence.query.typed.internal.EventsBySliceFirehose.FirehoseKey
 import akka.persistence.query.typed.internal.EventsBySliceFirehose.SlowConsumerException
-import akka.persistence.query.typed.scaladsl.EventsBySliceFirehoseReadJournal
+import akka.persistence.query.typed.scaladsl.EventsBySliceFirehoseQuery
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
@@ -112,7 +112,7 @@ class EventsBySliceFirehoseSpec
 
     def sliceRange = 0 to 1023
 
-    def pluginId: String = EventsBySliceFirehoseReadJournal.Identifier
+    def pluginId: String = EventsBySliceFirehoseQuery.Identifier
 
     class ConsumerSetup {
       private val catchupPublisherPromise = Promise[TestPublisher.Probe[EventEnvelope[Any]]]()
@@ -235,7 +235,7 @@ class EventsBySliceFirehoseSpec
       outProbe(1).expectNext(allEnvelopes(1))
 
       val firehose = eventsBySliceFirehose.getFirehose(
-        FirehoseKey(EventsBySliceFirehoseReadJournal.Identifier, entityType, sliceRange))
+        FirehoseKey(EventsBySliceFirehoseQuery.Identifier, entityType, sliceRange))
       firehose.consumerTracking.size shouldBe 2
       import akka.util.ccompat.JavaConverters._
       firehose.consumerTracking.values.asScala.foreach { tracking =>
@@ -291,7 +291,7 @@ class EventsBySliceFirehoseSpec
       moreEnvelopes.foreach(firehosePublisher.sendNext)
       outProbe(0).expectNextN(moreEnvelopes.size) shouldBe moreEnvelopes
       val firehose = eventsBySliceFirehose.getFirehose(
-        FirehoseKey(EventsBySliceFirehoseReadJournal.Identifier, entityType, sliceRange))
+        FirehoseKey(EventsBySliceFirehoseQuery.Identifier, entityType, sliceRange))
       clock.tick(JDuration.ofSeconds(6)) // simulate consumer lag
       firehose.detectSlowConsumers(clock.instant())
       clock.tick(JDuration.ofSeconds(2))

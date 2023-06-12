@@ -11,13 +11,13 @@ import com.typesafe.config.Config
 final class EventsBySliceFirehoseReadJournalProvider(system: ExtendedActorSystem, config: Config, cfgPath: String)
     extends ReadJournalProvider {
 
-  private lazy val scaladslReadJournalInstance: scaladsl.EventsBySliceFirehoseReadJournal =
-    new scaladsl.EventsBySliceFirehoseReadJournal(system, config, cfgPath)
+  private lazy val scaladslReadJournalInstance: scaladsl.EventsBySliceFirehoseQuery =
+    new scaladsl.EventsBySliceFirehoseQuery(system, config, cfgPath)
 
-  override def scaladslReadJournal(): scaladsl.EventsBySliceFirehoseReadJournal = scaladslReadJournalInstance
+  override def scaladslReadJournal(): scaladsl.EventsBySliceFirehoseQuery = scaladslReadJournalInstance
 
   private lazy val javadslReadJournalInstance =
-    new javadsl.EventsBySliceFirehoseReadJournal(new scaladsl.EventsBySliceFirehoseReadJournal(system, config, cfgPath))
+    new javadsl.EventsBySliceFirehoseQuery(new scaladsl.EventsBySliceFirehoseQuery(system, config, cfgPath))
 
-  override def javadslReadJournal(): javadsl.EventsBySliceFirehoseReadJournal = javadslReadJournalInstance
+  override def javadslReadJournal(): javadsl.EventsBySliceFirehoseQuery = javadslReadJournalInstance
 }

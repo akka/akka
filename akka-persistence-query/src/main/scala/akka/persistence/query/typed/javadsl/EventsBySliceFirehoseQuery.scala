@@ -21,8 +21,8 @@ import akka.persistence.query.typed.EventEnvelope
 import akka.persistence.query.typed.scaladsl
 import akka.stream.javadsl.Source
 
-object EventsBySliceFirehoseReadJournal {
-  val Identifier: String = scaladsl.EventsBySliceFirehoseReadJournal.Identifier
+object EventsBySliceFirehoseQuery {
+  val Identifier: String = scaladsl.EventsBySliceFirehoseQuery.Identifier
 }
 
 /**
@@ -34,16 +34,16 @@ object EventsBySliceFirehoseReadJournal {
  * It is retrieved with:
  * {{{
  * EventsBySliceQuery queries =
- *   PersistenceQuery.get(system).getReadJournalFor(EventsBySliceQuery.class, EventsBySliceFirehoseReadJournal.Identifier());
+ *   PersistenceQuery.get(system).getReadJournalFor(EventsBySliceQuery.class, EventsBySliceFirehoseQuery.Identifier());
  * }}}
  *
- * Corresponding Scala API is in [[akka.persistence.query.typed.scaladsl.EventsBySliceFirehoseReadJournal]].
+ * Corresponding Scala API is in [[akka.persistence.query.typed.scaladsl.EventsBySliceFirehoseQuery]].
  *
  * Configuration settings can be defined in the configuration section with the
  * absolute path corresponding to the identifier, which is `"akka.persistence.query.events-by-slice-firehose"`
- * for the default [[EventsBySliceFirehoseReadJournal#Identifier]]. See `reference.conf`.
+ * for the default [[EventsBySliceFirehoseQuery#Identifier]]. See `reference.conf`.
  */
-final class EventsBySliceFirehoseReadJournal(delegate: scaladsl.EventsBySliceFirehoseReadJournal)
+final class EventsBySliceFirehoseQuery(delegate: scaladsl.EventsBySliceFirehoseQuery)
     extends ReadJournal
     with EventsBySliceQuery
     with EventTimestampQuery
