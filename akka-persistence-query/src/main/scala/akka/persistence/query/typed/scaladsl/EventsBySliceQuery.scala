@@ -19,6 +19,8 @@ import akka.stream.scaladsl.Source
  * `EventsBySliceQuery` that is using a timestamp based offset should also implement [[EventTimestampQuery]] and
  * [[LoadEventQuery]].
  *
+ * See also [[EventsBySliceFirehoseReadJournal]].
+ *
  * API May Change
  */
 @ApiMayChange

@@ -29,8 +29,8 @@ object EventsBySliceFirehoseReadJournal {
 
 /**
  * This wrapper of [[EventsBySliceQuery]] gives better scalability when many consumers retrieve the
- * same event events, for example many Projections of the same entity type. The purpose is to share
- * the stream of events from the database and fan out to connected consumer streams. Thereby less
+ * same events, for example many Projections of the same entity type. The purpose is to share
+ * the stream of events from the database and fan out to connected consumer streams. Thereby fewer
  * queries and loading of events from the database.
  *
  * It is retrieved with:
