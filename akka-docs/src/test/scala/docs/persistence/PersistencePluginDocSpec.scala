@@ -67,12 +67,12 @@ class PersistencePluginDocSpec extends AnyWordSpec {
       """
         //#journal-plugin-config
         # Path to the journal plugin to be used
-        akka.persistence.journal.plugin = "my-journal"
+        akka.persistence.journal.plugin = "my-jourfasdfnal"
 
         # My custom journal plugin
         my-journal {
           # Class name of the plugin.
-          class = "docs.persistence.MyJournal"
+          class = "docs.persistence.MyJournalfasdf"
           # Dispatcher for the plugin actor.
           plugin-dispatcher = "akka.actor.default-dispatcher"
         }
@@ -152,7 +152,7 @@ trait SharedLeveldbPluginDocSpec {
   }
 }
 
-class MyJournal extends AsyncWriteJournal {
+class MyJournall extends AsyncWriteJournal {
   //#sync-journal-plugin-api
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
     Future.fromTry(Try {

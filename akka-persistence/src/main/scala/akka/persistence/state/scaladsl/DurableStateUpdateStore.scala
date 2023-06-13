@@ -13,10 +13,11 @@ import akka.Done
  *
  * For Java API see [[akka.persistence.state.javadsl.DurableStateUpdateStore]].
  */
+//#plugin-api
 trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
 
   /**
-   * @param seqNr sequence number for optimistic locking. starts at 1.
+   * @param revision sequence number for optimistic locking. starts at 1.
    */
   def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): Future[Done]
 
@@ -25,3 +26,4 @@ trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
 
   def deleteObject(persistenceId: String, revision: Long): Future[Done]
 }
+//#plugin-api
