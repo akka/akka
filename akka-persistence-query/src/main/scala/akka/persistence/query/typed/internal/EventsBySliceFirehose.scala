@@ -247,8 +247,8 @@ import akka.util.unused
               s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] updateConsumerTracking [$consumerId], " +
               s"behind [$consumerBehind] events from fastest, " +
               s"$diffFastestStr, $diffSlowestStr, " +
-              s"slowest [${fastestConsumer.consumerId}] is behind [$behind] " +
-              s"of fastest [${slowestConsumer.consumerId}], [$diffSlowestFastestsMillis] ms. " +
+              s"slowest [${slowestConsumer.consumerId}] is behind [$behind] " +
+              s"events from fastest [${fastestConsumer.consumerId}], [$diffSlowestFastestsMillis] ms. " +
               s"Consumer lag of fastest [$fastestLagMillis] ms.")
           }
         }
@@ -342,7 +342,7 @@ import akka.util.unused
         log.debug(
           s"Firehose entityType [$entityType] sliceRange [$sliceRangeStr] detectSlowConsumers, " +
           s"slowest [${slowestConsumer.consumerId}] is behind [$behind] " +
-          s"of fastest [${fastestConsumer.consumerId}], [$behindMillis] ms. " +
+          s"events from fastest [${fastestConsumer.consumerId}], [$behindMillis] ms. " +
           s"Consumer lag of fastest [$fastestLagMillis] ms")
 
         consumerTrackingValues.foreach { tracking =>
