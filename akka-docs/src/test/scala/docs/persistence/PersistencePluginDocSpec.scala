@@ -152,7 +152,7 @@ trait SharedLeveldbPluginDocSpec {
   }
 }
 
-class MyJournall extends AsyncWriteJournal {
+class MyJournal extends AsyncWriteJournal {
   //#sync-journal-plugin-api
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
     Future.fromTry(Try {
