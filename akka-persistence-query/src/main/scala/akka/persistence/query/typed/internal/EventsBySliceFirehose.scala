@@ -188,36 +188,27 @@ import akka.util.unused
     def isShutdown: Boolean =
       firehoseIsShutdown
 
-    @tailrec def updateConsumerTracking(
+    def updateConsumerTracking(
         consumerId: String,
         now: Instant,
         offset: TimestampOffset,
         consumerKillSwitch: KillSwitch): Unit = {
 
-      val existingTracking = consumerTracking.get(consumerId)
-      existingTracking match {
-        case null =>
-          val newTracking =
+      val newTracking = consumerTracking.compute(
+        consumerId,
+        (_, existing) => {
+          if (existing == null)
             ConsumerTracking(consumerId, history = Vector(offset), firehoseOnly = false, consumerKillSwitch, None)
-          if (consumerTracking.putIfAbsent(consumerId, newTracking) == null)
-            logUpdateConsumerTracking(consumerId, now, newTracking)
-          else
-            // concurrent update, try again
-            updateConsumerTracking(consumerId, now, offset, consumerKillSwitch)
-
-        case existing =>
-          val newHistory =
-            if (existing.history.size <= settings.broadcastBufferSize)
-              existing.history :+ offset
-            else
-              existing.history.tail :+ offset // drop one, add one
-          val newTracking = existing.copy(history = newHistory)
-          if (consumerTracking.replace(consumerId, existingTracking, newTracking))
-            logUpdateConsumerTracking(consumerId, now, newTracking)
-          else
-            // concurrent update, try again
-            updateConsumerTracking(consumerId, now, offset, consumerKillSwitch)
-      }
+          else {
+            val newHistory =
+              if (existing.history.size <= settings.broadcastBufferSize)
+                existing.history :+ offset
+              else
+                existing.history.tail :+ offset // drop one, add one
+            existing.copy(history = newHistory)
+          }
+        })
+      logUpdateConsumerTracking(consumerId, now, newTracking)
     }
 
     private def logUpdateConsumerTracking(consumerId: String, now: Instant, tracking: ConsumerTracking): Unit = {
