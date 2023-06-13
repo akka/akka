@@ -255,7 +255,7 @@ import akka.util.unused
         val behind = elementsBehind(fastestConsumer.history, slowestConsumer.history)
         val fastestLagMillis = now.toEpochMilli - fastestConsumer.offsetTimestamp.toEpochMilli
 
-        if (behind >= settings.broadcastBufferSize / 2 && fastestLagMillis > 5000) { // FIXME config fastestLagMillis
+        if (behind >= settings.broadcastBufferSize / 2 && fastestLagMillis > settings.slowConsumerLagThreshold.toMillis) {
           logDetectSlowConsumers(trackingValues, slowestConsumer, fastestConsumer, behind, fastestLagMillis)
 
           val changedConsumerTrackingValues = trackingValues.flatMap { tracking =>
