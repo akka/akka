@@ -273,10 +273,9 @@ import akka.util.unused
           }
 
           changedConsumerTrackingValues.foreach { tracking =>
-            consumerTracking.merge(
+            consumerTracking.computeIfPresent(
               tracking.consumerId,
-              tracking,
-              (existing, _) => existing.copy(slowConsumerCandidate = tracking.slowConsumerCandidate))
+              (_, existing) => existing.copy(slowConsumerCandidate = tracking.slowConsumerCandidate))
           }
 
           val newTrackingValues = consumerTrackingValues()
