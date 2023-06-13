@@ -281,12 +281,8 @@ import akka.util.unused
 
           val newTrackingValues = consumerTrackingValues()
 
-          val confirmedSlowConsumers = newTrackingValues.filter { tracking =>
-            tracking.slowConsumerCandidate match {
-              case None => false
-              case Some(detectedTimestamp) =>
-                isDurationGreaterThan(detectedTimestamp, now, settings.abortSlowConsumerAfter)
-            }
+          val confirmedSlowConsumers = newTrackingValues.filter {
+            _.slowConsumerCandidate.exists(isDurationGreaterThan(_, now, settings.abortSlowConsumerAfter))
           }
 
           if (confirmedSlowConsumers.nonEmpty) {
