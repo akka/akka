@@ -67,12 +67,12 @@ class PersistencePluginDocSpec extends AnyWordSpec {
       """
         //#journal-plugin-config
         # Path to the journal plugin to be used
-        akka.persistence.journal.plugin = "my-jourfasdfnal"
+        akka.persistence.journal.plugin = "my-journal"
 
         # My custom journal plugin
         my-journal {
           # Class name of the plugin.
-          class = "docs.persistence.MyJournalfasdf"
+          class = "docs.persistence.MyJournal"
           # Dispatcher for the plugin actor.
           plugin-dispatcher = "akka.actor.default-dispatcher"
         }
