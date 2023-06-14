@@ -18,8 +18,8 @@ To use Akka Sharded Daemon Process, you must add the following dependency in you
 ## Introduction
 
 Sharded Daemon Process provides a way to run `N` actors, each given a numeric id starting from `0` that are then kept alive
-and balanced across the cluster. When a rebalance is needed the actor is stopped and, triggered by a keep alive running on 
-all nodes, started on a new node (the keep alive should be seen as an implementation detail and may change in future versions).
+and balanced across the cluster. When a rebalance is needed the actor is stopped and, triggered by a keep alive from
+a Cluster Singleton (the keep alive should be seen as an implementation detail and may change in future versions).
 
 The intended use case is for splitting data processing workloads across a set number of workers that each get to work on a subset
 of the data that needs to be processed. This is commonly needed to create projections based on the event streams available
@@ -56,6 +56,29 @@ to with a failure response.
 
 A rolling upgrade switching from a static number of workers to a dynamic number is possible. 
 It is not safe to do a rolling upgrade from dynamic number of workers to static without a full cluster shutdown.
+
+### Colocate processes
+
+When using the default shard allocation strategy the processes for different names are allocated independent of
+each other, i.e. the same process index for different process names may be allocated to different nodes.
+Colocating processes can be useful to share resources, such as Projections with @ref:[EventsBySliceFirehoseQuery](../persistence-query.md#eventsbyslice-and-currenteventsbyslice)
+
+To colocate such processes you can use the @apidoc[akka.cluster.sharding.ConsistentHashingShardAllocationStrategy]
+as `shardAllocationStrategy` parameter of the `init` or `initWithContext` methods. 
+
+@@@ note
+Create a new instance of the `ConsistentHashingShardAllocationStrategy` for each Sharded Daemon Process name, i.e. a `ConsistentHashingShardAllocationStrategy` instance must not be shared.
+@@@
+
+The shard identifier that is used by Sharded Daemon Process is the same as the process index, i.e. processes with
+the same index will be colocated.
+
+The allocation strategy is using [Consistent Hashing](https://tom-e-white.com/2007/11/consistent-hashing.html)
+of the Cluster membership ring to assign a shard to a node. When adding or removing nodes it will rebalance
+according to the new consistent hashing, but that means that only a few shards will be rebalanced and others
+remain on the same location. When there are changes to the Cluster membership the shards may be on different
+nodes for a while, but eventually, when the membership is stable, the shards with the same identifier will
+end up on the same node.
 
 ## Scalability  
 
