@@ -15,7 +15,7 @@ import scala.concurrent.Future
 //#plugin-provider
 class MyStateStoreProvider(system: ExtendedActorSystem, config: Config, cfgPath: String) extends DurableStateStoreProvider {
   /**
-   * The `ReadJournal` implementation for the Scala API.
+   * The `DurableStateStore` implementation for the Scala API.
    * This corresponds to the instance that is returned by [[DurableStateStoreRegistry#durableStateStoreFor]].
    */
   override def scaladslDurableStateStore(): DurableStateStore[Any] = new MyStateStore(system, config, cfgPath)
@@ -42,7 +42,7 @@ class MyStateStore[A](system: ExtendedActorSystem, config: Config, cfgPath: Stri
   /**
    * Deprecated. Use the deleteObject overload with revision instead.
    */
-  override def deleteObject(persistenceId: String): Future[Done] = ???
+  override def deleteObject(persistenceId: String): Future[Done] = deleteObject(persistenceId, 0)
 
   /**
    * Will delete the state by setting it to the empty state and the revision number will be incremented by 1.

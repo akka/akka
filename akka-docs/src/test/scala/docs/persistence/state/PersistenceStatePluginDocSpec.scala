@@ -29,15 +29,13 @@ class PersistenceStatePluginDocSpec extends AnyWordSpec {
   val providerConfigJava =
     """
     //#plugin-config-java
-    # Path to the journal plugin to be used
+    # Path to the state store plugin to be used
     akka.persistence.state.plugin = "my-java-state-store"
 
-    # My custom journal plugin
+    # My custom state store plugin
     my-java-state-store {
       # Class name of the plugin.
       class = "docs.persistence.state.MyJavStateStoreProvider"
-      # Dispatcher for the plugin actor.
-      plugin-dispatcher = "akka.actor.default-dispatcher"
     }
     //#plugin-config-java
   """
@@ -45,15 +43,13 @@ class PersistenceStatePluginDocSpec extends AnyWordSpec {
   val providerConfig =
     """
         //#plugin-config-scala
-        # Path to the journal plugin to be used
+        # Path to the state store plugin to be used
         akka.persistence.state.plugin = "my-state-store"
 
-        # My custom journal plugin
+        # My custom state store plugin
         my-state-store {
           # Class name of the plugin.
           class = "docs.persistence.state.MyStateStoreProvider"
-          # Dispatcher for the plugin actor.
-          plugin-dispatcher = "akka.actor.default-dispatcher"
         }
         //#plugin-config-scala
       """
