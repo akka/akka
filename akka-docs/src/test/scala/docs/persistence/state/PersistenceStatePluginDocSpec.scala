@@ -35,32 +35,31 @@ class PersistenceStatePluginDocSpec extends AnyWordSpec {
     # My custom state store plugin
     my-java-state-store {
       # Class name of the plugin.
-      class = "docs.persistence.state.MyJavStateStoreProvider"
+      class = "docs.persistence.state.MyJavaStateStoreProvider"
     }
     //#plugin-config-java
   """
 
   val providerConfig =
     """
-        //#plugin-config-scala
-        # Path to the state store plugin to be used
-        akka.persistence.state.plugin = "my-state-store"
+    //#plugin-config-scala
+    # Path to the state store plugin to be used
+    akka.persistence.state.plugin = "my-state-store"
 
-        # My custom state store plugin
-        my-state-store {
-          # Class name of the plugin.
-          class = "docs.persistence.state.MyStateStoreProvider"
-        }
-        //#plugin-config-scala
+    # My custom state store plugin
+    my-state-store {
+      # Class name of the plugin.
+      class = "docs.persistence.state.MyStateStoreProvider"
+    }
+    //#plugin-config-scala
       """
 
-  val system = ActorSystem(
-    "PersistenceStatePluginDocSpec",
-    ConfigFactory
-      .parseString(providerConfig)
-  )
-
   "it should work for scala" in {
+    val system = ActorSystem(
+      "PersistenceStatePluginDocSpec",
+      ConfigFactory
+        .parseString(providerConfig)
+    )
     try {
       Persistence(system)
       DurableStateStoreRegistry(system).durableStateStoreFor[DurableStateUpdateStore[Any]]("my-state-store")
@@ -71,6 +70,11 @@ class PersistenceStatePluginDocSpec extends AnyWordSpec {
 
 
   "it should work for java" in {
+    val system = ActorSystem(
+      "PersistenceStatePluginDocSpec",
+      ConfigFactory
+        .parseString(providerConfigJava)
+    )
     try {
       Persistence(system)
       DurableStateStoreRegistry(system).durableStateStoreFor[DurableStateUpdateStore[Any]]("my-java-state-store")
