@@ -5,10 +5,13 @@
 package docs.persistence.state
 
 import akka.Done
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ExtendedActorSystem}
 
+import akka.persistence.state.scaladsl.DurableStateStore
+import akka.persistence.state.{DurableStateStoreProvider, DurableStateStoreRegistry}
 import akka.testkit.TestKit
 import com.typesafe.config._
+import docs.persistence
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.Future
@@ -21,60 +24,63 @@ import akka.persistence.state.scaladsl.GetObjectResult
 //#plugin-imports
 
 class PersistenceStatePluginDocSpec extends AnyWordSpec {
-  {
-    val providerConfig =
-      """
-        //#journal-plugin-config
+
+
+  val providerConfigJava =
+    """
+    //#plugin-config-java
+    # Path to the journal plugin to be used
+    akka.persistence.state.plugin = "my-java-state-store"
+
+    # My custom journal plugin
+    my-java-state-store {
+      # Class name of the plugin.
+      class = "docs.persistence.state.MyJavStateStoreProvider"
+      # Dispatcher for the plugin actor.
+      plugin-dispatcher = "akka.actor.default-dispatcher"
+    }
+    //#plugin-config-java
+  """
+
+  val providerConfig =
+    """
+        //#plugin-config-scala
         # Path to the journal plugin to be used
-        akka.persistence.state.plugin = "my-journal"
+        akka.persistence.state.plugin = "my-state-store"
 
         # My custom journal plugin
-        my-journal {
+        my-state-store {
           # Class name of the plugin.
-          class = "docs.persistence.state.MyJournal"
+          class = "docs.persistence.state.MyStateStoreProvider"
           # Dispatcher for the plugin actor.
           plugin-dispatcher = "akka.actor.default-dispatcher"
         }
-        //#journal-plugin-config
+        //#plugin-config-scala
       """
 
-    val system = ActorSystem(
-      "PersistenceStatePluginDocSpec",
-      ConfigFactory
-        .parseString(providerConfig)
-      //.withFallback(ConfigFactory.parseString(PersistencePluginDocSpec.config))
-    )
+  val system = ActorSystem(
+    "PersistenceStatePluginDocSpec",
+    ConfigFactory
+      .parseString(providerConfig)
+  )
+
+  "it should work for scala" in {
     try {
       Persistence(system)
+      DurableStateStoreRegistry(system).durableStateStoreFor[DurableStateUpdateStore[Any]]("my-state-store")
+    } finally {
+      TestKit.shutdownActorSystem(system, 10.seconds, false)
+    }
+  }
+
+
+  "it should work for java" in {
+    try {
+      Persistence(system)
+      DurableStateStoreRegistry(system).durableStateStoreFor[DurableStateUpdateStore[Any]]("my-java-state-store")
     } finally {
       TestKit.shutdownActorSystem(system, 10.seconds, false)
     }
   }
 }
 
-case class MyState(numbers: Seq[Int], tag: String)
-class MyJournal extends DurableStateUpdateStore[MyState] {
-
-  /**
-   * Will persist the latest state. If it’s a new persistence id, the record will be inserted.
-   *
-   * In case of an existing persistence id, the record will be updated only if the revision
-   * number of the incoming record is 1 more than the already existing record. Otherwise persist will fail.
-   */
-  override def upsertObject(persistenceId: String, revision: Long, value: MyState, tag: String): Future[Done] = ???
-
-  /**
-   * Deprecated. Use the deleteObject overload with revision instead.
-   */
-  override def deleteObject(persistenceId: String): Future[Done] = ???
-
-  /**
-   * Will delete the state by setting it to the empty state and the revision number will be incremented by 1.
-   */
-  override def deleteObject(persistenceId: String, revision: Long): Future[Done] = ???
-
-  /**
-   * Returns the current state for the given persistence id.
-   */
-  override def getObject(persistenceId: String): Future[GetObjectResult[MyState]] = ???
-}

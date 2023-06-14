@@ -10,7 +10,7 @@ Scala
 :  @@snip [PersistenceStatePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/state/PersistenceStatePluginDocSpec.scala) { #plugin-imports }
 
 Java
-:  @@snip [DurableStateExample.java](/akka-docs/src/test/java/jdocs/persistence/state/DurableStateExample.java) { #plugin-imports }
+:  @@snip [MyJavaStateStore.java](/akka-docs/src/main/java/docs/persistence/state/MyJavaStateStore.java) { #plugin-imports }
 
 ## State Store plugin API
 
@@ -19,11 +19,28 @@ A durable state store plugin extends `DurableStateUpdateStore`.
 `DurableStateUpdateStore` is an interface and the methods to be implemented are:
 
 Scala
-:  @@snip [DurableStateUpdateStore.scala](/akka-persistence/src/main/scala/akka/persistence/state/scaladsl/DurableStateUpdateStore.scala) { #plugin-api }
+:  @@snip [DurableStateUpdateStore.scala](/akka-docs/src/main/scala/docs/persistence/state/MyStateStore.scala) { #plugin-api }
 
 Java
-:  @@snip [DurableStateExample.java](/akka-docs/src/test/java/jdocs/persistence/state/DurableStateExample.java) { #state-store-plugin-api }
+:  @@snip [DurableStateExample.java](/akka-docs/src/main/java/docs/persistence/state/MyJavaStateStore.java) { #state-store-plugin-api }
+
+## State Store provider
+
+A `DurableStateStoreProvider` needs to be implemented to be able to create the plugin itself:
+
+Scala
+:  @@snip [DurableStateUpdateStore.scala](/akka-docs/src/main/scala/docs/persistence/state/MyStateStore.scala) { #plugin-provider }
+
+Java
+:  @@snip [DurableStateExample.java](/akka-docs/src/main/java/docs/persistence/state/MyJavaStateStoreProvider.java) { #plugin-provider }
+
+## Configure the State Store
 
 A durable state store plugin can be activated with the following minimal configuration:
 
-@@snip [PersistenceStatePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/state/PersistenceStatePluginDocSpec.scala) { #journal-plugin-config }
+Scala
+:  @@snip [PersistenceStatePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/state/PersistenceStatePluginDocSpec.scala) { #plugin-config-scala }
+
+Java
+:  @@snip [PersistenceStatePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/state/PersistenceStatePluginDocSpec.scala) { #plugin-config-java }
+

@@ -2,23 +2,35 @@
  * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package jdocs.persistence.state;
+package docs.persistence.state;
 
 // #plugin-imports
+
 import akka.Done;
+import akka.actor.ExtendedActorSystem;
 import akka.persistence.state.javadsl.DurableStateUpdateStore;
 import akka.persistence.state.javadsl.GetObjectResult;
+import com.typesafe.config.Config;
 import java.util.concurrent.CompletionStage;
+
 // #plugin-imports
 
 // #state-store-plugin-api
-class DurableStateExample implements DurableStateUpdateStore {
+class MyJavaStateStore<A> implements DurableStateUpdateStore<A> {
 
-  /**
-   * Returns the current state for the given persistence id.
-   */
+  private ExtendedActorSystem system;
+  private Config config;
+  private String cfgPath;
+
+  public MyJavaStateStore(ExtendedActorSystem system, Config config, String cfgPath) {
+    this.system = system;
+    this.config = config;
+    this.cfgPath = cfgPath;
+  }
+
+  /** Returns the current state for the given persistence id. */
   @Override
-  public CompletionStage<GetObjectResult> getObject(String persistenceId) {
+  public CompletionStage<GetObjectResult<A>> getObject(String persistenceId) {
     // implement getObject here
     return null;
   }
@@ -26,8 +38,9 @@ class DurableStateExample implements DurableStateUpdateStore {
   /**
    * Will persist the latest state. If it’s a new persistence id, the record will be inserted.
    *
-   * In case of an existing persistence id, the record will be updated only if the revision
-   * number of the incoming record is 1 more than the already existing record. Otherwise persist will fail.
+   * <p>In case of an existing persistence id, the record will be updated only if the revision
+   * number of the incoming record is 1 more than the already existing record. Otherwise persist
+   * will fail.
    */
   @Override
   public CompletionStage<Done> upsertObject(
@@ -36,16 +49,15 @@ class DurableStateExample implements DurableStateUpdateStore {
     return null;
   }
 
-  /**
-   * Deprecated. Use the deleteObject overload with revision instead.
-   */
+  /** Deprecated. Use the deleteObject overload with revision instead. */
   @Override
   public CompletionStage<Done> deleteObject(String persistenceId) {
     return null;
   }
 
   /**
-   * Will delete the state by setting it to the empty state and the revision number will be incremented by 1.
+   * Will delete the state by setting it to the empty state and the revision number will be
+   * incremented by 1.
    */
   @Override
   public CompletionStage<Done> deleteObject(String persistenceId, long revision) {
