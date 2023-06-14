@@ -19,20 +19,20 @@ A durable state store plugin extends `DurableStateUpdateStore`.
 `DurableStateUpdateStore` is an interface and the methods to be implemented are:
 
 Scala
-:  @@snip [DurableStateUpdateStore.scala](/akka-docs/src/main/scala/docs/persistence/state/MyStateStore.scala) { #plugin-api }
+:  @@snip [MyStateStore.scala](/akka-docs/src/main/scala/docs/persistence/state/MyStateStore.scala) { #plugin-api }
 
 Java
-:  @@snip [DurableStateExample.java](/akka-docs/src/main/java/docs/persistence/state/MyJavaStateStore.java) { #state-store-plugin-api }
+:  @@snip [MyJavaStateStore.java](/akka-docs/src/main/java/docs/persistence/state/MyJavaStateStore.java) { #state-store-plugin-api }
 
 ## State Store provider
 
 A `DurableStateStoreProvider` needs to be implemented to be able to create the plugin itself:
 
 Scala
-:  @@snip [DurableStateUpdateStore.scala](/akka-docs/src/main/scala/docs/persistence/state/MyStateStore.scala) { #plugin-provider }
+:  @@snip [MyStateStore.scala](/akka-docs/src/main/scala/docs/persistence/state/MyStateStore.scala) { #plugin-provider }
 
 Java
-:  @@snip [DurableStateExample.java](/akka-docs/src/main/java/docs/persistence/state/MyJavaStateStoreProvider.java) { #plugin-provider }
+:  @@snip [MyJavaStateStoreProvider.java](/akka-docs/src/main/java/docs/persistence/state/MyJavaStateStoreProvider.java) { #plugin-provider }
 
 ## Configure the State Store
 
