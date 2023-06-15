@@ -6,14 +6,16 @@ package docs.persistence.state
 
 import akka.Done
 import akka.actor.ExtendedActorSystem
-import akka.persistence.state.{DurableStateStoreProvider, DurableStateStoreRegistry}
-import akka.persistence.state.scaladsl.{DurableStateStore, DurableStateUpdateStore, GetObjectResult}
+import akka.persistence.state.{ DurableStateStoreProvider, DurableStateStoreRegistry }
+import akka.persistence.state.scaladsl.{ DurableStateStore, DurableStateUpdateStore, GetObjectResult }
 import com.typesafe.config.Config
-import akka.persistence.state.javadsl.{DurableStateStore => JDurableStateStore}
+import akka.persistence.state.javadsl.{ DurableStateStore => JDurableStateStore }
 import scala.concurrent.Future
 
 //#plugin-provider
-class MyStateStoreProvider(system: ExtendedActorSystem, config: Config, cfgPath: String) extends DurableStateStoreProvider {
+class MyStateStoreProvider(system: ExtendedActorSystem, config: Config, cfgPath: String)
+    extends DurableStateStoreProvider {
+
   /**
    * The `DurableStateStore` implementation for the Scala API.
    * This corresponds to the instance that is returned by [[DurableStateStoreRegistry#durableStateStoreFor]].

@@ -7,6 +7,7 @@ package akka.persistence.state.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
+
 /**
  * API for updating durable state objects.
  *
