@@ -14,7 +14,7 @@ object MiMa extends AutoPlugin {
 
   //  akka-pki artifact was added in Akka 2.6.6
   private val firstPatchOf26 = 6
-  private val latestPatchOf26 = 20
+  private val latestPatchOf26 = 21
   private val firstPatchOf27 = 0
   private val latestPatchOf27 = 0
   private val firstPatchOf28 = 0
