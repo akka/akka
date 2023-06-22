@@ -223,11 +223,14 @@ class EventsBySliceFirehoseSpec
       // FIXME is there a way to know that it has been added to the hub?
       Thread.sleep(1000)
 
-      firehosePublisher.sendNext(allEnvelopes(0))
       catchupPublisher(0).sendNext(allEnvelopes(0))
       catchupPublisher(1).sendNext(allEnvelopes(0))
       outProbe(0).expectNext(allEnvelopes(0))
       outProbe(1).expectNext(allEnvelopes(0))
+
+      firehosePublisher.sendNext(allEnvelopes(0))
+      // this "sleep" is needed so that the firehose envelope is received first
+      outProbe.expectNoMessage()
 
       catchupPublisher(0).sendNext(allEnvelopes(1))
       catchupPublisher(1).sendNext(allEnvelopes(1))
@@ -265,6 +268,7 @@ class EventsBySliceFirehoseSpec
       catchupPublisher(1).sendNext(allEnvelopes(0))
       outProbe(0).expectNext(allEnvelopes(0))
       outProbe(1).expectNext(allEnvelopes(0))
+
       firehosePublisher.sendNext(allEnvelopes(0))
       // this "sleep" is needed so that the firehose envelope is received first
       outProbe.expectNoMessage()
