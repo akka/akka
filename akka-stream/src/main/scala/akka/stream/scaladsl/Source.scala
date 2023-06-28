@@ -93,6 +93,9 @@ final class Source[+Out, +Mat](
   /**
    * Materializes this Source, immediately returning (1) its materialized value, and (2) a new Source
    * that can be used to consume elements from the newly materialized Source.
+   *
+   * Note that `preMaterialize` is implemented through a reactive streams `Publisher` which means that
+   * a buffer is introduced and that errors are not propagated upstream but are turned into cancellations without error details.
    */
   def preMaterialize()(implicit materializer: Materializer): (Mat, ReprMat[Out, NotUsed]) = {
     val (mat, pub) = toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
