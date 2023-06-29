@@ -5,8 +5,8 @@
 package akka.cluster
 
 import java.lang.management.ManagementFactory
-
 import javax.management.ObjectName
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

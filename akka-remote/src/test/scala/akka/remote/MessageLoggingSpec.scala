@@ -8,9 +8,9 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.{ Actor, ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Props, RootActorPath }
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit }
 import akka.testkit.EventFilter
 import akka.testkit.TestActors
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit }
 
 object MessageLoggingSpec {
   val config = ConfigFactory.parseString("""

@@ -5,10 +5,13 @@
 package akka.cluster.routing
 
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._

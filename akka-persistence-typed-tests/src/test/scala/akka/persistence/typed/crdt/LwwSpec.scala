@@ -4,19 +4,19 @@
 
 package akka.persistence.typed.crdt
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationBaseSpec
 import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
-import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.ReplicationBaseSpec
 import akka.serialization.jackson.CborSerializable
-
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 object LwwSpec {
 

@@ -131,9 +131,9 @@ object UnpersistentDurableStateSpec {
 }
 
 class UnpersistentDurableStateSpec extends AnyWordSpec with Matchers {
+  import UnpersistentDurableStateSpec._
   import org.slf4j.event.Level
 
-  import UnpersistentDurableStateSpec._
   import akka.actor.testkit.typed.scaladsl._
 
   "Unpersistent DurableStateBehavior" must {

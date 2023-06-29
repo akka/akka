@@ -8,8 +8,8 @@ import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
 import java.util.function.{ BiFunction, Supplier }
 
-import scala.annotation.varargs
 import scala.annotation.unchecked.uncheckedVariance
+import scala.annotation.varargs
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters.RichOptionalGeneric

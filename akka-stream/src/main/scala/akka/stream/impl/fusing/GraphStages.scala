@@ -4,25 +4,9 @@
 
 package akka.stream.impl.fusing
 
-import akka.Done
-import akka.actor.Cancellable
-import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
-import akka.event.Logging
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.FlowMonitorState._
-import akka.stream.Shape
-import akka.stream._
-import akka.stream.impl.ContextPropagation
-import akka.stream.impl.LinearTraversalBuilder
-import akka.stream.impl.ReactiveStreamsCompliance
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.StreamLayout._
-import akka.stream.scaladsl._
-import akka.stream.stage._
-
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -30,6 +14,23 @@ import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import akka.Done
+import akka.actor.Cancellable
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.event.Logging
+import akka.stream._
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.FlowMonitorState._
+import akka.stream.Shape
+import akka.stream.impl.ContextPropagation
+import akka.stream.impl.LinearTraversalBuilder
+import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.StreamLayout._
+import akka.stream.scaladsl._
+import akka.stream.stage._
 
 /**
  * INTERNAL API

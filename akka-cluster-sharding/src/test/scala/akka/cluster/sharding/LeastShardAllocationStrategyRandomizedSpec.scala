@@ -6,7 +6,9 @@ package akka.cluster.sharding
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.collection.immutable.SortedSet
 import scala.util.Random
+
 import akka.actor.ActorRef
 import akka.cluster.ClusterEvent
 import akka.cluster.ClusterEvent.CurrentClusterState
@@ -15,8 +17,6 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.LeastShardAllocationStrategy
 import akka.testkit.AkkaSpec
-
-import scala.collection.immutable.SortedSet
 
 class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel = INFO") {
   import LeastShardAllocationStrategySpec.{

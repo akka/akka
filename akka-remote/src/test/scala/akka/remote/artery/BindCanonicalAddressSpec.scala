@@ -14,8 +14,8 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import akka.actor.ExtendedActorSystem
 import akka.actor.{ ActorSystem, Address }
+import akka.actor.ExtendedActorSystem
 import akka.remote.BoundAddressesExtension
 import akka.testkit.SocketUtil
 

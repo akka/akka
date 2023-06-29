@@ -8,11 +8,11 @@ import java.net.InetAddress
 
 import scala.concurrent.duration._
 
+import CachePolicy.Ttl
 import com.typesafe.config.ConfigFactory
 import org.scalatest.time.Millis
 import org.scalatest.time.Span
 
-import CachePolicy.Ttl
 import akka.io.{ Dns, IO }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.pattern.ask

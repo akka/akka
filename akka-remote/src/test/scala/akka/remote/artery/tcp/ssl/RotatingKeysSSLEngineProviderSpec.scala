@@ -9,6 +9,14 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.atomic.AtomicReference
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
+
+import scala.concurrent.blocking
+import scala.util.control.NonFatal
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorIdentity
 import akka.actor.ActorPath
@@ -26,13 +34,6 @@ import akka.remote.artery.tcp.TlsTcpSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
-
-import scala.concurrent.blocking
-import scala.util.control.NonFatal
 
 // This is a simplification Spec. It doesn't rely on changing files.
 class RotatingProviderWithStaticKeysSpec

@@ -6,11 +6,10 @@ package akka.io.dns.internal
 
 import java.net.{ InetAddress, InetSocketAddress }
 
+import scala.annotation.nowarn
 import scala.collection.{ immutable => im }
 import scala.concurrent.duration._
 import scala.util.Try
-
-import scala.annotation.nowarn
 
 import akka.actor.{ Actor, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
 import akka.actor.Status.Failure

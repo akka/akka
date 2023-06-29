@@ -9,23 +9,22 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.Span
 import org.scalatest.wordspec.AnyWordSpec
 
 import akka.Done
-import akka.actor.dungeon.Dispatch
 import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
+import akka.actor.dungeon.Dispatch
+import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
-import com.typesafe.config.ConfigFactory
-import org.scalatest.time.Span
-
-import akka.actor.testkit.typed.TestKitSettings
 
 class ActorSystemSpec
     extends AnyWordSpec

@@ -21,8 +21,8 @@ import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
-import akka.util.Helpers.toRootLowerCase
 import akka.util.Helpers.Requiring
+import akka.util.Helpers.toRootLowerCase
 import akka.util.JavaDurationConverters._
 
 /**

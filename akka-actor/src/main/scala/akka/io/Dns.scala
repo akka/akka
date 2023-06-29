@@ -8,9 +8,9 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress, UnknownHostException 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function => JFunction }
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor._

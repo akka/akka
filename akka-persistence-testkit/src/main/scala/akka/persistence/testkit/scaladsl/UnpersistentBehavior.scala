@@ -4,12 +4,12 @@
 
 package akka.persistence.testkit.scaladsl
 
+import scala.reflect.ClassTag
+
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.typed.Behavior
 import akka.annotation.DoNotInherit
 import akka.persistence.testkit.internal.{ PersistenceProbeImpl, Unpersistent }
-
-import scala.reflect.ClassTag
 
 sealed trait UnpersistentBehavior[Command, State] {
   val behavior: Behavior[Command]

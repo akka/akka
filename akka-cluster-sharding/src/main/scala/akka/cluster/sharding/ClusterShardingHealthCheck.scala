@@ -6,8 +6,8 @@ package akka.cluster.sharding
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 
 import com.typesafe.config.Config
 

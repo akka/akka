@@ -6,9 +6,10 @@ package akka.remote.artery.tcp
 
 import java.security.SecureRandom
 
+import com.typesafe.config.Config
+
 import akka.annotation.InternalApi
 import akka.event.MarkerLoggingAdapter
-import com.typesafe.config.Config
 
 /**
  * INTERNAL API

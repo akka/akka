@@ -35,8 +35,8 @@ object LookupRemoteActorSpec {
 }
 
 abstract class LookupRemoteActorSpec extends RemotingMultiNodeSpec(LookupRemoteActorMultiJvmSpec) {
-  import LookupRemoteActorSpec._
   import LookupRemoteActorMultiJvmSpec._
+  import LookupRemoteActorSpec._
 
   def initialParticipants = 2
 

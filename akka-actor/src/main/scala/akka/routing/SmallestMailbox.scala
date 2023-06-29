@@ -6,10 +6,10 @@ package akka.routing
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor.ActorCell

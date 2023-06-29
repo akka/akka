@@ -5,16 +5,17 @@
 package akka.persistence.typed
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.scalatest.concurrent.Eventually
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.{ PersistenceTestKitPlugin, PersistenceTestKitSnapshotPlugin }
-import akka.persistence.testkit.scaladsl.{ PersistenceTestKit, SnapshotTestKit }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.testkit.scaladsl.{ PersistenceTestKit, SnapshotTestKit }
 import akka.persistence.typed.internal.{ ReplicatedPublishedEventMetaData, VersionVector }
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
-import org.scalatest.concurrent.Eventually
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ReplicationSnapshotSpec {
 

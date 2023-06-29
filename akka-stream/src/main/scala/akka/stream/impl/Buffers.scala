@@ -5,10 +5,11 @@
 package akka.stream.impl
 
 import java.{ util => ju }
-import akka.annotation.{ InternalApi, InternalStableApi }
-import akka.stream._
 
 import scala.collection.mutable
+
+import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.stream._
 
 /**
  * INTERNAL API

@@ -15,6 +15,9 @@ import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
 
 import akka.actor.ActorIdentity
+import akka.actor.Address
+import akka.actor.Identify
+import akka.actor.Scheduler
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -22,9 +25,6 @@ import akka.actor.typed.Props
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.Address
-import akka.actor.Identify
-import akka.actor.Scheduler
 import akka.cluster.ClusterEvent
 import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName

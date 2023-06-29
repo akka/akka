@@ -4,10 +4,10 @@
 
 package akka.stream.impl
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
 
-import scala.annotation.nowarn
 import org.reactivestreams._
 
 import akka.actor._

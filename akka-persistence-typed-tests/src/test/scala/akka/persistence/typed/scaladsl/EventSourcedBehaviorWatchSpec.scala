@@ -4,6 +4,11 @@
 
 package akka.persistence.typed.scaladsl
 
+import java.util.concurrent.atomic.AtomicInteger
+
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.LoggerFactory
+
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
@@ -12,22 +17,18 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WriterIdentity
+import akka.persistence.{ Recovery => ClassicRecovery }
+import akka.persistence.typed.NoOpEventAdapter
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.internal.BehaviorSetup
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WriterIdentity
 import akka.persistence.typed.internal.EventSourcedSettings
 import akka.persistence.typed.internal.InternalProtocol
 import akka.persistence.typed.internal.NoOpSnapshotAdapter
 import akka.persistence.typed.internal.StashState
-import akka.persistence.typed.NoOpEventAdapter
-import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.RecoveryCompleted
-import akka.persistence.{ Recovery => ClassicRecovery }
 import akka.serialization.jackson.CborSerializable
 import akka.util.ConstantFun
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.slf4j.LoggerFactory
-
-import java.util.concurrent.atomic.AtomicInteger
 
 object EventSourcedBehaviorWatchSpec {
   sealed trait Command extends CborSerializable

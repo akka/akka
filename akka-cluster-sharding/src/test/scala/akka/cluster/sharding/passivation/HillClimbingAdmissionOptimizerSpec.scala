@@ -4,9 +4,10 @@
 
 package akka.cluster.sharding.passivation
 
-import akka.cluster.sharding.internal.HillClimbingAdmissionOptimizer
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.cluster.sharding.internal.HillClimbingAdmissionOptimizer
 
 class HillClimbingAdmissionOptimizerSpec extends AnyWordSpec with Matchers {
 

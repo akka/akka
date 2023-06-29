@@ -10,8 +10,8 @@ import com.typesafe.config.ConfigFactory
 
 import akka.actor._
 import akka.cluster.{ Cluster, MemberStatus }
-import akka.testkit._
 import akka.remote.testkit.MultiNodeSpec
+import akka.testkit._
 import akka.util.ccompat._
 
 @ccompatUsedUntil213

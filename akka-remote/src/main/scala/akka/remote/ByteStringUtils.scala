@@ -5,9 +5,9 @@
 package akka.remote
 
 import akka.annotation.InternalApi
+import akka.protobufv3.internal.{ ByteString => ProtoByteString }
 import akka.protobufv3.internal.UnsafeByteOperations
 import akka.util.ByteString
-import akka.protobufv3.internal.{ ByteString => ProtoByteString }
 import akka.util.ByteString.ByteString1
 import akka.util.ByteString.ByteString1C
 

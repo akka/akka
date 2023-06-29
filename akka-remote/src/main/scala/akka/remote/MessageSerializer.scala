@@ -5,6 +5,7 @@
 package akka.remote
 
 import scala.util.control.NonFatal
+
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.protobufv3.internal.ByteString

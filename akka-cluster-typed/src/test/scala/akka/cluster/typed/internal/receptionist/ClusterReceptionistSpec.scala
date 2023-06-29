@@ -10,6 +10,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -30,10 +31,8 @@ import akka.cluster.typed.Join
 import akka.cluster.typed.JoinSeedNodes
 import akka.cluster.typed.Leave
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.LongRunningTest
-import org.scalatest.concurrent.ScalaFutures
-
 import akka.testkit.GHExcludeAeronTest
+import akka.testkit.LongRunningTest
 
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(s"""

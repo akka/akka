@@ -4,9 +4,9 @@
 
 package akka.persistence.testkit
 
-import akka.annotation.{ ApiMayChange, InternalApi }
-
 import scala.util.control.NoStackTrace
+
+import akka.annotation.{ ApiMayChange, InternalApi }
 
 /**
  * Policies allow to emulate behavior of the storage (failures and rejections).

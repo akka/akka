@@ -4,7 +4,9 @@
 
 package akka.persistence.query.journal.leveldb
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
+
 import akka.actor.ActorRef
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.PersistenceQuery
@@ -13,8 +15,6 @@ import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-
-import scala.annotation.nowarn
 
 object EventsByPersistenceIdSpec {
   val config = """

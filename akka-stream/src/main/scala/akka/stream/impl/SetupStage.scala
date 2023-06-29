@@ -7,9 +7,10 @@ package akka.stream.impl
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
-import akka.stream.Attributes.SourceLocation
 import akka.stream._
+import akka.stream.Attributes.SourceLocation
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink

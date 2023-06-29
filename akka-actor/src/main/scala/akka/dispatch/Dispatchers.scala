@@ -6,9 +6,9 @@ package akka.dispatch
 
 import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory }
 
+import scala.annotation.nowarn
 import scala.concurrent.ExecutionContext
 
-import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory, ConfigValueType }
 
 import akka.ConfigurationException

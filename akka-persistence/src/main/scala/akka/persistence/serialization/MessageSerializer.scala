@@ -5,11 +5,13 @@
 package akka.persistence.serialization
 
 import java.io.NotSerializableException
+
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import scala.concurrent.duration.Duration
-import scala.annotation.nowarn
+
 import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.actor.Actor
 import akka.persistence._

@@ -4,11 +4,10 @@
 
 package akka.cluster.metrics
 
+import scala.annotation.nowarn
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
-import scala.annotation.nowarn
 
 import akka.actor.Address
 

@@ -8,6 +8,7 @@ import java.io.Closeable
 import java.util.concurrent._
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.nowarn
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 import scala.util.Try
@@ -15,7 +16,6 @@ import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
 import atomic.{ AtomicInteger, AtomicReference }
-import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
 import org.scalatest.BeforeAndAfterEach

@@ -4,6 +4,20 @@
 
 package akka.persistence.typed.scaladsl
 
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.ActorInitializationException
 import akka.actor.testkit.typed.TestException
@@ -15,6 +29,8 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
+import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.persistence.SelectedSnapshot
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.query.EventEnvelope
@@ -30,22 +46,8 @@ import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
-import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
-import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 
 object EventSourcedBehaviorSpec {
 

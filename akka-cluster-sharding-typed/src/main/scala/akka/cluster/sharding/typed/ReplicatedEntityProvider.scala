@@ -4,20 +4,20 @@
 
 package akka.cluster.sharding.typed
 
-import akka.cluster.sharding.typed.scaladsl.Entity
-import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.cluster.sharding.typed.javadsl.{ Entity => JEntity, EntityTypeKey => JEntityTypeKey }
-import akka.persistence.typed.ReplicaId
+import java.util.{ Set => JSet }
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
-import akka.util.ccompat.JavaConverters._
-import java.util.{ Set => JSet }
 
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
+import akka.cluster.sharding.typed.javadsl.{ Entity => JEntity, EntityTypeKey => JEntityTypeKey }
+import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.ReplicationId.Separator
+import akka.util.ccompat.JavaConverters._
 
 object ReplicatedEntityProvider {
 

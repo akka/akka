@@ -5,14 +5,16 @@
 package akka.remote.testkit
 
 import java.net.{ InetAddress, InetSocketAddress }
+
 import scala.collection.immutable
 import scala.concurrent.{ Await, Awaitable }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 
+import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 import language.implicitConversions
 import org.jboss.netty.channel.ChannelException
+
 import akka.actor._
 import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }

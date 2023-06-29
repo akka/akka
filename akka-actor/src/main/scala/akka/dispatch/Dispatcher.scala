@@ -7,10 +7,9 @@ package akka.dispatch
 import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-
-import scala.annotation.nowarn
 
 import akka.actor.ActorCell
 import akka.dispatch.sysmsg.SystemMessage

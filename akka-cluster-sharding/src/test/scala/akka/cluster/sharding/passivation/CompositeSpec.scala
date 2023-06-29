@@ -4,11 +4,12 @@
 
 package akka.cluster.sharding.passivation
 
-import akka.cluster.sharding.ShardRegion
+import scala.concurrent.duration._
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.cluster.sharding.ShardRegion
 
 object CompositeSpec {
 

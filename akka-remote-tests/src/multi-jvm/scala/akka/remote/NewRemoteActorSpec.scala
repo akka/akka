@@ -54,8 +54,8 @@ object NewRemoteActorSpec {
 }
 
 abstract class NewRemoteActorSpec extends RemotingMultiNodeSpec(NewRemoteActorMultiJvmSpec) {
-  import NewRemoteActorSpec._
   import NewRemoteActorMultiJvmSpec._
+  import NewRemoteActorSpec._
 
   def initialParticipants = roles.size
 

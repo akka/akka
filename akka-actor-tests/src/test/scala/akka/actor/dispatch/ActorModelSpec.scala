@@ -8,11 +8,11 @@ import java.rmi.RemoteException
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong }
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 import language.postfixOps
 import org.scalatest.Assertions._

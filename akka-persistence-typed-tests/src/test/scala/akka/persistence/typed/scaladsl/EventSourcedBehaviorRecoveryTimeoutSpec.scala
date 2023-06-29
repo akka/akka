@@ -4,6 +4,14 @@
 
 package akka.persistence.typed.scaladsl
 
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -13,12 +21,6 @@ import akka.persistence.journal.SteppingInmemJournal
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.internal.JournalFailureException
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.duration._
 
 object EventSourcedBehaviorRecoveryTimeoutSpec {
 

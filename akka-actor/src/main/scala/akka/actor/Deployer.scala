@@ -6,9 +6,9 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 
-import scala.annotation.nowarn
 import com.typesafe.config._
 
 import akka.annotation.InternalApi

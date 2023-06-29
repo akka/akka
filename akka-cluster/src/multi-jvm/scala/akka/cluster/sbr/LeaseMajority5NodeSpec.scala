@@ -7,15 +7,15 @@ package akka.cluster.sbr
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import akka.cluster.MemberStatus
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.Direction
 import com.typesafe.config.ConfigFactory
 
+import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.coordination.lease.TestLease
 import akka.coordination.lease.TestLeaseExt
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 
 object LeaseMajority5NodeSpec extends MultiNodeConfig {
   val node1 = role("node1")

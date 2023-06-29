@@ -7,10 +7,12 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.control.NoStackTrace
+
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor.Props
-import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.coordination.lease.TestLease
 import akka.coordination.lease.TestLeaseExt
 import akka.testkit.{ AkkaSpec, ImplicitSender, WithLogCapturing }

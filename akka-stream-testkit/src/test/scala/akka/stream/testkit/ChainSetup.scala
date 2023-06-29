@@ -5,6 +5,7 @@
 package akka.stream.testkit
 
 import scala.annotation.nowarn
+
 import org.reactivestreams.Publisher
 
 import akka.NotUsed

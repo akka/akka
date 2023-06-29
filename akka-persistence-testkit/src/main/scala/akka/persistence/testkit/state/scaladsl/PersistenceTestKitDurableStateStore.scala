@@ -6,6 +6,7 @@ package akka.persistence.testkit.state.scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
 
+import scala.collection.immutable
 import scala.concurrent.Future
 
 import akka.{ Done, NotUsed }
@@ -23,12 +24,11 @@ import akka.persistence.query.scaladsl.{ DurableStateStorePagedPersistenceIdsQue
 import akka.persistence.query.typed.scaladsl.DurableStateStoreBySliceQuery
 import akka.persistence.state.scaladsl.{ DurableStateUpdateStore, GetObjectResult }
 import akka.persistence.typed.PersistenceId
+import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorSource
-import akka.stream.OverflowStrategy
-import scala.collection.immutable
 
 object PersistenceTestKitDurableStateStore {
   val Identifier = "akka.persistence.testkit.state"

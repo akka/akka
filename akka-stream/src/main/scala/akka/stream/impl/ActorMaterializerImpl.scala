@@ -6,10 +6,11 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
-import scala.annotation.nowarn
+
 import akka.actor._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi

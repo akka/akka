@@ -6,8 +6,8 @@ package akka.persistence.query.scaladsl
 
 import akka.NotUsed
 import akka.persistence.query.DurableStateChange
-import akka.persistence.state.scaladsl.DurableStateStore
 import akka.persistence.query.Offset
+import akka.persistence.state.scaladsl.DurableStateStore
 import akka.stream.scaladsl.Source
 
 /**

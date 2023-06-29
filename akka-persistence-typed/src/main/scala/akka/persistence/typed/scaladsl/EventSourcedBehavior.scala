@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.scaladsl
 
+import scala.annotation.tailrec
+
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -19,8 +21,6 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
-
-import scala.annotation.tailrec
 
 object EventSourcedBehavior {
 

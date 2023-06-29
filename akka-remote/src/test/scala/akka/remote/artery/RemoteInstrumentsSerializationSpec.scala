@@ -5,15 +5,16 @@
 package akka.remote.artery
 
 import java.nio.{ ByteBuffer, CharBuffer }
+import java.nio.ByteOrder
 import java.nio.charset.Charset
+
 import scala.concurrent.duration._
+
 import akka.actor.{ ActorRef, ActorSystem, ExtendedActorSystem, InternalActorRef }
 import akka.event._
 import akka.testkit.{ AkkaSpec, EventFilter, TestProbe }
 import akka.testkit.TestEvent.Mute
 import akka.util.{ unused, OptionVal }
-
-import java.nio.ByteOrder
 
 class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG") {
   import RemoteInstrumentsSerializationSpec._

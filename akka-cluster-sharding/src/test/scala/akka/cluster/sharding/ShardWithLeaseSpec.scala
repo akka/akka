@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Success
+import scala.util.control.NoStackTrace
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
@@ -15,11 +20,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Success
-import scala.util.control.NoStackTrace
 
 // FIXME this looks like it is the same test as ClusterShardingLeaseSpec is there any difference?
 object ShardWithLeaseSpec {

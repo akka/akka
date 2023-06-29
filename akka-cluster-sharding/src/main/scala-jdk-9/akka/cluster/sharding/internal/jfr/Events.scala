@@ -3,8 +3,9 @@
  */
 
 package akka.cluster.sharding.internal.jfr
-import akka.annotation.InternalApi
 import jdk.jfr.{ Category, Enabled, Event, Label, StackTrace, Timespan }
+
+import akka.annotation.InternalApi
 
 // requires jdk9+ to compile
 // for editing these in IntelliJ, open module settings, change JDK dependency to 11 for only this module

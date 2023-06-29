@@ -7,11 +7,11 @@ package akka.actor
 import java.util.concurrent.{ ConcurrentLinkedQueue, RejectedExecutionException }
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.setup.ActorSystemSetup

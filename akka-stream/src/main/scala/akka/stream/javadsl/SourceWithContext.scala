@@ -18,8 +18,8 @@ import akka.japi.Util
 import akka.japi.function
 import akka.stream._
 import akka.util.ConstantFun
-import akka.util.ccompat.JavaConverters._
 import akka.util.JavaDurationConverters._
+import akka.util.ccompat.JavaConverters._
 
 object SourceWithContext {
 

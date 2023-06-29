@@ -4,17 +4,17 @@
 
 package akka.cluster.sharding.internal
 
-import akka.annotation.InternalApi
-import akka.cluster.sharding.ClusterShardingSettings
-import akka.cluster.sharding.ShardRegion.EntityId
-import akka.util.FastFrequencySketch
-import akka.util.FrequencySketch
-import akka.util.OptionVal
-import akka.util.{ FrequencyList, RecencyList, SegmentedRecencyList }
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 
+import akka.annotation.InternalApi
+import akka.cluster.sharding.ClusterShardingSettings
+import akka.cluster.sharding.ShardRegion.EntityId
+import akka.util.{ FrequencyList, RecencyList, SegmentedRecencyList }
 import akka.util.Clock
+import akka.util.FastFrequencySketch
+import akka.util.FrequencySketch
+import akka.util.OptionVal
 
 /**
  * INTERNAL API

@@ -4,12 +4,12 @@
 
 package akka.persistence.testkit
 
-import akka.NotUsed
 import java.util.{ List => JList }
 
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 
+import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
 import akka.persistence.journal.Tagged

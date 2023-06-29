@@ -4,24 +4,26 @@
 
 package akka.stream.scaladsl
 
-import akka.Done
-import akka.dispatch.ExecutionContexts
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
-import akka.testkit.TestLatch
-import akka.testkit.TestProbe
-import akka.testkit.WithLogCapturing
-import org.scalatest.compatible.Assertion
-
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.duration._
+
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import org.scalatest.compatible.Assertion
+
+import akka.Done
+import akka.dispatch.ExecutionContexts
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
+import akka.testkit.WithLogCapturing
 
 class FlowMapAsyncPartitionedSpec extends StreamSpec with WithLogCapturing {
   import Utils.TE
@@ -239,9 +241,9 @@ class FlowMapAsyncPartitionedSpec extends StreamSpec with WithLogCapturing {
   }
 
   "fail ASAP midstream" in {
-    import system.dispatcher
-
     import scala.collection.immutable
+
+    import system.dispatcher
 
     val promises = (0 until 6).map(_ => Promise[Int]()).toArray
     val probe =

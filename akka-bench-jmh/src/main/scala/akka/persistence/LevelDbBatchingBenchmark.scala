@@ -6,16 +6,18 @@ package akka.persistence
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations._
+
 import akka.actor._
 import akka.persistence.journal.AsyncWriteTarget._
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.testkit.TestProbe
-
-import scala.annotation.nowarn
 
 /*
   # OS:   OSX 10.9.3

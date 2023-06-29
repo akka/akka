@@ -7,13 +7,13 @@ package akka.actor
 import java.util.concurrent.{ CountDownLatch, TimeUnit, TimeoutException }
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import scala.annotation.nowarn
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.actor.TypedActor._

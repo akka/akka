@@ -16,8 +16,8 @@ import scala.util.{ Failure, Success }
 
 import akka.Done
 import akka.actor._
-import akka.annotation.ApiMayChange
 import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.annotation.ApiMayChange
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings

@@ -7,10 +7,10 @@ package akka.util
 import java.util.Comparator
 import java.util.concurrent.{ ConcurrentHashMap, ConcurrentSkipListSet }
 
+import scala.annotation.nowarn
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 import annotation.tailrec
-import scala.annotation.nowarn
 
 import akka.util.ccompat.JavaConverters._
 

@@ -48,8 +48,8 @@ object AttemptSysMsgRedeliverySpec {
 }
 
 abstract class AttemptSysMsgRedeliverySpec extends RemotingMultiNodeSpec(AttemptSysMsgRedeliveryMultiJvmSpec) {
-  import AttemptSysMsgRedeliverySpec._
   import AttemptSysMsgRedeliveryMultiJvmSpec._
+  import AttemptSysMsgRedeliverySpec._
 
   def initialParticipants = roles.size
 

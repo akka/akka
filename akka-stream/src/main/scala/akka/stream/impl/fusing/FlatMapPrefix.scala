@@ -7,9 +7,10 @@ package akka.stream.impl.fusing
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
-import akka.stream.Attributes.SourceLocation
 import akka.stream._
+import akka.stream.Attributes.SourceLocation
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }

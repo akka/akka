@@ -10,13 +10,13 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
 
 import SupervisorStrategy.{ Directive, Restart, Resume, Stop }
-import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
 

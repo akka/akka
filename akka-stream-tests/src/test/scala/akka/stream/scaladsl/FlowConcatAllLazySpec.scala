@@ -4,12 +4,13 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
-
 import java.util.StringJoiner
 import java.util.concurrent.atomic.AtomicBoolean
+
 import scala.util.control.NoStackTrace
+
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
 
 class FlowConcatAllLazySpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

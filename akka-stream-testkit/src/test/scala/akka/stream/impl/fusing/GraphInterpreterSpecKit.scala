@@ -4,11 +4,10 @@
 
 package akka.stream.impl.fusing
 
+import scala.annotation.nowarn
 import scala.collection.{ Map => SMap }
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-
-import scala.annotation.nowarn
 
 import akka.actor.ActorSystem
 import akka.actor.Cancellable

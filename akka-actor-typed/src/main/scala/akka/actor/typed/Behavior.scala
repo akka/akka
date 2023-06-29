@@ -7,6 +7,7 @@ package akka.actor.typed
 import scala.annotation.switch
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
+
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior

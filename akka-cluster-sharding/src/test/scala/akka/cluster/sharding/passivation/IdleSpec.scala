@@ -4,9 +4,10 @@
 
 package akka.cluster.sharding.passivation
 
+import scala.concurrent.duration._
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 
 object IdleSpec {
   val config: Config = ConfigFactory.parseString("""

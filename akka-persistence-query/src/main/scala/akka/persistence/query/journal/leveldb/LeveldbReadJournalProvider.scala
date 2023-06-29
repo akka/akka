@@ -5,6 +5,7 @@
 package akka.persistence.query.journal.leveldb
 
 import com.typesafe.config.Config
+
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.ReadJournalProvider
 

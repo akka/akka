@@ -6,13 +6,12 @@ package akka.japi
 
 import java.util.Collections.{ emptyList, singletonList }
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.runtime.AbstractPartialFunction
 import scala.util.control.NoStackTrace
-
-import scala.annotation.nowarn
 
 import akka.util.Collections.EmptyImmutableSeq
 

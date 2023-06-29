@@ -5,6 +5,7 @@
 package akka.cluster
 
 import scala.annotation.nowarn
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 

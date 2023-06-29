@@ -4,13 +4,13 @@
 
 package akka.persistence.typed.scaladsl
 
+import scala.concurrent.Future
+
+import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
+import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.persistence.SelectedSnapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.scaladsl.SnapshotMutableStateSpec.MutableState
-import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
-import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
-
-import scala.concurrent.Future
 
 class SlowInMemorySnapshotStore extends SnapshotStore {
 

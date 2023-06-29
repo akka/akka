@@ -4,15 +4,16 @@
 
 package akka.cluster.sharding
 
-import akka.testkit.AkkaSpec
-import akka.testkit.TestProbe
-import akka.testkit.WithLogCapturing
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
-import scala.concurrent.duration._
 
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
+import akka.testkit.AkkaSpec
+import akka.testkit.TestProbe
+import akka.testkit.WithLogCapturing
 
 object ClusterShardingHealthCheckSpec {
   val config = ConfigFactory.parseString("""

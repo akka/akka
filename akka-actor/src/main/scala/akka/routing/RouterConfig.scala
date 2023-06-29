@@ -4,9 +4,8 @@
 
 package akka.routing
 
-import scala.collection.immutable
-
 import scala.annotation.nowarn
+import scala.collection.immutable
 
 import akka.ConfigurationException
 import akka.actor.ActorContext

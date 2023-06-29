@@ -4,6 +4,23 @@
 
 package akka.stream.scaladsl
 
+import java.io._
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.nowarn
+import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.Success
+import scala.util.control.NoStackTrace
+
+import com.google.common.jimfs.Configuration
+import com.google.common.jimfs.Jimfs
+
 import akka.Done
 import akka.stream.AbruptTerminationException
 import akka.stream.ActorAttributes
@@ -21,21 +38,6 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.EventFilter
 import akka.util.ByteString
-import com.google.common.jimfs.Configuration
-import com.google.common.jimfs.Jimfs
-
-import java.io._
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.util.concurrent.atomic.AtomicInteger
-import scala.annotation.nowarn
-import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.util.Success
-import scala.util.control.NoStackTrace
 
 class MapWithResourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 

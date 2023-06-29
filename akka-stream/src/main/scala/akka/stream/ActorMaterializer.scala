@@ -6,10 +6,10 @@ package akka.stream
 
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 

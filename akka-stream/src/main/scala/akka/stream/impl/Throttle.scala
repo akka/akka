@@ -4,14 +4,14 @@
 
 package akka.stream.impl
 
+import scala.concurrent.duration.{ FiniteDuration, _ }
+
 import akka.annotation.InternalApi
-import akka.stream.ThrottleMode.Enforcing
 import akka.stream._
+import akka.stream.ThrottleMode.Enforcing
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
 import akka.util.NanoTimeTokenBucket
-
-import scala.concurrent.duration.{ FiniteDuration, _ }
 
 /**
  * INTERNAL API

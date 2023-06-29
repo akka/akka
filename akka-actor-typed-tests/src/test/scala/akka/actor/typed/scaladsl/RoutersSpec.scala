@@ -4,8 +4,10 @@
 
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.{ ActorPath, ActorSystem }
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit

@@ -6,17 +6,19 @@ package akka.stream.stage
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
-import scala.annotation.nowarn
+
 import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
-import akka.stream.Attributes.SourceLocation
 import akka.stream._
+import akka.stream.Attributes.SourceLocation
 import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }

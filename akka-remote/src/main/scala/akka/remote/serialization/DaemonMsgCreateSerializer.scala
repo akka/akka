@@ -5,9 +5,10 @@
 package akka.remote.serialization
 
 import scala.collection.immutable
-import com.typesafe.config.{ Config, ConfigFactory }
 
+import com.typesafe.config.{ Config, ConfigFactory }
 import util.{ Failure, Success }
+
 import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.protobufv3.internal.ByteString
 import akka.remote.ByteStringUtils

@@ -5,14 +5,17 @@
 package akka.actor.typed.internal.adapter
 
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContextExecutor
+
 import org.slf4j.{ Logger, LoggerFactory }
+
 import akka.{ actor => classic }
 import akka.Done
 import akka.actor
-import akka.actor.ActorSystemImpl
 import akka.actor.{ ActorRefProvider, Address, ExtendedActorSystem, InvalidMessageException }
+import akka.actor.ActorSystemImpl
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior

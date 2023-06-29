@@ -10,12 +10,12 @@ import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 

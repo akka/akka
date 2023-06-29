@@ -3,9 +3,10 @@
  */
 
 package akka.persistence.testkit.query
+import com.typesafe.config.Config
+
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.ReadJournalProvider
-import com.typesafe.config.Config
 
 class PersistenceTestKitReadJournalProvider(system: ExtendedActorSystem, config: Config, configPath: String)
     extends ReadJournalProvider {

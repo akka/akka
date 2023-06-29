@@ -6,7 +6,6 @@ package akka.persistence.query.typed.javadsl
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
-
 import akka.persistence.query.javadsl.ReadJournal
 import akka.persistence.query.typed.EventEnvelope
 import akka.stream.javadsl.Source

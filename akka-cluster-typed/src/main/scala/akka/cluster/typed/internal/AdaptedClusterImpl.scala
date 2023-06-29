@@ -14,8 +14,8 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.cluster.{ ClusterEvent, Member, MemberStatus }
 import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.typed.PrepareForFullClusterShutdown
 import akka.cluster.typed._
+import akka.cluster.typed.PrepareForFullClusterShutdown
 
 /**
  * INTERNAL API:

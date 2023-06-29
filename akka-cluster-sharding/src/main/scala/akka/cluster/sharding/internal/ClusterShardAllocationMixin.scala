@@ -4,8 +4,8 @@
 
 package akka.cluster.sharding.internal
 
-import java.lang.{ Integer => JInteger }
 import java.lang.{ Boolean => JBoolean }
+import java.lang.{ Integer => JInteger }
 
 import scala.collection.immutable
 

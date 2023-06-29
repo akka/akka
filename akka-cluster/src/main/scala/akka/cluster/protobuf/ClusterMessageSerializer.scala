@@ -6,11 +6,14 @@ package akka.cluster.protobuf
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
+
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
-import scala.annotation.nowarn
+
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
+
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.annotation.InternalApi
 import akka.cluster._

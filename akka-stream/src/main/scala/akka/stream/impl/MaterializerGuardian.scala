@@ -4,9 +4,8 @@
 
 package akka.stream.impl
 
-import scala.concurrent.Promise
-
 import scala.annotation.nowarn
+import scala.concurrent.Promise
 
 import akka.actor.Actor
 import akka.actor.Props

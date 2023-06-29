@@ -6,8 +6,8 @@ package akka.persistence.typed.state.internal
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 
 import com.typesafe.config.Config
 

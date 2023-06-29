@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.time.Instant
+
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -37,10 +42,6 @@ import akka.stream.UniqueKillSwitch
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-
-import java.time.Instant
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 
 /**
  * INTERNAL API

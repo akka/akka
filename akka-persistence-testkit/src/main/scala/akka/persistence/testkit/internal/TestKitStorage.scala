@@ -6,10 +6,10 @@ package akka.persistence.testkit.internal
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.collection.immutable
+
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
-
-import scala.collection.immutable
 
 /**
  * INTERNAL API

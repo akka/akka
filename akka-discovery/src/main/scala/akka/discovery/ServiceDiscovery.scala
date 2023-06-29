@@ -8,14 +8,15 @@ import java.net.InetAddress
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
+
 import scala.collection.immutable
+import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.util.HashCode
-
-import scala.compat.java8.FutureConverters._
 import akka.util.JavaDurationConverters._
 
 object ServiceDiscovery {

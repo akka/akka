@@ -8,6 +8,7 @@ import java.util.concurrent._
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -15,8 +16,6 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-
-import scala.annotation.nowarn
 
 import akka.actor._
 import akka.actor.DeadLetter

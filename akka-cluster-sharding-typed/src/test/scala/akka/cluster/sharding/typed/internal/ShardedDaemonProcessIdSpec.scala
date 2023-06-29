@@ -4,9 +4,10 @@
 
 package akka.cluster.sharding.typed.internal
 
-import akka.cluster.sharding.typed.internal.ShardedDaemonProcessId.DecodedId
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessId.DecodedId
 
 class ShardedDaemonProcessIdSpec extends AnyWordSpecLike with Matchers {
 

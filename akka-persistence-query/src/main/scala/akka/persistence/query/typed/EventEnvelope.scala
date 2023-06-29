@@ -4,8 +4,9 @@
 
 package akka.persistence.query.typed
 
-import java.util.Optional
 import java.util.{ Set => JSet }
+import java.util.Optional
+
 import akka.annotation.ApiMayChange
 import akka.persistence.query.Offset
 import akka.util.HashCode

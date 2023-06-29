@@ -10,11 +10,11 @@ import java.net.Inet6Address
 import java.security.Security
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor.{ Actor, ActorLogging }

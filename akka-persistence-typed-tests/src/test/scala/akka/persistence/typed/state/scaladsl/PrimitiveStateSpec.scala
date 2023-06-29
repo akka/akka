@@ -4,15 +4,15 @@
 
 package akka.persistence.typed.state.scaladsl
 
-import akka.actor.testkit.typed.scaladsl._
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.persistence.typed.PersistenceId
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
+import akka.persistence.typed.PersistenceId
 
 object PrimitiveStateSpec {
 

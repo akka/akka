@@ -6,7 +6,9 @@ package akka.cluster.typed.internal.receptionist
 
 import scala.concurrent.duration._
 import scala.concurrent.duration.{ FiniteDuration, MILLISECONDS }
+
 import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ddata.Key.KeyId

@@ -9,18 +9,18 @@ import scala.util.control.NonFatal
 import org.slf4j.Logger
 import org.slf4j.MDC
 
+import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.actor.Cancellable
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.typed.state.internal.InternalProtocol.RecoveryTimeout
-import akka.persistence.typed.state.scaladsl.DurableStateBehavior
 import akka.persistence.state.DurableStateStoreRegistry
 import akka.persistence.state.scaladsl.DurableStateUpdateStore
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
+import akka.persistence.typed.state.internal.InternalProtocol.RecoveryTimeout
+import akka.persistence.typed.state.scaladsl.DurableStateBehavior
 import akka.util.OptionVal
 
 /**

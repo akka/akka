@@ -4,13 +4,13 @@
 
 package akka.persistence.fsm
 
+import scala.annotation.nowarn
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor._

@@ -5,13 +5,17 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.atomic.AtomicLong
+
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import scala.annotation.nowarn
+
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import akka.NotUsed
 import akka.stream._
 import akka.stream.impl._
@@ -19,8 +23,6 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InH
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.testkit.TestDuration
-
-import java.util.concurrent.atomic.AtomicLong
 
 object FlowSpec {
   class Fruit extends Serializable

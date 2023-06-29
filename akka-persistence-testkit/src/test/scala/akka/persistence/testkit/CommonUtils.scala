@@ -4,12 +4,13 @@
 
 package akka.persistence.testkit
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-
 import java.util.UUID
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence._
 import akka.testkit.TestKitBase
 

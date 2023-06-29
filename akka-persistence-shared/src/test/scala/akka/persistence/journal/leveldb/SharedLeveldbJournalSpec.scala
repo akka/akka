@@ -5,7 +5,9 @@
 package akka.persistence.journal.leveldb
 
 import scala.annotation.nowarn
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.persistence._
 import akka.testkit.{ AkkaSpec, TestProbe }

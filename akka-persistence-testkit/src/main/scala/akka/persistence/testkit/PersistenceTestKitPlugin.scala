@@ -4,20 +4,20 @@
 
 package akka.persistence.testkit
 
-import akka.actor.ActorLogging
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 
 import com.typesafe.config.{ Config, ConfigFactory }
 
+import akka.actor.ActorLogging
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.journal.Tagged
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.testkit.internal.CurrentTime
 import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
+import akka.persistence.testkit.internal.CurrentTime
 import akka.util.unused
 
 /**

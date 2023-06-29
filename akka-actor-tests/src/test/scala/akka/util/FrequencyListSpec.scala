@@ -4,10 +4,10 @@
 
 package akka.util
 
+import scala.concurrent.duration._
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import scala.concurrent.duration._
 
 class FrequencyListSpec extends AnyWordSpec with Matchers {
 

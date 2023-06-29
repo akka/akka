@@ -4,9 +4,10 @@
 
 package akka.persistence.query.typed
 
+import com.typesafe.config.Config
+
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.ReadJournalProvider
-import com.typesafe.config.Config
 
 final class EventsBySliceFirehoseReadJournalProvider(system: ExtendedActorSystem, config: Config, cfgPath: String)
     extends ReadJournalProvider {

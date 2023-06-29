@@ -4,20 +4,21 @@
 
 package akka.persistence.testkit.query
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
-import akka.persistence.query.Sequence
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
+import akka.persistence.query.Sequence
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.stream.testkit.scaladsl.TestSink
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration._
 
 object EventsByPersistenceIdSpec {
   val config = PersistenceTestKitPlugin.config.withFallback(

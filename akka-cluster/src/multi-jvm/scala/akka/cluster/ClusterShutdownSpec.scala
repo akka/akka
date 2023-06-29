@@ -4,12 +4,13 @@
 
 package akka.cluster
 
+import scala.concurrent.duration._
+
+import org.scalatest.concurrent.Eventually
+
 import akka.cluster.MemberStatus.Removed
 import akka.remote.testkit.MultiNodeConfig
 import akka.util.ccompat._
-import org.scalatest.concurrent.Eventually
-
-import scala.concurrent.duration._
 
 object ClusterShutdownSpec extends MultiNodeConfig {
   val first = role("first")

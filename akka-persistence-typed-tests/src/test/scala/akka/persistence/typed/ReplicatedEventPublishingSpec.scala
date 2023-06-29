@@ -4,6 +4,8 @@
 
 package akka.persistence.typed
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -13,10 +15,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.internal.{ ReplicatedPublishedEventMetaData, VersionVector }
-import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
-import org.scalatest.wordspec.AnyWordSpecLike
+import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 
 object ReplicatedEventPublishingSpec {
 

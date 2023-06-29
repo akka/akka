@@ -6,7 +6,9 @@ package akka.stream.typed.scaladsl
 
 import scala.concurrent.Future
 import scala.util.Success
+
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit

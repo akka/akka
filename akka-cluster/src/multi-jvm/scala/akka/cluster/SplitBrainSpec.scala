@@ -9,8 +9,8 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import language.postfixOps
 
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 
 final case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {

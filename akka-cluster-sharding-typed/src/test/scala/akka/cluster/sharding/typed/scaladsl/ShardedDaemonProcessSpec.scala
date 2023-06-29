@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -19,10 +24,6 @@ import akka.cluster.sharding.typed.internal.ShardedDaemonProcessState
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessStateKey
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration._
 
 object ShardedDaemonProcessSpec {
   // single node cluster config

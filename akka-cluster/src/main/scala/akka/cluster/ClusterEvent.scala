@@ -4,11 +4,11 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.collection.immutable.{ SortedSet, VectorBuilder }
 import scala.runtime.AbstractFunction5
 
-import scala.annotation.nowarn
 import language.postfixOps
 
 import akka.actor.{ Actor, ActorRef, Address }

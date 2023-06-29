@@ -4,8 +4,10 @@
 
 package akka.persistence.typed.internal
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
@@ -28,8 +30,6 @@ import akka.persistence.typed.internal.Running.startReplicationStream
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
-
-import scala.collection.immutable
 
 /***
  * INTERNAL API

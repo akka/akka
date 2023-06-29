@@ -5,10 +5,10 @@
 package akka.persistence.typed.state.javadsl
 
 import java.util.Objects
+import java.util.function.{ Function => JFunction }
 import java.util.function.BiFunction
 import java.util.function.Predicate
 import java.util.function.Supplier
-import java.util.function.{ Function => JFunction }
 
 import scala.compat.java8.FunctionConverters._
 

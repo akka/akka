@@ -7,9 +7,8 @@ package akka.io
 import java.lang.{ Iterable => JIterable }
 import java.net.InetSocketAddress
 
-import scala.collection.immutable
-
 import scala.annotation.nowarn
+import scala.collection.immutable
 
 import akka.actor._
 import akka.io.Inet.SocketOption

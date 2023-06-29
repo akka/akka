@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -18,8 +20,6 @@ import akka.cluster.sharding.typed.ShardedDaemonProcessContext
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl
 import akka.cluster.sharding.typed.javadsl
-
-import scala.reflect.ClassTag
 
 object ShardedDaemonProcess extends ExtensionId[ShardedDaemonProcess] {
   override def createExtension(system: ActorSystem[_]): ShardedDaemonProcess = new ShardedDaemonProcessImpl(system)

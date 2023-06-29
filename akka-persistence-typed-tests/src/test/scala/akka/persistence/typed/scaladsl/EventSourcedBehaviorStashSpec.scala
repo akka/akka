@@ -4,6 +4,16 @@
 
 package akka.persistence.typed.scaladsl
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.NotUsed
 import akka.actor.Dropped
 import akka.actor.UnhandledMessage
@@ -20,14 +30,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.duration._
 
 object EventSourcedBehaviorStashSpec {
   def conf: Config = ConfigFactory.parseString(s"""

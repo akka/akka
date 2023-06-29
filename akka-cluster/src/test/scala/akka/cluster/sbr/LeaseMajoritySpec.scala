@@ -4,9 +4,10 @@
 
 package akka.cluster.sbr
 
-import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
+
+import akka.testkit.AkkaSpec
 
 class LeaseMajoritySpec extends AkkaSpec() with Eventually {
 

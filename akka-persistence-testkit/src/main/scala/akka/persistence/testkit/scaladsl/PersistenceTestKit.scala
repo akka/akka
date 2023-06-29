@@ -7,7 +7,9 @@ package akka.persistence.testkit.scaladsl
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
+
 import com.typesafe.config.Config
+
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem

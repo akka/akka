@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.{ ApiMayChange, InternalApi }
@@ -13,10 +18,6 @@ import akka.coordination.lease.LeaseUsageSettings
 import akka.japi.Util.immutableSeq
 import akka.util.Helpers.toRootLowerCase
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
-
-import scala.collection.immutable
-import scala.concurrent.duration._
 
 object ClusterShardingSettings {
 

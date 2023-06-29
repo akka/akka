@@ -6,6 +6,7 @@ package akka.actor.typed.internal.adpater
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor
 import akka.actor.typed.ActorTags
 import akka.actor.typed.MailboxSelector

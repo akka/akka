@@ -16,8 +16,8 @@ import akka.persistence.query.typed.{ EventEnvelope => TypedEventEnvelope }
 import akka.persistence.query.typed.javadsl.CurrentEventsByPersistenceIdTypedQuery
 import akka.persistence.query.typed.javadsl.CurrentEventsBySliceQuery
 import akka.persistence.query.typed.javadsl.EventsByPersistenceIdTypedQuery
-import akka.stream.javadsl.Source
 import akka.persistence.testkit.query.scaladsl
+import akka.stream.javadsl.Source
 
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"

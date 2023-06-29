@@ -9,6 +9,8 @@ import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
+
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -16,7 +18,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
-import scala.annotation.nowarn
+
 import akka.Done
 import akka.NotUsed
 import akka.actor._

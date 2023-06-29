@@ -7,10 +7,10 @@ package akka.io.dns.internal
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.nowarn
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }

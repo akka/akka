@@ -6,12 +6,12 @@ package akka.cluster
 
 import scala.concurrent.duration._
 
-import akka.actor._
-import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
+import akka.actor._
 import akka.remote.artery.ArteryMultiNodeSpec
 import akka.remote.artery.ArterySpecSupport
+import akka.testkit._
 
 object ClusterDeathWatchNotificationSpec {
 

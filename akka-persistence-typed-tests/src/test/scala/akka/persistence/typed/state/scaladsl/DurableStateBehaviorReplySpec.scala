@@ -16,10 +16,9 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
-
-import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
 
 object DurableStateBehaviorReplySpec {
   def conf: Config = PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString(s"""

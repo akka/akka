@@ -4,18 +4,18 @@
 
 package akka.remote.serialization
 
+import java.nio.ByteOrder
+
 import akka.actor.ExtendedActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 import akka.protobufv3.internal.ByteString
 import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats
-import akka.serialization.ByteBufferSerializer
 import akka.serialization.{ SerializationExtension, Serializers }
+import akka.serialization.ByteBufferSerializer
 import akka.serialization.DisabledJavaSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-
-import java.nio.ByteOrder
 
 /**
  * INTERNAL API

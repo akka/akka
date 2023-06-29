@@ -57,8 +57,8 @@ object RemoteRandomSpec {
 }
 
 class RemoteRandomSpec extends RemotingMultiNodeSpec(RemoteRandomConfig) with DefaultTimeout {
-  import RemoteRandomSpec._
   import RemoteRandomConfig._
+  import RemoteRandomSpec._
 
   def initialParticipants = roles.size
 

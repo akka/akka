@@ -4,13 +4,13 @@
 
 package akka.actor.typed.javadsl
 
+import java.util.function.Predicate
+
 import akka.actor.typed.{ Behavior, Props }
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
-
-import java.util.function.Predicate
 
 object Routers {
 

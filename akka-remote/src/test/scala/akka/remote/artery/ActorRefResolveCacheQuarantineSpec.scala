@@ -4,13 +4,13 @@
 
 package akka.remote.artery
 
+import akka.pattern.ask
 import akka.remote.RARP
 import akka.testkit.DeadLettersFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import akka.testkit.TestEvent.Mute
 import akka.testkit.TestDuration
-import akka.pattern.ask
+import akka.testkit.TestEvent.Mute
 import akka.util.Timeout
 
 /**

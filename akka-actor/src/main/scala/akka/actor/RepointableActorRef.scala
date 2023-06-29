@@ -7,11 +7,10 @@ package akka.actor
 import java.util.{ LinkedList => JLinkedList }
 import java.util.concurrent.locks.ReentrantLock
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-
-import scala.annotation.nowarn
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch._

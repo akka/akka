@@ -10,11 +10,10 @@ import java.util.concurrent.{ Callable, Executor, ExecutorService }
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
+import scala.annotation.nowarn
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
 import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
 import scala.util.{ Failure, Success, Try }
-
-import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi

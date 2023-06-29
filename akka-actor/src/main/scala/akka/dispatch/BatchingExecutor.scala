@@ -4,12 +4,13 @@
 
 package akka.dispatch
 
-import akka.annotation.InternalApi
-
 import java.util.ArrayDeque
 import java.util.concurrent.Executor
+
 import scala.annotation.tailrec
 import scala.concurrent._
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

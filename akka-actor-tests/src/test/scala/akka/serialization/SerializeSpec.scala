@@ -8,11 +8,11 @@ import java.io._
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import SerializationTests._
-import scala.annotation.nowarn
 import com.typesafe.config._
 import language.postfixOps
 import test.akka.serialization.NoVerification

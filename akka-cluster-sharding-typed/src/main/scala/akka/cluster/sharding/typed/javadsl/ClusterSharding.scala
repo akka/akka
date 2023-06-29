@@ -10,6 +10,8 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.annotation.nowarn
+import scala.compat.java8.OptionConverters._
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -22,7 +24,6 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.StatusReply
-import scala.compat.java8.OptionConverters._
 @FunctionalInterface
 trait EntityFactory[M] {
   def apply(shardRegion: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[M]

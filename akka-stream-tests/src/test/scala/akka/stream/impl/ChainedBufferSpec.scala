@@ -4,10 +4,11 @@
 
 package akka.stream.impl
 
-import akka.stream.testkit.StreamSpec
+import scala.annotation.tailrec
+
 import org.scalatest.compatible.Assertion
 
-import scala.annotation.tailrec
+import akka.stream.testkit.StreamSpec
 
 class ChainedBufferSpec extends StreamSpec {
   val doNothing: Any => Unit = _ => ()

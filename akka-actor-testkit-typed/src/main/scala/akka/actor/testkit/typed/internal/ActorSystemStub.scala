@@ -5,12 +5,15 @@
 package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
+
+import scala.annotation.nowarn
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
-import scala.annotation.nowarn
+
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
 import akka.{ actor => classic }
 import akka.Done
 import akka.actor.{ ActorPath, ActorRefProvider, Address, ReflectiveDynamicAccess }

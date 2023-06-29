@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration.FiniteDuration
+
 import akka.NotUsed
 import akka.stream.{ BidiShape, _ }
 import akka.stream.impl.{ LinearTraversalBuilder, Timers, TraversalBuilder }

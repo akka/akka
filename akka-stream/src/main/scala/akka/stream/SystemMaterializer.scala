@@ -4,10 +4,9 @@
 
 package akka.stream
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.Promise
-
-import scala.annotation.nowarn
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider

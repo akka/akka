@@ -4,9 +4,9 @@
 
 package akka.cluster.protobuf
 
-import collection.immutable.SortedSet
-
 import scala.annotation.nowarn
+
+import collection.immutable.SortedSet
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ Address, ExtendedActorSystem }

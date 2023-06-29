@@ -4,9 +4,9 @@
 
 package akka.util
 
-import akka.annotation.InternalApi
-
 import scala.collection.AbstractIterator
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

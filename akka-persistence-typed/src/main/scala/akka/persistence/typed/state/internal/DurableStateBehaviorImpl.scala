@@ -19,10 +19,10 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation._
 import akka.persistence.RecoveryPermitter
-import akka.persistence.typed.state.scaladsl._
 import akka.persistence.state.scaladsl.GetObjectResult
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
+import akka.persistence.typed.state.scaladsl._
 import akka.util.unused
 
 @InternalApi

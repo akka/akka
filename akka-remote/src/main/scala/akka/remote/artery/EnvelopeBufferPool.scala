@@ -5,7 +5,9 @@
 package akka.remote.artery
 
 import java.nio.{ ByteBuffer, ByteOrder }
+
 import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
+
 import akka.actor.ActorRef
 import akka.actor.InternalActorRef
 import akka.io.DirectByteBufferPool

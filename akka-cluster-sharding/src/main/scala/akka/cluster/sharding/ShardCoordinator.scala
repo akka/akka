@@ -4,15 +4,18 @@
 
 package akka.cluster.sharding
 
+import java.util.UUID
+
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-import scala.annotation.nowarn
+
 import akka.actor._
 import akka.actor.DeadLetterSuppression
-import akka.annotation.DoNotInherit
 import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.annotation.DoNotInherit
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent
 import akka.cluster.ClusterEvent._
@@ -21,23 +24,21 @@ import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy
-import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
-import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabilityOrdering
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.MigrationMarker
 import akka.cluster.sharding.internal.{
   EventSourcedRememberEntitiesCoordinatorStore,
   RememberEntitiesCoordinatorStore,
   RememberEntitiesProvider
 }
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy
+import akka.cluster.sharding.internal.ClusterShardAllocationMixin.RegionEntry
+import akka.cluster.sharding.internal.ClusterShardAllocationMixin.ShardSuitabilityOrdering
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.MigrationMarker
 import akka.dispatch.ExecutionContexts
 import akka.event.{ BusLogging, Logging }
 import akka.pattern.{ pipe, AskTimeoutException }
 import akka.persistence._
 import akka.util.PrettyDuration._
 import akka.util.Timeout
-
-import java.util.UUID
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -1536,6 +1537,7 @@ private[akka] class DDataShardCoordinator(
     with Timers {
   import DDataShardCoordinator._
   import ShardCoordinator.Internal._
+
   import akka.cluster.ddata.Replicator.Update
 
   private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")

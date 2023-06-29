@@ -4,12 +4,16 @@
 
 package akka.actor.typed.delivery
 
+import java.io.NotSerializableException
 import java.nio.charset.StandardCharsets
+
+import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.delivery.ConsumerController.SequencedMessage
@@ -17,8 +21,6 @@ import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.SerializerWithStringManifest
-
-import java.io.NotSerializableException
 
 object TestConsumer {
 

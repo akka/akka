@@ -11,11 +11,12 @@ import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
+
 import akka.actor.ActorPath
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
-import akka.actor.typed.internal.{ AdaptMessage, AdaptWithRegisteredMessageAdapter }
 import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, PostStop, Signal, TypedActorContext }
+import akka.actor.typed.internal.{ AdaptMessage, AdaptWithRegisteredMessageAdapter }
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi

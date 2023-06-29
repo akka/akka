@@ -13,8 +13,8 @@ import com.typesafe.config.ConfigFactory
 
 import akka.Done
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Identify, Props }
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.serialization.jackson.CborSerializable
 import akka.stream.Materializer
 import akka.stream.RemoteStreamRefActorTerminatedException

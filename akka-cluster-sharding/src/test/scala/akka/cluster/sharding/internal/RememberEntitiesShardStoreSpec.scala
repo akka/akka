@@ -6,14 +6,15 @@ package akka.cluster.sharding.internal
 
 import java.util.UUID
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.Props
+import akka.cluster.{ Cluster, MemberStatus }
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.{ Cluster, MemberStatus }
 import akka.testkit.{ AkkaSpec, ImplicitSender, WithLogCapturing }
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 /**
  * Covers the interaction between the shard and the remember entities store

@@ -4,12 +4,12 @@
 
 package akka.cluster.sharding.passivation.simulator
 
+import java.nio.file.Paths
+
 import akka.NotUsed
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.stream.scaladsl._
 import akka.util.ByteString
-
-import java.nio.file.Paths
 
 trait AccessPattern {
   def isSynthetic: Boolean

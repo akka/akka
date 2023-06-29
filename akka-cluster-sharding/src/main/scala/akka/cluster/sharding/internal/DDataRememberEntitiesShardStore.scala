@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.internal
 
+import scala.concurrent.ExecutionContext
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -33,8 +35,6 @@ import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.util.PrettyDuration._
-
-import scala.concurrent.ExecutionContext
 
 /**
  * INTERNAL API

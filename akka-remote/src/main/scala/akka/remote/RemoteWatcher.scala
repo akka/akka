@@ -4,10 +4,9 @@
 
 package akka.remote
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.concurrent.duration._
-
-import scala.annotation.nowarn
 
 import akka.actor._
 import akka.annotation.InternalApi

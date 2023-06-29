@@ -7,11 +7,11 @@ package akka.remote.artery.tcp.ssl
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import akka.util.ccompat.JavaConverters._
 

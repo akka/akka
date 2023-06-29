@@ -4,15 +4,17 @@
 
 package akka.cluster.sharding.typed
 
+import java.time.{ Duration => JDuration }
+
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
-
-import java.time.{ Duration => JDuration }
-import scala.concurrent.duration.FiniteDuration
 
 object ShardedDaemonProcessSettings {
 

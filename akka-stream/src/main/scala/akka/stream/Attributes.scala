@@ -4,16 +4,18 @@
 
 package akka.stream
 
-import akka.actor.ActorSystem
-
 import java.net.URLEncoder
 import java.time.Duration
 import java.util.Optional
+
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
 import scala.util.control.NonFatal
+
+import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -24,8 +26,6 @@ import akka.util.ByteString
 import akka.util.Helpers
 import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
-
-import scala.annotation.nowarn
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]

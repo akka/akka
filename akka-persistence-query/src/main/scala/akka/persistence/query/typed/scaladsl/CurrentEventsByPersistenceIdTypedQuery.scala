@@ -6,7 +6,6 @@ package akka.persistence.query.typed.scaladsl
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
-
 import akka.persistence.query.scaladsl.ReadJournal
 import akka.persistence.query.typed.EventEnvelope
 import akka.stream.scaladsl.Source

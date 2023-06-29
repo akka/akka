@@ -7,8 +7,9 @@ package akka.cluster.sharding.typed.internal.testkit
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 
-import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.Future
+
 import akka.actor.ActorRefProvider
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Scheduler

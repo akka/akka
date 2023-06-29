@@ -7,9 +7,9 @@ package akka.remote.artery.tcp.ssl
 import java.security.Principal
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
-
 import javax.net.ssl.SSLSession
 import javax.net.ssl.SSLSessionContext
+
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

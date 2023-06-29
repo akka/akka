@@ -11,8 +11,8 @@ import com.typesafe.config.ConfigFactory
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 
 object IndirectlyConnected5NodeSpec extends MultiNodeConfig {
   val node1 = role("node1")

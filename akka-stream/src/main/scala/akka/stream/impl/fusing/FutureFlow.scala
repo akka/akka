@@ -4,18 +4,18 @@
 
 package akka.stream.impl.fusing
 
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
+import akka.stream.{ AbruptStageTerminationException, Attributes, FlowShape, Inlet, NeverMaterializedException, Outlet }
 import akka.stream.Attributes.SourceLocation
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ AbruptStageTerminationException, Attributes, FlowShape, Inlet, NeverMaterializedException, Outlet }
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.util.OptionVal
-
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
 
 @InternalApi private[akka] final class FutureFlow[In, Out, M](futureFlow: Future[Flow[In, Out, M]])
     extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {

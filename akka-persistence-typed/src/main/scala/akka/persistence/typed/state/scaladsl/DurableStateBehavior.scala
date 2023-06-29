@@ -15,9 +15,9 @@ import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
-import akka.persistence.typed.state.internal._
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
+import akka.persistence.typed.state.internal._
 
 /**
  * API May Change

@@ -4,11 +4,10 @@
 
 package akka.io.dns.internal
 
+import scala.annotation.nowarn
 import scala.collection.GenTraversableOnce
 import scala.collection.immutable.Seq
 import scala.util.{ Failure, Success, Try }
-
-import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 import akka.io.dns.ResourceRecord
