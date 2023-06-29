@@ -173,6 +173,10 @@ object AkkaBuild {
           url("https://github.com/akka/akka"),
           "scm:git:https://github.com/akka/akka.git",
           "scm:git:git@github.com:akka/akka.git")),
+    releaseNotesURL := {
+      if (version.value.endsWith("SNAPSHOT")) None
+      else Some(url(s"https://github.com/akka/akka/releases/tag/v${version.value}"))
+    },
     apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
     initialCommands :=
       """|import language.postfixOps
