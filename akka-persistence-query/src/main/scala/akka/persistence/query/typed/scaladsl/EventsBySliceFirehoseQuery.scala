@@ -48,6 +48,7 @@ object EventsBySliceFirehoseQuery {
 final class EventsBySliceFirehoseQuery(system: ExtendedActorSystem, config: Config, cfgPath: String)
     extends ReadJournal
     with EventsBySliceQuery
+    with EventsBySliceStartingFromSnapshotsQuery
     with EventTimestampQuery
     with LoadEventQuery {
 
@@ -58,9 +59,22 @@ final class EventsBySliceFirehoseQuery(system: ExtendedActorSystem, config: Conf
       entityType: String,
       minSlice: Int,
       maxSlice: Int,
-      offset: Offset): Source[EventEnvelope[Event], NotUsed] = {
+      offset: Offset): Source[EventEnvelope[Event], NotUsed] =
     EventsBySliceFirehose(system).eventsBySlices(cfgPath, entityType, minSlice, maxSlice, offset)
-  }
+
+  override def eventsBySlicesStartingFromSnapshots[Snapshot, Event](
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset,
+      transformSnapshot: Snapshot => Event): Source[EventEnvelope[Event], NotUsed] =
+    EventsBySliceFirehose(system).eventsBySlicesStartingFromSnapshots(
+      cfgPath,
+      entityType,
+      minSlice,
+      maxSlice,
+      offset,
+      transformSnapshot)
 
   override def sliceForPersistenceId(persistenceId: String): Int =
     persistenceExt.sliceForPersistenceId(persistenceId)

@@ -174,7 +174,9 @@ If your usage does not require a live stream, you can use the @apidoc[currentEve
 Query events for given entity type and slices. A slice is deterministically defined based on the persistence id.
 The purpose is to evenly distribute all persistence ids over the slices.
 
-See @apidoc[akka.persistence.query.typed.*.EventsBySliceQuery] and @apidoc[akka.persistence.query.typed.*.CurrentEventsBySliceQuery]. 
+See @apidoc[akka.persistence.query.typed.*.EventsBySliceQuery] and @apidoc[akka.persistence.query.typed.*.CurrentEventsBySliceQuery].
+
+A variation of these are @apidoc[akka.persistence.query.typed.*.EventsBySliceStartingFromSnapshotsQuery] and @apidoc[akka.persistence.query.typed.*.CurrentEventsBySliceStartingFromSnapshotsQuery].
 
 @apidoc[akka.persistence.query.typed.*.EventsBySliceFirehoseQuery] can give better scalability when many
 consumers retrieve the same events, for example many Projections of the same entity type. The purpose is

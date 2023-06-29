@@ -32,6 +32,7 @@ import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.TimestampOffset
 import akka.persistence.query.typed.EventEnvelope
 import akka.persistence.query.typed.scaladsl.EventsBySliceQuery
+import akka.persistence.query.typed.scaladsl.EventsBySliceStartingFromSnapshotsQuery
 import akka.stream.Attributes
 import akka.stream.FanInShape2
 import akka.stream.FlowShape
@@ -458,6 +459,41 @@ import akka.util.unused
     val sliceRange = minSlice to maxSlice
     val firehoseKey = FirehoseKey(pluginId, entityType, sliceRange)
     val firehose = getFirehose(firehoseKey)
+    val catchupSource = underlyingEventsBySlices[Event](
+      firehose.settings.delegateQueryPluginId,
+      entityType,
+      minSlice,
+      maxSlice,
+      offset,
+      firehose = false)
+    eventsBySlicesImpl(firehose, catchupSource)
+  }
+
+  def eventsBySlicesStartingFromSnapshots[Snapshot, Event](
+      pluginId: String,
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset,
+      transformSnapshot: Snapshot => Event): Source[EventEnvelope[Event], NotUsed] = {
+    val sliceRange = minSlice to maxSlice
+    val firehoseKey = FirehoseKey(pluginId, entityType, sliceRange)
+    val firehose = getFirehose(firehoseKey)
+    val catchupSource = underlyingEventsBySlicesStartingFromSnapshots[Snapshot, Event](
+      firehose.settings.delegateQueryPluginId,
+      entityType,
+      minSlice,
+      maxSlice,
+      offset,
+      transformSnapshot)
+    eventsBySlicesImpl(firehose, catchupSource)
+  }
+
+  private def eventsBySlicesImpl[Event](
+      firehose: Firehose,
+      catchupSource: Source[EventEnvelope[Event], NotUsed]): Source[EventEnvelope[Event], NotUsed] = {
+
+    val firehoseKey = firehose.firehoseKey
     val settings = firehose.settings
     val consumerId = UUID.randomUUID().toString
 
@@ -472,21 +508,15 @@ import akka.util.unused
     }
 
     val catchupKillSwitch = KillSwitches.shared("catchupKillSwitch")
-    val catchupSource =
-      underlyingEventsBySlices[Any](
-        settings.delegateQueryPluginId,
-        entityType,
-        minSlice,
-        maxSlice,
-        offset,
-        firehose = false).via(catchupKillSwitch.flow)
+    val catchupSourceWithKillSwitch =
+      catchupSource.asInstanceOf[Source[EventEnvelope[Any], NotUsed]].via(catchupKillSwitch.flow)
 
     val consumerKillSwitch = KillSwitches.shared("consumerKillSwitch")
 
     val firehoseSource = firehose.firehoseHub
 
     import GraphDSL.Implicits._
-    val catchupOrFirehose = GraphDSL.createGraph(catchupSource) { implicit b => r =>
+    val catchupOrFirehose = GraphDSL.createGraph(catchupSourceWithKillSwitch) { implicit b => r =>
       val merge = b.add(new CatchupOrFirehose(consumerId, firehose, catchupKillSwitch))
       r ~> merge.in1
       FlowShape(merge.in0, merge.out)
@@ -522,6 +552,18 @@ import akka.util.unused
     PersistenceQuery(system)
       .readJournalFor[EventsBySliceQuery](pluginId)
       .eventsBySlices(entityType, minSlice, maxSlice, offset)
+  }
+
+  private def underlyingEventsBySlicesStartingFromSnapshots[Snapshot, Event](
+      pluginId: String,
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset,
+      transformSnapshot: Snapshot => Event): Source[EventEnvelope[Event], NotUsed] = {
+    PersistenceQuery(system)
+      .readJournalFor[EventsBySliceStartingFromSnapshotsQuery](pluginId)
+      .eventsBySlicesStartingFromSnapshots(entityType, minSlice, maxSlice, offset, transformSnapshot)
   }
 
 }

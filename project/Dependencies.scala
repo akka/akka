@@ -112,7 +112,8 @@ object Dependencies {
 
     object TestDependencies {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % Test // ApacheV2
-      val commonsIo = "commons-io" % "commons-io" % "2.12.0" % Test // ApacheV2
+
+      val commonsIo = "commons-io" % "commons-io" % "2.13.0" % Test // ApacheV2
       val commonsCodec = "commons-codec" % "commons-codec" % "1.16.0" % Test // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % Test // EPL 1.0
@@ -136,8 +137,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % Test // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.18" % Test // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.18" % Test // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.2.19" % Test // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.2.19" % Test // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % Test // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % Test // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
