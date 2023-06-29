@@ -185,8 +185,13 @@ final class EventEnvelope[Event](
     eventOption match {
       case Some(evt) => evt
       case None =>
-        throw new IllegalStateException(
-          "Event was not loaded. Use eventOption and load the event on demand with LoadEventQuery.")
+        if (filtered) {
+          throw new IllegalStateException(
+            "Event was filtered so payload is not present. Use eventOption to handle more gracefully.")
+        } else {
+          throw new IllegalStateException(
+            "Event was not loaded. Use eventOption and load the event on demand with LoadEventQuery.")
+        }
     }
 
   /**
@@ -196,8 +201,13 @@ final class EventEnvelope[Event](
     eventOption match {
       case Some(evt) => evt
       case None =>
-        throw new IllegalStateException(
-          "Event was not loaded. Use getOptionalEvent and load the event on demand with LoadEventQuery.")
+        if (filtered) {
+          throw new IllegalStateException(
+            "Event was filtered so payload is not present. Use getOptionalEvent to handle more gracefully.")
+        } else {
+          throw new IllegalStateException(
+            "Event was not loaded. Use getOptionalEvent and load the event on demand with LoadEventQuery.")
+        }
     }
 
   /**
