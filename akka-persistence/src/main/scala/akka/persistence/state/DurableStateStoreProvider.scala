@@ -15,7 +15,7 @@ package akka.persistence.state
 trait DurableStateStoreProvider {
 
   /**
-   * The `ReadJournal` implementation for the Scala API.
+   * The `DurableStateStore` implementation for the Scala API.
    * This corresponds to the instance that is returned by [[DurableStateStoreRegistry#durableStateStoreFor]].
    */
   def scaladslDurableStateStore(): scaladsl.DurableStateStore[Any]
