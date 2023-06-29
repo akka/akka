@@ -71,6 +71,9 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
    * that can be consume elements 'into' the pre-materialized one.
    *
    * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   *
+   * Note that `preMaterialize` is implemented through a reactive streams `Subscriber` which means that a buffer is introduced
+   * and that errors are not propagated upstream but are turned into cancellations without error details.
    */
   def preMaterialize()(implicit materializer: Materializer): (Mat, Sink[In, NotUsed]) = {
     val (sub, mat) = Source.asSubscriber.toMat(this)(Keep.both).run()
