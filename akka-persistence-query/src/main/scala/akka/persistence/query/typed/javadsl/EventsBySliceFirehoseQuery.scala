@@ -46,6 +46,7 @@ object EventsBySliceFirehoseQuery {
 final class EventsBySliceFirehoseQuery(delegate: scaladsl.EventsBySliceFirehoseQuery)
     extends ReadJournal
     with EventsBySliceQuery
+    with EventsBySliceStartingFromSnapshotsQuery
     with EventTimestampQuery
     with LoadEventQuery {
 
@@ -58,6 +59,14 @@ final class EventsBySliceFirehoseQuery(delegate: scaladsl.EventsBySliceFirehoseQ
       maxSlice: Int,
       offset: Offset): Source[EventEnvelope[Event], NotUsed] =
     delegate.eventsBySlices(entityType, minSlice, maxSlice, offset).asJava
+
+  override def eventsBySlicesStartingFromSnapshots[Snapshot, Event](
+      entityType: String,
+      minSlice: Int,
+      maxSlice: Int,
+      offset: Offset,
+      transformSnapshot: java.util.function.Function[Snapshot, Event]): Source[EventEnvelope[Event], NotUsed] =
+    delegate.eventsBySlicesStartingFromSnapshots(entityType, minSlice, maxSlice, offset, transformSnapshot(_)).asJava
 
   override def sliceRanges(numberOfRanges: Int): util.List[Pair[Integer, Integer]] = {
     import akka.util.ccompat.JavaConverters._
