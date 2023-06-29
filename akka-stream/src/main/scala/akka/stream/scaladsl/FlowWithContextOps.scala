@@ -8,16 +8,14 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
-import ccompat._
-
 import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
 import akka.stream.impl.Throttle
-import akka.util.{ ccompat, ConstantFun }
+import akka.util.ccompat._
+import akka.util.ConstantFun
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
