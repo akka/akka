@@ -162,7 +162,7 @@ object AkkaBuild {
     ThisBuild / ivyLoggingLevel := UpdateLogging.Quiet,
     licenses := {
       val tagOrBranch =
-        if (version.value.endsWith("SNAPSHOT")) "main"
+        if (isSnapshot.value) "main"
         else "v" + version.value
       Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/akka/${tagOrBranch}/LICENSE")))
     },
@@ -173,6 +173,10 @@ object AkkaBuild {
           url("https://github.com/akka/akka"),
           "scm:git:https://github.com/akka/akka.git",
           "scm:git:git@github.com:akka/akka.git")),
+    releaseNotesURL := (
+        if (isSnapshot.value) None
+        else Some(url(s"https://github.com/akka/akka/releases/tag/v${version.value}"))
+      ),
     apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
     initialCommands :=
       """|import language.postfixOps
