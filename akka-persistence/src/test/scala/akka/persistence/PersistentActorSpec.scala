@@ -7,18 +7,21 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.nowarn
-import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
 
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
 import akka.actor._
 import akka.persistence.PersistentActorSpec._
-import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
+import akka.testkit.EventFilter
+import akka.testkit.ImplicitSender
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 
 object PersistentActorSpec {
 
@@ -115,6 +118,20 @@ object PersistentActorSpec {
   class Behavior3PersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
       extends Behavior3PersistentActor(name)
       with InmemRuntimePluginConfig
+
+  class Behavior4PersistentActor(name: String) extends ExamplePersistentActor(name) {
+    val receiveCommand: Receive = commonBehavior.orElse {
+      case FilteredPayload =>
+        persist(FilteredPayload)(_ => ())
+      case Cmd(data) =>
+        persist(Evt(s"$data-${lastSequenceNr + 1}"))(updateState)
+    }
+
+    override def receiveRecover: Receive = super.receiveRecover.orElse {
+      case FilteredPayload =>
+        throw new IllegalStateException("Unexpected FilteredPayload")
+    }
+  }
 
   class ChangeBehaviorInLastEventHandlerPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
@@ -1134,6 +1151,15 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       persistentActor ! GetState
       // cmd that was added to state before failure (b-10) is not replayed ...
       expectMsg(List("a-1", "a-2", "b-11", "b-12", "c-10", "c-11", "c-12"))
+    }
+    "exclude FilteredEvent in replay of persisted events" in {
+      val persistentActor = namedPersistentActor[Behavior4PersistentActor]
+      persistentActor ! FilteredPayload
+      persistentActor ! Cmd("b")
+      persistentActor ! "boom"
+      persistentActor ! Cmd("c")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "b-4", "c-5")) // seqNr 3 was for FilteredPayload
     }
     "allow behavior changes in event handler (when handling first event)" in {
       val persistentActor = changeBehaviorInFirstEventHandlerPersistentActor
