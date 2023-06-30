@@ -117,7 +117,7 @@ object EventSourcedBehaviorSpec {
 
   sealed trait Event extends CborSerializable
   final case class Incremented(delta: Int) extends Event
-  final case object FilteredEvent extends Event
+  case object FilteredEvent extends Event
 
   final case class State(value: Int, history: Vector[Int]) extends CborSerializable
 
