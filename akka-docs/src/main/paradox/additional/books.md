@@ -3,6 +3,7 @@
 ## Books
 
 ### Recommended reads
+ * [Akka in Action, second edition](https://www.manning.com/books/akka-in-action-second-edition), by Francisco Lopez-Sancho Abraham. Manning Publications Co., ISBN: 9781617299216, Jun 2023 
  * [Reactive Design Patterns](https://www.reactivedesignpatterns.com/), by Roland Kuhn with Jamie Allen and Brian Hanafee, Manning Publications Co., ISBN 9781617291807, Feb 2017
  * [Akka in Action](https://www.lightbend.com/resources/e-book/akka-in-action), by Raymond Roestenburg and Rob Bakker, Manning Publications Co., ISBN: 9781617291012, September 2016
  
