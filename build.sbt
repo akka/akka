@@ -1,31 +1,18 @@
 import akka.Dependencies.{ allScalaVersions, fortifySCAVersion, scalaFortifyVersion }
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
+import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox }
 
 import scala.language.postfixOps
 import scala.sys.process._
 
-ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
-
 scalaVersion := allScalaVersions.head
 
-enablePlugins(
-  UnidocRoot,
-  UnidocWithPrValidation,
-  NoPublish,
-  CopyrightHeader,
-  CopyrightHeaderInPr,
-  ScalafixIgnoreFilePlugin,
-  JavaFormatterPlugin)
+enablePlugins(UnidocRoot, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr, JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
 
 addCommandAlias("verifyCodeStyle", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
 addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbt")
 
-addCommandAlias(
-  name = "fixall",
-  value = ";scalafixEnable; scalafixAll; scalafmtAll; test:compile; multi-jvm:compile; reload")
-
-addCommandAlias(name = "sortImports", value = ";scalafixEnable; scalafixAll SortImports; scalafmtAll")
+addCommandAlias(name = "fixall", value = ";scalafmtAll; test:compile; multi-jvm:compile; reload")
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, Protobuf, SigarLoader, VersionGenerator }
@@ -230,7 +217,6 @@ lazy val docs = akkaModule("akka-docs")
     StreamOperatorsIndexGenerator,
     Jdk9)
   .disablePlugins(MimaPlugin)
-  .disablePlugins((if (ScalafixSupport.fixTestScope) Nil else Seq(ScalafixPlugin)): _*)
   // TODO https://github.com/akka/akka/issues/30243
   .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
 
