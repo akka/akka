@@ -4,9 +4,8 @@
 
 package akka.actor
 
-import scala.collection.immutable
-
 import scala.annotation.nowarn
+import scala.collection.immutable
 
 import akka.japi.Creator
 import akka.util.Reflect

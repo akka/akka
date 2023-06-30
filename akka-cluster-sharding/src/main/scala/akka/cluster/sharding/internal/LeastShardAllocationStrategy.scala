@@ -6,6 +6,7 @@ package akka.cluster.sharding.internal
 
 import scala.collection.immutable
 import scala.concurrent.Future
+
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.ShardId

@@ -7,6 +7,7 @@ package akka.remote.artery
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.actor.{ Actor, ActorLogging, Props }
 import akka.annotation.InternalApi

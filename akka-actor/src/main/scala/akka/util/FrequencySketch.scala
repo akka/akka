@@ -4,9 +4,9 @@
 
 package akka.util
 
-import akka.annotation.InternalApi
-
 import scala.util.hashing.MurmurHash3
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

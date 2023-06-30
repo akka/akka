@@ -5,8 +5,10 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.actor.ActorRef
 import akka.annotation.{ InternalApi, InternalStableApi }

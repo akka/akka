@@ -4,6 +4,10 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Address
@@ -12,8 +16,6 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus.Up
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.ImplicitSender
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 
 object RollingUpdateShardAllocationSpecConfig
     extends MultiNodeClusterShardingConfig(
@@ -84,8 +86,8 @@ abstract class RollingUpdateShardAllocationSpec
     extends MultiNodeClusterShardingSpec(RollingUpdateShardAllocationSpecConfig)
     with ImplicitSender {
 
-  import RollingUpdateShardAllocationSpecConfig._
   import RollingUpdateShardAllocationSpec._
+  import RollingUpdateShardAllocationSpecConfig._
 
   val typeName = "home"
 

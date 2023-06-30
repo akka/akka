@@ -151,9 +151,9 @@ object UnpersistentEventSourcedSpec {
 }
 
 class UnpersistentEventSourcedSpec extends AnyWordSpec with Matchers {
+  import UnpersistentEventSourcedSpec._
   import org.slf4j.event.Level
 
-  import UnpersistentEventSourcedSpec._
   import akka.actor.testkit.typed.scaladsl._
 
   "Unpersistent EventSourcedBehavior" must {

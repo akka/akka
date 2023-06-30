@@ -4,6 +4,15 @@
 
 package akka.cluster.sharding.passivation.simulator
 
+import scala.collection.immutable
+import scala.collection.mutable
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+
+import com.typesafe.config.ConfigFactory
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.cluster.sharding.internal.ActiveEntities
@@ -29,13 +38,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.util.Clock
 import akka.util.OptionVal
-import com.typesafe.config.ConfigFactory
-import scala.collection.immutable
-import scala.collection.mutable
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
 
 /**
  * Simulator for testing the efficiency of passivation strategies.

@@ -5,7 +5,6 @@
 package akka.stream.impl.io
 
 import java.nio.ByteBuffer
-
 import javax.net.ssl._
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._

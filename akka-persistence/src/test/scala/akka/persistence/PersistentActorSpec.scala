@@ -6,18 +6,19 @@ package akka.persistence
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
-import scala.annotation.nowarn
 
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.concurrent.Eventually
+
 import akka.actor._
 import akka.persistence.PersistentActorSpec._
 import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
-import org.scalatest.concurrent.Eventually
 
 object PersistentActorSpec {
 

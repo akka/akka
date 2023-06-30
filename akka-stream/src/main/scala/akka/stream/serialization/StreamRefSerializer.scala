@@ -4,6 +4,8 @@
 
 package akka.stream.serialization
 
+import java.nio.charset.StandardCharsets
+
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.protobufv3.internal.ByteString
@@ -11,8 +13,6 @@ import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization._
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
-
-import java.nio.charset.StandardCharsets
 
 /** INTERNAL API */
 @InternalApi

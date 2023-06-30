@@ -4,6 +4,8 @@
 
 package akka.persistence.testkit.query
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -14,7 +16,6 @@ import akka.persistence.testkit.query.EventsByPersistenceIdSpec.Command
 import akka.persistence.testkit.query.EventsByPersistenceIdSpec.testBehaviour
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.stream.scaladsl.Sink
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class CurrentEventsByTagSpec
     extends ScalaTestWithActorTestKit(EventsByPersistenceIdSpec.config)

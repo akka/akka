@@ -7,10 +7,9 @@ package akka.testkit.javadsl
 import java.util.{ List => JList }
 import java.util.function.{ Supplier, Function => JFunction }
 
+import scala.annotation.nowarn
 import scala.annotation.varargs
 import scala.concurrent.duration._
-
-import scala.annotation.nowarn
 
 import akka.actor._
 import akka.annotation.InternalApi

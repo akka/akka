@@ -5,6 +5,7 @@
 package akka.stream.javadsl
 
 import java.util.function.{ BiFunction, Supplier, ToLongBiFunction }
+
 import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.util.unused

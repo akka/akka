@@ -6,6 +6,8 @@ package akka.cluster.typed
 
 import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 
+import com.typesafe.config.Config
+
 import akka.actor.typed._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
@@ -16,7 +18,6 @@ import akka.cluster.singleton.{
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
 import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 object ClusterSingletonSettings {
   def apply(system: ActorSystem[_]): ClusterSingletonSettings =

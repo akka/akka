@@ -4,10 +4,10 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
@@ -19,8 +19,8 @@ import akka.actor.Terminated
 import akka.remote.RARP
 import akka.remote.artery.QuarantinedEvent
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 

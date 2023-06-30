@@ -5,11 +5,12 @@
 package akka.remote.artery
 package tcp
 
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
+
 import akka.actor.ExtendedActorSystem
 import akka.actor.setup.Setup
 import akka.util.ccompat._
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
 
 @ccompatUsedUntil213
 trait SSLEngineProvider {

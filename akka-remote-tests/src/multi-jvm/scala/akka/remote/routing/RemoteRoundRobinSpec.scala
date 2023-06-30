@@ -73,8 +73,8 @@ object RemoteRoundRobinSpec {
 }
 
 class RemoteRoundRobinSpec extends RemotingMultiNodeSpec(RemoteRoundRobinConfig) with DefaultTimeout {
-  import RemoteRoundRobinSpec._
   import RemoteRoundRobinConfig._
+  import RemoteRoundRobinSpec._
 
   def initialParticipants = roles.size
 

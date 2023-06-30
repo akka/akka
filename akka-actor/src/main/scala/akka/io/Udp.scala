@@ -7,9 +7,9 @@ package akka.io
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor._

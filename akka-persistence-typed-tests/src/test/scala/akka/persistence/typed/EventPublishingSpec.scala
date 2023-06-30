@@ -4,6 +4,8 @@
 
 package akka.persistence.typed
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -14,7 +16,6 @@ import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventPublishingSpec {
 

@@ -5,15 +5,16 @@
 package akka.cluster.sharding
 import java.util.UUID
 
-import akka.actor.{ ActorRef, ActorSystem, Props }
-import akka.cluster.sharding.ShardRegion.CurrentRegions
-import akka.cluster.{ Cluster, MemberStatus }
-import akka.persistence.PersistentActor
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.actor.{ ActorRef, ActorSystem, Props }
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.sharding.ShardRegion.CurrentRegions
+import akka.persistence.PersistentActor
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
 /**
  * Test migration from old persistent shard coordinator with remembered

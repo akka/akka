@@ -4,6 +4,10 @@
 
 package akka.cluster.singleton
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -15,9 +19,6 @@ import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object ClusterSingletonManagerPreparingForShutdownSpec extends MultiNodeConfig {
   val first = role("first")

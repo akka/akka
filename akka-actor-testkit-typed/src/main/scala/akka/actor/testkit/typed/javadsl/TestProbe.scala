@@ -7,7 +7,6 @@ package akka.actor.testkit.typed.javadsl
 import java.time.Duration
 import java.util.{ List => JList }
 import java.util.function.Supplier
-import akka.japi.function.Creator
 
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
@@ -17,6 +16,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.RecipientRef
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
+import akka.japi.function.Creator
 import akka.util.unused
 
 object FishingOutcomes {

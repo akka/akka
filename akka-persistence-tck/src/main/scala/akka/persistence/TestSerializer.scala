@@ -4,13 +4,13 @@
 
 package akka.persistence
 
+import java.io.NotSerializableException
 import java.nio.charset.StandardCharsets
+
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-
-import java.io.NotSerializableException
 
 final case class TestPayload(ref: ActorRef)
 

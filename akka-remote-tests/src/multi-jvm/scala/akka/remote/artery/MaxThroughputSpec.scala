@@ -4,11 +4,15 @@
 
 package akka.remote.artery
 
+import java.io.NotSerializableException
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
+
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
 import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
@@ -17,8 +21,6 @@ import akka.remote.testkit.{ MultiNodeConfig, PerfFlamesSupport }
 import akka.serialization.{ ByteBufferSerializer, SerializerWithStringManifest }
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
-
-import java.io.NotSerializableException
 
 object MaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")

@@ -4,17 +4,17 @@
 
 package akka.remote.artery
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor._
 import akka.actor.ActorIdentity
 import akka.actor.Identify
 import akka.remote.{ RARP, RemotingMultiNodeSpec }
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 
 object SurviveNetworkPartitionSpec extends MultiNodeConfig {

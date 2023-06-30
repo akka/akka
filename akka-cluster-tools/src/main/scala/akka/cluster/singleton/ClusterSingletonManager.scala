@@ -9,7 +9,9 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
 import com.typesafe.config.Config
+
 import akka.AkkaException
 import akka.Done
 import akka.actor.Actor

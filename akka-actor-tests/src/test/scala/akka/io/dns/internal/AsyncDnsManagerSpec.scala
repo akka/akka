@@ -6,9 +6,8 @@ package akka.io.dns.internal
 
 import java.net.InetAddress
 
-import scala.collection.immutable.Seq
-
 import scala.annotation.nowarn
+import scala.collection.immutable.Seq
 
 import akka.io.Dns
 import akka.io.dns.AAAARecord

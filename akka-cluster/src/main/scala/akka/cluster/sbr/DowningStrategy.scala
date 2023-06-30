@@ -7,6 +7,7 @@ package akka.cluster.sbr
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.Address
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi

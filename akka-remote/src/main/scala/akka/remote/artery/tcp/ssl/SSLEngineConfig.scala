@@ -4,12 +4,13 @@
 
 package akka.remote.artery.tcp.ssl
 
-import akka.annotation.InternalApi
-import akka.japi.Util.immutableSeq
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+
 import com.typesafe.config.Config
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
+import akka.annotation.InternalApi
+import akka.japi.Util.immutableSeq
 
 /**
  * INTERNAL API

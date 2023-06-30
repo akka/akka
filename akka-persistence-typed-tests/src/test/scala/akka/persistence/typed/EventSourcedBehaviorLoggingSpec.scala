@@ -4,9 +4,14 @@
 
 package akka.persistence.typed
 
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.testkit.PersistenceTestKitPlugin
@@ -15,11 +20,6 @@ import akka.persistence.typed.EventSourcedBehaviorLoggingSpec.ChattyEventSourcin
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import akka.Done
-import akka.actor.typed.ActorRef
 
 object EventSourcedBehaviorLoggingSpec {
 

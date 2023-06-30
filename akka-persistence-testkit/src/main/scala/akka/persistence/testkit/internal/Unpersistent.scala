@@ -4,6 +4,13 @@
 
 package akka.persistence.testkit.internal
 
+import java.util.concurrent.ConcurrentLinkedQueue
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.collection.mutable.ListBuffer
+import scala.reflect.ClassTag
+
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
@@ -15,13 +22,6 @@ import akka.persistence.typed.state.internal.DurableStateBehaviorImpl
 import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
 import akka.util.ConstantFun.{ scalaAnyToUnit => doNothing }
 import akka.util.ccompat.JavaConverters._
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.collection.mutable.ListBuffer
-import scala.reflect.ClassTag
-
-import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  * INTERNAL API
@@ -392,8 +392,9 @@ private[akka] class PersistenceProbeImpl[T] {
 
   def asJava: javadsl.PersistenceProbe[T] =
     new javadsl.PersistenceProbe[T] {
-      import javadsl.{ PersistenceEffect, PersistenceProbe }
       import java.util.{ List => JList, Set => JSet }
+
+      import javadsl.{ PersistenceEffect, PersistenceProbe }
 
       def drain(): JList[PersistenceEffect[T]] = {
         @annotation.tailrec

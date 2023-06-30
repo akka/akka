@@ -4,16 +4,16 @@
 
 package akka.cluster.sharding.internal
 
+import scala.collection.mutable
+
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.annotation.InternalApi
-import akka.cluster.sharding.ShardCoordinator.Internal
-import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.ClusterShardingSerializable
 import akka.cluster.sharding.ClusterShardingSettings
+import akka.cluster.sharding.ShardCoordinator.Internal
+import akka.cluster.sharding.ShardRegion.ShardId
 import akka.persistence._
-
-import scala.collection.mutable
 
 /**
  * INTERNAL API

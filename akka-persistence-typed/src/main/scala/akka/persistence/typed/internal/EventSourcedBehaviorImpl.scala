@@ -4,11 +4,13 @@
 
 package akka.persistence.typed.internal
 
-import akka.Done
-
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+
+import org.slf4j.LoggerFactory
+
+import akka.Done
 import akka.actor.typed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.BackoffSupervisorStrategy
@@ -41,12 +43,11 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
-import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.ConstantFun
 import akka.util.unused
-import org.slf4j.LoggerFactory
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {

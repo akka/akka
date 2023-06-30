@@ -4,21 +4,21 @@
 
 package akka.stream.impl.fusing
 
-import akka.annotation.InternalApi
-import akka.stream.Attributes.SourceLocation
-import akka.stream._
-import akka.stream.impl.BoundedBuffer
-import akka.stream.impl.ChainedBuffer
-import akka.stream.impl.PartitionedBuffer
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.{ Buffer => BufferImpl }
-import akka.stream.stage._
-
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.Attributes.SourceLocation
+import akka.stream.impl.{ Buffer => BufferImpl }
+import akka.stream.impl.BoundedBuffer
+import akka.stream.impl.ChainedBuffer
+import akka.stream.impl.PartitionedBuffer
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage._
 
 /**
  * Internal API

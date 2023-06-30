@@ -4,9 +4,12 @@
 
 package akka.cluster.sharding
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
@@ -16,13 +19,11 @@ import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions, Pa
 import akka.cluster.sharding.internal.{ DDataRememberEntitiesProvider, EventSourcedRememberEntitiesProvider }
 import akka.cluster.singleton.{ ClusterSingletonManager, ClusterSingletonManagerSettings }
 import akka.pattern.BackoffOpts
-import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.persistence.{ Persistence, PersistentActor }
+import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
-
-import scala.annotation.nowarn
 
 object ClusterShardingSpec {
   //#counter-actor

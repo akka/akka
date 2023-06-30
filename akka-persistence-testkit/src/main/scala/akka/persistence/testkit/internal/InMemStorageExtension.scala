@@ -6,8 +6,8 @@ package akka.persistence.testkit.internal
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.actor.Extension
 import akka.actor.{ ActorSystem, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
+import akka.actor.Extension
 import akka.annotation.InternalApi
 import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.JournalOperation

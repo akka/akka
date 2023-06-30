@@ -4,10 +4,9 @@
 
 package akka.remote
 
+import scala.annotation.nowarn
 import scala.collection.immutable.TreeMap
 import scala.concurrent.duration._
-
-import scala.annotation.nowarn
 
 import akka.remote.FailureDetector.Clock
 import akka.testkit.AkkaSpec

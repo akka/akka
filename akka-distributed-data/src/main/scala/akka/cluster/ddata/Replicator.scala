@@ -10,6 +10,7 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeUnit
 import java.util.function.{ Function => JFunction }
 
+import scala.annotation.nowarn
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.collection.immutable.TreeSet
@@ -22,7 +23,6 @@ import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor.Actor

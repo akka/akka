@@ -4,6 +4,12 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.util.Optional
+import java.util.function.IntFunction
+
+import scala.compat.java8.OptionConverters._
+import scala.reflect.ClassTag
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -25,11 +31,6 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.typed.ClusterSingleton
 import akka.cluster.typed.ClusterSingletonSettings
 import akka.cluster.typed.SingletonActor
-
-import java.util.Optional
-import java.util.function.IntFunction
-import scala.compat.java8.OptionConverters._
-import scala.reflect.ClassTag
 
 /**
  * INTERNAL API

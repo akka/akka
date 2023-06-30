@@ -6,6 +6,15 @@ package akka.remote.artery
 package tcp
 
 import java.security.NoSuchAlgorithmException
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
+
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
 
 import akka.actor.{ ActorIdentity, ActorPath, ActorRef, Identify, RootActorPath }
 import akka.actor.setup.ActorSystemSetup
@@ -14,14 +23,6 @@ import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
-import org.scalatest.matchers.should.Matchers
-
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 

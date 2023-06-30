@@ -4,9 +4,9 @@
 
 package akka.stream.impl
 
-import akka.stream.testkit.StreamSpec
-
 import scala.annotation.nowarn
+
+import akka.stream.testkit.StreamSpec
 
 @nowarn("msg=deprecated")
 class BoundedBufferSpec extends StreamSpec {

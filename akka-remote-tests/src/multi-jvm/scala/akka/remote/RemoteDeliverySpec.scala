@@ -39,8 +39,8 @@ object RemoteDeliverySpec {
 }
 
 abstract class RemoteDeliverySpec extends RemotingMultiNodeSpec(RemoteDeliveryConfig) {
-  import RemoteDeliverySpec._
   import RemoteDeliveryConfig._
+  import RemoteDeliverySpec._
 
   override def initialParticipants = roles.size
 

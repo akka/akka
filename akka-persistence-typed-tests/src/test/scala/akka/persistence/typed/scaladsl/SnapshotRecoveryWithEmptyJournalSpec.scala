@@ -4,6 +4,14 @@
 
 package akka.persistence.typed.scaladsl
 
+import java.io.File
+import java.util.UUID
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.apache.commons.io.FileUtils
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -14,13 +22,6 @@ import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.typed.PersistenceId
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.apache.commons.io.FileUtils
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import java.io.File
-import java.util.UUID
 
 object SnapshotRecoveryWithEmptyJournalSpec {
   val survivingSnapshotPath = s"target/survivingSnapshotPath-${UUID.randomUUID().toString}"

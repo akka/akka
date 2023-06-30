@@ -4,6 +4,12 @@
 
 package akka.cluster.sharding.passivation
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.Eventually
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
@@ -11,14 +17,9 @@ import akka.cluster.Cluster
 import akka.cluster.sharding.ClusterSharding
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion
-import akka.testkit.WithLogCapturing
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.Eventually
-import scala.concurrent.duration._
-
+import akka.testkit.WithLogCapturing
 import akka.util.Clock
 
 object EntityPassivationSpec {

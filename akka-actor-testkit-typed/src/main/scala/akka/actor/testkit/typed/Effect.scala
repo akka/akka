@@ -4,6 +4,8 @@
 
 package akka.actor.testkit.typed
 
+import java.util.concurrent.TimeoutException
+
 import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{ Failure, Success, Try }
@@ -12,8 +14,6 @@ import akka.actor.typed.{ ActorRef, Behavior, Props, RecipientRef }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.JavaDurationConverters._
 import akka.util.unused
-
-import java.util.concurrent.TimeoutException
 
 /**
  * All tracked effects for the [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit]] and

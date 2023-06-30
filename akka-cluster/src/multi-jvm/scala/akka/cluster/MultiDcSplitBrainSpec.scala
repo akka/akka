@@ -12,8 +12,8 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
 import akka.cluster.ClusterEvent._
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit.TestProbe
 
 object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {

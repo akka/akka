@@ -4,10 +4,12 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.io.NotSerializableException
+import java.nio.ByteBuffer
+import java.time.Instant
+
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
-
-import java.io.NotSerializableException
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ChangeNumberOfProcesses
 import akka.cluster.sharding.typed.GetNumberOfProcesses
@@ -19,9 +21,6 @@ import akka.remote.serialization.WrappedPayloadSupport
 import akka.serialization.BaseSerializer
 import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializerWithStringManifest
-
-import java.nio.ByteBuffer
-import java.time.Instant
 
 /**
  * INTERNAL API

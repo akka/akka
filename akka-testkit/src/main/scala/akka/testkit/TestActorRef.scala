@@ -6,10 +6,9 @@ package akka.testkit
 
 import java.util.concurrent.atomic.AtomicLong
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.reflect.ClassTag
-
-import scala.annotation.nowarn
 
 import akka.actor._
 import akka.dispatch._

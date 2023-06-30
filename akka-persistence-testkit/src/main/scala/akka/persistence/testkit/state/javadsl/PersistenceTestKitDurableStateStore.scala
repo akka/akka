@@ -6,10 +6,12 @@ package akka.persistence.testkit.state.javadsl
 
 import java.util.Optional
 import java.util.concurrent.{ CompletableFuture, CompletionStage }
+
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import akka.japi.Pair
+
 import akka.{ Done, NotUsed }
+import akka.japi.Pair
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.Offset
 import akka.persistence.query.javadsl.{ DurableStateStorePagedPersistenceIdsQuery, DurableStateStoreQuery }

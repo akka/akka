@@ -4,6 +4,18 @@
 
 package akka.actor
 
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeoutException
+
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.ConfigurationException
 import akka.Done
 import akka.actor.CoordinatedShutdown.Phase
@@ -13,16 +25,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.testkit.TestKit
 import akka.testkit.TestProbe
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeoutException
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.Promise
 
 class CoordinatedShutdownSpec
     extends AkkaSpec(ConfigFactory.parseString("""

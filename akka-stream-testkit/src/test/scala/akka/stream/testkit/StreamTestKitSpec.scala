@@ -8,9 +8,7 @@ import scala.concurrent.duration._
 
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-
 import akka.testkit._
-
 import akka.testkit.TestEvent.Mute
 import akka.testkit.TestEvent.UnMute
 

@@ -35,11 +35,11 @@ import akka.remote.DefaultFailureDetectorRegistry
 import akka.remote.PhiAccrualFailureDetector
 import akka.remote.RARP
 import akka.remote.artery.ArterySettings.AeronUpd
+import akka.remote.testkit.Direction
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.Direction
-import akka.testkit.TestEvent._
 import akka.testkit._
+import akka.testkit.TestEvent._
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 

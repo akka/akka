@@ -43,8 +43,8 @@ object RemoteQuarantinePiercingSpec {
 }
 
 abstract class RemoteQuarantinePiercingSpec extends RemotingMultiNodeSpec(RemoteQuarantinePiercingConfig) {
-  import RemoteQuarantinePiercingSpec._
   import RemoteQuarantinePiercingConfig._
+  import RemoteQuarantinePiercingSpec._
 
   override def initialParticipants = roles.size
 

@@ -4,9 +4,9 @@
 
 package akka.actor.typed.eventstream
 
-import akka.actor.InvalidMessageException
-
 import scala.reflect.ClassTag
+
+import akka.actor.InvalidMessageException
 import akka.actor.typed.ActorRef
 import akka.annotation.{ DoNotInherit, InternalApi }
 

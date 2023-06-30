@@ -5,18 +5,20 @@
 package akka.cluster
 
 import java.util.concurrent.atomic.AtomicBoolean
+
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import akka.ConfigurationException
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.testkit.TestKit.awaitCond
 import akka.testkit.TestKit.shutdownActorSystem
 import akka.util.unused
-
-import scala.util.control.NonFatal
 
 class FailingDowningProvider(@unused system: ActorSystem) extends DowningProvider {
   override val downRemovalMargin: FiniteDuration = 20.seconds

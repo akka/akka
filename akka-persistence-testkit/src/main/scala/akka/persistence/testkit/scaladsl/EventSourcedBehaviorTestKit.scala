@@ -6,8 +6,10 @@ package akka.persistence.testkit.scaladsl
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem

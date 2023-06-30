@@ -4,18 +4,19 @@
 
 package akka.persistence.typed.state.scaladsl
 
-import akka.actor.Dropped
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.state.RecoveryCompleted
-import akka.actor.typed.scaladsl.adapter._
 
 object DurableStateRevisionSpec {
 

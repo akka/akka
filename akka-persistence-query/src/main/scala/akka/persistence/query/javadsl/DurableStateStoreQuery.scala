@@ -5,9 +5,9 @@
 package akka.persistence.query.javadsl
 
 import akka.NotUsed
-import akka.persistence.state.javadsl.DurableStateStore
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.Offset
+import akka.persistence.state.javadsl.DurableStateStore
 import akka.stream.javadsl.Source
 
 /**

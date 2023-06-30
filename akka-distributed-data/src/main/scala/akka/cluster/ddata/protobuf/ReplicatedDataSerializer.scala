@@ -10,9 +10,11 @@ import java.util
 import java.util.ArrayList
 import java.util.Collections
 import java.util.Comparator
+
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.annotation.nowarn
+
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._

@@ -4,13 +4,14 @@
 
 package akka.cluster.sharding
 
-import akka.actor.ActorSystem
-import akka.testkit.{ AkkaSpec, TestKit }
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.duration._
+import akka.actor.ActorSystem
+import akka.testkit.{ AkkaSpec, TestKit }
 
 class ClusterShardingSettingsSpec extends AnyWordSpec with Matchers {
 

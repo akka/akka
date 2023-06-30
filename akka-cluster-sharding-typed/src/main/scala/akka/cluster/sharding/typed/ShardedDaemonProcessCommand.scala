@@ -4,13 +4,13 @@
 
 package akka.cluster.sharding.typed
 
+import java.time.Instant
+
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
 import akka.cluster.sharding.typed.internal.ClusterShardingTypedSerializable
 import akka.pattern.StatusReply
-
-import java.time.Instant
 
 /**
  * Commands for interacting with the sharded daemon process

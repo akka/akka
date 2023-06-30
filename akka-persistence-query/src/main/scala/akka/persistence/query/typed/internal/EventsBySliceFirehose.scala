@@ -4,8 +4,8 @@
 
 package akka.persistence.query.typed.internal
 
-import java.time.Instant
 import java.time.{ Duration => JDuration }
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -588,12 +588,11 @@ import akka.util.unused
     firehose: EventsBySliceFirehose.Firehose,
     catchupKillSwitch: KillSwitch)
     extends GraphStage[FanInShape2[EventEnvelope[Any], EventEnvelope[Any], EventEnvelope[Any]]] {
-  import firehose.firehoseKey.entityType
-  import firehose.settings
-
   import CatchupOrFirehose._
   import EventsBySliceFirehose.isDurationGreaterThan
   import EventsBySliceFirehose.timestampOffset
+  import firehose.firehoseKey.entityType
+  import firehose.settings
 
   override def initialAttributes = Attributes.name("CatchupOrFirehose")
   override val shape: FanInShape2[EventEnvelope[Any], EventEnvelope[Any], EventEnvelope[Any]] =

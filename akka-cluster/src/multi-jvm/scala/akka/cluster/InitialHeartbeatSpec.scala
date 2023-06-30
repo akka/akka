@@ -10,8 +10,8 @@ import com.typesafe.config.ConfigFactory
 import language.postfixOps
 
 import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 
 object InitialHeartbeatMultiJvmSpec extends MultiNodeConfig {

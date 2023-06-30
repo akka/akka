@@ -7,6 +7,7 @@ package akka.actor.typed
 import java.util.function.{ Function => F1 }
 
 import scala.annotation.nowarn
+
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

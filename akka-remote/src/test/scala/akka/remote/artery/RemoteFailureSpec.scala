@@ -10,9 +10,9 @@ import akka.actor.ActorIdentity
 import akka.actor.Identify
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.DeadLettersFilter
-import akka.testkit.TestEvent.Mute
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
+import akka.testkit.TestEvent.Mute
 
 object RemoteFailureSpec {
   final case class Ping(s: String) extends CborSerializable

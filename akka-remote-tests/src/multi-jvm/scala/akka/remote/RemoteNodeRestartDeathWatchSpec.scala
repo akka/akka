@@ -18,8 +18,8 @@ import akka.actor.Identify
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 
 object RemoteNodeRestartDeathWatchConfig extends MultiNodeConfig {
@@ -50,8 +50,8 @@ object RemoteNodeRestartDeathWatchSpec {
 }
 
 abstract class RemoteNodeRestartDeathWatchSpec extends RemotingMultiNodeSpec(RemoteNodeRestartDeathWatchConfig) {
-  import RemoteNodeRestartDeathWatchSpec._
   import RemoteNodeRestartDeathWatchConfig._
+  import RemoteNodeRestartDeathWatchSpec._
 
   override def initialParticipants = roles.size
 

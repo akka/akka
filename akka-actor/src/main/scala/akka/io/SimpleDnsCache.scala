@@ -6,10 +6,9 @@ package akka.io
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
-
-import scala.annotation.nowarn
 
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi

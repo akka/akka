@@ -6,13 +6,14 @@ package akka.remote.artery
 
 import java.net.InetAddress
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
 import akka.NotUsed
+import akka.io.dns.internal.AsyncDnsResolver
 import akka.japi.Util.immutableSeq
 import akka.stream.ActorMaterializerSettings
 import akka.util.Helpers.ConfigOps
@@ -20,7 +21,6 @@ import akka.util.Helpers.Requiring
 import akka.util.Helpers.toRootLowerCase
 import akka.util.WildcardIndex
 import akka.util.ccompat.JavaConverters._
-import akka.io.dns.internal.AsyncDnsResolver
 
 /** INTERNAL API */
 private[akka] final class ArterySettings private (config: Config) {

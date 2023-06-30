@@ -4,6 +4,15 @@
 
 package akka.stream.scaladsl
 
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.nowarn
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration.DurationInt
+import scala.util.Success
+import scala.util.control.NoStackTrace
+
 import akka.Done
 import akka.stream.AbruptStageTerminationException
 import akka.stream.ActorAttributes
@@ -15,14 +24,6 @@ import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.EventFilter
-
-import java.util.concurrent.atomic.AtomicInteger
-import scala.annotation.nowarn
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import scala.concurrent.duration.DurationInt
-import scala.util.Success
-import scala.util.control.NoStackTrace
 
 class FlowStatefulMapSpec extends StreamSpec {
 

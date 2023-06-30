@@ -16,8 +16,8 @@ import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Identify
 import akka.actor.Props
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction._
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit.TestProbe
 
 object RemoteReDeploymentConfig extends MultiNodeConfig {

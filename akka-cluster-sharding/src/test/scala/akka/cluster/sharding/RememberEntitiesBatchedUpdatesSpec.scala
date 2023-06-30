@@ -4,11 +4,12 @@
 
 package akka.cluster.sharding
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object RememberEntitiesBatchedUpdatesSpec {
 

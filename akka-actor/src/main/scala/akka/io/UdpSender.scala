@@ -4,6 +4,7 @@
 
 package akka.io
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.util.control.NonFatal
 
@@ -11,7 +12,6 @@ import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.{ DatagramChannelCreator, SocketOption }
 import akka.io.Udp._
-import scala.annotation.nowarn
 
 /**
  * INTERNAL API

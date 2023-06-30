@@ -6,9 +6,9 @@ package akka.routing
 
 import java.util.concurrent.atomic.AtomicLong
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor.ActorSystem

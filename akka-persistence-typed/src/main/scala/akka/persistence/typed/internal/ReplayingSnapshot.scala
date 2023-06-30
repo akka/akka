@@ -7,6 +7,7 @@ package akka.persistence.typed.internal
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence._
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
@@ -14,7 +15,6 @@ import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence.typed.{ RecoveryFailed, ReplicaId }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
 import akka.util.unused
-import akka.actor.typed.scaladsl.LoggerOps
 
 /**
  * INTERNAL API

@@ -6,8 +6,9 @@ package akka.actor.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
 
-import scala.concurrent.Future
 import scala.annotation.nowarn
+import scala.concurrent.Future
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.RecipientRef

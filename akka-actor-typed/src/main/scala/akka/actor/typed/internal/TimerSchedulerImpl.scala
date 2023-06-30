@@ -7,14 +7,15 @@ package internal
 
 import java.time.Duration
 
+import scala.concurrent.duration.FiniteDuration
+
+import org.slf4j.Logger
+
 import akka.actor.{ Cancellable, NotInfluenceReceiveTimeout }
 import akka.actor.typed.scaladsl.{ ActorContext, LoggerOps }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.OptionVal
-import org.slf4j.Logger
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

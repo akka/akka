@@ -9,8 +9,8 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import akka.cluster.MemberStatus.Up
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 
 class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
   val first = role("first")

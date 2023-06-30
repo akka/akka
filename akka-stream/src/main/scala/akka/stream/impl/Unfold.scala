@@ -4,16 +4,17 @@
 
 package akka.stream.impl
 
+import java.util.Optional
+import java.util.concurrent.CompletionStage
+
+import scala.concurrent.Future
+import scala.util.{ Failure, Success, Try }
+
 import akka.annotation.InternalApi
 import akka.japi.{ function, Pair }
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
-
-import java.util.Optional
-import java.util.concurrent.CompletionStage
-import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API

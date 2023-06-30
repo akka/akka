@@ -4,13 +4,14 @@
 
 package akka.persistence.testkit.javadsl
 
+import java.util.{ List, Set }
+
+import scala.collection.immutable.{ Set => ScalaSet }
+
 import akka.actor.testkit.typed.javadsl.BehaviorTestKit
 import akka.actor.typed.Behavior
 import akka.annotation.DoNotInherit
 import akka.persistence.testkit.internal.{ PersistenceProbeImpl, Unpersistent }
-
-import java.util.{ List, Set }
-import scala.collection.immutable.{ Set => ScalaSet }
 
 object UnpersistentBehavior {
 

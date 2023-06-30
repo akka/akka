@@ -5,15 +5,16 @@
 package akka.remote.artery.tcp.ssl
 
 import java.security.NoSuchAlgorithmException
+import javax.net.ssl.SSLEngine
+
+import scala.util.Try
+
+import com.typesafe.config.Config
 
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.event.NoMarkerLogging
 import akka.remote.artery.tcp.SecureRandomFactory
-import com.typesafe.config.Config
-import javax.net.ssl.SSLEngine
-
-import scala.util.Try
 
 object CipherSuiteSupportCheck {
 

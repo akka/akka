@@ -4,11 +4,11 @@
 
 package akka.remote
 
+import scala.annotation.nowarn
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 import TypedActorRemoteDeploySpec._
-import scala.annotation.nowarn
 import com.typesafe.config._
 
 import akka.actor.{ ActorSystem, Deploy, TypedActor, TypedProps }

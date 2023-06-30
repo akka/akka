@@ -11,13 +11,14 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorThreadSpec.Echo
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActorThreadSpec {
   object Echo {

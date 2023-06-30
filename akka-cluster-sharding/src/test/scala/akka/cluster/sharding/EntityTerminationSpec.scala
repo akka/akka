@@ -4,6 +4,10 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.Props
 import akka.cluster.Cluster
@@ -11,9 +15,6 @@ import akka.cluster.MemberStatus
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.WithLogCapturing
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 /**
  * Verifies that the automatic restart on terminate/crash that is in place for remember entities does not apply

@@ -4,14 +4,14 @@
 
 package akka.cluster
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
-import scala.annotation.nowarn
 import scala.util.Failure
 import scala.util.Success
+import scala.util.control.NonFatal
 
 import com.typesafe.config.Config
 

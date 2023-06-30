@@ -13,11 +13,11 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.state.internal
 import akka.persistence.typed.state.internal._
 import akka.persistence.typed.state.scaladsl
-import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.SnapshotAdapter
 
 /**
  * A `Behavior` for a persistent actor with durable storage of its state.

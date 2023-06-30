@@ -6,9 +6,9 @@ package akka.persistence.query
 
 import java.util.Optional
 
-import akka.annotation.InternalApi
-
 import scala.runtime.AbstractFunction4
+
+import akka.annotation.InternalApi
 import akka.util.HashCode
 
 // for binary compatibility (used to be a case class)

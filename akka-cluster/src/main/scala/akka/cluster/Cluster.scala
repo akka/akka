@@ -9,15 +9,15 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.annotation.nowarn
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext }
-import scala.concurrent.duration._
-import scala.util.control.NonFatal
-import scala.annotation.nowarn
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+import scala.util.control.NonFatal
 
 import com.typesafe.config.{ Config, ConfigFactory }
 

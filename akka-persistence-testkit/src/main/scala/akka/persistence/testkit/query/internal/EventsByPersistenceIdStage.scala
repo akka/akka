@@ -7,17 +7,17 @@ import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.journal.Tagged
 import akka.persistence.query.typed.EventEnvelope
-import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.PersistenceId
+import akka.stream.Attributes
+import akka.stream.Outlet
+import akka.stream.SourceShape
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageLogicWithLogging
 import akka.stream.stage.OutHandler
-import akka.stream.Attributes
-import akka.stream.Outlet
-import akka.stream.SourceShape
 
 /**
  * INTERNAL API

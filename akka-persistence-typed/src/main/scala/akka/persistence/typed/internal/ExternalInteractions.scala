@@ -5,6 +5,7 @@
 package akka.persistence.typed.internal
 
 import scala.collection.immutable
+
 import akka.actor.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop

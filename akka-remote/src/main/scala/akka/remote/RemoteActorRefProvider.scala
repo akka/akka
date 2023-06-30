@@ -4,12 +4,11 @@
 
 package akka.remote
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
-import scala.annotation.nowarn
 
 import akka.ConfigurationException
 import akka.Done

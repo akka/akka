@@ -4,10 +4,9 @@
 
 package akka.stream
 
+import scala.annotation.nowarn
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NoStackTrace
-
-import scala.annotation.nowarn
 
 import akka.Done
 

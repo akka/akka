@@ -6,9 +6,9 @@ package akka.cluster.metrics
 
 import java.lang.System.{ currentTimeMillis => newTimestamp }
 
+import scala.annotation.nowarn
 import scala.util.Failure
 
-import scala.annotation.nowarn
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

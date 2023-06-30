@@ -4,6 +4,10 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration.DurationInt
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -20,9 +24,6 @@ import akka.testkit.DeadLettersFilter
 import akka.testkit.TestEvent.Mute
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration.DurationInt
 
 object StopShardsSpec {
 

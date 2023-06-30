@@ -11,6 +11,15 @@ import java.security.PrivateKey
 import java.security.SecureRandom
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
+import javax.net.ssl.KeyManager
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
+import javax.net.ssl.TrustManager
+
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
 
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
@@ -23,14 +32,6 @@ import akka.remote.artery.tcp.SslTransportException
 import akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider.CachedContext
 import akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider.ConfiguredContext
 import akka.stream.TLSRole
-import com.typesafe.config.Config
-import javax.net.ssl.KeyManager
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
-import javax.net.ssl.TrustManager
-
-import scala.concurrent.duration._
 
 /**
  * Variation on ConfigSSLEngineProvider that will periodically reload the keys and certificates

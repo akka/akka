@@ -12,8 +12,8 @@ import akka.actor.Deploy
 import akka.actor.Identify
 import akka.actor.Props
 import akka.remote.RemotingMultiNodeSpec
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit.LongRunningTest
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {

@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
+import java.util.StringJoiner
+
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-
-import java.util.StringJoiner
 
 class FlowInterleaveAllSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

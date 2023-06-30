@@ -4,15 +4,15 @@
 
 package akka.persistence.query.journal.leveldb
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
+
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.query.scaladsl.PersistenceIdsQuery
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-
-import scala.annotation.nowarn
 
 object AllPersistenceIdsSpec {
   val config = """

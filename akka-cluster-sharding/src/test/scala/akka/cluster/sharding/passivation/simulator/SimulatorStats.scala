@@ -4,9 +4,9 @@
 
 package akka.cluster.sharding.passivation.simulator
 
-import akka.stream.scaladsl.Sink
-
 import scala.concurrent.Future
+
+import akka.stream.scaladsl.Sink
 
 object SimulatorStats {
   def apply(): Sink[Simulator.Event, Future[ShardingStats]] =

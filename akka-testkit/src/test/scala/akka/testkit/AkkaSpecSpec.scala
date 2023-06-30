@@ -4,13 +4,12 @@
 
 package akka.testkit
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.annotation.nowarn
 
 import com.typesafe.config.ConfigFactory
 import language.postfixOps
-
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

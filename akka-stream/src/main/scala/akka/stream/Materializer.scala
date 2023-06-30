@@ -4,10 +4,9 @@
 
 package akka.stream
 
+import scala.annotation.{ implicitNotFound, nowarn }
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-
-import scala.annotation.{ implicitNotFound, nowarn }
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem

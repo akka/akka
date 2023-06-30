@@ -9,7 +9,9 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+
 import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.query.NoOffset

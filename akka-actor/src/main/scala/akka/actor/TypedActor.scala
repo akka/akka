@@ -9,6 +9,7 @@ import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method,
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.ExecutionContextExecutor
@@ -16,8 +17,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
-
-import scala.annotation.nowarn
 
 import akka.dispatch._
 import akka.japi.{ Creator, Option => JOption }

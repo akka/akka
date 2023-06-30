@@ -4,6 +4,9 @@
 
 package akka.persistence.testkit.state.scaladsl
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -15,8 +18,6 @@ import akka.persistence.query.UpdatedDurableState
 import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.TestSink
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object PersistenceTestKitDurableStateStoreSpec {
   val config =

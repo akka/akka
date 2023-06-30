@@ -6,11 +6,12 @@ package akka.persistence.typed.crdt
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.util.HashCode
+
 import akka.annotation.InternalApi
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.ORSet.DeltaOp
 import akka.persistence.typed.internal.{ ManyVersionVector, OneVersionVector, VersionVector }
+import akka.util.HashCode
 
 object ORSet {
   def empty[A](originReplica: ReplicaId): ORSet[A] = new ORSet(originReplica.id, Map.empty, VersionVector.empty)

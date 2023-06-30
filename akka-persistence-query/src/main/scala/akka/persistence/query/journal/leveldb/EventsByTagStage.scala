@@ -5,6 +5,7 @@
 package akka.persistence.query.journal.leveldb
 
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol.RecoverySuccess

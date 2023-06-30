@@ -4,6 +4,11 @@
 
 package akka.stream.typed.scaladsl
 
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -11,10 +16,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.RetryFlow
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 final class Bug30201ReproducerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

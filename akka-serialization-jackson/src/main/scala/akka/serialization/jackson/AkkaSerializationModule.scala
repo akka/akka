@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.{ JsonGenerator, JsonParser, ObjectCodec }
 import com.fasterxml.jackson.databind.{ DeserializationContext, JsonNode, SerializerProvider }
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
+
 import akka.serialization.{ SerializationExtension, Serializer, Serializers }
 
 final class AkkaSerializationSerializer extends StdScalarSerializer[AnyRef](classOf[AnyRef]) with ActorSystemAccess {

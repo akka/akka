@@ -6,10 +6,10 @@ package akka.actor
 
 import java.lang.Thread.sleep
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import language.postfixOps
 
 import akka.pattern.ask

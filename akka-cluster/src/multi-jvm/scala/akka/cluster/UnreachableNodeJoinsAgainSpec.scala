@@ -16,8 +16,8 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.util.ccompat._
 

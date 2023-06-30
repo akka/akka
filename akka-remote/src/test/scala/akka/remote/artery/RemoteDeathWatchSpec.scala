@@ -4,9 +4,9 @@
 
 package akka.remote.artery
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor._

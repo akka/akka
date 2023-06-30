@@ -5,7 +5,9 @@
 package akka.remote.artery
 
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
+
 import akka.actor.Address
 import akka.event.Logging
 import akka.remote.artery.OutboundHandshake.HandshakeReq

@@ -4,10 +4,10 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.time.Instant
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import java.time.Instant
 
 class ShardedDaemonProcessStateSpec extends AnyWordSpecLike with Matchers {
 

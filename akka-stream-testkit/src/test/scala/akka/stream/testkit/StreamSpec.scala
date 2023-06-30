@@ -4,17 +4,18 @@
 
 package akka.stream.testkit
 
-import akka.actor.ActorSystem
-import akka.stream.Materializer
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.testkit.scaladsl.StreamTestKit.printDebugDump
-import akka.stream.testkit.scaladsl.StreamTestKit.assertNoChildren
-import akka.stream.testkit.scaladsl.StreamTestKit.stopAllChildren
-import akka.testkit.AkkaSpec
-import akka.testkit.TestKitUtils
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Failed
+
+import akka.actor.ActorSystem
+import akka.stream.Materializer
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.testkit.scaladsl.StreamTestKit.assertNoChildren
+import akka.stream.testkit.scaladsl.StreamTestKit.printDebugDump
+import akka.stream.testkit.scaladsl.StreamTestKit.stopAllChildren
+import akka.testkit.AkkaSpec
+import akka.testkit.TestKitUtils
 
 abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
 

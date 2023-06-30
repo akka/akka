@@ -4,11 +4,12 @@
 
 package akka.persistence.journal
 
+import scala.annotation.nowarn
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
-
-import scala.annotation.nowarn
 
 @nowarn("msg=Unused import")
 class InmemEventAdaptersSpec extends AkkaSpec {

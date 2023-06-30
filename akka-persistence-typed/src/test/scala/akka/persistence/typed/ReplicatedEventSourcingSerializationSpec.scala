@@ -4,6 +4,8 @@
 
 package akka.persistence.typed
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.crdt.Counter
@@ -11,7 +13,6 @@ import akka.persistence.typed.crdt.ORSet
 import akka.persistence.typed.internal.ReplicatedEventMetadata
 import akka.persistence.typed.internal.ReplicatedSnapshotMetadata
 import akka.persistence.typed.internal.VersionVector
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class ReplicatedEventSourcingSerializationSpec
     extends ScalaTestWithActorTestKit(ClusterSingletonPersistenceSpec.config)

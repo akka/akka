@@ -4,6 +4,11 @@
 
 package akka.cluster.typed
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -15,10 +20,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.GroupRouter
 import akka.actor.typed.scaladsl.Routers
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration._
 
 object GroupRouterSpec {
   def config = ConfigFactory.parseString(s"""

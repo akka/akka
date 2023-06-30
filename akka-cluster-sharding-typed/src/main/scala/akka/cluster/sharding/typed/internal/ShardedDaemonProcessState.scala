@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.time.Instant
+
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
@@ -13,8 +15,6 @@ import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.sharding.typed.ShardedDaemonProcessContext
-
-import java.time.Instant
 
 /**
  * INTERNAL API

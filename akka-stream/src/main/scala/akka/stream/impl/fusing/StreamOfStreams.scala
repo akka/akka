@@ -6,10 +6,12 @@ package akka.stream.impl.fusing
 
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
+
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream._

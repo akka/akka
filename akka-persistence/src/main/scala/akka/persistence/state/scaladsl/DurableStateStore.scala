@@ -4,8 +4,8 @@
 
 package akka.persistence.state.scaladsl
 
-import scala.concurrent.Future
 import scala.compat.java8.OptionConverters._
+import scala.concurrent.Future
 
 import akka.persistence.state.javadsl.{ GetObjectResult => JGetObjectResult }
 

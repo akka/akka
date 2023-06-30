@@ -10,12 +10,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 
+import org.scalatest.BeforeAndAfterEach
+
 import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestLatch
-import org.scalatest.BeforeAndAfterEach
-
 import akka.testkit.TestProbe
 
 object BalancingSpec {

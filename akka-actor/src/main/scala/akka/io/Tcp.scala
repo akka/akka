@@ -9,10 +9,10 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.file.{ Path, Paths }
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor._

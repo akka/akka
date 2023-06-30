@@ -4,11 +4,12 @@
 
 package akka.stream.scaladsl
 
+import java.util.concurrent.TimeoutException
+
+import scala.util.control.NoStackTrace
+
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
-
-import java.util.concurrent.TimeoutException
-import scala.util.control.NoStackTrace
 
 class OnErrorCompleteSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

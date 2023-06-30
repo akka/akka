@@ -5,6 +5,7 @@
 package akka.cluster.ddata
 
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike

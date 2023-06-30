@@ -9,8 +9,8 @@ import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
-import akka.persistence.typed.state.internal.SideEffect
 import akka.persistence.typed.state.internal._
+import akka.persistence.typed.state.internal.SideEffect
 
 /**
  * INTERNAL API: see `class EffectFactories`

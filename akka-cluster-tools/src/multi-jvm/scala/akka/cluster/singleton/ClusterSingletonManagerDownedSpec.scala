@@ -15,10 +15,10 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
+import akka.remote.testkit.Direction
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.remote.testkit.Direction
 import akka.testkit._
 import akka.util.ccompat._
 

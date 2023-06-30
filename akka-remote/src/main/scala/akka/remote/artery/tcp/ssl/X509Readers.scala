@@ -6,9 +6,9 @@ package akka.remote.artery.tcp.ssl
 
 import java.security.cert.X509Certificate
 import java.util
+import javax.naming.ldap.LdapName
 
 import akka.annotation.InternalApi
-import javax.naming.ldap.LdapName
 import akka.util.ccompat.JavaConverters._
 
 /**

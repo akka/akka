@@ -14,13 +14,12 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
+import scala.annotation.nowarn
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
-
-import scala.annotation.nowarn
 
 import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem

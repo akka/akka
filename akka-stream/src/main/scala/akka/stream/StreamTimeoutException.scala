@@ -6,6 +6,7 @@ package akka.stream
 
 import scala.concurrent.TimeoutException
 import scala.util.control.NoStackTrace
+
 import akka.annotation.DoNotInherit
 
 /**

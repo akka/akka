@@ -6,10 +6,9 @@ package akka.pattern
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.language.postfixOps
-
-import scala.annotation.nowarn
 
 import akka.actor._
 import akka.pattern.TestActor.NormalException

@@ -4,18 +4,19 @@
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.{ ActorRef, Behavior, Signal }
-import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.japi.function.{ Function => JFunction }
-import akka.pattern.StatusReply
-import com.typesafe.config.Config
-
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.annotation.nowarn
+
+import com.typesafe.config.Config
+
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.internal.{ ActorSystemStub, BehaviorTestKitImpl }
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.japi.function.{ Function => JFunction }
+import akka.pattern.StatusReply
 
 object BehaviorTestKit {
 

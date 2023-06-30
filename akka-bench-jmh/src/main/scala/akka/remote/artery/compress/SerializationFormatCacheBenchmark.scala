@@ -4,14 +4,9 @@
 
 package akka.remote.artery.compress
 
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Props
-import akka.pattern.PromiseActorRef
-import akka.remote.artery.SerializationFormatCache
-import akka.serialization.Serialization
+import scala.annotation.nowarn
+import scala.concurrent.Promise
+
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Fork
 import org.openjdk.jmh.annotations.Level
@@ -23,8 +18,14 @@ import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.infra.Blackhole
 
-import scala.annotation.nowarn
-import scala.concurrent.Promise
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.Props
+import akka.pattern.PromiseActorRef
+import akka.remote.artery.SerializationFormatCache
+import akka.serialization.Serialization
 
 /**
  * Actually more like specific benchmarks for the few concrete LRU cache usages

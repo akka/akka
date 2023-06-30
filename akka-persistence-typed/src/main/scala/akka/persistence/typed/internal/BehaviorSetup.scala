@@ -10,11 +10,11 @@ import scala.util.control.NonFatal
 import org.slf4j.Logger
 import org.slf4j.MDC
 
+import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.actor.Cancellable
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.LoggerOps
-import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
@@ -63,6 +63,7 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
+
   import akka.actor.typed.scaladsl.adapter._
 
   val persistence: Persistence = Persistence(context.system.toClassic)

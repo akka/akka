@@ -7,6 +7,8 @@ package akka.cluster.sharding
 import java.net.URLEncoder
 import java.util
 
+import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -26,9 +28,10 @@ import akka.cluster.ClusterEvent.MemberPreparingForShutdown
 import akka.cluster.ClusterEvent.MemberReadyForShutdown
 import akka.cluster.sharding.ShardRegion.ShardsUpdated
 import akka.cluster.sharding.internal.EntityPassivationStrategy
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
-import akka.cluster.sharding.internal.RememberEntitiesProvider
+import akka.cluster.sharding.internal.RememberEntityStarterManager
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.event.LoggingAdapter
@@ -38,9 +41,6 @@ import akka.util.MessageBufferMap
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
-import scala.concurrent.duration._
-
-import akka.cluster.sharding.internal.RememberEntityStarterManager
 
 /**
  * INTERNAL API

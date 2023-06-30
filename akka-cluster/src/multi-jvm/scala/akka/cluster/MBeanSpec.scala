@@ -5,12 +5,12 @@
 package akka.cluster
 
 import java.lang.management.ManagementFactory
+import javax.management.InstanceNotFoundException
+import javax.management.ObjectName
 
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
-import javax.management.InstanceNotFoundException
-import javax.management.ObjectName
 import language.postfixOps
 
 import akka.remote.testkit.MultiNodeConfig

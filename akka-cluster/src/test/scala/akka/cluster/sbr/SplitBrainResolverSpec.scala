@@ -14,6 +14,7 @@ import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
+import akka.cluster._
 import akka.cluster.ClusterEvent.LeaderChanged
 import akka.cluster.ClusterEvent.MemberExited
 import akka.cluster.ClusterEvent.MemberRemoved
@@ -26,7 +27,6 @@ import akka.cluster.ClusterEvent.UnreachableDataCenter
 import akka.cluster.ClusterEvent.UnreachableMember
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
-import akka.cluster._
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.TestLease
 import akka.coordination.lease.TimeoutSettings

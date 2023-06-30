@@ -10,9 +10,9 @@ import java.lang.Float.floatToRawIntBits
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 
+import scala.annotation.nowarn
 import scala.collection.mutable.Builder
 
-import scala.annotation.nowarn
 import org.apache.commons.codec.binary.Hex.encodeHex
 import org.scalacheck.{ Arbitrary, Gen }
 import org.scalacheck.Arbitrary.arbitrary

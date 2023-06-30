@@ -4,9 +4,8 @@
 
 package akka.cluster
 
-import scala.runtime.AbstractFunction2
-
 import scala.annotation.nowarn
+import scala.runtime.AbstractFunction2
 
 import akka.actor.Address
 import akka.annotation.InternalApi

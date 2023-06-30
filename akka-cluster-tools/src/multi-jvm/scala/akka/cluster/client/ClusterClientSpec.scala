@@ -22,10 +22,10 @@ import akka.cluster.client.ClusterClientSpec.TestClientListener.LatestContactPoi
 import akka.cluster.client.ClusterClientSpec.TestReceptionistListener.LatestClusterClients
 import akka.cluster.pubsub._
 import akka.remote.testconductor.RoleName
+import akka.remote.testkit.Direction
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.remote.testkit.Direction
 import akka.testkit._
 import akka.util.Timeout
 import akka.util.unused

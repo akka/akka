@@ -14,8 +14,8 @@ import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
 import akka.stream.impl.Throttle
-import akka.util.{ ccompat, ConstantFun }
-import ccompat._
+import akka.util.ccompat._
+import akka.util.ConstantFun
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context

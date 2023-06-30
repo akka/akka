@@ -8,12 +8,11 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.implicitNotFound
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.language.existentials
 import scala.util.control.{ NoStackTrace, NonFatal }
-
-import scala.annotation.nowarn
 
 import akka.{ AkkaException, ConfigurationException }
 import akka.actor._

@@ -4,16 +4,17 @@
 
 package akka.persistence.typed.crdt
 
+import scala.util.Random
+
+import ORSetSpec.ORSetEntity._
+
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing }
 import akka.persistence.typed.{ ReplicaId, ReplicationBaseSpec }
-import ORSetSpec.ORSetEntity._
 import akka.persistence.typed.ReplicationBaseSpec.{ R1, R2 }
 import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.crdt.ORSetSpec.ORSetEntity
-
-import scala.util.Random
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing }
 
 object ORSetSpec {
 

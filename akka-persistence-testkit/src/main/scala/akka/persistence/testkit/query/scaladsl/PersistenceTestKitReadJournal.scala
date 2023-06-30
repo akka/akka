@@ -3,12 +3,24 @@
  */
 
 package akka.persistence.testkit.query.scaladsl
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
+import scala.collection.immutable
+
+import com.typesafe.config.Config
+import org.slf4j.LoggerFactory
+
 import akka.NotUsed
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.persistence.Persistence
+import akka.persistence.PersistentRepr
 import akka.persistence.journal.Tagged
+import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Offset
+import akka.persistence.query.TimestampOffset
 import akka.persistence.query.scaladsl.{
   CurrentEventsByPersistenceIdQuery,
   CurrentEventsByTagQuery,
@@ -16,27 +28,17 @@ import akka.persistence.query.scaladsl.{
   PagedPersistenceIdsQuery,
   ReadJournal
 }
-import akka.persistence.query.{ EventEnvelope, Sequence }
-import akka.persistence.query.typed.{ EventEnvelope => TypedEventEnvelope }
-import akka.persistence.testkit.EventStorage
-import akka.persistence.testkit.internal.InMemStorageExtension
-import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage
-import akka.stream.scaladsl.Source
-import akka.util.unused
-import com.typesafe.config.Config
-import org.slf4j.LoggerFactory
-import akka.persistence.Persistence
-import akka.persistence.PersistentRepr
-import akka.persistence.query.TimestampOffset
 import akka.persistence.query.typed
+import akka.persistence.query.typed.{ EventEnvelope => TypedEventEnvelope }
 import akka.persistence.query.typed.scaladsl.CurrentEventsByPersistenceIdTypedQuery
 import akka.persistence.query.typed.scaladsl.CurrentEventsBySliceQuery
 import akka.persistence.query.typed.scaladsl.EventsByPersistenceIdTypedQuery
+import akka.persistence.testkit.EventStorage
+import akka.persistence.testkit.internal.InMemStorageExtension
+import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage
 import akka.persistence.typed.PersistenceId
-
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import scala.collection.immutable
+import akka.stream.scaladsl.Source
+import akka.util.unused
 
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"

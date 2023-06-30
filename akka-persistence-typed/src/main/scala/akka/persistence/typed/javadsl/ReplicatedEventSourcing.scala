@@ -4,9 +4,9 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.function.{ Function => JFunction }
-import java.util.{ Set => JSet }
 import java.util.{ Map => JMap }
+import java.util.{ Set => JSet }
+import java.util.function.{ Function => JFunction }
 
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId

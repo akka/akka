@@ -4,9 +4,8 @@
 
 package akka.stream.impl.streamref
 
-import scala.util.{ Failure, Success, Try }
-
 import scala.annotation.nowarn
+import scala.util.{ Failure, Success, Try }
 
 import akka.Done
 import akka.NotUsed

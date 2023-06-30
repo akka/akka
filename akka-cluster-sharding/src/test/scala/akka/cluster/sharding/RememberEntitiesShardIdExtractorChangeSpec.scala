@@ -6,6 +6,11 @@ package akka.cluster.sharding
 
 import java.util.UUID
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
@@ -15,10 +20,6 @@ import akka.persistence.PersistentActor
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 /**
  * Covers that remembered entities is correctly migrated when used and the shard id extractor

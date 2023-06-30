@@ -4,9 +4,9 @@
 
 package akka.persistence.testkit
 
-import akka.actor.Extension
-
 import scala.util.Success
+
+import akka.actor.Extension
 import akka.annotation.InternalApi
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies

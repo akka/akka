@@ -4,6 +4,13 @@
 
 package akka.cluster.sharding.typed
 
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
@@ -11,12 +18,6 @@ import akka.cluster.sharding.typed.internal.ShardedDaemonProcessCoordinator
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessState
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.serialization.SerializationExtension
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

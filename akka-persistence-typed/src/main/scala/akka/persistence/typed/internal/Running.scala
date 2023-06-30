@@ -4,8 +4,6 @@
 
 package akka.persistence.typed.internal
 
-import akka.Done
-
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -15,10 +13,11 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable
 
+import akka.Done
 import akka.actor.UnhandledMessage
+import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
@@ -38,8 +37,6 @@ import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
-import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -53,19 +50,21 @@ import akka.persistence.typed.{
   SnapshotMetadata,
   SnapshotSelectionCriteria
 }
+import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState, GetStateReply }
 import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
-import akka.stream.scaladsl.Keep
 import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
-import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.{ RestartSource, Sink }
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.OptionVal
-import akka.util.unused
 import akka.util.Timeout
+import akka.util.unused
 
 /**
  * INTERNAL API

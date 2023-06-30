@@ -4,29 +4,31 @@
 
 package akka.stream.io
 
-import akka.stream.IOResult._
-import akka.stream._
-import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.impl.StreamSupervisor
-import akka.stream.io.FileSourceSpec.Settings
-import akka.stream.scaladsl.FileIO
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import akka.stream.testkit.Utils._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.util.ByteString
-import com.google.common.jimfs.Configuration
-import com.google.common.jimfs.Jimfs
-
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.util.Random
+
 import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import com.google.common.jimfs.Configuration
+import com.google.common.jimfs.Jimfs
+
+import akka.stream._
+import akka.stream.IOResult._
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.impl.StreamSupervisor
+import akka.stream.impl.StreamSupervisor.Children
+import akka.stream.io.FileSourceSpec.Settings
+import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.util.ByteString
 
 object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)

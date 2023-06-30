@@ -13,9 +13,10 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-import akka.actor.ClassicActorSystemProvider
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+
 import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
+import akka.actor.ClassicActorSystemProvider
 import akka.stream._
 import akka.stream.impl._
 import akka.testkit.{ TestActor, TestProbe }

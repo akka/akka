@@ -14,8 +14,8 @@ import scala.util.control.NonFatal
 import akka.AkkaException
 import akka.Done
 import akka.OnlyCauseStackTrace
-import akka.actor.EmptyLocalActorRef
 import akka.actor._
+import akka.actor.EmptyLocalActorRef
 import akka.event.Logging
 import akka.remote.MessageSerializer
 import akka.remote.RemoteActorRefProvider
@@ -26,8 +26,8 @@ import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.Decoder.InboundCompressionAccessImpl
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
-import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress._
+import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.serialization.AbstractActorRefResolveCache
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension

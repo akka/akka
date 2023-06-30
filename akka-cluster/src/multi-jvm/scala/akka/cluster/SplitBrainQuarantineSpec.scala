@@ -4,15 +4,16 @@
 
 package akka.cluster
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.RootActorPath
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.Direction
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit.LongRunningTest
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object SplitBrainQuarantineSpec extends MultiNodeConfig {
   val first = role("first")

@@ -58,8 +58,8 @@ object RemoteScatterGatherSpec {
 }
 
 class RemoteScatterGatherSpec extends RemotingMultiNodeSpec(RemoteRoundRobinConfig) with DefaultTimeout {
-  import RemoteScatterGatherSpec._
   import RemoteRoundRobinConfig._
+  import RemoteScatterGatherSpec._
 
   def initialParticipants = roles.size
 

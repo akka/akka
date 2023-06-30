@@ -6,6 +6,7 @@ package akka.stream
 
 import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
+
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.util.ConstantFun

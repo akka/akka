@@ -5,6 +5,7 @@
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props

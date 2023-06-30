@@ -6,12 +6,11 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
-import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters

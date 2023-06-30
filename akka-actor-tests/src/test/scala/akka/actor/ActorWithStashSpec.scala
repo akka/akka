@@ -4,10 +4,10 @@
 
 package akka.actor
 
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
 

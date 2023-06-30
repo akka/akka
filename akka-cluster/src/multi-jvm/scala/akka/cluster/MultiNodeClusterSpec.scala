@@ -20,8 +20,8 @@ import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
 import akka.event.Logging.ErrorLevel
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
+import akka.remote.testkit.MultiNodeConfig
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.testkit.TestEvent._

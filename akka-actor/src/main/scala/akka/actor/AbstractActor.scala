@@ -6,11 +6,10 @@ package akka.actor
 
 import java.util.Optional
 
+import scala.annotation.nowarn
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.runtime.BoxedUnit
-
-import scala.annotation.nowarn
 
 import akka.annotation.DoNotInherit
 import akka.japi.pf.ReceiveBuilder

@@ -4,10 +4,13 @@
 
 package akka.cluster.sharding.typed
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.util.ccompat._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
 import akka.cluster.MemberStatus.Removed
@@ -21,9 +24,7 @@ import akka.cluster.typed.PrepareForFullClusterShutdown
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
+import akka.util.ccompat._
 
 object ClusterShardingPreparingForShutdownSpec extends MultiNodeConfig {
   val first = role("first")

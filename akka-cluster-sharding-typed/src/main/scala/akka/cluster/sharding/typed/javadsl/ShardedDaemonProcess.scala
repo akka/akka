@@ -4,11 +4,11 @@
 
 package akka.cluster.sharding.typed.javadsl
 
-import akka.actor.typed.ActorRef
-
-import java.util.function.IntFunction
-import java.util.function.{ Function => JFunction }
 import java.util.Optional
+import java.util.function.{ Function => JFunction }
+import java.util.function.IntFunction
+
+import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.annotation.ApiMayChange

@@ -4,14 +4,14 @@
 
 package akka.stream.impl
 
+import java.util
+
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.stream.Attributes.InputBuffer
 import akka.stream._
+import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
-
-import java.util
 
 /**
  * INTERNAL API

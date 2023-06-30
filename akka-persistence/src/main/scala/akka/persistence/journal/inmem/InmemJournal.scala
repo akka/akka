@@ -4,22 +4,23 @@
 
 package akka.persistence.journal.inmem
 
-import akka.actor.ActorRef
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
+import akka.actor.ActorRef
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.AtomicWrite
 import akka.persistence.JournalProtocol.RecoverySuccess
 import akka.persistence.PersistentRepr
-import akka.persistence.journal.inmem.InmemJournal.{ MessageWithMeta, ReplayWithMeta }
 import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
+import akka.persistence.journal.inmem.InmemJournal.{ MessageWithMeta, ReplayWithMeta }
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
 import akka.util.OptionVal

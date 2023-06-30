@@ -7,11 +7,11 @@ package akka.persistence
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
-import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }

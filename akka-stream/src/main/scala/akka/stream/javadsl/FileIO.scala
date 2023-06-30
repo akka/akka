@@ -10,10 +10,10 @@ import java.util
 import java.util.concurrent.CompletionStage
 
 import akka.stream.{ javadsl, scaladsl, IOResult }
-import akka.util.ByteString
-import akka.util.ccompat.JavaConverters._
 import akka.stream.scaladsl.SinkToCompletionStage
 import akka.stream.scaladsl.SourceToCompletionStage
+import akka.util.ByteString
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Java API: Factories to create sinks and sources from files

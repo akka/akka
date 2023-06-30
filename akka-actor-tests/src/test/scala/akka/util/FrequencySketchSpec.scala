@@ -4,10 +4,10 @@
 
 package akka.util
 
+import scala.collection.mutable
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import scala.collection.mutable
 
 class FrequencySketchSpec extends AnyWordSpec with Matchers {
 

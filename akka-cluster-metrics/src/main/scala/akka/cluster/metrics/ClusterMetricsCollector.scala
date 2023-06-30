@@ -6,9 +6,8 @@ package akka.cluster.metrics
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.collection.immutable
-
 import scala.annotation.nowarn
+import scala.collection.immutable
 
 import akka.actor.Actor
 import akka.actor.ActorLogging

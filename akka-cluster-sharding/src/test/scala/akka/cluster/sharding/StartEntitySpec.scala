@@ -4,6 +4,10 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
@@ -12,8 +16,6 @@ import akka.cluster.MemberStatus
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.WithLogCapturing
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 
 /**
  * Covers some corner cases around sending triggering an entity with StartEntity

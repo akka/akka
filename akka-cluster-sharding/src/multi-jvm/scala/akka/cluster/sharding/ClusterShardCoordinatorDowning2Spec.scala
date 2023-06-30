@@ -82,9 +82,8 @@ class DDataClusterShardCoordinatorDowning2MultiJvmNode2 extends DDataClusterShar
 abstract class ClusterShardCoordinatorDowning2Spec(multiNodeConfig: ClusterShardCoordinatorDowning2SpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender {
-  import multiNodeConfig._
-
   import ClusterShardCoordinatorDowning2Spec._
+  import multiNodeConfig._
 
   def startSharding(): Unit = {
     startSharding(

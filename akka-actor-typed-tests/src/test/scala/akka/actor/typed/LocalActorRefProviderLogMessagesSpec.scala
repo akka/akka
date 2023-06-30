@@ -4,9 +4,10 @@
 
 package akka.actor.typed
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object LocalActorRefProviderLogMessagesSpec {
   val config = """

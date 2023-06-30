@@ -85,9 +85,9 @@ object RemoteNodeDeathWatchSpec {
 }
 
 abstract class RemoteNodeDeathWatchSpec extends RemotingMultiNodeSpec(RemoteNodeDeathWatchConfig) {
+  import RemoteNodeDeathWatchConfig._
   import RemoteNodeDeathWatchSpec._
   import RemoteWatcher._
-  import RemoteNodeDeathWatchConfig._
 
   def scenario: String
   // Possible to override to let them heartbeat for a while.

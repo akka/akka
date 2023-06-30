@@ -5,8 +5,10 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.cluster.MultiNodeClusterSpec

@@ -4,9 +4,9 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.annotation.DoNotInherit
-
 import scala.concurrent.duration.FiniteDuration
+
+import akka.annotation.DoNotInherit
 
 /**
  * Support for scheduled `self` messages in an actor.

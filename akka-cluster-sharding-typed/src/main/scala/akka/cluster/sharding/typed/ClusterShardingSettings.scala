@@ -12,8 +12,8 @@ import com.typesafe.config.Config
 import akka.actor.typed.ActorSystem
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.sharding.typed.ClusterShardingSettings.RememberEntitiesStoreModeDData
 import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSettings }
+import akka.cluster.sharding.typed.ClusterShardingSettings.RememberEntitiesStoreModeDData
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings

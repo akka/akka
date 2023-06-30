@@ -4,11 +4,12 @@
 
 package akka.actor.testkit.typed.internal
 
+import scala.annotation.tailrec
+
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
-import akka.annotation.InternalApi
 
-import scala.annotation.tailrec
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

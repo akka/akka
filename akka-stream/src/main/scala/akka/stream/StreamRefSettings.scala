@@ -6,9 +6,9 @@ package akka.stream
 
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor.ActorSystem

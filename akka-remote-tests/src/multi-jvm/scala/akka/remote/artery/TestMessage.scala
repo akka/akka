@@ -4,12 +4,12 @@
 
 package akka.remote.artery
 
+import java.io.NotSerializableException
+
 import akka.actor.ExtendedActorSystem
 import akka.protobufv3.internal.ByteString
 import akka.remote.artery.protobuf.{ TestMessages => proto }
 import akka.serialization.SerializerWithStringManifest
-
-import java.io.NotSerializableException
 
 object TestMessage {
   final case class Item(id: Long, name: String)

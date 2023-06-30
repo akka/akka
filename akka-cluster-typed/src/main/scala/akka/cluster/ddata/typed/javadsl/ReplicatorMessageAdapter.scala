@@ -7,10 +7,9 @@ package akka.cluster.ddata.typed.javadsl
 import java.time.Duration
 import java.util.function.{ Function => JFunction }
 
+import scala.annotation.nowarn
 import scala.util.Failure
 import scala.util.Success
-
-import scala.annotation.nowarn
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.ActorContext

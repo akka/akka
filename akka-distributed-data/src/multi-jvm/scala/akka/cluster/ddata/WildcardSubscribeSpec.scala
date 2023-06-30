@@ -37,8 +37,8 @@ class WildcardSubscribeSpecMultiJvmNode1 extends WildcardSubscribeSpec
 class WildcardSubscribeSpecMultiJvmNode2 extends WildcardSubscribeSpec
 
 class WildcardSubscribeSpec extends MultiNodeSpec(WildcardSubscribeSpec) with STMultiNodeSpec with ImplicitSender {
-  import WildcardSubscribeSpec._
   import Replicator._
+  import WildcardSubscribeSpec._
 
   override def initialParticipants: Int = roles.size
 

@@ -8,15 +8,16 @@ import java.nio.file.Paths
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.HdrHistogram.Histogram
+
 import akka.actor._
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, GetShardRegionState, Passivate }
 import akka.testkit._
 import akka.util.ccompat._
-import com.typesafe.config.ConfigFactory
-import org.HdrHistogram.Histogram
-
-import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 object ClusterShardingRememberEntitiesPerfSpec {

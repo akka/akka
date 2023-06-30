@@ -4,6 +4,15 @@
 
 package akka.persistence.typed.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Try
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
@@ -21,14 +30,6 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.internal.JournalFailureException
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Try
 
 class ChaosJournal extends InmemJournal {
   var counts = Map.empty[String, Int]

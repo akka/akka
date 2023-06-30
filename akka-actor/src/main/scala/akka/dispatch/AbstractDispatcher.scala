@@ -7,12 +7,12 @@ package akka.dispatch
 import java.{ util => ju }
 import java.util.concurrent._
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NonFatal
 
-import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor._

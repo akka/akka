@@ -7,6 +7,7 @@ package akka.actor
 import java.util.concurrent.CompletionStage
 import java.util.regex.Pattern
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters
@@ -15,8 +16,6 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.util.Success
-
-import scala.annotation.nowarn
 
 import akka.dispatch.ExecutionContexts
 import akka.pattern.ask
