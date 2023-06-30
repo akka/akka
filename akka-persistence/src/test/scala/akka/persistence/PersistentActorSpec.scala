@@ -70,7 +70,7 @@ object PersistentActorSpec {
   class Behavior1PersistentActor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
-        persistAll(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
+        persistAll(List(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
       case d: DeleteMessagesSuccess =>
         val replyTo = askedForDelete.getOrElse(
           throw new RuntimeException("Received DeleteMessagesSuccess without anyone asking for delete!"))
@@ -100,8 +100,8 @@ object PersistentActorSpec {
   class Behavior2PersistentActor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
-        persistAll(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
-        persistAll(Seq(Evt(s"${data}-3"), Evt(s"${data}-4")))(updateState)
+        persistAll(List(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
+        persistAll(List(Evt(s"${data}-3"), Evt(s"${data}-4")))(updateState)
     }
   }
   class Behavior2PersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
@@ -111,7 +111,7 @@ object PersistentActorSpec {
   class Behavior3PersistentActor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
-        persistAll(Seq(Evt(s"${data}-11"), Evt(s"${data}-12")))(updateState)
+        persistAll(List(Evt(s"${data}-11"), Evt(s"${data}-12")))(updateState)
         updateState(Evt(s"${data}-10"))
     }
   }
@@ -185,7 +185,7 @@ object PersistentActorSpec {
     val newBehavior: Receive = {
       case Cmd(data) =>
         context.unbecome()
-        persistAll(Seq(Evt(s"${data}-31"), Evt(s"${data}-32")))(updateState)
+        persistAll(List(Evt(s"${data}-31"), Evt(s"${data}-32")))(updateState)
         updateState(Evt(s"${data}-30"))
     }
 
@@ -204,7 +204,7 @@ object PersistentActorSpec {
   class ChangeBehaviorInCommandHandlerLastPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
       case Cmd(data) =>
-        persistAll(Seq(Evt(s"${data}-31"), Evt(s"${data}-32")))(updateState)
+        persistAll(List(Evt(s"${data}-31"), Evt(s"${data}-32")))(updateState)
         updateState(Evt(s"${data}-30"))
         context.unbecome()
     }
@@ -229,7 +229,7 @@ object PersistentActorSpec {
     }
 
     private def handleCmd(cmd: Cmd): Unit = {
-      persistAll(Seq(Evt(s"${cmd.data}-41"), Evt(s"${cmd.data}-42")))(updateState)
+      persistAll(List(Evt(s"${cmd.data}-41"), Evt(s"${cmd.data}-42")))(updateState)
     }
 
     def receiveCommand: Receive = commonBehavior.orElse {
@@ -1262,7 +1262,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         persistentActor ! i
       }
 
-      val all: Seq[String] = this.receiveN(40).asInstanceOf[Seq[String]] // each command = 1 reply + 3 event-replies
+      val all: List[String] = this.receiveN(40).asInstanceOf[List[String]] // each command = 1 reply + 3 event-replies
 
       val replies = all.filter(r => r.count(_ == '-') == 1)
       replies should equal(commands.map(_.data))
