@@ -6,7 +6,7 @@
  * [Akka in Action, second edition](https://www.manning.com/books/akka-in-action-second-edition), by Francisco Lopez-Sancho Abraham. Manning Publications Co., ISBN: 9781617299216, Jun 2023 
  * [Reactive Design Patterns](https://www.reactivedesignpatterns.com/), by Roland Kuhn with Jamie Allen and Brian Hanafee, Manning Publications Co., ISBN 9781617291807, Feb 2017
  * [Akka in Action](https://www.lightbend.com/resources/e-book/akka-in-action), by Raymond Roestenburg and Rob Bakker, Manning Publications Co., ISBN: 9781617291012, September 2016
-
+ 
 ### Other reads about Akka and the Actor model
  * [Akka Cookbook](https://www.packtpub.com/application-development/akka-cookbook), by Héctor Veiga Ortiz & Piyush Mishra, PACKT Publishing, ISBN: 9781785288180, May 2017
  * [Mastering Akka](https://www.packtpub.com/application-development/mastering-akka), by Christian Baxter, PACKT Publishing, ISBN: 9781786465023, October 2016
