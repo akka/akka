@@ -6,6 +6,7 @@ package akka
 
 import sbt._
 import Keys._
+
 import scala.language.implicitConversions
 
 object Dependencies {
@@ -21,7 +22,7 @@ object Dependencies {
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   val agronaVersion = "1.17.1"
-  val nettyVersion = "3.10.6.Final"
+  val nettyVersion = "4.1.96.Final"
   val protobufJavaVersion = "3.16.1"
   val logbackVersion = "1.2.12"
   val scalaFortifyVersion = "1.0.22"
@@ -61,7 +62,8 @@ object Dependencies {
     // Compile
 
     val config = "com.typesafe" % "config" % "1.4.2" // ApacheV2
-    val netty = "io.netty" % "netty" % nettyVersion // ApacheV2
+    val `netty-transport` = "io.netty" % "netty-transport" % nettyVersion // ApacheV2
+    val `netty-handler` = "io.netty" % "netty-handler" % nettyVersion // ApacheV2
 
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
@@ -233,9 +235,9 @@ object Dependencies {
 
   val remoteTests = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest) ++ remoteDependencies
 
-  val multiNodeTestkit = l ++= Seq(netty)
+  val multiNodeTestkit = l ++= Seq(`netty-transport`, `netty-handler`)
 
-  val cluster = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest)
+  val cluster = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest, TestDependencies.logback)
 
   val clusterTools = l ++= Seq(TestDependencies.junit, TestDependencies.scalatest)
 

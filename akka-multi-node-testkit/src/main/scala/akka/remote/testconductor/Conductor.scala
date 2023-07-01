@@ -4,46 +4,40 @@
 
 package akka.remote.testconductor
 
+import akka.AkkaException
+import akka.ConfigurationException
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Address
+import akka.actor.DeadLetterSuppression
+import akka.actor.Deploy
+import akka.actor.LoggingFSM
+import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.OneForOneStrategy
+import akka.actor.Props
+import akka.actor.Status
+import akka.actor.SupervisorStrategy
+import akka.event.LoggingReceive
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.pattern.ask
+import akka.remote.testconductor.RemoteConnection.getAddrString
+import akka.remote.testkit.Direction
+import akka.util.Timeout
+import io.netty.channel.ChannelInboundHandlerAdapter
+import io.netty.channel.Channel
+import io.netty.channel.ChannelHandler.Sharable
+import io.netty.channel.ChannelHandlerContext
+
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
-
 import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.reflect.classTag
 import scala.util.control.NoStackTrace
-
-import RemoteConnection.getAddrString
-import language.postfixOps
-import org.jboss.netty.channel.{
-  Channel,
-  ChannelHandlerContext,
-  ChannelStateEvent,
-  MessageEvent,
-  SimpleChannelUpstreamHandler
-}
-
-import akka.AkkaException
-import akka.ConfigurationException
-import akka.actor.{
-  Actor,
-  ActorRef,
-  Address,
-  DeadLetterSuppression,
-  Deploy,
-  LoggingFSM,
-  NoSerializationVerificationNeeded,
-  OneForOneStrategy,
-  Props,
-  Status,
-  SupervisorStrategy
-}
-import akka.event.{ Logging, LoggingAdapter }
-import akka.event.LoggingReceive
-import akka.pattern.ask
-import akka.remote.testkit.Direction
-import akka.util.Timeout
 
 /**
  * The conductor is the one orchestrating the test: it governs the
@@ -273,32 +267,33 @@ trait Conductor { this: TestConductorExt =>
  *
  * INTERNAL API.
  */
+@Sharable
 private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorRef, log: LoggingAdapter)
-    extends SimpleChannelUpstreamHandler {
+    extends ChannelInboundHandlerAdapter {
 
   implicit val createTimeout: Timeout = _createTimeout
   val clients = new ConcurrentHashMap[Channel, ActorRef]()
 
-  override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    val channel = event.getChannel
+  override def channelActive(ctx: ChannelHandlerContext): Unit = {
+    val channel = ctx.channel()
     log.debug("connection from {}", getAddrString(channel))
     val fsm: ActorRef =
       Await.result((controller ? Controller.CreateServerFSM(channel)).mapTo(classTag[ActorRef]), Duration.Inf)
     clients.put(channel, fsm)
   }
 
-  override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    val channel = event.getChannel
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = {
+    val channel = ctx.channel()
     log.debug("disconnect from {}", getAddrString(channel))
     val fsm = clients.get(channel)
     fsm ! Controller.ClientDisconnected
     clients.remove(channel)
   }
 
-  override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
-    val channel = event.getChannel
-    log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
-    event.getMessage match {
+  override def channelRead(ctx: ChannelHandlerContext, msg: AnyRef): Unit = {
+    val channel = ctx.channel()
+    log.debug("message from {}: {}", getAddrString(channel), msg)
+    msg match {
       case msg: NetworkOp =>
         clients.get(channel) ! msg
       case msg =>
@@ -307,6 +302,11 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
     }
   }
 
+  @nowarn("msg=deprecated")
+  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
+    log.debug("channel {} exception {}", ctx.channel(), cause)
+    ctx.close()
+  }
 }
 
 /**
@@ -385,10 +385,10 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel)
       log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
       stop()
     case Event(ToClient(msg: UnconfirmedClientOp), _) =>
-      channel.write(msg)
+      channel.writeAndFlush(msg)
       stay()
     case Event(ToClient(msg), None) =>
-      channel.write(msg)
+      channel.writeAndFlush(msg)
       stay().using(Some(sender()))
     case Event(ToClient(msg), _) =>
       log.warning("cannot send {} while waiting for previous ACK", msg)
@@ -423,7 +423,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   import Controller._
 
   val settings = TestConductor().Settings
-  val connection = RemoteConnection(
+  val connection: RemoteConnection = RemoteConnection(
     Server,
     controllerPort,
     settings.ServerSocketWorkerPoolSize,
@@ -459,7 +459,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
 
   override def receive = LoggingReceive {
     case CreateServerFSM(channel) =>
-      val (ip, port) = channel.getRemoteAddress match {
+      val (ip, port) = channel.remoteAddress() match {
         case s: InetSocketAddress => (s.getAddress.getHostAddress, s.getPort)
         case _                    => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
@@ -512,12 +512,13 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case Remove(node) =>
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
-    case GetNodes    => sender() ! nodes.keys
-    case GetSockAddr => sender() ! connection.getLocalAddress
+    case GetNodes => sender() ! nodes.keys
+    case GetSockAddr =>
+      sender() ! connection.channelFuture.sync().channel().localAddress()
   }
 
   override def postStop(): Unit = {
-    RemoteConnection.shutdown(connection)
+    connection.shutdown()
   }
 }
 

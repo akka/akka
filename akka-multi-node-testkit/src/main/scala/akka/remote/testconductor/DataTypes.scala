@@ -4,18 +4,16 @@
 
 package akka.remote.testconductor
 
-import scala.concurrent.duration._
-
-import language.implicitConversions
-import org.jboss.netty.channel.Channel
-import org.jboss.netty.channel.ChannelHandlerContext
-import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
-
 import akka.actor.Address
-import akka.remote.testconductor.{ TestConductorProtocol => TCP }
 import akka.remote.testconductor.TestConductorProtocol.BarrierOp
+import akka.remote.testconductor.{ TestConductorProtocol => TCP }
 import akka.remote.testkit.Direction
+import io.netty.channel.ChannelHandlerContext
+import io.netty.handler.codec.MessageToMessageDecoder
+import io.netty.handler.codec.MessageToMessageEncoder
+
+import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 final case class RoleName(name: String)
 
@@ -64,7 +62,7 @@ private[akka] case object Done extends Done {
 
 private[akka] final case class Remove(node: RoleName) extends CommandOp
 
-private[akka] class MsgEncoder extends OneToOneEncoder {
+private[akka] class MsgEncoder extends MessageToMessageEncoder[AnyRef] {
 
   implicit def address2proto(addr: Address): TCP.Address =
     TCP.Address.newBuilder
@@ -80,7 +78,11 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
     case Direction.Both    => TCP.Direction.Both
   }
 
-  def encode(ctx: ChannelHandlerContext, ch: Channel, msg: AnyRef): AnyRef = msg match {
+  override def encode(ctx: ChannelHandlerContext, msg: AnyRef, out: java.util.List[AnyRef]): Unit = {
+    out.add(encode0(msg))
+  }
+
+  private def encode0(msg: AnyRef): AnyRef = msg match {
     case x: NetworkOp =>
       val w = TCP.Wrapper.newBuilder
       x match {
@@ -126,7 +128,7 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
   }
 }
 
-private[akka] class MsgDecoder extends OneToOneDecoder {
+private[akka] class MsgDecoder extends MessageToMessageDecoder[AnyRef] {
 
   implicit def address2scala(addr: TCP.Address): Address =
     Address(addr.getProtocol, addr.getSystem, addr.getHost, addr.getPort)
@@ -137,7 +139,11 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
     case TCP.Direction.Both    => Direction.Both
   }
 
-  def decode(ctx: ChannelHandlerContext, ch: Channel, msg: AnyRef): AnyRef = msg match {
+  override def decode(ctx: ChannelHandlerContext, msg: AnyRef, out: java.util.List[AnyRef]): Unit = {
+    out.add(decode0(msg))
+  }
+
+  private def decode0(msg: AnyRef): AnyRef = msg match {
     case w: TCP.Wrapper if w.getAllFields.size == 1 =>
       if (w.hasHello) {
         val h = w.getHello
