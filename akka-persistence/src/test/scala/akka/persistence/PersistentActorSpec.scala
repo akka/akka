@@ -4,6 +4,7 @@
 
 package akka.persistence
 
+import scala.collection.immutable
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.nowarn
@@ -132,6 +133,10 @@ object PersistentActorSpec {
         throw new IllegalStateException("Unexpected FilteredPayload")
     }
   }
+
+  class Behavior4PersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
+      extends Behavior4PersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class ChangeBehaviorInLastEventHandlerPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
@@ -981,6 +986,8 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
   protected def behavior3PersistentActor: ActorRef = namedPersistentActor[Behavior3PersistentActor]
 
+  protected def behavior4PersistentActor: ActorRef = namedPersistentActor[Behavior4PersistentActor]
+
   protected def changeBehaviorInFirstEventHandlerPersistentActor: ActorRef =
     namedPersistentActor[ChangeBehaviorInFirstEventHandlerPersistentActor]
 
@@ -1153,7 +1160,9 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(List("a-1", "a-2", "b-11", "b-12", "c-10", "c-11", "c-12"))
     }
     "exclude FilteredEvent in replay of persisted events" in {
-      val persistentActor = namedPersistentActor[Behavior4PersistentActor]
+      val persistentActor = behavior4PersistentActor
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2"))
       persistentActor ! FilteredPayload
       persistentActor ! Cmd("b")
       persistentActor ! "boom"
@@ -1262,7 +1271,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         persistentActor ! i
       }
 
-      val all: List[String] = this.receiveN(40).asInstanceOf[List[String]] // each command = 1 reply + 3 event-replies
+      val all: immutable.Seq[String] = this.receiveN(40).asInstanceOf[immutable.Seq[String]] // each command = 1 reply + 3 event-replies
 
       val replies = all.filter(r => r.count(_ == '-') == 1)
       replies should equal(commands.map(_.data))
@@ -1707,6 +1716,9 @@ class InmemPersistentActorWithRuntimePluginConfigSpec
 
   override protected def behavior3PersistentActor: ActorRef =
     namedPersistentActorWithProvidedConfig[Behavior3PersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+
+  override protected def behavior4PersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[Behavior4PersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
   override protected def changeBehaviorInFirstEventHandlerPersistentActor: ActorRef =
     namedPersistentActorWithProvidedConfig[
