@@ -29,6 +29,7 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.FilteredPayload
 import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
 import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.persistence.SelectedSnapshot
@@ -40,6 +41,8 @@ import akka.persistence.query.Sequence
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.EventSeq
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
@@ -109,9 +112,12 @@ object EventSourcedBehaviorSpec {
   case object LogThenStop extends Command
   case object Fail extends Command
   case object StopIt extends Command
+  case object PersistFilteredEvent extends Command
+  final case class GetLastSequenceNumber(replyTo: ActorRef[Long]) extends Command
 
   sealed trait Event extends CborSerializable
   final case class Incremented(delta: Int) extends Event
+  case object FilteredEvent extends Event
 
   final case class State(value: Int, history: Vector[Int]) extends CborSerializable
 
@@ -263,19 +269,50 @@ object EventSourcedBehaviorSpec {
           case StopIt =>
             Effect.none.thenStop()
 
+          case PersistFilteredEvent =>
+            // FilteredEvent will be converted FilteredPayload in eventAdapter
+            Effect.persist(FilteredEvent)
+
+          case GetLastSequenceNumber(replyTo) =>
+            replyTo ! EventSourcedBehavior.lastSequenceNumber(ctx)
+            Effect.none
+
         },
       eventHandler = (state, evt) =>
         evt match {
           case Incremented(delta) =>
             probe ! ((state, evt))
             State(state.value + delta, state.history :+ state.value)
-        }).receiveSignal {
-      case (_, RecoveryCompleted) => ()
-      case (_, SnapshotCompleted(metadata)) =>
-        snapshotProbe ! Success(metadata)
-      case (_, SnapshotFailed(_, failure)) =>
-        snapshotProbe ! Failure(failure)
-    }
+          case FilteredEvent =>
+            state
+
+        })
+      .receiveSignal {
+        case (_, RecoveryCompleted) => ()
+        case (_, SnapshotCompleted(metadata)) =>
+          snapshotProbe ! Success(metadata)
+        case (_, SnapshotFailed(_, failure)) =>
+          snapshotProbe ! Failure(failure)
+      }
+      // need a way to store FilteredPayload
+      .eventAdapter(new EventAdapter[Event, Any] {
+        override def toJournal(e: Event): Any =
+          e match {
+            case FilteredEvent => FilteredPayload
+            case _             => e
+          }
+
+        override def manifest(event: Event): String = ""
+
+        override def fromJournal(p: Any, manifest: String): EventSeq[Event] =
+          p match {
+            case FilteredPayload =>
+              throw new IllegalStateException("Unexpected FilteredPayload")
+            case e: Event => EventSeq.single(e)
+            case _ =>
+              throw new IllegalStateException(s"Unexpected event type $p")
+          }
+      })
   }
 }
 
@@ -319,6 +356,26 @@ class EventSourcedBehaviorSpec
       c2 ! Increment
       c2 ! GetValue(probe.ref)
       probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
+    }
+
+    "exclude FilteredEvent in replay of persisted events" in {
+      val pid = nextPid()
+      val c = spawn(counter(pid))
+
+      val probe = TestProbe[State]()
+      val seqNrProbe = TestProbe[Long]()
+      c ! Increment
+      c ! PersistFilteredEvent
+      c ! Increment
+      c ! GetValue(probe.ref)
+      probe.expectMessage(10.seconds, State(2, Vector(0, 1)))
+
+      val c2 = spawn(counter(pid))
+      c2 ! Increment
+      c2 ! GetValue(probe.ref)
+      probe.expectMessage(State(3, Vector(0, 1, 2)))
+      c2 ! GetLastSequenceNumber(seqNrProbe.ref)
+      seqNrProbe.expectMessage(4L) // seqNr 2 was used for FilteredPayload
     }
 
     "handle Terminated signal" in {

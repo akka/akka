@@ -635,6 +635,7 @@ private[persistence] trait Eventsourced
       }
 
       {
+        case PersistentRepr(FilteredPayload, _) => // ignore
         case PersistentRepr(payload, _) if recoveryRunning && _receiveRecover.isDefinedAt(payload) =>
           _receiveRecover(payload)
         case s: SnapshotOffer if _receiveRecover.isDefinedAt(s) =>
