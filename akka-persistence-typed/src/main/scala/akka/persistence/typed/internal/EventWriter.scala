@@ -27,6 +27,7 @@ import akka.util.Timeout
 import java.net.URLEncoder
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Failure
 import scala.util.Success
 
@@ -45,13 +46,15 @@ private[akka] object EventWriterExtension extends ExtensionId[EventWriterExtensi
  */
 @InternalStableApi
 private[akka] class EventWriterExtension(system: ActorSystem[_]) extends Extension {
+
+  private val settings = EventWriter.EventWriterSettings(system)
   private val writersPerJournalId = new ConcurrentHashMap[String, ActorRef[EventWriter.Command]]()
 
   def writerForJournal(journalId: Option[String]): ActorRef[EventWriter.Command] =
     writersPerJournalId.computeIfAbsent(
       journalId.getOrElse(""), { _ =>
         system.systemActorOf(
-          EventWriter(journalId.getOrElse("")),
+          EventWriter(journalId.getOrElse(""), settings),
           s"EventWriter-${URLEncoder.encode(journalId.getOrElse("default"), "UTF-8")}")
       })
 
@@ -65,6 +68,15 @@ private[akka] object EventWriter {
 
   type SeqNr = Long
   type Pid = String
+
+  object EventWriterSettings {
+    def apply(system: ActorSystem[_]): EventWriterSettings =
+      EventWriterSettings(
+        maxBatchSize = system.settings.config.getInt("akka.persistence.typed.event-writer.max-batch-size"),
+        askTimeout = system.settings.config.getDuration("akka.persistence.typed.event-writer.ask-timeout").asScala)
+
+  }
+  final case class EventWriterSettings(maxBatchSize: Int, askTimeout: FiniteDuration)
 
   sealed trait Command
   final case class Write(
@@ -87,25 +99,22 @@ private[akka] object EventWriter {
       writeErrorHandlingInProgress: Boolean = false,
       currentTransactionId: Int = 0)
 
-  def apply(journalPluginId: String): Behavior[Command] =
+  def apply(journalPluginId: String, eventWriterSettings: EventWriterSettings): Behavior[Command] =
     Behaviors
       .supervise(Behaviors.setup[Command] { context =>
         val journal = Persistence(context.system).journalFor(journalPluginId)
         context.log.debug("Event writer for journal [{}] starting up", journalPluginId)
-        apply(journal.toTyped)
+        apply(journal.toTyped, eventWriterSettings)
       })
       .onFailure[Exception](SupervisorStrategy.restart)
 
-  def apply(journal: ActorRef[JournalProtocol.Message]): Behavior[Command] =
+  def apply(journal: ActorRef[JournalProtocol.Message], eventWriterSettings: EventWriterSettings): Behavior[Command] =
     Behaviors
       .setup[AnyRef] { context =>
-        val maxBatchSize =
-          context.system.settings.config.getInt("akka.persistence.typed.event-writer.max-batch-size")
-        implicit val askTimeout: Timeout =
-          context.system.settings.config.getDuration("akka.persistence.typed.event-writer.ask-timeout").asScala
         val writerUuid = UUID.randomUUID().toString
 
         var perPidWriteState = Map.empty[Pid, StateForPid]
+        implicit val askTimeout: Timeout = eventWriterSettings.askTimeout
 
         def sendToJournal(transactionId: Int, reprs: Vector[PersistentRepr]) = {
           journal ! JournalProtocol.WriteMessages(
@@ -172,11 +181,10 @@ private[akka] object EventWriter {
                           sequenceNr,
                           transactionId)
                       case Some((_, waiting)) =>
-                        if (context.log.isTraceEnabled)
-                          context.log.trace2(
-                            "Successfully wrote event persistence id [{}], sequence nr [{}]",
-                            pid,
-                            message.sequenceNr)
+                        context.log.trace2(
+                          "Successfully wrote event persistence id [{}], sequence nr [{}]",
+                          pid,
+                          message.sequenceNr)
                         waiting ! StatusReply.success(WriteAck(pid, sequenceNr))
                         val newState = stateForPid.copy(waitingForReply = stateForPid.waitingForReply - sequenceNr)
                         handleUpdatedStateForPid(pid, newState)
@@ -233,13 +241,12 @@ private[akka] object EventWriter {
                               exception)
                         }
                       } else {
-                        if (context.log.isTraceEnabled)
-                          context.log.traceN(
-                            "Ignoring failure for pid [{}], seq nr [{}], tx id [{}], since write error handling already in progress or old tx id (current tx id [{}])",
-                            pid,
-                            sequenceNr,
-                            transactionId,
-                            state.currentTransactionId)
+                        context.log.traceN(
+                          "Ignoring failure for pid [{}], seq nr [{}], tx id [{}], since write error handling already in progress or old tx id (current tx id [{}])",
+                          pid,
+                          sequenceNr,
+                          transactionId,
+                          state.currentTransactionId)
                       }
                   }
               }
@@ -282,9 +289,9 @@ private[akka] object EventWriter {
                     currentTransactionId = 1)
                 case Some(state) =>
                   // write in progress for pid, add write to batch and perform once current write completes
-                  if (state.waitingForWrite.size == maxBatchSize) {
+                  if (state.waitingForWrite.size == eventWriterSettings.maxBatchSize) {
                     replyTo ! StatusReply.error(
-                      s"Max batch reached for pid $persistenceId, at most $maxBatchSize writes for " +
+                      s"Max batch reached for pid $persistenceId, at most ${eventWriterSettings.maxBatchSize} writes for " +
                       "the same pid may be in flight at the same time")
                     state
                   } else {

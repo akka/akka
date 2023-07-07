@@ -25,6 +25,7 @@ object EventWriterSpec {
 
 class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) with AnyWordSpecLike with LogCapturing {
 
+  private val settings = EventWriter.EventWriterSettings(10, 5.seconds)
   implicit val ec: ExecutionContext = testKit.system.executionContext
 
   "The event writer" should {
@@ -129,7 +130,7 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
     }
 
     "handle writes to many pids" in {
-      val writer = spawn(EventWriter("akka.persistence.journal.inmem"))
+      val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings))
       val probe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
       (0 to 1000).map { pidN =>
         Future {
@@ -145,7 +146,7 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
   trait TestSetup {
     def pid1 = "pid1"
     val fakeJournal = createTestProbe[JournalProtocol.Message]()
-    val writer = spawn(EventWriter(fakeJournal.ref))
+    val writer = spawn(EventWriter(fakeJournal.ref, settings))
     val clientProbe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
     def sendWrite(seqNr: Long, pid: String = pid1): Unit = {
       writer ! EventWriter.Write(pid, seqNr, seqNr.toString, None, Set.empty, clientProbe.ref)
