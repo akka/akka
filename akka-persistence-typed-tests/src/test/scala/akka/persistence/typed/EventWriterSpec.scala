@@ -86,13 +86,47 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
     }
 
     "pass real errors from journal back" in new TestSetup {
-      sendWrite(1)
+      sendWrite(1L)
       journalFailWrite("error error")
       // duplicate handling will ask for highest seq nr, can't know it is an actual error
       journalHighestSeqNr(0L)
       val response = clientProbe.receiveMessage()
       response.isError should ===(true)
       response.getError.getMessage should ===("Journal write failed")
+    }
+
+    "ignores old failures when replay triggered" in new TestSetup {
+      // not entirely sure this could actually happen because of ordering guarantees, but for good measure
+      sendWrite(1L) // triggers write
+
+      sendWrite(1L) // goes into batch
+      sendWrite(2L)
+      journalAckWrite()
+
+      val firstWrite = fakeJournal.expectMessageType[JournalProtocol.WriteMessages]
+      val payloads = firstWrite.messages.head.asInstanceOf[AtomicWrite].payload
+      // signal first failure, triggers HighestSeq
+      firstWrite.persistentActor ! JournalProtocol.WriteMessageFailure(
+        payloads.head,
+        new RuntimeException("duplicate"),
+        firstWrite.actorInstanceId)
+
+      // replay response triggers partial rewrite, seq nr 2
+      val replayRequest = fakeJournal.expectMessageType[JournalProtocol.ReplayMessages]
+      replayRequest.persistentActor ! JournalProtocol.RecoverySuccess(1L)
+
+      // but then original write failure arrives for seq nr 2 after sequence number lookup succeeded
+      firstWrite.persistentActor ! JournalProtocol.WriteMessageFailure(
+        payloads.tail.head,
+        new RuntimeException("duplicate"),
+        firstWrite.actorInstanceId)
+      firstWrite.persistentActor ! JournalProtocol.WriteMessagesFailed
+
+      // ack the partial retry
+      journalAckWrite() should ===(1)
+
+      clientExpectSuccess(3)
+
     }
 
     "handle writes to many pids" in {
