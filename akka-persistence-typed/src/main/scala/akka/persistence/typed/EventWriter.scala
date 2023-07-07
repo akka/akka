@@ -88,7 +88,16 @@ private[akka] object EventWriter {
 
   def apply(journalPluginId: String): Behavior[Command] =
     Behaviors
-      .supervise(Behaviors.setup[AnyRef] { context =>
+      .supervise(Behaviors.setup[Command] { context =>
+        val journal = Persistence(context.system).journalFor(journalPluginId)
+        context.log.debug("Event writer for journal [{}] starting up", journalPluginId)
+        apply(journal.toTyped)
+      })
+      .onFailure[Exception](SupervisorStrategy.restart)
+
+  def apply(journal: ActorRef[JournalProtocol.Message]): Behavior[Command] =
+    Behaviors
+      .setup[AnyRef] { context =>
         // FIXME do we need to allow configuring per journal?
         val maxBatchSize =
           context.system.settings.config.getInt("akka.persistence.typed.event-writer.max-batch-size")
@@ -96,8 +105,6 @@ private[akka] object EventWriter {
           context.system.settings.config.getDuration("akka.persistence.typed.event-writer.ask-timeout").asScala
         val actorInstanceId = instanceCounter.getAndIncrement()
         val writerUuid = UUID.randomUUID().toString
-        val journal = Persistence(context.system).journalFor(journalPluginId)
-        context.log.debug("Event writer for journal [{}] starting up", journalPluginId)
 
         var perPidWriteState = Map.empty[String, StateForPid]
 
@@ -181,7 +188,7 @@ private[akka] object EventWriter {
                         perPidWriteState =
                           perPidWriteState.updated(pid, state.copy(writeErrorHandlingInProgress = true))
                         context.ask(
-                          journal.toTyped,
+                          journal,
                           (replyTo: ActorRef[JournalProtocol.Response]) =>
                             JournalProtocol.ReplayMessages(0L, 0L, 1L, pid, replyTo.toClassic)) {
                           case Success(JournalProtocol.RecoverySuccess(highestSequenceNr)) =>
@@ -317,8 +324,7 @@ private[akka] object EventWriter {
             Behaviors.same
 
         }
-      })
-      .onFailure[Exception](SupervisorStrategy.restart)
+      }
       .narrow[Command]
 
 }
