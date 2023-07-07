@@ -63,8 +63,16 @@ object InmemJournal {
 
   private val log = Logging(context.system, classOf[InmemJournal])
 
-  private val delayWrites = cfg.getDuration("delay-writes").asScala
-  private val testSerialization = cfg.getBoolean("test-serialization")
+  private val delayWrites = {
+    val key = "delay-writes"
+    if (cfg.hasPath(key)) cfg.getDuration(key).asScala
+    else Duration.Zero
+  }
+  private val testSerialization = {
+    val key = "test-serialization"
+    if (cfg.hasPath(key)) cfg.getBoolean(key)
+    else false
+  }
 
   private val serialization = SerializationExtension(context.system)
 
