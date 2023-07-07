@@ -96,7 +96,6 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
     }
 
     "ignores old failures when replay triggered" in new TestSetup {
-      // not entirely sure this could actually happen because of ordering guarantees, but for good measure
       sendWrite(1L) // triggers write
 
       sendWrite(1L) // goes into batch
