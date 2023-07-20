@@ -90,7 +90,9 @@ import akka.util.OptionVal
             } else Terminated(ActorRefAdapter(ref))
           handleSignal(msg)
         case classic.ReceiveTimeout =>
-          handleMessage(ctx.receiveTimeoutMsg)
+          // discard when null as timeout was cancelled after RecieveTimeout was already enqueued into the mailbox
+          if (ctx.receiveTimeoutMsg != null)
+            handleMessage(ctx.receiveTimeoutMsg)
         case wrapped: AdaptMessage[Any, T] @unchecked =>
           withSafelyAdapted(() => wrapped.adapt()) {
             case AdaptWithRegisteredMessageAdapter(msg) =>
