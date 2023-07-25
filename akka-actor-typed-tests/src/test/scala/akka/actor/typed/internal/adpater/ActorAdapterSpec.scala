@@ -21,8 +21,6 @@ class ActorAdapterSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
   sealed trait Event
   case object Ended extends Event
 
-  val interval = 1.second
-
   def evidence(monitor: ActorRef[Event]): Behavior[Command] =
     Behaviors.setup { context =>
       Behaviors.receiveMessage[Command] {
