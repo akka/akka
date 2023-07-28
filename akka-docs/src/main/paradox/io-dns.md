@@ -27,7 +27,7 @@ Users should pick one of the built in extensions.
 
 @@@
 
-Akka DNS is a pluggable way to interact with DNS. Implementations much implement `akka.io.DnsProvider` and provide a configuration
+Akka DNS is a pluggable way to interact with DNS. Implementations must implement `akka.io.DnsProvider` and provide a configuration
 block that specifies the implementation via `provider-object`.
 
 @@@ note { title="DNS via Akka Discovery" }
