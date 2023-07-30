@@ -4,37 +4,39 @@
 
 package akka.stream.impl.fusing
 
-import java.util.Collections
-import java.util.concurrent.atomic.AtomicReference
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
-
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.stream._
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes.SourceLocation
-import akka.stream.impl.{ Buffer => BufferImpl }
+import akka.stream._
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.ActorSubscriberMessage.OnError
+import akka.stream.impl.EmptySource
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.IterableSource
 import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.OptionVal
 import akka.util.ccompat.JavaConverters._
+
+import java.util.Collections
+import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] final class FlattenMerge[T, M](val breadth: Int)
     extends GraphStage[FlowShape[Graph[SourceShape[T], M], T]] {
+  require(breadth >= 1, "breadth should >= 1")
   private val in = Inlet[Graph[SourceShape[T], M]]("flatten.in")
   private val out = Outlet[T]("flatten.out")
 
@@ -135,6 +137,210 @@ import akka.util.ccompat.JavaConverters._
     }
 
   override def toString: String = s"FlattenMerge($breadth)"
+}
+
+@InternalApi
+private[akka] object FlattenConcat {
+
+  sealed trait Materializable {
+    def materialize(): Unit
+  }
+
+  sealed abstract class InflightSource[T] {
+    def hasNext: Boolean
+    def next(): T
+    def tryPull(): Unit
+    def cancel(cause: Throwable): Unit
+    def isClosed: Boolean
+  }
+
+  final class InflightSingleSource[T](elem: T) extends InflightSource[T] {
+    private var _hasNext = true
+    override def hasNext: Boolean = _hasNext
+    override def next(): T =
+      if (_hasNext) {
+        _hasNext = false
+        elem
+      } else throw new NoSuchElementException("next called after completion")
+    override def tryPull(): Unit = ()
+    override def cancel(cause: Throwable): Unit = ()
+    override def isClosed: Boolean = !hasNext
+  }
+
+  final class InflightIterableSource[T](elements: Iterable[T]) extends InflightSource[T] {
+    private val iterator: Iterator[T] = elements.iterator
+    override def hasNext: Boolean = iterator.hasNext
+    override def next(): T = iterator.next()
+    override def tryPull(): Unit = ()
+    override def cancel(cause: Throwable): Unit = ()
+    override def isClosed: Boolean = !hasNext
+  }
+
+  object InflightEmptySource extends InflightSource[Any] {
+    override def hasNext: Boolean = false
+    override def next(): Any = throw new NoSuchElementException("next called after completion")
+    override def tryPull(): Unit = ()
+    override def cancel(cause: Throwable): Unit = ()
+    override def isClosed: Boolean = true
+  }
+}
+
+@InternalApi
+private[akka] final class FlattenConcat[T, M](parallelism: Int)
+    extends GraphStage[FlowShape[Graph[SourceShape[T], M], T]] {
+  require(parallelism >= 1, "parallelism should >= 1")
+  private val in = Inlet[Graph[SourceShape[T], M]]("flattenConcat.in")
+  private val out = Outlet[T]("flattenConcat.out")
+
+  override def initialAttributes: Attributes = DefaultAttributes.flattenConcat
+  override val shape: FlowShape[Graph[SourceShape[T], M], T] = FlowShape(in, out)
+  override def createLogic(inheritedAttributes: Attributes) =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      import FlattenConcat._
+      private var inflightSources: BufferImpl[InflightSource[T]] = _
+
+      override def preStart(): Unit = inflightSources = BufferImpl(parallelism, inheritedAttributes)
+
+      override def onPush(): Unit = {
+        val source = grab(in)
+        addSource(source)
+        if (!inflightSources.isFull) {
+          tryPull(in)
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = if (inflightSources.isEmpty) completeStage()
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        super.onUpstreamFailure(ex)
+        cancelInflightSources(SubscriptionWithCancelException.NoMoreElementsNeeded)
+      }
+
+      override def onPull(): Unit = {
+        if (inflightSources.nonEmpty) {
+          val currentSource = inflightSources.peek()
+          //purge if possible
+          if (currentSource.hasNext) {
+            push(out, currentSource.next())
+            if (currentSource.isClosed) {
+              removeSource(currentSource)
+            }
+          } else if (currentSource.isClosed) {
+            removeSource(currentSource)
+          } else {
+            currentSource.tryPull()
+          }
+        } else if (!hasBeenPulled(in)) {
+          tryPull(in)
+        } else if (isClosed(in)) {
+          completeStage()
+        }
+      }
+
+      override def onDownstreamFinish(cause: Throwable): Unit = {
+        super.onDownstreamFinish(cause)
+        cancelInflightSources(cause)
+      }
+
+      private def cancelInflightSources(cause: Throwable): Unit = {
+        if (inflightSources.nonEmpty) {
+          var source = inflightSources.dequeue()
+          while (source ne null) {
+            source.cancel(cause)
+            source = inflightSources.dequeue()
+          }
+        }
+      }
+
+      private def addSource(source: Graph[SourceShape[T], M]): Unit = {
+        TraversalBuilder.getValuePresentedSource(source) match {
+          case OptionVal.Some(graph) =>
+            graph match {
+              case single: SingleSource[T] @unchecked =>
+                if (isAvailable(out) && inflightSources.isEmpty) {
+                  push(out, single.elem)
+                } else {
+                  inflightSources.enqueue(new InflightSingleSource(single.elem))
+                }
+              case iterable: IterableSource[T] @unchecked =>
+                val inflightSource = new InflightIterableSource[T](iterable.elements)
+                if (isAvailable(out) && inflightSources.isEmpty) {
+                  if (inflightSource.hasNext) {
+                    push(out, inflightSource.next())
+                    if (inflightSource.hasNext) {
+                      inflightSources.enqueue(inflightSource)
+                    }
+                  }
+                } else {
+                  inflightSources.enqueue(inflightSource)
+                }
+              case EmptySource =>
+                if (!inflightSources.isEmpty) {
+                  inflightSources.enqueue(InflightEmptySource.asInstanceOf[InflightSource[T]])
+                }
+              case _ => throw new IllegalArgumentException("Not supported source type.")
+            }
+          case _ => attachAndMaterializeSource(source)
+        }
+
+        def attachAndMaterializeSource(source: Graph[SourceShape[T], M]): Unit = {
+          val inflightSource: InflightSource[T] with Materializable = new InflightSource[T] with Materializable {
+            self =>
+            val sinkIn = new SubSinkInlet[T]("FlattenConcatSink")
+            sinkIn.setHandler(new InHandler {
+              override def onPush(): Unit = {
+                if (isAvailable(out) && (inflightSources.peek() eq self)) {
+                  push(out, sinkIn.grab())
+                }
+              }
+              override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(self)
+            })
+
+            final override def materialize(): Unit = {
+              val graph = Source.fromGraph(source).to(sinkIn.sink)
+              interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = inheritedAttributes)
+            }
+
+            final override def cancel(cause: Throwable): Unit = sinkIn.cancel(cause)
+            final override def hasNext: Boolean = sinkIn.isAvailable
+            final override def isClosed: Boolean = sinkIn.isClosed
+            final override def next(): T = sinkIn.grab()
+            final override def tryPull(): Unit = if (!sinkIn.isClosed && !sinkIn.hasBeenPulled) sinkIn.pull()
+          }
+          if (inflightSources.isEmpty && isAvailable(out)) {
+            //this is the first one, pull
+            inflightSource.tryPull()
+          }
+          inflightSources.enqueue(inflightSource)
+          inflightSource.materialize()
+        }
+      }
+
+      private def removeSource(source: InflightSource[T]): Unit = {
+        if (inflightSources.nonEmpty && (source eq inflightSources.peek())) {
+          //only dequeue if it's the first
+          inflightSources.dequeue()
+          if (isClosed(in) && inflightSources.isEmpty) {
+            completeStage()
+          } else {
+            //pull next
+            if (inflightSources.nonEmpty) {
+              val nextSource = inflightSources.peek()
+              nextSource.tryPull()
+            }
+            if (!hasBeenPulled(in)) {
+              tryPull(in)
+            }
+          }
+        } else {
+          throw new IllegalStateException("Should not reach here.")
+        }
+      }
+
+      setHandlers(in, out, this)
+    }
+
+  override def toString: String = s"FlattenConcat($parallelism)"
 }
 
 /**

@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.Future
 
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
@@ -84,6 +85,18 @@ class FlatMapConcatBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource.flatMapConcat(n => Source(n :: Nil)).runWith(new LatchSink(OperationsPerInvocation, latch))
+
+    awaitLatch(latch)
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(OperationsPerInvocation)
+  def completedFuture(): Unit = {
+    val latch = new CountDownLatch(1)
+
+    testSource
+      .flatMapConcat(n => Source.future(Future.successful(n)))
+      .runWith(new LatchSink(OperationsPerInvocation, latch))
 
     awaitLatch(latch)
   }
