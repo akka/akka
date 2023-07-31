@@ -22,6 +22,16 @@ This page does not list all available modules, but overviews the main functional
 
 ### Actor library
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
+
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
@@ -50,6 +60,16 @@ Challenges that actors solve include the following:
 
 ### Remoting
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
+
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
@@ -75,6 +95,16 @@ Challenges Remoting solves include the following:
 * How to multiplex communications from an unrelated set of actors on the same network connection, all transparently.
 
 ### Cluster
+
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
 
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
@@ -102,6 +132,16 @@ Challenges the Cluster module solves include the following:
 
 ### Cluster Sharding
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
+
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
@@ -123,6 +163,16 @@ Challenges that Sharding solves include the following:
 * How to ensure that an entity does not exist on multiple systems at the same time and hence keeps consistent.
 
 ### Cluster Singleton
+
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
 
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
@@ -147,6 +197,16 @@ The Singleton module can be used to solve these challenges:
 * How to reach this instance from any member of the cluster assuming that it can migrate to other systems over time.
 
 ### Persistence
+
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
 
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
@@ -173,6 +233,16 @@ Persistence tackles the following challenges:
 
 ### Projections
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
+
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
@@ -192,6 +262,16 @@ Challenges Projections solve include the following:
 
 
 ### Distributed Data
+
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
 
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
@@ -214,6 +294,16 @@ Distributed Data is intended to solve the following challenges:
 * How to share data while at the same time ensuring low-latency local read and write access.
 
 ### Streams
+
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
 
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion

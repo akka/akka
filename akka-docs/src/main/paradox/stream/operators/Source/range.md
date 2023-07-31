@@ -6,6 +6,14 @@ Emit each integer in a range, with an option to take bigger steps than 1.
 
 ## Dependency
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion

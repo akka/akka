@@ -5,6 +5,14 @@ For the full documentation of this feature and for new projects see @ref:[Dispat
 
 ## Dependency
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
 Dispatchers are part of core Akka, which means that they are part of the akka-actor dependency:
 
 @@dependency[sbt,Maven,Gradle] {

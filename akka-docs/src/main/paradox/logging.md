@@ -5,6 +5,14 @@ For the new API see @ref[Logging](typed/logging.md).
 
 ## Module info
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
 To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)).
 
 @@dependency[sbt,Maven,Gradle] {

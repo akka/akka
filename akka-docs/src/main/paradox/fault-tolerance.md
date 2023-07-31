@@ -5,7 +5,15 @@ For the full documentation of this feature and for new projects see @ref:[fault 
 
 ## Dependency
 
-The concept of fault tolerance relates to actors, so in order to use these make sure to depend on actors:
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+The concept of fault tolerance relates to actors, so in order to use these make sure to depend on actors.
 
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion

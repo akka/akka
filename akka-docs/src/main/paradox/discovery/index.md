@@ -33,7 +33,17 @@ See @ref:[Migration hints](#migrating-from-akka-management-discovery-before-1-0-
 
 ## Module info
 
-@@dependency[sbt,Gradle,Maven] {
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
+
+@@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
