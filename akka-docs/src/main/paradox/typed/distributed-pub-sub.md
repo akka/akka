@@ -5,7 +5,17 @@ You are viewing the documentation for the new actor APIs, to view the Akka Class
 ## Module info
 
 The distributed publish subscribe topic API is available and usable with the core `akka-actor-typed` module, however it will only be distributed
-when used in a clustered application:
+when used in a clustered application.
+
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
 
 @@dependency[sbt,Maven,Gradle] {
   bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
