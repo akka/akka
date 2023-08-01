@@ -34,7 +34,12 @@ import akka.persistence.typed.state.internal.SideEffect
    */
   final def persist(state: State): EffectBuilder[State] = Persist(state)
 
-  // FIXME add delete effect
+  /**
+   * Delete the persisted state.
+   *
+   * Side effects can be chained with `thenRun`.
+   */
+  def delete(): EffectBuilder[State] = Delete().asInstanceOf[EffectBuilder[State]]
 
   /**
    * Do not persist anything
