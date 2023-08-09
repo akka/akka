@@ -24,6 +24,7 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterLogMarker
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.cluster.Reachability
 import akka.cluster.UniqueAddress
 import akka.cluster.sbr.DowningStrategy.Decision
@@ -357,10 +358,13 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
 
   private def thisActorSystemWasQuarantined(remoteUnique: akka.remote.UniqueAddress): Unit = {
     val remote = UniqueAddress(remoteUnique.address, remoteUnique.uid)
-    if (Cluster(context.system).state.members.exists(m => m.uniqueAddress == remote)) {
-      actOnDecision(DowningStrategy.DownSelfQuarantinedByRemote)
-    } else {
-      log.debug("Remote [{}] quarantined this system but is not part of cluster, ignoring", remote)
+    Cluster(context.system).state.members.find(m => m.uniqueAddress == remote) match {
+      case Some(m) if m.status != MemberStatus.Up =>
+        log.info("Remote [{}] quarantined this system but has status [{}], ignoring", remote, m.status)
+      case Some(_) =>
+        actOnDecision(DowningStrategy.DownSelfQuarantinedByRemote)
+      case None =>
+        log.info("Remote [{}] quarantined this system but is not part of cluster, ignoring", remote)
     }
   }
 
