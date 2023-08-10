@@ -332,6 +332,11 @@ private[impl] final class PartitionedBuffer[K, V](size: Int) {
     }
   }
 
+  def usedInPartition(key: K): Int =
+    if (partitionBuffers.contains(key)) {
+      partitionBuffers(key).used
+    } else 0
+
   def addPartition(key: K, buffer: Buffer[V]): Unit = {
     partitionBuffers += (key -> buffer)
   }

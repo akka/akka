@@ -92,5 +92,39 @@ class PartitionedBufferSpec extends StreamSpec {
       partitionBuffer.peekPartition(1) shouldBe empty
     }
 
+    "report usage of partitions" in {
+      val partitionBuffer = new PartitionedBuffer[Int, Int](6)
+
+      // odd/even
+      partitionBuffer.addPartition(0, Buffer(2, 8))
+      partitionBuffer.addPartition(1, Buffer(2, 8))
+
+      def sumOfPartitionUsed() =
+        (0 to 1).map { partition => partitionBuffer.usedInPartition(partition) }.sum
+
+      partitionBuffer.usedInPartition(0) shouldBe 0
+      partitionBuffer.usedInPartition(1) shouldBe 0
+      sumOfPartitionUsed() shouldBe partitionBuffer.used      // invariant
+
+      partitionBuffer.enqueue(0, 0)
+
+      partitionBuffer.usedInPartition(0) shouldBe 1
+      sumOfPartitionUsed() shouldBe partitionBuffer.used      // invariant
+
+      partitionBuffer.enqueue(1, 1)
+
+      partitionBuffer.usedInPartition(1) shouldBe 1
+      sumOfPartitionUsed() shouldBe partitionBuffer.used      // invariant
+
+      partitionBuffer.dequeue()
+
+      partitionBuffer.usedInPartition(0) shouldBe 0
+      sumOfPartitionUsed() shouldBe partitionBuffer.used      // invariant
+
+      partitionBuffer.dequeue()
+
+      partitionBuffer.usedInPartition(1) shouldBe 0
+      sumOfPartitionUsed() shouldBe partitionBuffer.used      // invariant
+    }
   }
 }
