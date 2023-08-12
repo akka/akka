@@ -409,7 +409,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
             scheduleOnce(TerminationDeadlineTimerKey, finalTerminationSignalDeadline)
 
           case AwaitingSubscription(ref) =>
-            // we didn't get an a first demand yet but have access to the partner - try a cancellation dance
+            // we didn't get a first demand yet but have access to the partner - try a cancellation dance
             triggerCancellationExchange(ref, cause)
 
           case UpstreamCompleted(_) =>
