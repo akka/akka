@@ -2,7 +2,7 @@
  * Copyright (C) 2018-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.stream.operators
+package docs.stream.operators.flow
 
 //#imports
 import akka.NotUsed

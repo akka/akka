@@ -16,7 +16,7 @@ Transform this Flow by applying a function to each *incoming* upstream element b
 ## Examples
 
 Scala
-:  @@snip [Flow.scala](/akka-docs/src/test/scala/docs/stream/operators/ContraMap.scala) { #imports #contramap }
+:  @@snip [Flow.scala](/akka-docs/src/test/scala/docs/stream/operators/flow/ContraMap.scala) { #imports #contramap }
 
 ## Reactive Streams semantics
 
