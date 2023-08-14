@@ -161,10 +161,11 @@ object MultiJvmPlugin extends AutoPlugin {
       // the first class wins just like a classpath
       // just concatenate conflicting text files
       assembly / assemblyMergeStrategy := {
-        case n if n.endsWith(".class") => MergeStrategy.first
-        case n if n.endsWith(".txt")   => MergeStrategy.concat
-        case n if n.endsWith("NOTICE") => MergeStrategy.concat
-        case n                         => (assembly / assemblyMergeStrategy).value.apply(n)
+        case n if n.endsWith(".class")  => MergeStrategy.first
+        case n if n.endsWith(".txt")    => MergeStrategy.concat
+        case n if n.endsWith("NOTICE")  => MergeStrategy.concat
+        case n if n.endsWith("LICENSE") => MergeStrategy.concat
+        case n                          => (assembly / assemblyMergeStrategy).value.apply(n)
       },
       assembly / assemblyJarName := {
         name.value + "_" + scalaVersion.value + "-" + version.value + "-multi-jvm-assembly.jar"

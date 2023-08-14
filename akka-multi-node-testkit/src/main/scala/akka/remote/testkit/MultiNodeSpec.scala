@@ -4,28 +4,32 @@
 
 package akka.remote.testkit
 
-import java.net.{ InetAddress, InetSocketAddress }
-
-import scala.collection.immutable
-import scala.concurrent.{ Await, Awaitable }
-import scala.concurrent.duration._
-import scala.util.control.NonFatal
-
-import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
-import language.implicitConversions
-import org.jboss.netty.channel.ChannelException
-
-import akka.actor._
 import akka.actor.RootActorPath
-import akka.event.{ Logging, LoggingAdapter }
+import akka.actor._
+import akka.event.Logging
+import akka.event.LoggingAdapter
 import akka.remote.RemoteTransportException
-import akka.remote.testconductor.{ TestConductor, TestConductorExt }
 import akka.remote.testconductor.RoleName
-import akka.testkit._
+import akka.remote.testconductor.TestConductor
+import akka.remote.testconductor.TestConductorExt
 import akka.testkit.TestEvent._
 import akka.testkit.TestKit
+import akka.testkit._
 import akka.util.Timeout
 import akka.util.ccompat._
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigObject
+import io.netty.channel.ChannelException
+
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Awaitable
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
