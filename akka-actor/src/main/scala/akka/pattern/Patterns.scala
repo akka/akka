@@ -604,11 +604,11 @@ object Patterns {
       ec: ExecutionContext): CompletionStage[T] =
     scalaRetry(
       () => attempt.call().toScala,
+      (ex) => shouldRetry.test(ex),
       attempts,
       minBackoff.asScala,
       maxBackoff.asScala,
-      randomFactor,
-      (ex) => shouldRetry.test(ex))(ec, scheduler).toJava
+      randomFactor)(ec, scheduler).toJava
 
   /**
    * Returns an internally retrying [[scala.concurrent.Future]]
@@ -718,8 +718,8 @@ object Patterns {
 
     scalaRetry(
       () => attempt.call().toScala,
+      (ex) => shouldRetry.test(ex),
       attempts,
-      (attempted) => delayFunction.apply(attempted).asScala.map(_.asScala),
-      (ex) => shouldRetry.test(ex))(context, scheduler).toJava
+      (attempted) => delayFunction.apply(attempted).asScala.map(_.asScala))(context, scheduler).toJava
   }
 }

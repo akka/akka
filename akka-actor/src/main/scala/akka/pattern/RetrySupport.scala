@@ -135,20 +135,20 @@ trait RetrySupport {
    */
   def retry[T](
       attempt: () => Future[T],
+      shouldRetry: Throwable => Boolean,
       attempts: Int,
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
-      randomFactor: Double,
-      shouldRetry: Throwable => Boolean)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+      randomFactor: Double)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
     require(minBackoff > Duration.Zero, "Parameter minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "Parameter maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
 
     retry(
       attempt,
+      shouldRetry,
       attempts,
-      attempted => Some(BackoffSupervisor.calculateDelay(attempted, minBackoff, maxBackoff, randomFactor)),
-      shouldRetry)
+      attempted => Some(BackoffSupervisor.calculateDelay(attempted, minBackoff, maxBackoff, randomFactor)))
   }
 
   /**
@@ -206,7 +206,7 @@ trait RetrySupport {
       implicit
       ec: ExecutionContext,
       scheduler: Scheduler): Future[T] = {
-    RetrySupport.retry(attempt, attempts, delayFunction, attempted = 0, RetrySupport.alwaysRetry)
+    RetrySupport.retry(attempt, attempts, delayFunction, attempted = 0, ConstantFun.anyToTrue)
   }
 
   /**
@@ -242,9 +242,9 @@ trait RetrySupport {
    */
   def retry[T](
       attempt: () => Future[T],
+      shouldRetry: Throwable => Boolean,
       attempts: Int,
-      delayFunction: Int => Option[FiniteDuration],
-      shouldRetry: Throwable => Boolean)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+      delayFunction: Int => Option[FiniteDuration])(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
     RetrySupport.retry(attempt, attempts, delayFunction, attempted = 0, shouldRetry)
   }
 }
@@ -253,7 +253,7 @@ object RetrySupport extends RetrySupport {
 
   private def retry[T](attempt: () => Future[T], maxAttempts: Int, attempted: Int)(
       implicit ec: ExecutionContext): Future[T] =
-    retry(attempt, maxAttempts, ConstantFun.scalaAnyToNone, attempted, alwaysRetry)(ec, null)
+    retry(attempt, maxAttempts, ConstantFun.scalaAnyToNone, attempted, ConstantFun.anyToTrue)(ec, null)
 
   private def retry[T](
       attempt: () => Future[T],
@@ -300,9 +300,5 @@ object RetrySupport extends RetrySupport {
     } else {
       tryAttempt()
     }
-  }
-
-  private val alwaysRetry: Throwable => Boolean = { _ =>
-    true
   }
 }
