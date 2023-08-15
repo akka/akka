@@ -127,7 +127,13 @@ private[akka] final case class MapAsyncPartitioned[In, Out, Partition](
                 // dropped from per-partition queue, to be able to execute next, but result is kept in the
                 // main linear buffer for when out is ready
                 buffer.dropOnlyPartitionHead(partition)
-                dropCompletedThenPushIfPossible(partition)
+
+                if (perPartition > 1 && buffer.usedInPartition(partition) > perPartition) {
+                  // If the next future in this partition has completed, start the next waiting future
+                  dropCompletedThenPushIfPossible(partition)
+                } else {
+                  pushNextIfPossible()
+                }
 
               case Failure(ex) =>
                 throw ex // Could happen if this finds the failed future before the async callback runs
