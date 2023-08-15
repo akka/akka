@@ -143,4 +143,34 @@ class RetrySpec extends AkkaSpec with RetrySupport {
     }
   }
 
+  "support short-circuiting failures that are not amenable to retries" in {
+    @volatile var failCount = 0
+
+    def retriable(cause: Throwable): Boolean =
+      cause match {
+        case _: IllegalArgumentException => false
+        case _                           => true
+      }
+
+    def attempt() =
+      failCount match {
+        case _ if (failCount % 3) < 2 =>
+          failCount += 1
+          Future.failed(new NoSuchElementException(failCount.toString))
+
+        case _ =>
+          failCount += 1
+          Future.failed(new IllegalArgumentException(failCount.toString))
+      }
+
+    val retried = retry(() => attempt(), retriable(_), 10)
+
+    within(3 seconds) {
+      Await.ready(retried, remaining)
+      failCount shouldBe 3
+      retried.value.get shouldBe a[scala.util.Failure[_]]
+      retried.failed.value.get.get shouldBe an[IllegalArgumentException]
+    }
+  }
+
 }

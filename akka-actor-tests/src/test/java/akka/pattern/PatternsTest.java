@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
@@ -304,6 +305,43 @@ public class PatternsTest extends JUnitSuite {
 
     final String actual = retriedStage.toCompletableFuture().get(3, SECONDS);
     assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testShortCircuitRetry() throws Exception {
+    AtomicInteger failureCounter = new AtomicInteger();
+
+    Predicate<Throwable> decider =
+        (ex) -> {
+          return !(ex instanceof IllegalArgumentException);
+        };
+
+    final CompletableFuture<Object> ise = new CompletableFuture<Object>();
+    final CompletableFuture<Object> iae = new CompletableFuture<Object>();
+    ise.completeExceptionally(new IllegalStateException());
+    iae.completeExceptionally(new IllegalArgumentException());
+
+    CompletionStage<Object> retriedAttempts =
+        Patterns.retry(
+            () -> { // attempt
+              if ((failureCounter.getAndIncrement() % 3) < 2) {
+                return ise;
+              } else {
+                return iae;
+              }
+            },
+            decider, // shouldRetry
+            10,
+            ec);
+
+    try {
+      retriedAttempts.toCompletableFuture().get(3, SECONDS);
+      throw new AssertionError("future should have failed!");
+    } catch (java.util.concurrent.ExecutionException e) {
+      assertEquals(e.getCause().getClass(), IllegalArgumentException.class);
+    }
+
+    assertEquals(failureCounter.get(), 3);
   }
 
   @Test(expected = IllegalStateException.class)
