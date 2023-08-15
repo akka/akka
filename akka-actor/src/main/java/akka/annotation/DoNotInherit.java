@@ -7,8 +7,8 @@ package akka.annotation;
 import java.lang.annotation.*;
 
 /**
- * Marks APIs that are designed under a closed-world assumption for and are NOT meant to be
- * extended by user-code. It is fine to extend these classes within Akka itself, however.
+ * Marks APIs that are designed under a closed-world assumption for and are NOT meant to be extended
+ * by user-code. It is fine to extend these classes within Akka itself, however.
  *
  * <p>This is most useful for binary compatibility purposes when a set of classes and interfaces
  * assume a "closed world" between them, and gain the ability to add methods to the interfaces
