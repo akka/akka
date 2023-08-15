@@ -131,7 +131,8 @@ class PersistentActorRecoveryTimeoutSpec
       // now replay
       val probe2 = TestProbe()
       val timeout = 20.millis
-      val replaying = system.actorOf(Props(classOf[PersistentActorRecoveryTimeoutSpec.TestReceiveTimeoutActor], timeout, probe2.ref))
+      val replaying =
+        system.actorOf(Props(classOf[PersistentActorRecoveryTimeoutSpec.TestReceiveTimeoutActor], timeout, probe2.ref))
 
       probe2.expectNoMessage(50.millis) // longer than the receive timeout
       // initial read highest
