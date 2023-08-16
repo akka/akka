@@ -14,6 +14,7 @@ import akka.persistence.query.TimestampOffset
 import akka.persistence.query.typed.EventEnvelope
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
+import akka.serialization.Serializers
 import akka.testkit.AkkaSpec
 
 class QuerySerializerSpec extends AkkaSpec {
@@ -24,8 +25,8 @@ class QuerySerializerSpec extends AkkaSpec {
     val serializer = serialization.findSerializerFor(obj).asInstanceOf[SerializerWithStringManifest]
     val manifest = serializer.manifest(obj)
     val bytes = serialization.serialize(obj).get
-    val deserialzied = serialization.deserialize(bytes, serializer.identifier, manifest).get
-    deserialzied shouldBe obj
+    val deserialized = serialization.deserialize(bytes, serializer.identifier, manifest).get
+    deserialized shouldBe obj
   }
 
   "Query serializer" should {
@@ -140,6 +141,30 @@ class QuerySerializerSpec extends AkkaSpec {
 
     "serialize NoOffset" in {
       verifySerialization(NoOffset)
+    }
+
+    "support lazy deserialization of EventEnvelope" in {
+      val event = "event1"
+      val serializer = serialization.findSerializerFor(event)
+      val eventBytes = serializer.toBinary(event)
+      val eventSerializerId = serializer.identifier
+      val eventManifest = Serializers.manifestFor(serializer, event)
+      val env = EventEnvelope(
+        TimestampOffset(Instant.now(), Instant.now(), Map("pid1" -> 3)),
+        "TestEntity|id1",
+        3L,
+        eventBytes,
+        bytes => Some(serialization.deserialize(bytes, eventSerializerId, eventManifest).get),
+        System.currentTimeMillis(),
+        None,
+        "TestEntity",
+        5,
+        filtered = false,
+        source = "",
+        tags = Set.empty[String])
+
+      env.eventBytes shouldBe Some(eventBytes)
+      env.event shouldBe "event1"
     }
   }
 

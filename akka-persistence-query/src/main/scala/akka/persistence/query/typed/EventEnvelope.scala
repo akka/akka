@@ -4,6 +4,7 @@
 
 package akka.persistence.query.typed
 
+import java.util
 import java.util.{ Set => JSet }
 import java.util.Optional
 
@@ -70,6 +71,32 @@ object EventEnvelope {
       slice: Int): EventEnvelope[Event] =
     apply(offset, persistenceId, sequenceNr, event, timestamp, entityType, slice, filtered = false, source = "")
 
+  def apply[Event](
+      offset: Offset,
+      persistenceId: String,
+      sequenceNr: Long,
+      eventBytes: Array[Byte],
+      deserialize: Array[Byte] => Option[Event],
+      timestamp: Long,
+      eventMetadata: Option[Any],
+      entityType: String,
+      slice: Int,
+      filtered: Boolean,
+      source: String,
+      tags: Set[String]): EventEnvelope[Event] =
+    new EventEnvelope(
+      offset,
+      persistenceId,
+      sequenceNr,
+      EventHolder[Event](eventBytes, deserialize),
+      timestamp,
+      eventMetadata,
+      entityType,
+      slice,
+      filtered,
+      source,
+      tags)
+
   def create[Event](
       offset: Offset,
       persistenceId: String,
@@ -107,6 +134,54 @@ object EventEnvelope {
 
   def unapply[Event](arg: EventEnvelope[Event]): Option[(Offset, String, Long, Option[Event], Long)] =
     Some((arg.offset, arg.persistenceId, arg.sequenceNr, arg.eventOption, arg.timestamp))
+
+  private object EventHolder {
+    private val _undefinedDeserialize: Array[Byte] => Option[Any] =
+      _ => throw new IllegalStateException("deserialize should not be called, this is a bug")
+    private def undefinedDeserialized[Event]: Array[Byte] => Option[Event] =
+      _undefinedDeserialize.asInstanceOf[Array[Byte] => Option[Event]]
+
+    def apply[Event](eventOption: Option[Event]): EventHolder[Event] =
+      new EventHolder(eventOption, None, undefinedDeserialized[Event])
+
+    def apply[Event](eventBytes: Array[Byte], deserialize: Array[Byte] => Option[Event]): EventHolder[Event] =
+      new EventHolder(None, Some(eventBytes), deserialize)
+  }
+  private final class EventHolder[Event] private (
+      private var _eventOption: Option[Event],
+      val eventBytes: Option[Array[Byte]],
+      private val deserialize: Array[Byte] => Option[Event]) {
+    private var _isDeserialized = eventBytes.isEmpty // not important to make volatile
+
+    lazy val eventOption: Option[Event] = {
+      eventBytes match {
+        case None => _eventOption
+        case Some(bytes) =>
+          _isDeserialized = true
+          deserialize(bytes)
+      }
+    }
+
+    def isDeserialized: Boolean =
+      _isDeserialized
+
+    // not really supposed to be used
+    override def hashCode(): Int =
+      eventOption.hashCode
+
+    override def equals(obj: Any): Boolean = obj match {
+      case other: EventHolder[_] =>
+        eventBytes match {
+          case None => eventOption == other.eventOption
+          case Some(bytes) =>
+            other.eventBytes match {
+              case None             => eventOption == other.eventOption
+              case Some(otherBytes) => util.Arrays.equals(bytes, otherBytes) // compare without deserialization
+            }
+        }
+      case _ => false
+    }
+  }
 }
 
 /**
@@ -124,11 +199,11 @@ object EventEnvelope {
  * API May Change
  */
 @ApiMayChange
-final class EventEnvelope[Event](
+final class EventEnvelope[Event] private (
     val offset: Offset,
     val persistenceId: String,
     val sequenceNr: Long,
-    val eventOption: Option[Event],
+    private val eventHolder: EventEnvelope.EventHolder[Event],
     val timestamp: Long,
     val eventMetadata: Option[Any],
     val entityType: String,
@@ -147,19 +222,44 @@ final class EventEnvelope[Event](
       entityType: String,
       slice: Int,
       filtered: Boolean,
-      source: String) =
+      source: String,
+      tags: Set[String]) =
     this(
       offset,
       persistenceId,
       sequenceNr,
-      eventOption,
+      EventEnvelope.EventHolder(eventOption),
       timestamp,
       eventMetadata,
       entityType,
       slice,
       filtered,
       source,
-      tags = Set.empty)
+      tags)
+
+  def this(
+      offset: Offset,
+      persistenceId: String,
+      sequenceNr: Long,
+      eventOption: Option[Event],
+      timestamp: Long,
+      eventMetadata: Option[Any],
+      entityType: String,
+      slice: Int,
+      filtered: Boolean,
+      source: String) =
+    this(
+      offset,
+      persistenceId,
+      sequenceNr,
+      EventEnvelope.EventHolder(eventOption),
+      timestamp,
+      eventMetadata,
+      entityType,
+      slice,
+      filtered,
+      source,
+      tags = Set.empty[String])
 
   def this(
       offset: Offset,
@@ -181,6 +281,9 @@ final class EventEnvelope[Event](
       slice,
       filtered = false,
       source = "")
+
+  def eventOption: Option[Event] =
+    eventHolder.eventOption
 
   def event: Event =
     eventOption match {
@@ -219,6 +322,9 @@ final class EventEnvelope[Event](
     eventOption.asJava
   }
 
+  def eventBytes: Option[Array[Byte]] =
+    eventHolder.eventBytes
+
   /**
    * Java API
    */
@@ -243,16 +349,19 @@ final class EventEnvelope[Event](
   override def equals(obj: Any): Boolean = obj match {
     case other: EventEnvelope[_] =>
       offset == other.offset && persistenceId == other.persistenceId && sequenceNr == other.sequenceNr &&
-      eventOption == other.eventOption && timestamp == other.timestamp && eventMetadata == other.eventMetadata &&
+      eventHolder == other.eventHolder && timestamp == other.timestamp && eventMetadata == other.eventMetadata &&
       entityType == other.entityType && slice == other.slice && filtered == other.filtered &&
       tags == other.tags
     case _ => false
   }
 
   override def toString: String = {
-    val eventStr = eventOption match {
-      case Some(evt) => evt.getClass.getName
-      case None      => ""
+    val eventStr = {
+      if (eventHolder.isDeserialized)
+        eventHolder.eventOption match {
+          case Some(evt) => evt.getClass.getName
+          case None      => ""
+        } else "..." // don't deserialize just for toString
     }
     val metaStr = eventMetadata match {
       case Some(meta) => meta.getClass.getName
