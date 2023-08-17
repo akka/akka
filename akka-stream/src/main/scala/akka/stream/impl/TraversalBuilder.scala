@@ -28,8 +28,7 @@ import akka.util.unused
  * number (and those which are not receive different numbers). This feature can be used to
  *  - materialize a graph, using the slots as indices to an array of Publishers/Subscribers that need to be wired
  *    together
- *  - fuse a graph, using the slots to construct a [[akka.stream.impl.fusing.GraphInterpreter.GraphAssembly]] which
- *    uses a similar layout
+ *  - fuse a graph
  *  - create a DOT formatted output for visualization
  *  - convert the graph to another data structure
  *

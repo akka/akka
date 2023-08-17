@@ -131,8 +131,9 @@ import akka.stream.stage._
 /**
  * INTERNAL API
  *
- * From an external viewpoint, the GraphInterpreter takes an assembly of graph processing stages encoded as a
- * [[GraphInterpreter#GraphAssembly]] object and provides facilities to execute and interact with this assembly.
+ * From an external viewpoint, the GraphInterpreter takes an assembly of graph processing stages and provides facilities
+ * to execute and interact with this assembly.
+ *
  * The lifecycle of the Interpreter is roughly the following:
  *  - [[init]] is called
  *  - [[execute]] is called whenever there is need for execution, providing an upper limit on the processed events
