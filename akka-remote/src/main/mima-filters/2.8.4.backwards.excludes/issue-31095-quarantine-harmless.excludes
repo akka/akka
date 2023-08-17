@@ -1,0 +1,3 @@
+# #31095 internals
+ProblemFilters.exclude[Problem]("akka.remote.artery.AssociationState#QuarantinedTimestamp*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.remote.artery.AssociationState$QuarantinedTimestamp$")
