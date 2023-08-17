@@ -96,9 +96,9 @@ private[remote] object AssociationState {
       quarantined = ImmutableLongMap.empty[QuarantinedTimestamp],
       new AtomicReference(UniqueRemoteAddressValue(None, Nil)))
 
-  final case class QuarantinedTimestamp(nanoTime: Long) {
+  final case class QuarantinedTimestamp(nanoTime: Long, harmless: Boolean) {
     override def toString: String =
-      s"Quarantined ${TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - nanoTime)} seconds ago"
+      s"Quarantined ${TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - nanoTime)} seconds ago, harmless $harmless"
   }
 
   private final case class UniqueRemoteAddressValue(
@@ -147,6 +147,12 @@ private[remote] final class AssociationState private (
 
   def isQuarantined(uid: Long): Boolean = quarantined.contains(uid)
 
+  def isQuarantinedHarmless(uid: Long): Boolean =
+    quarantined.get(uid) match {
+      case OptionVal.Some(QuarantinedTimestamp(_, harmless)) => harmless
+      case _                                                 => true
+    }
+
   @tailrec def completeUniqueRemoteAddress(peer: UniqueAddress): Unit = {
     val current = _uniqueRemoteAddress.get()
     if (current.uniqueRemoteAddress.isEmpty) {
@@ -184,14 +190,14 @@ private[remote] final class AssociationState private (
       quarantined,
       new AtomicReference(UniqueRemoteAddressValue(Some(remoteAddress), Nil)))
 
-  def newQuarantined(): AssociationState =
+  def newQuarantined(harmless: Boolean): AssociationState =
     uniqueRemoteAddress() match {
       case Some(a) =>
         new AssociationState(
           incarnation,
           lastUsedTimestamp = new AtomicLong(System.nanoTime()),
           controlIdleKillSwitch,
-          quarantined = quarantined.updated(a.uid, QuarantinedTimestamp(System.nanoTime())),
+          quarantined = quarantined.updated(a.uid, QuarantinedTimestamp(System.nanoTime(), harmless)),
           _uniqueRemoteAddress)
       case None => this
     }
