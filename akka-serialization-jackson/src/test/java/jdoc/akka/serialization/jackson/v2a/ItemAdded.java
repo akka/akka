@@ -4,12 +4,12 @@
 
 package jdoc.akka.serialization.jackson.v2a;
 
+import akka.serialization.jackson.JsonSerializable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Optional;
-import jdoc.akka.serialization.jackson.MySerializable;
 
 // #add-optional
-public class ItemAdded implements MySerializable {
+public class ItemAdded implements JsonSerializable {
   public final String shoppingCartId;
   public final String productId;
   public final int quantity;

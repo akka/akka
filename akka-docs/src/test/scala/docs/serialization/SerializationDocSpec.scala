@@ -17,6 +17,12 @@ package docs.serialization {
   import akka.actor.ExtendedActorSystem
   import java.nio.charset.StandardCharsets
 
+  //#marker-interface
+  import akka.serialization.jackson.JsonSerializable
+
+  final case class MyMessage(name: String, nr: Int) extends JsonSerializable
+  //#marker-interface
+
   //#my-own-serializer
   class MyOwnSerializer extends Serializer {
 
@@ -98,16 +104,6 @@ package docs.serialization {
   trait MyOwnSerializable
   final case class Customer(name: String) extends MyOwnSerializable
   final case class User(name: String) extends MyOwnSerializable
-
-  /**
-   * Marker trait for serialization with Jackson CBOR
-   */
-  trait CborSerializable
-
-  /**
-   * Marker trait for serialization with Jackson JSON
-   */
-  trait JsonSerializable
 
   object SerializerIdConfig {
     val config =

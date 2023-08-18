@@ -4,8 +4,9 @@
 
 package doc.akka.serialization.jackson.v2b
 
-import jdoc.akka.serialization.jackson.MySerializable
+import akka.serialization.jackson.JsonSerializable
 
 // #add-mandatory
-case class ItemAdded(shoppingCartId: String, productId: String, quantity: Int, discount: Double) extends MySerializable
+case class ItemAdded(shoppingCartId: String, productId: String, quantity: Int, discount: Double)
+    extends JsonSerializable
 // #add-mandatory

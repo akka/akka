@@ -4,10 +4,10 @@
 
 package jdoc.akka.serialization.jackson.v2c;
 
-import jdoc.akka.serialization.jackson.MySerializable;
+import akka.serialization.jackson.JsonSerializable;
 
 // #rename
-public class ItemAdded implements MySerializable {
+public class ItemAdded implements JsonSerializable {
   public final String shoppingCartId;
 
   public final String itemId;

@@ -4,6 +4,8 @@
 
 package doc.akka.serialization.jackson
 
+import akka.serialization.jackson.JsonSerializable
+
 object CustomAdtSerializer {
 
   //#adt-trait-object
@@ -54,6 +56,6 @@ object CustomAdtSerializer {
     }
   }
 
-  final case class Compass(currentDirection: Direction) extends MySerializable
+  final case class Compass(currentDirection: Direction) extends JsonSerializable
   //#adt-trait-object
 }

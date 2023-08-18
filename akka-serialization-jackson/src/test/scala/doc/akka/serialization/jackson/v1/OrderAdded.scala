@@ -4,8 +4,8 @@
 
 package doc.akka.serialization.jackson.v1
 
-import doc.akka.serialization.jackson.MySerializable
+import akka.serialization.jackson.JsonSerializable
 
 // #rename-class
-case class OrderAdded(shoppingCartId: String) extends MySerializable
+case class OrderAdded(shoppingCartId: String) extends JsonSerializable
 // #rename-class
