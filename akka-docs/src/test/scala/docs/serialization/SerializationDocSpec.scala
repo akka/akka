@@ -183,8 +183,6 @@ package docs.serialization {
           }
 
           serialization-bindings {
-            "docs.serialization.JsonSerializable" = jackson-json
-            "docs.serialization.CborSerializable" = jackson-cbor
             "com.google.protobuf.Message" = proto
             "docs.serialization.MyOwnSerializable" = myown
           }
