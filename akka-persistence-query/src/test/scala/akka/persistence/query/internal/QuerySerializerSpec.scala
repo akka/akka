@@ -21,7 +21,7 @@ class QuerySerializerSpec extends AkkaSpec {
 
   private val serialization = SerializationExtension(system)
 
-  def serializationRoundTrip[T<:AnyRef](obj: T): T = {
+  def serializationRoundTrip[T <: AnyRef](obj: T): T = {
     val serializer = serialization.findSerializerFor(obj).asInstanceOf[SerializerWithStringManifest]
     val manifest = serializer.manifest(obj)
     val bytes = serialization.serialize(obj).get
