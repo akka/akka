@@ -4,10 +4,11 @@
 
 package akka.persistence.query.typed
 
-import java.util.{ Set => JSet }
+import java.util.{Set => JSet}
 import java.util.Optional
 
 import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence.query.Offset
 import akka.util.HashCode
@@ -309,8 +310,17 @@ final class EventEnvelope[Event] private (
   def withEvent(event: Event): EventEnvelope[Event] =
     copy(_eventOption = Option(event))
 
+  def withEventOption(eventOption: Option[Event]): EventEnvelope[Event] =
+    copy(_eventOption = eventOption)
+
   def withTags(tags: Set[String]): EventEnvelope[Event] =
     copy(tags = tags)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka]  def isEventDeserialized: Boolean =
+    _eventOption.isDefined || serializedEvent.isEmpty
 
   private def copy(
       offset: Offset = offset,
