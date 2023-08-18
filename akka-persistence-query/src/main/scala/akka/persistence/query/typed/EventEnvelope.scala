@@ -309,6 +309,9 @@ final class EventEnvelope[Event] private (
   def withEvent(event: Event): EventEnvelope[Event] =
     copy(_eventOption = Option(event))
 
+  def withTags(tags: Set[String]): EventEnvelope[Event] =
+    copy(tags = tags)
+
   private def copy(
       offset: Offset = offset,
       persistenceId: String = persistenceId,
