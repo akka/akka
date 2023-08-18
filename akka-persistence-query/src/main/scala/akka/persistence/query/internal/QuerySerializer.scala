@@ -21,6 +21,9 @@ import akka.persistence.query.TimeBasedUUID
 import akka.persistence.query.TimestampOffset
 import akka.persistence.query.internal.protobuf.QueryMessages
 import akka.persistence.query.typed.EventEnvelope
+import akka.protobufv3.internal.ByteString
+import akka.remote.ByteStringUtils
+import akka.remote.ContainerFormats
 import akka.remote.serialization.WrappedPayloadSupport.{ deserializePayload, payloadBuilder }
 import akka.serialization.BaseSerializer
 import akka.serialization.SerializationExtension
@@ -80,7 +83,17 @@ import akka.util.ccompat.JavaConverters._
         builder.addAllTags(env.tags.asJava)
       }
 
-      env.eventOption.foreach(event => builder.setEvent(payloadBuilder(event, serialization, log)))
+      env.serializedEvent match {
+        case None =>
+          env.eventOption.foreach(event => builder.setEvent(payloadBuilder(event, serialization, log)))
+        case Some(EventEnvelope.SerializedEvent(eventBytes, eventSerializerId, eventManifest)) =>
+          val b = ContainerFormats.Payload.newBuilder()
+          b.setEnclosedMessage(ByteStringUtils.toProtoByteStringUnsafe(eventBytes))
+            .setSerializerId(eventSerializerId)
+            .setMessageManifest(ByteString.copyFromUtf8(eventManifest))
+          builder.setEvent(b)
+      }
+
       env.eventMetadata.foreach(meta => builder.setMetadata(payloadBuilder(meta, serialization, log)))
 
       builder.build().toByteArray()

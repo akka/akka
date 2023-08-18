@@ -4,11 +4,11 @@
 
 package akka.persistence.query.typed
 
-import java.util
 import java.util.{ Set => JSet }
 import java.util.Optional
 
 import akka.annotation.ApiMayChange
+import akka.annotation.InternalStableApi
 import akka.persistence.query.Offset
 import akka.util.HashCode
 import akka.util.ccompat.JavaConverters._
@@ -75,8 +75,7 @@ object EventEnvelope {
       offset: Offset,
       persistenceId: String,
       sequenceNr: Long,
-      eventBytes: Array[Byte],
-      deserialize: Array[Byte] => Option[Event],
+      serializedEvent: SerializedEvent,
       timestamp: Long,
       eventMetadata: Option[Any],
       entityType: String,
@@ -84,11 +83,12 @@ object EventEnvelope {
       filtered: Boolean,
       source: String,
       tags: Set[String]): EventEnvelope[Event] =
-    new EventEnvelope(
+    new EventEnvelope[Event](
       offset,
       persistenceId,
       sequenceNr,
-      EventHolder[Event](eventBytes, deserialize),
+      None,
+      Some(serializedEvent),
       timestamp,
       eventMetadata,
       entityType,
@@ -135,53 +135,13 @@ object EventEnvelope {
   def unapply[Event](arg: EventEnvelope[Event]): Option[(Offset, String, Long, Option[Event], Long)] =
     Some((arg.offset, arg.persistenceId, arg.sequenceNr, arg.eventOption, arg.timestamp))
 
-  private object EventHolder {
-    private val _undefinedDeserialize: Array[Byte] => Option[Any] =
-      _ => throw new IllegalStateException("deserialize should not be called, this is a bug")
-    private def undefinedDeserialized[Event]: Array[Byte] => Option[Event] =
-      _undefinedDeserialize.asInstanceOf[Array[Byte] => Option[Event]]
-
-    def apply[Event](eventOption: Option[Event]): EventHolder[Event] =
-      new EventHolder(eventOption, None, undefinedDeserialized[Event])
-
-    def apply[Event](eventBytes: Array[Byte], deserialize: Array[Byte] => Option[Event]): EventHolder[Event] =
-      new EventHolder(None, Some(eventBytes), deserialize)
-  }
-  private final class EventHolder[Event] private (
-      private var _eventOption: Option[Event],
-      val eventBytes: Option[Array[Byte]],
-      private val deserialize: Array[Byte] => Option[Event]) {
-    private var _isDeserialized = eventBytes.isEmpty // not important to make volatile
-
-    lazy val eventOption: Option[Event] = {
-      eventBytes match {
-        case None => _eventOption
-        case Some(bytes) =>
-          _isDeserialized = true
-          deserialize(bytes)
-      }
-    }
-
-    def isDeserialized: Boolean =
-      _isDeserialized
-
-    // not really supposed to be used
-    override def hashCode(): Int =
-      eventOption.hashCode
-
-    override def equals(obj: Any): Boolean = obj match {
-      case other: EventHolder[_] =>
-        eventBytes match {
-          case None => eventOption == other.eventOption
-          case Some(bytes) =>
-            other.eventBytes match {
-              case None             => eventOption == other.eventOption
-              case Some(otherBytes) => util.Arrays.equals(bytes, otherBytes) // compare without deserialization
-            }
-        }
-      case _ => false
-    }
-  }
+  /**
+   * INTERNAL API
+   */
+  @InternalStableApi private[akka] final case class SerializedEvent(
+      bytes: Array[Byte],
+      serializerId: Int,
+      serializerManifest: String)
 }
 
 /**
@@ -203,7 +163,9 @@ final class EventEnvelope[Event] private (
     val offset: Offset,
     val persistenceId: String,
     val sequenceNr: Long,
-    private val eventHolder: EventEnvelope.EventHolder[Event],
+    private val _eventOption: Option[Event],
+    /** INTERNAL API */
+    @InternalStableApi private[akka] val serializedEvent: Option[EventEnvelope.SerializedEvent],
     val timestamp: Long,
     val eventMetadata: Option[Any],
     val entityType: String,
@@ -228,7 +190,8 @@ final class EventEnvelope[Event] private (
       offset,
       persistenceId,
       sequenceNr,
-      EventEnvelope.EventHolder(eventOption),
+      eventOption,
+      None,
       timestamp,
       eventMetadata,
       entityType,
@@ -252,7 +215,8 @@ final class EventEnvelope[Event] private (
       offset,
       persistenceId,
       sequenceNr,
-      EventEnvelope.EventHolder(eventOption),
+      eventOption,
+      None,
       timestamp,
       eventMetadata,
       entityType,
@@ -282,8 +246,12 @@ final class EventEnvelope[Event] private (
       filtered = false,
       source = "")
 
-  def eventOption: Option[Event] =
-    eventHolder.eventOption
+  def eventOption: Option[Event] = {
+    if (serializedEvent.isDefined && _eventOption.isEmpty)
+      throw new IllegalStateException(
+        "Event has not been deserialized yet. This is a bug, please report at https://github.com/akka/akka/issues")
+    _eventOption
+  }
 
   def event: Event =
     eventOption match {
@@ -322,9 +290,6 @@ final class EventEnvelope[Event] private (
     eventOption.asJava
   }
 
-  def eventBytes: Option[Array[Byte]] =
-    eventHolder.eventBytes
-
   /**
    * Java API
    */
@@ -338,6 +303,40 @@ final class EventEnvelope[Event] private (
    */
   def getTags(): JSet[String] = tags.asJava
 
+  def withPersistenceId(persistenceId: String): EventEnvelope[Event] =
+    copy(persistenceId = persistenceId)
+
+  def withEvent(event: Event): EventEnvelope[Event] =
+    copy(_eventOption = Option(event))
+
+  private def copy(
+      offset: Offset = offset,
+      persistenceId: String = persistenceId,
+      sequenceNr: Long = sequenceNr,
+      _eventOption: Option[Event] = _eventOption,
+      serializedEvent: Option[EventEnvelope.SerializedEvent] = serializedEvent,
+      timestamp: Long = timestamp,
+      eventMetadata: Option[Any] = eventMetadata,
+      entityType: String = entityType,
+      slice: Int = slice,
+      filtered: Boolean = filtered,
+      source: String = source,
+      tags: Set[String] = tags): EventEnvelope[Event] = {
+    new EventEnvelope(
+      offset,
+      persistenceId,
+      sequenceNr,
+      _eventOption,
+      serializedEvent,
+      timestamp,
+      eventMetadata,
+      entityType,
+      slice,
+      filtered,
+      source,
+      tags)
+  }
+
   override def hashCode(): Int = {
     var result = HashCode.SEED
     result = HashCode.hash(result, offset)
@@ -349,20 +348,24 @@ final class EventEnvelope[Event] private (
   override def equals(obj: Any): Boolean = obj match {
     case other: EventEnvelope[_] =>
       offset == other.offset && persistenceId == other.persistenceId && sequenceNr == other.sequenceNr &&
-      eventHolder == other.eventHolder && timestamp == other.timestamp && eventMetadata == other.eventMetadata &&
+      _eventOption == other._eventOption && // FIXME compare combinations of eventOption and serializedEvent
+      timestamp == other.timestamp && eventMetadata == other.eventMetadata &&
       entityType == other.entityType && slice == other.slice && filtered == other.filtered &&
       tags == other.tags
     case _ => false
   }
 
   override def toString: String = {
-    val eventStr = {
-      if (eventHolder.isDeserialized)
-        eventHolder.eventOption match {
-          case Some(evt) => evt.getClass.getName
-          case None      => ""
-        } else "..." // don't deserialize just for toString
-    }
+    val eventStr =
+      _eventOption match {
+        case Some(evt) => evt.getClass.getName
+        case None =>
+          serializedEvent match {
+            case Some(EventEnvelope.SerializedEvent(_, serializerId, serializerManifest)) =>
+              s"SerializedEvent($serializerId, $serializerManifest)"
+            case None => ""
+          }
+      }
     val metaStr = eventMetadata match {
       case Some(meta) => meta.getClass.getName
       case None       => ""

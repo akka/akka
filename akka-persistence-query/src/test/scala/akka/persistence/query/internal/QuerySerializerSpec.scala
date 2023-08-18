@@ -21,11 +21,16 @@ class QuerySerializerSpec extends AkkaSpec {
 
   private val serialization = SerializationExtension(system)
 
-  def verifySerialization(obj: AnyRef): Unit = {
+  def serializationRoundTrip[T<:AnyRef](obj: T): T = {
     val serializer = serialization.findSerializerFor(obj).asInstanceOf[SerializerWithStringManifest]
     val manifest = serializer.manifest(obj)
     val bytes = serialization.serialize(obj).get
     val deserialized = serialization.deserialize(bytes, serializer.identifier, manifest).get
+    deserialized.asInstanceOf[T]
+  }
+
+  def verifySerialization(obj: AnyRef): Unit = {
+    val deserialized = serializationRoundTrip(obj)
     deserialized shouldBe obj
   }
 
@@ -143,18 +148,17 @@ class QuerySerializerSpec extends AkkaSpec {
       verifySerialization(NoOffset)
     }
 
-    "support lazy deserialization of EventEnvelope" in {
+    "serialize SerializedEvent of EventEnvelope" in {
       val event = "event1"
-      val serializer = serialization.findSerializerFor(event)
-      val eventBytes = serializer.toBinary(event)
-      val eventSerializerId = serializer.identifier
-      val eventManifest = Serializers.manifestFor(serializer, event)
-      val env = EventEnvelope(
+      val eventSerializer = serialization.findSerializerFor(event)
+      val eventBytes = eventSerializer.toBinary(event)
+      val eventSerializerId = eventSerializer.identifier
+      val eventManifest = Serializers.manifestFor(eventSerializer, event)
+      val env = EventEnvelope[String](
         TimestampOffset(Instant.now(), Instant.now(), Map("pid1" -> 3)),
         "TestEntity|id1",
         3L,
-        eventBytes,
-        bytes => Some(serialization.deserialize(bytes, eventSerializerId, eventManifest).get),
+        EventEnvelope.SerializedEvent(eventBytes, eventSerializerId, eventManifest),
         System.currentTimeMillis(),
         None,
         "TestEntity",
@@ -163,8 +167,11 @@ class QuerySerializerSpec extends AkkaSpec {
         source = "",
         tags = Set.empty[String])
 
-      env.eventBytes shouldBe Some(eventBytes)
-      env.event shouldBe "event1"
+      val deserializedEnv = serializationRoundTrip(env)
+      // Note that after serialization/deserialization roundtrip the event is deserialized.
+      // FIXME Maybe we should keep it serialized for some cases, e.g. sending envelope over sharding for Replicated Event Sourcing.
+      deserializedEnv.event shouldBe event
+      deserializedEnv.serializedEvent shouldBe None
     }
   }
 
