@@ -276,7 +276,6 @@ final case class Give(thing: Any)
 
 //#receive-orElse
 
-
 //#immutable-message-definition
 case class User(name: String)
 
