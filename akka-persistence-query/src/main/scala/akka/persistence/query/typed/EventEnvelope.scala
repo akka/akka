@@ -4,7 +4,7 @@
 
 package akka.persistence.query.typed
 
-import java.util.{Set => JSet}
+import java.util.{ Set => JSet }
 import java.util.Optional
 
 import akka.annotation.ApiMayChange
@@ -304,8 +304,16 @@ final class EventEnvelope[Event] private (
    */
   def getTags(): JSet[String] = tags.asJava
 
-  def withPersistenceId(persistenceId: String): EventEnvelope[Event] =
-    copy(persistenceId = persistenceId)
+  /**
+   * `entityType` and `slice` should be derived from the `persistenceId`, but must be explicitly defined
+   * when changing the `persistenceId` of the envelope.
+   * The `slice` should be calculated with [[akka.persistence.Persistence.sliceForPersistenceId]] for
+   * the given `persistenceId`.
+   * The `entityType` should be extracted from the `persistenceId` with
+   * `akka.persistence.typed.PersistenceId.extractEntityType`.
+   */
+  def withPersistenceId(persistenceId: String, entityType: String, slice: Int): EventEnvelope[Event] =
+    copy(persistenceId = persistenceId, entityType = entityType, slice = slice)
 
   def withEvent(event: Event): EventEnvelope[Event] =
     copy(_eventOption = Option(event))
@@ -319,7 +327,7 @@ final class EventEnvelope[Event] private (
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka]  def isEventDeserialized: Boolean =
+  @InternalApi private[akka] def isEventDeserialized: Boolean =
     _eventOption.isDefined || serializedEvent.isEmpty
 
   private def copy(
