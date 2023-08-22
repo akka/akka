@@ -172,15 +172,6 @@ The console output may look like this:
 
 You will also need to add a @ref:[logging dependency](logging.md) to see that output when running.
 
-@@@ div { .group-scala }
-
-#### Here is another example that you can edit and run in the browser:
-
-@@fiddle [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
-
-@@@
-
-
 ## A More Complex Example
 
 The next example is more realistic and demonstrates some important patterns:
