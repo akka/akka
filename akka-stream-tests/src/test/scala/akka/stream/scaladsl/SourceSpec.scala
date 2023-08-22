@@ -318,7 +318,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         .grouped(10)
         .runWith(Sink.head)
         .failed
-        .futureValue shouldBe an[TE]
+        .futureValue shouldBe a[TE]
 
       Source
         .fromIterator(() => (1 to 5).toIterator.map(k => if (k != 3) k else throw TE("a")))
@@ -348,7 +348,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         .grouped(10)
         .runWith(Sink.headOption)
         .failed
-        .futureValue shouldBe an[TE]
+        .futureValue shouldBe a[TE]
 
       Source
         .fromIterator(() => (1 to 5).toIterator.map(_ => throw TE("b")))
@@ -356,7 +356,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         .grouped(10)
         .runWith(Sink.headOption)
         .failed
-        .futureValue shouldBe an[TE]
+        .futureValue shouldBe a[TE]
 
       Source
         .fromIterator(() => (1 to 5).toIterator.map(_ => throw TE("b")))
