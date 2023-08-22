@@ -57,8 +57,6 @@ object Paradox {
         "google.analytics.account" -> "UA-21117439-1",
         "google.analytics.domain.name" -> "akka.io",
         "signature.akka.base_dir" -> (ThisBuild / baseDirectory).value.getAbsolutePath,
-        "fiddle.code.base_dir" -> (Test / sourceDirectory).value.getAbsolutePath,
-        "fiddle.akka.base_dir" -> (ThisBuild / baseDirectory).value.getAbsolutePath,
         "aeron_version" -> Dependencies.aeronVersion,
         "netty_version" -> Dependencies.nettyVersion,
         "logback_version" -> Dependencies.logbackVersion))
