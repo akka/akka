@@ -5,7 +5,6 @@
 package doc.akka.serialization.jackson
 
 import java.util.Optional
-
 import akka.actor.ActorSystem
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
@@ -23,12 +22,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 //#marker-interface
-/**
- * Marker interface for messages, events and snapshots that are serialized with Jackson.
- */
-trait MySerializable
+import akka.serialization.jackson.JsonSerializable
 
-final case class Message(name: String, nr: Int) extends MySerializable
+final case class Message(name: String, nr: Int) extends JsonSerializable
 //#marker-interface
 
 object SerializationDocSpec {
@@ -132,7 +128,7 @@ object SerializationDocSpec {
   object Polymorphism {
 
     //#polymorphism
-    final case class Zoo(primaryAttraction: Animal) extends MySerializable
+    final case class Zoo(primaryAttraction: Animal) extends JsonSerializable
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
@@ -150,7 +146,7 @@ object SerializationDocSpec {
   object PolymorphismMixedClassObject {
 
     //#polymorphism-case-object
-    final case class Zoo(primaryAttraction: Animal) extends MySerializable
+    final case class Zoo(primaryAttraction: Animal) extends JsonSerializable
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
@@ -213,10 +209,6 @@ class SerializationDocSpec
     }
     akka.actor {
       allow-java-serialization = off
-      serialization-bindings {
-        "${classOf[jdoc.akka.serialization.jackson.MySerializable].getName}" = jackson-json
-        "${classOf[doc.akka.serialization.jackson.MySerializable].getName}" = jackson-json
-      }
     }
     """)))
     with AnyWordSpecLike

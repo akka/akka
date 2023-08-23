@@ -4,11 +4,11 @@
 
 package jdoc.akka.serialization.jackson.v1;
 
-import jdoc.akka.serialization.jackson.MySerializable;
+import akka.serialization.jackson.JsonSerializable;
 
 // #add-optional
 // #forward-one-rename
-public class ItemAdded implements MySerializable {
+public class ItemAdded implements JsonSerializable {
   public final String shoppingCartId;
   public final String productId;
   public final int quantity;

@@ -26,7 +26,7 @@ To use Jackson Serialization, you must add the following dependency in your proj
 
 ## Introduction
 
-You find general concepts for for Akka serialization in the @ref:[Serialization](serialization.md) section.
+You find general concepts for Akka serialization in the @ref:[Serialization](serialization.md) section.
 This section describes how to use the Jackson serializer for application specific messages and persistent
 events and snapshots.
 
@@ -38,9 +38,11 @@ annotations are needed to specify how to convert the objects to JSON/bytes.
 
 ## Usage
 
-To enable Jackson serialization for a class you need to configure it or one of its super classes
-in serialization-bindings configuration. Typically you will create a marker @scala[trait]@java[interface]
-for that purpose and let the messages @scala[extend]@java[implement] that.
+To enable Jackson serialization for a class there needs to be a serialization binding for it or one of its super classes
+in serialization-bindings configuration. 
+
+You can use one of the two predefined marker @scala[traits]@java[interfaces]
+`akka.serialization.jackson.JsonSerializable` or `akka.serialization.jackson.CborSerializable`.
 
 Scala
 :  @@snip [SerializationDocSpec.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #marker-interface }
@@ -48,20 +50,12 @@ Scala
 Java
 :  @@snip [MySerializable.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/MySerializable.java) { #marker-interface }
 
-Then you configure the class name of the marker @scala[trait]@java[interface] in `serialization-bindings` to
-one of the supported Jackson formats: `jackson-json` or `jackson-cbor`
-
-@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #serialization-bindings }
-
-A good convention would be to name the marker interface `CborSerializable` or `JsonSerializable`.
-In this documentation we have used `MySerializable` to make it clear that the marker interface itself is not
-provided by Akka.
+If the pre-defined markers are not suitable for your project it is also possible to define your own marker 
+@scala[trait]@java[interface] and let the messages @scala[extend]@java[implement] that. You will then have to 
+add serialization binding configuration for your own marker in config, see @ref:[Serialization](serialization.md) for more details.
 
 That is all that is needed for basic classes where Jackson understands the structure. A few cases that requires
 annotations are described below.
-
-Note that it's only the top level class or its marker @scala[trait]@java[interface] that must be defined in
-`serialization-bindings`, not nested classes that it references in member fields.
 
 @@@ note
 
@@ -73,7 +67,7 @@ It reduces the need for some annotations.
 ## Security
 
 For security reasons it is disallowed to bind the Jackson serializers to
-open ended types that might be a target for [serialization gadgets](https://cowtowncoder.medium.com/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
+open-ended types that might be a target for [serialization gadgets](https://cowtowncoder.medium.com/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
 such as:
 
 * @javadoc[java.lang.Object](java.lang.Object)

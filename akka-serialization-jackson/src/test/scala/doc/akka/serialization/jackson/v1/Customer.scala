@@ -4,8 +4,9 @@
 
 package doc.akka.serialization.jackson.v1
 
-import doc.akka.serialization.jackson.MySerializable
+import akka.serialization.jackson.JsonSerializable
 
 // #structural
-case class Customer(name: String, street: String, city: String, zipCode: String, country: String) extends MySerializable
+case class Customer(name: String, street: String, city: String, zipCode: String, country: String)
+    extends JsonSerializable
 // #structural

@@ -4,11 +4,11 @@
 
 package jdoc.akka.serialization.jackson.v2a;
 
+import akka.serialization.jackson.JsonSerializable;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import jdoc.akka.serialization.jackson.MySerializable;
 
 // #rename-class
-public class OrderPlaced implements MySerializable {
+public class OrderPlaced implements JsonSerializable {
   public final String shoppingCartId;
 
   @JsonCreator

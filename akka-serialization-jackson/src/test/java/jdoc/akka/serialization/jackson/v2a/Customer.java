@@ -4,11 +4,11 @@
 
 package jdoc.akka.serialization.jackson.v2a;
 
+import akka.serialization.jackson.JsonSerializable;
 import java.util.Optional;
-import jdoc.akka.serialization.jackson.MySerializable;
 
 // #structural
-public class Customer implements MySerializable {
+public class Customer implements JsonSerializable {
   public final String name;
   public final Address shippingAddress;
   public final Optional<Address> billingAddress;
