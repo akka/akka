@@ -247,6 +247,9 @@ final class EventEnvelope[Event] private (
       filtered = false,
       source = "")
 
+  def isEventDefined: Boolean =
+    _eventOption.isDefined || serializedEvent.isDefined
+
   def eventOption: Option[Event] = {
     if (serializedEvent.isDefined && _eventOption.isEmpty)
       throw new IllegalStateException(

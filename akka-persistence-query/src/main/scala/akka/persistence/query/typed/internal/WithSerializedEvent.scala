@@ -4,16 +4,16 @@
 
 package akka.persistence.query.typed.internal
 
-import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 
 /**
  * INTERNAL API: Can be implemented by `ReadJournal` if it supports emitting `EventEnvelope` that
  * has not deserialized the event, i.e. envelope with [[akka.persistence.query.typed.EventEnvelope.SerializedEvent]].
  */
-@InternalApi private[akka] trait WithSerializedEvent {
+@InternalStableApi private[akka] trait WithSerializedEvent[Self] {
 
-  def useSerializedEvent: Boolean
+  @InternalStableApi private[akka] def useSerializedEvent: Boolean
 
-  def withSerializedEvent(): WithSerializedEvent
+  @InternalStableApi private[akka] def withSerializedEvent(): Self
 
 }
