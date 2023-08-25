@@ -1,0 +1,10 @@
+# TypedActor API dropped after deprecation cycle
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.ContextualTypedActorFactory")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.ContextualTypedActorFactory$")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedActor")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedActor$")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedActor$*")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedActorExtension")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedActorFactory")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedProps")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedProps$")
