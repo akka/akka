@@ -292,14 +292,6 @@ See @ref:[Cluster Aware Routers](cluster-routing.md) and @ref:[Routers](routing.
  
 @@include[cluster.md](includes/cluster.md) { #cluster-multidc } 
 See @ref:[Cluster Multi-DC](cluster-dc.md).
-  
-### Cluster Client
-
-Communication from an actor system that is not part of the cluster to actors running
-somewhere in the cluster. The client does not have to know on which node the destination
-actor is running.
-
-See @ref:[Cluster Client](cluster-client.md). 
  
 ### Cluster Metrics
 
