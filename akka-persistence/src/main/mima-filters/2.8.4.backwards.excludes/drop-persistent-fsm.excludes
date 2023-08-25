@@ -1,0 +1,6 @@
+# Dropped after deprecation cycle
+ProblemFilters.exclude[MissingClassProblem]("akka.persistence.fsm.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.serialization.MessageSerializer.PersistentStateChangeEventClass")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.serialization.MessageSerializer.PersistentFSMSnapshotClass")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.serialization.MessageSerializer.stateChange")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.serialization.MessageSerializer.persistentFSMSnapshot")

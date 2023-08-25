@@ -926,6 +926,5 @@ Java
 
 ## See also
 
-* @ref[Persistent FSM](persistence-fsm.md)
 * @ref[Persistence plugins](persistence-plugins.md)
 * @ref[Building a new storage backend](persistence-journals.md)

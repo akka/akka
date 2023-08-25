@@ -182,7 +182,7 @@ If you need to change any of the following aspects of sharding it will require a
 
 ### Migrating from PersistentFSM to EventSourcedBehavior
 
-If you've @ref:[migrated from `PersistentFSM` to `EventSourcedBehavior`](../persistence-fsm.md#migration-to-eventsourcedbehavior)
+If you've migrated from `PersistentFSM` to `EventSourcedBehavior` (See the [Akka 2.8 migration guide](https://doc.akka.io/docs/akka/2.8/persistence-fsm.html#migration-to-eventsourcedbehavior))
 and are using PersistenceFSM with Cluster Sharding, a full shutdown is required as shards can move between new and old nodes.
   
 ### Migrating from classic remoting to Artery

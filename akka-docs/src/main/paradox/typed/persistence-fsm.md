@@ -1,7 +1,7 @@
 # EventSourced behaviors as finite state machines
 
 An @apidoc[EventSourcedBehavior] can be used to represent a persistent FSM. If you're migrating an existing classic
-persistent FSM to EventSourcedBehavior see the @ref[migration guide](../persistence-fsm.md#migration-to-eventsourcedbehavior).
+persistent FSM to EventSourcedBehavior see the [Akka 2.8 migration guide](https://doc.akka.io/docs/akka/2.8/persistence-fsm.html#migration-to-eventsourcedbehavior).
 
 To demonstrate this consider an example of a shopping application. A customer can be in the following states:
 
