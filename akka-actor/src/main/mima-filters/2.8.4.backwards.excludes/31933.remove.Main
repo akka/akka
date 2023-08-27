@@ -1,0 +1,4 @@
+# Deprecated in 2.6.0
+ProblemFilters.exclude[MissingClassProblem]("akka.Main")
+ProblemFilters.exclude[MissingClassProblem]("akka.Main$")
+ProblemFilters.exclude[MissingClassProblem]("akka.Main$Terminator")
