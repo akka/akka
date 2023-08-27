@@ -235,13 +235,13 @@ import akka.util.unused
     // FIXME: Eliminate re-wraps
     def subreceive: SubReceive =
       new SubReceive({
-        case OnSubscribe(id, subscription) =>
-          inputs(id).subreceive(ActorSubscriberMessage.OnSubscribe(subscription))
         case OnNext(id, elem) =>
           if (marked(id) && !pending(id)) markedPending += 1
           pending(id, on = true)
           receivedInput = true
           inputs(id).subreceive(ActorSubscriberMessage.OnNext(elem))
+        case OnSubscribe(id, subscription) =>
+          inputs(id).subreceive(ActorSubscriberMessage.OnSubscribe(subscription))
         case OnComplete(id) =>
           if (!pending(id)) {
             if (marked(id) && !depleted(id)) markedDepleted += 1
