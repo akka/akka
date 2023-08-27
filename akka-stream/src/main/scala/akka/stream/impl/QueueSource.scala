@@ -61,6 +61,9 @@ import akka.stream.stage._
       }
       override def postStop(): Unit = {
         val exception = new StreamDetachedException()
+        lazy val bufferedElementFailure = new AbruptStageTerminationException(this)
+        while (buffer.nonEmpty && (onBufferedFailureOrCancel ne QueueSource
+                 .defaultOnBufferedFailure[T])) onBufferedFailureOrCancel(bufferedElementFailure, buffer.dequeue())
         completion.tryFailure(exception)
       }
 
@@ -179,6 +182,8 @@ import akka.stream.stage._
           }
 
         case Failure(ex) =>
+          while (buffer.nonEmpty && (onBufferedFailureOrCancel ne QueueSource
+                   .defaultOnBufferedFailure[T])) onBufferedFailureOrCancel(ex, buffer.dequeue())
           completion.failure(ex)
           failStage(ex)
       }
