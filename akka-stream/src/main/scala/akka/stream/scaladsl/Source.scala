@@ -917,7 +917,8 @@ object Source {
       overflowStrategy: OverflowStrategy,
       maxConcurrentOffers: Int): Source[T, SourceQueueWithComplete[T]] =
     Source.fromGraph(
-      new QueueSource(bufferSize, overflowStrategy, maxConcurrentOffers).withAttributes(DefaultAttributes.queueSource))
+      new QueueSource[T](bufferSize, overflowStrategy, maxConcurrentOffers)
+        .withAttributes(DefaultAttributes.queueSource))
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.

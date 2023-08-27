@@ -23,6 +23,9 @@ import akka.stream.stage._
   case object Completion extends Input[Nothing]
   final case class Failure(ex: Throwable) extends Input[Nothing]
 
+  private val _defaultOnBufferedFailure: (Throwable, Any) => Unit = (_, _) => ()
+  private def defaultOnBufferedFailure[T]: (Throwable, T) => Unit = _defaultOnBufferedFailure
+
 }
 
 /**
@@ -31,7 +34,8 @@ import akka.stream.stage._
 @InternalApi private[akka] final class QueueSource[T](
     maxBuffer: Int,
     overflowStrategy: OverflowStrategy,
-    maxConcurrentOffers: Int)
+    maxConcurrentOffers: Int,
+    onBufferedFailureOrCancel: (Throwable, T) => Unit = QueueSource.defaultOnBufferedFailure)
     extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
@@ -183,6 +187,8 @@ import akka.stream.stage._
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         while (pendingOffers.nonEmpty) pendingOffers.dequeue().promise.success(QueueOfferResult.QueueClosed)
+        while (buffer.nonEmpty && (onBufferedFailureOrCancel ne QueueSource
+                 .defaultOnBufferedFailure[T])) onBufferedFailureOrCancel(cause, buffer.dequeue())
         completion.success(Done)
         completeStage()
       }
