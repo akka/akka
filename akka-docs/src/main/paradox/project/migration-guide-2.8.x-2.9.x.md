@@ -36,3 +36,8 @@ group=com.typesafe
 artifact=ssl-config-core_$scala.binary.version$
 version="0.6.1"
 }
+
+## Persistent FSM
+
+Persistent FSM has been deprecated since Akka 2.6.0 (2019-11-06) and has now been dropped. Details on how to migrate can be found in the Akka 2.7
+docs here: https://doc.akka.io/docs/akka/2.8/persistence-fsm.html#migration-to-eventsourcedbehavior
