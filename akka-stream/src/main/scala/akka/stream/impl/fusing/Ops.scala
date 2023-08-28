@@ -2351,8 +2351,16 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
 
     override def onPush(): Unit =
       try {
-        currentIterator = plainFun(grab(in)).iterator
-        pushPull(shouldResumeContext = false)
+        val iterable = plainFun(grab(in))
+        if ((iterable.isEmpty): @nowarn("msg=deprecated")) {
+          if (!isClosed(in))
+            pull(in)
+          else
+            completeStage()
+        } else {
+          currentIterator = iterable.iterator
+          pushPull(shouldResumeContext = false)
+        }
       } catch handleException
 
     override def onUpstreamFinish(): Unit = onFinish()
