@@ -22,6 +22,8 @@ import akka.testkit.{ TestKit, _ }
 import akka.util.{ Switch, Timeout }
 import akka.util.Helpers.ConfigOps
 
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
 object ActorSystemSpec {
 
   class Waves extends Actor {
@@ -115,16 +117,17 @@ object ActorSystemSpec {
 }
 
 @nowarn
-class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSender {
+class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSender with ScalaCheckPropertyChecks {
 
   import ActorSystemSpec.FastActor
 
   "An ActorSystem" must {
 
-    "reject invalid names" in {
+    "reject common invalid names" in {
       for (n <- Seq(
              "-hallowelt",
              "_hallowelt",
+             "hallo welt",
              "hallo*welt",
              "hallo@welt",
              "hallo#welt",
@@ -132,6 +135,14 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
              "hallo%welt",
              "hallo/welt")) intercept[IllegalArgumentException] {
         ActorSystem(n)
+      }
+    }
+
+    "reject all invalid names" in {
+      forAll { (name: String) =>
+        whenever(!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$""")) {
+          an[IllegalArgumentException] should be thrownBy ActorSystem(name)
+        }
       }
     }
 
