@@ -16,3 +16,9 @@ A few deprecated features has been removed in Akka 2.9.x, see sections below.
 
 Cluster client has been deprecated since Akka 2.6.0 (2019-11-06). Details on how to migrate can be found in the Akka 
 2.6 docs here: https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc
+
+
+## Typed Actor
+
+The old "Typed Actor" API (`akka.actor.TypedActor`) has been deprecated since Akka 2.6.0 (2019-11-06) and has been dropped.
+No detailed migration guide exists, the recommendation is to move to the new Akka Typed APIs. 
