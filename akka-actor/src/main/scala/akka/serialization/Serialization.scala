@@ -468,7 +468,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   private[akka] val bindings: immutable.Seq[ClassSerializer] = {
     val fromConfig = for {
       (className: String, alias: String) <- settings.SerializationBindings
-      if alias != "none" && checkGoogleProtobuf(className) && checkAkkaProtobuf(className)
+      if alias != "none" && checkGoogleProtobuf(className) && checkAkkaProtobuf(className) && checkScalaPb(className)
     } yield (system.dynamicAccess.getClassFor[Any](className).get, serializers(alias))
 
     val fromSettings = serializerDetails.flatMap { detail =>
@@ -511,6 +511,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   // akka-protobuf is now not a dependency of remote so only load if user has explicitly added it
   // remove in 2.7
   private def checkAkkaProtobuf(className: String): Boolean = checkClass("akka.protobuf", className)
+
+  // for convenience scalapb.GeneratedMessage is defined in reference.conf, but might not be included in classpath
+  private def checkScalaPb(className: String): Boolean = checkClass("scalapb.GeneratedMessage", className)
 
   private def checkClass(prefix: String, className: String): Boolean =
     !className.startsWith(prefix) || system.dynamicAccess.getClassFor[Any](className).isSuccess
