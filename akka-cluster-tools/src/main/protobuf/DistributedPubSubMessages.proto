@@ -41,7 +41,7 @@ message Address {
 }
 
 /**
- * Send normally local, but it is also used by the ClusterClient.
+ * Send normally local.
  */
 message Send {
   required string path = 1;
@@ -50,7 +50,7 @@ message Send {
 }
 
 /**
- * SendToAll normally local, but it is also used by the ClusterClient.
+ * SendToAll normally local.
  */
 message SendToAll {
   required string path = 1;
@@ -59,7 +59,7 @@ message SendToAll {
 }
 
 /**
- * Publish normally local, but it is also used by the ClusterClient.
+ * Publish normally local.
  */
 message Publish {
   required string topic = 1;

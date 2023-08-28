@@ -1,0 +1,2 @@
+# Cluster Client dropped after deprecation cycle
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.client.*")
