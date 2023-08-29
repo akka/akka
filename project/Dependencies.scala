@@ -39,8 +39,6 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.4"
 
-  val sslConfigVersion = "0.6.1"
-
   val scalaTestVersion = "3.2.16"
 
   val scalaTestScalaCheckVersion = "1-17"
@@ -75,9 +73,6 @@ object Dependencies {
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // MIT-0
-
-    // ssl-config
-    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.8.3" // ApacheV2, OpenLDAP Public License
 
@@ -307,7 +302,7 @@ object Dependencies {
 
   // akka stream
 
-  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore, TestDependencies.scalatest)
+  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, TestDependencies.scalatest)
 
   lazy val streamTestkit = l ++= Seq(
         TestDependencies.scalatest,
