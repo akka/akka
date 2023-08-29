@@ -9,7 +9,6 @@ import javax.net.ssl.{ SSLEngine, SSLSession }
 import scala.util.Try
 
 import akka.NotUsed
-import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.TLSProtocol._
@@ -27,8 +26,8 @@ import akka.util.ByteString
     cipherOut: Outlet[ByteString],
     shape: BidiShape[SslTlsOutbound, ByteString, ByteString, SslTlsInbound],
     attributes: Attributes,
-    createSSLEngine: ActorSystem => SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    verifySession: (ActorSystem, SSLSession) => Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+    createSSLEngine: () => SSLEngine,
+    verifySession: SSLSession => Try[Unit],
     closing: TLSClosing)
     extends AtomicModule[BidiShape[SslTlsOutbound, ByteString, ByteString, SslTlsInbound], NotUsed] {
 
@@ -46,8 +45,8 @@ import akka.util.ByteString
 @InternalApi private[stream] object TlsModule {
   def apply(
       attributes: Attributes,
-      createSSLEngine: ActorSystem => SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-      verifySession: (ActorSystem, SSLSession) => Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+      createSSLEngine: () => SSLEngine,
+      verifySession: (SSLSession) => Try[Unit],
       closing: TLSClosing): TlsModule = {
     val name = attributes.nameOrDefault(s"StreamTls()")
     val cipherIn = Inlet[ByteString](s"$name.cipherIn")

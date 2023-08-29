@@ -22,3 +22,8 @@ Cluster client has been deprecated since Akka 2.6.0 (2019-11-06). Details on how
 
 The old "Typed Actor" API (`akka.actor.TypedActor`) has been deprecated since Akka 2.6.0 (2019-11-06) and has been dropped.
 No detailed migration guide exists, the recommendation is to move to the new Akka Typed APIs. 
+
+## Akka SSLConfig
+
+The Akka SSLConfig convenience and methods accepting it has been deprecated since Akka 2.6.0 and has been dropped. 
+Usage should be replaced with directly creating a `javax.net.ssl.SSLEngine` using the JDK APIs.
