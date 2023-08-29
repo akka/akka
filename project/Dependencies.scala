@@ -24,7 +24,7 @@ object Dependencies {
   val agronaVersion = "1.17.1"
   val nettyVersion = "4.1.96.Final"
   val protobufJavaVersion = "3.16.1"
-  val logbackVersion = "1.2.12"
+  val logbackVersion = "1.4.11"
   val scalaFortifyVersion = "1.0.22"
   val fortifySCAVersion = "22.1"
   val jacksonCoreVersion = "2.13.5"
