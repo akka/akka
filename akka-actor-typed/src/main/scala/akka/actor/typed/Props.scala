@@ -77,6 +77,13 @@ abstract class Props private[akka] () extends Product with Serializable {
   def withDispatcherSameAsParent: Props = DispatcherSameAsParent(this)
 
   /**
+   * Prepend a selection of the mailbox found at the given Config path to this Props.
+   * The path is relative to the configuration root of the [[ActorSystem]] that looks up the
+   * mailbox.
+   */
+  def withMailboxFromConfig(path: String): Props = MailboxFromConfigSelector(path, this)
+
+  /**
    * Find the first occurrence of a configuration node of the given type, falling
    * back to the provided default if none is found.
    *

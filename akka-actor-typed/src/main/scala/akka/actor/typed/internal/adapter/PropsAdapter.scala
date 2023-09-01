@@ -23,13 +23,13 @@ import akka.dispatch.Mailboxes
 
   private final val TypedCreatorFunctionConsumerClazz = classOf[TypedCreatorFunctionConsumer]
   private final val ActorAdapterClazz = classOf[ActorAdapter[_]]
-  private final val DefaultTypedDeploy = Deploy.local.copy(mailbox = "akka.actor.typed.default-mailbox")
+  private final val DefaultTypedDeploy = Deploy.local
 
   def apply[T](behavior: () => Behavior[T], props: Props, rethrowTypedFailure: Boolean): akka.actor.Props = {
     val deploy =
       if (props eq Props.empty) DefaultTypedDeploy // optimized case with no props specified
       else {
-        val deployWithMailbox = props.firstOrElse[MailboxSelector](MailboxSelector.default()) match {
+        val deployWithMailbox = props.firstOrElse[MailboxSelector](DefaultMailboxSelector.empty) match {
           case _: DefaultMailboxSelector           => DefaultTypedDeploy
           case BoundedMailboxSelector(capacity, _) =>
             // specific support in classic Mailboxes
