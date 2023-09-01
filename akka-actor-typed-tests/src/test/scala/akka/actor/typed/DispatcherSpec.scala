@@ -29,7 +29,7 @@ class DispatcherSelectorSpec extends ScalaTestWithActorTestKit("""
     }
   """) with AnyWordSpecLike with LogCapturing {
 
-  case class WhatsYourDispatcherAndMailbox(replyTo: ActorRef[(MessageDispatcher, MessageQueue)])
+  case class WhatsYourDispatcherAndMailbox(replyTo: ActorRef[(String, MessageQueue)])
 
   private def behavior: Behavior[WhatsYourDispatcherAndMailbox] =
     Behaviors.setup { context =>
@@ -39,7 +39,7 @@ class DispatcherSelectorSpec extends ScalaTestWithActorTestKit("""
             case adapter: ActorContextAdapter[_] =>
               adapter.classicActorContext match {
                 case cell: ActorCell =>
-                  (cell.dispatcher, cell.mailbox.messageQueue)
+                  (cell.dispatcher.id, cell.mailbox.messageQueue)
                 case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
               }
             case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
@@ -54,32 +54,31 @@ class DispatcherSelectorSpec extends ScalaTestWithActorTestKit("""
 
     "default to unbounded" in {
       val actor = spawn(behavior)
-      val (dispatcher, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
-      dispatcher.id eq Dispatchers.DefaultDispatcherId
+      val (_, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
       mailbox shouldBe a[UnboundedMessageQueueSemantics]
     }
 
     "select a blocking dispatcher" in {
       val actor = spawn(behavior, DispatcherSelector.blocking())
-      val (dispatcher, _) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
-      dispatcher.id eq Dispatchers.DefaultBlockingDispatcherId
+      val (dispatcherId, _) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
+      dispatcherId eq Dispatchers.DefaultBlockingDispatcherId
     }
 
     "select an specific dispatcher from config with mailbox selector" in {
       val actor =
         spawn(behavior, DispatcherSelector.fromConfig("specific-dispatcher").withMailboxFromConfig("specific-mailbox"))
-      val (dispatcher, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
+      val (dispatcherId, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
       mailbox shouldBe a[BoundedMessageQueueSemantics]
       mailbox.asInstanceOf[BoundedNodeMessageQueue].capacity should ===(4)
-      dispatcher.id eq "specific-dispatcher"
+      dispatcherId eq "specific-dispatcher"
     }
 
     "select an specific dispatcher from config with mailbox config" in {
       val actor = spawn(behavior, DispatcherSelector.fromConfig("specific-dispatcher-with-mailbox"))
-      val (dispatcher, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
+      val (dispatcherId, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
       mailbox shouldBe a[BoundedMessageQueueSemantics]
       mailbox.asInstanceOf[BoundedNodeMessageQueue].capacity should ===(4)
-      dispatcher.id eq "specific-dispatcher-with-mailbox"
+      dispatcherId eq "specific-dispatcher-with-mailbox"
     }
 
   }

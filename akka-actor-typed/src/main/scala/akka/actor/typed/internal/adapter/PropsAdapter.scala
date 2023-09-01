@@ -23,7 +23,7 @@ import akka.dispatch.Mailboxes
 
   private final val TypedCreatorFunctionConsumerClazz = classOf[TypedCreatorFunctionConsumer]
   private final val ActorAdapterClazz = classOf[ActorAdapter[_]]
-  private final val DefaultTypedDeploy = Deploy.local
+  private final val DefaultTypedDeploy = Deploy.local.copy(mailbox = "akka.actor.typed.default-mailbox")
 
   def apply[T](behavior: () => Behavior[T], props: Props, rethrowTypedFailure: Boolean): akka.actor.Props = {
     val deploy =
