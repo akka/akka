@@ -1,0 +1,3 @@
+# #32068 rename interal Serializer class
+ProblemFilters.exclude[MissingClassProblem]("akka.persistence.serialization.FilteredPayloadSerializer")
+
