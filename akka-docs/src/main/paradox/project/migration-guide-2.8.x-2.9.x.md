@@ -27,3 +27,12 @@ No detailed migration guide exists, the recommendation is to move to the new Akk
 
 The Akka SSLConfig convenience and methods accepting it has been deprecated since Akka 2.6.0 and has been dropped. 
 Usage should be replaced with directly creating a `javax.net.ssl.SSLEngine` using the JDK APIs.
+
+The dependency to `ssl-config-core` has been removed. If you need ssl-config for other reasons, such as running
+with older versions of Akka HTTP you can add the dependency to your build:
+
+@@dependency [Maven,sbt,Gradle] {
+group=com.typesafe
+artifact=ssl-config-core_$scala.binary.version$
+version="0.6.1"
+}
