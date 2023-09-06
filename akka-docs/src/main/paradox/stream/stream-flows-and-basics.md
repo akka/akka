@@ -279,8 +279,11 @@ well-known sinks, such as @scala[`runForeach(el => ...)`]@java[`runForeach(el ->
 
 Materialization is performed synchronously on the materializing thread by an @apidoc[actor.ActorSystem] global @apidoc[stream.Materializer].
 The actual stream processing is handled by actors started up during the streams materialization,
-which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
-the `ActorSystem` config or provided as attributes on the stream that is getting materialized.
+which will be running on the thread pools they have been configured to run on.  By default, the thread pool used is the
+dispatcher set on the `ActorSystem` config, but it is possible set other thread pools by providing @apidoc[stream.Attributes] to
+
+  * the stream to be materialized
+  * creating a custom instance of @apidoc[stream.Materializer] with `defaultAttributes`
 
 @@@ note
 
@@ -392,7 +395,7 @@ and emitting the "materialized value". An @apidoc[akka.actor.ActorSystem] wide `
 @apidoc[SystemMaterializer] by @scala[having an implicit `ActorSystem` in scope]@java[passing the `ActorSystem` to the 
 various `run` methods] this way there is no need to worry about the `Materializer` unless there are special requirements.
 
-The use case that may require a custom instance of `Materializer` is when all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes. 
+One use case that may require a custom instance of `Materializer` is when all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes. 
 
 An important aspect of working with streams and actors is understanding a `Materializer`'s life-cycle.
 The materializer is bound to the lifecycle of the @apidoc[akka.actor.ActorRefFactory] it is created from, which in practice will
