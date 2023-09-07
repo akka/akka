@@ -21,7 +21,7 @@ class MaterializerWithAttributesSpec
     TestKit.shutdownActorSystem(system)
   }
 
-  implicit val materializer: Materializer = new MaterializerWithAttributes(Materializer(system), Attributes.name("foo"))
+  implicit val materializer: Materializer = Materializer(system, Attributes.name("foo"))
 
   val attributesSource = new GraphStageWithMaterializedValue[SourceShape[Nothing], Attributes] {
     val out = Outlet[Nothing]("AttributesSource.out")

@@ -185,6 +185,15 @@ object ActorMaterializer {
     system
   }
 
+  // deprecated InternalApi?
+  /** INTERNAL API */
+  @InternalApi @nowarn("msg=deprecated")
+  private[stream] def apply(defaultAttributes: Attributes)(implicit context: ActorContext): ActorMaterializer = {
+    val settings = SystemMaterializer(actorSystemOf(context)).materializerSettings
+
+    PhasedFusingActorMaterializer(context, "flow", settings, defaultAttributes)
+  }
+
 }
 
 /**

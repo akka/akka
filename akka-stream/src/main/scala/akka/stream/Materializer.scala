@@ -220,22 +220,18 @@ object Materializer {
    * When the actor stops the materializer will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
    *
    * You can pass either a classic actor context or a typed actor context.
-   *
-   * The provided [[Attributes]] will be applied (with already-applied attributes taking precedence) to the streams materialized by the created materializer.
    */
   def apply(contextProvider: ClassicActorContextProvider, defaultAttributes: Attributes): Materializer =
-    new MaterializerWithAttributes(apply(contextProvider), defaultAttributes)
+    ActorMaterializer(defaultAttributes)(contextProvider.classicActorContext)
 
   /**
    * Java API: Create a materializer whose lifecycle will be tied to the one of the passed actor context.
    * When the actor stops the materializer will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
    *
    * You can pass either a classic actor context or a typed actor context.
-   *
-   * The provided [[Attributes]] will be applied (with already-applied attributes taking precedence) to the streams materialized by the created materializer.
    */
   def createMaterializer(contextProvider: ClassicActorContextProvider, defaultAttributes: Attributes): Materializer =
-    new MaterializerWithAttributes(createMaterializer(contextProvider), defaultAttributes)
+    apply(contextProvider, defaultAttributes)
 
   /**
    * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
@@ -262,70 +258,18 @@ object Materializer {
   /**
    * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
    *
-   * The provided [[Attributes]] will be applied (with already-applied attributes taking precedence) to the streams materialized by the created materializer.
-   *
    * It is generally advised to limit the number of system level materializers created.
    */
   def apply(systemProvider: ClassicActorSystemProvider, defaultAttributes: Attributes): Materializer =
-    new MaterializerWithAttributes(apply(systemProvider), defaultAttributes)
+    SystemMaterializer(systemProvider.classicSystem).createAdditionalSystemMaterializer(defaultAttributes)
 
   /**
    * Java API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
    *
-   * The provided [[Attributes]] will be applied (with already-applied attributes taking precedence) to the streams materialized by the created materializer.
-   *
    * It is generally advised to limit the number of system level materializers created.
    */
   def createMaterializer(systemProvider: ClassicActorSystemProvider, defaultAttributes: Attributes): Materializer =
-    new MaterializerWithAttributes(createMaterializer(systemProvider), defaultAttributes)
-}
-
-/** The constructor is INTERNAL API */
-final class MaterializerWithAttributes @InternalApi private[stream] (
-    val underlying: Materializer,
-    attributes: Attributes)
-    extends Materializer {
-  def withNamePrefix(name: String): Materializer =
-    new MaterializerWithAttributes(underlying.withNamePrefix(name), attributes)
-
-  def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
-    underlying.materialize(runnable.withAttributes(attributes and runnable.getAttributes))
-
-  def materialize[Mat](runnable: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat =
-    // Assumption: the passed 'defaultAttributes' should override the attributes from the constructor...
-    underlying.materialize(runnable.withAttributes(defaultAttributes and runnable.getAttributes), attributes)
-
-  implicit def executionContext: ExecutionContextExecutor = underlying.executionContext
-  def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = underlying.scheduleOnce(delay, task)
-
-  def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration, task: Runnable): Cancellable =
-    underlying.scheduleWithFixedDelay(initialDelay, delay, task)
-
-  def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
-    underlying.scheduleAtFixedRate(initialDelay, interval, task)
-
-  @nowarn("msg=deprecated")
-  def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
-    underlying.schedulePeriodically(initialDelay, interval, task)
-
-  def shutdown(): Unit = underlying.shutdown()
-  def isShutdown: Boolean = underlying.isShutdown
-  def system: ActorSystem = underlying.system
-
-  /** INTERNAL API */
-  @InternalApi
-  private[akka] def logger: LoggingAdapter = underlying.logger
-
-  /** INTERNAL API */
-  private[akka] def supervisor: ActorRef = underlying.supervisor
-
-  /** INTERNAL API */
-  @InternalApi
-  private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef =
-    underlying.actorOf(context, props)
-
-  @nowarn("msg=deprecated")
-  def settings: ActorMaterializerSettings = underlying.settings
+    apply(systemProvider, defaultAttributes)
 }
 
 /**

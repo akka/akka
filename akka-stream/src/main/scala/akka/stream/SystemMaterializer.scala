@@ -51,7 +51,7 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
   private implicit val materializerTimeout: Timeout =
     system.settings.config.getDuration("akka.stream.materializer.creation-timeout").asScala
 
-  @InternalApi @nowarn("msg=deprecated")
+  @InternalApi
   private val materializerGuardian = system.systemActorOf(
     MaterializerGuardian
       .props(systemMaterializerPromise, materializerSettings)
@@ -70,11 +70,20 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
     Await.result(started, materializerTimeout.duration).materializer
   }
 
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] def createAdditionalSystemMaterializer(defaultAttributes: Attributes): Materializer = {
+    val started =
+      (materializerGuardian ? MaterializerGuardian.StartMaterializer(Some(defaultAttributes)))
+        .mapTo[MaterializerGuardian.MaterializerStarted]
+
+    Await.result(started, materializerTimeout.duration).materializer
+  }
+
   /**
    * INTERNAL API
    */
   @InternalApi
-  @nowarn("msg=deprecated")
   private[akka] def createAdditionalLegacySystemMaterializer(
       namePrefix: String,
       settings: ActorMaterializerSettings): Materializer = {
