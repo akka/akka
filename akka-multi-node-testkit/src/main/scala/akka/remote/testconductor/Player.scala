@@ -213,11 +213,11 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(Done, _) =>
       log.debug("received Done: starting test")
       goto(Connected)
+    case Event(_: ServerOp, _) =>
+      stay().replying(Status.Failure(new IllegalStateException("not connected yet")))
     case Event(msg: NetworkOp, _) =>
       log.error("received {} instead of Done", msg)
       goto(Failed)
-    case Event(_: ServerOp, _) =>
-      stay().replying(Status.Failure(new IllegalStateException("not connected yet")))
     case Event(StateTimeout, _) =>
       log.error("connect timeout to TestConductor")
       goto(Failed)
