@@ -29,7 +29,7 @@ import akka.dispatch.Mailboxes
     val deploy =
       if (props eq Props.empty) DefaultTypedDeploy // optimized case with no props specified
       else {
-        val deployWithMailbox = props.firstOrElse[MailboxSelector](DefaultMailboxSelector.empty) match {
+        val deployWithMailbox = props.firstOrElse[MailboxSelector](MailboxSelector.default()) match {
           case _: DefaultMailboxSelector           => DefaultTypedDeploy
           case BoundedMailboxSelector(capacity, _) =>
             // specific support in classic Mailboxes

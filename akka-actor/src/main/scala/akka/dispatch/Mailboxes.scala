@@ -29,7 +29,6 @@ import akka.util.Reflect
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"
-  final val DefaultTypedMailboxId = "akka.actor.typed.default-mailbox"
   final val NoMailboxRequirement = ""
   final val BoundedCapacityPrefix = "bounded-capacity:"
 }
@@ -183,12 +182,10 @@ private[akka] class Mailboxes(
       mailboxType
     }
 
-    if (deploy.mailbox != DefaultTypedMailboxId && deploy.mailbox != Deploy.NoMailboxGiven) {
+    if (deploy.mailbox != Deploy.NoMailboxGiven) {
       verifyRequirements(lookup(deploy.mailbox))
     } else if (deploy.dispatcher != Deploy.NoDispatcherGiven && deploy.dispatcher != Deploy.DispatcherSameAsParent && hasMailboxType) {
       verifyRequirements(lookup(dispatcherConfig.getString("id")))
-    } else if (deploy.mailbox != Deploy.NoMailboxGiven) {
-      verifyRequirements(lookup(deploy.mailbox))
     } else if (hasRequiredType(actorClass)) {
       try verifyRequirements(lookupByQueueType(getRequiredType(actorClass)))
       catch {

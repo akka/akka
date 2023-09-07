@@ -73,11 +73,10 @@ class DispatcherSelectorSpec extends ScalaTestWithActorTestKit("""
       dispatcherId eq "specific-dispatcher"
     }
 
-    "select an specific dispatcher from config with mailbox config" in {
+    "select an mailbox via dispatcher config would not work" in {
       val actor = spawn(behavior, DispatcherSelector.fromConfig("specific-dispatcher-with-mailbox"))
       val (dispatcherId, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox.apply).futureValue
-      mailbox shouldBe a[BoundedMessageQueueSemantics]
-      mailbox.asInstanceOf[BoundedNodeMessageQueue].capacity should ===(4)
+      mailbox shouldBe a[NodeMessageQueue]
       dispatcherId eq "specific-dispatcher-with-mailbox"
     }
 
