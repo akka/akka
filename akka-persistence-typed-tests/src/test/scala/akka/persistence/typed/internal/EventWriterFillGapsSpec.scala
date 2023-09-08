@@ -4,31 +4,60 @@
 
 package akka.persistence.typed.internal
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.pattern.StatusReply
 import akka.persistence.AtomicWrite
 import akka.persistence.JournalProtocol
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-
-object EventWriterSpec {
+object EventWriterFillGapsSpec {
   def config =
     ConfigFactory.parseString(s"""
       akka.persistence.journal.inmem.delay-writes=10ms
     """).withFallback(ConfigFactory.load()).resolve()
 }
 
-class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) with AnyWordSpecLike with LogCapturing {
+class EventWriterFillGapsSpec
+    extends ScalaTestWithActorTestKit(EventWriterFillGapsSpec.config)
+    with AnyWordSpecLike
+    with LogCapturing {
 
-  private val settings = EventWriter.EventWriterSettings(10, 5.seconds, fillSequenceNumberGaps = false)
+  val settings = EventWriter.EventWriterSettings(10, 5.seconds, fillSequenceNumberGaps = true)
   implicit val ec: ExecutionContext = testKit.system.executionContext
 
   "The event writer" should {
+
+    "handle events without gaps when starting at 1" in new TestSetup {
+      sendWrite(1)
+      journalAckWrite()
+      clientExpectSuccess(1)
+
+      sendWrite(2)
+      journalAckWrite()
+      clientExpectSuccess(1)
+
+      sendWrite(3)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
+    "handle events without gaps when starting at > 1" in new TestSetup {
+      sendWrite(3)
+      journalHighestSeqNr(2)
+      journalAckWrite()
+      clientExpectSuccess(1)
+
+      sendWrite(4)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
 
     "handle duplicates" in new TestSetup {
       sendWrite(1)
@@ -37,50 +66,59 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
 
       // should also be ack:ed
       sendWrite(1)
-      journalAckWrite()
+      // duplicates detected before journal write
+      fakeJournal.expectNoMessage()
       clientExpectSuccess(1)
     }
 
     "handle batched duplicates" in new TestSetup {
-      // first write
+      // first write, and wait for ack so that this test doesn't have to lookup latest seqNr
       sendWrite(1)
+      journalAckWrite()
+      clientExpectSuccess(1)
+
+      sendWrite(2)
+
       // first batch
-      for (n <- 2L to 10L) {
+      for (n <- 3L to 10L) {
         sendWrite(n)
       }
-      // 1 will be written directly
+      // 2 will be written directly
       journalAckWrite() should ===(1)
       clientExpectSuccess(1)
 
-      // completing 1 triggers write of batch with 2-10
+      // completing 1 triggers write of batch with 3-10
       // second
       for (n <- 1L to 10L) {
         sendWrite(n)
       }
-      // batch 0-9 in flight, writes in the meanwhile go in a new batch
-      journalAckWrite() should ===(9)
-      journalFailWrite("duplicate") should ===(10)
-      journalHighestSeqNr(10L)
+      // batch 3-10 in flight, writes in the meanwhile go in a new batch
+      journalAckWrite() should ===(8)
+      // duplicates detected before journal write
 
-      clientExpectSuccess(19)
+      clientExpectSuccess(18)
     }
 
     "handle batches with half duplicates" in new TestSetup {
-      for (n <- 1L to 10L) {
+      // first write, and wait for ack so that this test doesn't have to lookup latest seqNr
+      sendWrite(1)
+      journalAckWrite()
+      clientExpectSuccess(1)
+
+      sendWrite(1)
+      for (n <- 2L to 10L) {
         sendWrite(n)
       }
       journalAckWrite() should ===(1)
-      journalAckWrite() should ===(9)
-      clientExpectSuccess(10)
+      journalAckWrite() should ===(8)
+      clientExpectSuccess(9)
 
       for (n <- 5L until 15L) {
         sendWrite(n)
       }
-      journalFailWrite("duplicate") should ===(1) // seq nr 5
-      journalHighestSeqNr(10L)
-      journalFailWrite("duplicate") should ===(9) // batch of 6-15
-      journalHighestSeqNr(10L)
-      journalAckWrite() should ===(4) // new write of 11-15 (non duplicates)
+      // duplicates detected before journal write
+      journalAckWrite() should ===(1) // new write of 11 (non duplicates)
+      journalAckWrite() should ===(3) // new write of 12-15 (non duplicates)
 
       // all writes succeeded
       clientExpectSuccess(10)
@@ -96,39 +134,6 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
       response.getError.getMessage should ===("Journal write failed")
     }
 
-    "ignores old failures when replay triggered" in new TestSetup {
-      sendWrite(1L) // triggers write
-
-      sendWrite(1L) // goes into batch
-      sendWrite(2L)
-      journalAckWrite()
-
-      val firstWrite = fakeJournal.expectMessageType[JournalProtocol.WriteMessages]
-      val payloads = firstWrite.messages.head.asInstanceOf[AtomicWrite].payload
-      // signal first failure, triggers HighestSeq
-      firstWrite.persistentActor ! JournalProtocol.WriteMessageFailure(
-        payloads.head,
-        new RuntimeException("duplicate"),
-        firstWrite.actorInstanceId)
-
-      // replay response triggers partial rewrite, seq nr 2
-      val replayRequest = fakeJournal.expectMessageType[JournalProtocol.ReplayMessages]
-      replayRequest.persistentActor ! JournalProtocol.RecoverySuccess(1L)
-
-      // but then original write failure arrives for seq nr 2 after sequence number lookup succeeded
-      firstWrite.persistentActor ! JournalProtocol.WriteMessageFailure(
-        payloads.tail.head,
-        new RuntimeException("duplicate"),
-        firstWrite.actorInstanceId)
-      firstWrite.persistentActor ! JournalProtocol.WriteMessagesFailed
-
-      // ack the partial retry
-      journalAckWrite() should ===(1)
-
-      clientExpectSuccess(3)
-
-    }
-
     "handle writes to many pids" in {
       val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings))
       val probe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
@@ -139,8 +144,12 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
           }
         }
       }
+      // FIXME something is not working as expected with this test, it's detecting gaps and filling them
+      // see log message "adding sequence nrs"
       probe.receiveMessages(20 * 1000, 20.seconds)
     }
+
+    // FIXME more tests of the actual gap fill
   }
 
   trait TestSetup {
