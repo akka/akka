@@ -88,6 +88,6 @@ private[akka] final class MaterializerGuardian(
       context,
       defaultNamePrefix,
       materializerSettings,
-      attributesOpt.getOrElse(defaultAttributes))
+      attributesOpt.fold(defaultAttributes)(defaultAttributes.and(_)))
   }
 }
