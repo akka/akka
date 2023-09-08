@@ -66,7 +66,7 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
   @InternalApi
   private[akka] def createAdditionalSystemMaterializer(): Materializer = {
     val started =
-      (materializerGuardian ? MaterializerGuardian.StartMaterializer).mapTo[MaterializerGuardian.MaterializerStarted]
+      (materializerGuardian ? MaterializerGuardian.StartMaterializer()).mapTo[MaterializerGuardian.MaterializerStarted]
     Await.result(started, materializerTimeout.duration).materializer
   }
 

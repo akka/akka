@@ -9,7 +9,7 @@ import scala.concurrent.Promise
 
 import akka.actor.Actor
 import akka.actor.Props
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.InternalApi
 import akka.stream.ActorMaterializerSettings
 import akka.stream.Attributes
 import akka.stream.Materializer
@@ -23,29 +23,7 @@ import akka.stream.Materializer
 @InternalApi
 private[akka] object MaterializerGuardian {
 
-  /** Not for user extension */
-  @DoNotInherit
-  sealed trait RequestMaterializerStart {
-    def attributes: Option[Attributes]
-  }
-
-  object StartMaterializer
-      extends RequestMaterializerStart
-      with Function1[Option[Attributes], RequestMaterializerStart] {
-    val attributes: Option[Attributes] = None
-
-    def apply(attributes: Option[Attributes]): RequestMaterializerStart =
-      attributes match {
-        case None => this
-        case Some(_) =>
-          val attrs = attributes
-          new RequestMaterializerStart {
-            val attributes: Option[Attributes] = attrs
-          }
-      }
-
-    def unapply(rms: RequestMaterializerStart): Option[Option[Attributes]] = Some(rms.attributes)
-  }
+  case class StartMaterializer(attributes: Option[Attributes] = None)
 
   final case class MaterializerStarted(materializer: Materializer)
 

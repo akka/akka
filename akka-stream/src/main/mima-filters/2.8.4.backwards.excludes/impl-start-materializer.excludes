@@ -7,3 +7,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.Materialize
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.productElement")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.productIterator")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.canEqual")
+ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.toString")

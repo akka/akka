@@ -14,6 +14,7 @@ import akka.actor.Cancellable
 import akka.actor.ClassicActorContextProvider
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.Props
+import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
@@ -221,8 +222,12 @@ object Materializer {
    *
    * You can pass either a classic actor context or a typed actor context.
    */
-  def apply(contextProvider: ClassicActorContextProvider, defaultAttributes: Attributes): Materializer =
-    ActorMaterializer(defaultAttributes)(contextProvider.classicActorContext)
+  def apply(contextProvider: ClassicActorContextProvider, defaultAttributes: Attributes): Materializer = {
+    val context = contextProvider.classicActorContext
+    val settings = SystemMaterializer(context.system).materializerSettings
+
+    PhasedFusingActorMaterializer(context, "flow", settings, settings.toAttributes and defaultAttributes)
+  }
 
   /**
    * Java API: Create a materializer whose lifecycle will be tied to the one of the passed actor context.
