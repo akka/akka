@@ -91,7 +91,7 @@ class DispatcherSelectorSpec(config: Config)
     }
 
     "select dispatcher from config" in {
-      val actor = spawn(behavior, Props.empty.withDispatcherFromConfig("specific-dispatcher"))
+      val actor = spawn(behavior, DispatcherSelector.fromConfig("specific-dispatcher"))
       val (dispatcherId, _) = actor.ask(WhatsYourDispatcherAndMailbox).futureValue
       dispatcherId shouldBe "specific-dispatcher"
     }
@@ -99,13 +99,13 @@ class DispatcherSelectorSpec(config: Config)
     "detect unknown dispatcher from config" in {
       val probe = createTestProbe[(String, MessageQueue)]()
       LoggingTestKit.error("Spawn failed").expect {
-        val ref = spawn(behavior, Props.empty.withDispatcherFromConfig("unknown"))
+        val ref = spawn(behavior, DispatcherSelector.fromConfig("unknown"))
         probe.expectTerminated(ref)
       }
     }
 
     "select same dispatcher as parent" in {
-      val parent = spawn(SpawnProtocol(), Props.empty.withDispatcherFromConfig("specific-dispatcher"))
+      val parent = spawn(SpawnProtocol(), DispatcherSelector.fromConfig("specific-dispatcher"))
 
       val child = parent.ask { replyTo: ActorRef[ActorRef[WhatsYourDispatcherAndMailbox]] =>
         SpawnProtocol.Spawn(behavior, "child", DispatcherSelector.sameAsParent(), replyTo)
@@ -116,7 +116,7 @@ class DispatcherSelectorSpec(config: Config)
     }
 
     "select same dispatcher as parent, several levels" in {
-      val guardian = spawn(SpawnProtocol(), Props.empty.withDispatcherFromConfig("specific-dispatcher"))
+      val guardian = spawn(SpawnProtocol(), DispatcherSelector.fromConfig("specific-dispatcher"))
 
       val parent = guardian.ask { replyTo: ActorRef[ActorRef[SpawnProtocol.Command]] =>
         SpawnProtocol.Spawn(SpawnProtocol(), "parent", DispatcherSelector.sameAsParent(), replyTo)
