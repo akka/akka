@@ -268,9 +268,6 @@ class EventWriterFillGapsSpec
     }
 
     "evict least recently used entries" in new TestSetup {
-      // FIXME
-      pending
-
       // this test is based on capacity of 100
       settings.latestSequenceNumberCacheCapacity should ===(100)
       (1 to 12).foreach { n =>
@@ -284,8 +281,8 @@ class EventWriterFillGapsSpec
         journalAckWrite(s"pid$n")
       }
 
-      // gap, but we still have it in cache, so no max lookup
-      sendWrite(3, "pid1")
+      // touch pid1
+      sendWrite(2, "pid1")
       journalAckWrite("pid1")
 
       // pending write for pid2
@@ -302,7 +299,7 @@ class EventWriterFillGapsSpec
       }
 
       // still in cache
-      sendWrite(3, "pid13")
+      sendWrite(2, "pid13")
       journalAckWrite("pid13")
       sendWrite(3, "pid2")
       journalAckWrite("pid2")

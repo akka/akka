@@ -402,7 +402,7 @@ private[akka] object EventWriter {
                     if (state.idle) {
                       sendToJournal(state.currentTransactionId + 1, fillRepr :+ repr)
                       val newWaitingForReply =
-                        (fillRepr.map(r => r.sequenceNr -> (r, ignoreRef)) :+ (repr.sequenceNr -> (repr, replyTo))).toMap
+                        (fillRepr.map(r => r.sequenceNr -> (r -> ignoreRef)) :+ (repr.sequenceNr -> (repr -> replyTo))).toMap
                       state.copy(
                         waitingForReply = newWaitingForReply,
                         currentTransactionId = state.currentTransactionId + 1)
@@ -414,8 +414,8 @@ private[akka] object EventWriter {
                           fillRepr.head.sequenceNr,
                           sequenceNumber)
                       // FIXME more checks for exceeding maxBatchSize
-                      val newWaitingForWrite = fillRepr.map((_, ignoreRef)) :+ (repr, replyTo)
-                      state.copy(waitingForWrite = state.waitingForWrite :++ newWaitingForWrite)
+                      val newWaitingForWrite = fillRepr.map(_ -> ignoreRef) :+ (repr -> replyTo)
+                      state.copy(waitingForWrite = state.waitingForWrite ++ newWaitingForWrite)
                     }
                   } else {
                     // No pending writes or we haven't just looked up latest sequence nr.
