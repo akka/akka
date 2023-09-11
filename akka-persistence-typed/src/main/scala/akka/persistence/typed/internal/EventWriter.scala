@@ -102,7 +102,7 @@ private[akka] object EventWriter {
       waitingForWrite: Vector[(PersistentRepr, ActorRef[StatusReply[WriteAck]])] = Vector.empty,
       writeErrorHandlingInProgress: Boolean = false,
       currentTransactionId: Int = 0,
-      latestSeqNr: SeqNr = 0L,
+      latestSeqNr: SeqNr = -1L,
       usedTimestamp: Long = 0L,
       waitingForSeqNrLookup: Vector[(PersistentRepr, ActorRef[StatusReply[WriteAck]])] = Vector.empty) {
     def idle: Boolean =
@@ -111,11 +111,16 @@ private[akka] object EventWriter {
     def seqNrlookupInProgress: Boolean =
       waitingForSeqNrLookup.nonEmpty
 
+    def isLatestSeqNrUnknown: Boolean =
+      latestSeqNr == -1L && idle
+
     def nextExpectedSeqNr: SeqNr =
       if (waitingForWrite.nonEmpty)
         waitingForWrite.last._1.sequenceNr + 1
       else if (waitingForReply.nonEmpty)
         waitingForReply.keysIterator.max + 1
+      else if (latestSeqNr == -1L)
+        1L
       else
         latestSeqNr + 1
   }
@@ -344,15 +349,14 @@ private[akka] object EventWriter {
                     persistenceId,
                     sequenceNumber)
                   state.copy(waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
-                } else if (fillSequenceNumberGaps && state.latestSeqNr == 0L && state.idle && sequenceNumber != 1L) {
+                } else if (fillSequenceNumberGaps && state.isLatestSeqNrUnknown && sequenceNumber != 1L) {
                   // we haven't looked up latest yet, no pending writes, and incoming is not the well known 1
                   askMaxSeqNr(persistenceId, originalErrorDesc = None)
                   context.log.trace2(
                     "Seq nr lookup needed for persistence id [{}], adding sequence nr [{}] to pending",
                     persistenceId,
                     sequenceNumber)
-                  state.copy(
-                    waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
+                  state.copy(waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
                 } else if (sequenceNumber == expectedSeqNr) {
                   if (state.idle) {
                     sendToJournal(1, Vector(repr))
@@ -377,11 +381,11 @@ private[akka] object EventWriter {
                   replyTo ! StatusReply.success(WriteAck(persistenceId, sequenceNumber)) // duplicate
                   state
                 } else { // sequenceNumber > expectedSeqNr
-                  require(fillSequenceNumberGaps,
+                  require(
+                    fillSequenceNumberGaps,
                     s"Unexpected sequence number gap, expected [$expectedSeqNr], received [$sequenceNumber]. " +
-                      "Enable akka.persistence.typed.event-writer.fill-sequence-number-gaps config if gaps are " +
-                      "expected and should be filled with FilteredPayload."
-                  )
+                    "Enable akka.persistence.typed.event-writer.fill-sequence-number-gaps config if gaps are " +
+                    "expected and should be filled with FilteredPayload.")
                   val fillRepr = (expectedSeqNr until sequenceNumber).map { n =>
                     PersistentRepr(
                       FilteredPayload,
@@ -396,9 +400,12 @@ private[akka] object EventWriter {
                     fillRepr.head.sequenceNr,
                     fillRepr.last.sequenceNr,
                     persistenceId)
+                  val ignoreRef = context.system.ignoreRef
                   if (state.idle) {
                     sendToJournal(1, fillRepr :+ repr)
-                    state.copy(waitingForReply = Map((repr.sequenceNr, (repr, replyTo))), currentTransactionId = 1)
+                    val newWaitingForReply =
+                      (fillRepr.map(r => r.sequenceNr -> (r, ignoreRef)) :+ (repr.sequenceNr -> (repr, replyTo))).toMap
+                    state.copy(waitingForReply = newWaitingForReply, currentTransactionId = 1)
                   } else {
                     if (context.log.isTraceEnabled)
                       context.log.traceN(
@@ -406,7 +413,6 @@ private[akka] object EventWriter {
                         persistenceId,
                         fillRepr.head.sequenceNr,
                         sequenceNumber)
-                    val ignoreRef = context.system.ignoreRef
                     // FIXME more checks for exceeding maxBatchSize
                     val newWaitingForWrite = fillRepr.map((_, ignoreRef)) :+ (repr, replyTo)
                     state.copy(waitingForWrite = state.waitingForWrite :++ newWaitingForWrite)
@@ -444,8 +450,7 @@ private[akka] object EventWriter {
                 val waiting = state.waitingForSeqNrLookup
                 perPidWriteState = perPidWriteState.updated(
                   pid,
-                  state
-                    .copy(latestSeqNr = maxSeqNr, waitingForSeqNrLookup = Vector.empty))
+                  state.copy(latestSeqNr = maxSeqNr, waitingForSeqNrLookup = Vector.empty))
                 waiting.foreach { case (repr, replyTo) => handleWrite(repr, replyTo) }
             }
             Behaviors.same

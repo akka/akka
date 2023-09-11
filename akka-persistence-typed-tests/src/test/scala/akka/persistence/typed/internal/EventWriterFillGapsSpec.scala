@@ -134,28 +134,13 @@ class EventWriterFillGapsSpec
       response.getError.getMessage should ===("Journal write failed")
     }
 
-    "handle writes to many pids" in {
-      val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings))
-      val probe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
-      (1 to 1000).map { pidN =>
-        Future {
-          for (n <- 1 to 20) {
-            writer ! EventWriter.Write(s"pid$pidN", n.toLong, n.toString, None, Set.empty, probe.ref)
-          }
-        }
-      }
-      // FIXME something is not working as expected with this test, it's detecting gaps and filling them
-      // see log message "adding sequence nrs"
-      probe.receiveMessages(20 * 1000, 20.seconds)
-    }
-
     "fill gaps when next expected is known" in new TestSetup {
       sendWrite(1)
       journalAckWrite()
       clientExpectSuccess(1)
 
       sendWrite(5)
-      journalAckWrite() shouldBe 4
+      journalAckWrite(expectedSequenceNumbers = Vector(2, 3, 4, 5))
       clientExpectSuccess(1)
 
       sendWrite(6)
@@ -166,8 +151,32 @@ class EventWriterFillGapsSpec
     "fill gaps when next expected is unknown" in new TestSetup {
       sendWrite(5)
       journalHighestSeqNr(2)
-      journalAckWrite() shouldBe 3
+      journalAckWrite(expectedSequenceNumbers = Vector(3, 4, 5))
       clientExpectSuccess(1)
+
+      sendWrite(6)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
+    "fill gaps when next expected is unknown and no highest" in new TestSetup {
+      sendWrite(5)
+      journalHighestSeqNr(0) // no events stored
+      journalAckWrite(expectedSequenceNumbers = Vector(1, 2, 3, 4, 5))
+      clientExpectSuccess(1)
+
+      sendWrite(6)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
+    "fill gaps when next expected is unknown and more writes afterwards" in new TestSetup {
+      sendWrite(4)
+      sendWrite(5)
+      journalHighestSeqNr(2)
+      journalAckWrite(expectedSequenceNumbers = Vector(3, 4))
+      journalAckWrite(expectedSequenceNumbers = Vector(5))
+      clientExpectSuccess(2)
 
       sendWrite(6)
       journalAckWrite()
@@ -218,6 +227,64 @@ class EventWriterFillGapsSpec
       sendWrite(10)
       journalAckWrite()
       clientExpectSuccess(1)
+    }
+
+    "fill gaps when duplicate detected by journal" in new TestSetup {
+      sendWrite(1)
+      // 2 and 3 in next batch
+      sendWrite(2)
+      sendWrite(3)
+
+      sendWrite(5)
+      journalAckWrite(expectedSequenceNumbers = Vector(1))
+      // let's say 2 is a duplicate, detected by journal
+      journalFailWrite("duplicate") shouldBe 4
+      journalHighestSeqNr(2)
+      journalAckWrite(expectedSequenceNumbers = Vector(3, 4, 5))
+      clientExpectSuccess(4)
+
+      sendWrite(6)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
+    // FIXME test eviction
+
+    "handle writes to many pids" in {
+      // no flow control in this test so just no limit on batch size
+      val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings.copy(maxBatchSize = Int.MaxValue)))
+      val probe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
+      (1 to 1000).map { pidN =>
+        Future {
+          for (n <- 1 to 20) {
+            writer ! EventWriter.Write(s"A|pid$pidN", n.toLong, n.toString, None, Set.empty, probe.ref)
+          }
+        }
+      }
+      val replies = probe.receiveMessages(20 * 1000, 20.seconds)
+      replies.exists(_.isError) should ===(false)
+    }
+
+    "handle writes to many pids and fill gaps" in {
+      // no flow control in this test so just no limit on batch size
+      val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings.copy(maxBatchSize = Int.MaxValue)))
+      val probe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
+      (1 to 1000).map { pidN =>
+        Future {
+          for (n <- 1 to 20) {
+            val gap =
+              if (pidN <= 500 && n <= 3) true
+              else if (pidN > 500 && 9 <= n && n <= 11) true
+              else false
+
+            if (!gap)
+              writer ! EventWriter.Write(s"B|pid$pidN", n.toLong, n.toString, None, Set.empty, probe.ref)
+          }
+        }
+      }
+      // 20 - 3 because 3 gaps for each pid
+      val replies = probe.receiveMessages((20-3) * 1000, 20.seconds)
+      replies.exists(_.isError) should ===(false)
     }
   }
 

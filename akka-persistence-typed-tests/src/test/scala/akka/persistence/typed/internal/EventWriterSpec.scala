@@ -130,16 +130,18 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
     }
 
     "handle writes to many pids" in {
-      val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings))
+      // no flow control in this test so just no limit on batch size
+      val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings.copy(maxBatchSize = Int.MaxValue)))
       val probe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
       (1 to 1000).map { pidN =>
         Future {
           for (n <- 1 to 20) {
-            writer ! EventWriter.Write(s"pid$pidN", n.toLong, n.toString, None, Set.empty, probe.ref)
+            writer ! EventWriter.Write(s"A|pid$pidN", n.toLong, n.toString, None, Set.empty, probe.ref)
           }
         }
       }
-      probe.receiveMessages(20 * 1000, 20.seconds)
+      val replies = probe.receiveMessages(20 * 1000, 20.seconds)
+      replies.exists(_.isError) should === (false)
     }
   }
 
