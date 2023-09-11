@@ -104,10 +104,12 @@ private[akka] object EventWriter {
       currentTransactionId: Int = 0,
       latestSeqNr: SeqNr = 0L,
       usedTimestamp: Long = 0L,
-      seqNrlookupInProgress: Boolean = false,
       waitingForSeqNrLookup: Vector[(PersistentRepr, ActorRef[StatusReply[WriteAck]])] = Vector.empty) {
     def idle: Boolean =
       waitingForReply.isEmpty && waitingForWrite.isEmpty
+
+    def seqNrlookupInProgress: Boolean =
+      waitingForSeqNrLookup.nonEmpty
 
     def nextExpectedSeqNr: SeqNr =
       if (waitingForWrite.nonEmpty)
@@ -325,13 +327,10 @@ private[akka] object EventWriter {
                   StateForPid(
                     waitingForReply = Map.empty,
                     waitingForSeqNrLookup = Vector((repr, replyTo)),
-                    seqNrlookupInProgress = true,
                     currentTransactionId = 1)
                 } else {
                   sendToJournal(1, Vector(repr))
-                  StateForPid(
-                    Map((repr.sequenceNr, (repr, replyTo))),
-                    currentTransactionId = 1)
+                  StateForPid(Map((repr.sequenceNr, (repr, replyTo))), currentTransactionId = 1)
                 }
 
               case Some(state) =>
@@ -345,14 +344,15 @@ private[akka] object EventWriter {
                     persistenceId,
                     sequenceNumber)
                   state.copy(waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
-                } else if (fillSequenceNumberGaps && state.latestSeqNr == 0L && sequenceNumber != 1L) {
-                  // we haven't looked up latest yet, and incoming is not the well known 1
+                } else if (fillSequenceNumberGaps && state.latestSeqNr == 0L && state.idle && sequenceNumber != 1L) {
+                  // we haven't looked up latest yet, no pending writes, and incoming is not the well known 1
                   askMaxSeqNr(persistenceId, originalErrorDesc = None)
                   context.log.trace2(
                     "Seq nr lookup needed for persistence id [{}], adding sequence nr [{}] to pending",
                     persistenceId,
                     sequenceNumber)
-                  state.copy(seqNrlookupInProgress = true, waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
+                  state.copy(
+                    waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
                 } else if (sequenceNumber == expectedSeqNr) {
                   if (state.idle) {
                     sendToJournal(1, Vector(repr))
@@ -386,6 +386,11 @@ private[akka] object EventWriter {
                       writerUuid = writerUuid,
                       sender = akka.actor.ActorRef.noSender)
                   }.toVector
+                  context.log.debugN(
+                    "Detected sequence nr gap [{}-{}] for persistence id [{}]. Filling with FilteredPayload.",
+                    fillRepr.head.sequenceNr,
+                    fillRepr.last.sequenceNr,
+                    persistenceId)
                   if (state.idle) {
                     sendToJournal(1, fillRepr :+ repr)
                     state.copy(waitingForReply = Map((repr.sequenceNr, (repr, replyTo))), currentTransactionId = 1)
@@ -435,7 +440,7 @@ private[akka] object EventWriter {
                 perPidWriteState = perPidWriteState.updated(
                   pid,
                   state
-                    .copy(latestSeqNr = maxSeqNr, seqNrlookupInProgress = false, waitingForSeqNrLookup = Vector.empty))
+                    .copy(latestSeqNr = maxSeqNr, waitingForSeqNrLookup = Vector.empty))
                 waiting.foreach { case (repr, replyTo) => handleWrite(repr, replyTo) }
             }
             Behaviors.same

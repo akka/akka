@@ -149,7 +149,76 @@ class EventWriterFillGapsSpec
       probe.receiveMessages(20 * 1000, 20.seconds)
     }
 
-    // FIXME more tests of the actual gap fill
+    "fill gaps when next expected is known" in new TestSetup {
+      sendWrite(1)
+      journalAckWrite()
+      clientExpectSuccess(1)
+
+      sendWrite(5)
+      journalAckWrite() shouldBe 4
+      clientExpectSuccess(1)
+
+      sendWrite(6)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
+    "fill gaps when next expected is unknown" in new TestSetup {
+      sendWrite(5)
+      journalHighestSeqNr(2)
+      journalAckWrite() shouldBe 3
+      clientExpectSuccess(1)
+
+      sendWrite(6)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
+    "fill gaps when pending write" in new TestSetup {
+      sendWrite(1)
+
+      // no ack of 1 yet, but since it's pending we don't have to lookup max
+      sendWrite(5)
+      journalAckWrite() shouldBe 1
+      journalAckWrite() shouldBe 4
+      clientExpectSuccess(2)
+
+      sendWrite(6)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
+    "fill gaps when pending batch" in new TestSetup {
+      sendWrite(1)
+      // 2 and 3 in next batch
+      sendWrite(2)
+      sendWrite(3)
+
+      sendWrite(5)
+      journalAckWrite() shouldBe 1
+      journalAckWrite() shouldBe 4 // all go into next batch, including the filled 4
+      clientExpectSuccess(4)
+
+      sendWrite(6)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
+    "fill gaps when more writes after max lookup" in new TestSetup {
+      sendWrite(5)
+      sendWrite(6)
+      sendWrite(7)
+      sendWrite(9) // 8 is another gap
+      journalHighestSeqNr(3) // 4 is a gap
+      journalAckWrite(expectedSequenceNumbers = Vector(4L, 5L))
+      // remaining into next batch
+      journalAckWrite() shouldBe 4
+      clientExpectSuccess(4)
+
+      sendWrite(10)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
   }
 
   trait TestSetup {
@@ -160,14 +229,19 @@ class EventWriterFillGapsSpec
     def sendWrite(seqNr: Long, pid: String = pid1): Unit = {
       writer ! EventWriter.Write(pid, seqNr, seqNr.toString, None, Set.empty, clientProbe.ref)
     }
-    def journalAckWrite(pid: String = pid1): Int = {
+    def journalAckWrite(pid: String = pid1, expectedSequenceNumbers: Vector[Long] = Vector.empty): Int = {
       val write = fakeJournal.expectMessageType[JournalProtocol.WriteMessages]
       write.messages should have size (1)
       val atomicWrite = write.messages.head.asInstanceOf[AtomicWrite]
-      atomicWrite.payload.foreach { repr =>
-        repr.persistenceId should ===(pid)
-        write.persistentActor ! JournalProtocol.WriteMessageSuccess(repr, write.actorInstanceId)
-      }
+
+      val seqNrs =
+        atomicWrite.payload.map { repr =>
+          repr.persistenceId should ===(pid)
+          write.persistentActor ! JournalProtocol.WriteMessageSuccess(repr, write.actorInstanceId)
+          repr.sequenceNr
+        }
+      if (expectedSequenceNumbers.nonEmpty)
+        seqNrs should ===(expectedSequenceNumbers)
       write.persistentActor ! JournalProtocol.WriteMessagesSuccessful
       atomicWrite.payload.size
     }
