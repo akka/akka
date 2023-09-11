@@ -283,7 +283,7 @@ class EventWriterFillGapsSpec
         }
       }
       // 20 - 3 because 3 gaps for each pid
-      val replies = probe.receiveMessages((20-3) * 1000, 20.seconds)
+      val replies = probe.receiveMessages((20 - 3) * 1000, 20.seconds)
       replies.exists(_.isError) should ===(false)
     }
   }

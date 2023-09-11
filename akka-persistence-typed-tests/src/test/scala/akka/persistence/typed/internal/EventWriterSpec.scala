@@ -141,7 +141,7 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
         }
       }
       val replies = probe.receiveMessages(20 * 1000, 20.seconds)
-      replies.exists(_.isError) should === (false)
+      replies.exists(_.isError) should ===(false)
     }
   }
 
