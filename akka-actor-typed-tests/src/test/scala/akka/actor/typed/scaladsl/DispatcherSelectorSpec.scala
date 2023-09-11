@@ -19,7 +19,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.DispatcherSelector
-import akka.actor.typed.Props
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.scaladsl.AskPattern._
