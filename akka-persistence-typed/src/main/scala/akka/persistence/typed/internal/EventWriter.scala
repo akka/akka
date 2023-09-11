@@ -329,10 +329,7 @@ private[akka] object EventWriter {
               case None =>
                 if (fillSequenceNumberGaps && sequenceNumber != 1L) {
                   askMaxSeqNr(persistenceId, originalErrorDesc = None)
-                  StateForPid(
-                    waitingForReply = Map.empty,
-                    waitingForSeqNrLookup = Vector((repr, replyTo)),
-                    currentTransactionId = 1)
+                  StateForPid(waitingForReply = Map.empty, waitingForSeqNrLookup = Vector((repr, replyTo)))
                 } else {
                   sendToJournal(1, Vector(repr))
                   StateForPid(Map((repr.sequenceNr, (repr, replyTo))), currentTransactionId = 1)
@@ -359,8 +356,10 @@ private[akka] object EventWriter {
                   state.copy(waitingForSeqNrLookup = state.waitingForSeqNrLookup :+ ((repr, replyTo)))
                 } else if (sequenceNumber == expectedSeqNr) {
                   if (state.idle) {
-                    sendToJournal(1, Vector(repr))
-                    state.copy(waitingForReply = Map((repr.sequenceNr, (repr, replyTo))), currentTransactionId = 1)
+                    sendToJournal(state.currentTransactionId + 1, Vector(repr))
+                    state.copy(
+                      waitingForReply = Map((repr.sequenceNr, (repr, replyTo))),
+                      currentTransactionId = state.currentTransactionId + 1)
                   } else {
                     // write in progress for pid, add write to batch and perform once current write completes
                     if (state.waitingForWrite.size >= settings.maxBatchSize) {
@@ -402,10 +401,12 @@ private[akka] object EventWriter {
                     persistenceId)
                   val ignoreRef = context.system.ignoreRef
                   if (state.idle) {
-                    sendToJournal(1, fillRepr :+ repr)
+                    sendToJournal(state.currentTransactionId + 1, fillRepr :+ repr)
                     val newWaitingForReply =
                       (fillRepr.map(r => r.sequenceNr -> (r, ignoreRef)) :+ (repr.sequenceNr -> (repr, replyTo))).toMap
-                    state.copy(waitingForReply = newWaitingForReply, currentTransactionId = 1)
+                    state.copy(
+                      waitingForReply = newWaitingForReply,
+                      currentTransactionId = state.currentTransactionId + 1)
                   } else {
                     if (context.log.isTraceEnabled)
                       context.log.traceN(
