@@ -79,19 +79,19 @@ class DispatcherSelectorSpec(config: Config)
 
     "default to unbounded" in {
       val actor = spawn(behavior)
-      val (_, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox).futureValue
+      val (_, mailbox) = actor.ask(this.WhatsYourDispatcherAndMailbox.apply).futureValue
       mailbox shouldBe a[NodeMessageQueue]
     }
 
     "select a blocking dispatcher" in {
       val actor = spawn(behavior, DispatcherSelector.blocking())
-      val (dispatcherId, _) = actor.ask(WhatsYourDispatcherAndMailbox).futureValue
+      val (dispatcherId, _) = actor.ask(this.WhatsYourDispatcherAndMailbox.apply).futureValue
       dispatcherId shouldBe Dispatchers.DefaultBlockingDispatcherId
     }
 
     "select dispatcher from config" in {
       val actor = spawn(behavior, DispatcherSelector.fromConfig("specific-dispatcher"))
-      val (dispatcherId, _) = actor.ask(WhatsYourDispatcherAndMailbox).futureValue
+      val (dispatcherId, _) = actor.ask(this.WhatsYourDispatcherAndMailbox.apply).futureValue
       dispatcherId shouldBe "specific-dispatcher"
     }
 
@@ -106,26 +106,26 @@ class DispatcherSelectorSpec(config: Config)
     "select same dispatcher as parent" in {
       val parent = spawn(SpawnProtocol(), DispatcherSelector.fromConfig("specific-dispatcher"))
 
-      val child = parent.ask { replyTo: ActorRef[ActorRef[WhatsYourDispatcherAndMailbox]] =>
+      val child = parent.ask { (replyTo: ActorRef[ActorRef[WhatsYourDispatcherAndMailbox]]) =>
         SpawnProtocol.Spawn(behavior, "child", DispatcherSelector.sameAsParent(), replyTo)
       }.futureValue
 
-      val (dispatcherId, _) = child.ask(WhatsYourDispatcherAndMailbox).futureValue
+      val (dispatcherId, _) = child.ask(this.WhatsYourDispatcherAndMailbox.apply).futureValue
       dispatcherId shouldBe "specific-dispatcher"
     }
 
     "select same dispatcher as parent, several levels" in {
       val guardian = spawn(SpawnProtocol(), DispatcherSelector.fromConfig("specific-dispatcher"))
 
-      val parent = guardian.ask { replyTo: ActorRef[ActorRef[SpawnProtocol.Command]] =>
+      val parent = guardian.ask { (replyTo: ActorRef[ActorRef[SpawnProtocol.Command]]) =>
         SpawnProtocol.Spawn(SpawnProtocol(), "parent", DispatcherSelector.sameAsParent(), replyTo)
       }.futureValue
 
-      val child = parent.ask { replyTo: ActorRef[ActorRef[WhatsYourDispatcherAndMailbox]] =>
+      val child = parent.ask { (replyTo: ActorRef[ActorRef[WhatsYourDispatcherAndMailbox]]) =>
         SpawnProtocol.Spawn(behavior, "child", DispatcherSelector.sameAsParent(), replyTo)
       }.futureValue
 
-      val (dispatcherId, _) = child.ask(WhatsYourDispatcherAndMailbox).futureValue
+      val (dispatcherId, _) = child.ask(this.WhatsYourDispatcherAndMailbox.apply).futureValue
       dispatcherId shouldBe "specific-dispatcher"
     }
 
@@ -136,7 +136,7 @@ class DispatcherSelectorSpec(config: Config)
         ActorSystemSetup.create(BootstrapSetup()),
         DispatcherSelector.sameAsParent())
       try {
-        val (dispatcherId, _) = sys.ask(WhatsYourDispatcherAndMailbox).futureValue
+        val (dispatcherId, _) = sys.ask(this.WhatsYourDispatcherAndMailbox.apply).futureValue
         dispatcherId shouldBe "akka.actor.default-dispatcher"
       } finally {
         ActorTestKit.shutdown(sys)
@@ -146,7 +146,7 @@ class DispatcherSelectorSpec(config: Config)
     "select an specific dispatcher from config with mailbox selector" in {
       val actor =
         spawn(behavior, DispatcherSelector.fromConfig("specific-dispatcher").withMailboxFromConfig("specific-mailbox"))
-      val (dispatcherId, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox).futureValue
+      val (dispatcherId, mailbox) = actor.ask(this.WhatsYourDispatcherAndMailbox.apply).futureValue
       mailbox shouldBe a[BoundedMessageQueueSemantics]
       mailbox.asInstanceOf[BoundedNodeMessageQueue].capacity should ===(4)
       dispatcherId shouldBe "specific-dispatcher"
@@ -154,7 +154,7 @@ class DispatcherSelectorSpec(config: Config)
 
     "select an mailbox via dispatcher config would not work" in {
       val actor = spawn(behavior, DispatcherSelector.fromConfig("specific-dispatcher-with-mailbox"))
-      val (dispatcherId, mailbox) = actor.ask(WhatsYourDispatcherAndMailbox).futureValue
+      val (dispatcherId, mailbox) = actor.ask(this.WhatsYourDispatcherAndMailbox.apply).futureValue
       mailbox shouldBe a[NodeMessageQueue]
       dispatcherId shouldBe "specific-dispatcher-with-mailbox"
     }
