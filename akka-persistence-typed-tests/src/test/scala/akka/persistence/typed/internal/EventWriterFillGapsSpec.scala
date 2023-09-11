@@ -270,13 +270,13 @@ class EventWriterFillGapsSpec
     "evict least recently used entries" in new TestSetup {
       // this test is based on capacity of 100
       settings.latestSequenceNumberCacheCapacity should ===(100)
-      (1 to 12).foreach { n =>
+      (1 to 13).foreach { n =>
         sendWrite(1, pid = s"pid$n")
         journalAckWrite(s"pid$n")
       }
-      Thread.sleep(100) // makes the first 12 least recently used
+      Thread.sleep(100) // makes the first 13 least recently used
 
-      (13 to 110).foreach { n =>
+      (14 to 110).foreach { n =>
         sendWrite(1, pid = s"pid$n")
         journalAckWrite(s"pid$n")
       }
@@ -284,23 +284,29 @@ class EventWriterFillGapsSpec
       // touch pid1
       sendWrite(2, "pid1")
       journalAckWrite("pid1")
-
-      // pending write for pid2
+      // touch pid2
       sendWrite(2, "pid2")
-      sendWrite(1, "pid111")
       journalAckWrite("pid2")
+      // one more
+      sendWrite(1, "pid111")
       journalAckWrite(pid = "pid111")
 
       // now exceeded the cache threshold, and evicted entries will result in lookup
-      (3 to 12).foreach { n =>
-        sendWrite(2, pid = s"pid$n")
-        journalHighestSeqNr(1)
-        journalAckWrite(s"pid$n")
-      }
+      sendWrite(2, pid = "pid3")
+      journalHighestSeqNr(1)
+      journalAckWrite("pid3")
+      sendWrite(2, pid = "pid12")
+      journalHighestSeqNr(1)
+      journalAckWrite("pid12")
+      sendWrite(2, pid = "pid13")
+      journalHighestSeqNr(1)
+      journalAckWrite("pid13")
 
       // still in cache
-      sendWrite(2, "pid13")
-      journalAckWrite("pid13")
+      sendWrite(2, "pid14")
+      journalAckWrite("pid14")
+      sendWrite(3, "pid1")
+      journalAckWrite("pid1")
       sendWrite(3, "pid2")
       journalAckWrite("pid2")
     }

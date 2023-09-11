@@ -216,13 +216,13 @@ private[akka] object EventWriter {
         def evictLeastRecentlyUsedPids(): Unit = {
           import settings.latestSequenceNumberCacheCapacity
           val accumulationFactor = 1.1
-          if (perPidWriteState.size > latestSequenceNumberCacheCapacity * accumulationFactor) {
+          if (perPidWriteState.size >= latestSequenceNumberCacheCapacity * accumulationFactor) {
             val idleEntries =
               perPidWriteState.iterator.filter {
                 case (_, stateForPid) => stateForPid.idle
               }.toVector
 
-            if (idleEntries.size > latestSequenceNumberCacheCapacity * accumulationFactor) {
+            if (idleEntries.size >= latestSequenceNumberCacheCapacity * accumulationFactor) {
               val pidsToRemove =
                 idleEntries
                   .sortBy {
@@ -230,6 +230,13 @@ private[akka] object EventWriter {
                   }
                   .take(idleEntries.size - latestSequenceNumberCacheCapacity)
                   .map { case (pid, _) => pid }
+
+              if (context.log.isTraceEnabled)
+                context.log.traceN(
+                  "Evicted cache from [{}] to [{}], persistence ids [{}]",
+                  idleEntries.size,
+                  idleEntries.size - pidsToRemove.size,
+                  pidsToRemove.mkString(", "))
 
               perPidWriteState --= pidsToRemove
             }
