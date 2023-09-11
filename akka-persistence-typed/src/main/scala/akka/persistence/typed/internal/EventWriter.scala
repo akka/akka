@@ -376,7 +376,12 @@ private[akka] object EventWriter {
                   context.log.trace2("Duplicate seq nr [{}] for persistence id [{}]", sequenceNumber, persistenceId)
                   replyTo ! StatusReply.success(WriteAck(persistenceId, sequenceNumber)) // duplicate
                   state
-                } else {
+                } else { // sequenceNumber > expectedSeqNr
+                  require(fillSequenceNumberGaps,
+                    s"Unexpected sequence number gap, expected [$expectedSeqNr], received [$sequenceNumber]. " +
+                      "Enable akka.persistence.typed.event-writer.fill-sequence-number-gaps config if gaps are " +
+                      "expected and should be filled with FilteredPayload."
+                  )
                   val fillRepr = (expectedSeqNr until sequenceNumber).map { n =>
                     PersistentRepr(
                       FilteredPayload,
