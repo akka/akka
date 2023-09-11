@@ -25,7 +25,11 @@ object EventWriterSpec {
 
 class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) with AnyWordSpecLike with LogCapturing {
 
-  private val settings = EventWriter.EventWriterSettings(10, 5.seconds, fillSequenceNumberGaps = false)
+  private val settings = EventWriter.EventWriterSettings(
+    10,
+    5.seconds,
+    fillSequenceNumberGaps = false,
+    latestSequenceNumberCacheCapacity = 1000)
   implicit val ec: ExecutionContext = testKit.system.executionContext
 
   "The event writer" should {

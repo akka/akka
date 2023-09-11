@@ -29,7 +29,11 @@ class EventWriterFillGapsSpec
     with AnyWordSpecLike
     with LogCapturing {
 
-  val settings = EventWriter.EventWriterSettings(10, 5.seconds, fillSequenceNumberGaps = true)
+  val settings = EventWriter.EventWriterSettings(
+    10,
+    5.seconds,
+    fillSequenceNumberGaps = true,
+    latestSequenceNumberCacheCapacity = 100)
   implicit val ec: ExecutionContext = testKit.system.executionContext
 
   "The event writer" should {
@@ -248,7 +252,43 @@ class EventWriterFillGapsSpec
       clientExpectSuccess(1)
     }
 
-    // FIXME test eviction
+    "evict least recently used entries" in new TestSetup {
+      // this test is based on capacity of 100
+      settings.latestSequenceNumberCacheCapacity should ===(100)
+      (1 to 12).foreach { n =>
+        sendWrite(1, pid = s"pid$n")
+        journalAckWrite(s"pid$n")
+      }
+      Thread.sleep(100) // makes the first 12 least recently used
+
+      (13 to 110).foreach { n =>
+        sendWrite(1, pid = s"pid$n")
+        journalAckWrite(s"pid$n")
+      }
+
+      // gap, but we still have it in cache, so no max lookup
+      sendWrite(3, "pid1")
+      journalAckWrite("pid1")
+
+      // pending write for pid2
+      sendWrite(2, "pid2")
+      sendWrite(1, "pid111")
+      journalAckWrite("pid2")
+      journalAckWrite(pid = "pid111")
+
+      // now exceeded the cache threshold, and evicted entries will result in lookup
+      (3 to 12).foreach { n =>
+        sendWrite(2, pid = s"pid$n")
+        journalHighestSeqNr(1)
+        journalAckWrite(s"pid$n")
+      }
+
+      // still in cache
+      sendWrite(3, "pid13")
+      journalAckWrite("pid13")
+      sendWrite(3, "pid2")
+      journalAckWrite("pid2")
+    }
 
     "handle writes to many pids" in {
       // no flow control in this test so just no limit on batch size

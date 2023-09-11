@@ -77,11 +77,16 @@ private[akka] object EventWriter {
       EventWriterSettings(
         maxBatchSize = config.getInt("max-batch-size"),
         askTimeout = config.getDuration("ask-timeout").asScala,
-        fillSequenceNumberGaps = config.getBoolean("fill-sequence-number-gaps"))
+        fillSequenceNumberGaps = config.getBoolean("fill-sequence-number-gaps"),
+        latestSequenceNumberCacheCapacity = config.getInt("latest-sequence-number-cache-capacity"))
     }
 
   }
-  final case class EventWriterSettings(maxBatchSize: Int, askTimeout: FiniteDuration, fillSequenceNumberGaps: Boolean)
+  final case class EventWriterSettings(
+      maxBatchSize: Int,
+      askTimeout: FiniteDuration,
+      fillSequenceNumberGaps: Boolean,
+      latestSequenceNumberCacheCapacity: Int)
 
   sealed trait Command
   final case class Write(
@@ -212,20 +217,21 @@ private[akka] object EventWriter {
         }
 
         def evictLeastRecentlyUsedPids(): Unit = {
-          val latestSeqNrCacheSize = 1000 // FIXME config
-          if (perPidWriteState.size > latestSeqNrCacheSize * 1.1) {
+          import settings.latestSequenceNumberCacheCapacity
+          val accumulationFactor = 1.1
+          if (perPidWriteState.size > latestSequenceNumberCacheCapacity * accumulationFactor) {
             val idleEntries =
               perPidWriteState.iterator.filter {
                 case (_, stateForPid) => stateForPid.idle
               }.toVector
 
-            if (idleEntries.size > latestSeqNrCacheSize * 1.1) {
+            if (idleEntries.size > latestSequenceNumberCacheCapacity * accumulationFactor) {
               val pidsToRemove =
                 idleEntries
                   .sortBy {
                     case (_, stateForPid) => stateForPid.usedTimestamp
                   }
-                  .take(idleEntries.size - latestSeqNrCacheSize)
+                  .take(idleEntries.size - latestSequenceNumberCacheCapacity)
                   .map { case (pid, _) => pid }
 
               perPidWriteState --= pidsToRemove
