@@ -1,0 +1,10 @@
+# MaterializerGuardian.StartMaterializer is internal API
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.MaterializerGuardian$StartMaterializer$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.productElementName")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.productElementNames")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.productPrefix")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.productArity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.productElement")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.productIterator")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.canEqual")
+ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.MaterializerGuardian#StartMaterializer.toString")
