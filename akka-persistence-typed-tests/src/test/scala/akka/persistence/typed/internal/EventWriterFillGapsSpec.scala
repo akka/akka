@@ -267,6 +267,21 @@ class EventWriterFillGapsSpec
       clientExpectSuccess(1)
     }
 
+    "not count filled gaps in max batch check" in new TestSetup {
+      settings.maxBatchSize should ===(10)
+      sendWrite(1)
+
+      sendWrite(15)
+      sendWrite(16)
+      journalAckWrite(expectedSequenceNumbers = Vector(1))
+      journalAckWrite(expectedSequenceNumbers = (2L to 16L).toVector)
+      clientExpectSuccess(2)
+
+      sendWrite(17)
+      journalAckWrite()
+      clientExpectSuccess(1)
+    }
+
     "evict least recently used entries" in new TestSetup {
       // this test is based on capacity of 100
       settings.latestSequenceNumberCacheCapacity should ===(100)

@@ -125,6 +125,10 @@ private[akka] object EventWriter {
         1L
       else
         latestSeqNr + 1
+
+    def waitingForWriteExceedingMaxBatchSize(batchSize: Int): Boolean =
+      waitingForWrite.size >= batchSize &&
+      waitingForWrite.count { case (repr, _) => repr.payload != FilteredPayload } >= batchSize
   }
 
   def apply(journalPluginId: String, settings: EventWriterSettings): Behavior[Command] =
@@ -365,7 +369,7 @@ private[akka] object EventWriter {
                       currentTransactionId = state.currentTransactionId + 1)
                   } else {
                     // write in progress for pid, add write to batch and perform once current write completes
-                    if (state.waitingForWrite.size >= settings.maxBatchSize) {
+                    if (state.waitingForWriteExceedingMaxBatchSize(settings.maxBatchSize)) {
                       replyTo ! StatusReply.error(
                         s"Max batch reached for pid $persistenceId, at most ${settings.maxBatchSize} writes for " +
                         "the same pid may be in flight at the same time")
@@ -420,7 +424,6 @@ private[akka] object EventWriter {
                           persistenceId,
                           fillRepr.head.sequenceNr,
                           sequenceNumber)
-                      // FIXME more checks for exceeding maxBatchSize
                       val newWaitingForWrite = fillRepr.map(_ -> ignoreRef) :+ (repr -> replyTo)
                       state.copy(waitingForWrite = state.waitingForWrite ++ newWaitingForWrite)
                     }
