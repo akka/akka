@@ -223,7 +223,7 @@ private[akka] object EventWriter {
           if (perPidWriteState.size >= latestSequenceNumberCacheCapacity * accumulationFactor) {
             val idleEntries =
               perPidWriteState.iterator.filter {
-                case (_, stateForPid) => stateForPid.idle
+                case (_, stateForPid) => stateForPid.idle && stateForPid.waitingForSeqNrLookup.isEmpty
               }.toVector
 
             if (idleEntries.size >= latestSequenceNumberCacheCapacity * accumulationFactor) {
