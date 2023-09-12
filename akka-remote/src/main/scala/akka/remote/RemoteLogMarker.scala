@@ -5,7 +5,6 @@
 package akka.remote
 
 import akka.actor.Address
-import akka.annotation.ApiMayChange
 import akka.event.LogMarker
 
 /**
@@ -13,7 +12,6 @@ import akka.event.LogMarker
  * No guarantee that it will remain binary compatible, but the marker names and properties
  * are considered public API and will not be changed without notice.
  */
-@ApiMayChange
 object RemoteLogMarker {
 
   /**
