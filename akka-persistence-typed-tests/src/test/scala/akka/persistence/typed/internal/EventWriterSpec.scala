@@ -25,7 +25,11 @@ object EventWriterSpec {
 
 class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) with AnyWordSpecLike with LogCapturing {
 
-  private val settings = EventWriter.EventWriterSettings(10, 5.seconds)
+  private val settings = EventWriter.EventWriterSettings(
+    10,
+    5.seconds,
+    fillSequenceNumberGaps = false,
+    latestSequenceNumberCacheCapacity = 1000)
   implicit val ec: ExecutionContext = testKit.system.executionContext
 
   "The event writer" should {
@@ -48,11 +52,11 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
       for (n <- 2L to 10L) {
         sendWrite(n)
       }
-      // 0 will be written directly
+      // 1 will be written directly
       journalAckWrite() should ===(1)
       clientExpectSuccess(1)
 
-      // completing 1 triggers write of batch with 0-9
+      // completing 1 triggers write of batch with 2-10
       // second
       for (n <- 1L to 10L) {
         sendWrite(n)
@@ -130,16 +134,18 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
     }
 
     "handle writes to many pids" in {
-      val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings))
+      // no flow control in this test so just no limit on batch size
+      val writer = spawn(EventWriter("akka.persistence.journal.inmem", settings.copy(maxBatchSize = Int.MaxValue)))
       val probe = createTestProbe[StatusReply[EventWriter.WriteAck]]()
-      (0 to 1000).map { pidN =>
+      (1 to 1000).map { pidN =>
         Future {
-          for (n <- 0 until 20) {
-            writer ! EventWriter.Write(s"pid$pidN", n.toLong, n.toString, None, Set.empty, probe.ref)
+          for (n <- 1 to 20) {
+            writer ! EventWriter.Write(s"A|pid$pidN", n.toLong, n.toString, None, Set.empty, probe.ref)
           }
         }
       }
-      probe.receiveMessages(20 * 1000, 20.seconds)
+      val replies = probe.receiveMessages(20 * 1000, 20.seconds)
+      replies.exists(_.isError) should ===(false)
     }
   }
 
