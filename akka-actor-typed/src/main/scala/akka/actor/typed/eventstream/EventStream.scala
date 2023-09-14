@@ -29,12 +29,9 @@ object EventStream {
   }
 
   /**
-   * Subscribe a typed actor to listen for types or subtypes of E
+   * Subscribe a typed actor to listen for types and subtypes of E
    * by sending this command to the [[akka.actor.typed.ActorSystem.eventStream]].
-   * <p>
-   *   Subscribe several times via send multiple Subscribe(a) are allowed because the
-   * EventStream's watch operation on an Actor is idempotent.
-   * </p>
+   * The same actor can create multiple subscriptions for different types.
    *
    * ==Simple example==
    * {{{
@@ -63,16 +60,8 @@ object EventStream {
   }
 
   /**
-   * Unsubscribe an actor ref from the event stream
+   * Unsubscribe all subscriptions created by this actor from the event stream
    * by sending this command to the [[akka.actor.typed.ActorSystem.eventStream]].
-   * <p>
-   *  <strong>
-   *   Unsubscribing an unsubscribed actor ref will triggers the expensive
-   * check of "whether actor ref still has subscriptions" in the [[akka.event.EventStream]],
-   * even though the operation is not performed on the EventStream itself,
-   * but it affects the timely "watch" of new subscribers by the [[akka.event.EventStream]].
-   *  </strong>
-   * </p>
    */
   final case class Unsubscribe[E](subscriber: ActorRef[E]) extends Command
 
