@@ -43,6 +43,10 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     else subscriber ! event
   }
 
+  /**
+   * Subscribe an actor to listen for types and subtypes by passing Class to channel argument.
+   * The same actor can create multiple subscriptions for different Class.
+   */
   override def subscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     if (debug)
@@ -51,6 +55,9 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     super.subscribe(subscriber, channel)
   }
 
+  /**
+   * Unsubscribe specific types subscriptions created by this actor from the event stream.
+   */
   override def unsubscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     val ret = super.unsubscribe(subscriber, channel)
@@ -61,6 +68,9 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     ret
   }
 
+  /**
+   * Unsubscribe all subscriptions created by this actor from the event stream.
+   */
   override def unsubscribe(subscriber: ActorRef): Unit = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     super.unsubscribe(subscriber)
