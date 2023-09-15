@@ -8,7 +8,6 @@ import java.util.Optional
 
 import scala.compat.java8.OptionConverters._
 
-import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.stream.scaladsl
 import akka.util.JavaDurationConverters._

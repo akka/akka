@@ -16,7 +16,6 @@ import scala.reflect.{ classTag, ClassTag }
 import scala.util.control.NonFatal
 
 import akka.actor.ActorSystem
-import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.event.Logging

@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 import akka.actor.{ ActorPath, ActorRef }
 import akka.actor.ActorSystem
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.pattern.ask
 import akka.stream.{ Attributes, Materializer }
 import akka.stream.SystemMaterializer

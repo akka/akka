@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 
 import scala.concurrent.duration._
 
-import akka.annotation.ApiMayChange
 import akka.stream.impl.RetryFlowCoordinator
 
 object RetryFlow {
@@ -73,6 +72,7 @@ object RetryFlow {
    * @param flow a flow with context to retry elements from
    * @param decideRetry retry condition decision function
    */
+  Œ
   def withBackoffAndContext[In, CtxIn, Out, CtxOut, Mat](
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
