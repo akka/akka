@@ -308,6 +308,39 @@ removes the need for `pipeTo`. However, for interactions with other APIs that re
 @scala[`Future`]@java[`CompletionStage`] it is still useful to send the result as a message to the actor.
 For this purpose there is a `pipeToSelf` method in the `ActorContext` in Typed.
 
+## ActorContext
+
+The `ActorContext` is always 1:1 with instance of an actor, when an actor has been started it exists even if you do not 
+access it in any behavior that the actor has during its lifetime. When the actor is stopped and is garbage collected, 
+so is the actor context. Multiple nested setup blocks will just give access to the same actor context and 
+is not a problem.
+
+You can think of the `ActorContext` as parallel to what `ActorRef` is for the actor from the “outside”, but from 
+the “inside”. It gives access to operations that are associated with the actor instance, for example spawning
+children, emitting log entries etc. that should only ever be used by the current behavior of the actor.
+
+The definition of an actor is a computational entity that in response to a message can:
+
+* send messages to other actors
+* create new actors
+* change its state
+* designate the behavior to be used for the next message it receives
+
+In Akka this boils down to a running actor having a current behavior to use when receiving the next message, 
+access to a way to spawn children and optional state.
+
+In the classic API this is directly and always modelled as a class @scala[`Actor`]@java[`AbstractActor`]. 
+While this at first glance seems simple the running actor is in fact more of a pair of the actor class instance
+and the actor context (which for example contains the current behavior `Receive` and `self`).
+
+In the new APIs this can be modelled both in the same way using a class based `AbstractBehavior` which the actor keeps
+for its entire life with state modelled as mutable fields, but also with a more FP:ish-style where the behavior and
+state is separated and the actor often returns a new behavior and state pair in response to a message. The running
+actor is in this case also essentially a pair of the actor context and the current behavior.
+
+If you look at the current implementation of the new APIs you can see that it is in fact built on top of the classic
+APIs, spawning a typed actor always spawns a classic actor under the hood.
+
 ## ActorContext.children
 
 The `ActorContext` has methods @scala[`children` and `child`]@java[`getChildren` and `getChild`]
