@@ -31,7 +31,6 @@ object MaterializerState {
   /**
    * Dump stream snapshots of all streams of the default system materializer.
    */
-  @ApiMayChange
   def streamSnapshots(system: ActorSystem): Future[immutable.Seq[StreamSnapshot]] = {
     SystemMaterializer(system).materializer match {
       case impl: PhasedFusingActorMaterializer =>
@@ -43,7 +42,6 @@ object MaterializerState {
   /**
    * Dump stream snapshots of all streams of the given materializer.
    */
-  @ApiMayChange
   def streamSnapshots(mat: Materializer): Future[immutable.Seq[StreamSnapshot]] = {
     mat match {
       case impl: PhasedFusingActorMaterializer =>
@@ -79,7 +77,7 @@ object MaterializerState {
  *
  * Not for user extension
  */
-@DoNotInherit @ApiMayChange
+@DoNotInherit
 sealed trait StreamSnapshot {
 
   /**
@@ -99,7 +97,7 @@ sealed trait StreamSnapshot {
  *
  * Not for user extension
  */
-@DoNotInherit @ApiMayChange
+@DoNotInherit
 sealed trait InterpreterSnapshot {
   def logics: immutable.Seq[LogicSnapshot]
 }
@@ -109,13 +107,13 @@ sealed trait InterpreterSnapshot {
  *
  * Not for user extension
  */
-@DoNotInherit @ApiMayChange
+@DoNotInherit
 sealed trait UninitializedInterpreter extends InterpreterSnapshot
 
 /**
  * A stream interpreter that is running/has been started
  */
-@DoNotInherit @ApiMayChange
+@DoNotInherit
 sealed trait RunningInterpreter extends InterpreterSnapshot {
 
   /**
@@ -140,17 +138,20 @@ sealed trait RunningInterpreter extends InterpreterSnapshot {
 }
 
 /**
- *
  * Not for user extension
  */
-@DoNotInherit @ApiMayChange
+@DoNotInherit
 sealed trait LogicSnapshot {
   def label: String
   def attributes: Attributes
 }
 
-@ApiMayChange
 object ConnectionSnapshot {
+
+  /**
+   * Not for user extension
+   */
+  @DoNotInherit
   sealed trait ConnectionState
   case object ShouldPull extends ConnectionState
   case object ShouldPush extends ConnectionState
@@ -160,7 +161,7 @@ object ConnectionSnapshot {
 /**
  * Not for user extension
  */
-@DoNotInherit @ApiMayChange
+@DoNotInherit
 sealed trait ConnectionSnapshot {
   def in: LogicSnapshot
   def out: LogicSnapshot
