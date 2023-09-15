@@ -331,7 +331,7 @@ access to a way to spawn children and optional state.
 
 In the classic API this is directly and always modelled as a class @scala[`Actor`]@java[`AbstractActor`]. 
 While this at first glance seems simple the running actor is in fact more of a pair of the actor class instance
-and the actor context (which for example contains the current behavior `Receive`, `self`).
+and the actor context (which for example contains the current behavior `Receive` and `self`).
 
 In the new APIs this can be modelled both in the same way using a class based `AbstractBehavior` which the actor keeps
 for its entire life with state modelled as mutable fields, but also with a more FP:ish-style where the behavior and
