@@ -5,7 +5,6 @@
 package akka.persistence.query.typed.javadsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.persistence.query.DurableStateChange
 import akka.persistence.query.Offset
@@ -16,10 +15,7 @@ import akka.stream.javadsl.Source
  * Query API for reading durable state objects.
  *
  * For Scala API see [[DurableStateStoreBySliceQuery]].
- *
- * API May Change
  */
-@ApiMayChange
 trait DurableStateStoreBySliceQuery[A] extends DurableStateStore[A] {
 
   /**

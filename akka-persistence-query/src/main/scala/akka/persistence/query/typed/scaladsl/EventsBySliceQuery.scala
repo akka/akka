@@ -7,7 +7,6 @@ package akka.persistence.query.typed.scaladsl
 import scala.collection.immutable
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.persistence.query.Offset
 import akka.persistence.query.scaladsl.ReadJournal
 import akka.persistence.query.typed.EventEnvelope
@@ -20,10 +19,7 @@ import akka.stream.scaladsl.Source
  * [[LoadEventQuery]].
  *
  * See also [[EventsBySliceFirehoseQuery]].
- *
- * API May Change
  */
-@ApiMayChange
 trait EventsBySliceQuery extends ReadJournal {
 
   /**

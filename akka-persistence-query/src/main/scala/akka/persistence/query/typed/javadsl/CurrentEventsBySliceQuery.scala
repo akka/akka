@@ -5,7 +5,6 @@
 package akka.persistence.query.typed.javadsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.persistence.query.Offset
 import akka.persistence.query.javadsl.ReadJournal
@@ -14,10 +13,7 @@ import akka.stream.javadsl.Source
 
 /**
  * A plugin may optionally support this query by implementing this trait.
- *
- * API May Change
  */
-@ApiMayChange
 trait CurrentEventsBySliceQuery extends ReadJournal {
 
   /**

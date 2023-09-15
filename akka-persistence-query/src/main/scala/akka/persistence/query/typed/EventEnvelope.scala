@@ -7,7 +7,6 @@ package akka.persistence.query.typed
 import java.util.{ Set => JSet }
 import java.util.Optional
 
-import akka.annotation.ApiMayChange
 import akka.persistence.query.Offset
 import akka.util.HashCode
 import akka.util.ccompat.JavaConverters._
@@ -120,10 +119,7 @@ object EventEnvelope {
  * `System.currentTimeMillis`).
  *
  * It is an improved `EventEnvelope` compared to [[akka.persistence.query.EventEnvelope]].
- *
- * API May Change
  */
-@ApiMayChange
 final class EventEnvelope[Event](
     val offset: Offset,
     val persistenceId: String,
