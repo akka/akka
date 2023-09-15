@@ -12,8 +12,6 @@ import akka.stream.impl.RetryFlowCoordinator
 object RetryFlow {
 
   /**
-   * API may change!
-   *
    * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `decideRetry` function. It takes the originally emitted
@@ -39,7 +37,6 @@ object RetryFlow {
    * @param flow a flow to retry elements from
    * @param decideRetry retry condition decision function
    */
-  @ApiMayChange(issue = "https://github.com/akka/akka/issues/27960")
   def withBackoff[In, Out, Mat](
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
@@ -53,8 +50,6 @@ object RetryFlow {
     }
 
   /**
-   * API may change!
-   *
    * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `decideRetry` function. It takes the originally emitted
@@ -78,7 +73,6 @@ object RetryFlow {
    * @param flow a flow with context to retry elements from
    * @param decideRetry retry condition decision function
    */
-  @ApiMayChange(issue = "https://github.com/akka/akka/issues/27960")
   def withBackoffAndContext[In, CtxIn, Out, CtxOut, Mat](
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
