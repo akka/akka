@@ -7,6 +7,7 @@ package akka.actor.typed.eventstream
 import akka.actor.DeadLetter
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Props
@@ -14,13 +15,11 @@ import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.SpawnProtocol.Spawn
 import akka.actor.typed.eventstream.EventStream.Publish
 import akka.actor.typed.eventstream.EventStream.Subscribe
-import akka.actor.typed.eventstream.LoggingDocSpec.ListenerActor
-import akka.util.Timeout
+import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 object LoggingDocSpec {
 
@@ -44,9 +43,11 @@ object LoggingDocSpec {
     context.system.eventStream ! Subscribe(adapter)
 
     override def onMessage(msg: String): Behavior[String] = {
-      case msg: String =>
-        println(msg)
-        Behaviors.same
+      msg match {
+        case m: String =>
+          println(m)
+          Behaviors.same
+      }
     }
   }
   //#deadletters
@@ -67,12 +68,16 @@ object LoggingDocSpec {
     import ListenerActor._
 
     override def onMessage(msg: AllKindsOfMusic): Behavior[AllKindsOfMusic] = {
-      case m: Jazz =>
-        println(s"${context.self.path.name} is listening to: ${m.artist}")
-        Behaviors.same
-      case m: Electronic =>
-        println(s"${context.self.path.name} is listening to: ${m.artist}")
-        Behaviors.same
+      msg match {
+        case m: Jazz =>
+          println(s"${context.self.path.name} is listening to: ${m.artist}")
+          Behaviors.same
+        case m: Electronic =>
+          println(s"${context.self.path.name} is listening to: ${m.artist}")
+          Behaviors.same
+        case _ =>
+          throw new IllegalArgumentException("ListenerActor receive unexpected message")
+      }
     }
   }
   //#superclass-subscription-eventstream
@@ -80,23 +85,24 @@ object LoggingDocSpec {
 }
 
 class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
+  import LoggingDocSpec._
+  import akka.actor.typed.scaladsl.AskPattern._
 
   "allow registration to dead letters" in {
-    import LoggingDocSpec.DeadLetterListener
-    import akka.actor.typed.SpawnProtocol.Spawn
-    //#deadletters
-    val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SpawnProtocol")
-    system ! Spawn(behavior = DeadLetterListener(), name = "DeadLetterListener", props = Props.empty, _)
-    //#deadletters
+    // #deadletters
+    ActorSystem(Behaviors.setup[Void] { context =>
+      context.spawn(DeadLetterListener(), "DeadLetterListener", Props.empty)
+      Behaviors.empty
+    }, "System")
+    // #deadletters
   }
 
   "demonstrate superclass subscriptions on typed eventStream" in {
     import LoggingDocSpec.ListenerActor._
-    import akka.actor.typed.scaladsl.AskPattern._
     //#superclass-subscription-eventstream
+
     implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SpawnProtocol")
     implicit val ec: ExecutionContext = system.executionContext
-    implicit val timeout: Timeout = Timeout(3.seconds)
 
     val jazzListener: Future[ActorRef[Jazz]] =
       system.ask(Spawn(behavior = ListenerActor(), name = "jazz", props = Props.empty, _))
@@ -117,7 +123,7 @@ class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
   }
 
   "allow registration to suppressed dead letters" in {
-    val listener: ActorRef[Any] = ???
+    val listener: ActorRef[Any] = TestProbe().ref
 
     //#suppressed-deadletters
     import akka.actor.SuppressedDeadLetter

@@ -33,11 +33,10 @@ import akka.actor.typed.ActorSystem;
 
 public class LoggingDocTest extends JUnitSuite {
 
-
     @Test
     public void subscribeToDeadLetters() {
         // #deadletters
-        ActorSystem<String> system = ActorSystem.create(DeadLetterActor.create(), "DeadLetters");
+        ActorSystem<DeadLetter> system = ActorSystem.create(Behaviors.empty(), "DeadLetters");
         system.eventStream().tell(new Subscribe<>(DeadLetter.class, system));
         // #deadletters
         ActorTestKit.shutdown(system);
