@@ -33,19 +33,13 @@ object LoggingDocSpec {
   object DeadLetterListener {
 
     def apply(): Behavior[String] = Behaviors.setup { context =>
-      new DeadLetterListener(context)
-    }
-  }
+      // subscribe DeadLetter at startup.
+      val adapter = context.messageAdapter[DeadLetter](d => d.message.toString)
+      context.system.eventStream ! Subscribe(adapter)
 
-  class DeadLetterListener(context: ActorContext[String]) extends AbstractBehavior[String](context) {
-
-    val adapter = context.messageAdapter[DeadLetter](d => d.message.toString)
-    context.system.eventStream ! Subscribe(adapter)
-
-    override def onMessage(msg: String): Behavior[String] = {
-      msg match {
-        case m: String =>
-          println(m)
+      Behaviors.receiveMessage {
+        case msg: String =>
+          println(msg)
           Behaviors.same
       }
     }
@@ -58,16 +52,7 @@ object LoggingDocSpec {
     case class Jazz(artist: String) extends AllKindsOfMusic
     case class Electronic(artist: String) extends AllKindsOfMusic
 
-    def apply(): Behavior[ListenerActor.AllKindsOfMusic] = Behaviors.setup { context =>
-      new ListenerActor(context)
-    }
-  }
-  class ListenerActor(context: ActorContext[ListenerActor.AllKindsOfMusic])
-      extends AbstractBehavior[ListenerActor.AllKindsOfMusic](context) {
-
-    import ListenerActor._
-
-    override def onMessage(msg: AllKindsOfMusic): Behavior[AllKindsOfMusic] = {
+    def apply(): Behavior[ListenerActor.AllKindsOfMusic] = Behaviors.receive { (context, msg) =>
       msg match {
         case m: Jazz =>
           println(s"${context.self.path.name} is listening to: ${m.artist}")
@@ -76,7 +61,7 @@ object LoggingDocSpec {
           println(s"${context.self.path.name} is listening to: ${m.artist}")
           Behaviors.same
         case _ =>
-          throw new IllegalArgumentException("ListenerActor receive unexpected message")
+          Behaviors.same
       }
     }
   }
