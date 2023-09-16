@@ -333,7 +333,7 @@ akka {
 ```
 
 To customize the logging further or take other actions for dead letters you can subscribe
-to the @ref:[Event Stream](../event-bus.md#event-stream).
+to the @ref:[Event Stream](event-bus.md#event-stream).
 
 ### Auxiliary logging options
 
