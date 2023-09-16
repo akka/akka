@@ -1,0 +1,133 @@
+/*
+ * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.actor.typed.eventstream
+
+import akka.actor.DeadLetter
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Props
+import akka.actor.typed.SpawnProtocol
+import akka.actor.typed.SpawnProtocol.Spawn
+import akka.actor.typed.eventstream.EventStream.Publish
+import akka.actor.typed.eventstream.EventStream.Subscribe
+import akka.actor.typed.eventstream.LoggingDocSpec.ListenerActor
+import akka.util.Timeout
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+
+object LoggingDocSpec {
+
+  //#deadletters
+  import akka.actor.typed.Behavior
+  import akka.actor.typed.eventstream.EventStream.Subscribe
+  import akka.actor.typed.scaladsl.AbstractBehavior
+  import akka.actor.typed.scaladsl.ActorContext
+  import akka.actor.typed.scaladsl.Behaviors
+
+  object DeadLetterListener {
+
+    def apply(): Behavior[String] = Behaviors.setup { context =>
+      new DeadLetterListener(context)
+    }
+  }
+
+  class DeadLetterListener(context: ActorContext[String]) extends AbstractBehavior[String](context) {
+
+    val adapter = context.messageAdapter[DeadLetter](d => d.message.toString)
+    context.system.eventStream ! Subscribe(adapter)
+
+    override def onMessage(msg: String): Behavior[String] = {
+      case msg: String =>
+        println(msg)
+        Behaviors.same
+    }
+  }
+  //#deadletters
+
+  //#superclass-subscription-eventstream
+  object ListenerActor {
+    abstract class AllKindsOfMusic { def artist: String }
+    case class Jazz(artist: String) extends AllKindsOfMusic
+    case class Electronic(artist: String) extends AllKindsOfMusic
+
+    def apply(): Behavior[ListenerActor.AllKindsOfMusic] = Behaviors.setup { context =>
+      new ListenerActor(context)
+    }
+  }
+  class ListenerActor(context: ActorContext[ListenerActor.AllKindsOfMusic])
+      extends AbstractBehavior[ListenerActor.AllKindsOfMusic](context) {
+
+    import ListenerActor._
+
+    override def onMessage(msg: AllKindsOfMusic): Behavior[AllKindsOfMusic] = {
+      case m: Jazz =>
+        println(s"${context.self.path.name} is listening to: ${m.artist}")
+        Behaviors.same
+      case m: Electronic =>
+        println(s"${context.self.path.name} is listening to: ${m.artist}")
+        Behaviors.same
+    }
+  }
+  //#superclass-subscription-eventstream
+
+}
+
+class LoggingDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
+
+  "allow registration to dead letters" in {
+    import LoggingDocSpec.DeadLetterListener
+    import akka.actor.typed.SpawnProtocol.Spawn
+    //#deadletters
+    val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SpawnProtocol")
+    system ! Spawn(behavior = DeadLetterListener(), name = "DeadLetterListener", props = Props.empty, _)
+    //#deadletters
+  }
+
+  "demonstrate superclass subscriptions on typed eventStream" in {
+    import LoggingDocSpec.ListenerActor._
+    import akka.actor.typed.scaladsl.AskPattern._
+    //#superclass-subscription-eventstream
+    implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SpawnProtocol")
+    implicit val ec: ExecutionContext = system.executionContext
+    implicit val timeout: Timeout = Timeout(3.seconds)
+
+    val jazzListener: Future[ActorRef[Jazz]] =
+      system.ask(Spawn(behavior = ListenerActor(), name = "jazz", props = Props.empty, _))
+    val musicListener: Future[ActorRef[AllKindsOfMusic]] =
+      system.ask(Spawn(behavior = ListenerActor(), name = "music", props = Props.empty, _))
+
+    for (jazzListenerRef <- jazzListener; musicListenerRef <- musicListener) {
+      system.eventStream ! Subscribe(jazzListenerRef)
+      system.eventStream ! Subscribe(musicListenerRef)
+    }
+
+    // only musicListener gets this message, since it listens to *all* kinds of music:
+    system.eventStream ! Publish(Electronic("Parov Stelar"))
+
+    // jazzListener and musicListener will be notified about Jazz:
+    system.eventStream ! Publish(Jazz("Sonny Rollins"))
+    //#superclass-subscription-eventstream
+  }
+
+  "allow registration to suppressed dead letters" in {
+    val listener: ActorRef[Any] = ???
+
+    //#suppressed-deadletters
+    import akka.actor.SuppressedDeadLetter
+    system.eventStream ! Subscribe[SuppressedDeadLetter](listener)
+    //#suppressed-deadletters
+
+    //#all-deadletters
+    import akka.actor.AllDeadLetters
+    system.eventStream ! Subscribe[AllDeadLetters](listener)
+    //#all-deadletters
+  }
+
+}

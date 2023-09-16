@@ -211,19 +211,19 @@ The following example demonstrates how a simple subscription works. Given a simp
 
 @@@ div { .group-scala }
 
-@@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #deadletters }
+@@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #deadletters }
 
 @@@
 
 @@@ div { .group-java }
 
-@@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #imports-deadletter }
+@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #imports-deadletter }
 
-@@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #deadletter-actor }
+@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #deadletter-actor }
 
 it can be subscribed like this:
 
-@@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #deadletters }
+@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #deadletters }
 
 @@@
 
@@ -233,10 +233,10 @@ is implemented in the event stream, it is possible to subscribe to a group of ev
 subscribing to their common superclass as demonstrated in the following example:
 
 Scala
-:  @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
+:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
 
 Java
-:  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
+:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
 
 Similarly to @ref:[Actor Classification](#actor-classification), @apidoc[event.EventStream] will automatically remove subscribers when they terminate.
 
@@ -261,22 +261,7 @@ akka {
 
 The handlers listed here by fully-qualified class name will be subscribed to
 all log event classes with priority higher than or equal to the configured
-log-level and their subscriptions are kept in sync when changing the log-level
-at runtime:
-
-Scala
-:   @@@vars
-```
-system.eventStream.setLogLevel(Logging.DebugLevel)
-```
-@@@
-
-Java
-:   @@@vars
-```
-system.eventStream.setLogLevel(Logging.DebugLevel());
-```
-@@@
+log-level.
 
 This means that log events for a level which will not be logged are
 typically not dispatched at all (unless manual subscriptions to the respective
@@ -298,18 +283,18 @@ However, in case you find yourself in need of debugging these kinds of low level
 it's still possible to subscribe to them explicitly:
 
 Scala
-:  @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #suppressed-deadletters }
+:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #suppressed-deadletters }
 
 Java
-:  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #suppressed-deadletters }
+:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #suppressed-deadletters }
 
 or all dead letters (including the suppressed ones):
 
 Scala
-:  @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #all-deadletters }
+:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #all-deadletters }
 
 Java
-:  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #all-deadletters }
+:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #all-deadletters }
 
 ### Other Uses
 
