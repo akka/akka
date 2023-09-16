@@ -26,8 +26,6 @@ object LoggingDocSpec {
   //#deadletters
   import akka.actor.typed.Behavior
   import akka.actor.typed.eventstream.EventStream.Subscribe
-  import akka.actor.typed.scaladsl.AbstractBehavior
-  import akka.actor.typed.scaladsl.ActorContext
   import akka.actor.typed.scaladsl.Behaviors
 
   object DeadLetterListener {
