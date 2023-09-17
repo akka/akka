@@ -32,7 +32,6 @@ object AskSpec {
   sealed trait Proxy
   final case class ProxyMsg(s: String) extends Proxy
   final case class ProxyReply(s: String) extends Proxy
-
 }
 
 class AskSpec extends ScalaTestWithActorTestKit("""
@@ -144,20 +143,19 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
 
     "publish dead-letter if the context.ask has completed on timeout" in {
-      implicit val timeout = Timeout(1.nanosecond)
+      implicit val timeout = Timeout(1.millis)
       val actor: ActorRef[Msg] = spawn(behavior)
 
       val mockActor: ActorRef[Proxy] = spawn(Behaviors.receive[Proxy]((context, msg) =>
         msg match {
           case ProxyMsg(s) =>
-            context.ask[Msg, String](actor, Bar(s, 10.millis, _)) {
+            context.ask[Msg, String](actor, Bar(s, timeout.duration.+(10.millis), _)) {
               case Success(result) => ProxyReply(result)
               case Failure(ex)     => throw ex
             }
             Behaviors.same
           case ProxyReply(s) =>
-            println(s"receive reply message: ${s}")
-            Behaviors.same
+            throw new IllegalArgumentException(s"unexpected reply: $s")
         }))
 
       mockActor ! ProxyMsg("foo")
