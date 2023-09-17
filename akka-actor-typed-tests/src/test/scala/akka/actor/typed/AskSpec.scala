@@ -4,8 +4,9 @@
 
 package akka.actor.typed
 
-import scala.concurrent.{ExecutionContext, Future, TimeoutException}
+import scala.concurrent.{ ExecutionContext, Future, TimeoutException }
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Success
 import scala.util.Failure
 
@@ -119,7 +120,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
 
     "fail the future if the actor has terminated" in {
-      implicit val timeout = Timeout(10.millis)
+      implicit val timeout = Timeout(10 millis)
       val actor: ActorRef[Msg] = spawn(behavior)
 
       val deadLetterProbe = createDeadLetterProbe()
@@ -143,13 +144,13 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
 
     "publish dead-letter if the context.ask has completed on timeout" in {
-      implicit val timeout = Timeout(1.millis)
+      implicit val timeout = Timeout(1 millis)
       val actor: ActorRef[Msg] = spawn(behavior)
 
       val mockActor: ActorRef[Proxy] = spawn(Behaviors.receive[Proxy]((context, msg) =>
         msg match {
           case ProxyMsg(s) =>
-            context.ask[Msg, String](actor, Bar(s, timeout.duration.+(10.millis), _)) {
+            context.ask[Msg, String](actor, Bar(s, timeout.duration.+(10 millis), _)) {
               case Success(result) => ProxyReply(result)
               case Failure(ex)     => throw ex
             }
