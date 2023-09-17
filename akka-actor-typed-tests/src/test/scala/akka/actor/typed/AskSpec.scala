@@ -6,7 +6,6 @@ package akka.actor.typed
 
 import scala.concurrent.{ ExecutionContext, Future, TimeoutException }
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.Success
 import scala.util.Failure
 
