@@ -27,8 +27,8 @@ object Dependencies {
   val logbackVersion = "1.2.12"
   val scalaFortifyVersion = "1.0.22"
   val fortifySCAVersion = "22.1"
-  val jacksonCoreVersion = "2.13.5"
-  val jacksonDatabindVersion = jacksonCoreVersion
+  val jacksonCoreVersion = "2.15.2" // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
+  val jacksonDatabindVersion = jacksonCoreVersion // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 
   val scala212Version = "2.12.18"
   val scala213Version = "2.13.11"

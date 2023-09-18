@@ -20,7 +20,7 @@ public class CustomerMigration extends JacksonMigration {
   public JsonNode transform(int fromVersion, JsonNode json) {
     ObjectNode root = (ObjectNode) json;
     if (fromVersion <= 1) {
-      ObjectNode shippingAddress = root.with("shippingAddress");
+      ObjectNode shippingAddress = root.withObject("/shippingAddress");
       shippingAddress.set("street", root.get("street"));
       shippingAddress.set("city", root.get("city"));
       shippingAddress.set("zipCode", root.get("zipCode"));

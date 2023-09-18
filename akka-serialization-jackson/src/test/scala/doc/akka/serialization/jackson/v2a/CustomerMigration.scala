@@ -16,7 +16,7 @@ class CustomerMigration extends JacksonMigration {
   override def transform(fromVersion: Int, json: JsonNode): JsonNode = {
     val root = json.asInstanceOf[ObjectNode]
     if (fromVersion <= 1) {
-      val shippingAddress = root.`with`("shippingAddress")
+      val shippingAddress = root.withObject("/shippingAddress")
       shippingAddress.set[JsonNode]("street", root.get("street"))
       shippingAddress.set[JsonNode]("city", root.get("city"))
       shippingAddress.set[JsonNode]("zipCode", root.get("zipCode"))
