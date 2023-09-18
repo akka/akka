@@ -323,9 +323,9 @@ import akka.stream.stage._
           if (currentIterator.hasNext) {
             if (isAvailable(out)) {
               push(out, currentIterator.next())
-            }
-            if (!currentIterator.hasNext) {
-              completeStage()
+              if (!currentIterator.hasNext) {
+                completeStage()
+              }
             }
           } else {
             completeStage()
