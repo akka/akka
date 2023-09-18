@@ -610,7 +610,7 @@ private[akka] final class PromiseActorRef(
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
     case Stopped | _: StoppedWithPath =>
-      provider.deadLetters ! message
+      provider.deadLetters ! DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this)
       onComplete(message, alreadyCompleted = true)
     case _ =>
       if (message == null) throw InvalidMessageException("Message is null")
