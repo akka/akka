@@ -310,6 +310,28 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }).onFailure[IllegalArgumentException](strategy)
   }
 
+  class FailingRestartBackoffTestSetup(strategy: SupervisorStrategy) {
+    val probe = TestProbe[AnyRef]("evt")
+
+    def behv =
+      supervise(setup[Command]{ context =>
+        // inject some delay on here.
+        Thread.sleep(200)
+        Behaviors
+          .receiveMessage[Command] { msg =>
+            msg match {
+              case Throw(e) =>
+                context.log.info(s"receive throwable ${e.getMessage}")
+                probe.ref ! msg
+                throw e
+              case _ =>
+                context.log.info("receive other")
+                Behaviors.same
+            }
+          }
+      }).onFailure[RuntimeException](strategy)
+  }
+
   "A supervised actor" must {
     "receive message" in {
       val probe = TestProbe[Event]("evt")
@@ -1034,6 +1056,23 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       LoggingTestKit.error[ActorInitializationException].expect {
         spawn(behv)
       }
+    }
+
+    "fail on receive Throw expect not msg lost" in new FailingRestartBackoffTestSetup(strategy = SupervisorStrategy.restartWithBackoff(10.millis, 10_000.millis, 0.floor).withStashCapacity(2_000)){
+      val exception = new RuntimeException("mockException")
+       val msg: Throw = Throw(exception)
+      val ref = spawn(behv)
+      ref ! msg
+      ref ! msg
+      ref ! msg
+      ref ! msg
+      ref ! msg
+
+      probe.expectMessage(msg)
+      probe.expectMessage(msg)
+      probe.expectMessage(msg)
+      probe.expectMessage(msg)
+      probe.expectMessage(msg)
     }
 
     "fail to resume when deferred factory throws" in new FailingDeferredTestSetup(
