@@ -158,7 +158,7 @@ In the case of multiple persisted events, the `eventHandler` is called with each
 
 The state is typically defined as an immutable class and then the event handler returns a new instance of the state.
 You may choose to use a mutable class for the state, and then the event handler may update the state instance and
-return the same instance. Both immutable and mutable state is supported.
+return the same instance. Both immutable and mutable state is supported, but it must only be modified in the event handler.
 
 The same event handler is also used when the entity is started up to recover its state from the stored events.
 
