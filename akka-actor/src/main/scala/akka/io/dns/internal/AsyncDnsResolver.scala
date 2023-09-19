@@ -128,6 +128,13 @@ private[io] final class AsyncDnsResolver(
       ttl.foreach { t =>
         cache.put(resolve.name -> resolve.requestType, resolved, t)
       }
+
+    case ResolutionFailed(resolve, failure) =>
+      inflightRequests.get(resolve).foreach { requestors =>
+        requestors.foreach(_ ! failure)
+      }
+
+      inflightRequests.remove(resolve)
   }
 }
 
@@ -165,6 +172,8 @@ private[akka] object AsyncDnsResolver {
       resolve: DnsProtocol.Resolve,
       resolved: DnsProtocol.Resolved,
       ttl: Option[CachePolicy])
+
+  private final case class ResolutionFailed(resolve: DnsProtocol.Resolve, failure: Status.Failure)
 
   // RequestIdInjector handles these
   private final case class DnsQuestionPreInjection(resolver: ActorRef, inject: Short => DnsQuestion, timeout: Timeout)
@@ -272,7 +281,11 @@ private[akka] object AsyncDnsResolver {
     private def failToResolve(): Unit =
       answerWithFailure(AsyncDnsResolver.failToResolve(name, settings.NameServers))
 
-    private def answerWithFailure(ex: Throwable): Unit = answer(Status.Failure(ex))
+    private def answerWithFailure(ex: Throwable): Unit = {
+      val failure = Status.Failure(ex)
+      cacheActor ! ResolutionFailed(resolve, failure)
+      answer(failure)
+    }
 
     private def answer(withMsg: Any): Unit = {
       answerTo ! withMsg
@@ -360,7 +373,6 @@ private[akka] object AsyncDnsResolver {
     }
 
     private def handleResolved(resolved: DnsProtocol.Resolved): Unit = {
-      val resolve = DnsProtocol.Resolve(name, mode)
       if (resolved.records.nonEmpty) {
         val minTtl = (settings.PositiveCachePolicy +: resolved.records.map(_.ttl)).min
         cacheActor ! ResolutionFinished(resolve, resolved, Some(minTtl))

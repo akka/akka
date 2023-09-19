@@ -36,6 +36,9 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
           id-strategy = NOT-IN-ANY-WAY-RANDOM-test-sequential
         """)
 
+  val configWithExtraShortTimeout =
+    defaultConfig.withValue("resolve-timeout", ConfigValueFactory.fromAnyRef("1 ms"))
+
   trait Setup {
     val dnsClient1 = TestProbe()
     val dnsClient2 = TestProbe()
@@ -226,8 +229,6 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
     }
 
     "attempt to drop a failed question" in new Setup {
-      val configWithExtraShortTimeout =
-        defaultConfig.withValue("resolve-timeout", ConfigValueFactory.fromAnyRef("1 ms"))
       override val r = resolver(List(dnsClient1.ref), configWithExtraShortTimeout)
 
       r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
@@ -303,6 +304,57 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       asker1.expectMsg(Resolved("cats.com", im.Seq.empty))
       asker2.expectMsg(Resolved("cats.com", im.Seq.empty))
     }
+  }
+
+  "clear failed inflight requests" in new Setup {
+    val slowDnsClient = TestProbe()
+    @volatile var qCount: Int = 0
+
+    val firstSender = TestProbe()
+    val secondSender = TestProbe()
+
+    val ipv4Record = ARecord("cats.com", Ttl.fromPositive(1.minute), InetAddress.getByName("127.0.0.1"))
+
+    slowDnsClient.setAutoPilot(new TestActor.AutoPilot {
+      def run(sender: ActorRef, msg: Any): TestActor.AutoPilot = {
+        msg match {
+          case Question4(id, addr) if addr == ipv4Record.name =>
+            // ignore the first question
+            if (qCount > 0) {
+              sender ! Answer(id, im.Seq(ipv4Record))
+            }
+
+            qCount += 1
+
+          case _ => ()
+        }
+
+        TestActor.KeepRunning
+      }
+    })
+
+    override val r = resolver(List(slowDnsClient.ref), configWithExtraShortTimeout)
+
+    def requestFrom(sendingProbe: TestProbe): Unit = {
+      r.tell(Resolve(ipv4Record.name, Ip(ipv4 = true, ipv6 = false)), sendingProbe.ref)
+    }
+
+    requestFrom(firstSender)
+    requestFrom(secondSender)
+
+    awaitAssert(a = {
+      qCount shouldBe 1
+    }, max = 100.millis, interval = 1.milli)
+
+    firstSender.expectMsgType[Failure]
+    secondSender.expectMsgType[Failure]
+
+    // if at first you don't succeed...
+    requestFrom(firstSender)
+    requestFrom(secondSender)
+
+    firstSender.expectMsg(Resolved(ipv4Record.name, im.Seq(ipv4Record)))
+    secondSender.expectMsg(Resolved(ipv4Record.name, im.Seq(ipv4Record)))
   }
 
   def resolver(clients: List[ActorRef], config: Config): ActorRef = {
