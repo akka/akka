@@ -314,21 +314,20 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     val probe = TestProbe[AnyRef]("evt")
 
     def behv =
-      supervise(setup[Command]{ context =>
+      supervise(setup[Command] { context =>
         // inject some delay on here.
         Thread.sleep(200)
-        Behaviors
-          .receiveMessage[Command] { msg =>
-            msg match {
-              case Throw(e) =>
-                context.log.info(s"receive throwable ${e.getMessage}")
-                probe.ref ! msg
-                throw e
-              case _ =>
-                context.log.info("receive other")
-                Behaviors.same
-            }
+        Behaviors.receiveMessage[Command] { msg =>
+          msg match {
+            case Throw(e) =>
+              context.log.info(s"receive throwable ${e.getMessage}")
+              probe.ref ! msg
+              throw e
+            case _ =>
+              context.log.info("receive other")
+              Behaviors.same
           }
+        }
       }).onFailure[RuntimeException](strategy)
   }
 
@@ -1058,9 +1057,12 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    "fail on receive Throw expect not msg lost" in new FailingRestartBackoffTestSetup(strategy = SupervisorStrategy.restartWithBackoff(10.millis, 10_000.millis, 0.floor).withStashCapacity(2_000)){
+    "fail on receive Throw expect not msg lost" in new FailingRestartBackoffTestSetup(
+      strategy = SupervisorStrategy
+        .restartWithBackoff(minBackoff = 10.millis, maxBackoff = 1000.millis, randomFactor = 0)
+        .withStashCapacity(10)) {
       val exception = new RuntimeException("mockException")
-       val msg: Throw = Throw(exception)
+      val msg: Throw = Throw(exception)
       val ref = spawn(behv)
       ref ! msg
       ref ! msg

@@ -359,8 +359,9 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       case OptionVal.Some((stashBuffer, _)) =>
         // keep stashBuffer on here.
         OptionVal.Some((stashBuffer, childrenToStop))
-      case _ => OptionVal.Some(
-        (StashBuffer[Any](ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], stashCapacity), childrenToStop))
+      case _ =>
+        OptionVal.Some(
+          (StashBuffer[Any](ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], stashCapacity), childrenToStop))
     }
     strategy match {
       case backoff: Backoff =>
