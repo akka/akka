@@ -12,13 +12,8 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.annotation.ApiMayChange
 import akka.cluster.sharding.external.internal.ExternalShardAllocationClientImpl
 
-/**
- * API May Change
- */
-@ApiMayChange
 final class ExternalShardAllocation(system: ExtendedActorSystem) extends Extension {
 
   private val clients = new ConcurrentHashMap[String, ExternalShardAllocationClientImpl]
