@@ -93,7 +93,7 @@ private[remote] class TestOutboundContext(
   }
 
   override def quarantine(reason: String): Unit = synchronized {
-    _associationState = _associationState.newQuarantined()
+    _associationState = _associationState.newQuarantined(harmless = false)
   }
 
   override def isOrdinaryMessageStreamActive(): Boolean = true
