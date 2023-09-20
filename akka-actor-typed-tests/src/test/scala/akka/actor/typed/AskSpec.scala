@@ -11,6 +11,7 @@ import scala.util.Failure
 
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import akka.actor.DeadLetter
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -57,7 +58,8 @@ class AskSpec extends ScalaTestWithActorTestKit("""
   }
 
   "Ask pattern" must {
-    "fail the future if the actor is already terminated" in {
+    "fail the future if the actor is already terminated and publish future asks to dead-letter" in {
+      val deadLetterProbe = createDeadLetterProbe()
       val ref = spawn(behavior)
       val stopResult: Future[Unit] = ref.ask(Stop.apply)
       stopResult.futureValue
@@ -68,6 +70,17 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should include("had already been terminated.")
+
+      deadLetterProbe.receiveMessage() match {
+        case DeadLetter(Foo(s, _), _, recipient) =>
+          s should ===("bar")
+
+          val classicRef = ActorRefAdapter.toClassic(ref)
+          classicRef shouldNot equal(system.classicSystem.deadLetters) // if this is true, all bets are off
+          recipient shouldEqual classicRef
+
+        case DeadLetter(msg, _, _) => fail(s"unexpected DeadLetter: $msg")
+      }
     }
 
     "succeed when the actor is alive" in {
@@ -116,30 +129,6 @@ class AskSpec extends ScalaTestWithActorTestKit("""
         case Foo(s, _) => s should ===("bar")
         case _         => fail(s"unexpected DeadLetter: $deadLetter")
       }
-    }
-
-    "fail the future if the actor has terminated" in {
-      val actor: ActorRef[Msg] = spawn(behavior)
-
-      val deadLetterProbe = createDeadLetterProbe()
-      val probe = createTestProbe[Any]()
-      actor ! Stop(probe.ref)
-      implicit val timeout: Timeout = 10.millis
-
-      val answer: Future[String] = actor.ask(Foo("bar", _))
-      val result = answer.failed.futureValue
-      result shouldBe a[TimeoutException]
-      result.getMessage should startWith("Ask timed out on")
-
-      val deadLetter = deadLetterProbe.receiveMessage()
-      deadLetter.message match {
-        case Foo(s, _) => s should ===("bar")
-        case _         => fail(s"unexpected DeadLetter: $deadLetter")
-      }
-
-      val deadLettersRef = system.classicSystem.deadLetters
-      deadLetter.recipient shouldNot equal(deadLettersRef)
-      deadLetter.recipient should equal(ActorRefAdapter.toClassic(actor))
     }
 
     "publish dead-letter if the context.ask has completed on timeout" in {
