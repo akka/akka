@@ -5,20 +5,22 @@
 package akka.persistence.serialization
 
 import java.io.NotSerializableException
-
 import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-
 import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.actor.Actor
 import akka.persistence._
 import akka.persistence.AtLeastOnceDelivery._
+import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
 import akka.persistence.serialization.{ MessageFormats => mf }
 import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization._
 import akka.util.ccompat._
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -37,6 +39,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   val PersistentReprClass = classOf[PersistentRepr]
   val PersistentImplClass = classOf[PersistentImpl]
   val AtLeastOnceDeliverySnapshotClass = classOf[AtLeastOnceDeliverySnapshot]
+  val PersistentStateChangeEventClass = classOf[StateChangeEvent]
+  val PersistentFSMSnapshotClass = classOf[PersistentFSMSnapshot[Any]]
 
   private lazy val serialization = SerializationExtension(system)
 
@@ -47,10 +51,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
    * message's payload to a matching `akka.serialization.Serializer`.
    */
   def toBinary(o: AnyRef): Array[Byte] = o match {
-    case p: PersistentRepr              => persistentMessageBuilder(p).build().toByteArray
-    case a: AtomicWrite                 => atomicWriteBuilder(a).build().toByteArray
-    case a: AtLeastOnceDeliverySnapshot => atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
-    case _                              => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
+    case p: PersistentRepr                        => persistentMessageBuilder(p).build().toByteArray
+    case a: AtomicWrite                           => atomicWriteBuilder(a).build().toByteArray
+    case a: AtLeastOnceDeliverySnapshot           => atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
+    case s: StateChangeEvent                      => stateChangeBuilder(s).build.toByteArray
+    case p: PersistentFSMSnapshot[Any @unchecked] => persistentFSMSnapshotBuilder(p).build.toByteArray
+    case _                                        => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   /**
@@ -66,7 +72,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
         case AtomicWriteClass    => atomicWrite(mf.AtomicWrite.parseFrom(bytes))
         case AtLeastOnceDeliverySnapshotClass =>
           atLeastOnceDeliverySnapshot(mf.AtLeastOnceDeliverySnapshot.parseFrom(bytes))
-        case _ => throw new NotSerializableException(s"Can't deserialize object of type ${c}")
+        case PersistentStateChangeEventClass => stateChange(mf.PersistentStateChangeEvent.parseFrom(bytes))
+        case PersistentFSMSnapshotClass      => persistentFSMSnapshot(mf.PersistentFSMSnapshot.parseFrom(bytes))
+        case _                               => throw new NotSerializableException(s"Can't deserialize object of type ${c}")
       }
   }
 
@@ -88,6 +96,25 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     builder
   }
 
+  private[persistence] def stateChangeBuilder(stateChange: StateChangeEvent): mf.PersistentStateChangeEvent.Builder = {
+    val builder = mf.PersistentStateChangeEvent.newBuilder.setStateIdentifier(stateChange.stateIdentifier)
+    stateChange.timeout match {
+      case None          => builder
+      case Some(timeout) => builder.setTimeoutNanos(timeout.toNanos)
+    }
+  }
+
+  private[persistence] def persistentFSMSnapshotBuilder(
+      persistentFSMSnapshot: PersistentFSMSnapshot[Any]): mf.PersistentFSMSnapshot.Builder = {
+    val builder = mf.PersistentFSMSnapshot.newBuilder
+      .setStateIdentifier(persistentFSMSnapshot.stateIdentifier)
+      .setData(persistentPayloadBuilder(persistentFSMSnapshot.data.asInstanceOf[AnyRef]))
+    persistentFSMSnapshot.timeout match {
+      case None          => builder
+      case Some(timeout) => builder.setTimeoutNanos(timeout.toNanos)
+    }
+  }
+
   def atLeastOnceDeliverySnapshot(
       atLeastOnceDeliverySnapshot: mf.AtLeastOnceDeliverySnapshot): AtLeastOnceDeliverySnapshot = {
     import akka.util.ccompat.JavaConverters._
@@ -100,6 +127,27 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     }
 
     AtLeastOnceDeliverySnapshot(atLeastOnceDeliverySnapshot.getCurrentDeliveryId, unconfirmedDeliveries.result())
+  }
+
+  @nowarn("msg=deprecated")
+  def stateChange(persistentStateChange: mf.PersistentStateChangeEvent): StateChangeEvent = {
+    StateChangeEvent(
+      persistentStateChange.getStateIdentifier,
+      // timeout field is deprecated, left for backward compatibility. timeoutNanos is used instead.
+      if (persistentStateChange.hasTimeoutNanos)
+        Some(Duration.fromNanos(persistentStateChange.getTimeoutNanos))
+      else if (persistentStateChange.hasTimeout)
+        Some(Duration(persistentStateChange.getTimeout).asInstanceOf[FiniteDuration])
+      else None)
+  }
+
+  def persistentFSMSnapshot(persistentFSMSnapshot: mf.PersistentFSMSnapshot): PersistentFSMSnapshot[Any] = {
+    PersistentFSMSnapshot(
+      persistentFSMSnapshot.getStateIdentifier,
+      payload(persistentFSMSnapshot.getData),
+      if (persistentFSMSnapshot.hasTimeoutNanos)
+        Some(Duration.fromNanos(persistentFSMSnapshot.getTimeoutNanos))
+      else None)
   }
 
   private def atomicWriteBuilder(a: AtomicWrite) = {
