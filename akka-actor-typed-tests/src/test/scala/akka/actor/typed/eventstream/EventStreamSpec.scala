@@ -122,6 +122,47 @@ class EventStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
 
   }
 
+  "a system event stream subscriber".can {
+    val rootEventListener = testKit.createTestProbe[Root]()
+
+    "subscribe several times between multiple types" in {
+      testKit.system.eventStream ! Subscribe[Foo](rootEventListener.ref)
+      testKit.system.eventStream ! Subscribe[Bar](rootEventListener.ref)
+      testKit.system.eventStream ! Subscribe[Baz](rootEventListener.ref)
+      testKit.system.eventStream ! Subscribe[Qux](rootEventListener.ref)
+    }
+
+    "listen to events for all subscribed types" in {
+      testKit.system.eventStream ! Publish(Foo())
+      rootEventListener.expectMessage(Foo())
+
+      testKit.system.eventStream ! Publish(Bar())
+      rootEventListener.expectMessage(Bar())
+
+      testKit.system.eventStream ! Publish(Baz())
+      rootEventListener.expectMessage(Baz())
+
+      testKit.system.eventStream ! Publish(Qux())
+      rootEventListener.expectMessage(Qux())
+    }
+
+    "unsubscribe all" in {
+      testKit.system.eventStream ! Unsubscribe(rootEventListener.ref)
+
+      testKit.system.eventStream ! Publish(Foo())
+      rootEventListener.expectNoMessage(ShortWait)
+
+      testKit.system.eventStream ! Publish(Bar())
+      rootEventListener.expectNoMessage(ShortWait)
+
+      testKit.system.eventStream ! Publish(Baz())
+      rootEventListener.expectNoMessage(ShortWait)
+
+      testKit.system.eventStream ! Publish(Qux())
+      rootEventListener.expectNoMessage(ShortWait)
+    }
+  }
+
 }
 
 object EventStreamSpec {
@@ -132,4 +173,9 @@ object EventStreamSpec {
   case class Depth1() extends Root
   sealed trait Level1 extends Root
   case class Depth2() extends Level1
+
+  case class Foo() extends Root
+  case class Bar() extends Root
+  case class Baz() extends Root
+  case class Qux() extends Root
 }
