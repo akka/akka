@@ -129,7 +129,8 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       val answer: Future[String] = actor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
-      result.getMessage should startWith("Ask timed out on")
+      // Message in the TimeoutException depends on the race between the actor stopping and
+      // the PromiseRef initializing... it's not really important for this test
 
       val deadLetter = deadLetterProbe.receiveMessage()
       deadLetter.message match {
