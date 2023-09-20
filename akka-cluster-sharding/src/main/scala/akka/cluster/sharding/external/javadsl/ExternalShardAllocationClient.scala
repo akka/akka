@@ -8,16 +8,14 @@ import java.util.concurrent.CompletionStage
 
 import akka.Done
 import akka.actor.Address
-import akka.annotation.ApiMayChange
+import akka.annotation.DoNotInherit
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.external.ShardLocations
 
 /**
- * API May Change
- *
  * Not for user extension
  */
-@ApiMayChange
+@DoNotInherit
 trait ExternalShardAllocationClient {
 
   /**
