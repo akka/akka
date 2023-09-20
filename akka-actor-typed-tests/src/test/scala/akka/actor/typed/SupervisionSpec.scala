@@ -310,13 +310,20 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }).onFailure[IllegalArgumentException](strategy)
   }
 
-  class FailingRestartBackoffTestSetup(strategy: SupervisorStrategy) {
+  class FailingRestartBackoffTestSetup(
+      minBackoff: FiniteDuration = 10.millis,
+      maxBackoff: FiniteDuration = 1000.millis,
+      capacity: Int = 10,
+      randomFactor: Double = Double.NaN,
+      val cntValue: Int) {
     val probe = TestProbe[AnyRef]("evt")
+    val latch = new CountDownLatch(cntValue)
+    val strategy =
+      SupervisorStrategy.restartWithBackoff(minBackoff, maxBackoff, randomFactor).withStashCapacity(capacity)
 
     def behv =
       supervise(setup[Command] { context =>
-        // inject some delay on here.
-        Thread.sleep(200)
+        latch.countDown()
         Behaviors.receiveMessage[Command] { msg =>
           msg match {
             case Throw(e) =>
@@ -1057,24 +1064,17 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    "fail on receive Throw expect not msg lost" in new FailingRestartBackoffTestSetup(
-      strategy = SupervisorStrategy
-        .restartWithBackoff(minBackoff = 10.millis, maxBackoff = 1000.millis, randomFactor = 0)
-        .withStashCapacity(10)) {
+    "fail on receive Throw expect not msg lost" in new FailingRestartBackoffTestSetup(cntValue = 5) {
       val exception = new RuntimeException("mockException")
       val msg: Throw = Throw(exception)
       val ref = spawn(behv)
-      ref ! msg
-      ref ! msg
-      ref ! msg
-      ref ! msg
-      ref ! msg
-
-      probe.expectMessage(msg)
-      probe.expectMessage(msg)
-      probe.expectMessage(msg)
-      probe.expectMessage(msg)
-      probe.expectMessage(msg)
+      for (_ <- 1 to cntValue) {
+        ref ! msg
+      }
+      latch.await(1000, TimeUnit.MILLISECONDS)
+      for (_ <- 1 to cntValue) {
+        probe.expectMessage(msg)
+      }
     }
 
     "fail to resume when deferred factory throws" in new FailingDeferredTestSetup(
