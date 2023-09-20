@@ -5,7 +5,6 @@
 package akka.persistence.query.typed.javadsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.persistence.query.Offset
 import akka.persistence.query.javadsl.ReadJournal
@@ -19,10 +18,7 @@ import akka.stream.javadsl.Source
  * [[LoadEventQuery]].
  *
  * See also [[EventsBySliceFirehoseQuery]].
- *
- * API May Change
  */
-@ApiMayChange
 trait EventsBySliceQuery extends ReadJournal {
 
   /**

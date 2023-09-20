@@ -7,7 +7,6 @@ package akka.persistence.query
 import java.time.Instant
 import java.util.UUID
 
-import akka.annotation.ApiMayChange
 import akka.util.UUIDComparator
 
 object Offset {
@@ -53,10 +52,13 @@ final case class TimeBasedUUID(value: UUID) extends Offset with Ordered[TimeBase
 }
 
 object TimestampOffset {
-  val Zero: TimestampOffset = TimestampOffset(Instant.EPOCH, Instant.EPOCH, Map.empty)
+  val Zero: TimestampOffset = new TimestampOffset(Instant.EPOCH, Instant.EPOCH, Map.empty)
 
   def apply(timestamp: Instant, seen: Map[String, Long]): TimestampOffset =
-    TimestampOffset(timestamp, Instant.EPOCH, seen)
+    new TimestampOffset(timestamp, Instant.EPOCH, seen)
+
+  def apply(timestamp: Instant, readTimestamp: Instant, seen: Map[String, Long]): TimestampOffset =
+    new TimestampOffset(timestamp, readTimestamp, seen)
 
   /**
    * Try to convert the Offset to a TimestampOffset. Epoch timestamp is used for `NoOffset`.
@@ -72,6 +74,9 @@ object TimestampOffset {
           s"received ${other.getClass.getName}")
     }
   }
+
+  def unapply(timestampOffset: TimestampOffset): Option[(Instant, Instant, Map[String, Long])] =
+    Some((timestampOffset.timestamp, timestampOffset.readTimestamp, timestampOffset.seen))
 }
 
 /**
@@ -91,8 +96,8 @@ object TimestampOffset {
  * @param seen
  *   List of sequence nrs for every persistence id seen at this timestamp
  */
-@ApiMayChange
-final case class TimestampOffset(timestamp: Instant, readTimestamp: Instant, seen: Map[String, Long]) extends Offset {
+final class TimestampOffset private (val timestamp: Instant, val readTimestamp: Instant, val seen: Map[String, Long])
+    extends Offset {
 
   /** Java API */
   def getSeen(): java.util.Map[String, java.lang.Long] = {
