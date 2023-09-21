@@ -5,7 +5,6 @@
 package akka.actor.typed.internal.jfr
 
 import akka.actor.ActorPath
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.internal.ActorFlightRecorder
 import akka.actor.typed.internal.DeliveryFlightRecorder
 import akka.annotation.InternalApi

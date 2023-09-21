@@ -3,7 +3,7 @@
  */
 
 package akka.cluster.sharding.internal.jfr
-import jdk.jfr.{ Category, Enabled, Event, Label, StackTrace, Timespan }
+import jdk.jfr.{ Category, Event, Label, StackTrace, Timespan }
 
 import akka.annotation.InternalApi
 
