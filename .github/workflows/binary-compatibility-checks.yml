@@ -23,7 +23,7 @@ jobs:
         # The versions of scala specified here are only used as `+~...`
         # which ignores the PATCH portion of the version id. These Scala versions don't need
         # to be fully defined here then since Akka build handles which patch version will be used.
-        scalaVersion: [ "2.12", "2.13", "3.3" ]
+        scalaVersion: [ "2.13", "3.3" ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3.1.0
