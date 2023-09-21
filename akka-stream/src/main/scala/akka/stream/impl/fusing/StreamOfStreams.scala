@@ -834,9 +834,9 @@ import akka.util.ccompat.JavaConverters._
 
     override def preStart(): Unit = {
       val ourOwnCallback = getAsyncCallback[ActorSubscriberMessage] {
+        case ActorSubscriberMessage.OnNext(elem) => push(out, elem.asInstanceOf[T])
         case ActorSubscriberMessage.OnComplete   => completeStage()
         case ActorSubscriberMessage.OnError(ex)  => failStage(ex)
-        case ActorSubscriberMessage.OnNext(elem) => push(out, elem.asInstanceOf[T])
       }
       setCB(ourOwnCallback)
     }
