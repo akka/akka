@@ -11,6 +11,7 @@ import sbt.Def
 import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin.autoImport._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 
 import java.io.FileInputStream
 import java.io.InputStreamReader
@@ -148,6 +149,7 @@ object AkkaBuild {
       JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
     Compile / javacOptions ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     doc / javacOptions := Seq(),
+    scalafmtOnCompile := !CliOptions.runningOnCi.get && !sys.props.contains("akka.no.discipline"),
     crossVersion := CrossVersion.binary,
     // Adds a `src/main/scala-2.13+` source directory for code shared
     // between Scala 2.13 and Scala 3
