@@ -91,7 +91,10 @@ final class DeliveryProducerReceived(val producerId: String, val currentSeqNr: L
 @Enabled(true)
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ProducerController")) @Label("Delivery ProducerController received demand request")
-final class DeliveryProducerReceivedRequest(val producerId: String, val requestedSeqNr: Long, @nowarn("msg=never used") confirmedSeqNr: Long)
+final class DeliveryProducerReceivedRequest(
+    val producerId: String,
+    val requestedSeqNr: Long,
+    @nowarn("msg=never used") confirmedSeqNr: Long)
     extends Event
 
 /** INTERNAL API */
