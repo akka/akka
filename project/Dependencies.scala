@@ -12,8 +12,9 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
-    .withRank(KeyRanks.Invisible) // avoid 'unused key' warning
+  // java8-compat is only used in a couple of places for 2.13,
+  // it is probably possible to remove the dependency if needed.
+  val java8CompatVersion = "1.0.0"
 
   val junitVersion = "4.13.2"
   val slf4jVersion = "1.7.36"
@@ -30,12 +31,11 @@ object Dependencies {
   val jacksonCoreVersion = "2.15.2" // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
   val jacksonDatabindVersion = jacksonCoreVersion // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 
-  val scala212Version = "2.12.18"
   val scala213Version = "2.13.11"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
   val scala3Version = "3.3.1"
-  val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
+  val allScalaVersions = Seq(scala213Version, scala3Version)
 
   val reactiveStreamsVersion = "1.0.4"
 
@@ -46,15 +46,7 @@ object Dependencies {
   val scalaCheckVersion = "1.17.0"
 
   val Versions =
-    Seq(crossScalaVersions := allScalaVersions, scalaVersion := allScalaVersions.head, java8CompatVersion := {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        // java8-compat is only used in a couple of places for 2.13,
-        // it is probably possible to remove the dependency if needed.
-        case Some((3, _))            => "1.0.0"
-        case Some((2, n)) if n >= 13 => "1.0.0"
-        case _                       => "0.8.0"
-      }
-    })
+    Seq(crossScalaVersions := allScalaVersions, scalaVersion := allScalaVersions.head)
 
   object Compile {
     // Compile
@@ -79,9 +71,7 @@ object Dependencies {
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
-    val java8Compat = Def.setting {
-      ("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value)
-    } // Scala License
+    val java8Compat = "org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
@@ -183,7 +173,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat.value)
+  val actor = l ++= Seq(config, java8Compat)
 
   val actorTyped = l ++= Seq(slf4jApi)
 
