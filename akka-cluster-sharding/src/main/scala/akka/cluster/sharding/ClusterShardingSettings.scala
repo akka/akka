@@ -95,7 +95,13 @@ object ClusterShardingSettings {
 
     val lease = config.getString("use-lease") match {
       case s if s.isEmpty => None
-      case other          => Some(new LeaseUsageSettings(other, config.getDuration("lease-retry-interval").asScala))
+      case other =>
+        Some(
+          new LeaseUsageSettings(
+            other,
+            config.getDuration("lease-retry-interval").asScala,
+            leaseName = "" // intentionally not in config because would be high risk of not using unique names
+          ))
     }
 
     new ClusterShardingSettings(
@@ -1113,6 +1119,10 @@ object ClusterShardingSettings {
  * @param passivationStrategySettings settings for automatic passivation strategy, see descriptions in reference.conf
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  * @param shardRegionQueryTimeout the timeout for querying a shard region, see descriptions in reference.conf
+ * @param leaseSettings LeaseSettings for acquiring before creating the shard.
+ *   Note that if you define a custom lease name and have several sharding entity types each one must have a unique
+ *   lease name. If the lease name is undefined it will be derived from ActorSystem name and shard name,
+ *   but that may result in too long lease names.
  */
 final class ClusterShardingSettings(
     val role: Option[String],
@@ -1311,6 +1321,11 @@ final class ClusterShardingSettings(
   def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
     copy(shardRegionQueryTimeout = duration.asScala)
 
+  /**
+   * Note that if you define a custom lease name and have several sharding entity types each one must have a unique
+   * lease name. If the lease name is undefined it will be derived from ActorSystem name and shard name,
+   * but that may result in too long lease names.
+   */
   def withLeaseSettings(leaseSettings: LeaseUsageSettings): ClusterShardingSettings =
     copy(leaseSettings = Some(leaseSettings))
 

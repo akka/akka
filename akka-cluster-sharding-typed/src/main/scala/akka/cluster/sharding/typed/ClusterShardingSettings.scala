@@ -810,6 +810,10 @@ object ClusterShardingSettings {
  *   snapshot plugin is used. Note that this is not related to persistence used by the entity
  *   actors.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
+ * @param leaseSettings LeaseSettings for acquiring before creating the shard.
+ *   Note that if you define a custom lease name and have several sharding entity types each one must have a unique
+ *   lease name. If the lease name is undefined it will be derived from ActorSystem name and shard name,
+ *   but that may result in too long lease names.
  */
 final class ClusterShardingSettings(
     val numberOfShards: Int,
@@ -1011,6 +1015,11 @@ final class ClusterShardingSettings(
   def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
     copy(shardRegionQueryTimeout = duration.asScala)
 
+  /**
+   * Note that if you define a custom lease name and have several sharding entity types each one must have a unique
+   * lease name. If the lease name is undefined it will be derived from ActorSystem name and shard name,
+   * but that may result in too long lease names.
+   */
   def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
 
   /**
