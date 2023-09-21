@@ -469,15 +469,13 @@ private[akka] class Shard(
     context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, PassivateIntervalTick)
   }
 
-  private val lease = settings.leaseSettings.map {
-    ls =>
-      val leaseName =
-        if (ls.leaseName.isEmpty) s"${context.system.name}-shard-$typeName-$shardId"
-        else s"${ls.leaseName}-$shardId"
-      LeaseProvider(context.system).getLease(
-        leaseName,
-        ls.leaseImplementation,
-        Cluster(context.system).selfAddress.hostPort)}
+  private val lease = settings.leaseSettings.map { ls =>
+    val leaseName =
+      if (ls.leaseName.isEmpty) s"${context.system.name}-shard-$typeName-$shardId"
+      else s"${ls.leaseName}-$shardId"
+    LeaseProvider(context.system)
+      .getLease(leaseName, ls.leaseImplementation, Cluster(context.system).selfAddress.hostPort)
+  }
 
   private val leaseRetryInterval = settings.leaseSettings match {
     case Some(l) => l.leaseRetryInterval
