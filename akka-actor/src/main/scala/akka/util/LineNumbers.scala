@@ -40,8 +40,8 @@ object LineNumbers {
    * the language designers have consciously made it impossible to obtain the
    * byte code for those.
    */
-  // FIXME: this needs memoization with an LRU cache
-  def apply(obj: AnyRef): Result = forObject(obj)
+  def apply(obj: AnyRef): Result =
+    forObject(obj) // TODO: might need memoization with an LRU cache
 
   /**
    * Java API: Obtain line number information for the class defining the given object.

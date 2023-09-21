@@ -20,7 +20,7 @@ class LineNumberSpec extends AkkaSpec {
 
       "work for larger functions" in {
         val result = LineNumbers(twoline)
-        result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 15, 17))
+        result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 16, 17))
       }
 
       "work for partial functions" in {
@@ -29,7 +29,7 @@ class LineNumberSpec extends AkkaSpec {
 
       "work for `def`" in {
         val result = LineNumbers(method("foo"))
-        result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 25, 27))
+        result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 26, 27))
       }
 
     }
