@@ -80,7 +80,8 @@ object Paradox {
     (Compile / paradoxMarkdownToHtml / excludeFilter) := (Compile / paradoxMarkdownToHtml / excludeFilter).value ||
       ParadoxPlugin.InDirectoryFilter((Compile / paradox / sourceDirectory).value / "includes.html"))
 
-  val groupsSettings = Seq(Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")))
+  val groupsSettings = Seq(
+    Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java"), "BuildTool" -> Seq("sbt", "Maven", "Gradle")))
 
   val parsingSettings = Seq(Compile / paradoxParsingTimeout := 5.seconds)
 
