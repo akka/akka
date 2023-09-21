@@ -8,7 +8,6 @@ import sbt.Keys._
 import sbt._
 
 object TestExtras {
-  import JdkOptions.isJdk8
   object Filter {
     object Keys {
       val excludeTestNames = settingKey[Set[String]](
@@ -54,16 +53,9 @@ object TestExtras {
           def shouldExist(description: String, filename: String): Unit =
             require(file(filename).exists, s"$description should be run as part of the build")
 
-          val baseList =
+          val testsToCheck =
             List(
               "The java JavaExtension.java" -> "akka-actor-tests/target/test-reports/TEST-akka.actor.JavaExtension.xml")
-          val jdk9Only = List(
-            "The jdk9-only FlowPublisherSinkSpec.scala" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.scaladsl.FlowPublisherSinkSpec.xml",
-            "The jdk9-only JavaFlowSupportCompileTest.java" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.javadsl.JavaFlowSupportCompileTest.xml")
-
-          val testsToCheck =
-            if (isJdk8) baseList
-            else baseList ::: jdk9Only
 
           testsToCheck.foreach((shouldExist _).tupled)
         })

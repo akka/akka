@@ -6,7 +6,14 @@ import scala.sys.process._
 
 scalaVersion := allScalaVersions.head
 
-enablePlugins(UnidocRoot, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr, JavaFormatterPlugin)
+enablePlugins(
+  UnidocRoot,
+  UnidocWithPrValidation,
+  NoPublish,
+  CopyrightHeader,
+  CopyrightHeaderInPr,
+  JavaFormatterPlugin,
+  JdkOptions)
 disablePlugins(MimaPlugin)
 
 addCommandAlias("verifyCodeStyle", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
@@ -106,7 +113,6 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
-  .enablePlugins(Jdk9)
   .dependsOn(Seq(actor, actorTyped, stream, streamTestkit, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
@@ -157,7 +163,6 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   .settings(Protobuf.settings)
   .configs(MultiJvm)
   .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
-  .enablePlugins(Jdk9)
 
 lazy val clusterTools = akkaModule("akka-cluster-tools")
   .dependsOn(
@@ -179,7 +184,6 @@ lazy val distributedData = akkaModule("akka-distributed-data")
   .enablePlugins(MultiNodeScalaTest)
 
 lazy val docs = akkaModule("akka-docs")
-  .configs(akka.Jdk9.TestJdk9)
   .dependsOn(
     actor,
     cluster,
@@ -189,7 +193,6 @@ lazy val docs = akkaModule("akka-docs")
     persistenceQuery,
     distributedData,
     stream,
-    stream % "TestJdk9->CompileJdk9",
     actorTyped,
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
@@ -214,8 +217,7 @@ lazy val docs = akkaModule("akka-docs")
     NoPublish,
     ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
-    StreamOperatorsIndexGenerator,
-    Jdk9)
+    StreamOperatorsIndexGenerator)
   .disablePlugins(MimaPlugin)
   // TODO https://github.com/akka/akka/issues/30243
   .settings(crossScalaVersions -= akka.Dependencies.scala3Version)
@@ -343,12 +345,11 @@ lazy val remote =
     .settings(AutomaticModuleName.settings("akka.remote"))
     .settings(Protobuf.settings)
     .settings(Test / parallelExecution := false)
-    .enablePlugins(Jdk9)
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(
     actorTests % "test->test",
-    remote % "compile->CompileJdk9;test->test",
+    remote % "compile->compile;test->test",
     streamTestkit % "test",
     multiNodeTestkit,
     jackson % "test->test")
@@ -369,7 +370,7 @@ lazy val stream = akkaModule("akka-stream")
   .settings(Dependencies.stream)
   .settings(AutomaticModuleName.settings("akka.stream"))
   .settings(Protobuf.settings)
-  .enablePlugins(BoilerplatePlugin, Jdk9)
+  .enablePlugins(BoilerplatePlugin)
 
 lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .dependsOn(stream, testkit % "compile->compile;test->test")
@@ -377,10 +378,9 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .settings(AutomaticModuleName.settings("akka.stream.testkit"))
 
 lazy val streamTests = akkaModule("akka-stream-tests")
-  .configs(akka.Jdk9.TestJdk9)
-  .dependsOn(streamTestkit % "test->test", remote % "test->test", stream % "TestJdk9->CompileJdk9")
+  .dependsOn(streamTestkit % "test->test", remote % "test->test", stream % "test->test")
   .settings(Dependencies.streamTests)
-  .enablePlugins(NoPublish, Jdk9)
+  .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin)
 
 lazy val streamTestsTck = akkaModule("akka-stream-tests-tck")
@@ -414,7 +414,6 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
       import akka.util.Timeout
       implicit val timeout = Timeout(5.seconds)
     """)
-  .enablePlugins(Jdk9)
 
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
@@ -456,14 +455,14 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
 
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
-    actorTyped % "compile->CompileJdk9",
+    actorTyped,
     clusterTyped % "compile->compile;test->test;multi-jvm->multi-jvm",
-    clusterSharding % "compile->compile;compile->CompileJdk9;multi-jvm->multi-jvm",
+    clusterSharding % "compile->compile;multi-jvm->multi-jvm",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "optional->compile;test->test",
     persistenceTestkit % "test->test",
-    remote % "compile->CompileJdk9;test->test",
+    remote % "compile->compile;test->test",
     remoteTests % "test->test",
     remoteTests % "test->test;multi-jvm->multi-jvm",
     jackson % "test->test")
@@ -491,7 +490,7 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .settings(Dependencies.actorTestkitTyped)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
-  .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test", actor)
+  .dependsOn(actorTyped, actorTestkitTyped % "compile->compile;test->test", actor)
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)

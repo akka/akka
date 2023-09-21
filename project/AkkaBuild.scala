@@ -113,15 +113,6 @@ object AkkaBuild {
     }
   }
 
-  private def jvmGCLogOptions(isJdk11OrHigher: Boolean, isJdk8: Boolean): Seq[String] = {
-    if (isJdk11OrHigher)
-      // -Xlog:gc* is equivalent to -XX:+PrintGCDetails. See:
-      // https://docs.oracle.com/en/java/javase/11/tools/java.html#GUID-BE93ABDC-999C-4CB5-A88B-1994AAAC74D5
-      Seq("-Xlog:gc*")
-    else if (isJdk8) Seq("-XX:+PrintGCTimeStamps", "-XX:+PrintGCDetails")
-    else Nil
-  }
-
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
 
@@ -132,20 +123,16 @@ object AkkaBuild {
     // compile options
     Compile / scalacOptions ++= DefaultScalacOptions.value,
     Compile / scalacOptions ++=
-      JdkOptions.targetJdkScalacOptions(
-        targetSystemJdk.value,
-        optionalDir(jdk8home.value),
-        fullJavaHomes.value,
-        scalaVersion.value),
+      JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, scalaVersion.value),
     Compile / scalacOptions ++= (if (allWarnings) Seq("-deprecation") else Nil),
     Test / scalacOptions := (Test / scalacOptions).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
     Compile / javacOptions ++= {
       DefaultJavacOptions ++
-      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value)
+      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value)
     },
     Test / javacOptions ++= DefaultJavacOptions ++
-      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
+      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value),
     Compile / javacOptions ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     doc / javacOptions := Seq(),
     crossVersion := CrossVersion.binary,
@@ -219,9 +206,7 @@ object AkkaBuild {
         // faster random source
         "-Djava.security.egd=file:/dev/./urandom")
 
-      defaults ++ CliOptions.runningOnCi
-        .ifTrue(jvmGCLogOptions(JdkOptions.isJdk11orHigher, JdkOptions.isJdk8))
-        .getOrElse(Nil) ++
+      defaults ++ CliOptions.runningOnCi.ifTrue(Seq("-Xlog:gc*")).getOrElse(Nil) ++
       JdkOptions.versionSpecificJavaOptions
     },
     // all system properties passed to sbt prefixed with "akka." or "aeron." will be passed on to the forked jvms as is
@@ -319,10 +304,7 @@ object AkkaBuild {
   lazy val docLintingSettings = Seq(
     compile / javacOptions ++= Seq("-Xdoclint:none"),
     test / javacOptions ++= Seq("-Xdoclint:none"),
-    doc / javacOptions ++= {
-      if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
-      else Seq("-Xdoclint:none", "--ignore-source-errors")
-    })
+    doc / javacOptions ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
