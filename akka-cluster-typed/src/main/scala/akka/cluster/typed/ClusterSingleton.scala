@@ -85,6 +85,11 @@ final class ClusterSingletonSettings(
 
   def withBufferSize(bufferSize: Int): ClusterSingletonSettings = copy(bufferSize = bufferSize)
 
+  /**
+   * Note that if you define a custom lease name and have several singletons each one must have a unique
+   * lease name. If the lease name is undefined it will be derived from ActorSystem name and singleton
+   * actor path, but that may result in too long lease names.
+   */
   def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
 
   private def copy(
@@ -239,7 +244,12 @@ object ClusterSingletonManagerSettings {
     val lease = config.getString("use-lease") match {
       case s if s.isEmpty => None
       case leaseConfigPath =>
-        Some(new LeaseUsageSettings(leaseConfigPath, config.getDuration("lease-retry-interval").asScala))
+        Some(
+          new LeaseUsageSettings(
+            leaseConfigPath,
+            config.getDuration("lease-retry-interval").asScala,
+            leaseName = "" // intentionally not in config because would be high risk of not using unique names
+          ))
     }
     new ClusterSingletonManagerSettings(
       singletonName = config.getString("singleton-name"),
@@ -285,7 +295,11 @@ object ClusterSingletonManagerSettings {
  *                              retried with this interval until the previous oldest confirms that the hand
  *                              over has started or the previous oldest member is removed from the cluster
  *                              (+ `removalMargin`).
- * @param leaseSettings         LeaseSettings for acquiring before creating the singleton actor
+ * @param leaseSettings         LeaseSettings for acquiring before creating the singleton actor.
+ *                              Note that if you define a custom lease name and have several singletons each
+ *                              one must have a unique lease name. If the lease name is undefined it will be
+ *                              derived from ActorSystem name and singleton actor path, but that may result in
+ *                              too long lease names.
  */
 final class ClusterSingletonManagerSettings(
     val singletonName: String,
@@ -322,6 +336,11 @@ final class ClusterSingletonManagerSettings(
   def withHandOverRetryInterval(retryInterval: java.time.Duration): ClusterSingletonManagerSettings =
     withHandOverRetryInterval(retryInterval.asScala)
 
+  /**
+   * Note that if you define a custom lease name and have several singletons each one must have a unique
+   * lease name. If the lease name is undefined it will be derived from ActorSystem name and singleton
+   * actor path, but that may result in too long lease names.
+   */
   def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
 
   private def copy(
