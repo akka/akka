@@ -17,12 +17,13 @@ object JdkOptions extends AutoPlugin {
 
   val specificationVersion: String = sys.props("java.specification.version")
 
-  val isJdk8: Boolean =
-    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(s"=1.8"))
   val isJdk11orHigher: Boolean =
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=11"))
   val isJdk17orHigher: Boolean =
     VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=17"))
+
+  if (!isJdk11orHigher)
+    throw new IllegalArgumentException("JDK 11 or higher is required")
 
   val versionSpecificJavaOptions =
     if (isJdk17orHigher) {
