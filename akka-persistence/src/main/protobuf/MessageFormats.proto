@@ -45,6 +45,7 @@ message AtLeastOnceDeliverySnapshot {
   repeated UnconfirmedDelivery unconfirmedDeliveries = 2;
 }
 
+// no longer created but needs to stay for reading persistent FSM events and snapshots
 message PersistentStateChangeEvent {
   required string stateIdentifier = 1;
   optional string timeout = 2; //not used in new records from 2.4.5

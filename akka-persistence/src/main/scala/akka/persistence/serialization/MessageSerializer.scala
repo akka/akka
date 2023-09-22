@@ -5,13 +5,9 @@
 package akka.persistence.serialization
 
 import java.io.NotSerializableException
-
 import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.duration
-import scala.concurrent.duration.Duration
-
 import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.actor.Actor
 import akka.persistence._
@@ -22,6 +18,9 @@ import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization._
 import akka.util.ccompat._
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -138,7 +137,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       if (persistentStateChange.hasTimeoutNanos)
         Some(Duration.fromNanos(persistentStateChange.getTimeoutNanos))
       else if (persistentStateChange.hasTimeout)
-        Some(Duration(persistentStateChange.getTimeout).asInstanceOf[duration.FiniteDuration])
+        Some(Duration(persistentStateChange.getTimeout).asInstanceOf[FiniteDuration])
       else None)
   }
 
