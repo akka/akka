@@ -7,7 +7,7 @@ Integration with Reactive Streams, subscribes to a @javadoc[Publisher](java.util
 ## Signature
 
 Scala
-:   @@snip[JavaFlowSupport.scala](/akka-stream/src/main/scala-jdk-9/akka/stream/scaladsl/JavaFlowSupport.scala) { #fromPublisher }
+:   @@snip[JavaFlowSupport.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/JavaFlowSupport.scala) { #fromPublisher }
 
 Java
 :   @@snip[JavaFlowSupport.java](/akka-docs/src/test/java-jdk9-only/jdocs/stream/operators/source/FromPublisher.java) { #api }
