@@ -79,8 +79,7 @@ class ManualTerminatedTestSetup(val workerLatch: CountDownLatch) {
     }
 }
 
-class DeadLetterSpec extends ScalaTestWithActorTestKit(
-      """
+class DeadLetterSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel=DEBUG
     akka.actor.debug.event-stream = on
     """) with AnyWordSpecLike with LogCapturing {
