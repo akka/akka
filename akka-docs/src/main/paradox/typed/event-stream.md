@@ -1,6 +1,6 @@
-# EventBus
+# EventStream
 
-You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Event Bus](../event-bus.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Event Stream](../event-bus.md#event-stream).
 
 ## Dependency
 
@@ -27,6 +27,93 @@ version=AkkaVersion
 
 ## Introduction
 
+The event stream is the main @ref:[Event Bus](#eventbus). of each actor system: it is used for
+carrying @ref:[log messages](logging.md) and @ref:[Dead Letters](#dead-letters) and may be
+used by the user code for other purposes as well. 
+
+It uses @ref:[Subchannel Classification](#subchannel-classification) which enables registering to related sets of channels.
+
+
+## How to use
+
+The following example demonstrates how a simple subscription works. Given a simple actor:
+
+@@@ div { .group-scala }
+
+@@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #deadletters }
+
+@@@
+
+@@@ div { .group-java }
+
+@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #imports-deadletter }
+
+@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #deadletter-actor }
+
+it can be subscribed like this:
+
+@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #deadletters }
+
+@@@
+
+
+It is also worth pointing out that thanks to the way the subchannel classification
+is implemented in the event stream, it is possible to subscribe to a group of events, by
+subscribing to their common superclass as demonstrated in the following example:
+
+Scala
+:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
+
+Java
+:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
+
+Similarly to @ref:[Actor Classification](#actor-classification), @apidoc[event.EventStream] will automatically remove subscribers when they terminate.
+
+@@@ note
+
+The event stream is a *local facility*, meaning that it will *not* distribute events to other nodes in a clustered environment (unless you subscribe a Remote Actor to the stream explicitly).
+If you need to broadcast events in an Akka cluster, *without* knowing your recipients explicitly (i.e. obtaining their ActorRefs), you may want to look into: @ref:[Distributed Publish Subscribe in Cluster](distributed-pub-sub.md).
+
+@@@
+
+### Dead Letters
+
+As described at @ref:[Stopping actors](actor-lifecycle.md#stopping-actors), messages queued when an actor
+terminates or sent after its death are re-routed to the dead letter mailbox,
+which by default will publish the messages wrapped in @apidoc[DeadLetter]. This
+wrapper holds the original sender, receiver and message of the envelope which
+was redirected.
+
+Some internal messages (marked with the @apidoc[DeadLetterSuppression] @scala[trait]@java[interface]) will not end up as
+dead letters like normal messages. These are by design safe and expected to sometimes arrive at a terminated actor
+and since they are nothing to worry about, they are suppressed from the default dead letters logging mechanism.
+
+However, in case you find yourself in need of debugging these kinds of low level suppressed dead letters,
+it's still possible to subscribe to them explicitly:
+
+Scala
+:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #suppressed-deadletters }
+
+Java
+:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #suppressed-deadletters }
+
+or all dead letters (including the suppressed ones):
+
+Scala
+:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #all-deadletters }
+
+Java
+:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #all-deadletters }
+
+### Other Uses
+
+The event stream is always there and ready to be used, you can publish your own
+events (it accepts @scala[@scaladoc[AnyRef](scala.AnyRef)]@java[@javadoc[Object](java.lang.Object)]) and subscribe listeners to the corresponding JVM
+classes.
+
+
+## EventBus
+
 <!--- #introduction-start --->
 Originally conceived as a way to send messages to groups of actors, the
 @scala[@scaladoc[EventBus](akka.event.EventBus)]@java[@javadoc[EventBus](akka.event.japi.EventBus)] has been generalized into a set of @scala[composable traits] @java[abstract base classes]
@@ -48,7 +135,7 @@ you have to provide it inside the message.
 
 @@@
 
-This mechanism is used in different places within Akka, e.g. the @ref:[Event Stream](#event-stream).
+This mechanism is used in different places within Akka, e.g. the EventStream.
 Implementations can make use of the specific building blocks presented below.
 
 An event bus must define the following three @scala[abstract types]@java[type parameters]:
@@ -200,104 +287,3 @@ Java
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
 <!--- #actor-classification-end --->
-
-## Event Stream
-
-The event stream is the main event bus of each actor system: it is used for
-carrying @ref:[log messages](logging.md) and @ref:[Dead Letters](#dead-letters) and may be
-used by the user code for other purposes as well. It uses @ref:[Subchannel
-Classification](#subchannel-classification) which enables registering to related sets of channels.
-The following example demonstrates how a simple subscription works. Given a simple actor:
-
-@@@ div { .group-scala }
-
-@@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #deadletters }
-
-@@@
-
-@@@ div { .group-java }
-
-@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #imports-deadletter }
-
-@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #deadletter-actor }
-
-it can be subscribed like this:
-
-@@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #deadletters }
-
-@@@
-
-
-It is also worth pointing out that thanks to the way the subchannel classification
-is implemented in the event stream, it is possible to subscribe to a group of events, by
-subscribing to their common superclass as demonstrated in the following example:
-
-Scala
-:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
-
-Java
-:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
-
-Similarly to @ref:[Actor Classification](#actor-classification), @apidoc[event.EventStream] will automatically remove subscribers when they terminate.
-
-@@@ note
-
-The event stream is a *local facility*, meaning that it will *not* distribute events to other nodes in a clustered environment (unless you subscribe a Remote Actor to the stream explicitly).
-If you need to broadcast events in an Akka cluster, *without* knowing your recipients explicitly (i.e. obtaining their ActorRefs), you may want to look into: @ref:[Distributed Publish Subscribe in Cluster](distributed-pub-sub.md).
-
-@@@
-
-### Default Handlers
-
-Upon start-up the actor system creates and subscribes actors to the event
-stream for logging: these are the handlers which are configured for example in
-`application.conf`:
-
-```text
-akka {
-  loggers = ["akka.event.Logging$DefaultLogger"]
-}
-```
-
-The handlers listed here by fully-qualified class name will be subscribed to
-all log event classes with priority higher than or equal to the configured
-log-level.
-
-This means that log events for a level which will not be logged are
-typically not dispatched at all (unless manual subscriptions to the respective
-event class have been done)
-
-### Dead Letters
-
-As described at @ref:[Stopping actors](actor-lifecycle.md#stopping-actors), messages queued when an actor
-terminates or sent after its death are re-routed to the dead letter mailbox,
-which by default will publish the messages wrapped in @apidoc[DeadLetter]. This
-wrapper holds the original sender, receiver and message of the envelope which
-was redirected.
-
-Some internal messages (marked with the @apidoc[DeadLetterSuppression] @scala[trait]@java[interface]) will not end up as
-dead letters like normal messages. These are by design safe and expected to sometimes arrive at a terminated actor
-and since they are nothing to worry about, they are suppressed from the default dead letters logging mechanism.
-
-However, in case you find yourself in need of debugging these kinds of low level suppressed dead letters,
-it's still possible to subscribe to them explicitly:
-
-Scala
-:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #suppressed-deadletters }
-
-Java
-:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #suppressed-deadletters }
-
-or all dead letters (including the suppressed ones):
-
-Scala
-:  @@snip [LoggingDocSpec.scala](/akka-actor-typed-tests/src/test/scala/akka/actor/typed/eventstream/LoggingDocSpec.scala) { #all-deadletters }
-
-Java
-:  @@snip [LoggingDocTest.java](/akka-actor-typed-tests/src/test/java/akka/actor/typed/eventstream/LoggingDocTest.java) { #all-deadletters }
-
-### Other Uses
-
-The event stream is always there and ready to be used, you can publish your own
-events (it accepts @scala[@scaladoc[AnyRef](scala.AnyRef)]@java[@javadoc[Object](java.lang.Object)]) and subscribe listeners to the corresponding JVM
-classes.

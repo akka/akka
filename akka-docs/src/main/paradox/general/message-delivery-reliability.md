@@ -339,7 +339,7 @@ guaranteed delivery.
 ### How do I Receive Dead Letters?
 
 An actor can subscribe to class @apidoc[akka.actor.DeadLetter](akka.actor.DeadLetter) on the event
-stream, see @ref:[Event Stream](../typed/event-bus.md#event-stream)
+stream, see @ref:[Event Stream](../typed/event-stream.md)
 for how to do that. The subscribed actor will then receive all dead
 letters published in the (local) system from that point onwards. Dead letters
 are not propagated over the network, if you want to collect them in one place

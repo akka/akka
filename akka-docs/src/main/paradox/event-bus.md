@@ -1,15 +1,15 @@
 # Classic Event Bus
 
 @@include[includes.md](includes.md) { #actor-api }
-For the full documentation of this feature and for new projects see @ref:[Event Bus](typed/event-bus.md).
+For the full documentation of this feature and for new projects see @ref:[Event Bus](typed/event-stream.md).
 
 ## Dependency
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #dependency }
+@@include[typed/event-bus.md](typed/event-stream.md) { #dependency }
 
 ## Introduction
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #introduction-start }
+@@include[typed/event-bus.md](typed/event-stream.md) { #introduction-start }
 
 Scala
 :  @@snip [EventBus.scala](/akka-actor/src/main/scala/akka/event/EventBus.scala) { #event-bus-api }
@@ -17,16 +17,16 @@ Scala
 Java
 :  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #event-bus-api }
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #introduction-end }
+@@include[typed/event-bus.md](typed/event-stream.md) { #introduction-end }
 
 
 ## Classifiers
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #classifiers-intro }
+@@include[typed/event-bus.md](typed/event-stream.md) { #classifiers-intro }
 
 ### Lookup Classification
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #lookup-classification-start }
+@@include[typed/event-bus.md](typed/event-stream.md) { #lookup-classification-start }
 
 Scala
 :  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus }
@@ -42,11 +42,11 @@ Scala
 Java
 :  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #lookup-bus-test }
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #lookup-classification-end }
+@@include[typed/event-bus.md](typed/event-stream.md) { #lookup-classification-end }
 
 ### Subchannel Classification
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #subchannel-classification-start }
+@@include[typed/event-bus.md](typed/event-stream.md) { #subchannel-classification-start }
 
 Scala
 :  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus }
@@ -62,11 +62,11 @@ Scala
 Java
 :  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus-test }
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #subchannel-classification-end }
+@@include[typed/event-bus.md](typed/event-stream.md) { #subchannel-classification-end }
 
 ### Scanning Classification
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #scanning-classification-start }
+@@include[typed/event-bus.md](typed/event-stream.md) { #scanning-classification-start }
 
 Scala
 :  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus }
@@ -82,7 +82,7 @@ Scala
 Java
 :  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #scanning-bus-test }
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #scanning-classification-end }
+@@include[typed/event-bus.md](typed/event-stream.md) { #scanning-classification-end }
 
 
 ### Actor Classification
@@ -91,7 +91,7 @@ This classification was originally developed specifically for implementing
 @ref:[DeathWatch](actors.md#lifecycle-monitoring-aka-deathwatch): subscribers as well as classifiers are of
 type @apidoc[actor.ActorRef].
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #actor-classification-start }
+@@include[typed/event-bus.md](typed/event-stream.md) { #actor-classification-start }
 
 Scala
 :  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #actor-bus }
@@ -107,7 +107,7 @@ Scala
 Java
 :  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #actor-bus-test }
 
-@@include[typed/event-bus.md](typed/event-bus.md) { #actor-classification-end }
+@@include[typed/event-bus.md](typed/event-stream.md) { #actor-classification-end }
 
 
 ## Event Stream
