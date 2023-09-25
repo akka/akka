@@ -4,7 +4,6 @@
 
 package akka.actor.typed
 
-import akka.actor.IllegalActorStateException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.scaladsl.AskPattern.Askable
@@ -14,11 +13,11 @@ import akka.actor.typed.scaladsl.Behaviors._
 import akka.util.Timeout
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import java.util.concurrent.CountDownLatch
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
+import scala.math.multiplyExact
 import scala.util.Failure
 import scala.util.Success
 
@@ -31,8 +30,13 @@ sealed trait WorkerCommand
 case class WorkerMultiply(a: Int, b: Int, replyTo: ActorRef[WorkerResult]) extends WorkerCommand
 case class WorkerResult(num: Int) extends WorkerCommand
 
-class ManualTerminatedTestSetup(val workerLatch: CountDownLatch) {
-  implicit val timeout: Timeout = 10.millis
+class DeadLetterSpec extends ScalaTestWithActorTestKit("""
+    akka.loglevel=DEBUG
+    akka.actor.debug.event-stream = on
+    """) with AnyWordSpecLike with LogCapturing {
+
+  implicit def executor: ExecutionContext = system.executionContext
+  override implicit val timeout: Timeout = 10.millis
 
   def forwardBehavior: Behavior[Command] =
     setup[Command] { context =>
@@ -53,64 +57,34 @@ class ManualTerminatedTestSetup(val workerLatch: CountDownLatch) {
       }
     }
 
-  def workerBehavior: Receive[WorkerCommand] =
-    Behaviors.receiveMessage[WorkerCommand] { msg =>
-      msg match {
-        case WorkerMultiply(a, b, replyTo) =>
-          workerLatch.await()
-          replyTo ! WorkerResult(a * b)
-          Behaviors.stopped
-        case _ =>
-          throw IllegalActorStateException("worker actor should not receive other message.")
-      }
-    }
-}
-
-class DeadLetterSpec extends ScalaTestWithActorTestKit("""
-    akka.loglevel=DEBUG
-    akka.actor.debug.event-stream = on
-    """) with AnyWordSpecLike with LogCapturing {
-
-  implicit def executor: ExecutionContext =
-    system.executionContext
-
   "DeadLetterActor" must {
 
-    "publish dead letter with recipient when context.ask terminated" in new ManualTerminatedTestSetup(
-      workerLatch = new CountDownLatch(1)) {
-      val deadLetterProbe = createDeadLetterProbe()
+    "publish dead letter with recipient when context.ask terminated" in {
       val forwardRef = spawn(forwardBehavior)
-      val workerRef = spawn(workerBehavior)
-
-      // this will not completed unit worker reply.
-      val multiplyResult: Future[Int] = forwardRef.ask(replyTo => Multiply(3, 9, workerRef, replyTo))
-      // waiting for temporary ask actor terminated with timeout
-      val result = multiplyResult.failed.futureValue
-      result shouldBe a[TimeoutException]
-      result.getMessage should startWith("Ask timed out on")
-      // unlock worker replying
-      workerLatch.countDown()
-
-      val deadLetter = deadLetterProbe.receiveMessage()
-      deadLetter.message shouldBe a[WorkerResult]
-      val deadLettersRef = system.classicSystem.deadLetters
-      // that should be not equals, otherwise, it may raise confusion, perform like a dead letter sent to the deadLetterActor.
-      deadLetter.recipient shouldNot equal(deadLettersRef)
+      testDeadLetterPublishWhenAskTimeout[Int](ref => forwardRef.ask(replyTo => Multiply(3, 9, ref, replyTo)))
     }
 
-    "publish dead letter with recipient when AskPattern timeout" in new ManualTerminatedTestSetup(
-      workerLatch = new CountDownLatch(1)) {
-      val deadLetterProbe = createDeadLetterProbe()
-      val workerRef = spawn(workerBehavior)
+    "publish dead letter with recipient when AskPattern timeout" in {
+      testDeadLetterPublishWhenAskTimeout[WorkerResult](ref => ref.ask(replyTo => WorkerMultiply(3, 9, replyTo)))
+    }
 
-      // this not completed unit countDown.
-      val multiplyResult: Future[WorkerResult] = workerRef.ask(replyTo => WorkerMultiply(3, 9, replyTo))
+    def testDeadLetterPublishWhenAskTimeout[T](askFunc: ActorRef[WorkerCommand] => Future[T]): Unit = {
+      val deadLetterProbe = createDeadLetterProbe()
+      val mockWorkerProbe = createTestProbe[WorkerCommand]()
+
+      // this will not completed unit worker reply.
+      val multiplyResult: Future[T] = askFunc(mockWorkerProbe.ref)
+      val request = mockWorkerProbe.expectMessageType[WorkerMultiply](1.seconds)
       // waiting for temporary ask actor terminated with timeout
+      mockWorkerProbe.expectTerminated(request.replyTo)
+      // verify ask timeout
       val result = multiplyResult.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should startWith("Ask timed out on")
-      // unlock worker replying
-      workerLatch.countDown()
+      // mock reply manually
+      request match {
+        case WorkerMultiply(a, b, replyTo) => replyTo ! WorkerResult(multiplyExact(a, b))
+      }
 
       val deadLetter = deadLetterProbe.receiveMessage()
       deadLetter.message shouldBe a[WorkerResult]
