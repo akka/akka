@@ -1076,11 +1076,11 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    "ensure unhandled message retention during multiple exception when restart" in {
+    "ensure unhandled message retention during unstash exception when restart" in {
       testMessageRetentionWhenMultipleException(SupervisorStrategy.restart.withStashCapacity(4))
     }
 
-    "ensure unhandled message retention during multiple exception when backoff" in {
+    "ensure unhandled message retention during unstash exception when backoff" in {
       testMessageRetentionWhenMultipleException(
         SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0).withStashCapacity(4))
     }
