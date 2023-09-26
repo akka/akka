@@ -34,7 +34,7 @@ Scala
 Java
 :  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #storing-state }
 
-Each state becomes a distinct behavior and after processing a message the next state in the form of a `Behavior`
+Each state becomes a distinct behavior and after processing a message the next state in the form of a @apidoc[typed.Behavior]
 is returned.
 
 Scala
@@ -44,18 +44,18 @@ Java
 :  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #simple-state}
 
 @@@ div { .group-scala }
-The method `idle` above makes use of `Behaviors.unhandled` which advises the system to reuse the previous behavior, 
+The method `idle` above makes use of @apidoc[Behaviors.unhandled](typed.*.Behaviors$) {scala="#unhandled[T]:akka.actor.typed.Behavior[T]" java="#unhandled()"} which advises the system to reuse the previous behavior, 
 including the hint that the message has not been handled.
 There are two related behaviors:
 
-- return `Behaviors.empty` as next behavior in case you reached a state where you don't expect messages any more. 
+- return @apidoc[Behaviors.empty](typed.*.Behaviors$) {scala="#empty[T]:akka.actor.typed.Behavior[T]" java="#empty()"} as next behavior in case you reached a state where you don't expect messages any more. 
   For instance if an actor only waits until all spawned child actors stopped. 
   Unhandled messages are still logged with this behavior.
-- return `Behaviors.ignore` as next behavior in case you don't care about unhandled messages. 
+- return @apidoc[Behaviors.ignore](typed.*.Behaviors$) {scala="#ignore[T]:akka.actor.typed.Behavior[T]" java="#ignore()"} as next behavior in case you don't care about unhandled messages. 
   All messages sent to an actor with such a behavior are simply dropped and ignored (without logging)
 @@@
 
-To set state timeouts use `Behaviors.withTimers` along with a `startSingleTimer`.
+To set state timeouts use @apidoc[Behaviors.withTimers](typed.*.Behaviors$) {scala="#withTimers[T](factory:akka.actor.typed.scaladsl.TimerScheduler[T]=%3Eakka.actor.typed.Behavior[T]):akka.actor.typed.Behavior[T]" java="#withTimers(akka.japi.function.Function)"} along with a @apidoc[startSingleTimer](typed.*.TimerScheduler) {scala="#startSingleTimer(key:Any,msg:T,delay:scala.concurrent.duration.FiniteDuration):Unit" java="#startSingleTimer(java.lang.Object,T,java.time.Duration)"}.
 
 ## Example project
 
