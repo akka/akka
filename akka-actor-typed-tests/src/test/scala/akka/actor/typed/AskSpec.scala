@@ -132,9 +132,9 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
 
     "publish dead-letter if the context.ask has completed on timeout" in {
-      val actor: ActorRef[Msg] = spawn(behavior)
-
       implicit val timeout: Timeout = 1.millis
+
+      val actor: ActorRef[Msg] = spawn(behavior)
       val mockActor: ActorRef[Proxy] = spawn(Behaviors.receive[Proxy]((context, msg) =>
         msg match {
           case ProxyMsg(s) =>
@@ -161,6 +161,32 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       deadLetter.recipient shouldNot equal(deadLettersRef)
       deadLetter.recipient shouldNot equal(ActorRefAdapter.toClassic(actor))
       deadLetter.recipient shouldNot equal(ActorRefAdapter.toClassic(mockActor))
+    }
+    "publish dead-letter if the AskPattern.ask has completed on timeout" in {
+      implicit val timeout: Timeout = 1.millis
+
+      val deadLetterProbe = createDeadLetterProbe()
+      val mockProbe = createTestProbe[Msg]()
+      val mockBusyRef = mockProbe.ref
+      // this will not completed unit worker reply.
+      val askResult: Future[String] = mockBusyRef.ask(replyTo => Foo("foo", replyTo))
+      val request = mockProbe.expectMessageType[Foo](1.seconds)
+      // waiting for temporary ask actor terminated with timeout
+      mockProbe.expectTerminated(request.replyTo)
+      // verify ask timeout
+      val result = askResult.failed.futureValue
+      result shouldBe a[TimeoutException]
+      result.getMessage should startWith("Ask timed out on")
+      // mock reply manually
+      request match {
+        case Foo(s, replyTo) => replyTo ! s
+      }
+
+      val deadLetter = deadLetterProbe.receiveMessage()
+      deadLetter.message shouldBe a[String]
+      val deadLettersRef = system.classicSystem.deadLetters
+      // that should be not equals, otherwise, it may raise confusion, perform like a dead letter sent to the deadLetterActor.
+      deadLetter.recipient shouldNot equal(deadLettersRef)
     }
 
     "transform a replied akka.actor.Status.Failure to a failed future" in {
