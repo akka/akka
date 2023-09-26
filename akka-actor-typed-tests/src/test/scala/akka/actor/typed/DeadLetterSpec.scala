@@ -61,7 +61,8 @@ class DeadLetterSpec extends ScalaTestWithActorTestKit("""
 
     "publish dead letter with recipient when context.ask terminated" in {
       val forwardRef = spawn(forwardBehavior)
-      testDeadLetterPublishWhenAskTimeout[Int](ref => forwardRef.ask(replyTo => Multiply(3, 9, ref, replyTo)))
+      testDeadLetterPublishWhenAskTimeout[Int](terminatedRef => 
+        forwardRef.ask(replyTo => Multiply(3, 9, terminatedRef, replyTo)))
     }
 
     "publish dead letter with recipient when AskPattern timeout" in {
