@@ -4,14 +4,15 @@
 
 package akka.stream.impl
 
-import scala.concurrent.{ Future, Promise }
-
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream._
 import akka.stream.OverflowStrategies._
+import akka.stream._
 import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.stream.stage._
+
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
 /**
  * INTERNAL API
@@ -23,9 +24,6 @@ import akka.stream.stage._
   case object Completion extends Input[Nothing]
   final case class Failure(ex: Throwable) extends Input[Nothing]
 
-  private val _defaultOnBufferedFailure: (Throwable, Any) => Unit = (_, _) => ()
-  private def defaultOnBufferedFailure[T]: (Throwable, T) => Unit = _defaultOnBufferedFailure
-
 }
 
 /**
@@ -35,7 +33,7 @@ import akka.stream.stage._
     maxBuffer: Int,
     overflowStrategy: OverflowStrategy,
     maxConcurrentOffers: Int,
-    onBufferedFailureOrCancel: (Throwable, T) => Unit = QueueSource.defaultOnBufferedFailure)
+    onBufferedFailureOrCancel: Option[(Throwable, T) => Unit] = None)
     extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
@@ -62,8 +60,7 @@ import akka.stream.stage._
       override def postStop(): Unit = {
         val exception = new StreamDetachedException()
         lazy val bufferedElementFailure = new AbruptStageTerminationException(this)
-        while (buffer.nonEmpty && (onBufferedFailureOrCancel ne QueueSource
-                 .defaultOnBufferedFailure[T])) onBufferedFailureOrCancel(bufferedElementFailure, buffer.dequeue())
+        handleBufferedOnFailure(bufferedElementFailure)
         completion.tryFailure(exception)
       }
 
@@ -182,8 +179,7 @@ import akka.stream.stage._
           }
 
         case Failure(ex) =>
-          while (buffer.nonEmpty && (onBufferedFailureOrCancel ne QueueSource
-                   .defaultOnBufferedFailure[T])) onBufferedFailureOrCancel(ex, buffer.dequeue())
+          handleBufferedOnFailure(ex)
           completion.failure(ex)
           failStage(ex)
       }
@@ -192,8 +188,7 @@ import akka.stream.stage._
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         while (pendingOffers.nonEmpty) pendingOffers.dequeue().promise.success(QueueOfferResult.QueueClosed)
-        while (buffer.nonEmpty && (onBufferedFailureOrCancel ne QueueSource
-                 .defaultOnBufferedFailure[T])) onBufferedFailureOrCancel(cause, buffer.dequeue())
+        handleBufferedOnFailure(cause)
         completion.success(Done)
         completeStage()
       }
@@ -234,6 +229,16 @@ import akka.stream.stage._
 
       override def fail(ex: Throwable): Unit = callback.invoke(Failure(ex))
 
+      private def handleBufferedOnFailure(ex: Throwable): Unit = {
+        if (buffer != null && buffer.nonEmpty) {
+          onBufferedFailureOrCancel match {
+            case Some(f) =>
+              while (buffer.nonEmpty) f(ex, buffer.dequeue())
+            case None =>
+              log.debug("Queue source failing, [{}] elements in buffer dropped", buffer.used)
+          }
+        }
+      }
     }
 
     (stageLogic, stageLogic)
