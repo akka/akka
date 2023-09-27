@@ -40,7 +40,8 @@ object ManyRecoveriesSpec {
 
 }
 
-class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
+class ManyRecoveriesSpec
+    extends PersistenceSpec(ConfigFactory.parseString("""
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
@@ -51,7 +52,8 @@ class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.actor.warn-about-java-serializer-usage = off
-  """)) with ImplicitSender {
+  """))
+    with ImplicitSender {
   import ManyRecoveriesSpec._
 
   "Many persistent actors" must {

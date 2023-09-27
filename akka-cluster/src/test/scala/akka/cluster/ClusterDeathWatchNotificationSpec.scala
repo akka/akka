@@ -15,7 +15,7 @@ import akka.testkit._
 
 object ClusterDeathWatchNotificationSpec {
 
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString("""
     akka {
         loglevel = INFO
         actor {

@@ -29,7 +29,8 @@ object ClusterShardingQueriesSpec {
   val shardTypeName = "DatatypeA"
 }
 
-object ClusterShardingQueriesSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = s"""
+object ClusterShardingQueriesSpecConfig
+    extends MultiNodeClusterShardingConfig(additionalConfig = """
         akka.log-dead-letters-during-shutdown = off
         akka.cluster.sharding {
           shard-region-query-timeout = 2ms

@@ -32,7 +32,7 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
       .withFallback(ConfigFactory.parseString("""
         akka.persistence.journal.stepping-inmem.recovery-event-timeout=1s
         """))
-      .withFallback(ConfigFactory.parseString(s"""
+      .withFallback(ConfigFactory.parseString("""
         akka.loglevel = INFO
         """))
 

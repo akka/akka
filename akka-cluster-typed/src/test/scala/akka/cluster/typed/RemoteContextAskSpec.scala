@@ -24,7 +24,7 @@ import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
 
 object RemoteContextAskSpec {
-  def config = ConfigFactory.parseString(s"""
+  def config = ConfigFactory.parseString("""
     akka {
       loglevel = debug
       actor.provider = cluster

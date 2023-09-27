@@ -19,7 +19,7 @@ import akka.persistence.JournalProtocol
 
 object EventWriterFillGapsSpec {
   def config =
-    ConfigFactory.parseString(s"""
+    ConfigFactory.parseString("""
       akka.persistence.journal.inmem.delay-writes=10ms
     """).withFallback(ConfigFactory.load()).resolve()
 }

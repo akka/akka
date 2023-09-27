@@ -35,7 +35,7 @@ object AeronStreamConsistencySpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
        akka {
          loglevel = INFO
          actor {

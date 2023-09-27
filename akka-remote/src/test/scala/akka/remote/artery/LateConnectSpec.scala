@@ -16,7 +16,7 @@ import akka.testkit.TestProbe
 
 object LateConnectSpec {
 
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString("""
      akka.remote.artery.advanced.handshake-timeout = 3s
      akka.remote.artery.advanced.aeron.image-liveness-timeout = 2.9s
   """).withFallback(ArterySpecSupport.defaultConfig)

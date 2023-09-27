@@ -22,7 +22,8 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 
-class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
+class OutboundIdleShutdownSpec
+    extends ArteryMultiNodeSpec("""
   akka.loglevel=INFO
   akka.remote.artery.advanced.stop-idle-outbound-after = 1 s
   akka.remote.artery.advanced.connection-timeout = 2 s
@@ -30,7 +31,9 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
   akka.remote.artery.advanced.compression {
     actor-refs.advertisement-interval = 5 seconds
   }
-  """) with ImplicitSender with Eventually {
+  """)
+    with ImplicitSender
+    with Eventually {
 
   override implicit val patience: PatienceConfig = {
     import akka.testkit.TestDuration

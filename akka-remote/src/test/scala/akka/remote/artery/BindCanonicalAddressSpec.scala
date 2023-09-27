@@ -46,7 +46,7 @@ trait BindCanonicalAddressBehaviors {
     val commonConfig = BindCanonicalAddressSpec.commonConfig(transport)
 
     "bind to a random port" in {
-      val config = ConfigFactory.parseString(s"""
+      val config = ConfigFactory.parseString("""
         akka.remote.artery.canonical.port = 0
       """)
 
@@ -82,7 +82,7 @@ trait BindCanonicalAddressBehaviors {
     }
 
     "bind to a specified bind hostname and remoting aspects from canonical hostname" in {
-      val config = ConfigFactory.parseString(s"""
+      val config = ConfigFactory.parseString("""
         akka.remote.artery.canonical.port = 0
         akka.remote.artery.canonical.hostname = "127.0.0.1"
         akka.remote.artery.bind.hostname = "localhost"
@@ -109,7 +109,7 @@ trait BindCanonicalAddressBehaviors {
     }
 
     "bind to all interfaces" in {
-      val config = ConfigFactory.parseString(s"""
+      val config = ConfigFactory.parseString("""
         akka.remote.artery.bind.hostname = "0.0.0.0"
       """)
 

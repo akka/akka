@@ -13,7 +13,7 @@ import akka.testkit.{ AkkaSpec, TestProbe }
 
 object PersistencePluginProxySpec {
   lazy val config =
-    ConfigFactory.parseString(s"""
+    ConfigFactory.parseString("""
       akka {
         actor {
           provider = remote

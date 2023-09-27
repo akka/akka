@@ -33,7 +33,7 @@ import akka.util.ccompat._
 
 @ccompatUsedUntil213
 object ClusterShardingSpec {
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString("""
       akka.actor.provider = cluster
 
       akka.remote.artery.canonical.port = 0

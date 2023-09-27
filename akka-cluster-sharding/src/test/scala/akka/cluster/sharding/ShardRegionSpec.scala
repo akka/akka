@@ -23,7 +23,9 @@ object ShardRegionSpec {
        """
 
   val config =
-    ConfigFactory.parseString(tempConfig).withFallback(ConfigFactory.parseString(s"""
+    ConfigFactory
+      .parseString(tempConfig)
+      .withFallback(ConfigFactory.parseString("""
         akka.loglevel = DEBUG
         akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
         akka.actor.provider = "cluster"

@@ -18,7 +18,7 @@ import akka.serialization.jackson.CborSerializable
 import akka.testkit.AkkaSpec
 
 object RemoteMessageSpec {
-  def config = ConfigFactory.parseString(s"""
+  def config = ConfigFactory.parseString("""
     akka {
       loglevel = debug
       actor.provider = cluster

@@ -117,7 +117,7 @@ class PerformanceSpec
     extends ScalaTestWithActorTestKit(
       PersistenceTestKitPlugin.config
         .withFallback(PersistenceTestKitSnapshotPlugin.config)
-        .withFallback(ConfigFactory.parseString(s"""
+        .withFallback(ConfigFactory.parseString("""
       akka.persistence.publish-plugin-commands = on
       akka.actor.testkit.typed.single-expect-default = 10s
       """))

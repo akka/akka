@@ -30,7 +30,8 @@ object ClusterShardingGetStateSpec {
   val shardTypeName = "Ping"
 }
 
-object ClusterShardingGetStateSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = s"""
+object ClusterShardingGetStateSpecConfig
+    extends MultiNodeClusterShardingConfig(additionalConfig = """
     akka.cluster.sharding {
       coordinator-failure-backoff = 3s
       shard-failure-backoff = 3s

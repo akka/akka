@@ -65,7 +65,7 @@ object TlsTcpSpec {
   def resourcePath(name: String): String = getClass.getClassLoader.getResource(name).getPath
 
   lazy val config: Config = {
-    ConfigFactory.parseString(s"""
+    ConfigFactory.parseString("""
       akka.remote.artery {
         transport = tls-tcp
         large-message-destinations = [ "/user/large" ]

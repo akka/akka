@@ -21,7 +21,7 @@ class ActorRefIgnoreSerializationSpec extends AnyWordSpec with ScalaFutures with
   private var system1: ActorSystem[String] = _
   private var system2: ActorSystem[String] = _
 
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString("""
       akka {
         loglevel = debug
         actor.provider = cluster

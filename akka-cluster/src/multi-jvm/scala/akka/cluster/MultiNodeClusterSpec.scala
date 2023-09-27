@@ -38,7 +38,8 @@ object MultiNodeClusterSpec {
   def clusterConfig(failureDetectorPuppet: Boolean): Config =
     if (failureDetectorPuppet) clusterConfigWithFailureDetectorPuppet else clusterConfig
 
-  def clusterConfig: Config = ConfigFactory.parseString(s"""
+  def clusterConfig: Config =
+    ConfigFactory.parseString("""
     akka.actor.provider = cluster
     akka.actor.warn-about-java-serializer-usage = off
     akka.cluster {

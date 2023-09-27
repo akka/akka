@@ -37,7 +37,7 @@ object SystemMessageDeliverySpec {
 
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
 
-  val safe = ConfigFactory.parseString(s"""
+  val safe = ConfigFactory.parseString("""
        akka.loglevel = INFO
        akka.remote.artery.advanced.stop-idle-outbound-after = 1000 ms
        akka.remote.artery.advanced.inject-handshake-interval = 500 ms

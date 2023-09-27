@@ -749,7 +749,7 @@ class EventSourcedBehaviorSpec
       // new ActorSystem without snapshot plugin config
       val testkit2 = ActorTestKit(
         ActorTestKitBase.testNameFromCallStack(),
-        ConfigFactory.parseString(s"""
+        ConfigFactory.parseString("""
           akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
           """))
       try {
@@ -771,7 +771,7 @@ class EventSourcedBehaviorSpec
       // new ActorSystem without snapshot plugin config
       val testkit2 = ActorTestKit(
         ActorTestKitBase.testNameFromCallStack(),
-        ConfigFactory.parseString(s"""
+        ConfigFactory.parseString("""
           akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
           """))
       try {

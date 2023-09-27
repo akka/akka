@@ -37,7 +37,7 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(
       mode,
       rememberEntities,
       rememberEntitiesStore = rememberEntitiesStore,
-      additionalConfig = s"""
+      additionalConfig = """
       akka.testconductor.barrier-timeout = 60 s
       akka.test.single-expect-default = 60 s
       akka.persistence.journal.leveldb-shared.store.native = off
