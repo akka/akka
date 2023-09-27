@@ -9,12 +9,13 @@ import java.io.File
 import com.typesafe.config.ConfigFactory
 import sbt.ConsoleLogger
 
+// used by JavaFormatter
 class ProjectFileIgnoreSupport(ignoreConfigFile: File, descriptor: String) {
   private val stdoutLogger = ConsoleLogger(System.out)
 
-  private val javaSourceDirectories = Set("java", Jdk9.JAVA_SOURCE_DIRECTORY, Jdk9.JAVA_TEST_SOURCE_DIRECTORY)
+  private val javaSourceDirectories = Set("java")
 
-  private val scalaSourceDirectories = Set("scala", Jdk9.SCALA_SOURCE_DIRECTORY, Jdk9.SCALA_TEST_SOURCE_DIRECTORY)
+  private val scalaSourceDirectories = Set("scala")
 
   private lazy val ignoreConfig = {
     require(

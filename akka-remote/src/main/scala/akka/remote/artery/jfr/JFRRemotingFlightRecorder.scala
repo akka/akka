@@ -7,7 +7,6 @@ package akka.remote.artery.jfr
 import java.net.InetSocketAddress
 
 import akka.actor.Address
-import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
 import akka.remote.artery.RemotingFlightRecorder

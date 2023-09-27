@@ -178,18 +178,28 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
     "run onTermination upon ActorRef.stop()" in {
       val started = TestLatch(1)
-      /*
-       * This lazy val trick is beyond evil: KIDS, DON'T TRY THIS AT HOME!
-       * It is necessary here because of the path-dependent type fsm.StopEvent.
-       */
-      lazy val fsm = new Actor with FSM[Int, Null] {
-        override def preStart() = { started.countDown() }
+
+      // can't be anonymous class due to https://github.com/akka/akka/issues/32128
+      class FsmActor extends Actor with FSM[Int, Null] {
+        override def preStart() = {
+          started.countDown()
+        }
+
         startWith(1, null)
-        when(1) { FSM.NullFunction }
+        when(1) {
+          FSM.NullFunction
+        }
         onTermination {
           case x => testActor ! x
         }
       }
+
+      /*
+       * This lazy val trick is beyond evil: KIDS, DON'T TRY THIS AT HOME!
+       * It is necessary here because of the path-dependent type fsm.StopEvent.
+       */
+      lazy val fsm = new FsmActor
+
       val ref = system.actorOf(Props(fsm))
       Await.ready(started, timeout.duration)
       system.stop(ref)
@@ -214,8 +224,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     "cancel all timers when terminated" in {
       val timerNames = List("timer-1", "timer-2", "timer-3")
 
-      // Lazy so fsmref can refer to checkTimersActive
-      lazy val fsmref = TestFSMRef(new Actor with FSM[String, Null] {
+      // can't be anonymous class due to https://github.com/akka/akka/issues/32128
+      class FsmActor extends Actor with FSM[String, Null] {
         startWith("not-started", null)
         when("not-started") {
           case Event("start", _) => goto("started").replying("starting")
@@ -233,7 +243,10 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
             testActor ! "stopped"
           }
         }
-      })
+      }
+
+      // Lazy so fsmref can refer to checkTimersActive
+      lazy val fsmref = TestFSMRef(new FsmActor)
 
       def checkTimersActive(active: Boolean): Unit = {
         for (timer <- timerNames) fsmref.isTimerActive(timer) should ===(active)

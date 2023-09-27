@@ -7,7 +7,7 @@ package akka.stream.impl
 import java.util.concurrent.Flow
 
 import JavaFlowAndRsConverters.Implicits._
-import org.{reactivestreams => rs}
+import org.{ reactivestreams => rs }
 
 import akka.annotation.InternalApi
 
@@ -97,31 +97,35 @@ private[akka] object JavaFlowAndRsConverters {
   }
 
   final def asJava[T, R](p: rs.Processor[T, R]): Flow.Processor[T, R] = p match {
-    case null => null // null remains null
+    case null                                        => null // null remains null
     case adapter: JavaFlowProcessorToRsAdapter[T, R] => adapter.delegate // unwrap adapter instead of wrapping again
-    case _ => new RsProcessorToJavaFlowAdapter[T, R](p)
+    case _                                           => new RsProcessorToJavaFlowAdapter[T, R](p)
   }
   final def asRs[T, R](p: Flow.Processor[T, R]): rs.Processor[T, R] = p match {
-    case null => null // null remains null
+    case null                                        => null // null remains null
     case adapter: RsProcessorToJavaFlowAdapter[T, R] => adapter.delegate // unwrap adapter instead of wrapping again
-    case _ => new JavaFlowProcessorToRsAdapter[T, R](p)
+    case _                                           => new JavaFlowProcessorToRsAdapter[T, R](p)
   }
 
 }
 
 /** INTERNAL API: Adapters are not meant to be touched directly */
-@InternalApi private[akka] final class JavaFlowPublisherToRsAdapter[T](val delegate: Flow.Publisher[T]) extends rs.Publisher[T] {
+@InternalApi private[akka] final class JavaFlowPublisherToRsAdapter[T](val delegate: Flow.Publisher[T])
+    extends rs.Publisher[T] {
   override def subscribe(rsSubscriber: rs.Subscriber[_ >: T]): Unit =
     delegate.subscribe(rsSubscriber.asJava)
 }
+
 /** INTERNAL API: Adapters are not meant to be touched directly */
-@InternalApi private[akka] final class RsPublisherToJavaFlowAdapter[T](val delegate: rs.Publisher[T]) extends Flow.Publisher[T] {
+@InternalApi private[akka] final class RsPublisherToJavaFlowAdapter[T](val delegate: rs.Publisher[T])
+    extends Flow.Publisher[T] {
   override def subscribe(javaSubscriber: Flow.Subscriber[_ >: T]): Unit =
     delegate.subscribe(javaSubscriber.asRs)
 }
 
 /** INTERNAL API: Adapters are not meant to be touched directly */
-@InternalApi private[akka] final class RsSubscriberToJavaFlowAdapter[T](val delegate: rs.Subscriber[T]) extends Flow.Subscriber[T] {
+@InternalApi private[akka] final class RsSubscriberToJavaFlowAdapter[T](val delegate: rs.Subscriber[T])
+    extends Flow.Subscriber[T] {
   override def onError(t: Throwable): Unit =
     delegate.onError(t)
 
@@ -134,8 +138,10 @@ private[akka] object JavaFlowAndRsConverters {
   override def onSubscribe(s: Flow.Subscription): Unit =
     delegate.onSubscribe(s.asRs)
 }
+
 /** INTERNAL API: Adapters are not meant to be touched directly */
-@InternalApi private[akka] final class JavaFlowSubscriberToRsAdapter[T](val delegate: Flow.Subscriber[T]) extends rs.Subscriber[T] {
+@InternalApi private[akka] final class JavaFlowSubscriberToRsAdapter[T](val delegate: Flow.Subscriber[T])
+    extends rs.Subscriber[T] {
   override def onError(t: Throwable): Unit =
     delegate.onError(t)
 
@@ -150,20 +156,24 @@ private[akka] object JavaFlowAndRsConverters {
 }
 
 /** INTERNAL API: Adapters are not meant to be touched directly */
-@InternalApi private[akka] final class RsSubscriptionToJavaFlowAdapter(val delegate: rs.Subscription) extends Flow.Subscription {
-  override def cancel(): Unit = delegate.cancel()
-
-  override def request(n: Long): Unit = delegate.request(n)
-}
-/** INTERNAL API: Adapters are not meant to be touched directly */
-@InternalApi private[akka] final class JavaFlowSubscriptionToRsAdapter(val delegate: Flow.Subscription) extends rs.Subscription {
+@InternalApi private[akka] final class RsSubscriptionToJavaFlowAdapter(val delegate: rs.Subscription)
+    extends Flow.Subscription {
   override def cancel(): Unit = delegate.cancel()
 
   override def request(n: Long): Unit = delegate.request(n)
 }
 
 /** INTERNAL API: Adapters are not meant to be touched directly */
-@InternalApi private[akka] final class RsProcessorToJavaFlowAdapter[T, R](val delegate: rs.Processor[T, R]) extends Flow.Processor[T, R] {
+@InternalApi private[akka] final class JavaFlowSubscriptionToRsAdapter(val delegate: Flow.Subscription)
+    extends rs.Subscription {
+  override def cancel(): Unit = delegate.cancel()
+
+  override def request(n: Long): Unit = delegate.request(n)
+}
+
+/** INTERNAL API: Adapters are not meant to be touched directly */
+@InternalApi private[akka] final class RsProcessorToJavaFlowAdapter[T, R](val delegate: rs.Processor[T, R])
+    extends Flow.Processor[T, R] {
   override def onError(t: Throwable): Unit =
     delegate.onError(t)
 
@@ -179,8 +189,10 @@ private[akka] object JavaFlowAndRsConverters {
   override def subscribe(javaSubscriber: Flow.Subscriber[_ >: R]): Unit =
     delegate.subscribe(javaSubscriber.asRs)
 }
+
 /** INTERNAL API: Adapters are not meant to be touched directly */
-@InternalApi private[akka] final class JavaFlowProcessorToRsAdapter[T, R](val delegate: Flow.Processor[T, R]) extends rs.Processor[T, R] {
+@InternalApi private[akka] final class JavaFlowProcessorToRsAdapter[T, R](val delegate: Flow.Processor[T, R])
+    extends rs.Processor[T, R] {
   override def onError(t: Throwable): Unit =
     delegate.onError(t)
 

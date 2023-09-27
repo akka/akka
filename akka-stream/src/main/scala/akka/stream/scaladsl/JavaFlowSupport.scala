@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import java.util.{concurrent => juc}
+import java.util.{ concurrent => juc }
 
 import scala.annotation.unchecked.uncheckedVariance
 
@@ -40,8 +40,8 @@ object JavaFlowSupport {
     final
     //#fromPublisher
     def fromPublisher[T](publisher: java.util.concurrent.Flow.Publisher[T]): Source[T, NotUsed] =
-    //#fromPublisher
-    scaladsl.Source.fromPublisher(publisher.asRs)
+      //#fromPublisher
+      scaladsl.Source.fromPublisher(publisher.asRs)
 
     /**
      * Creates a `Source` that is materialized as a [[java.util.concurrent.Flow.Subscriber]]
@@ -52,7 +52,7 @@ object JavaFlowSupport {
     final
     //#asSubscriber
     def asSubscriber[T]: Source[T, java.util.concurrent.Flow.Subscriber[T]] =
-    //#asSubscriber
+      //#asSubscriber
       scaladsl.Source.asSubscriber[T].mapMaterializedValue(_.asJava)
   }
 
@@ -84,24 +84,25 @@ object JavaFlowSupport {
      *
      * @return A [[RunnableGraph]] that materializes to a Processor when run() is called on it.
      */
-    def toProcessor[In, Out, Mat](self: Flow[In, Out, Mat]): RunnableGraph[juc.Flow.Processor[In @uncheckedVariance, Out @uncheckedVariance]] =
-      Source.asSubscriber[In].via(self)
-        .toMat(Sink.asPublisher[Out](fanout = false))(Keep.both)
-        .mapMaterializedValue {
-          case (sub, pub) => new juc.Flow.Processor[In, Out] {
+    def toProcessor[In, Out, Mat](
+        self: Flow[In, Out, Mat]): RunnableGraph[juc.Flow.Processor[In @uncheckedVariance, Out @uncheckedVariance]] =
+      Source.asSubscriber[In].via(self).toMat(Sink.asPublisher[Out](fanout = false))(Keep.both).mapMaterializedValue {
+        case (sub, pub) =>
+          new juc.Flow.Processor[In, Out] {
             override def onError(t: Throwable): Unit = sub.onError(t)
             override def onSubscribe(s: juc.Flow.Subscription): Unit = sub.onSubscribe(s)
             override def onComplete(): Unit = sub.onComplete()
             override def onNext(t: In): Unit = sub.onNext(t)
             override def subscribe(s: juc.Flow.Subscriber[_ >: Out]): Unit = pub.subscribe(s)
           }
-        }
+      }
   }
 
   /**
    * [[akka.stream.scaladsl.Sink]] factories operating with `java.util.concurrent.Flow.*` interfaces.
    */
   object Sink {
+
     /**
      * A `Sink` that materializes into a [[java.util.concurrent.Flow.Publisher]].
      *

@@ -4,6 +4,8 @@
 
 package akka.actor.typed.internal.jfr
 
+import scala.annotation.nowarn
+
 import jdk.jfr.Category
 import jdk.jfr.Enabled
 import jdk.jfr.Event
@@ -34,7 +36,10 @@ final class DeliveryProducerStarted(val producerId: String, val actorPath: Strin
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ProducerController")) @Label("Delivery ProducerController sent RequestNext")
-final class DeliveryProducerRequestNext(val producerId: String, val currentSeqNr: Long, val confirmedSeqNr: Long)
+final class DeliveryProducerRequestNext(
+    val producerId: String,
+    val currentSeqNr: Long,
+    @nowarn("msg=never used") val confirmedSeqNr: Long)
     extends Event
 
 /** INTERNAL API */
@@ -86,7 +91,10 @@ final class DeliveryProducerReceived(val producerId: String, val currentSeqNr: L
 @Enabled(true)
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ProducerController")) @Label("Delivery ProducerController received demand request")
-final class DeliveryProducerReceivedRequest(val producerId: String, val requestedSeqNr: Long, confirmedSeqNr: Long)
+final class DeliveryProducerReceivedRequest(
+    val producerId: String,
+    val requestedSeqNr: Long,
+    @nowarn("msg=never used") confirmedSeqNr: Long)
     extends Event
 
 /** INTERNAL API */

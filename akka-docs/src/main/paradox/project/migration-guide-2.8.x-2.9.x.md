@@ -12,18 +12,26 @@ Rolling updates of Akka Cluster from Akka 2.8.x to 2.9.x is fully supported.
 
 A few deprecated features has been removed in Akka 2.9.x, see sections below.
 
-## Cluster Client
+## Support for Java 8 removed
+
+The published artifacts are targeting Java 11, and later. Supported Java versions are 11 and 17.
+
+## Support for Scala 2.12 removed
+
+The published artifacts are targeting Scala 2.13 and Scala 3.3.
+
+## Deprecated Cluster Client removed
 
 Cluster client has been deprecated since Akka 2.6.0 (2019-11-06). Details on how to migrate can be found in the Akka 
 2.6 docs here: https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc
 
 
-## Typed Actor
+## Deprecated Typed Actor removed
 
 The old "Typed Actor" API (`akka.actor.TypedActor`) has been deprecated since Akka 2.6.0 (2019-11-06) and has been dropped.
 No detailed migration guide exists, the recommendation is to move to the new Akka Typed APIs. 
 
-## Akka SSLConfig
+## Deprecated Akka SSLConfig removed
 
 The Akka SSLConfig convenience and methods accepting it has been deprecated since Akka 2.6.0 and has been dropped. 
 Usage should be replaced with directly creating a `javax.net.ssl.SSLEngine` using the JDK APIs.

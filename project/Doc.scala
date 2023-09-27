@@ -141,10 +141,7 @@ object UnidocRoot extends AutoPlugin {
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(
-      JavaUnidoc / unidoc / javacOptions := {
-        if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
-        else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
-      },
+      JavaUnidoc / unidoc / javacOptions := Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories"),
       publishRsyncArtifacts ++= {
         val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
         (Compile / unidoc).value match {
