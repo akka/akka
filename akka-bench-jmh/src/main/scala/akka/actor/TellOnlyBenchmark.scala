@@ -31,7 +31,7 @@ class TellOnlyBenchmark {
   def setup(): Unit = {
     system = ActorSystem(
       "TellOnlyBenchmark",
-      ConfigFactory.parseString("""
+      ConfigFactory.parseString(s"""
           | akka {
           |   log-dead-letters = off
           |   actor {
