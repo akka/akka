@@ -41,6 +41,8 @@ import akka.util.unused
 @InternalApi
 private[akka] object Running {
 
+  private val MaxRecursiveUnstash = 100
+
   trait WithRevisionAccessible {
     def currentRevision: Long
   }
@@ -65,9 +67,12 @@ private[akka] object Running {
   import InternalProtocol._
   import Running.RunningState
   import Running.WithRevisionAccessible
+  import Running.MaxRecursiveUnstash
 
   // Needed for WithSeqNrAccessible, when unstashing
   private var _currentRevision = 0L
+
+  private var recursiveUnstashOne = 0
 
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
@@ -176,6 +181,18 @@ private[akka] object Running {
 
     override def currentRevision: Long =
       _currentRevision
+
+    // note that this shadows tryUnstashOne in StashManagement from HandlingCommands
+    private def tryUnstashOne(behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+      recursiveUnstashOne += 1
+      if (recursiveUnstashOne >= MaxRecursiveUnstash && behavior.isInstanceOf[HandlingCommands]) {
+        // avoid StackOverflow from too many recursive tryUnstashOne (stashed read only commands)
+        recursiveUnstashOne = 0
+        setup.context.self ! ContinueUnstash
+        new WaitingForContinueUnstash(state)
+      } else
+        Running.this.tryUnstashOne(behavior)
+    }
   }
 
   // ===============================================
@@ -209,6 +226,7 @@ private[akka] object Running {
         case RecoveryPermitGranted             => Behaviors.unhandled
         case _: GetSuccess[_]                  => Behaviors.unhandled
         case _: GetFailure                     => Behaviors.unhandled
+        case ContinueUnstash => Behaviors.unhandled
       }
     }
 
@@ -268,9 +286,51 @@ private[akka] object Running {
         else Behaviors.unhandled
     }
 
-    override def currentRevision: Long = {
+    override def currentRevision: Long =
       _currentRevision
+  }
+
+  // ===============================================
+
+  /** INTERNAL API */
+  @InternalApi private[akka] class WaitingForContinueUnstash(state: RunningState[S])
+    extends AbstractBehavior[InternalProtocol](setup.context)
+      with WithRevisionAccessible {
+
+    def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        if (setup.settings.logOnStashing)
+          setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+        Behaviors.unhandled
+      } else {
+        stashInternal(cmd)
+      }
     }
+
+    def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
+      case ContinueUnstash =>
+        tryUnstashOne(new HandlingCommands(state))
+      case cmd: IncomingCommand[C]@unchecked =>
+        onCommand(cmd)
+      case get: GetState[S@unchecked] =>
+        stashInternal(get)
+      case _ =>
+        Behaviors.unhandled
+    }
+
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill =>
+        // wait for ContinueUnstash before stopping
+        new WaitingForContinueUnstash(state.copy(receivedPoisonPill = true))
+      case signal =>
+        if (setup.onSignal(state.state, signal, catchAndLog = false))
+          Behaviors.same
+        else
+          Behaviors.unhandled
+    }
+
+    override def currentRevision: Long =
+      _currentRevision
   }
 
   // ===============================================

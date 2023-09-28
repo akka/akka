@@ -183,5 +183,6 @@ private[akka] final case class DurableStateBehaviorImpl[Command, State](
   final case class DeleteFailure(cause: Throwable) extends InternalProtocol
   case object RecoveryTimeout extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
+  case object ContinueUnstash extends InternalProtocol
 
 }
