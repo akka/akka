@@ -55,6 +55,7 @@ import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState, GetStateReply }
 import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
+import akka.persistence.typed.internal.Running.MaxRecursiveUnstash
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
@@ -86,6 +87,8 @@ import akka.util.unused
  */
 @InternalApi
 private[akka] object Running {
+
+  private val MaxRecursiveUnstash = 100
 
   trait WithSeqNrAccessible {
     def currentSequenceNumber: Long
@@ -229,6 +232,8 @@ private[akka] object Running {
 
   // Needed for WithSeqNrAccessible, when unstashing
   private var _currentSequenceNumber = 0L
+
+  private var recursiveUnstashOne = 0
 
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
@@ -629,6 +634,18 @@ private[akka] object Running {
         Tagged(adaptedEvent, tags)
     }
 
+    // note that this shadows tryUnstashOne in StashManagement from HandlingCommands
+    private def tryUnstashOne(behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+      recursiveUnstashOne += 1
+      if (recursiveUnstashOne >= MaxRecursiveUnstash && behavior.isInstanceOf[HandlingCommands]) {
+        // avoid StackOverflow from too many recursive tryUnstashOne (stashed read only commands)
+        recursiveUnstashOne = 0
+        setup.context.self ! ContinueUnstash
+        new WaitingForContinueUnstash(state)
+      } else
+        Running.this.tryUnstashOne(behavior)
+    }
+
     setup.setMdcPhase(PersistenceMdc.RunningCmds)
 
     override def currentSequenceNumber: Long =
@@ -673,6 +690,7 @@ private[akka] object Running {
         case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)                      => Behaviors.unhandled
         case RecoveryPermitGranted                     => Behaviors.unhandled
+        case ContinueUnstash                           => Behaviors.unhandled
       }
     }
 
@@ -902,6 +920,51 @@ private[akka] object Running {
       case PoisonPill =>
         // wait for snapshot response before stopping
         new StoringSnapshot(state.copy(receivedPoisonPill = true), sideEffects, snapshotReason)
+      case signal =>
+        if (setup.onSignal(state.state, signal, catchAndLog = false))
+          Behaviors.same
+        else
+          Behaviors.unhandled
+    }
+
+    override def currentSequenceNumber: Long =
+      _currentSequenceNumber
+  }
+
+  // ===============================================
+
+  /** INTERNAL API */
+  @InternalApi private[akka] class WaitingForContinueUnstash(state: RunningState[S])
+      extends AbstractBehavior[InternalProtocol](setup.context)
+      with WithSeqNrAccessible {
+
+    def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        if (setup.settings.logOnStashing)
+          setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+        Behaviors.unhandled
+      } else {
+        stashInternal(cmd)
+      }
+    }
+
+    def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
+      case ContinueUnstash =>
+        tryUnstashOne(new HandlingCommands(state))
+      case cmd: IncomingCommand[C] @unchecked =>
+        onCommand(cmd)
+      case get: GetState[S @unchecked] =>
+        stashInternal(get)
+      case get: GetSeenSequenceNr =>
+        stashInternal(get)
+      case _ =>
+        Behaviors.unhandled
+    }
+
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill =>
+        // wait for ContinueUnstash before stopping
+        new WaitingForContinueUnstash(state.copy(receivedPoisonPill = true))
       case signal =>
         if (setup.onSignal(state.state, signal, catchAndLog = false))
           Behaviors.same
