@@ -31,7 +31,7 @@ object Dependencies {
   val jacksonCoreVersion = "2.15.2" // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
   val jacksonDatabindVersion = jacksonCoreVersion // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 
-  val scala213Version = "2.13.11"
+  val scala213Version = "2.13.12"
   // To get the fix for https://github.com/lampepfl/dotty/issues/13106
   // and restored static forwarders
   val scala3Version = "3.3.1"
