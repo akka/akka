@@ -17,7 +17,7 @@ object Dependencies {
   val java8CompatVersion = "1.0.0"
 
   val junitVersion = "4.13.2"
-  val slf4jVersion = "1.7.36"
+  val slf4jVersion = "2.0.9"
   // check agrona version when updating this
   val aeronVersion = "1.42.1"
   // needs to be inline with the aeron version, check
