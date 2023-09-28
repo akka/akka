@@ -14,7 +14,7 @@ object Dependencies {
 
   // java8-compat is only used in a couple of places for 2.13,
   // it is probably possible to remove the dependency if needed.
-  val java8CompatVersion = "1.0.0"
+  val java8CompatVersion = "1.0.2"
 
   val junitVersion = "4.13.2"
   val slf4jVersion = "1.7.36"
