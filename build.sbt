@@ -323,7 +323,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
     assembly / fullClasspath := (Runtime / managedClasspath).value, // otherwise, there's a cyclic dependency between packageBin and assembly
     assembly / test := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
-    description := "Akka Protobuf V3 is a shaded version of the protobuf runtime. Original POM: https://github.com/protocolbuffers/protobuf/blob/v3.9.0/java/pom.xml")
+    description := s"Akka Protobuf V3 is a shaded version of ${Dependencies.Compile.Provided.protobufRuntime.name} ${Dependencies.Compile.Provided.protobufRuntime.revision}.")
 
 lazy val pki =
   akkaModule("akka-pki")
