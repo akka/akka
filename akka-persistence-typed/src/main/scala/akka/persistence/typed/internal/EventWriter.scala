@@ -209,11 +209,20 @@ private[akka] object EventWriter {
               JournalProtocol.ReplayMessages(0L, 0L, 1L, pid, replyTo.toClassic)) {
             case Success(JournalProtocol.RecoverySuccess(highestSequenceNr)) =>
               MaxSeqNrForPid(pid, highestSequenceNr, originalErrorDesc)
+            case Success(JournalProtocol.ReplayMessagesFailure(cause)) =>
+              throw new RuntimeException(
+                s"Error finding highest sequence number in journal for pid $pid." +
+                s"${originalErrorDesc.map(origErr => s"original error: $origErr")}",
+                cause)
             case Success(unexpected) =>
               throw new IllegalArgumentException(
-                s"Got unexpected reply from journal ${unexpected.getClass} for pid $pid")
+                s"Got unexpected reply from journal ${unexpected.getClass} for pid $pid." +
+                s"${originalErrorDesc.map(origErr => s"original error: $origErr")}")
             case Failure(exception) =>
-              throw new RuntimeException(s"Error finding highest sequence number in journal for pid $pid", exception)
+              throw new RuntimeException(
+                s"Error finding highest sequence number in journal for pid $pid." +
+                s"${originalErrorDesc.map(origErr => s"original error: $origErr")}",
+                exception)
           }
         }
 
