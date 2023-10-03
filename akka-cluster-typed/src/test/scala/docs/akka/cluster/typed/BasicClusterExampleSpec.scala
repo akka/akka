@@ -115,8 +115,9 @@ class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventual
   "Cluster API" must {
     "init cluster" in {
       // config is pulled into docs, but we don't want to hardcode ports because that makes for brittle tests
-      val sys1Port = SocketUtil.temporaryLocalPort()
-      val sys2Port = SocketUtil.temporaryLocalPort()
+      val addresses = SocketUtil.temporaryServerAddresses(2)
+      val sys1Port = addresses.head.getPort
+      val sys2Port = addresses.last.getPort
       def config(port: Int) = ConfigFactory.parseString(s"""
           akka.remote.artery.canonical.port = $port
           akka.cluster.jmx.multi-mbeans-in-same-jvm = on
