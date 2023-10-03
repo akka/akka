@@ -9,242 +9,219 @@ package akka.persistence.query.internal.protobuf;
 
 public final class QueryMessages {
   private QueryMessages() {}
-
   public static void registerAllExtensions(
-      akka.protobufv3.internal.ExtensionRegistryLite registry) {}
-
-  public static void registerAllExtensions(akka.protobufv3.internal.ExtensionRegistry registry) {
-    registerAllExtensions((akka.protobufv3.internal.ExtensionRegistryLite) registry);
+      akka.protobufv3.internal.ExtensionRegistryLite registry) {
   }
 
-  public interface EventEnvelopeOrBuilder
-      extends
+  public static void registerAllExtensions(
+      akka.protobufv3.internal.ExtensionRegistry registry) {
+    registerAllExtensions(
+        (akka.protobufv3.internal.ExtensionRegistryLite) registry);
+  }
+  public interface EventEnvelopeOrBuilder extends
       // @@protoc_insertion_point(interface_extends:akka.persistence.query.EventEnvelope)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>required string persistence_id = 1;</code>
-     *
      * @return Whether the persistenceId field is set.
      */
     boolean hasPersistenceId();
     /**
      * <code>required string persistence_id = 1;</code>
-     *
      * @return The persistenceId.
      */
     java.lang.String getPersistenceId();
     /**
      * <code>required string persistence_id = 1;</code>
-     *
      * @return The bytes for persistenceId.
      */
-    akka.protobufv3.internal.ByteString getPersistenceIdBytes();
+    akka.protobufv3.internal.ByteString
+        getPersistenceIdBytes();
 
     /**
      * <code>required string entity_type = 2;</code>
-     *
      * @return Whether the entityType field is set.
      */
     boolean hasEntityType();
     /**
      * <code>required string entity_type = 2;</code>
-     *
      * @return The entityType.
      */
     java.lang.String getEntityType();
     /**
      * <code>required string entity_type = 2;</code>
-     *
      * @return The bytes for entityType.
      */
-    akka.protobufv3.internal.ByteString getEntityTypeBytes();
+    akka.protobufv3.internal.ByteString
+        getEntityTypeBytes();
 
     /**
      * <code>required int32 slice = 3;</code>
-     *
      * @return Whether the slice field is set.
      */
     boolean hasSlice();
     /**
      * <code>required int32 slice = 3;</code>
-     *
      * @return The slice.
      */
     int getSlice();
 
     /**
      * <code>required int64 sequence_nr = 4;</code>
-     *
      * @return Whether the sequenceNr field is set.
      */
     boolean hasSequenceNr();
     /**
      * <code>required int64 sequence_nr = 4;</code>
-     *
      * @return The sequenceNr.
      */
     long getSequenceNr();
 
     /**
      * <code>required int64 timestamp = 5;</code>
-     *
      * @return Whether the timestamp field is set.
      */
     boolean hasTimestamp();
     /**
      * <code>required int64 timestamp = 5;</code>
-     *
      * @return The timestamp.
      */
     long getTimestamp();
 
     /**
      * <code>required string offset = 6;</code>
-     *
      * @return Whether the offset field is set.
      */
     boolean hasOffset();
     /**
      * <code>required string offset = 6;</code>
-     *
      * @return The offset.
      */
     java.lang.String getOffset();
     /**
      * <code>required string offset = 6;</code>
-     *
      * @return The bytes for offset.
      */
-    akka.protobufv3.internal.ByteString getOffsetBytes();
+    akka.protobufv3.internal.ByteString
+        getOffsetBytes();
 
     /**
      * <code>required string offset_manifest = 7;</code>
-     *
      * @return Whether the offsetManifest field is set.
      */
     boolean hasOffsetManifest();
     /**
      * <code>required string offset_manifest = 7;</code>
-     *
      * @return The offsetManifest.
      */
     java.lang.String getOffsetManifest();
     /**
      * <code>required string offset_manifest = 7;</code>
-     *
      * @return The bytes for offsetManifest.
      */
-    akka.protobufv3.internal.ByteString getOffsetManifestBytes();
+    akka.protobufv3.internal.ByteString
+        getOffsetManifestBytes();
 
     /**
      * <code>optional .Payload event = 8;</code>
-     *
      * @return Whether the event field is set.
      */
     boolean hasEvent();
     /**
      * <code>optional .Payload event = 8;</code>
-     *
      * @return The event.
      */
     akka.remote.ContainerFormats.Payload getEvent();
-    /** <code>optional .Payload event = 8;</code> */
+    /**
+     * <code>optional .Payload event = 8;</code>
+     */
     akka.remote.ContainerFormats.PayloadOrBuilder getEventOrBuilder();
 
     /**
      * <code>optional .Payload metadata = 9;</code>
-     *
      * @return Whether the metadata field is set.
      */
     boolean hasMetadata();
     /**
      * <code>optional .Payload metadata = 9;</code>
-     *
      * @return The metadata.
      */
     akka.remote.ContainerFormats.Payload getMetadata();
-    /** <code>optional .Payload metadata = 9;</code> */
+    /**
+     * <code>optional .Payload metadata = 9;</code>
+     */
     akka.remote.ContainerFormats.PayloadOrBuilder getMetadataOrBuilder();
 
     /**
      * <code>optional bool filtered = 10;</code>
-     *
      * @return Whether the filtered field is set.
      */
     boolean hasFiltered();
     /**
      * <code>optional bool filtered = 10;</code>
-     *
      * @return The filtered.
      */
     boolean getFiltered();
 
     /**
      * <code>optional string source = 11;</code>
-     *
      * @return Whether the source field is set.
      */
     boolean hasSource();
     /**
      * <code>optional string source = 11;</code>
-     *
      * @return The source.
      */
     java.lang.String getSource();
     /**
      * <code>optional string source = 11;</code>
-     *
      * @return The bytes for source.
      */
-    akka.protobufv3.internal.ByteString getSourceBytes();
+    akka.protobufv3.internal.ByteString
+        getSourceBytes();
 
     /**
      * <code>repeated string tags = 12;</code>
-     *
      * @return A list containing the tags.
      */
-    java.util.List<java.lang.String> getTagsList();
+    java.util.List<java.lang.String>
+        getTagsList();
     /**
      * <code>repeated string tags = 12;</code>
-     *
      * @return The count of tags.
      */
     int getTagsCount();
     /**
      * <code>repeated string tags = 12;</code>
-     *
      * @param index The index of the element to return.
      * @return The tags at the given index.
      */
     java.lang.String getTags(int index);
     /**
      * <code>repeated string tags = 12;</code>
-     *
      * @param index The index of the value to return.
      * @return The bytes of the tags at the given index.
      */
-    akka.protobufv3.internal.ByteString getTagsBytes(int index);
+    akka.protobufv3.internal.ByteString
+        getTagsBytes(int index);
   }
   /**
-   *
-   *
    * <pre>
    * for akka.persistence.query.typed.EventEnvelope
    * </pre>
    *
    * Protobuf type {@code akka.persistence.query.EventEnvelope}
    */
-  public static final class EventEnvelope extends akka.protobufv3.internal.GeneratedMessageV3
-      implements
+  public static final class EventEnvelope extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:akka.persistence.query.EventEnvelope)
       EventEnvelopeOrBuilder {
-    private static final long serialVersionUID = 0L;
+  private static final long serialVersionUID = 0L;
     // Use EventEnvelope.newBuilder() to construct.
     private EventEnvelope(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
-
     private EventEnvelope() {
       persistenceId_ = "";
       entityType_ = "";
@@ -262,190 +239,47 @@ public final class QueryMessages {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
-
-    private EventEnvelope(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
-          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10:
-              {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                bitField0_ |= 0x00000001;
-                persistenceId_ = bs;
-                break;
-              }
-            case 18:
-              {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                bitField0_ |= 0x00000002;
-                entityType_ = bs;
-                break;
-              }
-            case 24:
-              {
-                bitField0_ |= 0x00000004;
-                slice_ = input.readInt32();
-                break;
-              }
-            case 32:
-              {
-                bitField0_ |= 0x00000008;
-                sequenceNr_ = input.readInt64();
-                break;
-              }
-            case 40:
-              {
-                bitField0_ |= 0x00000010;
-                timestamp_ = input.readInt64();
-                break;
-              }
-            case 50:
-              {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                bitField0_ |= 0x00000020;
-                offset_ = bs;
-                break;
-              }
-            case 58:
-              {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                bitField0_ |= 0x00000040;
-                offsetManifest_ = bs;
-                break;
-              }
-            case 66:
-              {
-                akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
-                if (((bitField0_ & 0x00000080) != 0)) {
-                  subBuilder = event_.toBuilder();
-                }
-                event_ =
-                    input.readMessage(
-                        akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
-                if (subBuilder != null) {
-                  subBuilder.mergeFrom(event_);
-                  event_ = subBuilder.buildPartial();
-                }
-                bitField0_ |= 0x00000080;
-                break;
-              }
-            case 74:
-              {
-                akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
-                if (((bitField0_ & 0x00000100) != 0)) {
-                  subBuilder = metadata_.toBuilder();
-                }
-                metadata_ =
-                    input.readMessage(
-                        akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
-                if (subBuilder != null) {
-                  subBuilder.mergeFrom(metadata_);
-                  metadata_ = subBuilder.buildPartial();
-                }
-                bitField0_ |= 0x00000100;
-                break;
-              }
-            case 80:
-              {
-                bitField0_ |= 0x00000200;
-                filtered_ = input.readBool();
-                break;
-              }
-            case 90:
-              {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                bitField0_ |= 0x00000400;
-                source_ = bs;
-                break;
-              }
-            case 98:
-              {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                if (!((mutable_bitField0_ & 0x00000800) != 0)) {
-                  tags_ = new akka.protobufv3.internal.LazyStringArrayList();
-                  mutable_bitField0_ |= 0x00000800;
-                }
-                tags_.add(bs);
-                break;
-              }
-            default:
-              {
-                if (!parseUnknownField(input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
-                break;
-              }
-          }
-        }
-      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-            .setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000800) != 0)) {
-          tags_ = tags_.getUnmodifiableView();
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-
-    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
-      return akka.persistence.query.internal.protobuf.QueryMessages
-          .internal_static_akka_persistence_query_EventEnvelope_descriptor;
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.persistence.query.internal.protobuf.QueryMessages.internal_static_akka_persistence_query_EventEnvelope_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.query.internal.protobuf.QueryMessages
-          .internal_static_akka_persistence_query_EventEnvelope_fieldAccessorTable
+      return akka.persistence.query.internal.protobuf.QueryMessages.internal_static_akka_persistence_query_EventEnvelope_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.class,
-              akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.Builder.class);
+              akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.class, akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.Builder.class);
     }
 
     private int bitField0_;
     public static final int PERSISTENCE_ID_FIELD_NUMBER = 1;
-    private volatile java.lang.Object persistenceId_;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object persistenceId_ = "";
     /**
      * <code>required string persistence_id = 1;</code>
-     *
      * @return Whether the persistenceId field is set.
      */
+    @java.lang.Override
     public boolean hasPersistenceId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string persistence_id = 1;</code>
-     *
      * @return The persistenceId.
      */
+    @java.lang.Override
     public java.lang.String getPersistenceId() {
       java.lang.Object ref = persistenceId_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           persistenceId_ = s;
@@ -455,14 +289,16 @@ public final class QueryMessages {
     }
     /**
      * <code>required string persistence_id = 1;</code>
-     *
      * @return The bytes for persistenceId.
      */
-    public akka.protobufv3.internal.ByteString getPersistenceIdBytes() {
+    @java.lang.Override
+    public akka.protobufv3.internal.ByteString
+        getPersistenceIdBytes() {
       java.lang.Object ref = persistenceId_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b =
-            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         persistenceId_ = b;
         return b;
       } else {
@@ -471,26 +307,28 @@ public final class QueryMessages {
     }
 
     public static final int ENTITY_TYPE_FIELD_NUMBER = 2;
-    private volatile java.lang.Object entityType_;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object entityType_ = "";
     /**
      * <code>required string entity_type = 2;</code>
-     *
      * @return Whether the entityType field is set.
      */
+    @java.lang.Override
     public boolean hasEntityType() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string entity_type = 2;</code>
-     *
      * @return The entityType.
      */
+    @java.lang.Override
     public java.lang.String getEntityType() {
       java.lang.Object ref = entityType_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           entityType_ = s;
@@ -500,14 +338,16 @@ public final class QueryMessages {
     }
     /**
      * <code>required string entity_type = 2;</code>
-     *
      * @return The bytes for entityType.
      */
-    public akka.protobufv3.internal.ByteString getEntityTypeBytes() {
+    @java.lang.Override
+    public akka.protobufv3.internal.ByteString
+        getEntityTypeBytes() {
       java.lang.Object ref = entityType_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b =
-            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         entityType_ = b;
         return b;
       } else {
@@ -516,83 +356,85 @@ public final class QueryMessages {
     }
 
     public static final int SLICE_FIELD_NUMBER = 3;
-    private int slice_;
+    private int slice_ = 0;
     /**
      * <code>required int32 slice = 3;</code>
-     *
      * @return Whether the slice field is set.
      */
+    @java.lang.Override
     public boolean hasSlice() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required int32 slice = 3;</code>
-     *
      * @return The slice.
      */
+    @java.lang.Override
     public int getSlice() {
       return slice_;
     }
 
     public static final int SEQUENCE_NR_FIELD_NUMBER = 4;
-    private long sequenceNr_;
+    private long sequenceNr_ = 0L;
     /**
      * <code>required int64 sequence_nr = 4;</code>
-     *
      * @return Whether the sequenceNr field is set.
      */
+    @java.lang.Override
     public boolean hasSequenceNr() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required int64 sequence_nr = 4;</code>
-     *
      * @return The sequenceNr.
      */
+    @java.lang.Override
     public long getSequenceNr() {
       return sequenceNr_;
     }
 
     public static final int TIMESTAMP_FIELD_NUMBER = 5;
-    private long timestamp_;
+    private long timestamp_ = 0L;
     /**
      * <code>required int64 timestamp = 5;</code>
-     *
      * @return Whether the timestamp field is set.
      */
+    @java.lang.Override
     public boolean hasTimestamp() {
       return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>required int64 timestamp = 5;</code>
-     *
      * @return The timestamp.
      */
+    @java.lang.Override
     public long getTimestamp() {
       return timestamp_;
     }
 
     public static final int OFFSET_FIELD_NUMBER = 6;
-    private volatile java.lang.Object offset_;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object offset_ = "";
     /**
      * <code>required string offset = 6;</code>
-     *
      * @return Whether the offset field is set.
      */
+    @java.lang.Override
     public boolean hasOffset() {
       return ((bitField0_ & 0x00000020) != 0);
     }
     /**
      * <code>required string offset = 6;</code>
-     *
      * @return The offset.
      */
+    @java.lang.Override
     public java.lang.String getOffset() {
       java.lang.Object ref = offset_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           offset_ = s;
@@ -602,14 +444,16 @@ public final class QueryMessages {
     }
     /**
      * <code>required string offset = 6;</code>
-     *
      * @return The bytes for offset.
      */
-    public akka.protobufv3.internal.ByteString getOffsetBytes() {
+    @java.lang.Override
+    public akka.protobufv3.internal.ByteString
+        getOffsetBytes() {
       java.lang.Object ref = offset_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b =
-            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         offset_ = b;
         return b;
       } else {
@@ -618,26 +462,28 @@ public final class QueryMessages {
     }
 
     public static final int OFFSET_MANIFEST_FIELD_NUMBER = 7;
-    private volatile java.lang.Object offsetManifest_;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object offsetManifest_ = "";
     /**
      * <code>required string offset_manifest = 7;</code>
-     *
      * @return Whether the offsetManifest field is set.
      */
+    @java.lang.Override
     public boolean hasOffsetManifest() {
       return ((bitField0_ & 0x00000040) != 0);
     }
     /**
      * <code>required string offset_manifest = 7;</code>
-     *
      * @return The offsetManifest.
      */
+    @java.lang.Override
     public java.lang.String getOffsetManifest() {
       java.lang.Object ref = offsetManifest_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           offsetManifest_ = s;
@@ -647,14 +493,16 @@ public final class QueryMessages {
     }
     /**
      * <code>required string offset_manifest = 7;</code>
-     *
      * @return The bytes for offsetManifest.
      */
-    public akka.protobufv3.internal.ByteString getOffsetManifestBytes() {
+    @java.lang.Override
+    public akka.protobufv3.internal.ByteString
+        getOffsetManifestBytes() {
       java.lang.Object ref = offsetManifest_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b =
-            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         offsetManifest_ = b;
         return b;
       } else {
@@ -666,21 +514,24 @@ public final class QueryMessages {
     private akka.remote.ContainerFormats.Payload event_;
     /**
      * <code>optional .Payload event = 8;</code>
-     *
      * @return Whether the event field is set.
      */
+    @java.lang.Override
     public boolean hasEvent() {
       return ((bitField0_ & 0x00000080) != 0);
     }
     /**
      * <code>optional .Payload event = 8;</code>
-     *
      * @return The event.
      */
+    @java.lang.Override
     public akka.remote.ContainerFormats.Payload getEvent() {
       return event_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : event_;
     }
-    /** <code>optional .Payload event = 8;</code> */
+    /**
+     * <code>optional .Payload event = 8;</code>
+     */
+    @java.lang.Override
     public akka.remote.ContainerFormats.PayloadOrBuilder getEventOrBuilder() {
       return event_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : event_;
     }
@@ -689,69 +540,70 @@ public final class QueryMessages {
     private akka.remote.ContainerFormats.Payload metadata_;
     /**
      * <code>optional .Payload metadata = 9;</code>
-     *
      * @return Whether the metadata field is set.
      */
+    @java.lang.Override
     public boolean hasMetadata() {
       return ((bitField0_ & 0x00000100) != 0);
     }
     /**
      * <code>optional .Payload metadata = 9;</code>
-     *
      * @return The metadata.
      */
+    @java.lang.Override
     public akka.remote.ContainerFormats.Payload getMetadata() {
-      return metadata_ == null
-          ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
-          : metadata_;
+      return metadata_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : metadata_;
     }
-    /** <code>optional .Payload metadata = 9;</code> */
+    /**
+     * <code>optional .Payload metadata = 9;</code>
+     */
+    @java.lang.Override
     public akka.remote.ContainerFormats.PayloadOrBuilder getMetadataOrBuilder() {
-      return metadata_ == null
-          ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
-          : metadata_;
+      return metadata_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : metadata_;
     }
 
     public static final int FILTERED_FIELD_NUMBER = 10;
-    private boolean filtered_;
+    private boolean filtered_ = false;
     /**
      * <code>optional bool filtered = 10;</code>
-     *
      * @return Whether the filtered field is set.
      */
+    @java.lang.Override
     public boolean hasFiltered() {
       return ((bitField0_ & 0x00000200) != 0);
     }
     /**
      * <code>optional bool filtered = 10;</code>
-     *
      * @return The filtered.
      */
+    @java.lang.Override
     public boolean getFiltered() {
       return filtered_;
     }
 
     public static final int SOURCE_FIELD_NUMBER = 11;
-    private volatile java.lang.Object source_;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object source_ = "";
     /**
      * <code>optional string source = 11;</code>
-     *
      * @return Whether the source field is set.
      */
+    @java.lang.Override
     public boolean hasSource() {
       return ((bitField0_ & 0x00000400) != 0);
     }
     /**
      * <code>optional string source = 11;</code>
-     *
      * @return The source.
      */
+    @java.lang.Override
     public java.lang.String getSource() {
       java.lang.Object ref = source_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           source_ = s;
@@ -761,14 +613,16 @@ public final class QueryMessages {
     }
     /**
      * <code>optional string source = 11;</code>
-     *
      * @return The bytes for source.
      */
-    public akka.protobufv3.internal.ByteString getSourceBytes() {
+    @java.lang.Override
+    public akka.protobufv3.internal.ByteString
+        getSourceBytes() {
       java.lang.Object ref = source_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b =
-            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         source_ = b;
         return b;
       } else {
@@ -777,18 +631,18 @@ public final class QueryMessages {
     }
 
     public static final int TAGS_FIELD_NUMBER = 12;
+    @SuppressWarnings("serial")
     private akka.protobufv3.internal.LazyStringList tags_;
     /**
      * <code>repeated string tags = 12;</code>
-     *
      * @return A list containing the tags.
      */
-    public akka.protobufv3.internal.ProtocolStringList getTagsList() {
+    public akka.protobufv3.internal.ProtocolStringList
+        getTagsList() {
       return tags_;
     }
     /**
      * <code>repeated string tags = 12;</code>
-     *
      * @return The count of tags.
      */
     public int getTagsCount() {
@@ -796,7 +650,6 @@ public final class QueryMessages {
     }
     /**
      * <code>repeated string tags = 12;</code>
-     *
      * @param index The index of the element to return.
      * @return The tags at the given index.
      */
@@ -805,16 +658,15 @@ public final class QueryMessages {
     }
     /**
      * <code>repeated string tags = 12;</code>
-     *
      * @param index The index of the value to return.
      * @return The bytes of the tags at the given index.
      */
-    public akka.protobufv3.internal.ByteString getTagsBytes(int index) {
+    public akka.protobufv3.internal.ByteString
+        getTagsBytes(int index) {
       return tags_.getByteString(index);
     }
 
     private byte memoizedIsInitialized = -1;
-
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -867,7 +719,7 @@ public final class QueryMessages {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-        throws java.io.IOException {
+                        throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, persistenceId_);
       }
@@ -904,7 +756,7 @@ public final class QueryMessages {
       for (int i = 0; i < tags_.size(); i++) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 12, tags_.getRaw(i));
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -920,13 +772,16 @@ public final class QueryMessages {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(2, entityType_);
       }
       if (((bitField0_ & 0x00000004) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream.computeInt32Size(3, slice_);
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeInt32Size(3, slice_);
       }
       if (((bitField0_ & 0x00000008) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(4, sequenceNr_);
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeInt64Size(4, sequenceNr_);
       }
       if (((bitField0_ & 0x00000010) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(5, timestamp_);
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeInt64Size(5, timestamp_);
       }
       if (((bitField0_ & 0x00000020) != 0)) {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(6, offset_);
@@ -935,13 +790,16 @@ public final class QueryMessages {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(7, offsetManifest_);
       }
       if (((bitField0_ & 0x00000080) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(8, getEvent());
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(8, getEvent());
       }
       if (((bitField0_ & 0x00000100) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(9, getMetadata());
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(9, getMetadata());
       }
       if (((bitField0_ & 0x00000200) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream.computeBoolSize(10, filtered_);
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBoolSize(10, filtered_);
       }
       if (((bitField0_ & 0x00000400) != 0)) {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(11, source_);
@@ -954,7 +812,7 @@ public final class QueryMessages {
         size += dataSize;
         size += 1 * getTagsList().size();
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -962,60 +820,71 @@ public final class QueryMessages {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-        return true;
+       return true;
       }
       if (!(obj instanceof akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope)) {
         return super.equals(obj);
       }
-      akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope other =
-          (akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope) obj;
+      akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope other = (akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope) obj;
 
       if (hasPersistenceId() != other.hasPersistenceId()) return false;
       if (hasPersistenceId()) {
-        if (!getPersistenceId().equals(other.getPersistenceId())) return false;
+        if (!getPersistenceId()
+            .equals(other.getPersistenceId())) return false;
       }
       if (hasEntityType() != other.hasEntityType()) return false;
       if (hasEntityType()) {
-        if (!getEntityType().equals(other.getEntityType())) return false;
+        if (!getEntityType()
+            .equals(other.getEntityType())) return false;
       }
       if (hasSlice() != other.hasSlice()) return false;
       if (hasSlice()) {
-        if (getSlice() != other.getSlice()) return false;
+        if (getSlice()
+            != other.getSlice()) return false;
       }
       if (hasSequenceNr() != other.hasSequenceNr()) return false;
       if (hasSequenceNr()) {
-        if (getSequenceNr() != other.getSequenceNr()) return false;
+        if (getSequenceNr()
+            != other.getSequenceNr()) return false;
       }
       if (hasTimestamp() != other.hasTimestamp()) return false;
       if (hasTimestamp()) {
-        if (getTimestamp() != other.getTimestamp()) return false;
+        if (getTimestamp()
+            != other.getTimestamp()) return false;
       }
       if (hasOffset() != other.hasOffset()) return false;
       if (hasOffset()) {
-        if (!getOffset().equals(other.getOffset())) return false;
+        if (!getOffset()
+            .equals(other.getOffset())) return false;
       }
       if (hasOffsetManifest() != other.hasOffsetManifest()) return false;
       if (hasOffsetManifest()) {
-        if (!getOffsetManifest().equals(other.getOffsetManifest())) return false;
+        if (!getOffsetManifest()
+            .equals(other.getOffsetManifest())) return false;
       }
       if (hasEvent() != other.hasEvent()) return false;
       if (hasEvent()) {
-        if (!getEvent().equals(other.getEvent())) return false;
+        if (!getEvent()
+            .equals(other.getEvent())) return false;
       }
       if (hasMetadata() != other.hasMetadata()) return false;
       if (hasMetadata()) {
-        if (!getMetadata().equals(other.getMetadata())) return false;
+        if (!getMetadata()
+            .equals(other.getMetadata())) return false;
       }
       if (hasFiltered() != other.hasFiltered()) return false;
       if (hasFiltered()) {
-        if (getFiltered() != other.getFiltered()) return false;
+        if (getFiltered()
+            != other.getFiltered()) return false;
       }
       if (hasSource() != other.hasSource()) return false;
       if (hasSource()) {
-        if (!getSource().equals(other.getSource())) return false;
+        if (!getSource()
+            .equals(other.getSource())) return false;
       }
-      if (!getTagsList().equals(other.getTagsList())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getTagsList()
+          .equals(other.getTagsList())) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -1040,11 +909,13 @@ public final class QueryMessages {
       }
       if (hasSequenceNr()) {
         hash = (37 * hash) + SEQUENCE_NR_FIELD_NUMBER;
-        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getSequenceNr());
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getSequenceNr());
       }
       if (hasTimestamp()) {
         hash = (37 * hash) + TIMESTAMP_FIELD_NUMBER;
-        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getTimestamp());
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getTimestamp());
       }
       if (hasOffset()) {
         hash = (37 * hash) + OFFSET_FIELD_NUMBER;
@@ -1064,7 +935,8 @@ public final class QueryMessages {
       }
       if (hasFiltered()) {
         hash = (37 * hash) + FILTERED_FIELD_NUMBER;
-        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(getFiltered());
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getFiltered());
       }
       if (hasSource()) {
         hash = (37 * hash) + SOURCE_FIELD_NUMBER;
@@ -1074,103 +946,93 @@ public final class QueryMessages {
         hash = (37 * hash) + TAGS_FIELD_NUMBER;
         hash = (53 * hash) + getTagsList().hashCode();
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
 
     public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
-        java.nio.ByteBuffer data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
-        java.nio.ByteBuffer data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
     public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
         akka.protobufv3.internal.ByteString data)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
         akka.protobufv3.internal.ByteString data,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
-    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
-        byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
+    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(byte[] data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-
     public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
-        byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        byte[] data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-
-    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
-        java.io.InputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
-    }
-
-    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
-        java.io.InputStream input, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
-          PARSER, input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
-
-    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope
-        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
-          PARSER, input);
-    }
-
-    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope
-        parseDelimitedFrom(
-            java.io.InputStream input,
-            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
-          PARSER, input, extensionRegistry);
-    }
-
     public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
-        akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
-
+    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
+        akka.protobufv3.internal.CodedInputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
     public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parseFrom(
         akka.protobufv3.internal.CodedInputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
-          PARSER, input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() {
-      return newBuilder();
-    }
-
+    public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-
-    public static Builder newBuilder(
-        akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope prototype) {
+    public static Builder newBuilder(akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -1180,107 +1042,88 @@ public final class QueryMessages {
       return builder;
     }
     /**
-     *
-     *
      * <pre>
      * for akka.persistence.query.typed.EventEnvelope
      * </pre>
      *
      * Protobuf type {@code akka.persistence.query.EventEnvelope}
      */
-    public static final class Builder
-        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
-        implements
+    public static final class Builder extends
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:akka.persistence.query.EventEnvelope)
         akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelopeOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
-        return akka.persistence.query.internal.protobuf.QueryMessages
-            .internal_static_akka_persistence_query_EventEnvelope_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.persistence.query.internal.protobuf.QueryMessages.internal_static_akka_persistence_query_EventEnvelope_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.query.internal.protobuf.QueryMessages
-            .internal_static_akka_persistence_query_EventEnvelope_fieldAccessorTable
+        return akka.persistence.query.internal.protobuf.QueryMessages.internal_static_akka_persistence_query_EventEnvelope_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.class,
-                akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.Builder.class);
+                akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.class, akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.Builder.class);
       }
 
-      // Construct using
-      // akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.newBuilder()
+      // Construct using akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
-
       private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getEventFieldBuilder();
           getMetadataFieldBuilder();
         }
       }
-
       @java.lang.Override
       public Builder clear() {
         super.clear();
+        bitField0_ = 0;
         persistenceId_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
         entityType_ = "";
-        bitField0_ = (bitField0_ & ~0x00000002);
         slice_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000004);
         sequenceNr_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000008);
         timestamp_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000010);
         offset_ = "";
-        bitField0_ = (bitField0_ & ~0x00000020);
         offsetManifest_ = "";
-        bitField0_ = (bitField0_ & ~0x00000040);
-        if (eventBuilder_ == null) {
-          event_ = null;
-        } else {
-          eventBuilder_.clear();
+        event_ = null;
+        if (eventBuilder_ != null) {
+          eventBuilder_.dispose();
+          eventBuilder_ = null;
         }
-        bitField0_ = (bitField0_ & ~0x00000080);
-        if (metadataBuilder_ == null) {
-          metadata_ = null;
-        } else {
-          metadataBuilder_.clear();
+        metadata_ = null;
+        if (metadataBuilder_ != null) {
+          metadataBuilder_.dispose();
+          metadataBuilder_ = null;
         }
-        bitField0_ = (bitField0_ & ~0x00000100);
         filtered_ = false;
-        bitField0_ = (bitField0_ & ~0x00000200);
         source_ = "";
-        bitField0_ = (bitField0_ & ~0x00000400);
         tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000800);
         return this;
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
-        return akka.persistence.query.internal.protobuf.QueryMessages
-            .internal_static_akka_persistence_query_EventEnvelope_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.persistence.query.internal.protobuf.QueryMessages.internal_static_akka_persistence_query_EventEnvelope_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope
-          getDefaultInstanceForType() {
-        return akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope
-            .getDefaultInstance();
+      public akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope getDefaultInstanceForType() {
+        return akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.getDefaultInstance();
       }
 
       @java.lang.Override
       public akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope build() {
-        akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope result =
-            buildPartial();
+        akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -1289,18 +1132,32 @@ public final class QueryMessages {
 
       @java.lang.Override
       public akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope buildPartial() {
-        akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope result =
-            new akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope(this);
+        akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope result = new akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope(this);
+        buildPartialRepeatedFields(result);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartialRepeatedFields(akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope result) {
+        if (((bitField0_ & 0x00000800) != 0)) {
+          tags_ = tags_.getUnmodifiableView();
+          bitField0_ = (bitField0_ & ~0x00000800);
+        }
+        result.tags_ = tags_;
+      }
+
+      private void buildPartial0(akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.persistenceId_ = persistenceId_;
           to_bitField0_ |= 0x00000001;
         }
-        result.persistenceId_ = persistenceId_;
         if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.entityType_ = entityType_;
           to_bitField0_ |= 0x00000002;
         }
-        result.entityType_ = entityType_;
         if (((from_bitField0_ & 0x00000004) != 0)) {
           result.slice_ = slice_;
           to_bitField0_ |= 0x00000004;
@@ -1314,27 +1171,23 @@ public final class QueryMessages {
           to_bitField0_ |= 0x00000010;
         }
         if (((from_bitField0_ & 0x00000020) != 0)) {
+          result.offset_ = offset_;
           to_bitField0_ |= 0x00000020;
         }
-        result.offset_ = offset_;
         if (((from_bitField0_ & 0x00000040) != 0)) {
+          result.offsetManifest_ = offsetManifest_;
           to_bitField0_ |= 0x00000040;
         }
-        result.offsetManifest_ = offsetManifest_;
         if (((from_bitField0_ & 0x00000080) != 0)) {
-          if (eventBuilder_ == null) {
-            result.event_ = event_;
-          } else {
-            result.event_ = eventBuilder_.build();
-          }
+          result.event_ = eventBuilder_ == null
+              ? event_
+              : eventBuilder_.build();
           to_bitField0_ |= 0x00000080;
         }
         if (((from_bitField0_ & 0x00000100) != 0)) {
-          if (metadataBuilder_ == null) {
-            result.metadata_ = metadata_;
-          } else {
-            result.metadata_ = metadataBuilder_.build();
-          }
+          result.metadata_ = metadataBuilder_ == null
+              ? metadata_
+              : metadataBuilder_.build();
           to_bitField0_ |= 0x00000100;
         }
         if (((from_bitField0_ & 0x00000200) != 0)) {
@@ -1342,78 +1195,64 @@ public final class QueryMessages {
           to_bitField0_ |= 0x00000200;
         }
         if (((from_bitField0_ & 0x00000400) != 0)) {
+          result.source_ = source_;
           to_bitField0_ |= 0x00000400;
         }
-        result.source_ = source_;
-        if (((bitField0_ & 0x00000800) != 0)) {
-          tags_ = tags_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000800);
-        }
-        result.tags_ = tags_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
+        result.bitField0_ |= to_bitField0_;
       }
 
       @java.lang.Override
       public Builder clone() {
         return super.clone();
       }
-
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
         return super.setField(field, value);
       }
-
       @java.lang.Override
-      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
-
       @java.lang.Override
-      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
-
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index,
-          java.lang.Object value) {
+          int index, java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
-
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
-
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope) {
-          return mergeFrom(
-              (akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope) other);
+          return mergeFrom((akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(
-          akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope other) {
-        if (other
-            == akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope
-                .getDefaultInstance()) return this;
+      public Builder mergeFrom(akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope other) {
+        if (other == akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope.getDefaultInstance()) return this;
         if (other.hasPersistenceId()) {
-          bitField0_ |= 0x00000001;
           persistenceId_ = other.persistenceId_;
+          bitField0_ |= 0x00000001;
           onChanged();
         }
         if (other.hasEntityType()) {
-          bitField0_ |= 0x00000002;
           entityType_ = other.entityType_;
+          bitField0_ |= 0x00000002;
           onChanged();
         }
         if (other.hasSlice()) {
@@ -1426,13 +1265,13 @@ public final class QueryMessages {
           setTimestamp(other.getTimestamp());
         }
         if (other.hasOffset()) {
-          bitField0_ |= 0x00000020;
           offset_ = other.offset_;
+          bitField0_ |= 0x00000020;
           onChanged();
         }
         if (other.hasOffsetManifest()) {
-          bitField0_ |= 0x00000040;
           offsetManifest_ = other.offsetManifest_;
+          bitField0_ |= 0x00000040;
           onChanged();
         }
         if (other.hasEvent()) {
@@ -1445,8 +1284,8 @@ public final class QueryMessages {
           setFiltered(other.getFiltered());
         }
         if (other.hasSource()) {
-          bitField0_ |= 0x00000400;
           source_ = other.source_;
+          bitField0_ |= 0x00000400;
           onChanged();
         }
         if (!other.tags_.isEmpty()) {
@@ -1459,7 +1298,7 @@ public final class QueryMessages {
           }
           onChanged();
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -1505,28 +1344,102 @@ public final class QueryMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                persistenceId_ = input.readBytes();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 10
+              case 18: {
+                entityType_ = input.readBytes();
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 18
+              case 24: {
+                slice_ = input.readInt32();
+                bitField0_ |= 0x00000004;
+                break;
+              } // case 24
+              case 32: {
+                sequenceNr_ = input.readInt64();
+                bitField0_ |= 0x00000008;
+                break;
+              } // case 32
+              case 40: {
+                timestamp_ = input.readInt64();
+                bitField0_ |= 0x00000010;
+                break;
+              } // case 40
+              case 50: {
+                offset_ = input.readBytes();
+                bitField0_ |= 0x00000020;
+                break;
+              } // case 50
+              case 58: {
+                offsetManifest_ = input.readBytes();
+                bitField0_ |= 0x00000040;
+                break;
+              } // case 58
+              case 66: {
+                input.readMessage(
+                    getEventFieldBuilder().getBuilder(),
+                    extensionRegistry);
+                bitField0_ |= 0x00000080;
+                break;
+              } // case 66
+              case 74: {
+                input.readMessage(
+                    getMetadataFieldBuilder().getBuilder(),
+                    extensionRegistry);
+                bitField0_ |= 0x00000100;
+                break;
+              } // case 74
+              case 80: {
+                filtered_ = input.readBool();
+                bitField0_ |= 0x00000200;
+                break;
+              } // case 80
+              case 90: {
+                source_ = input.readBytes();
+                bitField0_ |= 0x00000400;
+                break;
+              } // case 90
+              case 98: {
+                akka.protobufv3.internal.ByteString bs = input.readBytes();
+                ensureTagsIsMutable();
+                tags_.add(bs);
+                break;
+              } // case 98
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          parsedMessage =
-              (akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope)
-                  e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
-
       private int bitField0_;
 
       private java.lang.Object persistenceId_ = "";
       /**
        * <code>required string persistence_id = 1;</code>
-       *
        * @return Whether the persistenceId field is set.
        */
       public boolean hasPersistenceId() {
@@ -1534,13 +1447,13 @@ public final class QueryMessages {
       }
       /**
        * <code>required string persistence_id = 1;</code>
-       *
        * @return The persistenceId.
        */
       public java.lang.String getPersistenceId() {
         java.lang.Object ref = persistenceId_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             persistenceId_ = s;
@@ -1552,14 +1465,15 @@ public final class QueryMessages {
       }
       /**
        * <code>required string persistence_id = 1;</code>
-       *
        * @return The bytes for persistenceId.
        */
-      public akka.protobufv3.internal.ByteString getPersistenceIdBytes() {
+      public akka.protobufv3.internal.ByteString
+          getPersistenceIdBytes() {
         java.lang.Object ref = persistenceId_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b =
-              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
           persistenceId_ = b;
           return b;
         } else {
@@ -1568,42 +1482,37 @@ public final class QueryMessages {
       }
       /**
        * <code>required string persistence_id = 1;</code>
-       *
        * @param value The persistenceId to set.
        * @return This builder for chaining.
        */
-      public Builder setPersistenceId(java.lang.String value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000001;
+      public Builder setPersistenceId(
+          java.lang.String value) {
+        if (value == null) { throw new NullPointerException(); }
         persistenceId_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
       /**
        * <code>required string persistence_id = 1;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearPersistenceId() {
-        bitField0_ = (bitField0_ & ~0x00000001);
         persistenceId_ = getDefaultInstance().getPersistenceId();
+        bitField0_ = (bitField0_ & ~0x00000001);
         onChanged();
         return this;
       }
       /**
        * <code>required string persistence_id = 1;</code>
-       *
        * @param value The bytes for persistenceId to set.
        * @return This builder for chaining.
        */
-      public Builder setPersistenceIdBytes(akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000001;
+      public Builder setPersistenceIdBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) { throw new NullPointerException(); }
         persistenceId_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -1611,7 +1520,6 @@ public final class QueryMessages {
       private java.lang.Object entityType_ = "";
       /**
        * <code>required string entity_type = 2;</code>
-       *
        * @return Whether the entityType field is set.
        */
       public boolean hasEntityType() {
@@ -1619,13 +1527,13 @@ public final class QueryMessages {
       }
       /**
        * <code>required string entity_type = 2;</code>
-       *
        * @return The entityType.
        */
       public java.lang.String getEntityType() {
         java.lang.Object ref = entityType_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             entityType_ = s;
@@ -1637,14 +1545,15 @@ public final class QueryMessages {
       }
       /**
        * <code>required string entity_type = 2;</code>
-       *
        * @return The bytes for entityType.
        */
-      public akka.protobufv3.internal.ByteString getEntityTypeBytes() {
+      public akka.protobufv3.internal.ByteString
+          getEntityTypeBytes() {
         java.lang.Object ref = entityType_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b =
-              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
           entityType_ = b;
           return b;
         } else {
@@ -1653,78 +1562,72 @@ public final class QueryMessages {
       }
       /**
        * <code>required string entity_type = 2;</code>
-       *
        * @param value The entityType to set.
        * @return This builder for chaining.
        */
-      public Builder setEntityType(java.lang.String value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000002;
+      public Builder setEntityType(
+          java.lang.String value) {
+        if (value == null) { throw new NullPointerException(); }
         entityType_ = value;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
       /**
        * <code>required string entity_type = 2;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearEntityType() {
-        bitField0_ = (bitField0_ & ~0x00000002);
         entityType_ = getDefaultInstance().getEntityType();
+        bitField0_ = (bitField0_ & ~0x00000002);
         onChanged();
         return this;
       }
       /**
        * <code>required string entity_type = 2;</code>
-       *
        * @param value The bytes for entityType to set.
        * @return This builder for chaining.
        */
-      public Builder setEntityTypeBytes(akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000002;
+      public Builder setEntityTypeBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) { throw new NullPointerException(); }
         entityType_ = value;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
 
-      private int slice_;
+      private int slice_ ;
       /**
        * <code>required int32 slice = 3;</code>
-       *
        * @return Whether the slice field is set.
        */
+      @java.lang.Override
       public boolean hasSlice() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required int32 slice = 3;</code>
-       *
        * @return The slice.
        */
+      @java.lang.Override
       public int getSlice() {
         return slice_;
       }
       /**
        * <code>required int32 slice = 3;</code>
-       *
        * @param value The slice to set.
        * @return This builder for chaining.
        */
       public Builder setSlice(int value) {
-        bitField0_ |= 0x00000004;
+        
         slice_ = value;
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
       /**
        * <code>required int32 slice = 3;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearSlice() {
@@ -1734,38 +1637,37 @@ public final class QueryMessages {
         return this;
       }
 
-      private long sequenceNr_;
+      private long sequenceNr_ ;
       /**
        * <code>required int64 sequence_nr = 4;</code>
-       *
        * @return Whether the sequenceNr field is set.
        */
+      @java.lang.Override
       public boolean hasSequenceNr() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required int64 sequence_nr = 4;</code>
-       *
        * @return The sequenceNr.
        */
+      @java.lang.Override
       public long getSequenceNr() {
         return sequenceNr_;
       }
       /**
        * <code>required int64 sequence_nr = 4;</code>
-       *
        * @param value The sequenceNr to set.
        * @return This builder for chaining.
        */
       public Builder setSequenceNr(long value) {
-        bitField0_ |= 0x00000008;
+        
         sequenceNr_ = value;
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
       /**
        * <code>required int64 sequence_nr = 4;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearSequenceNr() {
@@ -1775,38 +1677,37 @@ public final class QueryMessages {
         return this;
       }
 
-      private long timestamp_;
+      private long timestamp_ ;
       /**
        * <code>required int64 timestamp = 5;</code>
-       *
        * @return Whether the timestamp field is set.
        */
+      @java.lang.Override
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>required int64 timestamp = 5;</code>
-       *
        * @return The timestamp.
        */
+      @java.lang.Override
       public long getTimestamp() {
         return timestamp_;
       }
       /**
        * <code>required int64 timestamp = 5;</code>
-       *
        * @param value The timestamp to set.
        * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
-        bitField0_ |= 0x00000010;
+        
         timestamp_ = value;
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
       /**
        * <code>required int64 timestamp = 5;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearTimestamp() {
@@ -1819,7 +1720,6 @@ public final class QueryMessages {
       private java.lang.Object offset_ = "";
       /**
        * <code>required string offset = 6;</code>
-       *
        * @return Whether the offset field is set.
        */
       public boolean hasOffset() {
@@ -1827,13 +1727,13 @@ public final class QueryMessages {
       }
       /**
        * <code>required string offset = 6;</code>
-       *
        * @return The offset.
        */
       public java.lang.String getOffset() {
         java.lang.Object ref = offset_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             offset_ = s;
@@ -1845,14 +1745,15 @@ public final class QueryMessages {
       }
       /**
        * <code>required string offset = 6;</code>
-       *
        * @return The bytes for offset.
        */
-      public akka.protobufv3.internal.ByteString getOffsetBytes() {
+      public akka.protobufv3.internal.ByteString
+          getOffsetBytes() {
         java.lang.Object ref = offset_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b =
-              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
           offset_ = b;
           return b;
         } else {
@@ -1861,42 +1762,37 @@ public final class QueryMessages {
       }
       /**
        * <code>required string offset = 6;</code>
-       *
        * @param value The offset to set.
        * @return This builder for chaining.
        */
-      public Builder setOffset(java.lang.String value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000020;
+      public Builder setOffset(
+          java.lang.String value) {
+        if (value == null) { throw new NullPointerException(); }
         offset_ = value;
+        bitField0_ |= 0x00000020;
         onChanged();
         return this;
       }
       /**
        * <code>required string offset = 6;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearOffset() {
-        bitField0_ = (bitField0_ & ~0x00000020);
         offset_ = getDefaultInstance().getOffset();
+        bitField0_ = (bitField0_ & ~0x00000020);
         onChanged();
         return this;
       }
       /**
        * <code>required string offset = 6;</code>
-       *
        * @param value The bytes for offset to set.
        * @return This builder for chaining.
        */
-      public Builder setOffsetBytes(akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000020;
+      public Builder setOffsetBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) { throw new NullPointerException(); }
         offset_ = value;
+        bitField0_ |= 0x00000020;
         onChanged();
         return this;
       }
@@ -1904,7 +1800,6 @@ public final class QueryMessages {
       private java.lang.Object offsetManifest_ = "";
       /**
        * <code>required string offset_manifest = 7;</code>
-       *
        * @return Whether the offsetManifest field is set.
        */
       public boolean hasOffsetManifest() {
@@ -1912,13 +1807,13 @@ public final class QueryMessages {
       }
       /**
        * <code>required string offset_manifest = 7;</code>
-       *
        * @return The offsetManifest.
        */
       public java.lang.String getOffsetManifest() {
         java.lang.Object ref = offsetManifest_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             offsetManifest_ = s;
@@ -1930,14 +1825,15 @@ public final class QueryMessages {
       }
       /**
        * <code>required string offset_manifest = 7;</code>
-       *
        * @return The bytes for offsetManifest.
        */
-      public akka.protobufv3.internal.ByteString getOffsetManifestBytes() {
+      public akka.protobufv3.internal.ByteString
+          getOffsetManifestBytes() {
         java.lang.Object ref = offsetManifest_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b =
-              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
           offsetManifest_ = b;
           return b;
         } else {
@@ -1946,55 +1842,46 @@ public final class QueryMessages {
       }
       /**
        * <code>required string offset_manifest = 7;</code>
-       *
        * @param value The offsetManifest to set.
        * @return This builder for chaining.
        */
-      public Builder setOffsetManifest(java.lang.String value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000040;
+      public Builder setOffsetManifest(
+          java.lang.String value) {
+        if (value == null) { throw new NullPointerException(); }
         offsetManifest_ = value;
+        bitField0_ |= 0x00000040;
         onChanged();
         return this;
       }
       /**
        * <code>required string offset_manifest = 7;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearOffsetManifest() {
-        bitField0_ = (bitField0_ & ~0x00000040);
         offsetManifest_ = getDefaultInstance().getOffsetManifest();
+        bitField0_ = (bitField0_ & ~0x00000040);
         onChanged();
         return this;
       }
       /**
        * <code>required string offset_manifest = 7;</code>
-       *
        * @param value The bytes for offsetManifest to set.
        * @return This builder for chaining.
        */
-      public Builder setOffsetManifestBytes(akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000040;
+      public Builder setOffsetManifestBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) { throw new NullPointerException(); }
         offsetManifest_ = value;
+        bitField0_ |= 0x00000040;
         onChanged();
         return this;
       }
 
       private akka.remote.ContainerFormats.Payload event_;
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.remote.ContainerFormats.Payload,
-              akka.remote.ContainerFormats.Payload.Builder,
-              akka.remote.ContainerFormats.PayloadOrBuilder>
-          eventBuilder_;
+          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> eventBuilder_;
       /**
        * <code>optional .Payload event = 8;</code>
-       *
        * @return Whether the event field is set.
        */
       public boolean hasEvent() {
@@ -2002,103 +1889,108 @@ public final class QueryMessages {
       }
       /**
        * <code>optional .Payload event = 8;</code>
-       *
        * @return The event.
        */
       public akka.remote.ContainerFormats.Payload getEvent() {
         if (eventBuilder_ == null) {
-          return event_ == null
-              ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
-              : event_;
+          return event_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : event_;
         } else {
           return eventBuilder_.getMessage();
         }
       }
-      /** <code>optional .Payload event = 8;</code> */
+      /**
+       * <code>optional .Payload event = 8;</code>
+       */
       public Builder setEvent(akka.remote.ContainerFormats.Payload value) {
         if (eventBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
           event_ = value;
-          onChanged();
         } else {
           eventBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00000080;
+        onChanged();
         return this;
       }
-      /** <code>optional .Payload event = 8;</code> */
-      public Builder setEvent(akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+      /**
+       * <code>optional .Payload event = 8;</code>
+       */
+      public Builder setEvent(
+          akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (eventBuilder_ == null) {
           event_ = builderForValue.build();
-          onChanged();
         } else {
           eventBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00000080;
+        onChanged();
         return this;
       }
-      /** <code>optional .Payload event = 8;</code> */
+      /**
+       * <code>optional .Payload event = 8;</code>
+       */
       public Builder mergeEvent(akka.remote.ContainerFormats.Payload value) {
         if (eventBuilder_ == null) {
-          if (((bitField0_ & 0x00000080) != 0)
-              && event_ != null
-              && event_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
-            event_ =
-                akka.remote.ContainerFormats.Payload.newBuilder(event_)
-                    .mergeFrom(value)
-                    .buildPartial();
+          if (((bitField0_ & 0x00000080) != 0) &&
+            event_ != null &&
+            event_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+            getEventBuilder().mergeFrom(value);
           } else {
             event_ = value;
           }
-          onChanged();
         } else {
           eventBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00000080;
+        onChanged();
         return this;
       }
-      /** <code>optional .Payload event = 8;</code> */
+      /**
+       * <code>optional .Payload event = 8;</code>
+       */
       public Builder clearEvent() {
-        if (eventBuilder_ == null) {
-          event_ = null;
-          onChanged();
-        } else {
-          eventBuilder_.clear();
-        }
         bitField0_ = (bitField0_ & ~0x00000080);
+        event_ = null;
+        if (eventBuilder_ != null) {
+          eventBuilder_.dispose();
+          eventBuilder_ = null;
+        }
+        onChanged();
         return this;
       }
-      /** <code>optional .Payload event = 8;</code> */
+      /**
+       * <code>optional .Payload event = 8;</code>
+       */
       public akka.remote.ContainerFormats.Payload.Builder getEventBuilder() {
         bitField0_ |= 0x00000080;
         onChanged();
         return getEventFieldBuilder().getBuilder();
       }
-      /** <code>optional .Payload event = 8;</code> */
+      /**
+       * <code>optional .Payload event = 8;</code>
+       */
       public akka.remote.ContainerFormats.PayloadOrBuilder getEventOrBuilder() {
         if (eventBuilder_ != null) {
           return eventBuilder_.getMessageOrBuilder();
         } else {
-          return event_ == null
-              ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
-              : event_;
+          return event_ == null ?
+              akka.remote.ContainerFormats.Payload.getDefaultInstance() : event_;
         }
       }
-      /** <code>optional .Payload event = 8;</code> */
+      /**
+       * <code>optional .Payload event = 8;</code>
+       */
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.remote.ContainerFormats.Payload,
-              akka.remote.ContainerFormats.Payload.Builder,
-              akka.remote.ContainerFormats.PayloadOrBuilder>
+          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
           getEventFieldBuilder() {
         if (eventBuilder_ == null) {
-          eventBuilder_ =
-              new akka.protobufv3.internal.SingleFieldBuilderV3<
-                  akka.remote.ContainerFormats.Payload,
-                  akka.remote.ContainerFormats.Payload.Builder,
-                  akka.remote.ContainerFormats.PayloadOrBuilder>(
-                  getEvent(), getParentForChildren(), isClean());
+          eventBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  getEvent(),
+                  getParentForChildren(),
+                  isClean());
           event_ = null;
         }
         return eventBuilder_;
@@ -2106,13 +1998,9 @@ public final class QueryMessages {
 
       private akka.remote.ContainerFormats.Payload metadata_;
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.remote.ContainerFormats.Payload,
-              akka.remote.ContainerFormats.Payload.Builder,
-              akka.remote.ContainerFormats.PayloadOrBuilder>
-          metadataBuilder_;
+          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> metadataBuilder_;
       /**
        * <code>optional .Payload metadata = 9;</code>
-       *
        * @return Whether the metadata field is set.
        */
       public boolean hasMetadata() {
@@ -2120,140 +2008,144 @@ public final class QueryMessages {
       }
       /**
        * <code>optional .Payload metadata = 9;</code>
-       *
        * @return The metadata.
        */
       public akka.remote.ContainerFormats.Payload getMetadata() {
         if (metadataBuilder_ == null) {
-          return metadata_ == null
-              ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
-              : metadata_;
+          return metadata_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : metadata_;
         } else {
           return metadataBuilder_.getMessage();
         }
       }
-      /** <code>optional .Payload metadata = 9;</code> */
+      /**
+       * <code>optional .Payload metadata = 9;</code>
+       */
       public Builder setMetadata(akka.remote.ContainerFormats.Payload value) {
         if (metadataBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
           metadata_ = value;
-          onChanged();
         } else {
           metadataBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00000100;
+        onChanged();
         return this;
       }
-      /** <code>optional .Payload metadata = 9;</code> */
-      public Builder setMetadata(akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+      /**
+       * <code>optional .Payload metadata = 9;</code>
+       */
+      public Builder setMetadata(
+          akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (metadataBuilder_ == null) {
           metadata_ = builderForValue.build();
-          onChanged();
         } else {
           metadataBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00000100;
+        onChanged();
         return this;
       }
-      /** <code>optional .Payload metadata = 9;</code> */
+      /**
+       * <code>optional .Payload metadata = 9;</code>
+       */
       public Builder mergeMetadata(akka.remote.ContainerFormats.Payload value) {
         if (metadataBuilder_ == null) {
-          if (((bitField0_ & 0x00000100) != 0)
-              && metadata_ != null
-              && metadata_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
-            metadata_ =
-                akka.remote.ContainerFormats.Payload.newBuilder(metadata_)
-                    .mergeFrom(value)
-                    .buildPartial();
+          if (((bitField0_ & 0x00000100) != 0) &&
+            metadata_ != null &&
+            metadata_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+            getMetadataBuilder().mergeFrom(value);
           } else {
             metadata_ = value;
           }
-          onChanged();
         } else {
           metadataBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00000100;
+        onChanged();
         return this;
       }
-      /** <code>optional .Payload metadata = 9;</code> */
+      /**
+       * <code>optional .Payload metadata = 9;</code>
+       */
       public Builder clearMetadata() {
-        if (metadataBuilder_ == null) {
-          metadata_ = null;
-          onChanged();
-        } else {
-          metadataBuilder_.clear();
-        }
         bitField0_ = (bitField0_ & ~0x00000100);
+        metadata_ = null;
+        if (metadataBuilder_ != null) {
+          metadataBuilder_.dispose();
+          metadataBuilder_ = null;
+        }
+        onChanged();
         return this;
       }
-      /** <code>optional .Payload metadata = 9;</code> */
+      /**
+       * <code>optional .Payload metadata = 9;</code>
+       */
       public akka.remote.ContainerFormats.Payload.Builder getMetadataBuilder() {
         bitField0_ |= 0x00000100;
         onChanged();
         return getMetadataFieldBuilder().getBuilder();
       }
-      /** <code>optional .Payload metadata = 9;</code> */
+      /**
+       * <code>optional .Payload metadata = 9;</code>
+       */
       public akka.remote.ContainerFormats.PayloadOrBuilder getMetadataOrBuilder() {
         if (metadataBuilder_ != null) {
           return metadataBuilder_.getMessageOrBuilder();
         } else {
-          return metadata_ == null
-              ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
-              : metadata_;
+          return metadata_ == null ?
+              akka.remote.ContainerFormats.Payload.getDefaultInstance() : metadata_;
         }
       }
-      /** <code>optional .Payload metadata = 9;</code> */
+      /**
+       * <code>optional .Payload metadata = 9;</code>
+       */
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.remote.ContainerFormats.Payload,
-              akka.remote.ContainerFormats.Payload.Builder,
-              akka.remote.ContainerFormats.PayloadOrBuilder>
+          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
           getMetadataFieldBuilder() {
         if (metadataBuilder_ == null) {
-          metadataBuilder_ =
-              new akka.protobufv3.internal.SingleFieldBuilderV3<
-                  akka.remote.ContainerFormats.Payload,
-                  akka.remote.ContainerFormats.Payload.Builder,
-                  akka.remote.ContainerFormats.PayloadOrBuilder>(
-                  getMetadata(), getParentForChildren(), isClean());
+          metadataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  getMetadata(),
+                  getParentForChildren(),
+                  isClean());
           metadata_ = null;
         }
         return metadataBuilder_;
       }
 
-      private boolean filtered_;
+      private boolean filtered_ ;
       /**
        * <code>optional bool filtered = 10;</code>
-       *
        * @return Whether the filtered field is set.
        */
+      @java.lang.Override
       public boolean hasFiltered() {
         return ((bitField0_ & 0x00000200) != 0);
       }
       /**
        * <code>optional bool filtered = 10;</code>
-       *
        * @return The filtered.
        */
+      @java.lang.Override
       public boolean getFiltered() {
         return filtered_;
       }
       /**
        * <code>optional bool filtered = 10;</code>
-       *
        * @param value The filtered to set.
        * @return This builder for chaining.
        */
       public Builder setFiltered(boolean value) {
-        bitField0_ |= 0x00000200;
+        
         filtered_ = value;
+        bitField0_ |= 0x00000200;
         onChanged();
         return this;
       }
       /**
        * <code>optional bool filtered = 10;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearFiltered() {
@@ -2266,7 +2158,6 @@ public final class QueryMessages {
       private java.lang.Object source_ = "";
       /**
        * <code>optional string source = 11;</code>
-       *
        * @return Whether the source field is set.
        */
       public boolean hasSource() {
@@ -2274,13 +2165,13 @@ public final class QueryMessages {
       }
       /**
        * <code>optional string source = 11;</code>
-       *
        * @return The source.
        */
       public java.lang.String getSource() {
         java.lang.Object ref = source_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             source_ = s;
@@ -2292,14 +2183,15 @@ public final class QueryMessages {
       }
       /**
        * <code>optional string source = 11;</code>
-       *
        * @return The bytes for source.
        */
-      public akka.protobufv3.internal.ByteString getSourceBytes() {
+      public akka.protobufv3.internal.ByteString
+          getSourceBytes() {
         java.lang.Object ref = source_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b =
-              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
           source_ = b;
           return b;
         } else {
@@ -2308,66 +2200,58 @@ public final class QueryMessages {
       }
       /**
        * <code>optional string source = 11;</code>
-       *
        * @param value The source to set.
        * @return This builder for chaining.
        */
-      public Builder setSource(java.lang.String value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000400;
+      public Builder setSource(
+          java.lang.String value) {
+        if (value == null) { throw new NullPointerException(); }
         source_ = value;
+        bitField0_ |= 0x00000400;
         onChanged();
         return this;
       }
       /**
        * <code>optional string source = 11;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearSource() {
-        bitField0_ = (bitField0_ & ~0x00000400);
         source_ = getDefaultInstance().getSource();
+        bitField0_ = (bitField0_ & ~0x00000400);
         onChanged();
         return this;
       }
       /**
        * <code>optional string source = 11;</code>
-       *
        * @param value The bytes for source to set.
        * @return This builder for chaining.
        */
-      public Builder setSourceBytes(akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000400;
+      public Builder setSourceBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) { throw new NullPointerException(); }
         source_ = value;
+        bitField0_ |= 0x00000400;
         onChanged();
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList tags_ =
-          akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-
+      private akka.protobufv3.internal.LazyStringList tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
       private void ensureTagsIsMutable() {
         if (!((bitField0_ & 0x00000800) != 0)) {
           tags_ = new akka.protobufv3.internal.LazyStringArrayList(tags_);
           bitField0_ |= 0x00000800;
-        }
+         }
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @return A list containing the tags.
        */
-      public akka.protobufv3.internal.ProtocolStringList getTagsList() {
+      public akka.protobufv3.internal.ProtocolStringList
+          getTagsList() {
         return tags_.getUnmodifiableView();
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @return The count of tags.
        */
       public int getTagsCount() {
@@ -2375,7 +2259,6 @@ public final class QueryMessages {
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @param index The index of the element to return.
        * @return The tags at the given index.
        */
@@ -2384,24 +2267,22 @@ public final class QueryMessages {
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @param index The index of the value to return.
        * @return The bytes of the tags at the given index.
        */
-      public akka.protobufv3.internal.ByteString getTagsBytes(int index) {
+      public akka.protobufv3.internal.ByteString
+          getTagsBytes(int index) {
         return tags_.getByteString(index);
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @param index The index to set the value at.
        * @param value The tags to set.
        * @return This builder for chaining.
        */
-      public Builder setTags(int index, java.lang.String value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
+      public Builder setTags(
+          int index, java.lang.String value) {
+        if (value == null) { throw new NullPointerException(); }
         ensureTagsIsMutable();
         tags_.set(index, value);
         onChanged();
@@ -2409,14 +2290,12 @@ public final class QueryMessages {
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @param value The tags to add.
        * @return This builder for chaining.
        */
-      public Builder addTags(java.lang.String value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
+      public Builder addTags(
+          java.lang.String value) {
+        if (value == null) { throw new NullPointerException(); }
         ensureTagsIsMutable();
         tags_.add(value);
         onChanged();
@@ -2424,19 +2303,19 @@ public final class QueryMessages {
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @param values The tags to add.
        * @return This builder for chaining.
        */
-      public Builder addAllTags(java.lang.Iterable<java.lang.String> values) {
+      public Builder addAllTags(
+          java.lang.Iterable<java.lang.String> values) {
         ensureTagsIsMutable();
-        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, tags_);
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+            values, tags_);
         onChanged();
         return this;
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @return This builder for chaining.
        */
       public Builder clearTags() {
@@ -2447,20 +2326,17 @@ public final class QueryMessages {
       }
       /**
        * <code>repeated string tags = 12;</code>
-       *
        * @param value The bytes of the tags to add.
        * @return This builder for chaining.
        */
-      public Builder addTagsBytes(akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
+      public Builder addTagsBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) { throw new NullPointerException(); }
         ensureTagsIsMutable();
         tags_.add(value);
         onChanged();
         return this;
       }
-
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -2473,33 +2349,41 @@ public final class QueryMessages {
         return super.mergeUnknownFields(unknownFields);
       }
 
+
       // @@protoc_insertion_point(builder_scope:akka.persistence.query.EventEnvelope)
     }
 
     // @@protoc_insertion_point(class_scope:akka.persistence.query.EventEnvelope)
-    private static final akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope
-        DEFAULT_INSTANCE;
-
+    private static final akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope DEFAULT_INSTANCE;
     static {
       DEFAULT_INSTANCE = new akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope();
     }
 
-    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope
-        getDefaultInstance() {
+    public static akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated
-    public static final akka.protobufv3.internal.Parser<EventEnvelope> PARSER =
-        new akka.protobufv3.internal.AbstractParser<EventEnvelope>() {
-          @java.lang.Override
-          public EventEnvelope parsePartialFrom(
-              akka.protobufv3.internal.CodedInputStream input,
-              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-              throws akka.protobufv3.internal.InvalidProtocolBufferException {
-            return new EventEnvelope(input, extensionRegistry);
-          }
-        };
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<EventEnvelope>
+        PARSER = new akka.protobufv3.internal.AbstractParser<EventEnvelope>() {
+      @java.lang.Override
+      public EventEnvelope parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
+      }
+    };
 
     public static akka.protobufv3.internal.Parser<EventEnvelope> parser() {
       return PARSER;
@@ -2511,61 +2395,48 @@ public final class QueryMessages {
     }
 
     @java.lang.Override
-    public akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope
-        getDefaultInstanceForType() {
+    public akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
+
   }
 
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-      internal_static_akka_persistence_query_EventEnvelope_descriptor;
-  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+    internal_static_akka_persistence_query_EventEnvelope_descriptor;
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_akka_persistence_query_EventEnvelope_fieldAccessorTable;
 
-  public static akka.protobufv3.internal.Descriptors.FileDescriptor getDescriptor() {
+  public static akka.protobufv3.internal.Descriptors.FileDescriptor
+      getDescriptor() {
     return descriptor;
   }
-
-  private static akka.protobufv3.internal.Descriptors.FileDescriptor descriptor;
-
+  private static  akka.protobufv3.internal.Descriptors.FileDescriptor
+      descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\023QueryMessages.proto\022\026akka.persistence."
-          + "query\032\026ContainerFormats.proto\"\201\002\n\rEventE"
-          + "nvelope\022\026\n\016persistence_id\030\001 \002(\t\022\023\n\013entit"
-          + "y_type\030\002 \002(\t\022\r\n\005slice\030\003 \002(\005\022\023\n\013sequence_"
-          + "nr\030\004 \002(\003\022\021\n\ttimestamp\030\005 \002(\003\022\016\n\006offset\030\006 "
-          + "\002(\t\022\027\n\017offset_manifest\030\007 \002(\t\022\027\n\005event\030\010 "
-          + "\001(\0132\010.Payload\022\032\n\010metadata\030\t \001(\0132\010.Payloa"
-          + "d\022\020\n\010filtered\030\n \001(\010\022\016\n\006source\030\013 \001(\t\022\014\n\004t"
-          + "ags\030\014 \003(\tB,\n(akka.persistence.query.inte"
-          + "rnal.protobufH\001"
+      "\n\023QueryMessages.proto\022\026akka.persistence." +
+      "query\032\026ContainerFormats.proto\"\201\002\n\rEventE" +
+      "nvelope\022\026\n\016persistence_id\030\001 \002(\t\022\023\n\013entit" +
+      "y_type\030\002 \002(\t\022\r\n\005slice\030\003 \002(\005\022\023\n\013sequence_" +
+      "nr\030\004 \002(\003\022\021\n\ttimestamp\030\005 \002(\003\022\016\n\006offset\030\006 " +
+      "\002(\t\022\027\n\017offset_manifest\030\007 \002(\t\022\027\n\005event\030\010 " +
+      "\001(\0132\010.Payload\022\032\n\010metadata\030\t \001(\0132\010.Payloa" +
+      "d\022\020\n\010filtered\030\n \001(\010\022\016\n\006source\030\013 \001(\t\022\014\n\004t" +
+      "ags\030\014 \003(\tB,\n(akka.persistence.query.inte" +
+      "rnal.protobufH\001"
     };
-    descriptor =
-        akka.protobufv3.internal.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(
-            descriptorData,
-            new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
-              akka.remote.ContainerFormats.getDescriptor(),
-            });
+    descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
+      .internalBuildGeneratedFileFrom(descriptorData,
+        new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
+          akka.remote.ContainerFormats.getDescriptor(),
+        });
     internal_static_akka_persistence_query_EventEnvelope_descriptor =
-        getDescriptor().getMessageTypes().get(0);
-    internal_static_akka_persistence_query_EventEnvelope_fieldAccessorTable =
-        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-            internal_static_akka_persistence_query_EventEnvelope_descriptor,
-            new java.lang.String[] {
-              "PersistenceId",
-              "EntityType",
-              "Slice",
-              "SequenceNr",
-              "Timestamp",
-              "Offset",
-              "OffsetManifest",
-              "Event",
-              "Metadata",
-              "Filtered",
-              "Source",
-              "Tags",
-            });
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_akka_persistence_query_EventEnvelope_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_akka_persistence_query_EventEnvelope_descriptor,
+        new java.lang.String[] { "PersistenceId", "EntityType", "Slice", "SequenceNr", "Timestamp", "Offset", "OffsetManifest", "Event", "Metadata", "Filtered", "Source", "Tags", });
     akka.remote.ContainerFormats.getDescriptor();
   }
 
