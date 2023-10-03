@@ -80,6 +80,13 @@ private[akka] trait StashManagement[C, E, S] {
   }
 
   /**
+   * @return false if `tryUnstashOne` will unstash a message
+   */
+  protected def isStashEmpty: Boolean =
+    if (stashState.isUnstashAllInProgress) stashState.userStashBuffer.isEmpty
+    else stashState.internalStashBuffer.isEmpty
+
+  /**
    * Subsequent `tryUnstashOne` will drain the user stash buffer before using the
    * internal stash buffer. It will unstash as many commands as are in the buffer when
    * `unstashAll` was called, i.e. if subsequent commands stash more, those will

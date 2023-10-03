@@ -99,7 +99,10 @@ private[akka] object Running {
       val effect = setup.commandHandler(state.state, cmd)
       val (next, doUnstash) = applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[S]]) // TODO can we avoid the cast?
       if (doUnstash) tryUnstashOne(next)
-      else next
+      else {
+        recursiveUnstashOne = 0
+        next
+      }
     }
 
     // Used by DurableStateBehaviorTestKit to retrieve the state.
@@ -184,14 +187,19 @@ private[akka] object Running {
 
     // note that this shadows tryUnstashOne in StashManagement from HandlingCommands
     private def tryUnstashOne(behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-      recursiveUnstashOne += 1
-      if (recursiveUnstashOne >= MaxRecursiveUnstash && behavior.isInstanceOf[HandlingCommands]) {
-        // avoid StackOverflow from too many recursive tryUnstashOne (stashed read only commands)
+      if (isStashEmpty) {
         recursiveUnstashOne = 0
-        setup.context.self ! ContinueUnstash
-        new WaitingForContinueUnstash(state)
-      } else
-        Running.this.tryUnstashOne(behavior)
+        behavior
+      } else {
+        recursiveUnstashOne += 1
+        if (recursiveUnstashOne >= MaxRecursiveUnstash && behavior.isInstanceOf[HandlingCommands]) {
+          // avoid StackOverflow from too many recursive tryUnstashOne (stashed read only commands)
+          recursiveUnstashOne = 0
+          setup.context.self ! ContinueUnstash
+          new WaitingForContinueUnstash(state)
+        } else
+          Running.this.tryUnstashOne(behavior)
+      }
     }
   }
 
@@ -202,6 +210,7 @@ private[akka] object Running {
       visibleState: RunningState[S], // previous state until write success
       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdcPhase(PersistenceMdc.PersistingState)
+    recursiveUnstashOne = 0
     new PersistingState(state, visibleState, sideEffects)
   }
 
@@ -226,7 +235,7 @@ private[akka] object Running {
         case RecoveryPermitGranted             => Behaviors.unhandled
         case _: GetSuccess[_]                  => Behaviors.unhandled
         case _: GetFailure                     => Behaviors.unhandled
-        case ContinueUnstash => Behaviors.unhandled
+        case ContinueUnstash                   => Behaviors.unhandled
       }
     }
 
@@ -294,7 +303,7 @@ private[akka] object Running {
 
   /** INTERNAL API */
   @InternalApi private[akka] class WaitingForContinueUnstash(state: RunningState[S])
-    extends AbstractBehavior[InternalProtocol](setup.context)
+      extends AbstractBehavior[InternalProtocol](setup.context)
       with WithRevisionAccessible {
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
@@ -310,9 +319,9 @@ private[akka] object Running {
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case ContinueUnstash =>
         tryUnstashOne(new HandlingCommands(state))
-      case cmd: IncomingCommand[C]@unchecked =>
+      case cmd: IncomingCommand[C] @unchecked =>
         onCommand(cmd)
-      case get: GetState[S@unchecked] =>
+      case get: GetState[S @unchecked] =>
         stashInternal(get)
       case _ =>
         Behaviors.unhandled

@@ -636,14 +636,19 @@ private[akka] object Running {
 
     // note that this shadows tryUnstashOne in StashManagement from HandlingCommands
     private def tryUnstashOne(behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-      recursiveUnstashOne += 1
-      if (recursiveUnstashOne >= MaxRecursiveUnstash && behavior.isInstanceOf[HandlingCommands]) {
-        // avoid StackOverflow from too many recursive tryUnstashOne (stashed read only commands)
+      if (isStashEmpty) {
         recursiveUnstashOne = 0
-        setup.context.self ! ContinueUnstash
-        new WaitingForContinueUnstash(state)
-      } else
-        Running.this.tryUnstashOne(behavior)
+        behavior
+      } else {
+        recursiveUnstashOne += 1
+        if (recursiveUnstashOne >= MaxRecursiveUnstash && behavior.isInstanceOf[HandlingCommands]) {
+          // avoid StackOverflow from too many recursive tryUnstashOne (stashed read only commands)
+          recursiveUnstashOne = 0
+          setup.context.self ! ContinueUnstash
+          new WaitingForContinueUnstash(state)
+        } else
+          Running.this.tryUnstashOne(behavior)
+      }
     }
 
     setup.setMdcPhase(PersistenceMdc.RunningCmds)
@@ -662,6 +667,7 @@ private[akka] object Running {
       shouldPublish: Boolean,
       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdcPhase(PersistenceMdc.PersistingEvents)
+    recursiveUnstashOne = 0
     new PersistingEvents(state, visibleState, numberOfEvents, shouldSnapshotAfterPersist, shouldPublish, sideEffects)
   }
 
@@ -831,6 +837,7 @@ private[akka] object Running {
       extends AbstractBehavior[InternalProtocol](setup.context)
       with WithSeqNrAccessible {
     setup.setMdcPhase(PersistenceMdc.StoringSnapshot)
+    recursiveUnstashOne = 0
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {

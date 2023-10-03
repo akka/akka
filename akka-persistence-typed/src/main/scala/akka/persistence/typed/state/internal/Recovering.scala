@@ -90,7 +90,7 @@ private[akka] class Recovering[C, S](
       case _: UpsertFailure            => Behaviors.unhandled
       case DeleteSuccess               => Behaviors.unhandled
       case _: DeleteFailure            => Behaviors.unhandled
-      case ContinueUnstash => Behaviors.unhandled
+      case ContinueUnstash             => Behaviors.unhandled
     }
   }
 
