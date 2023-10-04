@@ -147,6 +147,8 @@ private[akka] object EventWriter {
         val writerUuid = UUID.randomUUID().toString
 
         var perPidWriteState = Map.empty[Pid, StateForPid]
+        var bypassCircuitBreaker = true // otherwise the duplicate key violations will flip the circuit breaker
+
         implicit val askTimeout: Timeout = settings.askTimeout
         import settings.fillSequenceNumberGaps
 
@@ -161,7 +163,8 @@ private[akka] object EventWriter {
             AtomicWrite(reprs) :: Nil,
             context.self.toClassic,
             // Note: we use actorInstanceId to correlate replies from one write request
-            actorInstanceId = transactionId)
+            actorInstanceId = transactionId,
+            bypassCircuitBreaker)
         }
 
         def handleUpdatedStateForPid(pid: Pid, newStateForPid: StateForPid): Unit = {
@@ -254,6 +257,7 @@ private[akka] object EventWriter {
         def handleJournalResponse(response: JournalProtocol.Response): Behavior[AnyRef] =
           response match {
             case JournalProtocol.WriteMessageSuccess(message, transactionId) =>
+              bypassCircuitBreaker = true
               val pid = message.persistenceId
               val sequenceNr = message.sequenceNr
               perPidWriteState.get(pid) match {
@@ -468,6 +472,7 @@ private[akka] object EventWriter {
             Behaviors.same
 
           case MaxSeqNrForPid(pid, maxSeqNr, None) =>
+            bypassCircuitBreaker = true
             perPidWriteState.get(pid) match {
               case None =>
                 context.log.debug("Got max seq nr with no waiting previous state for pid, ignoring (pid [{}])", pid)
@@ -482,6 +487,7 @@ private[akka] object EventWriter {
             Behaviors.same
 
           case MaxSeqNrForPid(pid, maxSeqNr, Some(errorDesc)) =>
+            bypassCircuitBreaker = true
             // write failed, so we looked up the maxSeqNr to detect if it was duplicate events, already in journal
             perPidWriteState.get(pid) match {
               case None =>
@@ -541,6 +547,7 @@ private[akka] object EventWriter {
             Behaviors.same
 
           case MaxSeqNrForPidFailed(pid, errorDescOpt) =>
+            bypassCircuitBreaker = false
             def errorDescInLog = errorDescOpt match {
               case None            => ""
               case Some(errorDesc) => s", original error desc: $errorDesc"

@@ -1,0 +1,5 @@
+# WriteMessages is internal
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.JournalProtocol#WriteMessages.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.JournalProtocol#WriteMessages.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.persistence.JournalProtocol$WriteMessages$")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.JournalProtocol#WriteMessages.unapply")
