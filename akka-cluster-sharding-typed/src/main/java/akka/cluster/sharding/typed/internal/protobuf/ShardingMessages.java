@@ -57,7 +57,7 @@ public final class ShardingMessages {
   /**
    * Protobuf type {@code akka.cluster.sharding.typed.ShardingEnvelope}
    */
-  public  static final class ShardingEnvelope extends
+  public static final class ShardingEnvelope extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.ShardingEnvelope)
       ShardingEnvelopeOrBuilder {
@@ -82,63 +82,6 @@ public final class ShardingMessages {
     getUnknownFields() {
       return this.unknownFields;
     }
-    private ShardingEnvelope(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
-          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              akka.protobufv3.internal.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000001;
-              entityId_ = bs;
-              break;
-            }
-            case 18: {
-              akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) != 0)) {
-                subBuilder = message_.toBuilder();
-              }
-              message_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(message_);
-                message_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000002;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_ShardingEnvelope_descriptor;
@@ -154,11 +97,13 @@ public final class ShardingMessages {
 
     private int bitField0_;
     public static final int ENTITYID_FIELD_NUMBER = 1;
-    private volatile java.lang.Object entityId_;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object entityId_ = "";
     /**
      * <code>required string entityId = 1;</code>
      * @return Whether the entityId field is set.
      */
+    @java.lang.Override
     public boolean hasEntityId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -166,6 +111,7 @@ public final class ShardingMessages {
      * <code>required string entityId = 1;</code>
      * @return The entityId.
      */
+    @java.lang.Override
     public java.lang.String getEntityId() {
       java.lang.Object ref = entityId_;
       if (ref instanceof java.lang.String) {
@@ -184,6 +130,7 @@ public final class ShardingMessages {
      * <code>required string entityId = 1;</code>
      * @return The bytes for entityId.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getEntityIdBytes() {
       java.lang.Object ref = entityId_;
@@ -204,6 +151,7 @@ public final class ShardingMessages {
      * <code>required .Payload message = 2;</code>
      * @return Whether the message field is set.
      */
+    @java.lang.Override
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -211,12 +159,14 @@ public final class ShardingMessages {
      * <code>required .Payload message = 2;</code>
      * @return The message.
      */
+    @java.lang.Override
     public akka.remote.ContainerFormats.Payload getMessage() {
       return message_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
     }
     /**
      * <code>required .Payload message = 2;</code>
      */
+    @java.lang.Override
     public akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder() {
       return message_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
     }
@@ -253,7 +203,7 @@ public final class ShardingMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         output.writeMessage(2, getMessage());
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -269,7 +219,7 @@ public final class ShardingMessages {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeMessageSize(2, getMessage());
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -294,7 +244,7 @@ public final class ShardingMessages {
         if (!getMessage()
             .equals(other.getMessage())) return false;
       }
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -313,7 +263,7 @@ public final class ShardingMessages {
         hash = (37 * hash) + MESSAGE_FIELD_NUMBER;
         hash = (53 * hash) + getMessage().hashCode();
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -447,14 +397,13 @@ public final class ShardingMessages {
       @java.lang.Override
       public Builder clear() {
         super.clear();
+        bitField0_ = 0;
         entityId_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
-        if (messageBuilder_ == null) {
-          message_ = null;
-        } else {
-          messageBuilder_.clear();
+        message_ = null;
+        if (messageBuilder_ != null) {
+          messageBuilder_.dispose();
+          messageBuilder_ = null;
         }
-        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -481,23 +430,25 @@ public final class ShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ShardingEnvelope buildPartial() {
         akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ShardingEnvelope result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ShardingEnvelope(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ShardingEnvelope result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.entityId_ = entityId_;
           to_bitField0_ |= 0x00000001;
         }
-        result.entityId_ = entityId_;
         if (((from_bitField0_ & 0x00000002) != 0)) {
-          if (messageBuilder_ == null) {
-            result.message_ = message_;
-          } else {
-            result.message_ = messageBuilder_.build();
-          }
+          result.message_ = messageBuilder_ == null
+              ? message_
+              : messageBuilder_.build();
           to_bitField0_ |= 0x00000002;
         }
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
+        result.bitField0_ |= to_bitField0_;
       }
 
       @java.lang.Override
@@ -545,14 +496,14 @@ public final class ShardingMessages {
       public Builder mergeFrom(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ShardingEnvelope other) {
         if (other == akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ShardingEnvelope.getDefaultInstance()) return this;
         if (other.hasEntityId()) {
-          bitField0_ |= 0x00000001;
           entityId_ = other.entityId_;
+          bitField0_ |= 0x00000001;
           onChanged();
         }
         if (other.hasMessage()) {
           mergeMessage(other.getMessage());
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -576,17 +527,42 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ShardingEnvelope parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                entityId_ = input.readBytes();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 10
+              case 18: {
+                input.readMessage(
+                    getMessageFieldBuilder().getBuilder(),
+                    extensionRegistry);
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 18
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ShardingEnvelope) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -641,11 +617,9 @@ public final class ShardingMessages {
        */
       public Builder setEntityId(
           java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+        if (value == null) { throw new NullPointerException(); }
         entityId_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -654,8 +628,8 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearEntityId() {
-        bitField0_ = (bitField0_ & ~0x00000001);
         entityId_ = getDefaultInstance().getEntityId();
+        bitField0_ = (bitField0_ & ~0x00000001);
         onChanged();
         return this;
       }
@@ -666,11 +640,9 @@ public final class ShardingMessages {
        */
       public Builder setEntityIdBytes(
           akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+        if (value == null) { throw new NullPointerException(); }
         entityId_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -705,11 +677,11 @@ public final class ShardingMessages {
             throw new NullPointerException();
           }
           message_ = value;
-          onChanged();
         } else {
           messageBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00000002;
+        onChanged();
         return this;
       }
       /**
@@ -719,11 +691,11 @@ public final class ShardingMessages {
           akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (messageBuilder_ == null) {
           message_ = builderForValue.build();
-          onChanged();
         } else {
           messageBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00000002;
+        onChanged();
         return this;
       }
       /**
@@ -732,31 +704,30 @@ public final class ShardingMessages {
       public Builder mergeMessage(akka.remote.ContainerFormats.Payload value) {
         if (messageBuilder_ == null) {
           if (((bitField0_ & 0x00000002) != 0) &&
-              message_ != null &&
-              message_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
-            message_ =
-              akka.remote.ContainerFormats.Payload.newBuilder(message_).mergeFrom(value).buildPartial();
+            message_ != null &&
+            message_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+            getMessageBuilder().mergeFrom(value);
           } else {
             message_ = value;
           }
-          onChanged();
         } else {
           messageBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00000002;
+        onChanged();
         return this;
       }
       /**
        * <code>required .Payload message = 2;</code>
        */
       public Builder clearMessage() {
-        if (messageBuilder_ == null) {
-          message_ = null;
-          onChanged();
-        } else {
-          messageBuilder_.clear();
-        }
         bitField0_ = (bitField0_ & ~0x00000002);
+        message_ = null;
+        if (messageBuilder_ != null) {
+          messageBuilder_.dispose();
+          messageBuilder_ = null;
+        }
+        onChanged();
         return this;
       }
       /**
@@ -827,7 +798,18 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        return new ShardingEnvelope(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -898,7 +880,7 @@ public final class ShardingMessages {
   /**
    * Protobuf type {@code akka.cluster.sharding.typed.DaemonProcessScaleState}
    */
-  public  static final class DaemonProcessScaleState extends
+  public static final class DaemonProcessScaleState extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.DaemonProcessScaleState)
       DaemonProcessScaleStateOrBuilder {
@@ -922,64 +904,6 @@ public final class ShardingMessages {
     getUnknownFields() {
       return this.unknownFields;
     }
-    private DaemonProcessScaleState(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
-          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 8: {
-              bitField0_ |= 0x00000001;
-              revision_ = input.readInt64();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              numberOfProcesses_ = input.readInt32();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              completed_ = input.readBool();
-              break;
-            }
-            case 32: {
-              bitField0_ |= 0x00000008;
-              startedTimestampMillis_ = input.readInt64();
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_DaemonProcessScaleState_descriptor;
@@ -995,11 +919,12 @@ public final class ShardingMessages {
 
     private int bitField0_;
     public static final int REVISION_FIELD_NUMBER = 1;
-    private long revision_;
+    private long revision_ = 0L;
     /**
      * <code>required int64 revision = 1;</code>
      * @return Whether the revision field is set.
      */
+    @java.lang.Override
     public boolean hasRevision() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -1007,16 +932,18 @@ public final class ShardingMessages {
      * <code>required int64 revision = 1;</code>
      * @return The revision.
      */
+    @java.lang.Override
     public long getRevision() {
       return revision_;
     }
 
     public static final int NUMBEROFPROCESSES_FIELD_NUMBER = 2;
-    private int numberOfProcesses_;
+    private int numberOfProcesses_ = 0;
     /**
      * <code>required int32 numberOfProcesses = 2;</code>
      * @return Whether the numberOfProcesses field is set.
      */
+    @java.lang.Override
     public boolean hasNumberOfProcesses() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -1024,16 +951,18 @@ public final class ShardingMessages {
      * <code>required int32 numberOfProcesses = 2;</code>
      * @return The numberOfProcesses.
      */
+    @java.lang.Override
     public int getNumberOfProcesses() {
       return numberOfProcesses_;
     }
 
     public static final int COMPLETED_FIELD_NUMBER = 3;
-    private boolean completed_;
+    private boolean completed_ = false;
     /**
      * <code>required bool completed = 3;</code>
      * @return Whether the completed field is set.
      */
+    @java.lang.Override
     public boolean hasCompleted() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -1041,16 +970,18 @@ public final class ShardingMessages {
      * <code>required bool completed = 3;</code>
      * @return The completed.
      */
+    @java.lang.Override
     public boolean getCompleted() {
       return completed_;
     }
 
     public static final int STARTEDTIMESTAMPMILLIS_FIELD_NUMBER = 4;
-    private long startedTimestampMillis_;
+    private long startedTimestampMillis_ = 0L;
     /**
      * <code>required int64 startedTimestampMillis = 4;</code>
      * @return Whether the startedTimestampMillis field is set.
      */
+    @java.lang.Override
     public boolean hasStartedTimestampMillis() {
       return ((bitField0_ & 0x00000008) != 0);
     }
@@ -1058,6 +989,7 @@ public final class ShardingMessages {
      * <code>required int64 startedTimestampMillis = 4;</code>
      * @return The startedTimestampMillis.
      */
+    @java.lang.Override
     public long getStartedTimestampMillis() {
       return startedTimestampMillis_;
     }
@@ -1104,7 +1036,7 @@ public final class ShardingMessages {
       if (((bitField0_ & 0x00000008) != 0)) {
         output.writeInt64(4, startedTimestampMillis_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -1129,7 +1061,7 @@ public final class ShardingMessages {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeInt64Size(4, startedTimestampMillis_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -1164,7 +1096,7 @@ public final class ShardingMessages {
         if (getStartedTimestampMillis()
             != other.getStartedTimestampMillis()) return false;
       }
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -1194,7 +1126,7 @@ public final class ShardingMessages {
         hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
             getStartedTimestampMillis());
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -1311,30 +1243,22 @@ public final class ShardingMessages {
 
       // Construct using akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.DaemonProcessScaleState.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
         super.clear();
+        bitField0_ = 0;
         revision_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000001);
         numberOfProcesses_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
         completed_ = false;
-        bitField0_ = (bitField0_ & ~0x00000004);
         startedTimestampMillis_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
 
@@ -1361,6 +1285,12 @@ public final class ShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.DaemonProcessScaleState buildPartial() {
         akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.DaemonProcessScaleState result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.DaemonProcessScaleState(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.DaemonProcessScaleState result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -1379,9 +1309,7 @@ public final class ShardingMessages {
           result.startedTimestampMillis_ = startedTimestampMillis_;
           to_bitField0_ |= 0x00000008;
         }
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
+        result.bitField0_ |= to_bitField0_;
       }
 
       @java.lang.Override
@@ -1440,7 +1368,7 @@ public final class ShardingMessages {
         if (other.hasStartedTimestampMillis()) {
           setStartedTimestampMillis(other.getStartedTimestampMillis());
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -1467,17 +1395,50 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.DaemonProcessScaleState parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 8: {
+                revision_ = input.readInt64();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 8
+              case 16: {
+                numberOfProcesses_ = input.readInt32();
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 16
+              case 24: {
+                completed_ = input.readBool();
+                bitField0_ |= 0x00000004;
+                break;
+              } // case 24
+              case 32: {
+                startedTimestampMillis_ = input.readInt64();
+                bitField0_ |= 0x00000008;
+                break;
+              } // case 32
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.DaemonProcessScaleState) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -1487,6 +1448,7 @@ public final class ShardingMessages {
        * <code>required int64 revision = 1;</code>
        * @return Whether the revision field is set.
        */
+      @java.lang.Override
       public boolean hasRevision() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -1494,6 +1456,7 @@ public final class ShardingMessages {
        * <code>required int64 revision = 1;</code>
        * @return The revision.
        */
+      @java.lang.Override
       public long getRevision() {
         return revision_;
       }
@@ -1503,8 +1466,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setRevision(long value) {
-        bitField0_ |= 0x00000001;
+        
         revision_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -1524,6 +1488,7 @@ public final class ShardingMessages {
        * <code>required int32 numberOfProcesses = 2;</code>
        * @return Whether the numberOfProcesses field is set.
        */
+      @java.lang.Override
       public boolean hasNumberOfProcesses() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -1531,6 +1496,7 @@ public final class ShardingMessages {
        * <code>required int32 numberOfProcesses = 2;</code>
        * @return The numberOfProcesses.
        */
+      @java.lang.Override
       public int getNumberOfProcesses() {
         return numberOfProcesses_;
       }
@@ -1540,8 +1506,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setNumberOfProcesses(int value) {
-        bitField0_ |= 0x00000002;
+        
         numberOfProcesses_ = value;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1561,6 +1528,7 @@ public final class ShardingMessages {
        * <code>required bool completed = 3;</code>
        * @return Whether the completed field is set.
        */
+      @java.lang.Override
       public boolean hasCompleted() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -1568,6 +1536,7 @@ public final class ShardingMessages {
        * <code>required bool completed = 3;</code>
        * @return The completed.
        */
+      @java.lang.Override
       public boolean getCompleted() {
         return completed_;
       }
@@ -1577,8 +1546,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setCompleted(boolean value) {
-        bitField0_ |= 0x00000004;
+        
         completed_ = value;
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -1598,6 +1568,7 @@ public final class ShardingMessages {
        * <code>required int64 startedTimestampMillis = 4;</code>
        * @return Whether the startedTimestampMillis field is set.
        */
+      @java.lang.Override
       public boolean hasStartedTimestampMillis() {
         return ((bitField0_ & 0x00000008) != 0);
       }
@@ -1605,6 +1576,7 @@ public final class ShardingMessages {
        * <code>required int64 startedTimestampMillis = 4;</code>
        * @return The startedTimestampMillis.
        */
+      @java.lang.Override
       public long getStartedTimestampMillis() {
         return startedTimestampMillis_;
       }
@@ -1614,8 +1586,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setStartedTimestampMillis(long value) {
-        bitField0_ |= 0x00000008;
+        
         startedTimestampMillis_ = value;
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -1662,7 +1635,18 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        return new DaemonProcessScaleState(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -1717,7 +1701,7 @@ public final class ShardingMessages {
   /**
    * Protobuf type {@code akka.cluster.sharding.typed.ChangeNumberOfProcesses}
    */
-  public  static final class ChangeNumberOfProcesses extends
+  public static final class ChangeNumberOfProcesses extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.ChangeNumberOfProcesses)
       ChangeNumberOfProcessesOrBuilder {
@@ -1742,55 +1726,6 @@ public final class ShardingMessages {
     getUnknownFields() {
       return this.unknownFields;
     }
-    private ChangeNumberOfProcesses(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
-          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 8: {
-              bitField0_ |= 0x00000001;
-              newNumberOfProcesses_ = input.readInt32();
-              break;
-            }
-            case 18: {
-              akka.protobufv3.internal.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000002;
-              replyTo_ = bs;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_ChangeNumberOfProcesses_descriptor;
@@ -1806,11 +1741,12 @@ public final class ShardingMessages {
 
     private int bitField0_;
     public static final int NEWNUMBEROFPROCESSES_FIELD_NUMBER = 1;
-    private int newNumberOfProcesses_;
+    private int newNumberOfProcesses_ = 0;
     /**
      * <code>required int32 newNumberOfProcesses = 1;</code>
      * @return Whether the newNumberOfProcesses field is set.
      */
+    @java.lang.Override
     public boolean hasNewNumberOfProcesses() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -1818,16 +1754,19 @@ public final class ShardingMessages {
      * <code>required int32 newNumberOfProcesses = 1;</code>
      * @return The newNumberOfProcesses.
      */
+    @java.lang.Override
     public int getNewNumberOfProcesses() {
       return newNumberOfProcesses_;
     }
 
     public static final int REPLYTO_FIELD_NUMBER = 2;
-    private volatile java.lang.Object replyTo_;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object replyTo_ = "";
     /**
      * <code>required string replyTo = 2;</code>
      * @return Whether the replyTo field is set.
      */
+    @java.lang.Override
     public boolean hasReplyTo() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -1835,6 +1774,7 @@ public final class ShardingMessages {
      * <code>required string replyTo = 2;</code>
      * @return The replyTo.
      */
+    @java.lang.Override
     public java.lang.String getReplyTo() {
       java.lang.Object ref = replyTo_;
       if (ref instanceof java.lang.String) {
@@ -1853,6 +1793,7 @@ public final class ShardingMessages {
      * <code>required string replyTo = 2;</code>
      * @return The bytes for replyTo.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getReplyToBytes() {
       java.lang.Object ref = replyTo_;
@@ -1895,7 +1836,7 @@ public final class ShardingMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 2, replyTo_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -1911,7 +1852,7 @@ public final class ShardingMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(2, replyTo_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -1936,7 +1877,7 @@ public final class ShardingMessages {
         if (!getReplyTo()
             .equals(other.getReplyTo())) return false;
       }
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -1955,7 +1896,7 @@ public final class ShardingMessages {
         hash = (37 * hash) + REPLYTO_FIELD_NUMBER;
         hash = (53 * hash) + getReplyTo().hashCode();
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -2072,26 +2013,20 @@ public final class ShardingMessages {
 
       // Construct using akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ChangeNumberOfProcesses.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
         super.clear();
+        bitField0_ = 0;
         newNumberOfProcesses_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000001);
         replyTo_ = "";
-        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -2118,6 +2053,12 @@ public final class ShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ChangeNumberOfProcesses buildPartial() {
         akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ChangeNumberOfProcesses result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ChangeNumberOfProcesses(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ChangeNumberOfProcesses result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -2125,12 +2066,10 @@ public final class ShardingMessages {
           to_bitField0_ |= 0x00000001;
         }
         if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.replyTo_ = replyTo_;
           to_bitField0_ |= 0x00000002;
         }
-        result.replyTo_ = replyTo_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
+        result.bitField0_ |= to_bitField0_;
       }
 
       @java.lang.Override
@@ -2181,11 +2120,11 @@ public final class ShardingMessages {
           setNewNumberOfProcesses(other.getNewNumberOfProcesses());
         }
         if (other.hasReplyTo()) {
-          bitField0_ |= 0x00000002;
           replyTo_ = other.replyTo_;
+          bitField0_ |= 0x00000002;
           onChanged();
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -2206,17 +2145,40 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ChangeNumberOfProcesses parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 8: {
+                newNumberOfProcesses_ = input.readInt32();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 8
+              case 18: {
+                replyTo_ = input.readBytes();
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 18
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.ChangeNumberOfProcesses) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -2226,6 +2188,7 @@ public final class ShardingMessages {
        * <code>required int32 newNumberOfProcesses = 1;</code>
        * @return Whether the newNumberOfProcesses field is set.
        */
+      @java.lang.Override
       public boolean hasNewNumberOfProcesses() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -2233,6 +2196,7 @@ public final class ShardingMessages {
        * <code>required int32 newNumberOfProcesses = 1;</code>
        * @return The newNumberOfProcesses.
        */
+      @java.lang.Override
       public int getNewNumberOfProcesses() {
         return newNumberOfProcesses_;
       }
@@ -2242,8 +2206,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setNewNumberOfProcesses(int value) {
-        bitField0_ |= 0x00000001;
+        
         newNumberOfProcesses_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -2308,11 +2273,9 @@ public final class ShardingMessages {
        */
       public Builder setReplyTo(
           java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+        if (value == null) { throw new NullPointerException(); }
         replyTo_ = value;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -2321,8 +2284,8 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearReplyTo() {
-        bitField0_ = (bitField0_ & ~0x00000002);
         replyTo_ = getDefaultInstance().getReplyTo();
+        bitField0_ = (bitField0_ & ~0x00000002);
         onChanged();
         return this;
       }
@@ -2333,11 +2296,9 @@ public final class ShardingMessages {
        */
       public Builder setReplyToBytes(
           akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+        if (value == null) { throw new NullPointerException(); }
         replyTo_ = value;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -2374,7 +2335,18 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        return new ChangeNumberOfProcesses(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -2418,7 +2390,7 @@ public final class ShardingMessages {
   /**
    * Protobuf type {@code akka.cluster.sharding.typed.GetNumberOfProcesses}
    */
-  public  static final class GetNumberOfProcesses extends
+  public static final class GetNumberOfProcesses extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.GetNumberOfProcesses)
       GetNumberOfProcessesOrBuilder {
@@ -2443,50 +2415,6 @@ public final class ShardingMessages {
     getUnknownFields() {
       return this.unknownFields;
     }
-    private GetNumberOfProcesses(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
-          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              akka.protobufv3.internal.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000001;
-              replyTo_ = bs;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcesses_descriptor;
@@ -2502,11 +2430,13 @@ public final class ShardingMessages {
 
     private int bitField0_;
     public static final int REPLYTO_FIELD_NUMBER = 1;
-    private volatile java.lang.Object replyTo_;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object replyTo_ = "";
     /**
      * <code>required string replyTo = 1;</code>
      * @return Whether the replyTo field is set.
      */
+    @java.lang.Override
     public boolean hasReplyTo() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -2514,6 +2444,7 @@ public final class ShardingMessages {
      * <code>required string replyTo = 1;</code>
      * @return The replyTo.
      */
+    @java.lang.Override
     public java.lang.String getReplyTo() {
       java.lang.Object ref = replyTo_;
       if (ref instanceof java.lang.String) {
@@ -2532,6 +2463,7 @@ public final class ShardingMessages {
      * <code>required string replyTo = 1;</code>
      * @return The bytes for replyTo.
      */
+    @java.lang.Override
     public akka.protobufv3.internal.ByteString
         getReplyToBytes() {
       java.lang.Object ref = replyTo_;
@@ -2567,7 +2499,7 @@ public final class ShardingMessages {
       if (((bitField0_ & 0x00000001) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, replyTo_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -2579,7 +2511,7 @@ public final class ShardingMessages {
       if (((bitField0_ & 0x00000001) != 0)) {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, replyTo_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -2599,7 +2531,7 @@ public final class ShardingMessages {
         if (!getReplyTo()
             .equals(other.getReplyTo())) return false;
       }
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -2614,7 +2546,7 @@ public final class ShardingMessages {
         hash = (37 * hash) + REPLYTO_FIELD_NUMBER;
         hash = (53 * hash) + getReplyTo().hashCode();
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -2731,24 +2663,19 @@ public final class ShardingMessages {
 
       // Construct using akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
         super.clear();
+        bitField0_ = 0;
         replyTo_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
 
@@ -2775,15 +2702,19 @@ public final class ShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses buildPartial() {
         akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.replyTo_ = replyTo_;
           to_bitField0_ |= 0x00000001;
         }
-        result.replyTo_ = replyTo_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
+        result.bitField0_ |= to_bitField0_;
       }
 
       @java.lang.Override
@@ -2831,11 +2762,11 @@ public final class ShardingMessages {
       public Builder mergeFrom(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses other) {
         if (other == akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses.getDefaultInstance()) return this;
         if (other.hasReplyTo()) {
-          bitField0_ |= 0x00000001;
           replyTo_ = other.replyTo_;
+          bitField0_ |= 0x00000001;
           onChanged();
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -2853,17 +2784,35 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                replyTo_ = input.readBytes();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 10
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcesses) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -2918,11 +2867,9 @@ public final class ShardingMessages {
        */
       public Builder setReplyTo(
           java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+        if (value == null) { throw new NullPointerException(); }
         replyTo_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -2931,8 +2878,8 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearReplyTo() {
-        bitField0_ = (bitField0_ & ~0x00000001);
         replyTo_ = getDefaultInstance().getReplyTo();
+        bitField0_ = (bitField0_ & ~0x00000001);
         onChanged();
         return this;
       }
@@ -2943,11 +2890,9 @@ public final class ShardingMessages {
        */
       public Builder setReplyToBytes(
           akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+        if (value == null) { throw new NullPointerException(); }
         replyTo_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -2984,7 +2929,18 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        return new GetNumberOfProcesses(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -3055,7 +3011,7 @@ public final class ShardingMessages {
   /**
    * Protobuf type {@code akka.cluster.sharding.typed.GetNumberOfProcessesReply}
    */
-  public  static final class GetNumberOfProcessesReply extends
+  public static final class GetNumberOfProcessesReply extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:akka.cluster.sharding.typed.GetNumberOfProcessesReply)
       GetNumberOfProcessesReplyOrBuilder {
@@ -3079,64 +3035,6 @@ public final class ShardingMessages {
     getUnknownFields() {
       return this.unknownFields;
     }
-    private GetNumberOfProcessesReply(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
-          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 8: {
-              bitField0_ |= 0x00000001;
-              revision_ = input.readInt64();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              numberOfProcesses_ = input.readInt32();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              rescaleInProgress_ = input.readBool();
-              break;
-            }
-            case 32: {
-              bitField0_ |= 0x00000008;
-              startedTimestampMillis_ = input.readInt64();
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.internal_static_akka_cluster_sharding_typed_GetNumberOfProcessesReply_descriptor;
@@ -3152,11 +3050,12 @@ public final class ShardingMessages {
 
     private int bitField0_;
     public static final int REVISION_FIELD_NUMBER = 1;
-    private long revision_;
+    private long revision_ = 0L;
     /**
      * <code>required int64 revision = 1;</code>
      * @return Whether the revision field is set.
      */
+    @java.lang.Override
     public boolean hasRevision() {
       return ((bitField0_ & 0x00000001) != 0);
     }
@@ -3164,16 +3063,18 @@ public final class ShardingMessages {
      * <code>required int64 revision = 1;</code>
      * @return The revision.
      */
+    @java.lang.Override
     public long getRevision() {
       return revision_;
     }
 
     public static final int NUMBEROFPROCESSES_FIELD_NUMBER = 2;
-    private int numberOfProcesses_;
+    private int numberOfProcesses_ = 0;
     /**
      * <code>required int32 numberOfProcesses = 2;</code>
      * @return Whether the numberOfProcesses field is set.
      */
+    @java.lang.Override
     public boolean hasNumberOfProcesses() {
       return ((bitField0_ & 0x00000002) != 0);
     }
@@ -3181,16 +3082,18 @@ public final class ShardingMessages {
      * <code>required int32 numberOfProcesses = 2;</code>
      * @return The numberOfProcesses.
      */
+    @java.lang.Override
     public int getNumberOfProcesses() {
       return numberOfProcesses_;
     }
 
     public static final int RESCALEINPROGRESS_FIELD_NUMBER = 3;
-    private boolean rescaleInProgress_;
+    private boolean rescaleInProgress_ = false;
     /**
      * <code>required bool rescaleInProgress = 3;</code>
      * @return Whether the rescaleInProgress field is set.
      */
+    @java.lang.Override
     public boolean hasRescaleInProgress() {
       return ((bitField0_ & 0x00000004) != 0);
     }
@@ -3198,16 +3101,18 @@ public final class ShardingMessages {
      * <code>required bool rescaleInProgress = 3;</code>
      * @return The rescaleInProgress.
      */
+    @java.lang.Override
     public boolean getRescaleInProgress() {
       return rescaleInProgress_;
     }
 
     public static final int STARTEDTIMESTAMPMILLIS_FIELD_NUMBER = 4;
-    private long startedTimestampMillis_;
+    private long startedTimestampMillis_ = 0L;
     /**
      * <code>required int64 startedTimestampMillis = 4;</code>
      * @return Whether the startedTimestampMillis field is set.
      */
+    @java.lang.Override
     public boolean hasStartedTimestampMillis() {
       return ((bitField0_ & 0x00000008) != 0);
     }
@@ -3215,6 +3120,7 @@ public final class ShardingMessages {
      * <code>required int64 startedTimestampMillis = 4;</code>
      * @return The startedTimestampMillis.
      */
+    @java.lang.Override
     public long getStartedTimestampMillis() {
       return startedTimestampMillis_;
     }
@@ -3261,7 +3167,7 @@ public final class ShardingMessages {
       if (((bitField0_ & 0x00000008) != 0)) {
         output.writeInt64(4, startedTimestampMillis_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -3286,7 +3192,7 @@ public final class ShardingMessages {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeInt64Size(4, startedTimestampMillis_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -3321,7 +3227,7 @@ public final class ShardingMessages {
         if (getStartedTimestampMillis()
             != other.getStartedTimestampMillis()) return false;
       }
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -3351,7 +3257,7 @@ public final class ShardingMessages {
         hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
             getStartedTimestampMillis());
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -3468,30 +3374,22 @@ public final class ShardingMessages {
 
       // Construct using akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
         super.clear();
+        bitField0_ = 0;
         revision_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000001);
         numberOfProcesses_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
         rescaleInProgress_ = false;
-        bitField0_ = (bitField0_ & ~0x00000004);
         startedTimestampMillis_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
 
@@ -3518,6 +3416,12 @@ public final class ShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply buildPartial() {
         akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply result = new akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -3536,9 +3440,7 @@ public final class ShardingMessages {
           result.startedTimestampMillis_ = startedTimestampMillis_;
           to_bitField0_ |= 0x00000008;
         }
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
+        result.bitField0_ |= to_bitField0_;
       }
 
       @java.lang.Override
@@ -3597,7 +3499,7 @@ public final class ShardingMessages {
         if (other.hasStartedTimestampMillis()) {
           setStartedTimestampMillis(other.getStartedTimestampMillis());
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -3624,17 +3526,50 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 8: {
+                revision_ = input.readInt64();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 8
+              case 16: {
+                numberOfProcesses_ = input.readInt32();
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 16
+              case 24: {
+                rescaleInProgress_ = input.readBool();
+                bitField0_ |= 0x00000004;
+                break;
+              } // case 24
+              case 32: {
+                startedTimestampMillis_ = input.readInt64();
+                bitField0_ |= 0x00000008;
+                break;
+              } // case 32
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.cluster.sharding.typed.internal.protobuf.ShardingMessages.GetNumberOfProcessesReply) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -3644,6 +3579,7 @@ public final class ShardingMessages {
        * <code>required int64 revision = 1;</code>
        * @return Whether the revision field is set.
        */
+      @java.lang.Override
       public boolean hasRevision() {
         return ((bitField0_ & 0x00000001) != 0);
       }
@@ -3651,6 +3587,7 @@ public final class ShardingMessages {
        * <code>required int64 revision = 1;</code>
        * @return The revision.
        */
+      @java.lang.Override
       public long getRevision() {
         return revision_;
       }
@@ -3660,8 +3597,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setRevision(long value) {
-        bitField0_ |= 0x00000001;
+        
         revision_ = value;
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -3681,6 +3619,7 @@ public final class ShardingMessages {
        * <code>required int32 numberOfProcesses = 2;</code>
        * @return Whether the numberOfProcesses field is set.
        */
+      @java.lang.Override
       public boolean hasNumberOfProcesses() {
         return ((bitField0_ & 0x00000002) != 0);
       }
@@ -3688,6 +3627,7 @@ public final class ShardingMessages {
        * <code>required int32 numberOfProcesses = 2;</code>
        * @return The numberOfProcesses.
        */
+      @java.lang.Override
       public int getNumberOfProcesses() {
         return numberOfProcesses_;
       }
@@ -3697,8 +3637,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setNumberOfProcesses(int value) {
-        bitField0_ |= 0x00000002;
+        
         numberOfProcesses_ = value;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -3718,6 +3659,7 @@ public final class ShardingMessages {
        * <code>required bool rescaleInProgress = 3;</code>
        * @return Whether the rescaleInProgress field is set.
        */
+      @java.lang.Override
       public boolean hasRescaleInProgress() {
         return ((bitField0_ & 0x00000004) != 0);
       }
@@ -3725,6 +3667,7 @@ public final class ShardingMessages {
        * <code>required bool rescaleInProgress = 3;</code>
        * @return The rescaleInProgress.
        */
+      @java.lang.Override
       public boolean getRescaleInProgress() {
         return rescaleInProgress_;
       }
@@ -3734,8 +3677,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setRescaleInProgress(boolean value) {
-        bitField0_ |= 0x00000004;
+        
         rescaleInProgress_ = value;
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -3755,6 +3699,7 @@ public final class ShardingMessages {
        * <code>required int64 startedTimestampMillis = 4;</code>
        * @return Whether the startedTimestampMillis field is set.
        */
+      @java.lang.Override
       public boolean hasStartedTimestampMillis() {
         return ((bitField0_ & 0x00000008) != 0);
       }
@@ -3762,6 +3707,7 @@ public final class ShardingMessages {
        * <code>required int64 startedTimestampMillis = 4;</code>
        * @return The startedTimestampMillis.
        */
+      @java.lang.Override
       public long getStartedTimestampMillis() {
         return startedTimestampMillis_;
       }
@@ -3771,8 +3717,9 @@ public final class ShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setStartedTimestampMillis(long value) {
-        bitField0_ |= 0x00000008;
+        
         startedTimestampMillis_ = value;
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -3819,7 +3766,18 @@ public final class ShardingMessages {
           akka.protobufv3.internal.CodedInputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        return new GetNumberOfProcessesReply(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
