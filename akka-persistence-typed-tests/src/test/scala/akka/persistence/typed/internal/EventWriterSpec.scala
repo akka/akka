@@ -11,10 +11,11 @@ import akka.persistence.AtomicWrite
 import akka.persistence.JournalProtocol
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+
+import akka.actor.testkit.typed.TestException
 
 object EventWriterSpec {
   def config =
@@ -100,6 +101,16 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
       response.getError.getMessage should ===("Journal write failed")
     }
 
+    "pass real errors from journal back when highestSeqNr fails" in new TestSetup {
+      sendWrite(1L)
+      journalFailWrite("the error")
+      // duplicate handling will ask for highest seq nr, can't know it is an actual error
+      journalFailHighestSeqNr("highest error")
+      val response = clientProbe.receiveMessage()
+      response.isError should ===(true)
+      response.getError.getMessage should ===("Journal write failed")
+    }
+
     "ignores old failures when replay triggered" in new TestSetup {
       sendWrite(1L) // triggers write
 
@@ -175,10 +186,7 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
       val atomicWrite = write.messages.head.asInstanceOf[AtomicWrite]
       atomicWrite.payload.foreach { repr =>
         repr.persistenceId should ===(pid)
-        write.persistentActor ! JournalProtocol.WriteMessageFailure(
-          repr,
-          new RuntimeException(reason),
-          write.actorInstanceId)
+        write.persistentActor ! JournalProtocol.WriteMessageFailure(repr, TestException(reason), write.actorInstanceId)
       }
       write.persistentActor ! JournalProtocol.WriteMessagesFailed
       atomicWrite.payload.size
@@ -187,6 +195,11 @@ class EventWriterSpec extends ScalaTestWithActorTestKit(EventWriterSpec.config) 
     def journalHighestSeqNr(highestSeqNr: Long): Unit = {
       val replay = fakeJournal.expectMessageType[JournalProtocol.ReplayMessages]
       replay.persistentActor ! JournalProtocol.RecoverySuccess(highestSeqNr)
+    }
+
+    def journalFailHighestSeqNr(reason: String): Unit = {
+      val replay = fakeJournal.expectMessageType[JournalProtocol.ReplayMessages]
+      replay.persistentActor ! JournalProtocol.ReplayMessagesFailure(TestException(reason))
     }
 
     def clientExpectSuccess(n: Int) = {
