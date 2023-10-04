@@ -313,6 +313,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   final case class SnapshotterResponse(msg: akka.persistence.SnapshotProtocol.Response) extends InternalProtocol
   final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
+  case object ContinueUnstash extends InternalProtocol
 
   final case class ReplicatedEventEnvelope[E](event: ReplicatedEvent[E], ack: ActorRef[ReplicatedEventAck.type])
       extends InternalProtocol

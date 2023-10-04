@@ -44,7 +44,7 @@ object EventSourcedStashOverflowSpec {
     SteppingInmemJournal.config("EventSourcedStashOverflow").withFallback(ConfigFactory.parseString(s"""
        akka.persistence {
          typed {
-           stash-capacity = 1000 # enough to fail on stack size
+           stash-capacity = 5000 # enough to fail on stack size
            stash-overflow-strategy = "drop"
          }
        }
