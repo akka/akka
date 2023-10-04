@@ -7,8 +7,9 @@ package akka
 import sbt._
 import sbt.Keys._
 import java.io.File
+
 import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncHost
-import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
+import sbt.Def
 
 object Publish extends AutoPlugin {
 
@@ -17,12 +18,9 @@ object Publish extends AutoPlugin {
   override def trigger = allRequirements
 
   override lazy val projectSettings = Seq(
-    publishTo := Some(akkaPublishTo.value),
     publishRsyncHost := "akkarepo@gustav.akka.io",
-    credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com")),
-    sonatypeProfileName := "com.typesafe",
     startYear := Some(2009),
     developers := List(
         Developer(
@@ -34,20 +32,24 @@ object Publish extends AutoPlugin {
     pomIncludeRepository := { x =>
       false
     },
-    defaultPublishTo := target.value / "repository")
+    defaultPublishTo := target.value / "repository") ++ publishingSettings
 
-  private def akkaPublishTo = Def.setting {
-    val key = new java.io.File(
-      Option(System.getProperty("akka.gustav.key"))
-        .getOrElse(System.getProperty("user.home") + "/.ssh/id_rsa_gustav.pem"))
-    if (isSnapshot.value)
-      Resolver.sftp("Akka snapshots", "gustav.akka.io", "/home/akkarepo/www/snapshots").as("akkarepo", key)
-    else
-      Opts.resolver.sonatypeStaging
+  private lazy val publishingSettings: Seq[Def.Setting[_]] = {
+    if (isSnapshot.value) {
+      val key = new java.io.File(
+        Option(System.getProperty("akka.gustav.key"))
+          .getOrElse(System.getProperty("user.home") + "/.ssh/id_rsa_gustav.pem"))
+      publishTo := Some(Resolver.sftp("Akka snapshots", "gustav.akka.io", "/home/akkarepo/www/snapshots").as("akkarepo", key))
+    } else {
+      publishTo := Some("Cloudsmith API".at("https://maven.cloudsmith.io/lightbend/akka/"))
+      val user = System.getProperty("PUBLISH_USER")
+      val password = System.getProperty("PUBLISH_PASSWORD")
+      if (user == null || password == null) {
+        throw new Exception("Publishing credentials expected in `PUBLISH_USER` and `PUBLISH_PASSWORD`.")
+      }
+      credentials ++= Seq(Credentials("Cloudsmith API", "maven.cloudsmith.io", user, password))
+    }
   }
-
-  private def akkaCredentials: Seq[Credentials] =
-    Option(System.getProperty("akka.publish.credentials")).map(f => Credentials(new File(f))).toSeq
 }
 
 /**
