@@ -259,7 +259,7 @@ lazy val persistenceQuery = akkaModule("akka-persistence-query")
   .settings(AutomaticModuleName.settings("akka.persistence.query"))
   .settings(Protobuf.settings)
   // To be able to import ContainerFormats.proto
-  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
+  .settings(Compile / PB.includePaths += (baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(Test / fork := true)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
@@ -431,7 +431,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .settings(Protobuf.settings)
   // To be able to import ContainerFormats.proto
-  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
+  .settings(Compile / PB.includePaths += (baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
@@ -443,13 +443,10 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     actorTypedTests % "test->test",
     remoteTests % "test->test",
     jackson % "test->test")
-  .settings(Protobuf.settings)
-  // To be able to import ContainerFormats.proto
-  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
   .settings(Protobuf.settings)
   // To be able to import ContainerFormats.proto
-  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
+  .settings(Compile / PB.includePaths += (baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -470,7 +467,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.settings)
-  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
+  .settings(Compile / PB.includePaths += (baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 

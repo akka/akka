@@ -6,35 +6,28 @@ package akka
 
 import java.io.File
 import java.io.PrintWriter
-
-import scala.sys.process._
-
-import sbt._
+import scala.sys.process.*
+import sbt.*
 import sbt.util.CacheStoreFactory
-import Keys._
-
-import sbtassembly.AssemblyKeys._
+import Keys.*
+import sbtassembly.AssemblyKeys.*
+import sbtprotoc.ProtocPlugin.autoImport.PB
+import sbtprotoc.ProtocPlugin.autoImport.PB.*
 
 object Protobuf {
-  val paths = SettingKey[Seq[File]]("protobuf-paths", "The paths that contain *.proto files.")
-  val outputPaths =
-    SettingKey[Seq[File]]("protobuf-output-paths", "The paths where to save the generated *.java files.")
-  val importPath = SettingKey[Option[File]](
-    "protobuf-import-path",
-    "The path that contain additional *.proto files that can be imported.")
-  val protoc = SettingKey[String]("protobuf-protoc", "The path and name of the protoc executable.")
-  val protocVersion = SettingKey[String]("protobuf-protoc-version", "The version of the protoc executable.")
+  // val protoc = SettingKey[String]("protobuf-protoc", "The path and name of the protoc executable.")
+  // val protocVersion = SettingKey[String]("protobuf-protoc-version", "The version of the protoc executable.")
   val generate = TaskKey[Unit]("protobuf-generate", "Compile the protobuf sources and do all processing.")
 
   lazy val settings: Seq[Setting[_]] = Seq(
-    paths := Seq((Compile / sourceDirectory).value, (Test / sourceDirectory).value).map(_ / "protobuf"),
-    outputPaths := Seq((Compile / sourceDirectory).value, (Test / sourceDirectory).value).map(_ / "java"),
-    importPath := None,
+    //  outputPaths := Seq((Compile / sourceDirectory).value, (Test / sourceDirectory).value).map(_ / "java"),
+    PB.protocVersion := "3.21.12", // also sync with protobufJavaVersion in Dependencies.scala
+    Compile / PB.targets := Seq(PB.gens.java -> (Compile / sourceManaged).value),
     // this keeps intellij happy for files that use the shaded protobuf
-    Compile / unmanagedJars += (LocalProject("akka-protobuf-v3") / assembly).value,
-    protoc := "protoc",
-    protocVersion := "3.21.12", // also sync with protobufJavaVersion in Dependencies.scala
-    generate := {
+    Compile / unmanagedJars += (LocalProject("akka-protobuf-v3") / assembly).value
+  )
+
+  /* generate := {
       val sourceDirs = paths.value
       val targetDirs = outputPaths.value
       val log = streams.value.log
@@ -126,7 +119,7 @@ object Protobuf {
         if (exitCode != 0)
           sys.error("protoc returned exit code: %d".format(exitCode))
       }
-  }
+  } */
 
   /**
    * Create a transformed version of all files in a directory, given a predicate and a transform function for each file. From sbt-site
