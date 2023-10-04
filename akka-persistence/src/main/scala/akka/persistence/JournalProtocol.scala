@@ -31,6 +31,14 @@ private[persistence] object JournalProtocol {
   final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, persistentActor: ActorRef)
       extends Request
 
+  object WriteMessages {
+    def apply(
+        messages: immutable.Seq[PersistentEnvelope],
+        persistentActor: ActorRef,
+        actorInstanceId: Int): WriteMessages =
+      WriteMessages(messages, persistentActor, actorInstanceId, bypassCircuitBreaker = false)
+  }
+
   /**
    * Request to write messages.
    *
@@ -40,7 +48,8 @@ private[persistence] object JournalProtocol {
   final case class WriteMessages(
       messages: immutable.Seq[PersistentEnvelope],
       persistentActor: ActorRef,
-      actorInstanceId: Int)
+      actorInstanceId: Int,
+      bypassCircuitBreaker: Boolean)
       extends Request
       with NoSerializationVerificationNeeded
 

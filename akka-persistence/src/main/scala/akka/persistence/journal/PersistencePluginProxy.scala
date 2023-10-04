@@ -189,7 +189,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
 
     case req: JournalProtocol.Request =>
       req match { // exhaustive match
-        case WriteMessages(messages, persistentActor, actorInstanceId) =>
+        case WriteMessages(messages, persistentActor, actorInstanceId, _) =>
           val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
           persistentActor ! WriteMessagesFailed(timeoutException(), atomicWriteCount)
           messages.foreach {
