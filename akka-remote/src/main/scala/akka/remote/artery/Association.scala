@@ -40,6 +40,7 @@ import akka.remote.RemoteLogMarker
 import akka.remote.UniqueAddress
 import akka.remote.artery.ArteryTransport.AeronTerminated
 import akka.remote.artery.ArteryTransport.ShuttingDown
+import akka.remote.artery.Association.UidCollisionException
 import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
@@ -122,6 +123,8 @@ private[remote] object Association {
       streamKillSwitch: OptionVal[SharedKillSwitch],
       completed: Future[Done],
       stopping: OptionVal[StopSignal])
+
+  final class UidCollisionException(message: String) extends IllegalArgumentException(message)
 }
 
 /**
@@ -1160,7 +1163,7 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
           a
         else
           // make sure we don't overwrite same UID with different association
-          throw new IllegalArgumentException(s"UID collision old [$previous] new [$a]")
+          throw new UidCollisionException(s"UID collision old [$previous] new [$a]")
       case _ =>
         // update associationsByUid Map with the uid -> association
         val newMap = currentMap.updated(peer.uid, a)
