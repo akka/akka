@@ -40,6 +40,8 @@ jobs:
           sbt -Dakka.genjavadoc.enabled=true "+~ 2.13 publishRsync"
         env:
           SCP_SECRET: ${{ secrets.SCP_SECRET }}
+          PUBLISH_USER: ${{ secrets.PUBLISH_USER }}
+          PUBLISH_PASSWORD: ${{ secrets.PUBLISH_PASSWORD }}
 
       - name: Email on failure
         if: ${{ failure() }}

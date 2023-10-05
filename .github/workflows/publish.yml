@@ -38,7 +38,7 @@ jobs:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           PUBLISH_USER: ${{ secrets.PUBLISH_USER }}
-          PUBLISH_PASSWORD: $${{ secrets.PUBLISH_PASSWORD }}
+          PUBLISH_PASSWORD: ${{ secrets.PUBLISH_PASSWORD }}
 
       - name: Email on failure
         if: ${{ failure() }}
