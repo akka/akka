@@ -14,7 +14,10 @@ enablePlugins(
   CopyrightHeaderInPr,
   JavaFormatterPlugin,
   JdkOptions)
-disablePlugins(MimaPlugin)
+disablePlugins(
+  MimaPlugin,
+  com.geirsson.CiReleasePlugin // we use publishSigned, but use a pgp utility from CiReleasePlugin
+)
 
 addCommandAlias("verifyCodeStyle", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
 addCommandAlias("applyCodeStyle", "headerCreateAll; scalafmtAll; scalafmtSbt")
@@ -540,6 +543,7 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(fortifySettings(name))
     .enablePlugins(BootstrapGenjavadoc)
+    .disablePlugins(com.geirsson.CiReleasePlugin) // we use publishSigned, but use a pgp utility from CiReleasePlugin
 
 /* Command aliases one can run locally against a module
   - where three or more tasks should be checked for faster turnaround
