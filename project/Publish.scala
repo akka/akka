@@ -21,6 +21,9 @@ object Publish extends AutoPlugin {
 
   lazy val setupGpg = taskKey[Unit]("setup gpg before publishSigned")
 
+  lazy val setupGpgOnce =
+    CiReleasePlugin.setupGpg()
+
   override lazy val projectSettings = Seq(
       publishRsyncHost := "akkarepo@gustav.akka.io",
       organizationName := "Lightbend Inc.",
@@ -54,9 +57,7 @@ object Publish extends AutoPlugin {
     }
 
     Def.settings(
-      setupGpg := {
-        CiReleasePlugin.setupGpg()
-      },
+      setupGpg := setupGpgOnce,
       publishSigned := publishSigned.dependsOn(setupGpg).value,
       publishTo := (if (isSnapshot.value)
                       Some(
