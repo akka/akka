@@ -27,8 +27,13 @@ Akka uses Git and is hosted at [Github akka/akka](https://github.com/akka/akka).
 
 ## Releases Repository
 
-All Akka releases are published via Sonatype to Maven Central, see
-[search.maven.org](https://search.maven.org/search?q=g:com.typesafe.akka)
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
 
 ## Snapshots Repository
 
