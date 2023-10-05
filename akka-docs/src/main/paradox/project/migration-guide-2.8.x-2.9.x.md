@@ -12,6 +12,16 @@ Rolling updates of Akka Cluster from Akka 2.8.x to 2.9.x is fully supported.
 
 A few deprecated features has been removed in Akka 2.9.x, see sections below.
 
+## Akka repository
+
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
 ## Support for Java 8 removed
 
 The published artifacts are targeting Java 11, and later. Supported Java versions are 11 and 17.
