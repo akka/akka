@@ -10,12 +10,16 @@ import java.io.File
 
 import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncHost
 import sbt.Def
+import com.geirsson.CiReleasePlugin
+import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 
 object Publish extends AutoPlugin {
 
   val defaultPublishTo = settingKey[File]("Default publish directory")
 
   override def trigger = allRequirements
+
+  lazy val setupGpg = taskKey[Unit]("setup gpg before publishSigned")
 
   override lazy val projectSettings = Seq(
       publishRsyncHost := "akkarepo@gustav.akka.io",
@@ -50,6 +54,10 @@ object Publish extends AutoPlugin {
     }
 
     Def.settings(
+      setupGpg := {
+        CiReleasePlugin.setupGpg()
+      },
+      publishSigned := publishSigned.dependsOn(setupGpg).value,
       publishTo := (if (isSnapshot.value)
                       Some(
                         Resolver
