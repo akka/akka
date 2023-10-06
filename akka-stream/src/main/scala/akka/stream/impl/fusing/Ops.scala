@@ -653,7 +653,7 @@ private[stream] object Collect {
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
+      lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
       private var aggregator: Out = zero
       private var aggregating: Future[Out] = Future.successful(aggregator)
@@ -1391,7 +1391,7 @@ private[stream] object Collect {
     new GraphStageLogic(shape) with InHandler with OutHandler {
       override def toString = s"MapAsyncUnordered.Logic(inFlight=$inFlight, buffer=$buffer)"
 
-      val decider =
+      lazy val decider =
         inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
       private var inFlight = 0
