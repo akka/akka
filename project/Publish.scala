@@ -7,6 +7,7 @@ package akka
 import sbt._
 import sbt.Keys._
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncHost
 import sbt.Def
@@ -19,10 +20,17 @@ object Publish extends AutoPlugin {
 
   override def trigger = allRequirements
 
-  lazy val setupGpg = taskKey[Unit]("setup gpg before publishSigned")
+  lazy val beforePublishTask = taskKey[Unit]("setup before publish")
 
-  lazy val setupGpgOnce =
-    CiReleasePlugin.setupGpg()
+  lazy val beforePublishDone = new AtomicBoolean(false)
+
+  def beforePublish(snapshot: Boolean) = {
+    if (beforePublishDone.compareAndSet(false, true)) {
+      CiReleasePlugin.setupGpg()
+      if (!snapshot)
+        cloudsmithCredentials(validate = true)
+    }
+  }
 
   override lazy val projectSettings = Seq(
       publishRsyncHost := "akkarepo@gustav.akka.io",
@@ -47,18 +55,9 @@ object Publish extends AutoPlugin {
         Option(System.getProperty("akka.gustav.key"))
           .getOrElse(System.getProperty("user.home") + "/.ssh/id_rsa_gustav.pem"))
 
-    def cloudsmithCredentials: Seq[Credentials] = {
-      val user = System.getProperty("PUBLISH_USER")
-      val password = System.getProperty("PUBLISH_PASSWORD")
-      if (user == null || password == null) {
-        throw new Exception("Publishing credentials expected in `PUBLISH_USER` and `PUBLISH_PASSWORD`.")
-      }
-      Seq(Credentials("Cloudsmith API", "maven.cloudsmith.io", user, password))
-    }
-
     Def.settings(
-      setupGpg := setupGpgOnce,
-      publishSigned := publishSigned.dependsOn(setupGpg).value,
+      beforePublishTask := beforePublish(isSnapshot.value),
+      publishSigned := publishSigned.dependsOn(beforePublishTask).value,
       publishTo := (if (isSnapshot.value)
                       Some(
                         Resolver
@@ -66,7 +65,19 @@ object Publish extends AutoPlugin {
                           .as("akkarepo", snapshotRepoKey))
                     else
                       Some("Cloudsmith API".at("https://maven.cloudsmith.io/lightbend/akka/"))),
-      credentials ++= (if (isSnapshot.value) Seq[Credentials]() else cloudsmithCredentials))
+      credentials ++= (if (isSnapshot.value) Seq[Credentials]() else cloudsmithCredentials(validate = false)))
+  }
+
+  def cloudsmithCredentials(validate: Boolean): Seq[Credentials] = {
+    (sys.env.get("PUBLISH_USER"), sys.env.get("PUBLISH_PASSWORD")) match {
+      case (Some(user), Some(password)) =>
+        Seq(Credentials("Cloudsmith API", "maven.cloudsmith.io", user, password))
+      case _ =>
+        if (validate)
+          throw new Exception("Publishing credentials expected in `PUBLISH_USER` and `PUBLISH_PASSWORD`.")
+        else
+          Nil
+    }
   }
 }
 
