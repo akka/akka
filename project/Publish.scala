@@ -48,12 +48,12 @@ object Publish extends AutoPlugin {
           .getOrElse(System.getProperty("user.home") + "/.ssh/id_rsa_gustav.pem"))
 
     def cloudsmithCredentials: Seq[Credentials] = {
-      val user = System.getProperty("PUBLISH_USER")
-      val password = System.getProperty("PUBLISH_PASSWORD")
-      if (user == null || password == null) {
-        throw new Exception("Publishing credentials expected in `PUBLISH_USER` and `PUBLISH_PASSWORD`.")
+      (sys.env.get("PUBLISH_USER"), sys.env.get("PUBLISH_PASSWORD")) match {
+        case (Some(user), Some(password)) =>
+          Seq(Credentials("Cloudsmith API", "maven.cloudsmith.io", user, password))
+        case _ =>
+          throw new Exception("Publishing credentials expected in `PUBLISH_USER` and `PUBLISH_PASSWORD`.")
       }
-      Seq(Credentials("Cloudsmith API", "maven.cloudsmith.io", user, password))
     }
 
     Def.settings(
