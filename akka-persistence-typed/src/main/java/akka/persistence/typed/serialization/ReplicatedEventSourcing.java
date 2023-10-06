@@ -9,47 +9,29 @@ package akka.persistence.typed.serialization;
 
 public final class ReplicatedEventSourcing {
   private ReplicatedEventSourcing() {}
-  public static void registerAllExtensions(
-      akka.protobufv3.internal.ExtensionRegistryLite registry) {
-  }
 
   public static void registerAllExtensions(
-      akka.protobufv3.internal.ExtensionRegistry registry) {
-    registerAllExtensions(
-        (akka.protobufv3.internal.ExtensionRegistryLite) registry);
+      akka.protobufv3.internal.ExtensionRegistryLite registry) {}
+
+  public static void registerAllExtensions(akka.protobufv3.internal.ExtensionRegistry registry) {
+    registerAllExtensions((akka.protobufv3.internal.ExtensionRegistryLite) registry);
   }
-  /**
-   * Protobuf enum {@code ORSetDeltaOp}
-   */
-  public enum ORSetDeltaOp
-      implements akka.protobufv3.internal.ProtocolMessageEnum {
-    /**
-     * <code>Add = 0;</code>
-     */
+  /** Protobuf enum {@code ORSetDeltaOp} */
+  public enum ORSetDeltaOp implements akka.protobufv3.internal.ProtocolMessageEnum {
+    /** <code>Add = 0;</code> */
     Add(0),
-    /**
-     * <code>Remove = 1;</code>
-     */
+    /** <code>Remove = 1;</code> */
     Remove(1),
-    /**
-     * <code>Full = 2;</code>
-     */
+    /** <code>Full = 2;</code> */
     Full(2),
     ;
 
-    /**
-     * <code>Add = 0;</code>
-     */
+    /** <code>Add = 0;</code> */
     public static final int Add_VALUE = 0;
-    /**
-     * <code>Remove = 1;</code>
-     */
+    /** <code>Remove = 1;</code> */
     public static final int Remove_VALUE = 1;
-    /**
-     * <code>Full = 2;</code>
-     */
+    /** <code>Full = 2;</code> */
     public static final int Full_VALUE = 2;
-
 
     public final int getNumber() {
       return value;
@@ -71,10 +53,14 @@ public final class ReplicatedEventSourcing {
      */
     public static ORSetDeltaOp forNumber(int value) {
       switch (value) {
-        case 0: return Add;
-        case 1: return Remove;
-        case 2: return Full;
-        default: return null;
+        case 0:
+          return Add;
+        case 1:
+          return Remove;
+        case 2:
+          return Full;
+        default:
+          return null;
       }
     }
 
@@ -82,25 +68,27 @@ public final class ReplicatedEventSourcing {
         internalGetValueMap() {
       return internalValueMap;
     }
-    private static final akka.protobufv3.internal.Internal.EnumLiteMap<
-        ORSetDeltaOp> internalValueMap =
-          new akka.protobufv3.internal.Internal.EnumLiteMap<ORSetDeltaOp>() {
-            public ORSetDeltaOp findValueByNumber(int number) {
-              return ORSetDeltaOp.forNumber(number);
-            }
-          };
 
-    public final akka.protobufv3.internal.Descriptors.EnumValueDescriptor
-        getValueDescriptor() {
+    private static final akka.protobufv3.internal.Internal.EnumLiteMap<ORSetDeltaOp>
+        internalValueMap =
+            new akka.protobufv3.internal.Internal.EnumLiteMap<ORSetDeltaOp>() {
+              public ORSetDeltaOp findValueByNumber(int number) {
+                return ORSetDeltaOp.forNumber(number);
+              }
+            };
+
+    public final akka.protobufv3.internal.Descriptors.EnumValueDescriptor getValueDescriptor() {
       return getDescriptor().getValues().get(ordinal());
     }
-    public final akka.protobufv3.internal.Descriptors.EnumDescriptor
-        getDescriptorForType() {
+
+    public final akka.protobufv3.internal.Descriptors.EnumDescriptor getDescriptorForType() {
       return getDescriptor();
     }
-    public static final akka.protobufv3.internal.Descriptors.EnumDescriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.getDescriptor().getEnumTypes().get(0);
+
+    public static final akka.protobufv3.internal.Descriptors.EnumDescriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing.getDescriptor()
+          .getEnumTypes()
+          .get(0);
     }
 
     private static final ORSetDeltaOp[] VALUES = values();
@@ -108,8 +96,7 @@ public final class ReplicatedEventSourcing {
     public static ORSetDeltaOp valueOf(
         akka.protobufv3.internal.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-          "EnumValueDescriptor is not for this type.");
+        throw new java.lang.IllegalArgumentException("EnumValueDescriptor is not for this type.");
       }
       return VALUES[desc.getIndex()];
     }
@@ -123,33 +110,35 @@ public final class ReplicatedEventSourcing {
     // @@protoc_insertion_point(enum_scope:ORSetDeltaOp)
   }
 
-  public interface CounterOrBuilder extends
+  public interface CounterOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:Counter)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>required bytes value = 1;</code>
+     *
      * @return Whether the value field is set.
      */
     boolean hasValue();
     /**
      * <code>required bytes value = 1;</code>
+     *
      * @return The value.
      */
     akka.protobufv3.internal.ByteString getValue();
   }
-  /**
-   * Protobuf type {@code Counter}
-   */
-  public static final class Counter extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code Counter} */
+  public static final class Counter extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:Counter)
       CounterOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use Counter.newBuilder() to construct.
     private Counter(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private Counter() {
       value_ = akka.protobufv3.internal.ByteString.EMPTY;
     }
@@ -162,21 +151,23 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_Counter_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_Counter_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_Counter_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_Counter_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.Builder.class);
     }
 
     private int bitField0_;
@@ -184,6 +175,7 @@ public final class ReplicatedEventSourcing {
     private akka.protobufv3.internal.ByteString value_ = akka.protobufv3.internal.ByteString.EMPTY;
     /**
      * <code>required bytes value = 1;</code>
+     *
      * @return Whether the value field is set.
      */
     @java.lang.Override
@@ -192,6 +184,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required bytes value = 1;</code>
+     *
      * @return The value.
      */
     @java.lang.Override
@@ -200,6 +193,7 @@ public final class ReplicatedEventSourcing {
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -216,7 +210,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
         output.writeBytes(1, value_);
       }
@@ -230,8 +224,7 @@ public final class ReplicatedEventSourcing {
 
       size = 0;
       if (((bitField0_ & 0x00000001) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeBytesSize(1, value_);
+        size += akka.protobufv3.internal.CodedOutputStream.computeBytesSize(1, value_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -241,17 +234,17 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
       if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter other =
+          (akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter) obj;
 
       if (hasValue() != other.hasValue()) return false;
       if (hasValue()) {
-        if (!getValue()
-            .equals(other.getValue())) return false;
+        if (!getValue().equals(other.getValue())) return false;
       }
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
@@ -274,87 +267,97 @@ public final class ReplicatedEventSourcing {
     }
 
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        java.nio.ByteBuffer data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
         akka.protobufv3.internal.ByteString data)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
         akka.protobufv3.internal.ByteString data,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
+        byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+        java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
-    }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-    }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
+        java.io.InputStream input, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
+        akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+    }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter parseFrom(
         akka.protobufv3.internal.CodedInputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -363,36 +366,35 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code Counter}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code Counter} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:Counter)
         akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_Counter_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_Counter_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_Counter_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_Counter_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.Builder.class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.newBuilder()
-      private Builder() {
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.newBuilder()
+      private Builder() {}
 
-      }
-
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -402,19 +404,22 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_Counter_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_Counter_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter
+            .getDefaultInstance();
       }
 
       @java.lang.Override
       public akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter build() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter result = buildPartial();
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter result =
+            buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -423,13 +428,17 @@ public final class ReplicatedEventSourcing {
 
       @java.lang.Override
       public akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter(this);
-        if (bitField0_ != 0) { buildPartial0(result); }
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter result =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter(this);
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -443,46 +452,53 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter)other);
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter) other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter
+                .getDefaultInstance()) return this;
         if (other.hasValue()) {
           setValue(other.getValue());
         }
@@ -515,17 +531,19 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                value_ = input.readBytes();
-                bitField0_ |= 0x00000001;
-                break;
-              } // case 10
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  value_ = input.readBytes();
+                  bitField0_ |= 0x00000001;
+                  break;
+                } // case 10
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -535,11 +553,14 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
-      private akka.protobufv3.internal.ByteString value_ = akka.protobufv3.internal.ByteString.EMPTY;
+      private akka.protobufv3.internal.ByteString value_ =
+          akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes value = 1;</code>
+       *
        * @return Whether the value field is set.
        */
       @java.lang.Override
@@ -548,6 +569,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bytes value = 1;</code>
+       *
        * @return The value.
        */
       @java.lang.Override
@@ -556,11 +578,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bytes value = 1;</code>
+       *
        * @param value The value to set.
        * @return This builder for chaining.
        */
       public Builder setValue(akka.protobufv3.internal.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+        if (value == null) {
+          throw new NullPointerException();
+        }
         value_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -568,6 +593,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bytes value = 1;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearValue() {
@@ -576,6 +602,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -588,41 +615,45 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:Counter)
     }
 
     // @@protoc_insertion_point(class_scope:Counter)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter
+        DEFAULT_INSTANCE;
+
     static {
       DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Counter>
-        PARSER = new akka.protobufv3.internal.AbstractParser<Counter>() {
-      @java.lang.Override
-      public Counter parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<Counter> PARSER =
+        new akka.protobufv3.internal.AbstractParser<Counter>() {
+          @java.lang.Override
+          public Counter parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<Counter> parser() {
       return PARSER;
@@ -634,39 +665,41 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.Counter
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
-  public interface CounterUpdateOrBuilder extends
+  public interface CounterUpdateOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:CounterUpdate)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>required bytes delta = 1;</code>
+     *
      * @return Whether the delta field is set.
      */
     boolean hasDelta();
     /**
      * <code>required bytes delta = 1;</code>
+     *
      * @return The delta.
      */
     akka.protobufv3.internal.ByteString getDelta();
   }
-  /**
-   * Protobuf type {@code CounterUpdate}
-   */
-  public static final class CounterUpdate extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code CounterUpdate} */
+  public static final class CounterUpdate extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:CounterUpdate)
       CounterUpdateOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use CounterUpdate.newBuilder() to construct.
     private CounterUpdate(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private CounterUpdate() {
       delta_ = akka.protobufv3.internal.ByteString.EMPTY;
     }
@@ -679,21 +712,24 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_CounterUpdate_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_CounterUpdate_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_CounterUpdate_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_CounterUpdate_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.Builder
+                  .class);
     }
 
     private int bitField0_;
@@ -701,6 +737,7 @@ public final class ReplicatedEventSourcing {
     private akka.protobufv3.internal.ByteString delta_ = akka.protobufv3.internal.ByteString.EMPTY;
     /**
      * <code>required bytes delta = 1;</code>
+     *
      * @return Whether the delta field is set.
      */
     @java.lang.Override
@@ -709,6 +746,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required bytes delta = 1;</code>
+     *
      * @return The delta.
      */
     @java.lang.Override
@@ -717,6 +755,7 @@ public final class ReplicatedEventSourcing {
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -733,7 +772,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
         output.writeBytes(1, delta_);
       }
@@ -747,8 +786,7 @@ public final class ReplicatedEventSourcing {
 
       size = 0;
       if (((bitField0_ & 0x00000001) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeBytesSize(1, delta_);
+        size += akka.protobufv3.internal.CodedOutputStream.computeBytesSize(1, delta_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -758,17 +796,18 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
-      if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate)) {
+      if (!(obj
+          instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate other =
+          (akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate) obj;
 
       if (hasDelta() != other.hasDelta()) return false;
       if (hasDelta()) {
-        if (!getDelta()
-            .equals(other.getDelta())) return false;
+        if (!getDelta().equals(other.getDelta())) return false;
       }
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
@@ -790,88 +829,105 @@ public final class ReplicatedEventSourcing {
       return hash;
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(
-        akka.protobufv3.internal.ByteString data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(
-        akka.protobufv3.internal.ByteString data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate parseFrom(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -880,36 +936,36 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code CounterUpdate}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code CounterUpdate} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:CounterUpdate)
         akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdateOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_CounterUpdate_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_CounterUpdate_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_CounterUpdate_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_CounterUpdate_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.Builder
+                    .class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.newBuilder()
-      private Builder() {
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.newBuilder()
+      private Builder() {}
 
-      }
-
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -919,19 +975,22 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_CounterUpdate_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_CounterUpdate_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+            .getDefaultInstance();
       }
 
       @java.lang.Override
       public akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate build() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate result = buildPartial();
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate result =
+            buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -939,14 +998,19 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate(this);
-        if (bitField0_ != 0) { buildPartial0(result); }
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate result =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate(this);
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -960,46 +1024,54 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-        if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate)other);
+        if (other
+            instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate) other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+                .getDefaultInstance()) return this;
         if (other.hasDelta()) {
           setDelta(other.getDelta());
         }
@@ -1032,17 +1104,19 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                delta_ = input.readBytes();
-                bitField0_ |= 0x00000001;
-                break;
-              } // case 10
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  delta_ = input.readBytes();
+                  bitField0_ |= 0x00000001;
+                  break;
+                } // case 10
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -1052,11 +1126,14 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
-      private akka.protobufv3.internal.ByteString delta_ = akka.protobufv3.internal.ByteString.EMPTY;
+      private akka.protobufv3.internal.ByteString delta_ =
+          akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes delta = 1;</code>
+       *
        * @return Whether the delta field is set.
        */
       @java.lang.Override
@@ -1065,6 +1142,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bytes delta = 1;</code>
+       *
        * @return The delta.
        */
       @java.lang.Override
@@ -1073,11 +1151,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bytes delta = 1;</code>
+       *
        * @param value The delta to set.
        * @return This builder for chaining.
        */
       public Builder setDelta(akka.protobufv3.internal.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+        if (value == null) {
+          throw new NullPointerException();
+        }
         delta_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -1085,6 +1166,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bytes delta = 1;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearDelta() {
@@ -1093,6 +1175,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -1105,41 +1188,46 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:CounterUpdate)
     }
 
     // @@protoc_insertion_point(class_scope:CounterUpdate)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        DEFAULT_INSTANCE;
+
     static {
-      DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate();
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<CounterUpdate>
-        PARSER = new akka.protobufv3.internal.AbstractParser<CounterUpdate>() {
-      @java.lang.Override
-      public CounterUpdate parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<CounterUpdate> PARSER =
+        new akka.protobufv3.internal.AbstractParser<CounterUpdate>() {
+          @java.lang.Override
+          public CounterUpdate parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<CounterUpdate> parser() {
       return PARSER;
@@ -1151,109 +1239,110 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.CounterUpdate
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
-  public interface ORSetOrBuilder extends
+  public interface ORSetOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:ORSet)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>required string originDc = 1;</code>
+     *
      * @return Whether the originDc field is set.
      */
     boolean hasOriginDc();
     /**
      * <code>required string originDc = 1;</code>
+     *
      * @return The originDc.
      */
     java.lang.String getOriginDc();
     /**
      * <code>required string originDc = 1;</code>
+     *
      * @return The bytes for originDc.
      */
-    akka.protobufv3.internal.ByteString
-        getOriginDcBytes();
+    akka.protobufv3.internal.ByteString getOriginDcBytes();
 
     /**
      * <code>required .VersionVector vvector = 2;</code>
+     *
      * @return Whether the vvector field is set.
      */
     boolean hasVvector();
     /**
      * <code>required .VersionVector vvector = 2;</code>
+     *
      * @return The vvector.
      */
     akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVvector();
-    /**
-     * <code>required .VersionVector vvector = 2;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVvectorOrBuilder();
+    /** <code>required .VersionVector vvector = 2;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVvectorOrBuilder();
 
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
-    java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector> 
+    /** <code>repeated .VersionVector dots = 3;</code> */
+    java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector>
         getDotsList();
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
+    /** <code>repeated .VersionVector dots = 3;</code> */
     akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getDots(int index);
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
+    /** <code>repeated .VersionVector dots = 3;</code> */
     int getDotsCount();
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
-    java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> 
+    /** <code>repeated .VersionVector dots = 3;</code> */
+    java.util.List<
+            ? extends
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
         getDotsOrBuilderList();
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getDotsOrBuilder(
-        int index);
+    /** <code>repeated .VersionVector dots = 3;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getDotsOrBuilder(int index);
 
     /**
      * <code>repeated string stringElements = 4;</code>
+     *
      * @return A list containing the stringElements.
      */
-    java.util.List<java.lang.String>
-        getStringElementsList();
+    java.util.List<java.lang.String> getStringElementsList();
     /**
      * <code>repeated string stringElements = 4;</code>
+     *
      * @return The count of stringElements.
      */
     int getStringElementsCount();
     /**
      * <code>repeated string stringElements = 4;</code>
+     *
      * @param index The index of the element to return.
      * @return The stringElements at the given index.
      */
     java.lang.String getStringElements(int index);
     /**
      * <code>repeated string stringElements = 4;</code>
+     *
      * @param index The index of the value to return.
      * @return The bytes of the stringElements at the given index.
      */
-    akka.protobufv3.internal.ByteString
-        getStringElementsBytes(int index);
+    akka.protobufv3.internal.ByteString getStringElementsBytes(int index);
 
     /**
      * <code>repeated sint32 intElements = 5 [packed = true];</code>
+     *
      * @return A list containing the intElements.
      */
     java.util.List<java.lang.Integer> getIntElementsList();
     /**
      * <code>repeated sint32 intElements = 5 [packed = true];</code>
+     *
      * @return The count of intElements.
      */
     int getIntElementsCount();
     /**
      * <code>repeated sint32 intElements = 5 [packed = true];</code>
+     *
      * @param index The index of the element to return.
      * @return The intElements at the given index.
      */
@@ -1261,57 +1350,47 @@ public final class ReplicatedEventSourcing {
 
     /**
      * <code>repeated sint64 longElements = 6 [packed = true];</code>
+     *
      * @return A list containing the longElements.
      */
     java.util.List<java.lang.Long> getLongElementsList();
     /**
      * <code>repeated sint64 longElements = 6 [packed = true];</code>
+     *
      * @return The count of longElements.
      */
     int getLongElementsCount();
     /**
      * <code>repeated sint64 longElements = 6 [packed = true];</code>
+     *
      * @param index The index of the element to return.
      * @return The longElements at the given index.
      */
     long getLongElements(int index);
 
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
-    java.util.List<akka.remote.ContainerFormats.Payload> 
-        getOtherElementsList();
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
+    /** <code>repeated .Payload otherElements = 7;</code> */
+    java.util.List<akka.remote.ContainerFormats.Payload> getOtherElementsList();
+    /** <code>repeated .Payload otherElements = 7;</code> */
     akka.remote.ContainerFormats.Payload getOtherElements(int index);
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
+    /** <code>repeated .Payload otherElements = 7;</code> */
     int getOtherElementsCount();
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
-    java.util.List<? extends akka.remote.ContainerFormats.PayloadOrBuilder> 
+    /** <code>repeated .Payload otherElements = 7;</code> */
+    java.util.List<? extends akka.remote.ContainerFormats.PayloadOrBuilder>
         getOtherElementsOrBuilderList();
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
-    akka.remote.ContainerFormats.PayloadOrBuilder getOtherElementsOrBuilder(
-        int index);
+    /** <code>repeated .Payload otherElements = 7;</code> */
+    akka.remote.ContainerFormats.PayloadOrBuilder getOtherElementsOrBuilder(int index);
   }
-  /**
-   * Protobuf type {@code ORSet}
-   */
-  public static final class ORSet extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code ORSet} */
+  public static final class ORSet extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:ORSet)
       ORSetOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use ORSet.newBuilder() to construct.
     private ORSet(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private ORSet() {
       originDc_ = "";
       dots_ = java.util.Collections.emptyList();
@@ -1329,29 +1408,33 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSet_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ORSet_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSet_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ORSet_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder.class);
     }
 
     private int bitField0_;
     public static final int ORIGINDC_FIELD_NUMBER = 1;
+
     @SuppressWarnings("serial")
     private volatile java.lang.Object originDc_ = "";
     /**
      * <code>required string originDc = 1;</code>
+     *
      * @return Whether the originDc field is set.
      */
     @java.lang.Override
@@ -1360,6 +1443,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required string originDc = 1;</code>
+     *
      * @return The originDc.
      */
     @java.lang.Override
@@ -1368,8 +1452,7 @@ public final class ReplicatedEventSourcing {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = 
-            (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           originDc_ = s;
@@ -1379,16 +1462,15 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required string originDc = 1;</code>
+     *
      * @return The bytes for originDc.
      */
     @java.lang.Override
-    public akka.protobufv3.internal.ByteString
-        getOriginDcBytes() {
+    public akka.protobufv3.internal.ByteString getOriginDcBytes() {
       java.lang.Object ref = originDc_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b = 
-            akka.protobufv3.internal.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b =
+            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
         originDc_ = b;
         return b;
       } else {
@@ -1400,6 +1482,7 @@ public final class ReplicatedEventSourcing {
     private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector vvector_;
     /**
      * <code>required .VersionVector vvector = 2;</code>
+     *
      * @return Whether the vvector field is set.
      */
     @java.lang.Override
@@ -1408,74 +1491,80 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required .VersionVector vvector = 2;</code>
+     *
      * @return The vvector.
      */
     @java.lang.Override
     public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVvector() {
-      return vvector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : vvector_;
+      return vvector_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : vvector_;
     }
-    /**
-     * <code>required .VersionVector vvector = 2;</code>
-     */
+    /** <code>required .VersionVector vvector = 2;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVvectorOrBuilder() {
-      return vvector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : vvector_;
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVvectorOrBuilder() {
+      return vvector_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : vvector_;
     }
 
     public static final int DOTS_FIELD_NUMBER = 3;
+
     @SuppressWarnings("serial")
-    private java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector> dots_;
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
+    private java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector>
+        dots_;
+    /** <code>repeated .VersionVector dots = 3;</code> */
     @java.lang.Override
-    public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector> getDotsList() {
+    public java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector>
+        getDotsList() {
       return dots_;
     }
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
+    /** <code>repeated .VersionVector dots = 3;</code> */
     @java.lang.Override
-    public java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> 
+    public java.util.List<
+            ? extends
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
         getDotsOrBuilderList() {
       return dots_;
     }
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
+    /** <code>repeated .VersionVector dots = 3;</code> */
     @java.lang.Override
     public int getDotsCount() {
       return dots_.size();
     }
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
+    /** <code>repeated .VersionVector dots = 3;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getDots(int index) {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getDots(
+        int index) {
       return dots_.get(index);
     }
-    /**
-     * <code>repeated .VersionVector dots = 3;</code>
-     */
+    /** <code>repeated .VersionVector dots = 3;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getDotsOrBuilder(
-        int index) {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getDotsOrBuilder(int index) {
       return dots_.get(index);
     }
 
     public static final int STRINGELEMENTS_FIELD_NUMBER = 4;
+
     @SuppressWarnings("serial")
     private akka.protobufv3.internal.LazyStringList stringElements_;
     /**
      * <code>repeated string stringElements = 4;</code>
+     *
      * @return A list containing the stringElements.
      */
-    public akka.protobufv3.internal.ProtocolStringList
-        getStringElementsList() {
+    public akka.protobufv3.internal.ProtocolStringList getStringElementsList() {
       return stringElements_;
     }
     /**
      * <code>repeated string stringElements = 4;</code>
+     *
      * @return The count of stringElements.
      */
     public int getStringElementsCount() {
@@ -1483,6 +1572,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>repeated string stringElements = 4;</code>
+     *
      * @param index The index of the element to return.
      * @return The stringElements at the given index.
      */
@@ -1491,28 +1581,30 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>repeated string stringElements = 4;</code>
+     *
      * @param index The index of the value to return.
      * @return The bytes of the stringElements at the given index.
      */
-    public akka.protobufv3.internal.ByteString
-        getStringElementsBytes(int index) {
+    public akka.protobufv3.internal.ByteString getStringElementsBytes(int index) {
       return stringElements_.getByteString(index);
     }
 
     public static final int INTELEMENTS_FIELD_NUMBER = 5;
+
     @SuppressWarnings("serial")
     private akka.protobufv3.internal.Internal.IntList intElements_;
     /**
      * <code>repeated sint32 intElements = 5 [packed = true];</code>
+     *
      * @return A list containing the intElements.
      */
     @java.lang.Override
-    public java.util.List<java.lang.Integer>
-        getIntElementsList() {
+    public java.util.List<java.lang.Integer> getIntElementsList() {
       return intElements_;
     }
     /**
      * <code>repeated sint32 intElements = 5 [packed = true];</code>
+     *
      * @return The count of intElements.
      */
     public int getIntElementsCount() {
@@ -1520,28 +1612,32 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>repeated sint32 intElements = 5 [packed = true];</code>
+     *
      * @param index The index of the element to return.
      * @return The intElements at the given index.
      */
     public int getIntElements(int index) {
       return intElements_.getInt(index);
     }
+
     private int intElementsMemoizedSerializedSize = -1;
 
     public static final int LONGELEMENTS_FIELD_NUMBER = 6;
+
     @SuppressWarnings("serial")
     private akka.protobufv3.internal.Internal.LongList longElements_;
     /**
      * <code>repeated sint64 longElements = 6 [packed = true];</code>
+     *
      * @return A list containing the longElements.
      */
     @java.lang.Override
-    public java.util.List<java.lang.Long>
-        getLongElementsList() {
+    public java.util.List<java.lang.Long> getLongElementsList() {
       return longElements_;
     }
     /**
      * <code>repeated sint64 longElements = 6 [packed = true];</code>
+     *
      * @return The count of longElements.
      */
     public int getLongElementsCount() {
@@ -1549,56 +1645,49 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>repeated sint64 longElements = 6 [packed = true];</code>
+     *
      * @param index The index of the element to return.
      * @return The longElements at the given index.
      */
     public long getLongElements(int index) {
       return longElements_.getLong(index);
     }
+
     private int longElementsMemoizedSerializedSize = -1;
 
     public static final int OTHERELEMENTS_FIELD_NUMBER = 7;
+
     @SuppressWarnings("serial")
     private java.util.List<akka.remote.ContainerFormats.Payload> otherElements_;
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
+    /** <code>repeated .Payload otherElements = 7;</code> */
     @java.lang.Override
     public java.util.List<akka.remote.ContainerFormats.Payload> getOtherElementsList() {
       return otherElements_;
     }
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
+    /** <code>repeated .Payload otherElements = 7;</code> */
     @java.lang.Override
-    public java.util.List<? extends akka.remote.ContainerFormats.PayloadOrBuilder> 
+    public java.util.List<? extends akka.remote.ContainerFormats.PayloadOrBuilder>
         getOtherElementsOrBuilderList() {
       return otherElements_;
     }
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
+    /** <code>repeated .Payload otherElements = 7;</code> */
     @java.lang.Override
     public int getOtherElementsCount() {
       return otherElements_.size();
     }
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
+    /** <code>repeated .Payload otherElements = 7;</code> */
     @java.lang.Override
     public akka.remote.ContainerFormats.Payload getOtherElements(int index) {
       return otherElements_.get(index);
     }
-    /**
-     * <code>repeated .Payload otherElements = 7;</code>
-     */
+    /** <code>repeated .Payload otherElements = 7;</code> */
     @java.lang.Override
-    public akka.remote.ContainerFormats.PayloadOrBuilder getOtherElementsOrBuilder(
-        int index) {
+    public akka.remote.ContainerFormats.PayloadOrBuilder getOtherElementsOrBuilder(int index) {
       return otherElements_.get(index);
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -1635,7 +1724,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, originDc_);
@@ -1647,7 +1736,8 @@ public final class ReplicatedEventSourcing {
         output.writeMessage(3, dots_.get(i));
       }
       for (int i = 0; i < stringElements_.size(); i++) {
-        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 4, stringElements_.getRaw(i));
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(
+            output, 4, stringElements_.getRaw(i));
       }
       if (getIntElementsList().size() > 0) {
         output.writeUInt32NoTag(42);
@@ -1679,12 +1769,10 @@ public final class ReplicatedEventSourcing {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, originDc_);
       }
       if (((bitField0_ & 0x00000002) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(2, getVvector());
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(2, getVvector());
       }
       for (int i = 0; i < dots_.size(); i++) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(3, dots_.get(i));
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(3, dots_.get(i));
       }
       {
         int dataSize = 0;
@@ -1697,34 +1785,34 @@ public final class ReplicatedEventSourcing {
       {
         int dataSize = 0;
         for (int i = 0; i < intElements_.size(); i++) {
-          dataSize += akka.protobufv3.internal.CodedOutputStream
-            .computeSInt32SizeNoTag(intElements_.getInt(i));
+          dataSize +=
+              akka.protobufv3.internal.CodedOutputStream.computeSInt32SizeNoTag(
+                  intElements_.getInt(i));
         }
         size += dataSize;
         if (!getIntElementsList().isEmpty()) {
           size += 1;
-          size += akka.protobufv3.internal.CodedOutputStream
-              .computeInt32SizeNoTag(dataSize);
+          size += akka.protobufv3.internal.CodedOutputStream.computeInt32SizeNoTag(dataSize);
         }
         intElementsMemoizedSerializedSize = dataSize;
       }
       {
         int dataSize = 0;
         for (int i = 0; i < longElements_.size(); i++) {
-          dataSize += akka.protobufv3.internal.CodedOutputStream
-            .computeSInt64SizeNoTag(longElements_.getLong(i));
+          dataSize +=
+              akka.protobufv3.internal.CodedOutputStream.computeSInt64SizeNoTag(
+                  longElements_.getLong(i));
         }
         size += dataSize;
         if (!getLongElementsList().isEmpty()) {
           size += 1;
-          size += akka.protobufv3.internal.CodedOutputStream
-              .computeInt32SizeNoTag(dataSize);
+          size += akka.protobufv3.internal.CodedOutputStream.computeInt32SizeNoTag(dataSize);
         }
         longElementsMemoizedSerializedSize = dataSize;
       }
       for (int i = 0; i < otherElements_.size(); i++) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(7, otherElements_.get(i));
+        size +=
+            akka.protobufv3.internal.CodedOutputStream.computeMessageSize(7, otherElements_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -1734,33 +1822,27 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
       if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet other =
+          (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet) obj;
 
       if (hasOriginDc() != other.hasOriginDc()) return false;
       if (hasOriginDc()) {
-        if (!getOriginDc()
-            .equals(other.getOriginDc())) return false;
+        if (!getOriginDc().equals(other.getOriginDc())) return false;
       }
       if (hasVvector() != other.hasVvector()) return false;
       if (hasVvector()) {
-        if (!getVvector()
-            .equals(other.getVvector())) return false;
+        if (!getVvector().equals(other.getVvector())) return false;
       }
-      if (!getDotsList()
-          .equals(other.getDotsList())) return false;
-      if (!getStringElementsList()
-          .equals(other.getStringElementsList())) return false;
-      if (!getIntElementsList()
-          .equals(other.getIntElementsList())) return false;
-      if (!getLongElementsList()
-          .equals(other.getLongElementsList())) return false;
-      if (!getOtherElementsList()
-          .equals(other.getOtherElementsList())) return false;
+      if (!getDotsList().equals(other.getDotsList())) return false;
+      if (!getStringElementsList().equals(other.getStringElementsList())) return false;
+      if (!getIntElementsList().equals(other.getIntElementsList())) return false;
+      if (!getLongElementsList().equals(other.getLongElementsList())) return false;
+      if (!getOtherElementsList().equals(other.getOtherElementsList())) return false;
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
@@ -1806,87 +1888,97 @@ public final class ReplicatedEventSourcing {
     }
 
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        java.nio.ByteBuffer data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
         akka.protobufv3.internal.ByteString data)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
         akka.protobufv3.internal.ByteString data,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
+        byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+        java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
-    }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-    }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
+        java.io.InputStream input, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
+        akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+    }
+
     public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet parseFrom(
         akka.protobufv3.internal.CodedInputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -1895,44 +1987,46 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code ORSet}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code ORSet} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:ORSet)
         akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSet_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ORSet_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSet_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ORSet_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder.class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.newBuilder()
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
           getVvectorFieldBuilder();
           getDotsFieldBuilder();
           getOtherElementsFieldBuilder();
         }
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -1965,14 +2059,16 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSet_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ORSet_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+            .getDefaultInstance();
       }
 
       @java.lang.Override
@@ -1986,14 +2082,18 @@ public final class ReplicatedEventSourcing {
 
       @java.lang.Override
       public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet(this);
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet result =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet(this);
         buildPartialRepeatedFields(result);
-        if (bitField0_ != 0) { buildPartial0(result); }
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet result) {
+      private void buildPartialRepeatedFields(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet result) {
         if (dotsBuilder_ == null) {
           if (((bitField0_ & 0x00000004) != 0)) {
             dots_ = java.util.Collections.unmodifiableList(dots_);
@@ -2029,7 +2129,8 @@ public final class ReplicatedEventSourcing {
         }
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -2037,9 +2138,7 @@ public final class ReplicatedEventSourcing {
           to_bitField0_ |= 0x00000001;
         }
         if (((from_bitField0_ & 0x00000002) != 0)) {
-          result.vvector_ = vvectorBuilder_ == null
-              ? vvector_
-              : vvectorBuilder_.build();
+          result.vvector_ = vvectorBuilder_ == null ? vvector_ : vvectorBuilder_.build();
           to_bitField0_ |= 0x00000002;
         }
         result.bitField0_ |= to_bitField0_;
@@ -2049,46 +2148,53 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet)other);
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet) other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+                .getDefaultInstance()) return this;
         if (other.hasOriginDc()) {
           originDc_ = other.originDc_;
           bitField0_ |= 0x00000001;
@@ -2115,9 +2221,10 @@ public final class ReplicatedEventSourcing {
               dotsBuilder_ = null;
               dots_ = other.dots_;
               bitField0_ = (bitField0_ & ~0x00000004);
-              dotsBuilder_ = 
-                akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders ?
-                   getDotsFieldBuilder() : null;
+              dotsBuilder_ =
+                  akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders
+                      ? getDotsFieldBuilder()
+                      : null;
             } else {
               dotsBuilder_.addAllMessages(other.dots_);
             }
@@ -2171,9 +2278,10 @@ public final class ReplicatedEventSourcing {
               otherElementsBuilder_ = null;
               otherElements_ = other.otherElements_;
               bitField0_ = (bitField0_ & ~0x00000040);
-              otherElementsBuilder_ = 
-                akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders ?
-                   getOtherElementsFieldBuilder() : null;
+              otherElementsBuilder_ =
+                  akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders
+                      ? getOtherElementsFieldBuilder()
+                      : null;
             } else {
               otherElementsBuilder_.addAllMessages(other.otherElements_);
             }
@@ -2224,88 +2332,96 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                originDc_ = input.readBytes();
-                bitField0_ |= 0x00000001;
-                break;
-              } // case 10
-              case 18: {
-                input.readMessage(
-                    getVvectorFieldBuilder().getBuilder(),
-                    extensionRegistry);
-                bitField0_ |= 0x00000002;
-                break;
-              } // case 18
-              case 26: {
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector m =
-                    input.readMessage(
-                        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.PARSER,
-                        extensionRegistry);
-                if (dotsBuilder_ == null) {
-                  ensureDotsIsMutable();
-                  dots_.add(m);
-                } else {
-                  dotsBuilder_.addMessage(m);
-                }
-                break;
-              } // case 26
-              case 34: {
-                akka.protobufv3.internal.ByteString bs = input.readBytes();
-                ensureStringElementsIsMutable();
-                stringElements_.add(bs);
-                break;
-              } // case 34
-              case 40: {
-                int v = input.readSInt32();
-                ensureIntElementsIsMutable();
-                intElements_.addInt(v);
-                break;
-              } // case 40
-              case 42: {
-                int length = input.readRawVarint32();
-                int limit = input.pushLimit(length);
-                ensureIntElementsIsMutable();
-                while (input.getBytesUntilLimit() > 0) {
-                  intElements_.addInt(input.readSInt32());
-                }
-                input.popLimit(limit);
-                break;
-              } // case 42
-              case 48: {
-                long v = input.readSInt64();
-                ensureLongElementsIsMutable();
-                longElements_.addLong(v);
-                break;
-              } // case 48
-              case 50: {
-                int length = input.readRawVarint32();
-                int limit = input.pushLimit(length);
-                ensureLongElementsIsMutable();
-                while (input.getBytesUntilLimit() > 0) {
-                  longElements_.addLong(input.readSInt64());
-                }
-                input.popLimit(limit);
-                break;
-              } // case 50
-              case 58: {
-                akka.remote.ContainerFormats.Payload m =
-                    input.readMessage(
-                        akka.remote.ContainerFormats.Payload.PARSER,
-                        extensionRegistry);
-                if (otherElementsBuilder_ == null) {
-                  ensureOtherElementsIsMutable();
-                  otherElements_.add(m);
-                } else {
-                  otherElementsBuilder_.addMessage(m);
-                }
-                break;
-              } // case 58
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  originDc_ = input.readBytes();
+                  bitField0_ |= 0x00000001;
+                  break;
+                } // case 10
+              case 18:
+                {
+                  input.readMessage(getVvectorFieldBuilder().getBuilder(), extensionRegistry);
+                  bitField0_ |= 0x00000002;
+                  break;
+                } // case 18
+              case 26:
+                {
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector m =
+                      input.readMessage(
+                          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                              .PARSER,
+                          extensionRegistry);
+                  if (dotsBuilder_ == null) {
+                    ensureDotsIsMutable();
+                    dots_.add(m);
+                  } else {
+                    dotsBuilder_.addMessage(m);
+                  }
+                  break;
+                } // case 26
+              case 34:
+                {
+                  akka.protobufv3.internal.ByteString bs = input.readBytes();
+                  ensureStringElementsIsMutable();
+                  stringElements_.add(bs);
+                  break;
+                } // case 34
+              case 40:
+                {
+                  int v = input.readSInt32();
+                  ensureIntElementsIsMutable();
+                  intElements_.addInt(v);
+                  break;
+                } // case 40
+              case 42:
+                {
+                  int length = input.readRawVarint32();
+                  int limit = input.pushLimit(length);
+                  ensureIntElementsIsMutable();
+                  while (input.getBytesUntilLimit() > 0) {
+                    intElements_.addInt(input.readSInt32());
+                  }
+                  input.popLimit(limit);
+                  break;
+                } // case 42
+              case 48:
+                {
+                  long v = input.readSInt64();
+                  ensureLongElementsIsMutable();
+                  longElements_.addLong(v);
+                  break;
+                } // case 48
+              case 50:
+                {
+                  int length = input.readRawVarint32();
+                  int limit = input.pushLimit(length);
+                  ensureLongElementsIsMutable();
+                  while (input.getBytesUntilLimit() > 0) {
+                    longElements_.addLong(input.readSInt64());
+                  }
+                  input.popLimit(limit);
+                  break;
+                } // case 50
+              case 58:
+                {
+                  akka.remote.ContainerFormats.Payload m =
+                      input.readMessage(
+                          akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
+                  if (otherElementsBuilder_ == null) {
+                    ensureOtherElementsIsMutable();
+                    otherElements_.add(m);
+                  } else {
+                    otherElementsBuilder_.addMessage(m);
+                  }
+                  break;
+                } // case 58
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -2315,11 +2431,13 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
       private java.lang.Object originDc_ = "";
       /**
        * <code>required string originDc = 1;</code>
+       *
        * @return Whether the originDc field is set.
        */
       public boolean hasOriginDc() {
@@ -2327,13 +2445,13 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originDc = 1;</code>
+       *
        * @return The originDc.
        */
       public java.lang.String getOriginDc() {
         java.lang.Object ref = originDc_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs =
-              (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             originDc_ = s;
@@ -2345,15 +2463,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originDc = 1;</code>
+       *
        * @return The bytes for originDc.
        */
-      public akka.protobufv3.internal.ByteString
-          getOriginDcBytes() {
+      public akka.protobufv3.internal.ByteString getOriginDcBytes() {
         java.lang.Object ref = originDc_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b = 
-              akka.protobufv3.internal.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
           originDc_ = b;
           return b;
         } else {
@@ -2362,12 +2479,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originDc = 1;</code>
+       *
        * @param value The originDc to set.
        * @return This builder for chaining.
        */
-      public Builder setOriginDc(
-          java.lang.String value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setOriginDc(java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         originDc_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -2375,6 +2494,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originDc = 1;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearOriginDc() {
@@ -2385,12 +2505,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originDc = 1;</code>
+       *
        * @param value The bytes for originDc to set.
        * @return This builder for chaining.
        */
-      public Builder setOriginDcBytes(
-          akka.protobufv3.internal.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setOriginDcBytes(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         originDc_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -2399,9 +2521,13 @@ public final class ReplicatedEventSourcing {
 
       private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector vvector_;
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> vvectorBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
+          vvectorBuilder_;
       /**
        * <code>required .VersionVector vvector = 2;</code>
+       *
        * @return Whether the vvector field is set.
        */
       public boolean hasVvector() {
@@ -2409,19 +2535,23 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required .VersionVector vvector = 2;</code>
+       *
        * @return The vvector.
        */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVvector() {
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          getVvector() {
         if (vvectorBuilder_ == null) {
-          return vvector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : vvector_;
+          return vvector_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : vvector_;
         } else {
           return vvectorBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .VersionVector vvector = 2;</code>
-       */
-      public Builder setVvector(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>required .VersionVector vvector = 2;</code> */
+      public Builder setVvector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (vvectorBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2434,11 +2564,10 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector vvector = 2;</code>
-       */
+      /** <code>required .VersionVector vvector = 2;</code> */
       public Builder setVvector(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+              builderForValue) {
         if (vvectorBuilder_ == null) {
           vvector_ = builderForValue.build();
         } else {
@@ -2448,14 +2577,15 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector vvector = 2;</code>
-       */
-      public Builder mergeVvector(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>required .VersionVector vvector = 2;</code> */
+      public Builder mergeVvector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (vvectorBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) != 0) &&
-            vvector_ != null &&
-            vvector_ != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) != 0)
+              && vvector_ != null
+              && vvector_
+                  != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .getDefaultInstance()) {
             getVvectorBuilder().mergeFrom(value);
           } else {
             vvector_ = value;
@@ -2467,9 +2597,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector vvector = 2;</code>
-       */
+      /** <code>required .VersionVector vvector = 2;</code> */
       public Builder clearVvector() {
         bitField0_ = (bitField0_ & ~0x00000002);
         vvector_ = null;
@@ -2480,67 +2608,75 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector vvector = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder getVvectorBuilder() {
+      /** <code>required .VersionVector vvector = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+          getVvectorBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getVvectorFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .VersionVector vvector = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVvectorOrBuilder() {
+      /** <code>required .VersionVector vvector = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+          getVvectorOrBuilder() {
         if (vvectorBuilder_ != null) {
           return vvectorBuilder_.getMessageOrBuilder();
         } else {
-          return vvector_ == null ?
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : vvector_;
+          return vvector_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : vvector_;
         }
       }
-      /**
-       * <code>required .VersionVector vvector = 2;</code>
-       */
+      /** <code>required .VersionVector vvector = 2;</code> */
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
           getVvectorFieldBuilder() {
         if (vvectorBuilder_ == null) {
-          vvectorBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>(
-                  getVvector(),
-                  getParentForChildren(),
-                  isClean());
+          vvectorBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .VersionVectorOrBuilder>(getVvector(), getParentForChildren(), isClean());
           vvector_ = null;
         }
         return vvectorBuilder_;
       }
 
-      private java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector> dots_ =
-        java.util.Collections.emptyList();
+      private java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector>
+          dots_ = java.util.Collections.emptyList();
+
       private void ensureDotsIsMutable() {
         if (!((bitField0_ & 0x00000004) != 0)) {
-          dots_ = new java.util.ArrayList<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector>(dots_);
+          dots_ =
+              new java.util.ArrayList<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector>(
+                  dots_);
           bitField0_ |= 0x00000004;
-         }
+        }
       }
 
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> dotsBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
+          dotsBuilder_;
 
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector> getDotsList() {
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector>
+          getDotsList() {
         if (dotsBuilder_ == null) {
           return java.util.Collections.unmodifiableList(dots_);
         } else {
           return dotsBuilder_.getMessageList();
         }
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public int getDotsCount() {
         if (dotsBuilder_ == null) {
           return dots_.size();
@@ -2548,21 +2684,19 @@ public final class ReplicatedEventSourcing {
           return dotsBuilder_.getCount();
         }
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getDots(int index) {
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getDots(
+          int index) {
         if (dotsBuilder_ == null) {
           return dots_.get(index);
         } else {
           return dotsBuilder_.getMessage(index);
         }
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public Builder setDots(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (dotsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2575,11 +2709,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public Builder setDots(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder builderForValue) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+              builderForValue) {
         if (dotsBuilder_ == null) {
           ensureDotsIsMutable();
           dots_.set(index, builderForValue.build());
@@ -2589,10 +2723,9 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public Builder addDots(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public Builder addDots(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (dotsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2605,11 +2738,10 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public Builder addDots(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (dotsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2622,11 +2754,10 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public Builder addDots(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+              builderForValue) {
         if (dotsBuilder_ == null) {
           ensureDotsIsMutable();
           dots_.add(builderForValue.build());
@@ -2636,11 +2767,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public Builder addDots(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder builderForValue) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+              builderForValue) {
         if (dotsBuilder_ == null) {
           ensureDotsIsMutable();
           dots_.add(index, builderForValue.build());
@@ -2650,24 +2781,22 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public Builder addAllDots(
-          java.lang.Iterable<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector> values) {
+          java.lang.Iterable<
+                  ? extends
+                      akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector>
+              values) {
         if (dotsBuilder_ == null) {
           ensureDotsIsMutable();
-          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
-              values, dots_);
+          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, dots_);
           onChanged();
         } else {
           dotsBuilder_.addAllMessages(values);
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public Builder clearDots() {
         if (dotsBuilder_ == null) {
           dots_ = java.util.Collections.emptyList();
@@ -2678,9 +2807,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
+      /** <code>repeated .VersionVector dots = 3;</code> */
       public Builder removeDots(int index) {
         if (dotsBuilder_ == null) {
           ensureDotsIsMutable();
@@ -2691,88 +2818,95 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder getDotsBuilder(
-          int index) {
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+          getDotsBuilder(int index) {
         return getDotsFieldBuilder().getBuilder(index);
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getDotsOrBuilder(
-          int index) {
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+          getDotsOrBuilder(int index) {
         if (dotsBuilder_ == null) {
-          return dots_.get(index);  } else {
+          return dots_.get(index);
+        } else {
           return dotsBuilder_.getMessageOrBuilder(index);
         }
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> 
-           getDotsOrBuilderList() {
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public java.util.List<
+              ? extends
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .VersionVectorOrBuilder>
+          getDotsOrBuilderList() {
         if (dotsBuilder_ != null) {
           return dotsBuilder_.getMessageOrBuilderList();
         } else {
           return java.util.Collections.unmodifiableList(dots_);
         }
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder addDotsBuilder() {
-        return getDotsFieldBuilder().addBuilder(
-            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance());
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+          addDotsBuilder() {
+        return getDotsFieldBuilder()
+            .addBuilder(
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                    .getDefaultInstance());
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder addDotsBuilder(
-          int index) {
-        return getDotsFieldBuilder().addBuilder(
-            index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance());
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+          addDotsBuilder(int index) {
+        return getDotsFieldBuilder()
+            .addBuilder(
+                index,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                    .getDefaultInstance());
       }
-      /**
-       * <code>repeated .VersionVector dots = 3;</code>
-       */
-      public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder> 
-           getDotsBuilderList() {
+      /** <code>repeated .VersionVector dots = 3;</code> */
+      public java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder>
+          getDotsBuilderList() {
         return getDotsFieldBuilder().getBuilderList();
       }
+
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
           getDotsFieldBuilder() {
         if (dotsBuilder_ == null) {
-          dotsBuilder_ = new akka.protobufv3.internal.RepeatedFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>(
-                  dots_,
-                  ((bitField0_ & 0x00000004) != 0),
-                  getParentForChildren(),
-                  isClean());
+          dotsBuilder_ =
+              new akka.protobufv3.internal.RepeatedFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .VersionVectorOrBuilder>(
+                  dots_, ((bitField0_ & 0x00000004) != 0), getParentForChildren(), isClean());
           dots_ = null;
         }
         return dotsBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList stringElements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringList stringElements_ =
+          akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+
       private void ensureStringElementsIsMutable() {
         if (!((bitField0_ & 0x00000008) != 0)) {
           stringElements_ = new akka.protobufv3.internal.LazyStringArrayList(stringElements_);
           bitField0_ |= 0x00000008;
-         }
+        }
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @return A list containing the stringElements.
        */
-      public akka.protobufv3.internal.ProtocolStringList
-          getStringElementsList() {
+      public akka.protobufv3.internal.ProtocolStringList getStringElementsList() {
         return stringElements_.getUnmodifiableView();
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @return The count of stringElements.
        */
       public int getStringElementsCount() {
@@ -2780,6 +2914,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @param index The index of the element to return.
        * @return The stringElements at the given index.
        */
@@ -2788,22 +2923,24 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @param index The index of the value to return.
        * @return The bytes of the stringElements at the given index.
        */
-      public akka.protobufv3.internal.ByteString
-          getStringElementsBytes(int index) {
+      public akka.protobufv3.internal.ByteString getStringElementsBytes(int index) {
         return stringElements_.getByteString(index);
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @param index The index to set the value at.
        * @param value The stringElements to set.
        * @return This builder for chaining.
        */
-      public Builder setStringElements(
-          int index, java.lang.String value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setStringElements(int index, java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         ensureStringElementsIsMutable();
         stringElements_.set(index, value);
         onChanged();
@@ -2811,12 +2948,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @param value The stringElements to add.
        * @return This builder for chaining.
        */
-      public Builder addStringElements(
-          java.lang.String value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder addStringElements(java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         ensureStringElementsIsMutable();
         stringElements_.add(value);
         onChanged();
@@ -2824,19 +2963,19 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @param values The stringElements to add.
        * @return This builder for chaining.
        */
-      public Builder addAllStringElements(
-          java.lang.Iterable<java.lang.String> values) {
+      public Builder addAllStringElements(java.lang.Iterable<java.lang.String> values) {
         ensureStringElementsIsMutable();
-        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
-            values, stringElements_);
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, stringElements_);
         onChanged();
         return this;
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearStringElements() {
@@ -2847,12 +2986,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated string stringElements = 4;</code>
+       *
        * @param value The bytes of the stringElements to add.
        * @return This builder for chaining.
        */
-      public Builder addStringElementsBytes(
-          akka.protobufv3.internal.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder addStringElementsBytes(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         ensureStringElementsIsMutable();
         stringElements_.add(value);
         onChanged();
@@ -2860,6 +3001,7 @@ public final class ReplicatedEventSourcing {
       }
 
       private akka.protobufv3.internal.Internal.IntList intElements_ = emptyIntList();
+
       private void ensureIntElementsIsMutable() {
         if (!((bitField0_ & 0x00000010) != 0)) {
           intElements_ = mutableCopy(intElements_);
@@ -2868,15 +3010,17 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
+       *
        * @return A list containing the intElements.
        */
-      public java.util.List<java.lang.Integer>
-          getIntElementsList() {
-        return ((bitField0_ & 0x00000010) != 0) ?
-                 java.util.Collections.unmodifiableList(intElements_) : intElements_;
+      public java.util.List<java.lang.Integer> getIntElementsList() {
+        return ((bitField0_ & 0x00000010) != 0)
+            ? java.util.Collections.unmodifiableList(intElements_)
+            : intElements_;
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
+       *
        * @return The count of intElements.
        */
       public int getIntElementsCount() {
@@ -2884,6 +3028,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
+       *
        * @param index The index of the element to return.
        * @return The intElements at the given index.
        */
@@ -2892,13 +3037,13 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
+       *
        * @param index The index to set the value at.
        * @param value The intElements to set.
        * @return This builder for chaining.
        */
-      public Builder setIntElements(
-          int index, int value) {
-        
+      public Builder setIntElements(int index, int value) {
+
         ensureIntElementsIsMutable();
         intElements_.setInt(index, value);
         onChanged();
@@ -2906,11 +3051,12 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
+       *
        * @param value The intElements to add.
        * @return This builder for chaining.
        */
       public Builder addIntElements(int value) {
-        
+
         ensureIntElementsIsMutable();
         intElements_.addInt(value);
         onChanged();
@@ -2918,19 +3064,19 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
+       *
        * @param values The intElements to add.
        * @return This builder for chaining.
        */
-      public Builder addAllIntElements(
-          java.lang.Iterable<? extends java.lang.Integer> values) {
+      public Builder addAllIntElements(java.lang.Iterable<? extends java.lang.Integer> values) {
         ensureIntElementsIsMutable();
-        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
-            values, intElements_);
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, intElements_);
         onChanged();
         return this;
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearIntElements() {
@@ -2941,6 +3087,7 @@ public final class ReplicatedEventSourcing {
       }
 
       private akka.protobufv3.internal.Internal.LongList longElements_ = emptyLongList();
+
       private void ensureLongElementsIsMutable() {
         if (!((bitField0_ & 0x00000020) != 0)) {
           longElements_ = mutableCopy(longElements_);
@@ -2949,15 +3096,17 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
+       *
        * @return A list containing the longElements.
        */
-      public java.util.List<java.lang.Long>
-          getLongElementsList() {
-        return ((bitField0_ & 0x00000020) != 0) ?
-                 java.util.Collections.unmodifiableList(longElements_) : longElements_;
+      public java.util.List<java.lang.Long> getLongElementsList() {
+        return ((bitField0_ & 0x00000020) != 0)
+            ? java.util.Collections.unmodifiableList(longElements_)
+            : longElements_;
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
+       *
        * @return The count of longElements.
        */
       public int getLongElementsCount() {
@@ -2965,6 +3114,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
+       *
        * @param index The index of the element to return.
        * @return The longElements at the given index.
        */
@@ -2973,13 +3123,13 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
+       *
        * @param index The index to set the value at.
        * @param value The longElements to set.
        * @return This builder for chaining.
        */
-      public Builder setLongElements(
-          int index, long value) {
-        
+      public Builder setLongElements(int index, long value) {
+
         ensureLongElementsIsMutable();
         longElements_.setLong(index, value);
         onChanged();
@@ -2987,11 +3137,12 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
+       *
        * @param value The longElements to add.
        * @return This builder for chaining.
        */
       public Builder addLongElements(long value) {
-        
+
         ensureLongElementsIsMutable();
         longElements_.addLong(value);
         onChanged();
@@ -2999,19 +3150,19 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
+       *
        * @param values The longElements to add.
        * @return This builder for chaining.
        */
-      public Builder addAllLongElements(
-          java.lang.Iterable<? extends java.lang.Long> values) {
+      public Builder addAllLongElements(java.lang.Iterable<? extends java.lang.Long> values) {
         ensureLongElementsIsMutable();
-        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
-            values, longElements_);
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, longElements_);
         onChanged();
         return this;
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearLongElements() {
@@ -3022,20 +3173,23 @@ public final class ReplicatedEventSourcing {
       }
 
       private java.util.List<akka.remote.ContainerFormats.Payload> otherElements_ =
-        java.util.Collections.emptyList();
+          java.util.Collections.emptyList();
+
       private void ensureOtherElementsIsMutable() {
         if (!((bitField0_ & 0x00000040) != 0)) {
-          otherElements_ = new java.util.ArrayList<akka.remote.ContainerFormats.Payload>(otherElements_);
+          otherElements_ =
+              new java.util.ArrayList<akka.remote.ContainerFormats.Payload>(otherElements_);
           bitField0_ |= 0x00000040;
-         }
+        }
       }
 
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> otherElementsBuilder_;
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
+          otherElementsBuilder_;
 
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public java.util.List<akka.remote.ContainerFormats.Payload> getOtherElementsList() {
         if (otherElementsBuilder_ == null) {
           return java.util.Collections.unmodifiableList(otherElements_);
@@ -3043,9 +3197,7 @@ public final class ReplicatedEventSourcing {
           return otherElementsBuilder_.getMessageList();
         }
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public int getOtherElementsCount() {
         if (otherElementsBuilder_ == null) {
           return otherElements_.size();
@@ -3053,9 +3205,7 @@ public final class ReplicatedEventSourcing {
           return otherElementsBuilder_.getCount();
         }
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public akka.remote.ContainerFormats.Payload getOtherElements(int index) {
         if (otherElementsBuilder_ == null) {
           return otherElements_.get(index);
@@ -3063,11 +3213,8 @@ public final class ReplicatedEventSourcing {
           return otherElementsBuilder_.getMessage(index);
         }
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
-      public Builder setOtherElements(
-          int index, akka.remote.ContainerFormats.Payload value) {
+      /** <code>repeated .Payload otherElements = 7;</code> */
+      public Builder setOtherElements(int index, akka.remote.ContainerFormats.Payload value) {
         if (otherElementsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -3080,9 +3227,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public Builder setOtherElements(
           int index, akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (otherElementsBuilder_ == null) {
@@ -3094,9 +3239,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public Builder addOtherElements(akka.remote.ContainerFormats.Payload value) {
         if (otherElementsBuilder_ == null) {
           if (value == null) {
@@ -3110,11 +3253,8 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
-      public Builder addOtherElements(
-          int index, akka.remote.ContainerFormats.Payload value) {
+      /** <code>repeated .Payload otherElements = 7;</code> */
+      public Builder addOtherElements(int index, akka.remote.ContainerFormats.Payload value) {
         if (otherElementsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -3127,9 +3267,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public Builder addOtherElements(
           akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (otherElementsBuilder_ == null) {
@@ -3141,9 +3279,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public Builder addOtherElements(
           int index, akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (otherElementsBuilder_ == null) {
@@ -3155,24 +3291,19 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public Builder addAllOtherElements(
           java.lang.Iterable<? extends akka.remote.ContainerFormats.Payload> values) {
         if (otherElementsBuilder_ == null) {
           ensureOtherElementsIsMutable();
-          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
-              values, otherElements_);
+          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, otherElements_);
           onChanged();
         } else {
           otherElementsBuilder_.addAllMessages(values);
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public Builder clearOtherElements() {
         if (otherElementsBuilder_ == null) {
           otherElements_ = java.util.Collections.emptyList();
@@ -3183,9 +3314,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public Builder removeOtherElements(int index) {
         if (otherElementsBuilder_ == null) {
           ensureOtherElementsIsMutable();
@@ -3196,62 +3325,54 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
-      public akka.remote.ContainerFormats.Payload.Builder getOtherElementsBuilder(
-          int index) {
+      /** <code>repeated .Payload otherElements = 7;</code> */
+      public akka.remote.ContainerFormats.Payload.Builder getOtherElementsBuilder(int index) {
         return getOtherElementsFieldBuilder().getBuilder(index);
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
-      public akka.remote.ContainerFormats.PayloadOrBuilder getOtherElementsOrBuilder(
-          int index) {
+      /** <code>repeated .Payload otherElements = 7;</code> */
+      public akka.remote.ContainerFormats.PayloadOrBuilder getOtherElementsOrBuilder(int index) {
         if (otherElementsBuilder_ == null) {
-          return otherElements_.get(index);  } else {
+          return otherElements_.get(index);
+        } else {
           return otherElementsBuilder_.getMessageOrBuilder(index);
         }
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
-      public java.util.List<? extends akka.remote.ContainerFormats.PayloadOrBuilder> 
-           getOtherElementsOrBuilderList() {
+      /** <code>repeated .Payload otherElements = 7;</code> */
+      public java.util.List<? extends akka.remote.ContainerFormats.PayloadOrBuilder>
+          getOtherElementsOrBuilderList() {
         if (otherElementsBuilder_ != null) {
           return otherElementsBuilder_.getMessageOrBuilderList();
         } else {
           return java.util.Collections.unmodifiableList(otherElements_);
         }
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
+      /** <code>repeated .Payload otherElements = 7;</code> */
       public akka.remote.ContainerFormats.Payload.Builder addOtherElementsBuilder() {
-        return getOtherElementsFieldBuilder().addBuilder(
-            akka.remote.ContainerFormats.Payload.getDefaultInstance());
+        return getOtherElementsFieldBuilder()
+            .addBuilder(akka.remote.ContainerFormats.Payload.getDefaultInstance());
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
-      public akka.remote.ContainerFormats.Payload.Builder addOtherElementsBuilder(
-          int index) {
-        return getOtherElementsFieldBuilder().addBuilder(
-            index, akka.remote.ContainerFormats.Payload.getDefaultInstance());
+      /** <code>repeated .Payload otherElements = 7;</code> */
+      public akka.remote.ContainerFormats.Payload.Builder addOtherElementsBuilder(int index) {
+        return getOtherElementsFieldBuilder()
+            .addBuilder(index, akka.remote.ContainerFormats.Payload.getDefaultInstance());
       }
-      /**
-       * <code>repeated .Payload otherElements = 7;</code>
-       */
-      public java.util.List<akka.remote.ContainerFormats.Payload.Builder> 
-           getOtherElementsBuilderList() {
+      /** <code>repeated .Payload otherElements = 7;</code> */
+      public java.util.List<akka.remote.ContainerFormats.Payload.Builder>
+          getOtherElementsBuilderList() {
         return getOtherElementsFieldBuilder().getBuilderList();
       }
+
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
           getOtherElementsFieldBuilder() {
         if (otherElementsBuilder_ == null) {
-          otherElementsBuilder_ = new akka.protobufv3.internal.RepeatedFieldBuilderV3<
-              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
+          otherElementsBuilder_ =
+              new akka.protobufv3.internal.RepeatedFieldBuilderV3<
+                  akka.remote.ContainerFormats.Payload,
+                  akka.remote.ContainerFormats.Payload.Builder,
+                  akka.remote.ContainerFormats.PayloadOrBuilder>(
                   otherElements_,
                   ((bitField0_ & 0x00000040) != 0),
                   getParentForChildren(),
@@ -3260,6 +3381,7 @@ public final class ReplicatedEventSourcing {
         }
         return otherElementsBuilder_;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -3272,41 +3394,45 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:ORSet)
     }
 
     // @@protoc_insertion_point(class_scope:ORSet)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+        DEFAULT_INSTANCE;
+
     static {
       DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<ORSet>
-        PARSER = new akka.protobufv3.internal.AbstractParser<ORSet>() {
-      @java.lang.Override
-      public ORSet parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<ORSet> PARSER =
+        new akka.protobufv3.internal.AbstractParser<ORSet>() {
+          @java.lang.Override
+          public ORSet parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<ORSet> parser() {
       return PARSER;
@@ -3318,52 +3444,47 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
-  public interface ORSetDeltaGroupOrBuilder extends
+  public interface ORSetDeltaGroupOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:ORSetDeltaGroup)
       akka.protobufv3.internal.MessageOrBuilder {
 
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
-    java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry> 
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+    java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry>
         getEntriesList();
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry getEntries(int index);
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
-    int getEntriesCount();
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
-    java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder> 
-        getEntriesOrBuilderList();
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder getEntriesOrBuilder(
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry getEntries(
         int index);
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+    int getEntriesCount();
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+    java.util.List<
+            ? extends
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                    .EntryOrBuilder>
+        getEntriesOrBuilderList();
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder
+        getEntriesOrBuilder(int index);
   }
-  /**
-   * Protobuf type {@code ORSetDeltaGroup}
-   */
-  public static final class ORSetDeltaGroup extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code ORSetDeltaGroup} */
+  public static final class ORSetDeltaGroup extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:ORSetDeltaGroup)
       ORSetDeltaGroupOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use ORSetDeltaGroup.newBuilder() to construct.
     private ORSetDeltaGroup(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private ORSetDeltaGroup() {
       entries_ = java.util.Collections.emptyList();
     }
@@ -3376,65 +3497,71 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ORSetDeltaGroup_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ORSetDeltaGroup_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Builder
+                  .class);
     }
 
-    public interface EntryOrBuilder extends
+    public interface EntryOrBuilder
+        extends
         // @@protoc_insertion_point(interface_extends:ORSetDeltaGroup.Entry)
         akka.protobufv3.internal.MessageOrBuilder {
 
       /**
        * <code>required .ORSetDeltaOp operation = 1;</code>
+       *
        * @return Whether the operation field is set.
        */
       boolean hasOperation();
       /**
        * <code>required .ORSetDeltaOp operation = 1;</code>
+       *
        * @return The operation.
        */
       akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp getOperation();
 
       /**
        * <code>required .ORSet underlying = 2;</code>
+       *
        * @return Whether the underlying field is set.
        */
       boolean hasUnderlying();
       /**
        * <code>required .ORSet underlying = 2;</code>
+       *
        * @return The underlying.
        */
       akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet getUnderlying();
-      /**
-       * <code>required .ORSet underlying = 2;</code>
-       */
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder getUnderlyingOrBuilder();
+      /** <code>required .ORSet underlying = 2;</code> */
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder
+          getUnderlyingOrBuilder();
     }
-    /**
-     * Protobuf type {@code ORSetDeltaGroup.Entry}
-     */
-    public static final class Entry extends
-        akka.protobufv3.internal.GeneratedMessageV3 implements
+    /** Protobuf type {@code ORSetDeltaGroup.Entry} */
+    public static final class Entry extends akka.protobufv3.internal.GeneratedMessageV3
+        implements
         // @@protoc_insertion_point(message_implements:ORSetDeltaGroup.Entry)
         EntryOrBuilder {
-    private static final long serialVersionUID = 0L;
+      private static final long serialVersionUID = 0L;
       // Use Entry.newBuilder() to construct.
       private Entry(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
         super(builder);
       }
+
       private Entry() {
         operation_ = 0;
       }
@@ -3447,21 +3574,25 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
+      public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
         return this.unknownFields;
       }
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_Entry_descriptor;
+
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ORSetDeltaGroup_Entry_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_Entry_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ORSetDeltaGroup_Entry_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                    .class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                    .Builder.class);
       }
 
       private int bitField0_;
@@ -3469,24 +3600,34 @@ public final class ReplicatedEventSourcing {
       private int operation_ = 0;
       /**
        * <code>required .ORSetDeltaOp operation = 1;</code>
+       *
        * @return Whether the operation field is set.
        */
-      @java.lang.Override public boolean hasOperation() {
+      @java.lang.Override
+      public boolean hasOperation() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ORSetDeltaOp operation = 1;</code>
+       *
        * @return The operation.
        */
-      @java.lang.Override public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp getOperation() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp result = akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.forNumber(operation_);
-        return result == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.Add : result;
+      @java.lang.Override
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp
+          getOperation() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp result =
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.forNumber(
+                operation_);
+        return result == null
+            ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.Add
+            : result;
       }
 
       public static final int UNDERLYING_FIELD_NUMBER = 2;
       private akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet underlying_;
       /**
        * <code>required .ORSet underlying = 2;</code>
+       *
        * @return Whether the underlying field is set.
        */
       @java.lang.Override
@@ -3495,21 +3636,28 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required .ORSet underlying = 2;</code>
+       *
        * @return The underlying.
        */
       @java.lang.Override
       public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet getUnderlying() {
-        return underlying_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.getDefaultInstance() : underlying_;
+        return underlying_ == null
+            ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+                .getDefaultInstance()
+            : underlying_;
       }
-      /**
-       * <code>required .ORSet underlying = 2;</code>
-       */
+      /** <code>required .ORSet underlying = 2;</code> */
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder getUnderlyingOrBuilder() {
-        return underlying_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.getDefaultInstance() : underlying_;
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder
+          getUnderlyingOrBuilder() {
+        return underlying_ == null
+            ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+                .getDefaultInstance()
+            : underlying_;
       }
 
       private byte memoizedIsInitialized = -1;
+
       @java.lang.Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
@@ -3534,7 +3682,7 @@ public final class ReplicatedEventSourcing {
 
       @java.lang.Override
       public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                          throws java.io.IOException {
+          throws java.io.IOException {
         if (((bitField0_ & 0x00000001) != 0)) {
           output.writeEnum(1, operation_);
         }
@@ -3551,12 +3699,10 @@ public final class ReplicatedEventSourcing {
 
         size = 0;
         if (((bitField0_ & 0x00000001) != 0)) {
-          size += akka.protobufv3.internal.CodedOutputStream
-            .computeEnumSize(1, operation_);
+          size += akka.protobufv3.internal.CodedOutputStream.computeEnumSize(1, operation_);
         }
         if (((bitField0_ & 0x00000002) != 0)) {
-          size += akka.protobufv3.internal.CodedOutputStream
-            .computeMessageSize(2, getUnderlying());
+          size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(2, getUnderlying());
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSize = size;
@@ -3566,12 +3712,16 @@ public final class ReplicatedEventSourcing {
       @java.lang.Override
       public boolean equals(final java.lang.Object obj) {
         if (obj == this) {
-         return true;
+          return true;
         }
-        if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry)) {
+        if (!(obj
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry)) {
           return super.equals(obj);
         }
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry) obj;
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry other =
+            (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry)
+                obj;
 
         if (hasOperation() != other.hasOperation()) return false;
         if (hasOperation()) {
@@ -3579,8 +3729,7 @@ public final class ReplicatedEventSourcing {
         }
         if (hasUnderlying() != other.hasUnderlying()) return false;
         if (hasUnderlying()) {
-          if (!getUnderlying()
-              .equals(other.getUnderlying())) return false;
+          if (!getUnderlying().equals(other.getUnderlying())) return false;
         }
         if (!getUnknownFields().equals(other.getUnknownFields())) return false;
         return true;
@@ -3606,88 +3755,118 @@ public final class ReplicatedEventSourcing {
         return hash;
       }
 
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(
-          java.nio.ByteBuffer data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(java.nio.ByteBuffer data)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(
-          java.nio.ByteBuffer data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(
+              java.nio.ByteBuffer data,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(
-          akka.protobufv3.internal.ByteString data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(akka.protobufv3.internal.ByteString data)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(
-          akka.protobufv3.internal.ByteString data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(
+              akka.protobufv3.internal.ByteString data,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(byte[] data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(
-          byte[] data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(java.io.InputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(
-          java.io.InputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(
+              java.io.InputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+            PARSER, input, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseDelimitedFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseDelimitedWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+            PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseDelimitedFrom(
-          java.io.InputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseDelimitedFrom(
+              java.io.InputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+            PARSER, input, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(
-          akka.protobufv3.internal.CodedInputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry parseFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          parseFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+            PARSER, input, extensionRegistry);
       }
 
       @java.lang.Override
-      public Builder newBuilderForType() { return newBuilder(); }
+      public Builder newBuilderForType() {
+        return newBuilder();
+      }
+
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
       }
-      public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry prototype) {
+
+      public static Builder newBuilder(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
+
       @java.lang.Override
       public Builder toBuilder() {
-        return this == DEFAULT_INSTANCE
-            ? new Builder() : new Builder().mergeFrom(this);
+        return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
       }
 
       @java.lang.Override
@@ -3696,42 +3875,47 @@ public final class ReplicatedEventSourcing {
         Builder builder = new Builder(parent);
         return builder;
       }
-      /**
-       * Protobuf type {@code ORSetDeltaGroup.Entry}
-       */
-      public static final class Builder extends
-          akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+      /** Protobuf type {@code ORSetDeltaGroup.Entry} */
+      public static final class Builder
+          extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+          implements
           // @@protoc_insertion_point(builder_implements:ORSetDeltaGroup.Entry)
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder {
-        public static final akka.protobufv3.internal.Descriptors.Descriptor
-            getDescriptor() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_Entry_descriptor;
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .EntryOrBuilder {
+        public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_ORSetDeltaGroup_Entry_descriptor;
         }
 
         @java.lang.Override
         protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_Entry_fieldAccessorTable
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_ORSetDeltaGroup_Entry_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder.class);
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                      .class,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                      .Builder.class);
         }
 
-        // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.newBuilder()
+        // Construct using
+        // akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.newBuilder()
         private Builder() {
           maybeForceBuilderInitialization();
         }
 
-        private Builder(
-            akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
+
         private void maybeForceBuilderInitialization() {
-          if (akka.protobufv3.internal.GeneratedMessageV3
-                  .alwaysUseFieldBuilders) {
+          if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
             getUnderlyingFieldBuilder();
           }
         }
+
         @java.lang.Override
         public Builder clear() {
           super.clear();
@@ -3746,19 +3930,23 @@ public final class ReplicatedEventSourcing {
         }
 
         @java.lang.Override
-        public akka.protobufv3.internal.Descriptors.Descriptor
-            getDescriptorForType() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_Entry_descriptor;
+        public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_ORSetDeltaGroup_Entry_descriptor;
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry getDefaultInstanceForType() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.getDefaultInstance();
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+            getDefaultInstanceForType() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              .getDefaultInstance();
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry build() {
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry result = buildPartial();
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+            build() {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              result = buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
@@ -3766,14 +3954,22 @@ public final class ReplicatedEventSourcing {
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry buildPartial() {
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+            buildPartial() {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              result =
+                  new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                      .Entry(this);
+          if (bitField0_ != 0) {
+            buildPartial0(result);
+          }
           onBuilt();
           return result;
         }
 
-        private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry result) {
+        private void buildPartial0(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                result) {
           int from_bitField0_ = bitField0_;
           int to_bitField0_ = 0;
           if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -3781,9 +3977,8 @@ public final class ReplicatedEventSourcing {
             to_bitField0_ |= 0x00000001;
           }
           if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.underlying_ = underlyingBuilder_ == null
-                ? underlying_
-                : underlyingBuilder_.build();
+            result.underlying_ =
+                underlyingBuilder_ == null ? underlying_ : underlyingBuilder_.build();
             to_bitField0_ |= 0x00000002;
           }
           result.bitField0_ |= to_bitField0_;
@@ -3793,46 +3988,57 @@ public final class ReplicatedEventSourcing {
         public Builder clone() {
           return super.clone();
         }
+
         @java.lang.Override
         public Builder setField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
           return super.setField(field, value);
         }
+
         @java.lang.Override
-        public Builder clearField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
           return super.clearField(field);
         }
+
         @java.lang.Override
-        public Builder clearOneof(
-            akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
           return super.clearOneof(oneof);
         }
+
         @java.lang.Override
         public Builder setRepeatedField(
             akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            int index, java.lang.Object value) {
+            int index,
+            java.lang.Object value) {
           return super.setRepeatedField(field, index, value);
         }
+
         @java.lang.Override
         public Builder addRepeatedField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
           return super.addRepeatedField(field, value);
         }
+
         @java.lang.Override
         public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-          if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry) {
-            return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry)other);
+          if (other
+              instanceof
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry) {
+            return mergeFrom(
+                (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry)
+                    other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry other) {
-          if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.getDefaultInstance()) return this;
+        public Builder mergeFrom(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                other) {
+          if (other
+              == akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                  .getDefaultInstance()) return this;
           if (other.hasOperation()) {
             setOperation(other.getOperation());
           }
@@ -3874,31 +4080,34 @@ public final class ReplicatedEventSourcing {
                 case 0:
                   done = true;
                   break;
-                case 8: {
-                  int tmpRaw = input.readEnum();
-                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp tmpValue =
-                      akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.forNumber(tmpRaw);
-                  if (tmpValue == null) {
-                    mergeUnknownVarintField(1, tmpRaw);
-                  } else {
-                    operation_ = tmpRaw;
-                    bitField0_ |= 0x00000001;
-                  }
-                  break;
-                } // case 8
-                case 18: {
-                  input.readMessage(
-                      getUnderlyingFieldBuilder().getBuilder(),
-                      extensionRegistry);
-                  bitField0_ |= 0x00000002;
-                  break;
-                } // case 18
-                default: {
-                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                    done = true; // was an endgroup tag
-                  }
-                  break;
-                } // default:
+                case 8:
+                  {
+                    int tmpRaw = input.readEnum();
+                    akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp
+                        tmpValue =
+                            akka.persistence.typed.serialization.ReplicatedEventSourcing
+                                .ORSetDeltaOp.forNumber(tmpRaw);
+                    if (tmpValue == null) {
+                      mergeUnknownVarintField(1, tmpRaw);
+                    } else {
+                      operation_ = tmpRaw;
+                      bitField0_ |= 0x00000001;
+                    }
+                    break;
+                  } // case 8
+                case 18:
+                  {
+                    input.readMessage(getUnderlyingFieldBuilder().getBuilder(), extensionRegistry);
+                    bitField0_ |= 0x00000002;
+                    break;
+                  } // case 18
+                default:
+                  {
+                    if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                      done = true; // was an endgroup tag
+                    }
+                    break;
+                  } // default:
               } // switch (tag)
             } // while (!done)
           } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -3908,31 +4117,42 @@ public final class ReplicatedEventSourcing {
           } // finally
           return this;
         }
+
         private int bitField0_;
 
         private int operation_ = 0;
         /**
          * <code>required .ORSetDeltaOp operation = 1;</code>
+         *
          * @return Whether the operation field is set.
          */
-        @java.lang.Override public boolean hasOperation() {
+        @java.lang.Override
+        public boolean hasOperation() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .ORSetDeltaOp operation = 1;</code>
+         *
          * @return The operation.
          */
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp getOperation() {
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp result = akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.forNumber(operation_);
-          return result == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.Add : result;
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp
+            getOperation() {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp result =
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.forNumber(
+                  operation_);
+          return result == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp.Add
+              : result;
         }
         /**
          * <code>required .ORSetDeltaOp operation = 1;</code>
+         *
          * @param value The operation to set.
          * @return This builder for chaining.
          */
-        public Builder setOperation(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp value) {
+        public Builder setOperation(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaOp value) {
           if (value == null) {
             throw new NullPointerException();
           }
@@ -3943,6 +4163,7 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required .ORSetDeltaOp operation = 1;</code>
+         *
          * @return This builder for chaining.
          */
         public Builder clearOperation() {
@@ -3954,9 +4175,13 @@ public final class ReplicatedEventSourcing {
 
         private akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet underlying_;
         private akka.protobufv3.internal.SingleFieldBuilderV3<
-            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder> underlyingBuilder_;
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder>
+            underlyingBuilder_;
         /**
          * <code>required .ORSet underlying = 2;</code>
+         *
          * @return Whether the underlying field is set.
          */
         public boolean hasUnderlying() {
@@ -3964,19 +4189,22 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required .ORSet underlying = 2;</code>
+         *
          * @return The underlying.
          */
         public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet getUnderlying() {
           if (underlyingBuilder_ == null) {
-            return underlying_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.getDefaultInstance() : underlying_;
+            return underlying_ == null
+                ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+                    .getDefaultInstance()
+                : underlying_;
           } else {
             return underlyingBuilder_.getMessage();
           }
         }
-        /**
-         * <code>required .ORSet underlying = 2;</code>
-         */
-        public Builder setUnderlying(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet value) {
+        /** <code>required .ORSet underlying = 2;</code> */
+        public Builder setUnderlying(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet value) {
           if (underlyingBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
@@ -3989,11 +4217,10 @@ public final class ReplicatedEventSourcing {
           onChanged();
           return this;
         }
-        /**
-         * <code>required .ORSet underlying = 2;</code>
-         */
+        /** <code>required .ORSet underlying = 2;</code> */
         public Builder setUnderlying(
-            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder builderForValue) {
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder
+                builderForValue) {
           if (underlyingBuilder_ == null) {
             underlying_ = builderForValue.build();
           } else {
@@ -4003,14 +4230,15 @@ public final class ReplicatedEventSourcing {
           onChanged();
           return this;
         }
-        /**
-         * <code>required .ORSet underlying = 2;</code>
-         */
-        public Builder mergeUnderlying(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet value) {
+        /** <code>required .ORSet underlying = 2;</code> */
+        public Builder mergeUnderlying(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet value) {
           if (underlyingBuilder_ == null) {
-            if (((bitField0_ & 0x00000002) != 0) &&
-              underlying_ != null &&
-              underlying_ != akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.getDefaultInstance()) {
+            if (((bitField0_ & 0x00000002) != 0)
+                && underlying_ != null
+                && underlying_
+                    != akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+                        .getDefaultInstance()) {
               getUnderlyingBuilder().mergeFrom(value);
             } else {
               underlying_ = value;
@@ -4022,9 +4250,7 @@ public final class ReplicatedEventSourcing {
           onChanged();
           return this;
         }
-        /**
-         * <code>required .ORSet underlying = 2;</code>
-         */
+        /** <code>required .ORSet underlying = 2;</code> */
         public Builder clearUnderlying() {
           bitField0_ = (bitField0_ & ~0x00000002);
           underlying_ = null;
@@ -4035,41 +4261,43 @@ public final class ReplicatedEventSourcing {
           onChanged();
           return this;
         }
-        /**
-         * <code>required .ORSet underlying = 2;</code>
-         */
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder getUnderlyingBuilder() {
+        /** <code>required .ORSet underlying = 2;</code> */
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder
+            getUnderlyingBuilder() {
           bitField0_ |= 0x00000002;
           onChanged();
           return getUnderlyingFieldBuilder().getBuilder();
         }
-        /**
-         * <code>required .ORSet underlying = 2;</code>
-         */
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder getUnderlyingOrBuilder() {
+        /** <code>required .ORSet underlying = 2;</code> */
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder
+            getUnderlyingOrBuilder() {
           if (underlyingBuilder_ != null) {
             return underlyingBuilder_.getMessageOrBuilder();
           } else {
-            return underlying_ == null ?
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.getDefaultInstance() : underlying_;
+            return underlying_ == null
+                ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet
+                    .getDefaultInstance()
+                : underlying_;
           }
         }
-        /**
-         * <code>required .ORSet underlying = 2;</code>
-         */
+        /** <code>required .ORSet underlying = 2;</code> */
         private akka.protobufv3.internal.SingleFieldBuilderV3<
-            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder> 
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder>
             getUnderlyingFieldBuilder() {
           if (underlyingBuilder_ == null) {
-            underlyingBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder>(
-                    getUnderlying(),
-                    getParentForChildren(),
-                    isClean());
+            underlyingBuilder_ =
+                new akka.protobufv3.internal.SingleFieldBuilderV3<
+                    akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet,
+                    akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSet.Builder,
+                    akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetOrBuilder>(
+                    getUnderlying(), getParentForChildren(), isClean());
             underlying_ = null;
           }
           return underlyingBuilder_;
         }
+
         @java.lang.Override
         public final Builder setUnknownFields(
             final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -4082,41 +4310,49 @@ public final class ReplicatedEventSourcing {
           return super.mergeUnknownFields(unknownFields);
         }
 
-
         // @@protoc_insertion_point(builder_scope:ORSetDeltaGroup.Entry)
       }
 
       // @@protoc_insertion_point(class_scope:ORSetDeltaGroup.Entry)
-      private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry DEFAULT_INSTANCE;
+      private static final akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ORSetDeltaGroup.Entry
+          DEFAULT_INSTANCE;
+
       static {
-        DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry();
+        DEFAULT_INSTANCE =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                .Entry();
       }
 
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry getDefaultInstance() {
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .Entry
+          getDefaultInstance() {
         return DEFAULT_INSTANCE;
       }
 
-      @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Entry>
-          PARSER = new akka.protobufv3.internal.AbstractParser<Entry>() {
-        @java.lang.Override
-        public Entry parsePartialFrom(
-            akka.protobufv3.internal.CodedInputStream input,
-            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-            throws akka.protobufv3.internal.InvalidProtocolBufferException {
-          Builder builder = newBuilder();
-          try {
-            builder.mergeFrom(input, extensionRegistry);
-          } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(builder.buildPartial());
-          } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-            throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-          } catch (java.io.IOException e) {
-            throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-                .setUnfinishedMessage(builder.buildPartial());
-          }
-          return builder.buildPartial();
-        }
-      };
+      @java.lang.Deprecated
+      public static final akka.protobufv3.internal.Parser<Entry> PARSER =
+          new akka.protobufv3.internal.AbstractParser<Entry>() {
+            @java.lang.Override
+            public Entry parsePartialFrom(
+                akka.protobufv3.internal.CodedInputStream input,
+                akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+                throws akka.protobufv3.internal.InvalidProtocolBufferException {
+              Builder builder = newBuilder();
+              try {
+                builder.mergeFrom(input, extensionRegistry);
+              } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+                throw e.setUnfinishedMessage(builder.buildPartial());
+              } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+                throw e.asInvalidProtocolBufferException()
+                    .setUnfinishedMessage(builder.buildPartial());
+              } catch (java.io.IOException e) {
+                throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                    .setUnfinishedMessage(builder.buildPartial());
+              }
+              return builder.buildPartial();
+            }
+          };
 
       public static akka.protobufv3.internal.Parser<Entry> parser() {
         return PARSER;
@@ -4128,54 +4364,55 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry getDefaultInstanceForType() {
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+          getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
-
     }
 
     public static final int ENTRIES_FIELD_NUMBER = 1;
+
     @SuppressWarnings("serial")
-    private java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry> entries_;
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
+    private java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry>
+        entries_;
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
     @java.lang.Override
-    public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry> getEntriesList() {
+    public java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry>
+        getEntriesList() {
       return entries_;
     }
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
     @java.lang.Override
-    public java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder> 
+    public java.util.List<
+            ? extends
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                    .EntryOrBuilder>
         getEntriesOrBuilderList() {
       return entries_;
     }
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
     @java.lang.Override
     public int getEntriesCount() {
       return entries_.size();
     }
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry getEntries(int index) {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+        getEntries(int index) {
       return entries_.get(index);
     }
-    /**
-     * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-     */
+    /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder getEntriesOrBuilder(
-        int index) {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+            .EntryOrBuilder
+        getEntriesOrBuilder(int index) {
       return entries_.get(index);
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -4194,7 +4431,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       for (int i = 0; i < entries_.size(); i++) {
         output.writeMessage(1, entries_.get(i));
       }
@@ -4208,8 +4445,7 @@ public final class ReplicatedEventSourcing {
 
       size = 0;
       for (int i = 0; i < entries_.size(); i++) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(1, entries_.get(i));
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(1, entries_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -4219,15 +4455,17 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
-      if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup)) {
+      if (!(obj
+          instanceof
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup other =
+          (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup) obj;
 
-      if (!getEntriesList()
-          .equals(other.getEntriesList())) return false;
+      if (!getEntriesList().equals(other.getEntriesList())) return false;
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
@@ -4248,88 +4486,105 @@ public final class ReplicatedEventSourcing {
       return hash;
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(
-        akka.protobufv3.internal.ByteString data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(
-        akka.protobufv3.internal.ByteString data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup parseFrom(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -4338,36 +4593,36 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code ORSetDeltaGroup}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code ORSetDeltaGroup} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:ORSetDeltaGroup)
         akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroupOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ORSetDeltaGroup_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ORSetDeltaGroup_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Builder
+                    .class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.newBuilder()
-      private Builder() {
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.newBuilder()
+      private Builder() {}
 
-      }
-
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -4383,19 +4638,22 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ORSetDeltaGroup_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ORSetDeltaGroup_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+            .getDefaultInstance();
       }
 
       @java.lang.Override
       public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup build() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup result = buildPartial();
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup result =
+            buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -4403,15 +4661,20 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup(this);
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup result =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup(this);
         buildPartialRepeatedFields(result);
-        if (bitField0_ != 0) { buildPartial0(result); }
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup result) {
+      private void buildPartialRepeatedFields(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup result) {
         if (entriesBuilder_ == null) {
           if (((bitField0_ & 0x00000001) != 0)) {
             entries_ = java.util.Collections.unmodifiableList(entries_);
@@ -4423,7 +4686,8 @@ public final class ReplicatedEventSourcing {
         }
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup result) {
         int from_bitField0_ = bitField0_;
       }
 
@@ -4431,46 +4695,55 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-        if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup)other);
+        if (other
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup) other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                .getDefaultInstance()) return this;
         if (entriesBuilder_ == null) {
           if (!other.entries_.isEmpty()) {
             if (entries_.isEmpty()) {
@@ -4489,9 +4762,10 @@ public final class ReplicatedEventSourcing {
               entriesBuilder_ = null;
               entries_ = other.entries_;
               bitField0_ = (bitField0_ & ~0x00000001);
-              entriesBuilder_ = 
-                akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders ?
-                   getEntriesFieldBuilder() : null;
+              entriesBuilder_ =
+                  akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders
+                      ? getEntriesFieldBuilder()
+                      : null;
             } else {
               entriesBuilder_.addAllMessages(other.entries_);
             }
@@ -4528,25 +4802,29 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry m =
-                    input.readMessage(
-                        akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.PARSER,
-                        extensionRegistry);
-                if (entriesBuilder_ == null) {
-                  ensureEntriesIsMutable();
-                  entries_.add(m);
-                } else {
-                  entriesBuilder_.addMessage(m);
-                }
-                break;
-              } // case 10
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                      m =
+                          input.readMessage(
+                              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                                  .ORSetDeltaGroup.Entry.PARSER,
+                              extensionRegistry);
+                  if (entriesBuilder_ == null) {
+                    ensureEntriesIsMutable();
+                    entries_.add(m);
+                  } else {
+                    entriesBuilder_.addMessage(m);
+                  }
+                  break;
+                } // case 10
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -4556,33 +4834,42 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
-      private java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry> entries_ =
-        java.util.Collections.emptyList();
+      private java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry>
+          entries_ = java.util.Collections.emptyList();
+
       private void ensureEntriesIsMutable() {
         if (!((bitField0_ & 0x00000001) != 0)) {
-          entries_ = new java.util.ArrayList<akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry>(entries_);
+          entries_ =
+              new java.util.ArrayList<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                      .Entry>(entries_);
           bitField0_ |= 0x00000001;
-         }
+        }
       }
 
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder> entriesBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                  .Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                  .EntryOrBuilder>
+          entriesBuilder_;
 
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry> getEntriesList() {
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry>
+          getEntriesList() {
         if (entriesBuilder_ == null) {
           return java.util.Collections.unmodifiableList(entries_);
         } else {
           return entriesBuilder_.getMessageList();
         }
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public int getEntriesCount() {
         if (entriesBuilder_ == null) {
           return entries_.size();
@@ -4590,21 +4877,20 @@ public final class ReplicatedEventSourcing {
           return entriesBuilder_.getCount();
         }
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry getEntries(int index) {
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+          getEntries(int index) {
         if (entriesBuilder_ == null) {
           return entries_.get(index);
         } else {
           return entriesBuilder_.getMessage(index);
         }
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public Builder setEntries(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry value) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              value) {
         if (entriesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -4617,11 +4903,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public Builder setEntries(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder builderForValue) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder
+              builderForValue) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
           entries_.set(index, builderForValue.build());
@@ -4631,10 +4917,10 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public Builder addEntries(akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry value) {
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public Builder addEntries(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              value) {
         if (entriesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -4647,11 +4933,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public Builder addEntries(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry value) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              value) {
         if (entriesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -4664,11 +4950,10 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public Builder addEntries(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder
+              builderForValue) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
           entries_.add(builderForValue.build());
@@ -4678,11 +4963,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public Builder addEntries(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder builderForValue) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder
+              builderForValue) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
           entries_.add(index, builderForValue.build());
@@ -4692,24 +4977,23 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public Builder addAllEntries(
-          java.lang.Iterable<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry> values) {
+          java.lang.Iterable<
+                  ? extends
+                      akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                          .Entry>
+              values) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
-          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
-              values, entries_);
+          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, entries_);
           onChanged();
         } else {
           entriesBuilder_.addAllMessages(values);
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public Builder clearEntries() {
         if (entriesBuilder_ == null) {
           entries_ = java.util.Collections.emptyList();
@@ -4720,9 +5004,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
       public Builder removeEntries(int index) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
@@ -4733,70 +5015,83 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder getEntriesBuilder(
-          int index) {
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              .Builder
+          getEntriesBuilder(int index) {
         return getEntriesFieldBuilder().getBuilder(index);
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder getEntriesOrBuilder(
-          int index) {
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+              .EntryOrBuilder
+          getEntriesOrBuilder(int index) {
         if (entriesBuilder_ == null) {
-          return entries_.get(index);  } else {
+          return entries_.get(index);
+        } else {
           return entriesBuilder_.getMessageOrBuilder(index);
         }
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder> 
-           getEntriesOrBuilderList() {
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public java.util.List<
+              ? extends
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                      .EntryOrBuilder>
+          getEntriesOrBuilderList() {
         if (entriesBuilder_ != null) {
           return entriesBuilder_.getMessageOrBuilderList();
         } else {
           return java.util.Collections.unmodifiableList(entries_);
         }
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder addEntriesBuilder() {
-        return getEntriesFieldBuilder().addBuilder(
-            akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.getDefaultInstance());
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              .Builder
+          addEntriesBuilder() {
+        return getEntriesFieldBuilder()
+            .addBuilder(
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                    .getDefaultInstance());
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder addEntriesBuilder(
-          int index) {
-        return getEntriesFieldBuilder().addBuilder(
-            index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.getDefaultInstance());
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+              .Builder
+          addEntriesBuilder(int index) {
+        return getEntriesFieldBuilder()
+            .addBuilder(
+                index,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                    .getDefaultInstance());
       }
-      /**
-       * <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code>
-       */
-      public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder> 
-           getEntriesBuilderList() {
+      /** <code>repeated .ORSetDeltaGroup.Entry entries = 1;</code> */
+      public java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                  .Builder>
+          getEntriesBuilderList() {
         return getEntriesFieldBuilder().getBuilderList();
       }
+
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                  .Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                  .EntryOrBuilder>
           getEntriesFieldBuilder() {
         if (entriesBuilder_ == null) {
-          entriesBuilder_ = new akka.protobufv3.internal.RepeatedFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.EntryOrBuilder>(
-                  entries_,
-                  ((bitField0_ & 0x00000001) != 0),
-                  getParentForChildren(),
-                  isClean());
+          entriesBuilder_ =
+              new akka.protobufv3.internal.RepeatedFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                      .Entry,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup.Entry
+                      .Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+                      .EntryOrBuilder>(
+                  entries_, ((bitField0_ & 0x00000001) != 0), getParentForChildren(), isClean());
           entries_ = null;
         }
         return entriesBuilder_;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -4809,41 +5104,47 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:ORSetDeltaGroup)
     }
 
     // @@protoc_insertion_point(class_scope:ORSetDeltaGroup)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ORSetDeltaGroup
+        DEFAULT_INSTANCE;
+
     static {
-      DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup();
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<ORSetDeltaGroup>
-        PARSER = new akka.protobufv3.internal.AbstractParser<ORSetDeltaGroup>() {
-      @java.lang.Override
-      public ORSetDeltaGroup parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<ORSetDeltaGroup> PARSER =
+        new akka.protobufv3.internal.AbstractParser<ORSetDeltaGroup>() {
+          @java.lang.Override
+          public ORSetDeltaGroup parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<ORSetDeltaGroup> parser() {
       return PARSER;
@@ -4855,52 +5156,46 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ORSetDeltaGroup
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
-  public interface VersionVectorOrBuilder extends
+  public interface VersionVectorOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:VersionVector)
       akka.protobufv3.internal.MessageOrBuilder {
 
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
-    java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry> 
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+    java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry>
         getEntriesList();
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry getEntries(int index);
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
-    int getEntriesCount();
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
-    java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder> 
-        getEntriesOrBuilderList();
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder getEntriesOrBuilder(
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry getEntries(
         int index);
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+    int getEntriesCount();
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+    java.util.List<
+            ? extends
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                    .EntryOrBuilder>
+        getEntriesOrBuilderList();
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder
+        getEntriesOrBuilder(int index);
   }
-  /**
-   * Protobuf type {@code VersionVector}
-   */
-  public static final class VersionVector extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code VersionVector} */
+  public static final class VersionVector extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:VersionVector)
       VersionVectorOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use VersionVector.newBuilder() to construct.
     private VersionVector(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private VersionVector() {
       entries_ = java.util.Collections.emptyList();
     }
@@ -4913,67 +5208,74 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_VersionVector_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_VersionVector_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+                  .class);
     }
 
-    public interface EntryOrBuilder extends
+    public interface EntryOrBuilder
+        extends
         // @@protoc_insertion_point(interface_extends:VersionVector.Entry)
         akka.protobufv3.internal.MessageOrBuilder {
 
       /**
        * <code>required string key = 1;</code>
+       *
        * @return Whether the key field is set.
        */
       boolean hasKey();
       /**
        * <code>required string key = 1;</code>
+       *
        * @return The key.
        */
       java.lang.String getKey();
       /**
        * <code>required string key = 1;</code>
+       *
        * @return The bytes for key.
        */
-      akka.protobufv3.internal.ByteString
-          getKeyBytes();
+      akka.protobufv3.internal.ByteString getKeyBytes();
 
       /**
        * <code>required int64 version = 2;</code>
+       *
        * @return Whether the version field is set.
        */
       boolean hasVersion();
       /**
        * <code>required int64 version = 2;</code>
+       *
        * @return The version.
        */
       long getVersion();
     }
-    /**
-     * Protobuf type {@code VersionVector.Entry}
-     */
-    public static final class Entry extends
-        akka.protobufv3.internal.GeneratedMessageV3 implements
+    /** Protobuf type {@code VersionVector.Entry} */
+    public static final class Entry extends akka.protobufv3.internal.GeneratedMessageV3
+        implements
         // @@protoc_insertion_point(message_implements:VersionVector.Entry)
         EntryOrBuilder {
-    private static final long serialVersionUID = 0L;
+      private static final long serialVersionUID = 0L;
       // Use Entry.newBuilder() to construct.
       private Entry(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
         super(builder);
       }
+
       private Entry() {
         key_ = "";
       }
@@ -4986,29 +5288,35 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
+      public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
         return this.unknownFields;
       }
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_Entry_descriptor;
+
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_VersionVector_Entry_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_Entry_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_VersionVector_Entry_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                    .class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                    .Builder.class);
       }
 
       private int bitField0_;
       public static final int KEY_FIELD_NUMBER = 1;
+
       @SuppressWarnings("serial")
       private volatile java.lang.Object key_ = "";
       /**
        * <code>required string key = 1;</code>
+       *
        * @return Whether the key field is set.
        */
       @java.lang.Override
@@ -5017,6 +5325,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string key = 1;</code>
+       *
        * @return The key.
        */
       @java.lang.Override
@@ -5025,8 +5334,7 @@ public final class ReplicatedEventSourcing {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          akka.protobufv3.internal.ByteString bs = 
-              (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             key_ = s;
@@ -5036,16 +5344,15 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string key = 1;</code>
+       *
        * @return The bytes for key.
        */
       @java.lang.Override
-      public akka.protobufv3.internal.ByteString
-          getKeyBytes() {
+      public akka.protobufv3.internal.ByteString getKeyBytes() {
         java.lang.Object ref = key_;
         if (ref instanceof java.lang.String) {
-          akka.protobufv3.internal.ByteString b = 
-              akka.protobufv3.internal.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
           key_ = b;
           return b;
         } else {
@@ -5057,6 +5364,7 @@ public final class ReplicatedEventSourcing {
       private long version_ = 0L;
       /**
        * <code>required int64 version = 2;</code>
+       *
        * @return Whether the version field is set.
        */
       @java.lang.Override
@@ -5065,6 +5373,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required int64 version = 2;</code>
+       *
        * @return The version.
        */
       @java.lang.Override
@@ -5073,6 +5382,7 @@ public final class ReplicatedEventSourcing {
       }
 
       private byte memoizedIsInitialized = -1;
+
       @java.lang.Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
@@ -5093,7 +5403,7 @@ public final class ReplicatedEventSourcing {
 
       @java.lang.Override
       public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                          throws java.io.IOException {
+          throws java.io.IOException {
         if (((bitField0_ & 0x00000001) != 0)) {
           akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, key_);
         }
@@ -5113,8 +5423,7 @@ public final class ReplicatedEventSourcing {
           size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, key_);
         }
         if (((bitField0_ & 0x00000002) != 0)) {
-          size += akka.protobufv3.internal.CodedOutputStream
-            .computeInt64Size(2, version_);
+          size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(2, version_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSize = size;
@@ -5124,22 +5433,23 @@ public final class ReplicatedEventSourcing {
       @java.lang.Override
       public boolean equals(final java.lang.Object obj) {
         if (obj == this) {
-         return true;
+          return true;
         }
-        if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry)) {
+        if (!(obj
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry)) {
           return super.equals(obj);
         }
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry) obj;
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry other =
+            (akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry) obj;
 
         if (hasKey() != other.hasKey()) return false;
         if (hasKey()) {
-          if (!getKey()
-              .equals(other.getKey())) return false;
+          if (!getKey().equals(other.getKey())) return false;
         }
         if (hasVersion() != other.hasVersion()) return false;
         if (hasVersion()) {
-          if (getVersion()
-              != other.getVersion()) return false;
+          if (getVersion() != other.getVersion()) return false;
         }
         if (!getUnknownFields().equals(other.getUnknownFields())) return false;
         return true;
@@ -5158,96 +5468,113 @@ public final class ReplicatedEventSourcing {
         }
         if (hasVersion()) {
           hash = (37 * hash) + VERSION_FIELD_NUMBER;
-          hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
-              getVersion());
+          hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getVersion());
         }
         hash = (29 * hash) + getUnknownFields().hashCode();
         memoizedHashCode = hash;
         return hash;
       }
 
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(
-          java.nio.ByteBuffer data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(java.nio.ByteBuffer data)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(
-          java.nio.ByteBuffer data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(
+              java.nio.ByteBuffer data,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(
-          akka.protobufv3.internal.ByteString data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(akka.protobufv3.internal.ByteString data)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(
-          akka.protobufv3.internal.ByteString data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(
+              akka.protobufv3.internal.ByteString data,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(byte[] data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(
-          byte[] data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(java.io.InputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(
-          java.io.InputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(
+              java.io.InputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+            PARSER, input, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseDelimitedFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseDelimitedWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+            PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseDelimitedFrom(
-          java.io.InputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseDelimitedFrom(
+              java.io.InputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+            PARSER, input, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(
-          akka.protobufv3.internal.CodedInputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry parseFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          parseFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+            PARSER, input, extensionRegistry);
       }
 
       @java.lang.Override
-      public Builder newBuilderForType() { return newBuilder(); }
+      public Builder newBuilderForType() {
+        return newBuilder();
+      }
+
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
       }
-      public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry prototype) {
+
+      public static Builder newBuilder(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+              prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
+
       @java.lang.Override
       public Builder toBuilder() {
-        return this == DEFAULT_INSTANCE
-            ? new Builder() : new Builder().mergeFrom(this);
+        return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
       }
 
       @java.lang.Override
@@ -5256,36 +5583,38 @@ public final class ReplicatedEventSourcing {
         Builder builder = new Builder(parent);
         return builder;
       }
-      /**
-       * Protobuf type {@code VersionVector.Entry}
-       */
-      public static final class Builder extends
-          akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+      /** Protobuf type {@code VersionVector.Entry} */
+      public static final class Builder
+          extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+          implements
           // @@protoc_insertion_point(builder_implements:VersionVector.Entry)
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder {
-        public static final akka.protobufv3.internal.Descriptors.Descriptor
-            getDescriptor() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_Entry_descriptor;
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .EntryOrBuilder {
+        public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_VersionVector_Entry_descriptor;
         }
 
         @java.lang.Override
         protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_Entry_fieldAccessorTable
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_VersionVector_Entry_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder.class);
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                      .class,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                      .Builder.class);
         }
 
-        // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.newBuilder()
-        private Builder() {
+        // Construct using
+        // akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.newBuilder()
+        private Builder() {}
 
-        }
-
-        private Builder(
-            akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
           super(parent);
-
         }
+
         @java.lang.Override
         public Builder clear() {
           super.clear();
@@ -5296,19 +5625,23 @@ public final class ReplicatedEventSourcing {
         }
 
         @java.lang.Override
-        public akka.protobufv3.internal.Descriptors.Descriptor
-            getDescriptorForType() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_Entry_descriptor;
+        public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_VersionVector_Entry_descriptor;
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry getDefaultInstanceForType() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.getDefaultInstance();
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+            getDefaultInstanceForType() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+              .getDefaultInstance();
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry build() {
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry result = buildPartial();
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+            build() {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry result =
+              buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
@@ -5316,14 +5649,21 @@ public final class ReplicatedEventSourcing {
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry buildPartial() {
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+            buildPartial() {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry result =
+              new akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry(
+                  this);
+          if (bitField0_ != 0) {
+            buildPartial0(result);
+          }
           onBuilt();
           return result;
         }
 
-        private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry result) {
+        private void buildPartial0(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                result) {
           int from_bitField0_ = bitField0_;
           int to_bitField0_ = 0;
           if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -5341,46 +5681,57 @@ public final class ReplicatedEventSourcing {
         public Builder clone() {
           return super.clone();
         }
+
         @java.lang.Override
         public Builder setField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
           return super.setField(field, value);
         }
+
         @java.lang.Override
-        public Builder clearField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
           return super.clearField(field);
         }
+
         @java.lang.Override
-        public Builder clearOneof(
-            akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
           return super.clearOneof(oneof);
         }
+
         @java.lang.Override
         public Builder setRepeatedField(
             akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            int index, java.lang.Object value) {
+            int index,
+            java.lang.Object value) {
           return super.setRepeatedField(field, index, value);
         }
+
         @java.lang.Override
         public Builder addRepeatedField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
           return super.addRepeatedField(field, value);
         }
+
         @java.lang.Override
         public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-          if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry) {
-            return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry)other);
+          if (other
+              instanceof
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry) {
+            return mergeFrom(
+                (akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry)
+                    other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry other) {
-          if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.getDefaultInstance()) return this;
+        public Builder mergeFrom(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                other) {
+          if (other
+              == akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                  .getDefaultInstance()) return this;
           if (other.hasKey()) {
             key_ = other.key_;
             bitField0_ |= 0x00000001;
@@ -5421,22 +5772,25 @@ public final class ReplicatedEventSourcing {
                 case 0:
                   done = true;
                   break;
-                case 10: {
-                  key_ = input.readBytes();
-                  bitField0_ |= 0x00000001;
-                  break;
-                } // case 10
-                case 16: {
-                  version_ = input.readInt64();
-                  bitField0_ |= 0x00000002;
-                  break;
-                } // case 16
-                default: {
-                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                    done = true; // was an endgroup tag
-                  }
-                  break;
-                } // default:
+                case 10:
+                  {
+                    key_ = input.readBytes();
+                    bitField0_ |= 0x00000001;
+                    break;
+                  } // case 10
+                case 16:
+                  {
+                    version_ = input.readInt64();
+                    bitField0_ |= 0x00000002;
+                    break;
+                  } // case 16
+                default:
+                  {
+                    if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                      done = true; // was an endgroup tag
+                    }
+                    break;
+                  } // default:
               } // switch (tag)
             } // while (!done)
           } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -5446,11 +5800,13 @@ public final class ReplicatedEventSourcing {
           } // finally
           return this;
         }
+
         private int bitField0_;
 
         private java.lang.Object key_ = "";
         /**
          * <code>required string key = 1;</code>
+         *
          * @return Whether the key field is set.
          */
         public boolean hasKey() {
@@ -5458,13 +5814,13 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string key = 1;</code>
+         *
          * @return The key.
          */
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
           if (!(ref instanceof java.lang.String)) {
-            akka.protobufv3.internal.ByteString bs =
-                (akka.protobufv3.internal.ByteString) ref;
+            akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
             java.lang.String s = bs.toStringUtf8();
             if (bs.isValidUtf8()) {
               key_ = s;
@@ -5476,15 +5832,14 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string key = 1;</code>
+         *
          * @return The bytes for key.
          */
-        public akka.protobufv3.internal.ByteString
-            getKeyBytes() {
+        public akka.protobufv3.internal.ByteString getKeyBytes() {
           java.lang.Object ref = key_;
           if (ref instanceof String) {
-            akka.protobufv3.internal.ByteString b = 
-                akka.protobufv3.internal.ByteString.copyFromUtf8(
-                    (java.lang.String) ref);
+            akka.protobufv3.internal.ByteString b =
+                akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
             key_ = b;
             return b;
           } else {
@@ -5493,12 +5848,14 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string key = 1;</code>
+         *
          * @param value The key to set.
          * @return This builder for chaining.
          */
-        public Builder setKey(
-            java.lang.String value) {
-          if (value == null) { throw new NullPointerException(); }
+        public Builder setKey(java.lang.String value) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
           key_ = value;
           bitField0_ |= 0x00000001;
           onChanged();
@@ -5506,6 +5863,7 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string key = 1;</code>
+         *
          * @return This builder for chaining.
          */
         public Builder clearKey() {
@@ -5516,21 +5874,24 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string key = 1;</code>
+         *
          * @param value The bytes for key to set.
          * @return This builder for chaining.
          */
-        public Builder setKeyBytes(
-            akka.protobufv3.internal.ByteString value) {
-          if (value == null) { throw new NullPointerException(); }
+        public Builder setKeyBytes(akka.protobufv3.internal.ByteString value) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
           key_ = value;
           bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
 
-        private long version_ ;
+        private long version_;
         /**
          * <code>required int64 version = 2;</code>
+         *
          * @return Whether the version field is set.
          */
         @java.lang.Override
@@ -5539,6 +5900,7 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required int64 version = 2;</code>
+         *
          * @return The version.
          */
         @java.lang.Override
@@ -5547,11 +5909,12 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required int64 version = 2;</code>
+         *
          * @param value The version to set.
          * @return This builder for chaining.
          */
         public Builder setVersion(long value) {
-          
+
           version_ = value;
           bitField0_ |= 0x00000002;
           onChanged();
@@ -5559,6 +5922,7 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required int64 version = 2;</code>
+         *
          * @return This builder for chaining.
          */
         public Builder clearVersion() {
@@ -5567,6 +5931,7 @@ public final class ReplicatedEventSourcing {
           onChanged();
           return this;
         }
+
         @java.lang.Override
         public final Builder setUnknownFields(
             final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -5579,41 +5944,47 @@ public final class ReplicatedEventSourcing {
           return super.mergeUnknownFields(unknownFields);
         }
 
-
         // @@protoc_insertion_point(builder_scope:VersionVector.Entry)
       }
 
       // @@protoc_insertion_point(class_scope:VersionVector.Entry)
-      private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry DEFAULT_INSTANCE;
+      private static final akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .VersionVector.Entry
+          DEFAULT_INSTANCE;
+
       static {
-        DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry();
+        DEFAULT_INSTANCE =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry();
       }
 
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry getDefaultInstance() {
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          getDefaultInstance() {
         return DEFAULT_INSTANCE;
       }
 
-      @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Entry>
-          PARSER = new akka.protobufv3.internal.AbstractParser<Entry>() {
-        @java.lang.Override
-        public Entry parsePartialFrom(
-            akka.protobufv3.internal.CodedInputStream input,
-            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-            throws akka.protobufv3.internal.InvalidProtocolBufferException {
-          Builder builder = newBuilder();
-          try {
-            builder.mergeFrom(input, extensionRegistry);
-          } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(builder.buildPartial());
-          } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-            throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-          } catch (java.io.IOException e) {
-            throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-                .setUnfinishedMessage(builder.buildPartial());
-          }
-          return builder.buildPartial();
-        }
-      };
+      @java.lang.Deprecated
+      public static final akka.protobufv3.internal.Parser<Entry> PARSER =
+          new akka.protobufv3.internal.AbstractParser<Entry>() {
+            @java.lang.Override
+            public Entry parsePartialFrom(
+                akka.protobufv3.internal.CodedInputStream input,
+                akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+                throws akka.protobufv3.internal.InvalidProtocolBufferException {
+              Builder builder = newBuilder();
+              try {
+                builder.mergeFrom(input, extensionRegistry);
+              } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+                throw e.setUnfinishedMessage(builder.buildPartial());
+              } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+                throw e.asInvalidProtocolBufferException()
+                    .setUnfinishedMessage(builder.buildPartial());
+              } catch (java.io.IOException e) {
+                throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                    .setUnfinishedMessage(builder.buildPartial());
+              }
+              return builder.buildPartial();
+            }
+          };
 
       public static akka.protobufv3.internal.Parser<Entry> parser() {
         return PARSER;
@@ -5625,54 +5996,54 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry getDefaultInstanceForType() {
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
-
     }
 
     public static final int ENTRIES_FIELD_NUMBER = 1;
+
     @SuppressWarnings("serial")
-    private java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry> entries_;
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
+    private java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry>
+        entries_;
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
     @java.lang.Override
-    public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry> getEntriesList() {
+    public java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry>
+        getEntriesList() {
       return entries_;
     }
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
     @java.lang.Override
-    public java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder> 
+    public java.util.List<
+            ? extends
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                    .EntryOrBuilder>
         getEntriesOrBuilderList() {
       return entries_;
     }
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
     @java.lang.Override
     public int getEntriesCount() {
       return entries_.size();
     }
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry getEntries(int index) {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+        getEntries(int index) {
       return entries_.get(index);
     }
-    /**
-     * <code>repeated .VersionVector.Entry entries = 1;</code>
-     */
+    /** <code>repeated .VersionVector.Entry entries = 1;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder getEntriesOrBuilder(
-        int index) {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder
+        getEntriesOrBuilder(int index) {
       return entries_.get(index);
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -5691,7 +6062,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       for (int i = 0; i < entries_.size(); i++) {
         output.writeMessage(1, entries_.get(i));
       }
@@ -5705,8 +6076,7 @@ public final class ReplicatedEventSourcing {
 
       size = 0;
       for (int i = 0; i < entries_.size(); i++) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(1, entries_.get(i));
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(1, entries_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -5716,15 +6086,16 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
-      if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector)) {
+      if (!(obj
+          instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector other =
+          (akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector) obj;
 
-      if (!getEntriesList()
-          .equals(other.getEntriesList())) return false;
+      if (!getEntriesList().equals(other.getEntriesList())) return false;
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
@@ -5745,88 +6116,105 @@ public final class ReplicatedEventSourcing {
       return hash;
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(
-        akka.protobufv3.internal.ByteString data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(
-        akka.protobufv3.internal.ByteString data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector parseFrom(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -5835,36 +6223,36 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code VersionVector}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code VersionVector} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:VersionVector)
         akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_VersionVector_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_VersionVector_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+                    .class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.newBuilder()
-      private Builder() {
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.newBuilder()
+      private Builder() {}
 
-      }
-
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -5880,19 +6268,22 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_VersionVector_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_VersionVector_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+            .getDefaultInstance();
       }
 
       @java.lang.Override
       public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector build() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector result = buildPartial();
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector result =
+            buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -5900,15 +6291,20 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector(this);
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector result =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector(this);
         buildPartialRepeatedFields(result);
-        if (bitField0_ != 0) { buildPartial0(result); }
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector result) {
+      private void buildPartialRepeatedFields(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector result) {
         if (entriesBuilder_ == null) {
           if (((bitField0_ & 0x00000001) != 0)) {
             entries_ = java.util.Collections.unmodifiableList(entries_);
@@ -5920,7 +6316,8 @@ public final class ReplicatedEventSourcing {
         }
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector result) {
         int from_bitField0_ = bitField0_;
       }
 
@@ -5928,46 +6325,54 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-        if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector)other);
+        if (other
+            instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector) other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                .getDefaultInstance()) return this;
         if (entriesBuilder_ == null) {
           if (!other.entries_.isEmpty()) {
             if (entries_.isEmpty()) {
@@ -5986,9 +6391,10 @@ public final class ReplicatedEventSourcing {
               entriesBuilder_ = null;
               entries_ = other.entries_;
               bitField0_ = (bitField0_ & ~0x00000001);
-              entriesBuilder_ = 
-                akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders ?
-                   getEntriesFieldBuilder() : null;
+              entriesBuilder_ =
+                  akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders
+                      ? getEntriesFieldBuilder()
+                      : null;
             } else {
               entriesBuilder_.addAllMessages(other.entries_);
             }
@@ -6025,25 +6431,29 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry m =
-                    input.readMessage(
-                        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.PARSER,
-                        extensionRegistry);
-                if (entriesBuilder_ == null) {
-                  ensureEntriesIsMutable();
-                  entries_.add(m);
-                } else {
-                  entriesBuilder_.addMessage(m);
-                }
-                break;
-              } // case 10
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                      m =
+                          input.readMessage(
+                              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                                  .VersionVector.Entry.PARSER,
+                              extensionRegistry);
+                  if (entriesBuilder_ == null) {
+                    ensureEntriesIsMutable();
+                    entries_.add(m);
+                  } else {
+                    entriesBuilder_.addMessage(m);
+                  }
+                  break;
+                } // case 10
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -6053,33 +6463,42 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
-      private java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry> entries_ =
-        java.util.Collections.emptyList();
+      private java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry>
+          entries_ = java.util.Collections.emptyList();
+
       private void ensureEntriesIsMutable() {
         if (!((bitField0_ & 0x00000001) != 0)) {
-          entries_ = new java.util.ArrayList<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry>(entries_);
+          entries_ =
+              new java.util.ArrayList<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry>(
+                  entries_);
           bitField0_ |= 0x00000001;
-         }
+        }
       }
 
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder> entriesBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                  .Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .EntryOrBuilder>
+          entriesBuilder_;
 
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry> getEntriesList() {
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry>
+          getEntriesList() {
         if (entriesBuilder_ == null) {
           return java.util.Collections.unmodifiableList(entries_);
         } else {
           return entriesBuilder_.getMessageList();
         }
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public int getEntriesCount() {
         if (entriesBuilder_ == null) {
           return entries_.size();
@@ -6087,21 +6506,19 @@ public final class ReplicatedEventSourcing {
           return entriesBuilder_.getCount();
         }
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry getEntries(int index) {
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+          getEntries(int index) {
         if (entriesBuilder_ == null) {
           return entries_.get(index);
         } else {
           return entriesBuilder_.getMessage(index);
         }
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public Builder setEntries(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry value) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry value) {
         if (entriesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -6114,11 +6531,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public Builder setEntries(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder builderForValue) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder
+              builderForValue) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
           entries_.set(index, builderForValue.build());
@@ -6128,10 +6545,9 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public Builder addEntries(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry value) {
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public Builder addEntries(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry value) {
         if (entriesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -6144,11 +6560,10 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public Builder addEntries(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry value) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry value) {
         if (entriesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -6161,11 +6576,10 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public Builder addEntries(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder
+              builderForValue) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
           entries_.add(builderForValue.build());
@@ -6175,11 +6589,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public Builder addEntries(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder builderForValue) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder
+              builderForValue) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
           entries_.add(index, builderForValue.build());
@@ -6189,24 +6603,23 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public Builder addAllEntries(
-          java.lang.Iterable<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry> values) {
+          java.lang.Iterable<
+                  ? extends
+                      akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                          .Entry>
+              values) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
-          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
-              values, entries_);
+          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, entries_);
           onChanged();
         } else {
           entriesBuilder_.addAllMessages(values);
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public Builder clearEntries() {
         if (entriesBuilder_ == null) {
           entries_ = java.util.Collections.emptyList();
@@ -6217,9 +6630,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
       public Builder removeEntries(int index) {
         if (entriesBuilder_ == null) {
           ensureEntriesIsMutable();
@@ -6230,70 +6641,82 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder getEntriesBuilder(
-          int index) {
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+              .Builder
+          getEntriesBuilder(int index) {
         return getEntriesFieldBuilder().getBuilder(index);
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder getEntriesOrBuilder(
-          int index) {
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .EntryOrBuilder
+          getEntriesOrBuilder(int index) {
         if (entriesBuilder_ == null) {
-          return entries_.get(index);  } else {
+          return entries_.get(index);
+        } else {
           return entriesBuilder_.getMessageOrBuilder(index);
         }
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder> 
-           getEntriesOrBuilderList() {
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public java.util.List<
+              ? extends
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .EntryOrBuilder>
+          getEntriesOrBuilderList() {
         if (entriesBuilder_ != null) {
           return entriesBuilder_.getMessageOrBuilderList();
         } else {
           return java.util.Collections.unmodifiableList(entries_);
         }
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder addEntriesBuilder() {
-        return getEntriesFieldBuilder().addBuilder(
-            akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.getDefaultInstance());
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+              .Builder
+          addEntriesBuilder() {
+        return getEntriesFieldBuilder()
+            .addBuilder(
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                    .getDefaultInstance());
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder addEntriesBuilder(
-          int index) {
-        return getEntriesFieldBuilder().addBuilder(
-            index, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.getDefaultInstance());
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+              .Builder
+          addEntriesBuilder(int index) {
+        return getEntriesFieldBuilder()
+            .addBuilder(
+                index,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                    .getDefaultInstance());
       }
-      /**
-       * <code>repeated .VersionVector.Entry entries = 1;</code>
-       */
-      public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder> 
-           getEntriesBuilderList() {
+      /** <code>repeated .VersionVector.Entry entries = 1;</code> */
+      public java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                  .Builder>
+          getEntriesBuilderList() {
         return getEntriesFieldBuilder().getBuilderList();
       }
+
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                  .Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .EntryOrBuilder>
           getEntriesFieldBuilder() {
         if (entriesBuilder_ == null) {
-          entriesBuilder_ = new akka.protobufv3.internal.RepeatedFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.EntryOrBuilder>(
-                  entries_,
-                  ((bitField0_ & 0x00000001) != 0),
-                  getParentForChildren(),
-                  isClean());
+          entriesBuilder_ =
+              new akka.protobufv3.internal.RepeatedFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Entry
+                      .Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .EntryOrBuilder>(
+                  entries_, ((bitField0_ & 0x00000001) != 0), getParentForChildren(), isClean());
           entries_ = null;
         }
         return entriesBuilder_;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -6306,41 +6729,46 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:VersionVector)
     }
 
     // @@protoc_insertion_point(class_scope:VersionVector)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        DEFAULT_INSTANCE;
+
     static {
-      DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector();
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<VersionVector>
-        PARSER = new akka.protobufv3.internal.AbstractParser<VersionVector>() {
-      @java.lang.Override
-      public VersionVector parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<VersionVector> PARSER =
+        new akka.protobufv3.internal.AbstractParser<VersionVector>() {
+          @java.lang.Override
+          public VersionVector parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<VersionVector> parser() {
       return PARSER;
@@ -6352,82 +6780,91 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
-  public interface ReplicatedEventMetadataOrBuilder extends
+  public interface ReplicatedEventMetadataOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:ReplicatedEventMetadata)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>required string originReplica = 1;</code>
+     *
      * @return Whether the originReplica field is set.
      */
     boolean hasOriginReplica();
     /**
      * <code>required string originReplica = 1;</code>
+     *
      * @return The originReplica.
      */
     java.lang.String getOriginReplica();
     /**
      * <code>required string originReplica = 1;</code>
+     *
      * @return The bytes for originReplica.
      */
-    akka.protobufv3.internal.ByteString
-        getOriginReplicaBytes();
+    akka.protobufv3.internal.ByteString getOriginReplicaBytes();
 
     /**
      * <code>required int64 originSequenceNr = 2;</code>
+     *
      * @return Whether the originSequenceNr field is set.
      */
     boolean hasOriginSequenceNr();
     /**
      * <code>required int64 originSequenceNr = 2;</code>
+     *
      * @return The originSequenceNr.
      */
     long getOriginSequenceNr();
 
     /**
      * <code>required .VersionVector versionVector = 3;</code>
+     *
      * @return Whether the versionVector field is set.
      */
     boolean hasVersionVector();
     /**
      * <code>required .VersionVector versionVector = 3;</code>
+     *
      * @return The versionVector.
      */
     akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersionVector();
-    /**
-     * <code>required .VersionVector versionVector = 3;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionVectorOrBuilder();
+    /** <code>required .VersionVector versionVector = 3;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVersionVectorOrBuilder();
 
     /**
      * <code>required bool concurrent = 4;</code>
+     *
      * @return Whether the concurrent field is set.
      */
     boolean hasConcurrent();
     /**
      * <code>required bool concurrent = 4;</code>
+     *
      * @return The concurrent.
      */
     boolean getConcurrent();
   }
-  /**
-   * Protobuf type {@code ReplicatedEventMetadata}
-   */
-  public static final class ReplicatedEventMetadata extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code ReplicatedEventMetadata} */
+  public static final class ReplicatedEventMetadata
+      extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:ReplicatedEventMetadata)
       ReplicatedEventMetadataOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use ReplicatedEventMetadata.newBuilder() to construct.
-    private ReplicatedEventMetadata(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+    private ReplicatedEventMetadata(
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private ReplicatedEventMetadata() {
       originReplica_ = "";
     }
@@ -6440,29 +6877,35 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedEventMetadata_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ReplicatedEventMetadata_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedEventMetadata_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ReplicatedEventMetadata_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+                  .class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+                  .Builder.class);
     }
 
     private int bitField0_;
     public static final int ORIGINREPLICA_FIELD_NUMBER = 1;
+
     @SuppressWarnings("serial")
     private volatile java.lang.Object originReplica_ = "";
     /**
      * <code>required string originReplica = 1;</code>
+     *
      * @return Whether the originReplica field is set.
      */
     @java.lang.Override
@@ -6471,6 +6914,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required string originReplica = 1;</code>
+     *
      * @return The originReplica.
      */
     @java.lang.Override
@@ -6479,8 +6923,7 @@ public final class ReplicatedEventSourcing {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = 
-            (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           originReplica_ = s;
@@ -6490,16 +6933,15 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required string originReplica = 1;</code>
+     *
      * @return The bytes for originReplica.
      */
     @java.lang.Override
-    public akka.protobufv3.internal.ByteString
-        getOriginReplicaBytes() {
+    public akka.protobufv3.internal.ByteString getOriginReplicaBytes() {
       java.lang.Object ref = originReplica_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b = 
-            akka.protobufv3.internal.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b =
+            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
         originReplica_ = b;
         return b;
       } else {
@@ -6511,6 +6953,7 @@ public final class ReplicatedEventSourcing {
     private long originSequenceNr_ = 0L;
     /**
      * <code>required int64 originSequenceNr = 2;</code>
+     *
      * @return Whether the originSequenceNr field is set.
      */
     @java.lang.Override
@@ -6519,6 +6962,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required int64 originSequenceNr = 2;</code>
+     *
      * @return The originSequenceNr.
      */
     @java.lang.Override
@@ -6527,9 +6971,11 @@ public final class ReplicatedEventSourcing {
     }
 
     public static final int VERSIONVECTOR_FIELD_NUMBER = 3;
-    private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector versionVector_;
+    private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        versionVector_;
     /**
      * <code>required .VersionVector versionVector = 3;</code>
+     *
      * @return Whether the versionVector field is set.
      */
     @java.lang.Override
@@ -6538,24 +6984,32 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required .VersionVector versionVector = 3;</code>
+     *
      * @return The versionVector.
      */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersionVector() {
-      return versionVector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : versionVector_;
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        getVersionVector() {
+      return versionVector_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : versionVector_;
     }
-    /**
-     * <code>required .VersionVector versionVector = 3;</code>
-     */
+    /** <code>required .VersionVector versionVector = 3;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionVectorOrBuilder() {
-      return versionVector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : versionVector_;
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVersionVectorOrBuilder() {
+      return versionVector_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : versionVector_;
     }
 
     public static final int CONCURRENT_FIELD_NUMBER = 4;
     private boolean concurrent_ = false;
     /**
      * <code>required bool concurrent = 4;</code>
+     *
      * @return Whether the concurrent field is set.
      */
     @java.lang.Override
@@ -6564,6 +7018,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required bool concurrent = 4;</code>
+     *
      * @return The concurrent.
      */
     @java.lang.Override
@@ -6572,6 +7027,7 @@ public final class ReplicatedEventSourcing {
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -6604,7 +7060,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, originReplica_);
       }
@@ -6630,16 +7086,14 @@ public final class ReplicatedEventSourcing {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, originReplica_);
       }
       if (((bitField0_ & 0x00000002) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeInt64Size(2, originSequenceNr_);
+        size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(2, originSequenceNr_);
       }
       if (((bitField0_ & 0x00000004) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(3, getVersionVector());
+        size +=
+            akka.protobufv3.internal.CodedOutputStream.computeMessageSize(3, getVersionVector());
       }
       if (((bitField0_ & 0x00000008) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeBoolSize(4, concurrent_);
+        size += akka.protobufv3.internal.CodedOutputStream.computeBoolSize(4, concurrent_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -6649,32 +7103,32 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
-      if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata)) {
+      if (!(obj
+          instanceof
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata other =
+          (akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata)
+              obj;
 
       if (hasOriginReplica() != other.hasOriginReplica()) return false;
       if (hasOriginReplica()) {
-        if (!getOriginReplica()
-            .equals(other.getOriginReplica())) return false;
+        if (!getOriginReplica().equals(other.getOriginReplica())) return false;
       }
       if (hasOriginSequenceNr() != other.hasOriginSequenceNr()) return false;
       if (hasOriginSequenceNr()) {
-        if (getOriginSequenceNr()
-            != other.getOriginSequenceNr()) return false;
+        if (getOriginSequenceNr() != other.getOriginSequenceNr()) return false;
       }
       if (hasVersionVector() != other.hasVersionVector()) return false;
       if (hasVersionVector()) {
-        if (!getVersionVector()
-            .equals(other.getVersionVector())) return false;
+        if (!getVersionVector().equals(other.getVersionVector())) return false;
       }
       if (hasConcurrent() != other.hasConcurrent()) return false;
       if (hasConcurrent()) {
-        if (getConcurrent()
-            != other.getConcurrent()) return false;
+        if (getConcurrent() != other.getConcurrent()) return false;
       }
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
@@ -6693,8 +7147,7 @@ public final class ReplicatedEventSourcing {
       }
       if (hasOriginSequenceNr()) {
         hash = (37 * hash) + ORIGINSEQUENCENR_FIELD_NUMBER;
-        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
-            getOriginSequenceNr());
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getOriginSequenceNr());
       }
       if (hasVersionVector()) {
         hash = (37 * hash) + VERSIONVECTOR_FIELD_NUMBER;
@@ -6702,96 +7155,125 @@ public final class ReplicatedEventSourcing {
       }
       if (hasConcurrent()) {
         hash = (37 * hash) + CONCURRENT_FIELD_NUMBER;
-        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
-            getConcurrent());
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(getConcurrent());
       }
       hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(
-        akka.protobufv3.internal.ByteString data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(
-        akka.protobufv3.internal.ByteString data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata parseFrom(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+            prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -6800,42 +7282,47 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code ReplicatedEventMetadata}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code ReplicatedEventMetadata} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:ReplicatedEventMetadata)
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadataOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedEventMetadata_descriptor;
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadataOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedEventMetadata_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedEventMetadata_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedEventMetadata_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+                    .class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+                    .Builder.class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata.newBuilder()
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
           getVersionVectorFieldBuilder();
         }
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -6852,19 +7339,23 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedEventMetadata_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedEventMetadata_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+            .getDefaultInstance();
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata build() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata result = buildPartial();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+          build() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+            result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -6872,14 +7363,22 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata(this);
-        if (bitField0_ != 0) { buildPartial0(result); }
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+            result =
+                new akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedEventMetadata(this);
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+              result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -6891,9 +7390,8 @@ public final class ReplicatedEventSourcing {
           to_bitField0_ |= 0x00000002;
         }
         if (((from_bitField0_ & 0x00000004) != 0)) {
-          result.versionVector_ = versionVectorBuilder_ == null
-              ? versionVector_
-              : versionVectorBuilder_.build();
+          result.versionVector_ =
+              versionVectorBuilder_ == null ? versionVector_ : versionVectorBuilder_.build();
           to_bitField0_ |= 0x00000004;
         }
         if (((from_bitField0_ & 0x00000008) != 0)) {
@@ -6907,46 +7405,57 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-        if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata)other);
+        if (other
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata)
+                  other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+              other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+                .getDefaultInstance()) return this;
         if (other.hasOriginReplica()) {
           originReplica_ = other.originReplica_;
           bitField0_ |= 0x00000001;
@@ -7002,34 +7511,37 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                originReplica_ = input.readBytes();
-                bitField0_ |= 0x00000001;
-                break;
-              } // case 10
-              case 16: {
-                originSequenceNr_ = input.readInt64();
-                bitField0_ |= 0x00000002;
-                break;
-              } // case 16
-              case 26: {
-                input.readMessage(
-                    getVersionVectorFieldBuilder().getBuilder(),
-                    extensionRegistry);
-                bitField0_ |= 0x00000004;
-                break;
-              } // case 26
-              case 32: {
-                concurrent_ = input.readBool();
-                bitField0_ |= 0x00000008;
-                break;
-              } // case 32
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  originReplica_ = input.readBytes();
+                  bitField0_ |= 0x00000001;
+                  break;
+                } // case 10
+              case 16:
+                {
+                  originSequenceNr_ = input.readInt64();
+                  bitField0_ |= 0x00000002;
+                  break;
+                } // case 16
+              case 26:
+                {
+                  input.readMessage(getVersionVectorFieldBuilder().getBuilder(), extensionRegistry);
+                  bitField0_ |= 0x00000004;
+                  break;
+                } // case 26
+              case 32:
+                {
+                  concurrent_ = input.readBool();
+                  bitField0_ |= 0x00000008;
+                  break;
+                } // case 32
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -7039,11 +7551,13 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
       private java.lang.Object originReplica_ = "";
       /**
        * <code>required string originReplica = 1;</code>
+       *
        * @return Whether the originReplica field is set.
        */
       public boolean hasOriginReplica() {
@@ -7051,13 +7565,13 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originReplica = 1;</code>
+       *
        * @return The originReplica.
        */
       public java.lang.String getOriginReplica() {
         java.lang.Object ref = originReplica_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs =
-              (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             originReplica_ = s;
@@ -7069,15 +7583,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originReplica = 1;</code>
+       *
        * @return The bytes for originReplica.
        */
-      public akka.protobufv3.internal.ByteString
-          getOriginReplicaBytes() {
+      public akka.protobufv3.internal.ByteString getOriginReplicaBytes() {
         java.lang.Object ref = originReplica_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b = 
-              akka.protobufv3.internal.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
           originReplica_ = b;
           return b;
         } else {
@@ -7086,12 +7599,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originReplica = 1;</code>
+       *
        * @param value The originReplica to set.
        * @return This builder for chaining.
        */
-      public Builder setOriginReplica(
-          java.lang.String value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setOriginReplica(java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         originReplica_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -7099,6 +7614,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originReplica = 1;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearOriginReplica() {
@@ -7109,21 +7625,24 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string originReplica = 1;</code>
+       *
        * @param value The bytes for originReplica to set.
        * @return This builder for chaining.
        */
-      public Builder setOriginReplicaBytes(
-          akka.protobufv3.internal.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setOriginReplicaBytes(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         originReplica_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
 
-      private long originSequenceNr_ ;
+      private long originSequenceNr_;
       /**
        * <code>required int64 originSequenceNr = 2;</code>
+       *
        * @return Whether the originSequenceNr field is set.
        */
       @java.lang.Override
@@ -7132,6 +7651,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required int64 originSequenceNr = 2;</code>
+       *
        * @return The originSequenceNr.
        */
       @java.lang.Override
@@ -7140,11 +7660,12 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required int64 originSequenceNr = 2;</code>
+       *
        * @param value The originSequenceNr to set.
        * @return This builder for chaining.
        */
       public Builder setOriginSequenceNr(long value) {
-        
+
         originSequenceNr_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -7152,6 +7673,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required int64 originSequenceNr = 2;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearOriginSequenceNr() {
@@ -7161,11 +7683,16 @@ public final class ReplicatedEventSourcing {
         return this;
       }
 
-      private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector versionVector_;
+      private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          versionVector_;
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> versionVectorBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
+          versionVectorBuilder_;
       /**
        * <code>required .VersionVector versionVector = 3;</code>
+       *
        * @return Whether the versionVector field is set.
        */
       public boolean hasVersionVector() {
@@ -7173,19 +7700,23 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required .VersionVector versionVector = 3;</code>
+       *
        * @return The versionVector.
        */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersionVector() {
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          getVersionVector() {
         if (versionVectorBuilder_ == null) {
-          return versionVector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : versionVector_;
+          return versionVector_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : versionVector_;
         } else {
           return versionVectorBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .VersionVector versionVector = 3;</code>
-       */
-      public Builder setVersionVector(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>required .VersionVector versionVector = 3;</code> */
+      public Builder setVersionVector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (versionVectorBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -7198,11 +7729,10 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector versionVector = 3;</code>
-       */
+      /** <code>required .VersionVector versionVector = 3;</code> */
       public Builder setVersionVector(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+              builderForValue) {
         if (versionVectorBuilder_ == null) {
           versionVector_ = builderForValue.build();
         } else {
@@ -7212,14 +7742,15 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector versionVector = 3;</code>
-       */
-      public Builder mergeVersionVector(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>required .VersionVector versionVector = 3;</code> */
+      public Builder mergeVersionVector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (versionVectorBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) != 0) &&
-            versionVector_ != null &&
-            versionVector_ != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000004) != 0)
+              && versionVector_ != null
+              && versionVector_
+                  != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .getDefaultInstance()) {
             getVersionVectorBuilder().mergeFrom(value);
           } else {
             versionVector_ = value;
@@ -7231,9 +7762,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector versionVector = 3;</code>
-       */
+      /** <code>required .VersionVector versionVector = 3;</code> */
       public Builder clearVersionVector() {
         bitField0_ = (bitField0_ & ~0x00000004);
         versionVector_ = null;
@@ -7244,45 +7773,49 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector versionVector = 3;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder getVersionVectorBuilder() {
+      /** <code>required .VersionVector versionVector = 3;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+          getVersionVectorBuilder() {
         bitField0_ |= 0x00000004;
         onChanged();
         return getVersionVectorFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .VersionVector versionVector = 3;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionVectorOrBuilder() {
+      /** <code>required .VersionVector versionVector = 3;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+          getVersionVectorOrBuilder() {
         if (versionVectorBuilder_ != null) {
           return versionVectorBuilder_.getMessageOrBuilder();
         } else {
-          return versionVector_ == null ?
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : versionVector_;
+          return versionVector_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : versionVector_;
         }
       }
-      /**
-       * <code>required .VersionVector versionVector = 3;</code>
-       */
+      /** <code>required .VersionVector versionVector = 3;</code> */
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
           getVersionVectorFieldBuilder() {
         if (versionVectorBuilder_ == null) {
-          versionVectorBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>(
-                  getVersionVector(),
-                  getParentForChildren(),
-                  isClean());
+          versionVectorBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .VersionVectorOrBuilder>(
+                  getVersionVector(), getParentForChildren(), isClean());
           versionVector_ = null;
         }
         return versionVectorBuilder_;
       }
 
-      private boolean concurrent_ ;
+      private boolean concurrent_;
       /**
        * <code>required bool concurrent = 4;</code>
+       *
        * @return Whether the concurrent field is set.
        */
       @java.lang.Override
@@ -7291,6 +7824,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bool concurrent = 4;</code>
+       *
        * @return The concurrent.
        */
       @java.lang.Override
@@ -7299,11 +7833,12 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bool concurrent = 4;</code>
+       *
        * @param value The concurrent to set.
        * @return This builder for chaining.
        */
       public Builder setConcurrent(boolean value) {
-        
+
         concurrent_ = value;
         bitField0_ |= 0x00000008;
         onChanged();
@@ -7311,6 +7846,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required bool concurrent = 4;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearConcurrent() {
@@ -7319,6 +7855,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -7331,41 +7868,49 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:ReplicatedEventMetadata)
     }
 
     // @@protoc_insertion_point(class_scope:ReplicatedEventMetadata)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        DEFAULT_INSTANCE;
+
     static {
-      DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata();
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedEventMetadata();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedEventMetadata
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<ReplicatedEventMetadata>
-        PARSER = new akka.protobufv3.internal.AbstractParser<ReplicatedEventMetadata>() {
-      @java.lang.Override
-      public ReplicatedEventMetadata parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<ReplicatedEventMetadata> PARSER =
+        new akka.protobufv3.internal.AbstractParser<ReplicatedEventMetadata>() {
+          @java.lang.Override
+          public ReplicatedEventMetadata parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<ReplicatedEventMetadata> parser() {
       return PARSER;
@@ -7377,67 +7922,67 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedEventMetadata
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
-  public interface ReplicatedSnapshotMetadataOrBuilder extends
+  public interface ReplicatedSnapshotMetadataOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:ReplicatedSnapshotMetadata)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>required .VersionVector version = 1;</code>
+     *
      * @return Whether the version field is set.
      */
     boolean hasVersion();
     /**
      * <code>required .VersionVector version = 1;</code>
+     *
      * @return The version.
      */
     akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersion();
-    /**
-     * <code>required .VersionVector version = 1;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionOrBuilder();
+    /** <code>required .VersionVector version = 1;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVersionOrBuilder();
 
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
-    java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen> 
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+    java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                .Seen>
         getSeenPerReplicaList();
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen getSeenPerReplica(int index);
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen
+        getSeenPerReplica(int index);
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
     int getSeenPerReplicaCount();
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
-    java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder> 
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+    java.util.List<
+            ? extends
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata.SeenOrBuilder>
         getSeenPerReplicaOrBuilderList();
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder getSeenPerReplicaOrBuilder(
-        int index);
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+            .SeenOrBuilder
+        getSeenPerReplicaOrBuilder(int index);
   }
-  /**
-   * Protobuf type {@code ReplicatedSnapshotMetadata}
-   */
-  public static final class ReplicatedSnapshotMetadata extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code ReplicatedSnapshotMetadata} */
+  public static final class ReplicatedSnapshotMetadata
+      extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:ReplicatedSnapshotMetadata)
       ReplicatedSnapshotMetadataOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use ReplicatedSnapshotMetadata.newBuilder() to construct.
-    private ReplicatedSnapshotMetadata(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+    private ReplicatedSnapshotMetadata(
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private ReplicatedSnapshotMetadata() {
       seenPerReplica_ = java.util.Collections.emptyList();
     }
@@ -7450,67 +7995,75 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ReplicatedSnapshotMetadata_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ReplicatedSnapshotMetadata_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Builder.class);
     }
 
-    public interface SeenOrBuilder extends
+    public interface SeenOrBuilder
+        extends
         // @@protoc_insertion_point(interface_extends:ReplicatedSnapshotMetadata.Seen)
         akka.protobufv3.internal.MessageOrBuilder {
 
       /**
        * <code>required string replicaId = 1;</code>
+       *
        * @return Whether the replicaId field is set.
        */
       boolean hasReplicaId();
       /**
        * <code>required string replicaId = 1;</code>
+       *
        * @return The replicaId.
        */
       java.lang.String getReplicaId();
       /**
        * <code>required string replicaId = 1;</code>
+       *
        * @return The bytes for replicaId.
        */
-      akka.protobufv3.internal.ByteString
-          getReplicaIdBytes();
+      akka.protobufv3.internal.ByteString getReplicaIdBytes();
 
       /**
        * <code>required int64 sequenceNr = 2;</code>
+       *
        * @return Whether the sequenceNr field is set.
        */
       boolean hasSequenceNr();
       /**
        * <code>required int64 sequenceNr = 2;</code>
+       *
        * @return The sequenceNr.
        */
       long getSequenceNr();
     }
-    /**
-     * Protobuf type {@code ReplicatedSnapshotMetadata.Seen}
-     */
-    public static final class Seen extends
-        akka.protobufv3.internal.GeneratedMessageV3 implements
+    /** Protobuf type {@code ReplicatedSnapshotMetadata.Seen} */
+    public static final class Seen extends akka.protobufv3.internal.GeneratedMessageV3
+        implements
         // @@protoc_insertion_point(message_implements:ReplicatedSnapshotMetadata.Seen)
         SeenOrBuilder {
-    private static final long serialVersionUID = 0L;
+      private static final long serialVersionUID = 0L;
       // Use Seen.newBuilder() to construct.
       private Seen(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
         super(builder);
       }
+
       private Seen() {
         replicaId_ = "";
       }
@@ -7523,29 +8076,35 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
+      public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
         return this.unknownFields;
       }
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
+
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_Seen_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedSnapshotMetadata_Seen_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata.Seen.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata.Seen.Builder.class);
       }
 
       private int bitField0_;
       public static final int REPLICAID_FIELD_NUMBER = 1;
+
       @SuppressWarnings("serial")
       private volatile java.lang.Object replicaId_ = "";
       /**
        * <code>required string replicaId = 1;</code>
+       *
        * @return Whether the replicaId field is set.
        */
       @java.lang.Override
@@ -7554,6 +8113,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string replicaId = 1;</code>
+       *
        * @return The replicaId.
        */
       @java.lang.Override
@@ -7562,8 +8122,7 @@ public final class ReplicatedEventSourcing {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          akka.protobufv3.internal.ByteString bs = 
-              (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             replicaId_ = s;
@@ -7573,16 +8132,15 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required string replicaId = 1;</code>
+       *
        * @return The bytes for replicaId.
        */
       @java.lang.Override
-      public akka.protobufv3.internal.ByteString
-          getReplicaIdBytes() {
+      public akka.protobufv3.internal.ByteString getReplicaIdBytes() {
         java.lang.Object ref = replicaId_;
         if (ref instanceof java.lang.String) {
-          akka.protobufv3.internal.ByteString b = 
-              akka.protobufv3.internal.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
           replicaId_ = b;
           return b;
         } else {
@@ -7594,6 +8152,7 @@ public final class ReplicatedEventSourcing {
       private long sequenceNr_ = 0L;
       /**
        * <code>required int64 sequenceNr = 2;</code>
+       *
        * @return Whether the sequenceNr field is set.
        */
       @java.lang.Override
@@ -7602,6 +8161,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required int64 sequenceNr = 2;</code>
+       *
        * @return The sequenceNr.
        */
       @java.lang.Override
@@ -7610,6 +8170,7 @@ public final class ReplicatedEventSourcing {
       }
 
       private byte memoizedIsInitialized = -1;
+
       @java.lang.Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
@@ -7630,7 +8191,7 @@ public final class ReplicatedEventSourcing {
 
       @java.lang.Override
       public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                          throws java.io.IOException {
+          throws java.io.IOException {
         if (((bitField0_ & 0x00000001) != 0)) {
           akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, replicaId_);
         }
@@ -7650,8 +8211,7 @@ public final class ReplicatedEventSourcing {
           size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, replicaId_);
         }
         if (((bitField0_ & 0x00000002) != 0)) {
-          size += akka.protobufv3.internal.CodedOutputStream
-            .computeInt64Size(2, sequenceNr_);
+          size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(2, sequenceNr_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSize = size;
@@ -7661,22 +8221,27 @@ public final class ReplicatedEventSourcing {
       @java.lang.Override
       public boolean equals(final java.lang.Object obj) {
         if (obj == this) {
-         return true;
+          return true;
         }
-        if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen)) {
+        if (!(obj
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                .Seen)) {
           return super.equals(obj);
         }
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen) obj;
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen
+            other =
+                (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                        .ReplicatedSnapshotMetadata.Seen)
+                    obj;
 
         if (hasReplicaId() != other.hasReplicaId()) return false;
         if (hasReplicaId()) {
-          if (!getReplicaId()
-              .equals(other.getReplicaId())) return false;
+          if (!getReplicaId().equals(other.getReplicaId())) return false;
         }
         if (hasSequenceNr() != other.hasSequenceNr()) return false;
         if (hasSequenceNr()) {
-          if (getSequenceNr()
-              != other.getSequenceNr()) return false;
+          if (getSequenceNr() != other.getSequenceNr()) return false;
         }
         if (!getUnknownFields().equals(other.getUnknownFields())) return false;
         return true;
@@ -7695,96 +8260,126 @@ public final class ReplicatedEventSourcing {
         }
         if (hasSequenceNr()) {
           hash = (37 * hash) + SEQUENCENR_FIELD_NUMBER;
-          hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
-              getSequenceNr());
+          hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getSequenceNr());
         }
         hash = (29 * hash) + getUnknownFields().hashCode();
         memoizedHashCode = hash;
         return hash;
       }
 
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(
-          java.nio.ByteBuffer data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(java.nio.ByteBuffer data)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(
-          java.nio.ByteBuffer data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(
+              java.nio.ByteBuffer data,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(
-          akka.protobufv3.internal.ByteString data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(akka.protobufv3.internal.ByteString data)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(
-          akka.protobufv3.internal.ByteString data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(
+              akka.protobufv3.internal.ByteString data,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(byte[] data)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(
-          byte[] data,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(java.io.InputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(
-          java.io.InputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(
+              java.io.InputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+            PARSER, input, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseDelimitedFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseDelimitedWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+            PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseDelimitedFrom(
-          java.io.InputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseDelimitedFrom(
+              java.io.InputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+            PARSER, input, extensionRegistry);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(
-          akka.protobufv3.internal.CodedInputStream input)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
       }
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen parseFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return akka.protobufv3.internal.GeneratedMessageV3
-            .parseWithIOException(PARSER, input, extensionRegistry);
+
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          parseFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws java.io.IOException {
+        return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+            PARSER, input, extensionRegistry);
       }
 
       @java.lang.Override
-      public Builder newBuilderForType() { return newBuilder(); }
+      public Builder newBuilderForType() {
+        return newBuilder();
+      }
+
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
       }
-      public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen prototype) {
+
+      public static Builder newBuilder(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen
+              prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
+
       @java.lang.Override
       public Builder toBuilder() {
-        return this == DEFAULT_INSTANCE
-            ? new Builder() : new Builder().mergeFrom(this);
+        return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
       }
 
       @java.lang.Override
@@ -7793,36 +8388,38 @@ public final class ReplicatedEventSourcing {
         Builder builder = new Builder(parent);
         return builder;
       }
-      /**
-       * Protobuf type {@code ReplicatedSnapshotMetadata.Seen}
-       */
-      public static final class Builder extends
-          akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+      /** Protobuf type {@code ReplicatedSnapshotMetadata.Seen} */
+      public static final class Builder
+          extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+          implements
           // @@protoc_insertion_point(builder_implements:ReplicatedSnapshotMetadata.Seen)
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder {
-        public static final akka.protobufv3.internal.Descriptors.Descriptor
-            getDescriptor() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              .SeenOrBuilder {
+        public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
         }
 
         @java.lang.Override
         protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_Seen_fieldAccessorTable
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_ReplicatedSnapshotMetadata_Seen_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder.class);
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata.Seen.class,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata.Seen.Builder.class);
         }
 
-        // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.newBuilder()
-        private Builder() {
+        // Construct using
+        // akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.newBuilder()
+        private Builder() {}
 
-        }
-
-        private Builder(
-            akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
           super(parent);
-
         }
+
         @java.lang.Override
         public Builder clear() {
           super.clear();
@@ -7833,19 +8430,26 @@ public final class ReplicatedEventSourcing {
         }
 
         @java.lang.Override
-        public akka.protobufv3.internal.Descriptors.Descriptor
-            getDescriptorForType() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
+        public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen getDefaultInstanceForType() {
-          return akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.getDefaultInstance();
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedSnapshotMetadata.Seen
+            getDefaultInstanceForType() {
+          return akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen.getDefaultInstance();
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen build() {
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen result = buildPartial();
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedSnapshotMetadata.Seen
+            build() {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen
+              result = buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
@@ -7853,14 +8457,25 @@ public final class ReplicatedEventSourcing {
         }
 
         @java.lang.Override
-        public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen buildPartial() {
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+        public akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedSnapshotMetadata.Seen
+            buildPartial() {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen
+              result =
+                  new akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata.Seen(this);
+          if (bitField0_ != 0) {
+            buildPartial0(result);
+          }
           onBuilt();
           return result;
         }
 
-        private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen result) {
+        private void buildPartial0(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                    .Seen
+                result) {
           int from_bitField0_ = bitField0_;
           int to_bitField0_ = 0;
           if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -7878,46 +8493,60 @@ public final class ReplicatedEventSourcing {
         public Builder clone() {
           return super.clone();
         }
+
         @java.lang.Override
         public Builder setField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
           return super.setField(field, value);
         }
+
         @java.lang.Override
-        public Builder clearField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
           return super.clearField(field);
         }
+
         @java.lang.Override
-        public Builder clearOneof(
-            akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
           return super.clearOneof(oneof);
         }
+
         @java.lang.Override
         public Builder setRepeatedField(
             akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            int index, java.lang.Object value) {
+            int index,
+            java.lang.Object value) {
           return super.setRepeatedField(field, index, value);
         }
+
         @java.lang.Override
         public Builder addRepeatedField(
-            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
           return super.addRepeatedField(field, value);
         }
+
         @java.lang.Override
         public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-          if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen) {
-            return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen)other);
+          if (other
+              instanceof
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen) {
+            return mergeFrom(
+                (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                        .ReplicatedSnapshotMetadata.Seen)
+                    other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen other) {
-          if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.getDefaultInstance()) return this;
+        public Builder mergeFrom(
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                    .Seen
+                other) {
+          if (other
+              == akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen.getDefaultInstance()) return this;
           if (other.hasReplicaId()) {
             replicaId_ = other.replicaId_;
             bitField0_ |= 0x00000001;
@@ -7958,22 +8587,25 @@ public final class ReplicatedEventSourcing {
                 case 0:
                   done = true;
                   break;
-                case 10: {
-                  replicaId_ = input.readBytes();
-                  bitField0_ |= 0x00000001;
-                  break;
-                } // case 10
-                case 16: {
-                  sequenceNr_ = input.readInt64();
-                  bitField0_ |= 0x00000002;
-                  break;
-                } // case 16
-                default: {
-                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                    done = true; // was an endgroup tag
-                  }
-                  break;
-                } // default:
+                case 10:
+                  {
+                    replicaId_ = input.readBytes();
+                    bitField0_ |= 0x00000001;
+                    break;
+                  } // case 10
+                case 16:
+                  {
+                    sequenceNr_ = input.readInt64();
+                    bitField0_ |= 0x00000002;
+                    break;
+                  } // case 16
+                default:
+                  {
+                    if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                      done = true; // was an endgroup tag
+                    }
+                    break;
+                  } // default:
               } // switch (tag)
             } // while (!done)
           } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -7983,11 +8615,13 @@ public final class ReplicatedEventSourcing {
           } // finally
           return this;
         }
+
         private int bitField0_;
 
         private java.lang.Object replicaId_ = "";
         /**
          * <code>required string replicaId = 1;</code>
+         *
          * @return Whether the replicaId field is set.
          */
         public boolean hasReplicaId() {
@@ -7995,13 +8629,13 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string replicaId = 1;</code>
+         *
          * @return The replicaId.
          */
         public java.lang.String getReplicaId() {
           java.lang.Object ref = replicaId_;
           if (!(ref instanceof java.lang.String)) {
-            akka.protobufv3.internal.ByteString bs =
-                (akka.protobufv3.internal.ByteString) ref;
+            akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
             java.lang.String s = bs.toStringUtf8();
             if (bs.isValidUtf8()) {
               replicaId_ = s;
@@ -8013,15 +8647,14 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string replicaId = 1;</code>
+         *
          * @return The bytes for replicaId.
          */
-        public akka.protobufv3.internal.ByteString
-            getReplicaIdBytes() {
+        public akka.protobufv3.internal.ByteString getReplicaIdBytes() {
           java.lang.Object ref = replicaId_;
           if (ref instanceof String) {
-            akka.protobufv3.internal.ByteString b = 
-                akka.protobufv3.internal.ByteString.copyFromUtf8(
-                    (java.lang.String) ref);
+            akka.protobufv3.internal.ByteString b =
+                akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
             replicaId_ = b;
             return b;
           } else {
@@ -8030,12 +8663,14 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string replicaId = 1;</code>
+         *
          * @param value The replicaId to set.
          * @return This builder for chaining.
          */
-        public Builder setReplicaId(
-            java.lang.String value) {
-          if (value == null) { throw new NullPointerException(); }
+        public Builder setReplicaId(java.lang.String value) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
           replicaId_ = value;
           bitField0_ |= 0x00000001;
           onChanged();
@@ -8043,6 +8678,7 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string replicaId = 1;</code>
+         *
          * @return This builder for chaining.
          */
         public Builder clearReplicaId() {
@@ -8053,21 +8689,24 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required string replicaId = 1;</code>
+         *
          * @param value The bytes for replicaId to set.
          * @return This builder for chaining.
          */
-        public Builder setReplicaIdBytes(
-            akka.protobufv3.internal.ByteString value) {
-          if (value == null) { throw new NullPointerException(); }
+        public Builder setReplicaIdBytes(akka.protobufv3.internal.ByteString value) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
           replicaId_ = value;
           bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
 
-        private long sequenceNr_ ;
+        private long sequenceNr_;
         /**
          * <code>required int64 sequenceNr = 2;</code>
+         *
          * @return Whether the sequenceNr field is set.
          */
         @java.lang.Override
@@ -8076,6 +8715,7 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required int64 sequenceNr = 2;</code>
+         *
          * @return The sequenceNr.
          */
         @java.lang.Override
@@ -8084,11 +8724,12 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required int64 sequenceNr = 2;</code>
+         *
          * @param value The sequenceNr to set.
          * @return This builder for chaining.
          */
         public Builder setSequenceNr(long value) {
-          
+
           sequenceNr_ = value;
           bitField0_ |= 0x00000002;
           onChanged();
@@ -8096,6 +8737,7 @@ public final class ReplicatedEventSourcing {
         }
         /**
          * <code>required int64 sequenceNr = 2;</code>
+         *
          * @return This builder for chaining.
          */
         public Builder clearSequenceNr() {
@@ -8104,6 +8746,7 @@ public final class ReplicatedEventSourcing {
           onChanged();
           return this;
         }
+
         @java.lang.Override
         public final Builder setUnknownFields(
             final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -8116,41 +8759,49 @@ public final class ReplicatedEventSourcing {
           return super.mergeUnknownFields(unknownFields);
         }
 
-
         // @@protoc_insertion_point(builder_scope:ReplicatedSnapshotMetadata.Seen)
       }
 
       // @@protoc_insertion_point(class_scope:ReplicatedSnapshotMetadata.Seen)
-      private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen DEFAULT_INSTANCE;
+      private static final akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          DEFAULT_INSTANCE;
+
       static {
-        DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen();
+        DEFAULT_INSTANCE =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedSnapshotMetadata.Seen();
       }
 
-      public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen getDefaultInstance() {
+      public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata.Seen
+          getDefaultInstance() {
         return DEFAULT_INSTANCE;
       }
 
-      @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Seen>
-          PARSER = new akka.protobufv3.internal.AbstractParser<Seen>() {
-        @java.lang.Override
-        public Seen parsePartialFrom(
-            akka.protobufv3.internal.CodedInputStream input,
-            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-            throws akka.protobufv3.internal.InvalidProtocolBufferException {
-          Builder builder = newBuilder();
-          try {
-            builder.mergeFrom(input, extensionRegistry);
-          } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(builder.buildPartial());
-          } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-            throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-          } catch (java.io.IOException e) {
-            throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-                .setUnfinishedMessage(builder.buildPartial());
-          }
-          return builder.buildPartial();
-        }
-      };
+      @java.lang.Deprecated
+      public static final akka.protobufv3.internal.Parser<Seen> PARSER =
+          new akka.protobufv3.internal.AbstractParser<Seen>() {
+            @java.lang.Override
+            public Seen parsePartialFrom(
+                akka.protobufv3.internal.CodedInputStream input,
+                akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+                throws akka.protobufv3.internal.InvalidProtocolBufferException {
+              Builder builder = newBuilder();
+              try {
+                builder.mergeFrom(input, extensionRegistry);
+              } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+                throw e.setUnfinishedMessage(builder.buildPartial());
+              } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+                throw e.asInvalidProtocolBufferException()
+                    .setUnfinishedMessage(builder.buildPartial());
+              } catch (java.io.IOException e) {
+                throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                    .setUnfinishedMessage(builder.buildPartial());
+              }
+              return builder.buildPartial();
+            }
+          };
 
       public static akka.protobufv3.internal.Parser<Seen> parser() {
         return PARSER;
@@ -8162,10 +8813,11 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen getDefaultInstanceForType() {
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              .Seen
+          getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
-
     }
 
     private int bitField0_;
@@ -8173,6 +8825,7 @@ public final class ReplicatedEventSourcing {
     private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector version_;
     /**
      * <code>required .VersionVector version = 1;</code>
+     *
      * @return Whether the version field is set.
      */
     @java.lang.Override
@@ -8181,62 +8834,72 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>required .VersionVector version = 1;</code>
+     *
      * @return The version.
      */
     @java.lang.Override
     public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersion() {
-      return version_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : version_;
+      return version_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : version_;
     }
-    /**
-     * <code>required .VersionVector version = 1;</code>
-     */
+    /** <code>required .VersionVector version = 1;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionOrBuilder() {
-      return version_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : version_;
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVersionOrBuilder() {
+      return version_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : version_;
     }
 
     public static final int SEENPERREPLICA_FIELD_NUMBER = 2;
+
     @SuppressWarnings("serial")
-    private java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen> seenPerReplica_;
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
+    private java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                .Seen>
+        seenPerReplica_;
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
     @java.lang.Override
-    public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen> getSeenPerReplicaList() {
+    public java.util.List<
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                .Seen>
+        getSeenPerReplicaList() {
       return seenPerReplica_;
     }
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
     @java.lang.Override
-    public java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder> 
+    public java.util.List<
+            ? extends
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata.SeenOrBuilder>
         getSeenPerReplicaOrBuilderList() {
       return seenPerReplica_;
     }
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
     @java.lang.Override
     public int getSeenPerReplicaCount() {
       return seenPerReplica_.size();
     }
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen getSeenPerReplica(int index) {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+            .Seen
+        getSeenPerReplica(int index) {
       return seenPerReplica_.get(index);
     }
-    /**
-     * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-     */
+    /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder getSeenPerReplicaOrBuilder(
-        int index) {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+            .SeenOrBuilder
+        getSeenPerReplicaOrBuilder(int index) {
       return seenPerReplica_.get(index);
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -8263,7 +8926,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
         output.writeMessage(1, getVersion());
       }
@@ -8280,12 +8943,12 @@ public final class ReplicatedEventSourcing {
 
       size = 0;
       if (((bitField0_ & 0x00000001) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(1, getVersion());
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(1, getVersion());
       }
       for (int i = 0; i < seenPerReplica_.size(); i++) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(2, seenPerReplica_.get(i));
+        size +=
+            akka.protobufv3.internal.CodedOutputStream.computeMessageSize(
+                2, seenPerReplica_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -8295,20 +8958,25 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
-      if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata)) {
+      if (!(obj
+          instanceof
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+          other =
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata)
+                  obj;
 
       if (hasVersion() != other.hasVersion()) return false;
       if (hasVersion()) {
-        if (!getVersion()
-            .equals(other.getVersion())) return false;
+        if (!getVersion().equals(other.getVersion())) return false;
       }
-      if (!getSeenPerReplicaList()
-          .equals(other.getSeenPerReplicaList())) return false;
+      if (!getSeenPerReplicaList().equals(other.getSeenPerReplicaList())) return false;
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
@@ -8333,88 +9001,118 @@ public final class ReplicatedEventSourcing {
       return hash;
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(
-        akka.protobufv3.internal.ByteString data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(
-        akka.protobufv3.internal.ByteString data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata parseFrom(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+            prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -8423,43 +9121,48 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code ReplicatedSnapshotMetadata}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code ReplicatedSnapshotMetadata} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:ReplicatedSnapshotMetadata)
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadataOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_descriptor;
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadataOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedSnapshotMetadata_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedSnapshotMetadata_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata.Builder.class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.newBuilder()
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
           getVersionFieldBuilder();
           getSeenPerReplicaFieldBuilder();
         }
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -8480,19 +9183,23 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedSnapshotMetadata_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedSnapshotMetadata_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata.getDefaultInstance();
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata build() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata result = buildPartial();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+          build() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+            result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -8500,15 +9207,23 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata(this);
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+            result =
+                new akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata(this);
         buildPartialRepeatedFields(result);
-        if (bitField0_ != 0) { buildPartial0(result); }
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata result) {
+      private void buildPartialRepeatedFields(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              result) {
         if (seenPerReplicaBuilder_ == null) {
           if (((bitField0_ & 0x00000002) != 0)) {
             seenPerReplica_ = java.util.Collections.unmodifiableList(seenPerReplica_);
@@ -8520,13 +9235,13 @@ public final class ReplicatedEventSourcing {
         }
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
-          result.version_ = versionBuilder_ == null
-              ? version_
-              : versionBuilder_.build();
+          result.version_ = versionBuilder_ == null ? version_ : versionBuilder_.build();
           to_bitField0_ |= 0x00000001;
         }
         result.bitField0_ |= to_bitField0_;
@@ -8536,46 +9251,59 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-        if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata)other);
+        if (other
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedSnapshotMetadata) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata)
+                  other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedSnapshotMetadata.getDefaultInstance()) return this;
         if (other.hasVersion()) {
           mergeVersion(other.getVersion());
         }
@@ -8597,9 +9325,10 @@ public final class ReplicatedEventSourcing {
               seenPerReplicaBuilder_ = null;
               seenPerReplica_ = other.seenPerReplica_;
               bitField0_ = (bitField0_ & ~0x00000002);
-              seenPerReplicaBuilder_ = 
-                akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders ?
-                   getSeenPerReplicaFieldBuilder() : null;
+              seenPerReplicaBuilder_ =
+                  akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders
+                      ? getSeenPerReplicaFieldBuilder()
+                      : null;
             } else {
               seenPerReplicaBuilder_.addAllMessages(other.seenPerReplica_);
             }
@@ -8642,32 +9371,36 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                input.readMessage(
-                    getVersionFieldBuilder().getBuilder(),
-                    extensionRegistry);
-                bitField0_ |= 0x00000001;
-                break;
-              } // case 10
-              case 18: {
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen m =
-                    input.readMessage(
-                        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.PARSER,
-                        extensionRegistry);
-                if (seenPerReplicaBuilder_ == null) {
-                  ensureSeenPerReplicaIsMutable();
-                  seenPerReplica_.add(m);
-                } else {
-                  seenPerReplicaBuilder_.addMessage(m);
-                }
-                break;
-              } // case 18
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  input.readMessage(getVersionFieldBuilder().getBuilder(), extensionRegistry);
+                  bitField0_ |= 0x00000001;
+                  break;
+                } // case 10
+              case 18:
+                {
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                          .ReplicatedSnapshotMetadata.Seen
+                      m =
+                          input.readMessage(
+                              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                                  .ReplicatedSnapshotMetadata.Seen.PARSER,
+                              extensionRegistry);
+                  if (seenPerReplicaBuilder_ == null) {
+                    ensureSeenPerReplicaIsMutable();
+                    seenPerReplica_.add(m);
+                  } else {
+                    seenPerReplicaBuilder_.addMessage(m);
+                  }
+                  break;
+                } // case 18
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -8677,13 +9410,18 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
       private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector version_;
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> versionBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
+          versionBuilder_;
       /**
        * <code>required .VersionVector version = 1;</code>
+       *
        * @return Whether the version field is set.
        */
       public boolean hasVersion() {
@@ -8691,19 +9429,23 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>required .VersionVector version = 1;</code>
+       *
        * @return The version.
        */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersion() {
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          getVersion() {
         if (versionBuilder_ == null) {
-          return version_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : version_;
+          return version_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : version_;
         } else {
           return versionBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .VersionVector version = 1;</code>
-       */
-      public Builder setVersion(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>required .VersionVector version = 1;</code> */
+      public Builder setVersion(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (versionBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -8716,11 +9458,10 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector version = 1;</code>
-       */
+      /** <code>required .VersionVector version = 1;</code> */
       public Builder setVersion(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+              builderForValue) {
         if (versionBuilder_ == null) {
           version_ = builderForValue.build();
         } else {
@@ -8730,14 +9471,15 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector version = 1;</code>
-       */
-      public Builder mergeVersion(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>required .VersionVector version = 1;</code> */
+      public Builder mergeVersion(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (versionBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) != 0) &&
-            version_ != null &&
-            version_ != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) != 0)
+              && version_ != null
+              && version_
+                  != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .getDefaultInstance()) {
             getVersionBuilder().mergeFrom(value);
           } else {
             version_ = value;
@@ -8749,9 +9491,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector version = 1;</code>
-       */
+      /** <code>required .VersionVector version = 1;</code> */
       public Builder clearVersion() {
         bitField0_ = (bitField0_ & ~0x00000001);
         version_ = null;
@@ -8762,67 +9502,80 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .VersionVector version = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder getVersionBuilder() {
+      /** <code>required .VersionVector version = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+          getVersionBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getVersionFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .VersionVector version = 1;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionOrBuilder() {
+      /** <code>required .VersionVector version = 1;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+          getVersionOrBuilder() {
         if (versionBuilder_ != null) {
           return versionBuilder_.getMessageOrBuilder();
         } else {
-          return version_ == null ?
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : version_;
+          return version_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : version_;
         }
       }
-      /**
-       * <code>required .VersionVector version = 1;</code>
-       */
+      /** <code>required .VersionVector version = 1;</code> */
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
           getVersionFieldBuilder() {
         if (versionBuilder_ == null) {
-          versionBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>(
-                  getVersion(),
-                  getParentForChildren(),
-                  isClean());
+          versionBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .VersionVectorOrBuilder>(getVersion(), getParentForChildren(), isClean());
           version_ = null;
         }
         return versionBuilder_;
       }
 
-      private java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen> seenPerReplica_ =
-        java.util.Collections.emptyList();
+      private java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen>
+          seenPerReplica_ = java.util.Collections.emptyList();
+
       private void ensureSeenPerReplicaIsMutable() {
         if (!((bitField0_ & 0x00000002) != 0)) {
-          seenPerReplica_ = new java.util.ArrayList<akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen>(seenPerReplica_);
+          seenPerReplica_ =
+              new java.util.ArrayList<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata.Seen>(seenPerReplica_);
           bitField0_ |= 0x00000002;
-         }
+        }
       }
 
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder> seenPerReplicaBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.SeenOrBuilder>
+          seenPerReplicaBuilder_;
 
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen> getSeenPerReplicaList() {
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen>
+          getSeenPerReplicaList() {
         if (seenPerReplicaBuilder_ == null) {
           return java.util.Collections.unmodifiableList(seenPerReplica_);
         } else {
           return seenPerReplicaBuilder_.getMessageList();
         }
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public int getSeenPerReplicaCount() {
         if (seenPerReplicaBuilder_ == null) {
           return seenPerReplica_.size();
@@ -8830,21 +9583,22 @@ public final class ReplicatedEventSourcing {
           return seenPerReplicaBuilder_.getCount();
         }
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen getSeenPerReplica(int index) {
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              .Seen
+          getSeenPerReplica(int index) {
         if (seenPerReplicaBuilder_ == null) {
           return seenPerReplica_.get(index);
         } else {
           return seenPerReplicaBuilder_.getMessage(index);
         }
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public Builder setSeenPerReplica(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen value) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen
+              value) {
         if (seenPerReplicaBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -8857,11 +9611,12 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public Builder setSeenPerReplica(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder builderForValue) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen.Builder
+              builderForValue) {
         if (seenPerReplicaBuilder_ == null) {
           ensureSeenPerReplicaIsMutable();
           seenPerReplica_.set(index, builderForValue.build());
@@ -8871,10 +9626,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public Builder addSeenPerReplica(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen value) {
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public Builder addSeenPerReplica(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen
+              value) {
         if (seenPerReplicaBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -8887,11 +9643,12 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public Builder addSeenPerReplica(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen value) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen
+              value) {
         if (seenPerReplicaBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -8904,11 +9661,11 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public Builder addSeenPerReplica(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen.Builder
+              builderForValue) {
         if (seenPerReplicaBuilder_ == null) {
           ensureSeenPerReplicaIsMutable();
           seenPerReplica_.add(builderForValue.build());
@@ -8918,11 +9675,12 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public Builder addSeenPerReplica(
-          int index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder builderForValue) {
+          int index,
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+                  .Seen.Builder
+              builderForValue) {
         if (seenPerReplicaBuilder_ == null) {
           ensureSeenPerReplicaIsMutable();
           seenPerReplica_.add(index, builderForValue.build());
@@ -8932,24 +9690,23 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public Builder addAllSeenPerReplica(
-          java.lang.Iterable<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen> values) {
+          java.lang.Iterable<
+                  ? extends
+                      akka.persistence.typed.serialization.ReplicatedEventSourcing
+                          .ReplicatedSnapshotMetadata.Seen>
+              values) {
         if (seenPerReplicaBuilder_ == null) {
           ensureSeenPerReplicaIsMutable();
-          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
-              values, seenPerReplica_);
+          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, seenPerReplica_);
           onChanged();
         } else {
           seenPerReplicaBuilder_.addAllMessages(values);
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public Builder clearSeenPerReplica() {
         if (seenPerReplicaBuilder_ == null) {
           seenPerReplica_ = java.util.Collections.emptyList();
@@ -8960,9 +9717,7 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
       public Builder removeSeenPerReplica(int index) {
         if (seenPerReplicaBuilder_ == null) {
           ensureSeenPerReplicaIsMutable();
@@ -8973,62 +9728,78 @@ public final class ReplicatedEventSourcing {
         }
         return this;
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder getSeenPerReplicaBuilder(
-          int index) {
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              .Seen.Builder
+          getSeenPerReplicaBuilder(int index) {
         return getSeenPerReplicaFieldBuilder().getBuilder(index);
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder getSeenPerReplicaOrBuilder(
-          int index) {
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              .SeenOrBuilder
+          getSeenPerReplicaOrBuilder(int index) {
         if (seenPerReplicaBuilder_ == null) {
-          return seenPerReplica_.get(index);  } else {
+          return seenPerReplica_.get(index);
+        } else {
           return seenPerReplicaBuilder_.getMessageOrBuilder(index);
         }
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public java.util.List<? extends akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder> 
-           getSeenPerReplicaOrBuilderList() {
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public java.util.List<
+              ? extends
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata.SeenOrBuilder>
+          getSeenPerReplicaOrBuilderList() {
         if (seenPerReplicaBuilder_ != null) {
           return seenPerReplicaBuilder_.getMessageOrBuilderList();
         } else {
           return java.util.Collections.unmodifiableList(seenPerReplica_);
         }
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder addSeenPerReplicaBuilder() {
-        return getSeenPerReplicaFieldBuilder().addBuilder(
-            akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.getDefaultInstance());
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              .Seen.Builder
+          addSeenPerReplicaBuilder() {
+        return getSeenPerReplicaFieldBuilder()
+            .addBuilder(
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata.Seen.getDefaultInstance());
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder addSeenPerReplicaBuilder(
-          int index) {
-        return getSeenPerReplicaFieldBuilder().addBuilder(
-            index, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.getDefaultInstance());
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+              .Seen.Builder
+          addSeenPerReplicaBuilder(int index) {
+        return getSeenPerReplicaFieldBuilder()
+            .addBuilder(
+                index,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedSnapshotMetadata.Seen.getDefaultInstance());
       }
-      /**
-       * <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code>
-       */
-      public java.util.List<akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder> 
-           getSeenPerReplicaBuilderList() {
+      /** <code>repeated .ReplicatedSnapshotMetadata.Seen seenPerReplica = 2;</code> */
+      public java.util.List<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen.Builder>
+          getSeenPerReplicaBuilderList() {
         return getSeenPerReplicaFieldBuilder().getBuilderList();
       }
+
       private akka.protobufv3.internal.RepeatedFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.Seen.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedSnapshotMetadata.SeenOrBuilder>
           getSeenPerReplicaFieldBuilder() {
         if (seenPerReplicaBuilder_ == null) {
-          seenPerReplicaBuilder_ = new akka.protobufv3.internal.RepeatedFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata.SeenOrBuilder>(
+          seenPerReplicaBuilder_ =
+              new akka.protobufv3.internal.RepeatedFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata.Seen,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata.Seen.Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedSnapshotMetadata.SeenOrBuilder>(
                   seenPerReplica_,
                   ((bitField0_ & 0x00000002) != 0),
                   getParentForChildren(),
@@ -9037,6 +9808,7 @@ public final class ReplicatedEventSourcing {
         }
         return seenPerReplicaBuilder_;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -9049,41 +9821,49 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:ReplicatedSnapshotMetadata)
     }
 
     // @@protoc_insertion_point(class_scope:ReplicatedSnapshotMetadata)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        DEFAULT_INSTANCE;
+
     static {
-      DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata();
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedSnapshotMetadata();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedSnapshotMetadata
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<ReplicatedSnapshotMetadata>
-        PARSER = new akka.protobufv3.internal.AbstractParser<ReplicatedSnapshotMetadata>() {
-      @java.lang.Override
-      public ReplicatedSnapshotMetadata parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<ReplicatedSnapshotMetadata> PARSER =
+        new akka.protobufv3.internal.AbstractParser<ReplicatedSnapshotMetadata>() {
+          @java.lang.Override
+          public ReplicatedSnapshotMetadata parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<ReplicatedSnapshotMetadata> parser() {
       return PARSER;
@@ -9095,60 +9875,65 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedSnapshotMetadata
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
-  public interface ReplicatedPublishedEventMetaDataOrBuilder extends
+  public interface ReplicatedPublishedEventMetaDataOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:ReplicatedPublishedEventMetaData)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>optional string replicaId = 1;</code>
+     *
      * @return Whether the replicaId field is set.
      */
     boolean hasReplicaId();
     /**
      * <code>optional string replicaId = 1;</code>
+     *
      * @return The replicaId.
      */
     java.lang.String getReplicaId();
     /**
      * <code>optional string replicaId = 1;</code>
+     *
      * @return The bytes for replicaId.
      */
-    akka.protobufv3.internal.ByteString
-        getReplicaIdBytes();
+    akka.protobufv3.internal.ByteString getReplicaIdBytes();
 
     /**
      * <code>optional .VersionVector versionVector = 2;</code>
+     *
      * @return Whether the versionVector field is set.
      */
     boolean hasVersionVector();
     /**
      * <code>optional .VersionVector versionVector = 2;</code>
+     *
      * @return The versionVector.
      */
     akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersionVector();
-    /**
-     * <code>optional .VersionVector versionVector = 2;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionVectorOrBuilder();
+    /** <code>optional .VersionVector versionVector = 2;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVersionVectorOrBuilder();
   }
-  /**
-   * Protobuf type {@code ReplicatedPublishedEventMetaData}
-   */
-  public static final class ReplicatedPublishedEventMetaData extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code ReplicatedPublishedEventMetaData} */
+  public static final class ReplicatedPublishedEventMetaData
+      extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:ReplicatedPublishedEventMetaData)
       ReplicatedPublishedEventMetaDataOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use ReplicatedPublishedEventMetaData.newBuilder() to construct.
-    private ReplicatedPublishedEventMetaData(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+    private ReplicatedPublishedEventMetaData(
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private ReplicatedPublishedEventMetaData() {
       replicaId_ = "";
     }
@@ -9161,29 +9946,35 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedPublishedEventMetaData_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ReplicatedPublishedEventMetaData_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.Builder.class);
     }
 
     private int bitField0_;
     public static final int REPLICAID_FIELD_NUMBER = 1;
+
     @SuppressWarnings("serial")
     private volatile java.lang.Object replicaId_ = "";
     /**
      * <code>optional string replicaId = 1;</code>
+     *
      * @return Whether the replicaId field is set.
      */
     @java.lang.Override
@@ -9192,6 +9983,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional string replicaId = 1;</code>
+     *
      * @return The replicaId.
      */
     @java.lang.Override
@@ -9200,8 +9992,7 @@ public final class ReplicatedEventSourcing {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = 
-            (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           replicaId_ = s;
@@ -9211,16 +10002,15 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional string replicaId = 1;</code>
+     *
      * @return The bytes for replicaId.
      */
     @java.lang.Override
-    public akka.protobufv3.internal.ByteString
-        getReplicaIdBytes() {
+    public akka.protobufv3.internal.ByteString getReplicaIdBytes() {
       java.lang.Object ref = replicaId_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b = 
-            akka.protobufv3.internal.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b =
+            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
         replicaId_ = b;
         return b;
       } else {
@@ -9229,9 +10019,11 @@ public final class ReplicatedEventSourcing {
     }
 
     public static final int VERSIONVECTOR_FIELD_NUMBER = 2;
-    private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector versionVector_;
+    private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        versionVector_;
     /**
      * <code>optional .VersionVector versionVector = 2;</code>
+     *
      * @return Whether the versionVector field is set.
      */
     @java.lang.Override
@@ -9240,21 +10032,29 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional .VersionVector versionVector = 2;</code>
+     *
      * @return The versionVector.
      */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersionVector() {
-      return versionVector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : versionVector_;
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        getVersionVector() {
+      return versionVector_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : versionVector_;
     }
-    /**
-     * <code>optional .VersionVector versionVector = 2;</code>
-     */
+    /** <code>optional .VersionVector versionVector = 2;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionVectorOrBuilder() {
-      return versionVector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : versionVector_;
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVersionVectorOrBuilder() {
+      return versionVector_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : versionVector_;
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -9273,7 +10073,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, replicaId_);
       }
@@ -9293,8 +10093,8 @@ public final class ReplicatedEventSourcing {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, replicaId_);
       }
       if (((bitField0_ & 0x00000002) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(2, getVersionVector());
+        size +=
+            akka.protobufv3.internal.CodedOutputStream.computeMessageSize(2, getVersionVector());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -9304,22 +10104,27 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
-      if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData)) {
+      if (!(obj
+          instanceof
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData
+          other =
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData)
+                  obj;
 
       if (hasReplicaId() != other.hasReplicaId()) return false;
       if (hasReplicaId()) {
-        if (!getReplicaId()
-            .equals(other.getReplicaId())) return false;
+        if (!getReplicaId().equals(other.getReplicaId())) return false;
       }
       if (hasVersionVector() != other.hasVersionVector()) return false;
       if (hasVersionVector()) {
-        if (!getVersionVector()
-            .equals(other.getVersionVector())) return false;
+        if (!getVersionVector().equals(other.getVersionVector())) return false;
       }
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
@@ -9345,88 +10150,119 @@ public final class ReplicatedEventSourcing {
       return hash;
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(
-        akka.protobufv3.internal.ByteString data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(
-        akka.protobufv3.internal.ByteString data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData parseFrom(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData
+            prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -9435,42 +10271,47 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code ReplicatedPublishedEventMetaData}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code ReplicatedPublishedEventMetaData} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:ReplicatedPublishedEventMetaData)
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaDataOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedPublishedEventMetaData_descriptor;
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaDataOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedPublishedEventMetaData_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedPublishedEventMetaData.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedPublishedEventMetaData.Builder.class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.newBuilder()
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
           getVersionVectorFieldBuilder();
         }
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -9485,19 +10326,26 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_ReplicatedPublishedEventMetaData_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedPublishedEventMetaData_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData.getDefaultInstance();
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData build() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData result = buildPartial();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          build() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData
+            result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -9505,14 +10353,25 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData(this);
-        if (bitField0_ != 0) { buildPartial0(result); }
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData
+            result =
+                new akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedPublishedEventMetaData(this);
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData
+              result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -9520,9 +10379,8 @@ public final class ReplicatedEventSourcing {
           to_bitField0_ |= 0x00000001;
         }
         if (((from_bitField0_ & 0x00000002) != 0)) {
-          result.versionVector_ = versionVectorBuilder_ == null
-              ? versionVector_
-              : versionVectorBuilder_.build();
+          result.versionVector_ =
+              versionVectorBuilder_ == null ? versionVector_ : versionVectorBuilder_.build();
           to_bitField0_ |= 0x00000002;
         }
         result.bitField0_ |= to_bitField0_;
@@ -9532,46 +10390,60 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-        if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData)other);
+        if (other
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData)
+                  other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData
+              other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData.getDefaultInstance()) return this;
         if (other.hasReplicaId()) {
           replicaId_ = other.replicaId_;
           bitField0_ |= 0x00000001;
@@ -9611,24 +10483,25 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                replicaId_ = input.readBytes();
-                bitField0_ |= 0x00000001;
-                break;
-              } // case 10
-              case 18: {
-                input.readMessage(
-                    getVersionVectorFieldBuilder().getBuilder(),
-                    extensionRegistry);
-                bitField0_ |= 0x00000002;
-                break;
-              } // case 18
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  replicaId_ = input.readBytes();
+                  bitField0_ |= 0x00000001;
+                  break;
+                } // case 10
+              case 18:
+                {
+                  input.readMessage(getVersionVectorFieldBuilder().getBuilder(), extensionRegistry);
+                  bitField0_ |= 0x00000002;
+                  break;
+                } // case 18
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -9638,11 +10511,13 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
       private java.lang.Object replicaId_ = "";
       /**
        * <code>optional string replicaId = 1;</code>
+       *
        * @return Whether the replicaId field is set.
        */
       public boolean hasReplicaId() {
@@ -9650,13 +10525,13 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replicaId = 1;</code>
+       *
        * @return The replicaId.
        */
       public java.lang.String getReplicaId() {
         java.lang.Object ref = replicaId_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs =
-              (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             replicaId_ = s;
@@ -9668,15 +10543,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replicaId = 1;</code>
+       *
        * @return The bytes for replicaId.
        */
-      public akka.protobufv3.internal.ByteString
-          getReplicaIdBytes() {
+      public akka.protobufv3.internal.ByteString getReplicaIdBytes() {
         java.lang.Object ref = replicaId_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b = 
-              akka.protobufv3.internal.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
           replicaId_ = b;
           return b;
         } else {
@@ -9685,12 +10559,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replicaId = 1;</code>
+       *
        * @param value The replicaId to set.
        * @return This builder for chaining.
        */
-      public Builder setReplicaId(
-          java.lang.String value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setReplicaId(java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         replicaId_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -9698,6 +10574,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replicaId = 1;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearReplicaId() {
@@ -9708,23 +10585,30 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replicaId = 1;</code>
+       *
        * @param value The bytes for replicaId to set.
        * @return This builder for chaining.
        */
-      public Builder setReplicaIdBytes(
-          akka.protobufv3.internal.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setReplicaIdBytes(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         replicaId_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
 
-      private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector versionVector_;
+      private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          versionVector_;
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> versionVectorBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
+          versionVectorBuilder_;
       /**
        * <code>optional .VersionVector versionVector = 2;</code>
+       *
        * @return Whether the versionVector field is set.
        */
       public boolean hasVersionVector() {
@@ -9732,19 +10616,23 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional .VersionVector versionVector = 2;</code>
+       *
        * @return The versionVector.
        */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersionVector() {
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          getVersionVector() {
         if (versionVectorBuilder_ == null) {
-          return versionVector_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : versionVector_;
+          return versionVector_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : versionVector_;
         } else {
           return versionVectorBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .VersionVector versionVector = 2;</code>
-       */
-      public Builder setVersionVector(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public Builder setVersionVector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (versionVectorBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -9757,11 +10645,10 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .VersionVector versionVector = 2;</code>
-       */
+      /** <code>optional .VersionVector versionVector = 2;</code> */
       public Builder setVersionVector(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+              builderForValue) {
         if (versionVectorBuilder_ == null) {
           versionVector_ = builderForValue.build();
         } else {
@@ -9771,14 +10658,15 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .VersionVector versionVector = 2;</code>
-       */
-      public Builder mergeVersionVector(akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public Builder mergeVersionVector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
         if (versionVectorBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) != 0) &&
-            versionVector_ != null &&
-            versionVector_ != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) != 0)
+              && versionVector_ != null
+              && versionVector_
+                  != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .getDefaultInstance()) {
             getVersionVectorBuilder().mergeFrom(value);
           } else {
             versionVector_ = value;
@@ -9790,9 +10678,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .VersionVector versionVector = 2;</code>
-       */
+      /** <code>optional .VersionVector versionVector = 2;</code> */
       public Builder clearVersionVector() {
         bitField0_ = (bitField0_ & ~0x00000002);
         versionVector_ = null;
@@ -9803,41 +10689,45 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .VersionVector versionVector = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder getVersionVectorBuilder() {
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+          getVersionVectorBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getVersionVectorFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .VersionVector versionVector = 2;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder getVersionVectorOrBuilder() {
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+          getVersionVectorOrBuilder() {
         if (versionVectorBuilder_ != null) {
           return versionVectorBuilder_.getMessageOrBuilder();
         } else {
-          return versionVector_ == null ?
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.getDefaultInstance() : versionVector_;
+          return versionVector_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : versionVector_;
         }
       }
-      /**
-       * <code>optional .VersionVector versionVector = 2;</code>
-       */
+      /** <code>optional .VersionVector versionVector = 2;</code> */
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
           getVersionVectorFieldBuilder() {
         if (versionVectorBuilder_ == null) {
-          versionVectorBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>(
-                  getVersionVector(),
-                  getParentForChildren(),
-                  isClean());
+          versionVectorBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .VersionVectorOrBuilder>(
+                  getVersionVector(), getParentForChildren(), isClean());
           versionVector_ = null;
         }
         return versionVectorBuilder_;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -9850,41 +10740,49 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:ReplicatedPublishedEventMetaData)
     }
 
     // @@protoc_insertion_point(class_scope:ReplicatedPublishedEventMetaData)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        DEFAULT_INSTANCE;
+
     static {
-      DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData();
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<ReplicatedPublishedEventMetaData>
-        PARSER = new akka.protobufv3.internal.AbstractParser<ReplicatedPublishedEventMetaData>() {
-      @java.lang.Override
-      public ReplicatedPublishedEventMetaData parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<ReplicatedPublishedEventMetaData> PARSER =
+        new akka.protobufv3.internal.AbstractParser<ReplicatedPublishedEventMetaData>() {
+          @java.lang.Override
+          public ReplicatedPublishedEventMetaData parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<ReplicatedPublishedEventMetaData> parser() {
       return PARSER;
@@ -9896,114 +10794,126 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
-  public interface PublishedEventOrBuilder extends
+  public interface PublishedEventOrBuilder
+      extends
       // @@protoc_insertion_point(interface_extends:PublishedEvent)
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
      * <code>optional string persistenceId = 1;</code>
+     *
      * @return Whether the persistenceId field is set.
      */
     boolean hasPersistenceId();
     /**
      * <code>optional string persistenceId = 1;</code>
+     *
      * @return The persistenceId.
      */
     java.lang.String getPersistenceId();
     /**
      * <code>optional string persistenceId = 1;</code>
+     *
      * @return The bytes for persistenceId.
      */
-    akka.protobufv3.internal.ByteString
-        getPersistenceIdBytes();
+    akka.protobufv3.internal.ByteString getPersistenceIdBytes();
 
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     *
      * @return Whether the sequenceNr field is set.
      */
     boolean hasSequenceNr();
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     *
      * @return The sequenceNr.
      */
     long getSequenceNr();
 
     /**
      * <code>optional .Payload payload = 3;</code>
+     *
      * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>optional .Payload payload = 3;</code>
+     *
      * @return The payload.
      */
     akka.remote.ContainerFormats.Payload getPayload();
-    /**
-     * <code>optional .Payload payload = 3;</code>
-     */
+    /** <code>optional .Payload payload = 3;</code> */
     akka.remote.ContainerFormats.PayloadOrBuilder getPayloadOrBuilder();
 
     /**
      * <code>optional int64 timestamp = 4;</code>
+     *
      * @return Whether the timestamp field is set.
      */
     boolean hasTimestamp();
     /**
      * <code>optional int64 timestamp = 4;</code>
+     *
      * @return The timestamp.
      */
     long getTimestamp();
 
     /**
      * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+     *
      * @return Whether the metadata field is set.
      */
     boolean hasMetadata();
     /**
      * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+     *
      * @return The metadata.
      */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData getMetadata();
-    /**
-     * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-     */
-    akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaDataOrBuilder getMetadataOrBuilder();
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData
+        getMetadata();
+    /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaDataOrBuilder
+        getMetadataOrBuilder();
 
     /**
      * <code>optional string replyTo = 6;</code>
+     *
      * @return Whether the replyTo field is set.
      */
     boolean hasReplyTo();
     /**
      * <code>optional string replyTo = 6;</code>
+     *
      * @return The replyTo.
      */
     java.lang.String getReplyTo();
     /**
      * <code>optional string replyTo = 6;</code>
+     *
      * @return The bytes for replyTo.
      */
-    akka.protobufv3.internal.ByteString
-        getReplyToBytes();
+    akka.protobufv3.internal.ByteString getReplyToBytes();
   }
-  /**
-   * Protobuf type {@code PublishedEvent}
-   */
-  public static final class PublishedEvent extends
-      akka.protobufv3.internal.GeneratedMessageV3 implements
+  /** Protobuf type {@code PublishedEvent} */
+  public static final class PublishedEvent extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
       // @@protoc_insertion_point(message_implements:PublishedEvent)
       PublishedEventOrBuilder {
-  private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
     // Use PublishedEvent.newBuilder() to construct.
     private PublishedEvent(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
     }
+
     private PublishedEvent() {
       persistenceId_ = "";
       replyTo_ = "";
@@ -10017,29 +10927,34 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
-    public static final akka.protobufv3.internal.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_PublishedEvent_descriptor;
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_PublishedEvent_descriptor;
     }
 
     @java.lang.Override
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_PublishedEvent_fieldAccessorTable
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_PublishedEvent_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.Builder.class);
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.Builder
+                  .class);
     }
 
     private int bitField0_;
     public static final int PERSISTENCEID_FIELD_NUMBER = 1;
+
     @SuppressWarnings("serial")
     private volatile java.lang.Object persistenceId_ = "";
     /**
      * <code>optional string persistenceId = 1;</code>
+     *
      * @return Whether the persistenceId field is set.
      */
     @java.lang.Override
@@ -10048,6 +10963,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional string persistenceId = 1;</code>
+     *
      * @return The persistenceId.
      */
     @java.lang.Override
@@ -10056,8 +10972,7 @@ public final class ReplicatedEventSourcing {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = 
-            (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           persistenceId_ = s;
@@ -10067,16 +10982,15 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional string persistenceId = 1;</code>
+     *
      * @return The bytes for persistenceId.
      */
     @java.lang.Override
-    public akka.protobufv3.internal.ByteString
-        getPersistenceIdBytes() {
+    public akka.protobufv3.internal.ByteString getPersistenceIdBytes() {
       java.lang.Object ref = persistenceId_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b = 
-            akka.protobufv3.internal.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b =
+            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
         persistenceId_ = b;
         return b;
       } else {
@@ -10088,6 +11002,7 @@ public final class ReplicatedEventSourcing {
     private long sequenceNr_ = 0L;
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     *
      * @return Whether the sequenceNr field is set.
      */
     @java.lang.Override
@@ -10096,6 +11011,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     *
      * @return The sequenceNr.
      */
     @java.lang.Override
@@ -10107,6 +11023,7 @@ public final class ReplicatedEventSourcing {
     private akka.remote.ContainerFormats.Payload payload_;
     /**
      * <code>optional .Payload payload = 3;</code>
+     *
      * @return Whether the payload field is set.
      */
     @java.lang.Override
@@ -10115,24 +11032,28 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional .Payload payload = 3;</code>
+     *
      * @return The payload.
      */
     @java.lang.Override
     public akka.remote.ContainerFormats.Payload getPayload() {
-      return payload_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : payload_;
+      return payload_ == null
+          ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
+          : payload_;
     }
-    /**
-     * <code>optional .Payload payload = 3;</code>
-     */
+    /** <code>optional .Payload payload = 3;</code> */
     @java.lang.Override
     public akka.remote.ContainerFormats.PayloadOrBuilder getPayloadOrBuilder() {
-      return payload_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : payload_;
+      return payload_ == null
+          ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
+          : payload_;
     }
 
     public static final int TIMESTAMP_FIELD_NUMBER = 4;
     private long timestamp_ = 0L;
     /**
      * <code>optional int64 timestamp = 4;</code>
+     *
      * @return Whether the timestamp field is set.
      */
     @java.lang.Override
@@ -10141,6 +11062,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional int64 timestamp = 4;</code>
+     *
      * @return The timestamp.
      */
     @java.lang.Override
@@ -10149,9 +11071,12 @@ public final class ReplicatedEventSourcing {
     }
 
     public static final int METADATA_FIELD_NUMBER = 5;
-    private akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData metadata_;
+    private akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        metadata_;
     /**
      * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+     *
      * @return Whether the metadata field is set.
      */
     @java.lang.Override
@@ -10160,25 +11085,36 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+     *
      * @return The metadata.
      */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData getMetadata() {
-      return metadata_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.getDefaultInstance() : metadata_;
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        getMetadata() {
+      return metadata_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData.getDefaultInstance()
+          : metadata_;
     }
-    /**
-     * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-     */
+    /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaDataOrBuilder getMetadataOrBuilder() {
-      return metadata_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.getDefaultInstance() : metadata_;
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaDataOrBuilder
+        getMetadataOrBuilder() {
+      return metadata_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData.getDefaultInstance()
+          : metadata_;
     }
 
     public static final int REPLYTO_FIELD_NUMBER = 6;
+
     @SuppressWarnings("serial")
     private volatile java.lang.Object replyTo_ = "";
     /**
      * <code>optional string replyTo = 6;</code>
+     *
      * @return Whether the replyTo field is set.
      */
     @java.lang.Override
@@ -10187,6 +11123,7 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional string replyTo = 6;</code>
+     *
      * @return The replyTo.
      */
     @java.lang.Override
@@ -10195,8 +11132,7 @@ public final class ReplicatedEventSourcing {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobufv3.internal.ByteString bs = 
-            (akka.protobufv3.internal.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           replyTo_ = s;
@@ -10206,16 +11142,15 @@ public final class ReplicatedEventSourcing {
     }
     /**
      * <code>optional string replyTo = 6;</code>
+     *
      * @return The bytes for replyTo.
      */
     @java.lang.Override
-    public akka.protobufv3.internal.ByteString
-        getReplyToBytes() {
+    public akka.protobufv3.internal.ByteString getReplyToBytes() {
       java.lang.Object ref = replyTo_;
       if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b = 
-            akka.protobufv3.internal.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobufv3.internal.ByteString b =
+            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
         replyTo_ = b;
         return b;
       } else {
@@ -10224,6 +11159,7 @@ public final class ReplicatedEventSourcing {
     }
 
     private byte memoizedIsInitialized = -1;
+
     @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -10248,7 +11184,7 @@ public final class ReplicatedEventSourcing {
 
     @java.lang.Override
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
-                        throws java.io.IOException {
+        throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, persistenceId_);
       }
@@ -10280,20 +11216,16 @@ public final class ReplicatedEventSourcing {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, persistenceId_);
       }
       if (((bitField0_ & 0x00000002) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeInt64Size(2, sequenceNr_);
+        size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(2, sequenceNr_);
       }
       if (((bitField0_ & 0x00000004) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(3, getPayload());
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(3, getPayload());
       }
       if (((bitField0_ & 0x00000008) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeInt64Size(4, timestamp_);
+        size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(4, timestamp_);
       }
       if (((bitField0_ & 0x00000010) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeMessageSize(5, getMetadata());
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(5, getMetadata());
       }
       if (((bitField0_ & 0x00000020) != 0)) {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(6, replyTo_);
@@ -10306,42 +11238,38 @@ public final class ReplicatedEventSourcing {
     @java.lang.Override
     public boolean equals(final java.lang.Object obj) {
       if (obj == this) {
-       return true;
+        return true;
       }
-      if (!(obj instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent)) {
+      if (!(obj
+          instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent)) {
         return super.equals(obj);
       }
-      akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent other = (akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent) obj;
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent other =
+          (akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent) obj;
 
       if (hasPersistenceId() != other.hasPersistenceId()) return false;
       if (hasPersistenceId()) {
-        if (!getPersistenceId()
-            .equals(other.getPersistenceId())) return false;
+        if (!getPersistenceId().equals(other.getPersistenceId())) return false;
       }
       if (hasSequenceNr() != other.hasSequenceNr()) return false;
       if (hasSequenceNr()) {
-        if (getSequenceNr()
-            != other.getSequenceNr()) return false;
+        if (getSequenceNr() != other.getSequenceNr()) return false;
       }
       if (hasPayload() != other.hasPayload()) return false;
       if (hasPayload()) {
-        if (!getPayload()
-            .equals(other.getPayload())) return false;
+        if (!getPayload().equals(other.getPayload())) return false;
       }
       if (hasTimestamp() != other.hasTimestamp()) return false;
       if (hasTimestamp()) {
-        if (getTimestamp()
-            != other.getTimestamp()) return false;
+        if (getTimestamp() != other.getTimestamp()) return false;
       }
       if (hasMetadata() != other.hasMetadata()) return false;
       if (hasMetadata()) {
-        if (!getMetadata()
-            .equals(other.getMetadata())) return false;
+        if (!getMetadata().equals(other.getMetadata())) return false;
       }
       if (hasReplyTo() != other.hasReplyTo()) return false;
       if (hasReplyTo()) {
-        if (!getReplyTo()
-            .equals(other.getReplyTo())) return false;
+        if (!getReplyTo().equals(other.getReplyTo())) return false;
       }
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
@@ -10360,8 +11288,7 @@ public final class ReplicatedEventSourcing {
       }
       if (hasSequenceNr()) {
         hash = (37 * hash) + SEQUENCENR_FIELD_NUMBER;
-        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
-            getSequenceNr());
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getSequenceNr());
       }
       if (hasPayload()) {
         hash = (37 * hash) + PAYLOAD_FIELD_NUMBER;
@@ -10369,8 +11296,7 @@ public final class ReplicatedEventSourcing {
       }
       if (hasTimestamp()) {
         hash = (37 * hash) + TIMESTAMP_FIELD_NUMBER;
-        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
-            getTimestamp());
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getTimestamp());
       }
       if (hasMetadata()) {
         hash = (37 * hash) + METADATA_FIELD_NUMBER;
@@ -10385,88 +11311,105 @@ public final class ReplicatedEventSourcing {
       return hash;
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(
-        java.nio.ByteBuffer data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(
-        java.nio.ByteBuffer data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(
-        akka.protobufv3.internal.ByteString data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(
-        akka.protobufv3.internal.ByteString data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(byte[] data)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(
-        byte[] data,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(
-        akka.protobufv3.internal.CodedInputStream input)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
     }
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parseFrom(
-        akka.protobufv3.internal.CodedInputStream input,
-        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return akka.protobufv3.internal.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
     }
 
     @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent prototype) {
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
+
     @java.lang.Override
     public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
     }
 
     @java.lang.Override
@@ -10475,43 +11418,46 @@ public final class ReplicatedEventSourcing {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code PublishedEvent}
-     */
-    public static final class Builder extends
-        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+    /** Protobuf type {@code PublishedEvent} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
         // @@protoc_insertion_point(builder_implements:PublishedEvent)
         akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEventOrBuilder {
-      public static final akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_PublishedEvent_descriptor;
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_PublishedEvent_descriptor;
       }
 
       @java.lang.Override
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_PublishedEvent_fieldAccessorTable
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_PublishedEvent_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.class, akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.Builder.class);
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.Builder
+                    .class);
       }
 
-      // Construct using akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.newBuilder()
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobufv3.internal.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
           getPayloadFieldBuilder();
           getMetadataFieldBuilder();
         }
       }
+
       @java.lang.Override
       public Builder clear() {
         super.clear();
@@ -10534,19 +11480,22 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.protobufv3.internal.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.internal_static_PublishedEvent_descriptor;
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_PublishedEvent_descriptor;
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent getDefaultInstanceForType() {
-        return akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.getDefaultInstance();
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+            .getDefaultInstance();
       }
 
       @java.lang.Override
       public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent build() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent result = buildPartial();
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent result =
+            buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
@@ -10554,14 +11503,19 @@ public final class ReplicatedEventSourcing {
       }
 
       @java.lang.Override
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent buildPartial() {
-        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent result = new akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent(this);
-        if (bitField0_ != 0) { buildPartial0(result); }
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent result =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent(this);
+        if (bitField0_ != 0) {
+          buildPartial0(result);
+        }
         onBuilt();
         return result;
       }
 
-      private void buildPartial0(akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent result) {
+      private void buildPartial0(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent result) {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
@@ -10573,9 +11527,7 @@ public final class ReplicatedEventSourcing {
           to_bitField0_ |= 0x00000002;
         }
         if (((from_bitField0_ & 0x00000004) != 0)) {
-          result.payload_ = payloadBuilder_ == null
-              ? payload_
-              : payloadBuilder_.build();
+          result.payload_ = payloadBuilder_ == null ? payload_ : payloadBuilder_.build();
           to_bitField0_ |= 0x00000004;
         }
         if (((from_bitField0_ & 0x00000008) != 0)) {
@@ -10583,9 +11535,7 @@ public final class ReplicatedEventSourcing {
           to_bitField0_ |= 0x00000008;
         }
         if (((from_bitField0_ & 0x00000010) != 0)) {
-          result.metadata_ = metadataBuilder_ == null
-              ? metadata_
-              : metadataBuilder_.build();
+          result.metadata_ = metadataBuilder_ == null ? metadata_ : metadataBuilder_.build();
           to_bitField0_ |= 0x00000010;
         }
         if (((from_bitField0_ & 0x00000020) != 0)) {
@@ -10599,46 +11549,55 @@ public final class ReplicatedEventSourcing {
       public Builder clone() {
         return super.clone();
       }
+
       @java.lang.Override
       public Builder setField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.setField(field, value);
       }
+
       @java.lang.Override
-      public Builder clearField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
+
       @java.lang.Override
-      public Builder clearOneof(
-          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
+
       @java.lang.Override
       public Builder setRepeatedField(
           akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index,
+          java.lang.Object value) {
         return super.setRepeatedField(field, index, value);
       }
+
       @java.lang.Override
       public Builder addRepeatedField(
-          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
         return super.addRepeatedField(field, value);
       }
+
       @java.lang.Override
       public Builder mergeFrom(akka.protobufv3.internal.Message other) {
-        if (other instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent) {
-          return mergeFrom((akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent)other);
+        if (other
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent) other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent other) {
-        if (other == akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.getDefaultInstance()) return this;
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+                .getDefaultInstance()) return this;
         if (other.hasPersistenceId()) {
           persistenceId_ = other.persistenceId_;
           bitField0_ |= 0x00000001;
@@ -10697,46 +11656,49 @@ public final class ReplicatedEventSourcing {
               case 0:
                 done = true;
                 break;
-              case 10: {
-                persistenceId_ = input.readBytes();
-                bitField0_ |= 0x00000001;
-                break;
-              } // case 10
-              case 16: {
-                sequenceNr_ = input.readInt64();
-                bitField0_ |= 0x00000002;
-                break;
-              } // case 16
-              case 26: {
-                input.readMessage(
-                    getPayloadFieldBuilder().getBuilder(),
-                    extensionRegistry);
-                bitField0_ |= 0x00000004;
-                break;
-              } // case 26
-              case 32: {
-                timestamp_ = input.readInt64();
-                bitField0_ |= 0x00000008;
-                break;
-              } // case 32
-              case 42: {
-                input.readMessage(
-                    getMetadataFieldBuilder().getBuilder(),
-                    extensionRegistry);
-                bitField0_ |= 0x00000010;
-                break;
-              } // case 42
-              case 50: {
-                replyTo_ = input.readBytes();
-                bitField0_ |= 0x00000020;
-                break;
-              } // case 50
-              default: {
-                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                  done = true; // was an endgroup tag
-                }
-                break;
-              } // default:
+              case 10:
+                {
+                  persistenceId_ = input.readBytes();
+                  bitField0_ |= 0x00000001;
+                  break;
+                } // case 10
+              case 16:
+                {
+                  sequenceNr_ = input.readInt64();
+                  bitField0_ |= 0x00000002;
+                  break;
+                } // case 16
+              case 26:
+                {
+                  input.readMessage(getPayloadFieldBuilder().getBuilder(), extensionRegistry);
+                  bitField0_ |= 0x00000004;
+                  break;
+                } // case 26
+              case 32:
+                {
+                  timestamp_ = input.readInt64();
+                  bitField0_ |= 0x00000008;
+                  break;
+                } // case 32
+              case 42:
+                {
+                  input.readMessage(getMetadataFieldBuilder().getBuilder(), extensionRegistry);
+                  bitField0_ |= 0x00000010;
+                  break;
+                } // case 42
+              case 50:
+                {
+                  replyTo_ = input.readBytes();
+                  bitField0_ |= 0x00000020;
+                  break;
+                } // case 50
+              default:
+                {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
             } // switch (tag)
           } // while (!done)
         } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
@@ -10746,11 +11708,13 @@ public final class ReplicatedEventSourcing {
         } // finally
         return this;
       }
+
       private int bitField0_;
 
       private java.lang.Object persistenceId_ = "";
       /**
        * <code>optional string persistenceId = 1;</code>
+       *
        * @return Whether the persistenceId field is set.
        */
       public boolean hasPersistenceId() {
@@ -10758,13 +11722,13 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string persistenceId = 1;</code>
+       *
        * @return The persistenceId.
        */
       public java.lang.String getPersistenceId() {
         java.lang.Object ref = persistenceId_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs =
-              (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             persistenceId_ = s;
@@ -10776,15 +11740,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string persistenceId = 1;</code>
+       *
        * @return The bytes for persistenceId.
        */
-      public akka.protobufv3.internal.ByteString
-          getPersistenceIdBytes() {
+      public akka.protobufv3.internal.ByteString getPersistenceIdBytes() {
         java.lang.Object ref = persistenceId_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b = 
-              akka.protobufv3.internal.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
           persistenceId_ = b;
           return b;
         } else {
@@ -10793,12 +11756,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string persistenceId = 1;</code>
+       *
        * @param value The persistenceId to set.
        * @return This builder for chaining.
        */
-      public Builder setPersistenceId(
-          java.lang.String value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setPersistenceId(java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         persistenceId_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -10806,6 +11771,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string persistenceId = 1;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearPersistenceId() {
@@ -10816,21 +11782,24 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string persistenceId = 1;</code>
+       *
        * @param value The bytes for persistenceId to set.
        * @return This builder for chaining.
        */
-      public Builder setPersistenceIdBytes(
-          akka.protobufv3.internal.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setPersistenceIdBytes(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         persistenceId_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
 
-      private long sequenceNr_ ;
+      private long sequenceNr_;
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       *
        * @return Whether the sequenceNr field is set.
        */
       @java.lang.Override
@@ -10839,6 +11808,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       *
        * @return The sequenceNr.
        */
       @java.lang.Override
@@ -10847,11 +11817,12 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       *
        * @param value The sequenceNr to set.
        * @return This builder for chaining.
        */
       public Builder setSequenceNr(long value) {
-        
+
         sequenceNr_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -10859,6 +11830,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearSequenceNr() {
@@ -10870,9 +11842,13 @@ public final class ReplicatedEventSourcing {
 
       private akka.remote.ContainerFormats.Payload payload_;
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> payloadBuilder_;
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
+          payloadBuilder_;
       /**
        * <code>optional .Payload payload = 3;</code>
+       *
        * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
@@ -10880,18 +11856,19 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional .Payload payload = 3;</code>
+       *
        * @return The payload.
        */
       public akka.remote.ContainerFormats.Payload getPayload() {
         if (payloadBuilder_ == null) {
-          return payload_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : payload_;
+          return payload_ == null
+              ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
+              : payload_;
         } else {
           return payloadBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .Payload payload = 3;</code>
-       */
+      /** <code>optional .Payload payload = 3;</code> */
       public Builder setPayload(akka.remote.ContainerFormats.Payload value) {
         if (payloadBuilder_ == null) {
           if (value == null) {
@@ -10905,11 +11882,8 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .Payload payload = 3;</code>
-       */
-      public Builder setPayload(
-          akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+      /** <code>optional .Payload payload = 3;</code> */
+      public Builder setPayload(akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (payloadBuilder_ == null) {
           payload_ = builderForValue.build();
         } else {
@@ -10919,14 +11893,12 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .Payload payload = 3;</code>
-       */
+      /** <code>optional .Payload payload = 3;</code> */
       public Builder mergePayload(akka.remote.ContainerFormats.Payload value) {
         if (payloadBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) != 0) &&
-            payload_ != null &&
-            payload_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000004) != 0)
+              && payload_ != null
+              && payload_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
             getPayloadBuilder().mergeFrom(value);
           } else {
             payload_ = value;
@@ -10938,9 +11910,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .Payload payload = 3;</code>
-       */
+      /** <code>optional .Payload payload = 3;</code> */
       public Builder clearPayload() {
         bitField0_ = (bitField0_ & ~0x00000004);
         payload_ = null;
@@ -10951,45 +11921,44 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .Payload payload = 3;</code>
-       */
+      /** <code>optional .Payload payload = 3;</code> */
       public akka.remote.ContainerFormats.Payload.Builder getPayloadBuilder() {
         bitField0_ |= 0x00000004;
         onChanged();
         return getPayloadFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .Payload payload = 3;</code>
-       */
+      /** <code>optional .Payload payload = 3;</code> */
       public akka.remote.ContainerFormats.PayloadOrBuilder getPayloadOrBuilder() {
         if (payloadBuilder_ != null) {
           return payloadBuilder_.getMessageOrBuilder();
         } else {
-          return payload_ == null ?
-              akka.remote.ContainerFormats.Payload.getDefaultInstance() : payload_;
+          return payload_ == null
+              ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
+              : payload_;
         }
       }
-      /**
-       * <code>optional .Payload payload = 3;</code>
-       */
+      /** <code>optional .Payload payload = 3;</code> */
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
           getPayloadFieldBuilder() {
         if (payloadBuilder_ == null) {
-          payloadBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
-                  getPayload(),
-                  getParentForChildren(),
-                  isClean());
+          payloadBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.remote.ContainerFormats.Payload,
+                  akka.remote.ContainerFormats.Payload.Builder,
+                  akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  getPayload(), getParentForChildren(), isClean());
           payload_ = null;
         }
         return payloadBuilder_;
       }
 
-      private long timestamp_ ;
+      private long timestamp_;
       /**
        * <code>optional int64 timestamp = 4;</code>
+       *
        * @return Whether the timestamp field is set.
        */
       @java.lang.Override
@@ -10998,6 +11967,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional int64 timestamp = 4;</code>
+       *
        * @return The timestamp.
        */
       @java.lang.Override
@@ -11006,11 +11976,12 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional int64 timestamp = 4;</code>
+       *
        * @param value The timestamp to set.
        * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
-        
+
         timestamp_ = value;
         bitField0_ |= 0x00000008;
         onChanged();
@@ -11018,6 +11989,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional int64 timestamp = 4;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearTimestamp() {
@@ -11027,11 +11999,20 @@ public final class ReplicatedEventSourcing {
         return this;
       }
 
-      private akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData metadata_;
+      private akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          metadata_;
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaDataOrBuilder> metadataBuilder_;
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaDataOrBuilder>
+          metadataBuilder_;
       /**
        * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+       *
        * @return Whether the metadata field is set.
        */
       public boolean hasMetadata() {
@@ -11039,19 +12020,26 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+       *
        * @return The metadata.
        */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData getMetadata() {
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          getMetadata() {
         if (metadataBuilder_ == null) {
-          return metadata_ == null ? akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.getDefaultInstance() : metadata_;
+          return metadata_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.getDefaultInstance()
+              : metadata_;
         } else {
           return metadataBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-       */
-      public Builder setMetadata(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData value) {
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public Builder setMetadata(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData
+              value) {
         if (metadataBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -11064,11 +12052,11 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-       */
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
       public Builder setMetadata(
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.Builder builderForValue) {
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.Builder
+              builderForValue) {
         if (metadataBuilder_ == null) {
           metadata_ = builderForValue.build();
         } else {
@@ -11078,14 +12066,17 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-       */
-      public Builder mergeMetadata(akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData value) {
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public Builder mergeMetadata(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData
+              value) {
         if (metadataBuilder_ == null) {
-          if (((bitField0_ & 0x00000010) != 0) &&
-            metadata_ != null &&
-            metadata_ != akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000010) != 0)
+              && metadata_ != null
+              && metadata_
+                  != akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData.getDefaultInstance()) {
             getMetadataBuilder().mergeFrom(value);
           } else {
             metadata_ = value;
@@ -11097,9 +12088,7 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-       */
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
       public Builder clearMetadata() {
         bitField0_ = (bitField0_ & ~0x00000010);
         metadata_ = null;
@@ -11110,37 +12099,46 @@ public final class ReplicatedEventSourcing {
         onChanged();
         return this;
       }
-      /**
-       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.Builder getMetadataBuilder() {
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData.Builder
+          getMetadataBuilder() {
         bitField0_ |= 0x00000010;
         onChanged();
         return getMetadataFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-       */
-      public akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaDataOrBuilder getMetadataOrBuilder() {
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaDataOrBuilder
+          getMetadataOrBuilder() {
         if (metadataBuilder_ != null) {
           return metadataBuilder_.getMessageOrBuilder();
         } else {
-          return metadata_ == null ?
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.getDefaultInstance() : metadata_;
+          return metadata_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.getDefaultInstance()
+              : metadata_;
         }
       }
-      /**
-       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
-       */
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
       private akka.protobufv3.internal.SingleFieldBuilderV3<
-          akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaDataOrBuilder> 
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaDataOrBuilder>
           getMetadataFieldBuilder() {
         if (metadataBuilder_ == null) {
-          metadataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
-              akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.Builder, akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaDataOrBuilder>(
-                  getMetadata(),
-                  getParentForChildren(),
-                  isClean());
+          metadataBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData.Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaDataOrBuilder>(
+                  getMetadata(), getParentForChildren(), isClean());
           metadata_ = null;
         }
         return metadataBuilder_;
@@ -11149,6 +12147,7 @@ public final class ReplicatedEventSourcing {
       private java.lang.Object replyTo_ = "";
       /**
        * <code>optional string replyTo = 6;</code>
+       *
        * @return Whether the replyTo field is set.
        */
       public boolean hasReplyTo() {
@@ -11156,13 +12155,13 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replyTo = 6;</code>
+       *
        * @return The replyTo.
        */
       public java.lang.String getReplyTo() {
         java.lang.Object ref = replyTo_;
         if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs =
-              (akka.protobufv3.internal.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             replyTo_ = s;
@@ -11174,15 +12173,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replyTo = 6;</code>
+       *
        * @return The bytes for replyTo.
        */
-      public akka.protobufv3.internal.ByteString
-          getReplyToBytes() {
+      public akka.protobufv3.internal.ByteString getReplyToBytes() {
         java.lang.Object ref = replyTo_;
         if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b = 
-              akka.protobufv3.internal.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
           replyTo_ = b;
           return b;
         } else {
@@ -11191,12 +12189,14 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replyTo = 6;</code>
+       *
        * @param value The replyTo to set.
        * @return This builder for chaining.
        */
-      public Builder setReplyTo(
-          java.lang.String value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setReplyTo(java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         replyTo_ = value;
         bitField0_ |= 0x00000020;
         onChanged();
@@ -11204,6 +12204,7 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replyTo = 6;</code>
+       *
        * @return This builder for chaining.
        */
       public Builder clearReplyTo() {
@@ -11214,17 +12215,20 @@ public final class ReplicatedEventSourcing {
       }
       /**
        * <code>optional string replyTo = 6;</code>
+       *
        * @param value The bytes for replyTo to set.
        * @return This builder for chaining.
        */
-      public Builder setReplyToBytes(
-          akka.protobufv3.internal.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+      public Builder setReplyToBytes(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         replyTo_ = value;
         bitField0_ |= 0x00000020;
         onChanged();
         return this;
       }
+
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -11237,41 +12241,46 @@ public final class ReplicatedEventSourcing {
         return super.mergeUnknownFields(unknownFields);
       }
 
-
       // @@protoc_insertion_point(builder_scope:PublishedEvent)
     }
 
     // @@protoc_insertion_point(class_scope:PublishedEvent)
-    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent DEFAULT_INSTANCE;
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        DEFAULT_INSTANCE;
+
     static {
-      DEFAULT_INSTANCE = new akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent();
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent();
     }
 
-    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent getDefaultInstance() {
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
-    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<PublishedEvent>
-        PARSER = new akka.protobufv3.internal.AbstractParser<PublishedEvent>() {
-      @java.lang.Override
-      public PublishedEvent parsePartialFrom(
-          akka.protobufv3.internal.CodedInputStream input,
-          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobufv3.internal.InvalidProtocolBufferException {
-        Builder builder = newBuilder();
-        try {
-          builder.mergeFrom(input, extensionRegistry);
-        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(builder.buildPartial());
-        } catch (akka.protobufv3.internal.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-        } catch (java.io.IOException e) {
-          throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
-              .setUnfinishedMessage(builder.buildPartial());
-        }
-        return builder.buildPartial();
-      }
-    };
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<PublishedEvent> PARSER =
+        new akka.protobufv3.internal.AbstractParser<PublishedEvent>() {
+          @java.lang.Override
+          public PublishedEvent parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+              builder.mergeFrom(input, extensionRegistry);
+            } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+              throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (akka.protobufv3.internal.UninitializedMessageException e) {
+              throw e.asInvalidProtocolBufferException()
+                  .setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+              throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+                  .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+          }
+        };
 
     public static akka.protobufv3.internal.Parser<PublishedEvent> parser() {
       return PARSER;
@@ -11283,190 +12292,202 @@ public final class ReplicatedEventSourcing {
     }
 
     @java.lang.Override
-    public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent getDefaultInstanceForType() {
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
-
   }
 
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_Counter_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_Counter_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_Counter_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_CounterUpdate_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_CounterUpdate_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_CounterUpdate_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_ORSet_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ORSet_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ORSet_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_ORSetDeltaGroup_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ORSetDeltaGroup_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ORSetDeltaGroup_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_ORSetDeltaGroup_Entry_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ORSetDeltaGroup_Entry_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ORSetDeltaGroup_Entry_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_VersionVector_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_VersionVector_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_VersionVector_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_VersionVector_Entry_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_VersionVector_Entry_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_VersionVector_Entry_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_ReplicatedEventMetadata_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ReplicatedEventMetadata_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ReplicatedEventMetadata_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_ReplicatedSnapshotMetadata_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ReplicatedSnapshotMetadata_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ReplicatedSnapshotMetadata_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ReplicatedSnapshotMetadata_Seen_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_ReplicatedPublishedEventMetaData_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ReplicatedPublishedEventMetaData_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable;
   private static final akka.protobufv3.internal.Descriptors.Descriptor
-    internal_static_PublishedEvent_descriptor;
-  private static final 
-    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_PublishedEvent_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_PublishedEvent_fieldAccessorTable;
 
-  public static akka.protobufv3.internal.Descriptors.FileDescriptor
-      getDescriptor() {
+  public static akka.protobufv3.internal.Descriptors.FileDescriptor getDescriptor() {
     return descriptor;
   }
-  private static  akka.protobufv3.internal.Descriptors.FileDescriptor
-      descriptor;
+
+  private static akka.protobufv3.internal.Descriptors.FileDescriptor descriptor;
+
   static {
     java.lang.String[] descriptorData = {
-      "\n\035ReplicatedEventSourcing.proto\032\026Contain" +
-      "erFormats.proto\"\030\n\007Counter\022\r\n\005value\030\001 \002(" +
-      "\014\"\036\n\rCounterUpdate\022\r\n\005delta\030\001 \002(\014\"\304\001\n\005OR" +
-      "Set\022\020\n\010originDc\030\001 \002(\t\022\037\n\007vvector\030\002 \002(\0132\016" +
-      ".VersionVector\022\034\n\004dots\030\003 \003(\0132\016.VersionVe" +
-      "ctor\022\026\n\016stringElements\030\004 \003(\t\022\027\n\013intEleme" +
-      "nts\030\005 \003(\021B\002\020\001\022\030\n\014longElements\030\006 \003(\022B\002\020\001\022" +
-      "\037\n\rotherElements\030\007 \003(\0132\010.Payload\"\201\001\n\017ORS" +
-      "etDeltaGroup\022\'\n\007entries\030\001 \003(\0132\026.ORSetDel" +
-      "taGroup.Entry\032E\n\005Entry\022 \n\toperation\030\001 \002(" +
-      "\0162\r.ORSetDeltaOp\022\032\n\nunderlying\030\002 \002(\0132\006.O" +
-      "RSet\"]\n\rVersionVector\022%\n\007entries\030\001 \003(\0132\024" +
-      ".VersionVector.Entry\032%\n\005Entry\022\013\n\003key\030\001 \002" +
-      "(\t\022\017\n\007version\030\002 \002(\003\"\205\001\n\027ReplicatedEventM" +
-      "etadata\022\025\n\roriginReplica\030\001 \002(\t\022\030\n\020origin" +
-      "SequenceNr\030\002 \002(\003\022%\n\rversionVector\030\003 \002(\0132" +
-      "\016.VersionVector\022\022\n\nconcurrent\030\004 \002(\010\"\246\001\n\032" +
-      "ReplicatedSnapshotMetadata\022\037\n\007version\030\001 " +
-      "\002(\0132\016.VersionVector\0228\n\016seenPerReplica\030\002 " +
-      "\003(\0132 .ReplicatedSnapshotMetadata.Seen\032-\n" +
-      "\004Seen\022\021\n\treplicaId\030\001 \002(\t\022\022\n\nsequenceNr\030\002" +
-      " \002(\003\"\\\n ReplicatedPublishedEventMetaData" +
-      "\022\021\n\treplicaId\030\001 \001(\t\022%\n\rversionVector\030\002 \001" +
-      "(\0132\016.VersionVector\"\257\001\n\016PublishedEvent\022\025\n" +
-      "\rpersistenceId\030\001 \001(\t\022\022\n\nsequenceNr\030\002 \001(\003" +
-      "\022\031\n\007payload\030\003 \001(\0132\010.Payload\022\021\n\ttimestamp" +
-      "\030\004 \001(\003\0223\n\010metadata\030\005 \001(\0132!.ReplicatedPub" +
-      "lishedEventMetaData\022\017\n\007replyTo\030\006 \001(\t*-\n\014" +
-      "ORSetDeltaOp\022\007\n\003Add\020\000\022\n\n\006Remove\020\001\022\010\n\004Ful" +
-      "l\020\002B(\n$akka.persistence.typed.serializat" +
-      "ionH\001"
+      "\n\035ReplicatedEventSourcing.proto\032\026Contain"
+          + "erFormats.proto\"\030\n\007Counter\022\r\n\005value\030\001 \002("
+          + "\014\"\036\n\rCounterUpdate\022\r\n\005delta\030\001 \002(\014\"\304\001\n\005OR"
+          + "Set\022\020\n\010originDc\030\001 \002(\t\022\037\n\007vvector\030\002 \002(\0132\016"
+          + ".VersionVector\022\034\n\004dots\030\003 \003(\0132\016.VersionVe"
+          + "ctor\022\026\n\016stringElements\030\004 \003(\t\022\027\n\013intEleme"
+          + "nts\030\005 \003(\021B\002\020\001\022\030\n\014longElements\030\006 \003(\022B\002\020\001\022"
+          + "\037\n\rotherElements\030\007 \003(\0132\010.Payload\"\201\001\n\017ORS"
+          + "etDeltaGroup\022\'\n\007entries\030\001 \003(\0132\026.ORSetDel"
+          + "taGroup.Entry\032E\n\005Entry\022 \n\toperation\030\001 \002("
+          + "\0162\r.ORSetDeltaOp\022\032\n\nunderlying\030\002 \002(\0132\006.O"
+          + "RSet\"]\n\rVersionVector\022%\n\007entries\030\001 \003(\0132\024"
+          + ".VersionVector.Entry\032%\n\005Entry\022\013\n\003key\030\001 \002"
+          + "(\t\022\017\n\007version\030\002 \002(\003\"\205\001\n\027ReplicatedEventM"
+          + "etadata\022\025\n\roriginReplica\030\001 \002(\t\022\030\n\020origin"
+          + "SequenceNr\030\002 \002(\003\022%\n\rversionVector\030\003 \002(\0132"
+          + "\016.VersionVector\022\022\n\nconcurrent\030\004 \002(\010\"\246\001\n\032"
+          + "ReplicatedSnapshotMetadata\022\037\n\007version\030\001 "
+          + "\002(\0132\016.VersionVector\0228\n\016seenPerReplica\030\002 "
+          + "\003(\0132 .ReplicatedSnapshotMetadata.Seen\032-\n"
+          + "\004Seen\022\021\n\treplicaId\030\001 \002(\t\022\022\n\nsequenceNr\030\002"
+          + " \002(\003\"\\\n ReplicatedPublishedEventMetaData"
+          + "\022\021\n\treplicaId\030\001 \001(\t\022%\n\rversionVector\030\002 \001"
+          + "(\0132\016.VersionVector\"\257\001\n\016PublishedEvent\022\025\n"
+          + "\rpersistenceId\030\001 \001(\t\022\022\n\nsequenceNr\030\002 \001(\003"
+          + "\022\031\n\007payload\030\003 \001(\0132\010.Payload\022\021\n\ttimestamp"
+          + "\030\004 \001(\003\0223\n\010metadata\030\005 \001(\0132!.ReplicatedPub"
+          + "lishedEventMetaData\022\017\n\007replyTo\030\006 \001(\t*-\n\014"
+          + "ORSetDeltaOp\022\007\n\003Add\020\000\022\n\n\006Remove\020\001\022\010\n\004Ful"
+          + "l\020\002B(\n$akka.persistence.typed.serializat"
+          + "ionH\001"
     };
-    descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
-      .internalBuildGeneratedFileFrom(descriptorData,
-        new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
-          akka.remote.ContainerFormats.getDescriptor(),
-        });
-    internal_static_Counter_descriptor =
-      getDescriptor().getMessageTypes().get(0);
-    internal_static_Counter_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_Counter_descriptor,
-        new java.lang.String[] { "Value", });
-    internal_static_CounterUpdate_descriptor =
-      getDescriptor().getMessageTypes().get(1);
-    internal_static_CounterUpdate_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_CounterUpdate_descriptor,
-        new java.lang.String[] { "Delta", });
-    internal_static_ORSet_descriptor =
-      getDescriptor().getMessageTypes().get(2);
-    internal_static_ORSet_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_ORSet_descriptor,
-        new java.lang.String[] { "OriginDc", "Vvector", "Dots", "StringElements", "IntElements", "LongElements", "OtherElements", });
-    internal_static_ORSetDeltaGroup_descriptor =
-      getDescriptor().getMessageTypes().get(3);
-    internal_static_ORSetDeltaGroup_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_ORSetDeltaGroup_descriptor,
-        new java.lang.String[] { "Entries", });
+    descriptor =
+        akka.protobufv3.internal.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(
+            descriptorData,
+            new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
+              akka.remote.ContainerFormats.getDescriptor(),
+            });
+    internal_static_Counter_descriptor = getDescriptor().getMessageTypes().get(0);
+    internal_static_Counter_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_Counter_descriptor,
+            new java.lang.String[] {
+              "Value",
+            });
+    internal_static_CounterUpdate_descriptor = getDescriptor().getMessageTypes().get(1);
+    internal_static_CounterUpdate_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_CounterUpdate_descriptor,
+            new java.lang.String[] {
+              "Delta",
+            });
+    internal_static_ORSet_descriptor = getDescriptor().getMessageTypes().get(2);
+    internal_static_ORSet_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_ORSet_descriptor,
+            new java.lang.String[] {
+              "OriginDc",
+              "Vvector",
+              "Dots",
+              "StringElements",
+              "IntElements",
+              "LongElements",
+              "OtherElements",
+            });
+    internal_static_ORSetDeltaGroup_descriptor = getDescriptor().getMessageTypes().get(3);
+    internal_static_ORSetDeltaGroup_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_ORSetDeltaGroup_descriptor,
+            new java.lang.String[] {
+              "Entries",
+            });
     internal_static_ORSetDeltaGroup_Entry_descriptor =
-      internal_static_ORSetDeltaGroup_descriptor.getNestedTypes().get(0);
-    internal_static_ORSetDeltaGroup_Entry_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_ORSetDeltaGroup_Entry_descriptor,
-        new java.lang.String[] { "Operation", "Underlying", });
-    internal_static_VersionVector_descriptor =
-      getDescriptor().getMessageTypes().get(4);
-    internal_static_VersionVector_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_VersionVector_descriptor,
-        new java.lang.String[] { "Entries", });
+        internal_static_ORSetDeltaGroup_descriptor.getNestedTypes().get(0);
+    internal_static_ORSetDeltaGroup_Entry_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_ORSetDeltaGroup_Entry_descriptor,
+            new java.lang.String[] {
+              "Operation", "Underlying",
+            });
+    internal_static_VersionVector_descriptor = getDescriptor().getMessageTypes().get(4);
+    internal_static_VersionVector_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_VersionVector_descriptor,
+            new java.lang.String[] {
+              "Entries",
+            });
     internal_static_VersionVector_Entry_descriptor =
-      internal_static_VersionVector_descriptor.getNestedTypes().get(0);
-    internal_static_VersionVector_Entry_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_VersionVector_Entry_descriptor,
-        new java.lang.String[] { "Key", "Version", });
-    internal_static_ReplicatedEventMetadata_descriptor =
-      getDescriptor().getMessageTypes().get(5);
-    internal_static_ReplicatedEventMetadata_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_ReplicatedEventMetadata_descriptor,
-        new java.lang.String[] { "OriginReplica", "OriginSequenceNr", "VersionVector", "Concurrent", });
+        internal_static_VersionVector_descriptor.getNestedTypes().get(0);
+    internal_static_VersionVector_Entry_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_VersionVector_Entry_descriptor,
+            new java.lang.String[] {
+              "Key", "Version",
+            });
+    internal_static_ReplicatedEventMetadata_descriptor = getDescriptor().getMessageTypes().get(5);
+    internal_static_ReplicatedEventMetadata_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_ReplicatedEventMetadata_descriptor,
+            new java.lang.String[] {
+              "OriginReplica", "OriginSequenceNr", "VersionVector", "Concurrent",
+            });
     internal_static_ReplicatedSnapshotMetadata_descriptor =
-      getDescriptor().getMessageTypes().get(6);
-    internal_static_ReplicatedSnapshotMetadata_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_ReplicatedSnapshotMetadata_descriptor,
-        new java.lang.String[] { "Version", "SeenPerReplica", });
+        getDescriptor().getMessageTypes().get(6);
+    internal_static_ReplicatedSnapshotMetadata_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_ReplicatedSnapshotMetadata_descriptor,
+            new java.lang.String[] {
+              "Version", "SeenPerReplica",
+            });
     internal_static_ReplicatedSnapshotMetadata_Seen_descriptor =
-      internal_static_ReplicatedSnapshotMetadata_descriptor.getNestedTypes().get(0);
-    internal_static_ReplicatedSnapshotMetadata_Seen_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_ReplicatedSnapshotMetadata_Seen_descriptor,
-        new java.lang.String[] { "ReplicaId", "SequenceNr", });
+        internal_static_ReplicatedSnapshotMetadata_descriptor.getNestedTypes().get(0);
+    internal_static_ReplicatedSnapshotMetadata_Seen_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_ReplicatedSnapshotMetadata_Seen_descriptor,
+            new java.lang.String[] {
+              "ReplicaId", "SequenceNr",
+            });
     internal_static_ReplicatedPublishedEventMetaData_descriptor =
-      getDescriptor().getMessageTypes().get(7);
-    internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_ReplicatedPublishedEventMetaData_descriptor,
-        new java.lang.String[] { "ReplicaId", "VersionVector", });
-    internal_static_PublishedEvent_descriptor =
-      getDescriptor().getMessageTypes().get(8);
-    internal_static_PublishedEvent_fieldAccessorTable = new
-      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_PublishedEvent_descriptor,
-        new java.lang.String[] { "PersistenceId", "SequenceNr", "Payload", "Timestamp", "Metadata", "ReplyTo", });
+        getDescriptor().getMessageTypes().get(7);
+    internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_ReplicatedPublishedEventMetaData_descriptor,
+            new java.lang.String[] {
+              "ReplicaId", "VersionVector",
+            });
+    internal_static_PublishedEvent_descriptor = getDescriptor().getMessageTypes().get(8);
+    internal_static_PublishedEvent_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_PublishedEvent_descriptor,
+            new java.lang.String[] {
+              "PersistenceId", "SequenceNr", "Payload", "Timestamp", "Metadata", "ReplyTo",
+            });
     akka.remote.ContainerFormats.getDescriptor();
   }
 
