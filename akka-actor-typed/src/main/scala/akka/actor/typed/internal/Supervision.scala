@@ -391,7 +391,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       val nextBehavior = restartingInProgress match {
         case OptionVal.Some((stashBuffer, _)) =>
           val behavior = stashBuffer.unstashAll(newBehavior.unsafeCast)
-          // reset to None only if this completed on success
+          // restart unstash was successful for all stashed messages, drop stash buffer
           restartingInProgress = OptionVal.None
           behavior
         case _ => newBehavior
