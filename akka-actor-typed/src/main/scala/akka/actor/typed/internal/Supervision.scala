@@ -354,14 +354,11 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
     val stashCapacity =
       if (strategy.stashCapacity >= 0) strategy.stashCapacity
       else ctx.asScala.system.settings.RestartStashCapacity
-    // new generate only if there has been reset to None.
-    restartingInProgress = restartingInProgress match {
-      case OptionVal.Some((stashBuffer, _)) =>
-        // keep stashBuffer on here.
-        OptionVal.Some((stashBuffer, childrenToStop))
-      case _ =>
-        OptionVal.Some(
-          (StashBuffer[Any](ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], stashCapacity), childrenToStop))
+    // new stash only if there is no already on-going restart with previously stashed messages
+    val stashBufferForRestart = restartingInProgress match {
+      case OptionVal.Some((stashBuffer, _)) => stashBuffer
+      case _ => StashBuffer[Any](ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], stashCapacity)
+    restartingInProgress = OptionVal.Some((stashBufferForRestart, childrenToStop))
     }
     strategy match {
       case backoff: Backoff =>
