@@ -13,7 +13,7 @@ import akka.persistence._
 import akka.testkit.{ AkkaSpec, TestProbe }
 
 object SharedLeveldbJournalSpec {
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString("""
       akka {
         actor {
           provider = remote

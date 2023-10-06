@@ -23,7 +23,7 @@ object RemoteRouterSpec {
   }
 }
 
-class RemoteRouterSpec extends AkkaSpec(s"""
+class RemoteRouterSpec extends AkkaSpec("""
     akka.actor.provider = remote
     akka.remote.use-unsafe-remote-features-outside-cluster = on
     akka.remote.artery.canonical {

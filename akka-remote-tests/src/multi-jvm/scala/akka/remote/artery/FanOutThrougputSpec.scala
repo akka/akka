@@ -30,12 +30,17 @@ object FanOutThroughputSpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(
+        ConfigFactory.parseString("""
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.FanOutThroughputSpec.totalMessagesFactor = 10.0
        akka.test.FanOutThroughputSpec.real-message = off
        akka.test.FanOutThroughputSpec.actor-selection = off
-       """)).withFallback(MaxThroughputSpec.cfg).withFallback(RemotingMultiNodeSpec.commonConfig))
+       """))
+      .withFallback(MaxThroughputSpec.cfg)
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
 

@@ -285,7 +285,7 @@ object DistributedPubSubExample {
   import akka.actor.testkit.typed.scaladsl.TestProbe
   import Ontology._
 
-  val config: Config = ConfigFactory.parseString(s"""
+  val config: Config = ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.cluster.pub-sub.max-delta-elements = 500
         akka.cluster.jmx.enabled = off

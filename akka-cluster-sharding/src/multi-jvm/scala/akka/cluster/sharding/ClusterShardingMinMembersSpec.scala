@@ -16,7 +16,7 @@ import akka.util.ccompat._
 abstract class ClusterShardingMinMembersSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = s"""
+      additionalConfig = """
         akka.cluster.sharding.rebalance-interval = 120s #disable rebalance
         akka.cluster.min-nr-of-members = 3
         """) {

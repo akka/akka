@@ -861,7 +861,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
     }
 
     // TODO: Consider moving the migrations Specs to a separate Spec
-    "deserialize with migrations" in withSystem(s"""
+    "deserialize with migrations" in withSystem(
+      """
         akka.serialization.jackson.migrations {
           ## Usually the key is a FQCN but we're hacking the name to use multiple migrations for the
           ## same type in a single test.
@@ -1087,7 +1088,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
     }
 
     // TODO: Consider moving the migrations Specs to a separate Spec
-    "deserialize with migrations" in withSystem(s"""
+    "deserialize with migrations" in withSystem(
+      """
         akka.serialization.jackson.migrations {
           ## Usually the key is a FQCN but we're hacking the name to use multiple migrations for the
           ## same type in a single test.

@@ -49,7 +49,8 @@ object ManyRecoveriesSpec {
     (1 to n).map(mapper).toSet
 }
 
-class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
+class ManyRecoveriesSpec
+    extends ScalaTestWithActorTestKit("""
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
@@ -59,7 +60,9 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
     }
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """) with AnyWordSpecLike with LogCapturing {
+    """)
+    with AnyWordSpecLike
+    with LogCapturing {
 
   import ManyRecoveriesSpec._
 

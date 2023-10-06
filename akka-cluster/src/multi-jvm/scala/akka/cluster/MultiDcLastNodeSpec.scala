@@ -15,7 +15,7 @@ object MultiDcLastNodeSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(ConfigFactory.parseString("""
       akka.loglevel = INFO
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 

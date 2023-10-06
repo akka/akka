@@ -35,7 +35,7 @@ class ClusterWatcherNoClusterWatcheeConfig(val useUnsafe: Boolean) extends Multi
       akka.actor.allow-java-serialization = on
      """)))
 
-  nodeConfig(remoting)(ConfigFactory.parseString(s"""
+  nodeConfig(remoting)(ConfigFactory.parseString("""
       akka.actor.provider = remote"""))
 
   nodeConfig(clustered)(ConfigFactory.parseString("""

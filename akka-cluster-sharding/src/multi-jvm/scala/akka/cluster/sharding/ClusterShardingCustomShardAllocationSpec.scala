@@ -63,7 +63,7 @@ object ClusterShardingCustomShardAllocationSpec {
 abstract class ClusterShardingCustomShardAllocationSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = s"""
+      additionalConfig = """
       akka.cluster.sharding.rebalance-interval = 1 s
       akka.persistence.journal.leveldb-shared.store.native = off
       """) {

@@ -19,7 +19,7 @@ import akka.testkit._
 
 object CompressionIntegrationSpec {
 
-  val commonConfig = ConfigFactory.parseString(s"""
+  val commonConfig = ConfigFactory.parseString("""
      akka {
        loglevel = INFO
 

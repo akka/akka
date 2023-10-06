@@ -23,7 +23,7 @@ object EventSourcedBehaviorInterceptorSpec {
 
   val journalId = "event-sourced-behavior-interceptor-spec"
 
-  def config: Config = ConfigFactory.parseString(s"""
+  def config: Config = ConfigFactory.parseString("""
         akka.loglevel = INFO
         akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
         akka.persistence.journal.inmem.test-serialization = on

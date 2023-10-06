@@ -22,7 +22,7 @@ import akka.actor.typed.scaladsl.Routers
 import akka.serialization.jackson.CborSerializable
 
 object GroupRouterSpec {
-  def config = ConfigFactory.parseString(s"""
+  def config = ConfigFactory.parseString("""
     akka {
       loglevel = debug
       actor.provider = cluster

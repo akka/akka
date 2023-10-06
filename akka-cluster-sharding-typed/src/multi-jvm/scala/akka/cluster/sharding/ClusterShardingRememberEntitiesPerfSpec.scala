@@ -62,7 +62,7 @@ object ClusterShardingRememberEntitiesPerfSpec {
 object ClusterShardingRememberEntitiesPerfSpecConfig
     extends MultiNodeClusterShardingConfig(
       rememberEntities = true,
-      additionalConfig = s"""
+      additionalConfig = """
     akka.loglevel = DEBUG 
     akka.testconductor.barrier-timeout = 3 minutes
     akka.remote.artery.advanced.outbound-message-queue-size = 10000

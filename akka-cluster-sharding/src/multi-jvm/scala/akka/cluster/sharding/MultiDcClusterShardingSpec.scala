@@ -48,7 +48,7 @@ object MultiDcClusterShardingSpec {
 object MultiDcClusterShardingSpecConfig
     extends MultiNodeClusterShardingConfig(
       loglevel = "DEBUG", //issue #23741
-      additionalConfig = s"""
+      additionalConfig = """
     akka.cluster {
       debug.verbose-heartbeat-logging = on
       debug.verbose-gossip-logging = on

@@ -20,7 +20,8 @@ import akka.persistence.typed.state.RecoveryCompleted
 
 object DurableStateRevisionSpec {
 
-  def conf: Config = PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString(s"""
+  def conf: Config =
+    PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString("""
     akka.loglevel = INFO
     """))
 

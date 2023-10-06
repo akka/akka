@@ -16,7 +16,8 @@ import akka.persistence.typed.PersistenceId
 
 object PrimitiveStateSpec {
 
-  def conf: Config = PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString(s"""
+  def conf: Config =
+    PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString("""
     akka.loglevel = INFO
     """))
 }

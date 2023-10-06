@@ -193,7 +193,8 @@ class SerializationDocSpec
     extends TestKit(
       ActorSystem(
         "SerializationDocSpec",
-        ConfigFactory.parseString(s"""
+        ConfigFactory.parseString(
+          """
     akka.serialization.jackson.migrations {
         # migrations for Java classes
         "jdoc.akka.serialization.jackson.v2b.ItemAdded" = "jdoc.akka.serialization.jackson.v2b.ItemAddedMigration"

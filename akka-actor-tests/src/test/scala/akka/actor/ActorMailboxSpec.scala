@@ -16,7 +16,8 @@ import akka.util.Helpers.ConfigOps
 import akka.util.unused
 
 object ActorMailboxSpec {
-  val mailboxConf = ConfigFactory.parseString(s"""
+  val mailboxConf =
+    ConfigFactory.parseString(s"""
     unbounded-dispatcher {
       mailbox-type = "akka.dispatch.UnboundedMailbox"
     }

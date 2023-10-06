@@ -8,7 +8,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 object ArterySpecSupport {
   // same for all artery enabled remoting tests
-  private val staticArteryRemotingConfig = ConfigFactory.parseString(s"""
+  private val staticArteryRemotingConfig = ConfigFactory.parseString("""
     akka {
       actor {
         provider = remote

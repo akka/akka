@@ -35,7 +35,7 @@ import akka.testkit.GHExcludeAeronTest
 import akka.testkit.LongRunningTest
 
 object ClusterReceptionistSpec {
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString("""
       akka.loglevel = DEBUG # issue #24960
       akka.actor.provider = cluster
       akka.remote.artery.canonical.port = 0

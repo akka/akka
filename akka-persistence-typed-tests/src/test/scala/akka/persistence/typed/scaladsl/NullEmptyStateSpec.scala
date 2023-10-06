@@ -16,7 +16,7 @@ import akka.persistence.typed.RecoveryCompleted
 
 object NullEmptyStateSpec {
 
-  private val conf = ConfigFactory.parseString(s"""
+  private val conf = ConfigFactory.parseString("""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.journal.inmem.test-serialization = on
     """)

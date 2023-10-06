@@ -14,7 +14,7 @@ import akka.testkit.{ DefaultTimeout, ImplicitSender }
 object RemotingMultiNodeSpec {
 
   def commonConfig =
-    ConfigFactory.parseString(s"""
+    ConfigFactory.parseString("""
         akka.actor.warn-about-java-serializer-usage = off
       """).withFallback(ArterySpecSupport.tlsConfig) // TLS only used if transport=tls-tcp
 

@@ -21,7 +21,8 @@ import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
 
 object DurableStateBehaviorReplySpec {
-  def conf: Config = PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString(s"""
+  def conf: Config =
+    PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString("""
     akka.loglevel = INFO
     """))
 

@@ -1697,7 +1697,8 @@ class InmemPersistentActorWithRuntimePluginConfigSpec
 
   val providedActorConfig: Config = {
     ConfigFactory
-      .parseString(s"""
+      .parseString(
+        """
          | custom.persistence.snapshot-store.local.dir = target/snapshots-InmemPersistentActorWithRuntimePluginConfigSpec/
      """.stripMargin)
       .withValue(

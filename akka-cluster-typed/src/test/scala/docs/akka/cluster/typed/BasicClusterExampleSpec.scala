@@ -25,7 +25,7 @@ import org.scalatest.time.{ Millis, Seconds, Span }
 import scala.concurrent.duration._
 
 object BasicClusterExampleSpec {
-  val configSystem1 = ConfigFactory.parseString(s"""
+  val configSystem1 = ConfigFactory.parseString("""
 akka.loglevel = DEBUG
 #config-seeds
 akka {
@@ -50,7 +50,7 @@ akka {
 #config-seeds
      """)
 
-  val configSystem2 = ConfigFactory.parseString(s"""
+  val configSystem2 = ConfigFactory.parseString("""
         akka.remote.artery.canonical.port = 0
      """).withFallback(configSystem1)
 
@@ -141,7 +141,7 @@ class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventual
 }
 
 object BasicClusterManualSpec {
-  val clusterConfig = ConfigFactory.parseString(s"""
+  val clusterConfig = ConfigFactory.parseString("""
 akka.loglevel = DEBUG
 akka.cluster.jmx.multi-mbeans-in-same-jvm = on
 #config

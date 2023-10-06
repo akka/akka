@@ -14,7 +14,7 @@ import akka.testkit.LongRunningTest
 
 object JoinConfigCompatCheckerRollingUpdateSpec {
 
-  val baseConfig = ConfigFactory.parseString(s"""
+  val baseConfig = ConfigFactory.parseString("""
       akka.log-dead-letters = off
       akka.log-dead-letters-during-shutdown = off
       akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning

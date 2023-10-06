@@ -69,12 +69,15 @@ object RecoveryPermitterSpec {
     }
 }
 
-class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
+class RecoveryPermitterSpec
+    extends ScalaTestWithActorTestKit("""
       akka.persistence.max-concurrent-recoveries = 3
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.journal.inmem.test-serialization = on
       akka.loggers = ["akka.testkit.TestEventListener"]
-      """) with AnyWordSpecLike with LogCapturing {
+      """)
+    with AnyWordSpecLike
+    with LogCapturing {
 
   import RecoveryPermitterSpec._
 

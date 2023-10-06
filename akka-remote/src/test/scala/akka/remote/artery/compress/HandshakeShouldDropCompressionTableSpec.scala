@@ -19,7 +19,7 @@ import akka.testkit._
 import akka.util.Timeout
 
 object HandshakeShouldDropCompressionTableSpec {
-  val commonConfig = ConfigFactory.parseString(s"""
+  val commonConfig = ConfigFactory.parseString("""
      akka {
        remote.artery.advanced.handshake-timeout = 10s
        remote.artery.advanced.aeron.image-liveness-timeout = 7s

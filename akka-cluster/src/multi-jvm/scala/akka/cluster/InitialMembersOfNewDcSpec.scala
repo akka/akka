@@ -12,7 +12,7 @@ import akka.remote.testkit._
 import akka.testkit.ImplicitSender
 
 object InitialMembersOfNewDcSpec extends MultiNodeConfig {
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = cluster
     akka.actor.warn-about-java-serializer-usage = off
     akka.cluster {

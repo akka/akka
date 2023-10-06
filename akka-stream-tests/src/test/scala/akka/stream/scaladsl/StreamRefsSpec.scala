@@ -168,7 +168,7 @@ object StreamRefsSpec {
   final case class BulkSinkMsg(dataSink: SinkRef[ByteString])
 
   def config(): Config = {
-    ConfigFactory.parseString(s"""
+    ConfigFactory.parseString("""
     akka {
       loglevel = DEBUG
 
