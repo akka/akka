@@ -358,8 +358,8 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
     val stashBufferForRestart = restartingInProgress match {
       case OptionVal.Some((stashBuffer, _)) => stashBuffer
       case _ => StashBuffer[Any](ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], stashCapacity)
-    restartingInProgress = OptionVal.Some((stashBufferForRestart, childrenToStop))
     }
+    restartingInProgress = OptionVal.Some((stashBufferForRestart, childrenToStop))
     strategy match {
       case backoff: Backoff =>
         val restartDelay =
