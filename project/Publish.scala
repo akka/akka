@@ -50,19 +50,11 @@ object Publish extends AutoPlugin {
       defaultPublishTo := target.value / "repository") ++ publishingSettings
 
   private lazy val publishingSettings: Seq[Def.Setting[_]] = {
-    def snapshotRepoKey =
-      new java.io.File(
-        Option(System.getProperty("akka.gustav.key"))
-          .getOrElse(System.getProperty("user.home") + "/.ssh/id_rsa_gustav.pem"))
-
     Def.settings(
       beforePublishTask := beforePublish(isSnapshot.value),
       publishSigned := publishSigned.dependsOn(beforePublishTask).value,
       publishTo := (if (isSnapshot.value)
-                      Some(
-                        Resolver
-                          .sftp("Akka snapshots", "gustav.akka.io", "/home/akkarepo/www/snapshots")
-                          .as("akkarepo", snapshotRepoKey))
+                      Some(Resolver.file("file", target.value / "repository")) // FIXME snapshot repo
                     else
                       Some("Cloudsmith API".at("https://maven.cloudsmith.io/lightbend/akka/"))),
       credentials ++= (if (isSnapshot.value) Seq[Credentials]() else cloudsmithCredentials(validate = false)))
