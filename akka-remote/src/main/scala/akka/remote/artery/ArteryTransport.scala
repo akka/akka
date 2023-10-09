@@ -731,7 +731,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     } catch {
       case ShuttingDown => Future.successful(Done) // silence it
       case exc: UidCollisionException =>
-        log.error(exc, exc.getMessage)
+        log.warning(exc.getMessage)
         // quarantine will not do much since handshake not completed, but for good measures
         quarantine(peer.address, Some(peer.uid), exc.getMessage, harmless = false)
         Future.failed(exc)

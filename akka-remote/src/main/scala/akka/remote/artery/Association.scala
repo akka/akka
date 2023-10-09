@@ -124,7 +124,7 @@ private[remote] object Association {
       completed: Future[Done],
       stopping: OptionVal[StopSignal])
 
-  final class UidCollisionException(message: String) extends IllegalArgumentException(message)
+  final class UidCollisionException(message: String) extends IllegalArgumentException(message) with NoStackTrace
 }
 
 /**
