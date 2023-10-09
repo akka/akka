@@ -35,7 +35,7 @@ Java
 :  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #imports }
 
 All of the Akka I/O APIs are accessed through manager objects. When using an I/O API, the first step is to acquire a
-reference to the appropriate manager. The code below shows how to acquire a reference to the `Tcp` manager.
+reference to the appropriate manager. The code below shows how to acquire a reference to the @apidoc[akka.io.Tcp$] manager.
 
 Scala
 :  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #manager }
@@ -55,8 +55,8 @@ Java
 :  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #client }
 
 The first step of connecting to a remote address is sending a 
-@scala[`Connect` message]@java[message by the `TcpMessage.connect` method] to the TCP manager; in addition to the simplest form shown above there
-is also the possibility to specify a local `InetSocketAddress` to bind
+@scala[@scaladoc[Connect](akka.io.Tcp.Connect) message]@java[message by the @javadoc[TcpMessage.connect](akka.io.TcpMessage#connect(java.net.InetSocketAddress)) method] to the TCP manager; in addition to the simplest form shown above there
+is also the possibility to specify a local @javadoc[InetSocketAddress](java.net.InetSocketAddress) to bind
 to and a list of socket options to apply.
 
 @@@ note
@@ -69,12 +69,12 @@ options of the @scala[`Connect` message]@java[message by the `TcpMessage.connect
 
 @@@
 
-The TCP manager will then reply either with a `CommandFailed` or it will
+The TCP manager will then reply either with a @apidoc[akka.io.Tcp.CommandFailed] or it will
 spawn an internal actor representing the new connection. This new actor will
-then send a `Connected` message to the original sender of the
-@scala[`Connect` message]@java[message by the `TcpMessage.connect` method].
+then send a @apidoc[akka.io.Tcp.Connected] message to the original sender of the
+@scala[@scaladoc[Connect](akka.io.Tcp.Connect) message]@java[message by the @javadoc[TcpMessage.connect](akka.io.TcpMessage#connect(java.net.InetSocketAddress)) method].
 
-In order to activate the new connection a @scala[`Register` message]@java[message by the `TcpMessage.register` method] must be
+In order to activate the new connection a @scala[@scaladoc[Register](akka.io.Tcp.Register) message]@java[message by the @javadoc[TcpMessage.register](akka.io.TcpMessage#register(akka.actor.ActorRef)) method] must be
 sent to the connection actor, informing that one about who shall receive data
 from the socket. Before this step is done the connection cannot be used, and
 there is an internal timeout after which the connection actor will shut itself
@@ -87,7 +87,7 @@ with that connection.
 The actor in the example above uses `become` to switch from unconnected
 to connected operation, demonstrating the commands and events which are
 observed in that state. For a discussion on `CommandFailed` see
-[Throttling Reads and Writes](#throttling-reads-and-writes) below. `ConnectionClosed` is a trait,
+[Throttling Reads and Writes](#throttling-reads-and-writes) below. @apidoc[akka.io.Tcp.ConnectionClosed] is a trait,
 which marks the different connection close events. The last line handles all
 connection close events in the same way. It is possible to listen for more
 fine-grained connection close events, see @ref:[Closing Connections](#closing-connections) below.
@@ -100,12 +100,12 @@ Scala
 Java
 :  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #server }
 
-To create a TCP server and listen for inbound connections, a @scala[`Bind` command]@java[message by the `TcpMessage.bind` method]
+To create a TCP server and listen for inbound connections, a @scala[@scaladoc[Bind](akka.io.Tcp.Bind) command]@java[message by the @javadoc[TcpMessage.bind](akka.io.TcpMessage#bind(akka.actor.ActorRef,java.net.InetSocketAddress,int)) method]
 has to be sent to the TCP manager.  This will instruct the TCP manager
-to listen for TCP connections on a particular `InetSocketAddress`; the
+to listen for TCP connections on a particular @javadoc[InetSocketAddress](java.net.InetSocketAddress); the
 port may be specified as `0` in order to bind to a random port.
 
-The actor sending the @scala[`Bind` message]@java[message by the `TcpMessage.bind` method] will receive a `Bound`
+The actor sending the @scala[`Bind` message]@java[message by the `TcpMessage.bind` method] will receive a @apidoc[akka.io.Tcp.Bound]
 message signaling that the server is ready to accept incoming connections;
 this message also contains the `InetSocketAddress` to which the socket
 was actually bound (i.e. resolved IP address and correct port number). 
@@ -113,7 +113,7 @@ was actually bound (i.e. resolved IP address and correct port number).
 From this point forward the process of handling connections is the same as for
 outgoing connections. The example demonstrates that handling the reads from a
 certain connection can be delegated to another actor by naming it as the
-handler when sending the @scala[`Register` message]@java[message by the `TcpMessage.register` method]. Writes can be sent from any
+handler when sending the @scala[@scaladoc[Register](akka.io.Tcp.Register) message]@java[message by the @javadoc[TcpMessage.register](akka.io.TcpMessage#register(akka.actor.ActorRef)) method]. Writes can be sent from any
 actor in the system to the connection actor (i.e. the actor which sent the
 `Connected` message). The simplistic handler is defined as:
 
@@ -127,8 +127,8 @@ For a more complete sample which also takes into account the possibility of
 failures when sending please see @ref:[Throttling Reads and Writes](#throttling-reads-and-writes) below.
 
 The only difference to outgoing connections is that the internal actor managing
-the listen port—the sender of the `Bound` message—watches the actor
-which was named as the recipient for `Connected` messages in the
+the listen port—the sender of the @apidoc[akka.io.Tcp.Bound] message—watches the actor
+which was named as the recipient for @apidoc[akka.io.Tcp.Connected] messages in the
 @scala[`Bind` message]@java[`TcpMessage.bind` method]. When that actor terminates the listen port will be
 closed and all resources associated with it will be released; existing
 connections will not be terminated at this point.
@@ -139,16 +139,16 @@ A connection can be closed by sending @scala[one of the commands `Close`, `Confi
 @java[a message by one of the methods `TcpMessage.close`, `TcpMessage.confirmedClose` or `TcpMessage.abort`]
 to the connection actor.
 
-@scala[`Close`]@java[`TcpMessage.close`] will close the connection by sending a `FIN` message, but without waiting for confirmation from
+@scala[@scaladoc[Close](akka.io.Tcp.Close$)]@java[@javadoc[TcpMessage.close](akka.io.TcpMessage#close())] will close the connection by sending a `FIN` message, but without waiting for confirmation from
 the remote endpoint. Pending writes will be flushed. If the close is successful, the listener will be notified with
-`Closed`.
+@scaladoc[Closed](akka.io.Tcp.Closed$).
 
-@scala[`ConfirmedClose`]@java[`TcpMessage.confirmedClose`] will close the sending direction of the connection by sending a `FIN` message, but data 
+@scala[@scaladoc[ConfirmedClose](akka.io.Tcp.ConfirmedClose$)]@java[@javadoc[TcpMessage.confirmedClose](akka.io.TcpMessage#confirmedClose())] will close the sending direction of the connection by sending a `FIN` message, but data 
 will continue to be received until the remote endpoint closes the connection, too. Pending writes will be flushed. If the close is
-successful, the listener will be notified with `ConfirmedClosed`.
+successful, the listener will be notified with @scaladoc[ConfirmedClosed](akka.io.Tcp.ConfirmedClosed$).
 
-@scala[`Abort`]@java[`TcpMessage.abort`] will immediately terminate the connection by sending a `RST` message to the remote endpoint. Pending
-writes will be not flushed. If the close is successful, the listener will be notified with `Aborted`.
+@scala[@scaladoc[Abort](akka.io.Tcp.Abort$)]@java[@javadoc[TcpMessage.abort](akka.io.TcpMessage#abort())] will immediately terminate the connection by sending a `RST` message to the remote endpoint. Pending
+writes will be not flushed. If the close is successful, the listener will be notified with @scaladoc[Aborted](akka.io.Tcp.Aborted$).
 
 `PeerClosed` will be sent to the listener if the connection has been closed by the remote endpoint. Per default, the
 connection will then automatically be closed from this endpoint as well. To support half-closed connections set the
