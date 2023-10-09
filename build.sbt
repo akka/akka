@@ -1,5 +1,6 @@
 import akka.Dependencies.{ allScalaVersions, fortifySCAVersion, scalaFortifyVersion }
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox }
+import com.geirsson.CiReleasePlugin
 
 import scala.language.postfixOps
 import scala.sys.process._
@@ -14,9 +15,7 @@ enablePlugins(
   CopyrightHeaderInPr,
   JavaFormatterPlugin,
   JdkOptions)
-disablePlugins(
-  MimaPlugin,
-  com.geirsson.CiReleasePlugin // we use publishSigned, but use a pgp utility from CiReleasePlugin
+disablePlugins(MimaPlugin, CiReleasePlugin // we use publishSigned, but use a pgp utility from CiReleasePlugin
 )
 
 addCommandAlias("verifyCodeStyle", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
@@ -510,7 +509,7 @@ lazy val coordination = akkaModule("akka-coordination")
 
 lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-materials"))
   .enablePlugins(BillOfMaterialsPlugin)
-  .disablePlugins(MimaPlugin, AkkaDisciplinePlugin)
+  .disablePlugins(MimaPlugin, AkkaDisciplinePlugin, CiReleasePlugin)
   // buildSettings and defaultSettings configure organization name, licenses, etc...
   .settings(AkkaBuild.buildSettings)
   .settings(AkkaBuild.defaultSettings)
@@ -543,7 +542,7 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(fortifySettings(name))
     .enablePlugins(BootstrapGenjavadoc)
-    .disablePlugins(com.geirsson.CiReleasePlugin) // we use publishSigned, but use a pgp utility from CiReleasePlugin
+    .disablePlugins(CiReleasePlugin) // we use publishSigned, but use a pgp utility from CiReleasePlugin
 
 /* Command aliases one can run locally against a module
   - where three or more tasks should be checked for faster turnaround
