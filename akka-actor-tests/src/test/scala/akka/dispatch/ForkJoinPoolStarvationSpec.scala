@@ -52,7 +52,8 @@ class ForkJoinPoolStarvationSpec extends AkkaSpec(ForkJoinPoolStarvationSpec.con
 
     "not starve tasks arriving from external dispatchers under high internal traffic" in {
       // TODO issue #31117: starvation with JDK 17 FJP
-      if (System.getProperty("java.specification.version") == "17")
+      val javaSpecVersion = System.getProperty("java.specification.version").toInt
+      if (javaSpecVersion >= 17)
         pending
 
       // Two busy actors that will occupy the threads of the dispatcher
