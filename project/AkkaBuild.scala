@@ -12,6 +12,7 @@ import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin.autoImport._
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
+import sbtdynver.DynVerPlugin.autoImport.dynverSonatypeSnapshots
 
 import java.io.FileInputStream
 import java.io.InputStreamReader
@@ -149,6 +150,8 @@ object AkkaBuild {
         case _                       => Nil
       }
     },
+    // append -SNAPSHOT to version when isSnapshot
+    ThisBuild / dynverSonatypeSnapshots := true,
     ThisBuild / ivyLoggingLevel := UpdateLogging.Quiet,
     licenses := {
       val tagOrBranch =
