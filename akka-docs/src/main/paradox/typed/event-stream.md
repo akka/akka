@@ -27,7 +27,7 @@ version=AkkaVersion
 
 ## Introduction
 
-The event stream is the main @ref:[Event Bus](#eventbus). of each actor system: it is used for
+The event stream is the main @ref:[Event Bus](#eventbus) of each actor system: it is used for
 carrying @ref:[log messages](logging.md) and @ref:[Dead Letters](#dead-letters) and may be
 used by the user code for other purposes as well. 
 
