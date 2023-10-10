@@ -100,10 +100,8 @@ public class LoggingDocTest extends AbstractJavaTest {
 
   @Test
   public void subscribeBySubclassification() {
-    final ActorSystem system = ActorSystem.create("DeadLetters");
+    final ActorSystem system = ActorSystem.create("Subclassification");
     // #superclass-subscription-eventstream
-    final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
-    system.getEventStream().subscribe(actor, DeadLetter.class);
 
     final ActorRef jazzListener = system.actorOf(Props.create(Listener.class));
     final ActorRef musicListener = system.actorOf(Props.create(Listener.class));
