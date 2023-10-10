@@ -72,7 +72,7 @@ Similarly to @ref:[Actor Classification](#actor-classification), @apidoc[event.E
 @@@ note
 
 The event stream is a *local facility*, meaning that it will *not* distribute events to other nodes in a clustered environment (unless you subscribe a Remote Actor to the stream explicitly).
-If you need to broadcast events in an Akka cluster, *without* knowing your recipients explicitly (i.e. obtaining their ActorRefs), you may want to look into: @ref:[Distributed Publish Subscribe in Cluster](distributed-pub-sub.md).
+If you need to broadcast events in an Akka cluster, *without* knowing your recipients explicitly (i.e. obtaining their ActorRefs), you may want to look into: @ref:[The Receptionist](actor-discovery.md#receptionist), @ref:[Group Routers](routers.md#group-router) or @ref:[Distributed Publish Subscribe in Cluster](distributed-pub-sub.md).
 
 @@@
 
