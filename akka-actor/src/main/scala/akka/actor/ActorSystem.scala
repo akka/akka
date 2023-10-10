@@ -807,8 +807,6 @@ private[akka] class ActorSystemImpl(
     setup: ActorSystemSetup)
     extends ExtendedActorSystem {
 
-  val uid: Long = ThreadLocalRandom.current.nextLong()
-
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
       "invalid ActorSystem name [" + name +
@@ -832,6 +830,14 @@ private[akka] class ActorSystemImpl(
       applicationConfig.withFallback(ConfigFactory.defaultReference(classLoader)),
       _dynamicAccess)
     new Settings(classLoader, config, name, setup)
+  }
+
+  val uid: Long = {
+    // to be able to test uid collisions
+    if (settings.config.hasPath("akka.test-only-uid"))
+      settings.config.getLong("akka.test-only-uid")
+    else
+      ThreadLocalRandom.current.nextLong()
   }
 
   protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =

@@ -29,6 +29,7 @@ import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
 import akka.remote.UniqueAddress
+import akka.remote.artery.Association.UidCollisionException
 import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
@@ -729,6 +730,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       associationRegistry.setUID(peer).completeHandshake(peer)
     } catch {
       case ShuttingDown => Future.successful(Done) // silence it
+      case exc: UidCollisionException =>
+        log.warning(exc.getMessage)
+        // quarantine will not do much since handshake not completed, but for good measures
+        quarantine(peer.address, Some(peer.uid), exc.getMessage, harmless = false)
+        Future.failed(exc)
     }
   }
 

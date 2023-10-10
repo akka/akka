@@ -248,7 +248,7 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
                   // that the other system is alive.
                   inboundContext.association(from.address).associationState.lastUsedTimestamp.set(System.nanoTime())
 
-                  after(inboundContext.completeHandshake(from)) { () =>
+                  after(inboundContext.completeHandshake(from)) { _ =>
                     pull(in)
                   }
                 case _ =>
@@ -270,8 +270,9 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
 
       private def onHandshakeReq(from: UniqueAddress, to: Address): Unit = {
         if (to == inboundContext.localAddress.address) {
-          after(inboundContext.completeHandshake(from)) { () =>
-            inboundContext.sendControl(from.address, HandshakeRsp(inboundContext.localAddress))
+          after(inboundContext.completeHandshake(from)) { success =>
+            if (success)
+              inboundContext.sendControl(from.address, HandshakeRsp(inboundContext.localAddress))
             pull(in)
           }
         } else {
@@ -289,15 +290,16 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
         }
       }
 
-      private def after(first: Future[Done])(thenInside: () => Unit): Unit = {
+      private def after(first: Future[Done])(thenInside: Boolean => Unit): Unit = {
         first.value match {
-          case Some(_) =>
+          case Some(result) =>
             // This in the normal case (all but the first). The future will be completed
             // because handshake was already completed. Note that we send those HandshakeReq
             // periodically.
-            thenInside()
+            thenInside(result.isSuccess)
           case None =>
-            first.onComplete(_ => runInStage.invoke(thenInside))(ExecutionContexts.parasitic)
+            first.onComplete(result => runInStage.invoke(() => thenInside(result.isSuccess)))(
+              ExecutionContexts.parasitic)
         }
 
       }
