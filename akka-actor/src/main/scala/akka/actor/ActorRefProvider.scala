@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.annotation.implicitNotFound
@@ -167,6 +168,8 @@ import akka.util.OptionVal
    */
   @InternalApi
   private[akka] def addressString: String
+
+  def systemUid: Long
 
 }
 
@@ -779,4 +782,7 @@ private[akka] class LocalActorRefProvider private[akka] (
         addr
     }
   }
+
+  override val systemUid: Long =
+    ThreadLocalRandom.current.nextLong()
 }

@@ -832,12 +832,22 @@ private[akka] class ActorSystemImpl(
     new Settings(classLoader, config, name, setup)
   }
 
-  val uid: Long = {
+  override lazy val uid: Long = {
     // to be able to test uid collisions
     if (settings.config.hasPath("akka.test-only-uid"))
       settings.config.getLong("akka.test-only-uid")
     else
-      ThreadLocalRandom.current.nextLong()
+      try {
+        provider.systemUid
+      } catch {
+        case NonFatal(exc) =>
+          // could be NPE in RARP if transport not initialized yet
+          throw new IllegalStateException(
+            "uid accessed before provider has been initialized. " +
+            "This is a bug, please report at https://github.com/akka/akka/issues",
+            exc)
+      }
+
   }
 
   protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =

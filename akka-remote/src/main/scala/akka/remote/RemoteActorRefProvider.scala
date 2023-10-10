@@ -9,6 +9,7 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
+import scala.util.hashing.MurmurHash3
 
 import akka.ConfigurationException
 import akka.Done
@@ -620,6 +621,24 @@ private[akka] class RemoteActorRefProvider(
         local.addressString
     }
   }
+
+  override lazy val systemUid: Long = {
+    val address = getDefaultAddress
+
+    val sb = new StringBuilder
+    sb.append(address.host.getOrElse(""))
+      .append(address.port.getOrElse(0))
+      .append(System.currentTimeMillis())
+      .append(System.nanoTime())
+    val key = sb.toString()
+
+    val hash1 = MurmurHash3.stringHash(key.substring(0, key.length / 2))
+    val hash2 = MurmurHash3.stringHash(key.substring(key.length / 2))
+    val longHash = hash1.toLong << 32 | hash2
+
+    longHash
+  }
+
 }
 
 private[akka] trait RemoteRef extends ActorRefScope {
