@@ -36,7 +36,7 @@ It uses @ref:[Subchannel Classification](#subchannel-classification) which enabl
 
 ## How to use
 
-The following example demonstrates how a simple subscription works. Given a simple actor:
+The following example demonstrates how a subscription works. Given an actor:
 
 @@@ div { .group-scala }
 
