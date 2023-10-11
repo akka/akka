@@ -40,7 +40,7 @@ class TimeoutSettingsSpec extends AnyWordSpec with Matchers {
         """).heartbeatInterval shouldEqual 20.second
     }
 
-    "not allow interval to be greater or equal to half the interval" in {
+    "not allow heartbeat-interval to be greater or equal to half the heartbeat-timeout" in {
       intercept[IllegalArgumentException] {
         conf("""
           heartbeat-timeout=100s
