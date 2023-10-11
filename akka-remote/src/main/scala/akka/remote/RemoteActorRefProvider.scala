@@ -4,12 +4,13 @@
 
 package akka.remote
 
+import java.nio.charset.StandardCharsets
+
 import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-import scala.util.hashing.MurmurHash3
 
 import akka.ConfigurationException
 import akka.Done
@@ -33,6 +34,7 @@ import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.remote.artery.tcp.ArteryTcpTransport
+import akka.remote.internal.Hash128
 import akka.remote.serialization.ActorRefResolveThreadLocalCache
 import akka.serialization.Serialization
 import akka.util.ErrorMessages
@@ -630,13 +632,9 @@ private[akka] class RemoteActorRefProvider(
       .append(address.port.getOrElse(0))
       .append(System.currentTimeMillis())
       .append(System.nanoTime())
-    val key = sb.toString()
+    val data = sb.toString().getBytes(StandardCharsets.UTF_8)
 
-    val hash1 = MurmurHash3.stringHash(key.substring(0, key.length / 2))
-    val hash2 = MurmurHash3.stringHash(key.substring(key.length / 2))
-    val longHash = hash1.toLong << 32 | hash2
-
-    longHash
+    Hash128.hash128x64(data)._2
   }
 
 }

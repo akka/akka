@@ -6,6 +6,8 @@ package akka.remote.internal
 
 import java.nio.charset.StandardCharsets
 
+import scala.util.Random
+
 import org.apache.commons.codec.digest.MurmurHash3
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -14,8 +16,8 @@ class Hash128Spec extends AnyWordSpec with Matchers {
   "128 bit hashing" must {
     "be same as MurmurHash3.hash128x64Internal" in {
       // note that MurmurHash3 is from commons-codec test dependency
-//      val rnd = new Random
-      val data = "abc"
+      val rnd = new Random
+      val data = rnd.nextString(5 + rnd.nextInt(40))
       val dataBytes = data.getBytes(StandardCharsets.UTF_8)
       withClue(s"$data: ") {
         val expected = MurmurHash3.hash128x64(dataBytes)
