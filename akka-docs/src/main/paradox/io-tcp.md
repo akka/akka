@@ -150,19 +150,19 @@ successful, the listener will be notified with @scaladoc[ConfirmedClosed](akka.i
 @scala[@scaladoc[Abort](akka.io.Tcp.Abort$)]@java[@javadoc[TcpMessage.abort](akka.io.TcpMessage#abort())] will immediately terminate the connection by sending a `RST` message to the remote endpoint. Pending
 writes will be not flushed. If the close is successful, the listener will be notified with @scaladoc[Aborted](akka.io.Tcp.Aborted$).
 
-`PeerClosed` will be sent to the listener if the connection has been closed by the remote endpoint. Per default, the
+@scaladoc[PeerClosed](akka.io.Tcp.PeerClosed$) will be sent to the listener if the connection has been closed by the remote endpoint. Per default, the
 connection will then automatically be closed from this endpoint as well. To support half-closed connections set the
-`keepOpenOnPeerClosed` member of the @scala[`Register` message]@java[`TcpMessage.register` method] to `true` in which case the connection stays open until
+`keepOpenOnPeerClosed` member of the @scala[@scaladoc[Register](akka.io.Tcp.Register) message]@java[@javadoc[TcpMessage.register](akka.io.TcpMessage#register(akka.actor.ActorRef,boolean,boolean)) method] to `true` in which case the connection stays open until
 it receives one of the above close commands.
 
-`ErrorClosed` will be sent to the listener whenever an error happened that forced the connection to be closed.
+@apidoc[akka.io.Tcp.ErrorClosed] will be sent to the listener whenever an error happened that forced the connection to be closed.
 
-All close notifications are sub-types of `ConnectionClosed` so listeners who do not need fine-grained close events
+All close notifications are sub-types of @apidoc[akka.io.Tcp.ConnectionClosed] so listeners who do not need fine-grained close events
 may handle all close events in the same way.
 
 ## Writing to a connection
 
-Once a connection has been established data can be sent to it from any actor in the form of a `Tcp.WriteCommand`.
+Once a connection has been established data can be sent to it from any actor in the form of a @apidoc[Tcp.WriteCommand](akka.io.Tcp.WriteCommand).
 `Tcp.WriteCommand` is an abstract class with three concrete implementations:
 
 Tcp.Write
@@ -171,24 +171,24 @@ A `ByteString` (as explained in @ref:[this section](io.md#bytestring)) models on
 in-memory data with a maximum (total) size of 2 GB (2^31 bytes).
 
 Tcp.WriteFile
-: If you want to send "raw" data from a file you can do so efficiently with the `Tcp.WriteFile` command.
+: If you want to send "raw" data from a file you can do so efficiently with the @apidoc[Tcp.WriteFile](akka.io.Tcp.WriteFile) command.
 This allows you do designate a (contiguous) chunk of on-disk bytes for sending across the connection without
 the need to first load them into the JVM memory. As such `Tcp.WriteFile` can "hold" more than 2GB of data and
 an "ack" event if required.
 
 Tcp.CompoundWrite
 : 
-Sometimes you might want to group (or interleave) several `Tcp.Write` and/or `Tcp.WriteFile` commands into
-one atomic write command which gets written to the connection in one go. The `Tcp.CompoundWrite` allows you
+Sometimes you might want to group (or interleave) several @apidoc[Tcp.Write](akka.io.Tcp.Write) and/or @apidoc[Tcp.WriteFile](akka.io.Tcp.WriteFile) commands into
+one atomic write command which gets written to the connection in one go. The @apidoc[Tcp.CompoundWrite](akka.io.Tcp.CompoundWrite) allows you
 to do just that and offers three benefits:
  1. As explained in the following section the TCP connection actor can only handle one single write command at a time.
 By combining several writes into one `CompoundWrite` you can have them be sent across the connection with
 minimum overhead and without the need to spoon feed them to the connection actor via an *ACK-based* message
 protocol.
- 2. Because a `WriteCommand` is atomic you can be sure that no other actor can "inject" other writes into your
+ 2. Because a @apidoc[akka.io.Tcp.WriteCommand] is atomic you can be sure that no other actor can "inject" other writes into your
 series of writes if you combine them into one single `CompoundWrite`. In scenarios where several actors write
 to the same connection this can be an important feature which can be somewhat hard to achieve otherwise.
- 3. The "sub writes" of a `CompoundWrite` are regular @scala[`Write` or `WriteFile` commands]@java[messages by `TcpMessage.write` or `TcpMessage.writeFile` methods] that themselves can request
+ 3. The "sub writes" of a `CompoundWrite` are regular @scala[@scaladoc[Write](akka.io.Tcp$.Write) or @scaladoc[WriteFile](akka.io.Tcp$.WriteFile) commands]@java[messages by @javadoc[TcpMessage.write](akka.io.TcpMessage#write(akka.util.ByteString,akka.io.Tcp.Event)) or @javadoc[TcpMessage.writeFile](akka.io.TcpMessage#writeFile(java.lang.String,long,long,akka.io.Tcp.Event)) methods] that themselves can request
 "ack" events. These ACKs are sent out as soon as the respective "sub write" has been completed. This allows you to
 attach more than one ACK to a @scala[`Write` or `WriteFile`]@java[message by `TcpMessage.write` or `TcpMessage.writeFile`] (by combining it with an empty write that itself requests
 an ACK) or to have the connection actor acknowledge the progress of transmitting the `CompoundWrite` by sending
@@ -204,22 +204,22 @@ needs to be handled at the user level, for both writes and reads.
 
 For back-pressuring writes there are three modes of operation
 
- * *ACK-based:* every `Write` command carries an arbitrary object, and if
-this object is not `Tcp.NoAck` then it will be returned to the sender of
+ * *ACK-based:* every @apidoc[akka.io.Tcp.Write] command carries an arbitrary object, and if
+this object is not @apidoc[akka.io.Tcp.NoAck] then it will be returned to the sender of
 the `Write` upon successfully writing all contained data to the
 socket. If no other write is initiated before having received this
 acknowledgement then no failures can happen due to buffer overrun.
  * *NACK-based:* every write which arrives while a previous write is not yet
-completed will be replied to with a `CommandFailed` message containing
+completed will be replied to with a @apidoc[akka.io.Tcp.CommandFailed] message containing
 the failed write. Just relying on this mechanism requires the implemented
 protocol to tolerate skipping writes (e.g. if each write is a valid message
 on its own and it is not required that all are delivered). This mode is
 enabled by setting the `useResumeWriting` flag to `false` within the
-@scala[`Register` message]@java[message by the `TcpMessage.register` method] during connection activation.
+   @scala[@scaladoc[Register](akka.io.Tcp.Register) message]@java[@javadoc[TcpMessage.register](akka.io.TcpMessage#register(akka.actor.ActorRef,boolean,boolean)) method] during connection activation.
  * *NACK-based with write suspending:* this mode is very similar to the
 NACK-based one, but once a single write has failed no further writes will
-succeed until a @scala[`ResumeWriting` message]@java[message by the `TcpMessage.resumeWriting` method] is received. This message will
-be answered with a `WritingResumed` message once the last accepted
+succeed until a @scala[@scaladoc[ResumeWriting](akka.io.Tcp.ResumeWriting$) message]@java[message by the @javadoc[TcpMessage.resumeWriting](akka.io.TcpMessage#resumeWriting()) method] is received. This message will
+be answered with a @apidoc[akka.io.Tcp.WritingResumed] message once the last accepted
 write has completed. If the actor driving the connection implements buffering
 and resends the NACK’ed messages after having awaited the
 `WritingResumed` signal then every message is delivered exactly once
@@ -232,11 +232,11 @@ available @scala[@extref[on GitHub](github:akka-docs/src/test/scala/docs/io/Echo
 For back-pressuring reads there are two modes of operation
 
  * *Push-reading:* in this mode the connection actor sends the registered reader actor
-incoming data as soon as available as `Received` events. Whenever the reader actor
-wants to signal back-pressure to the remote TCP endpoint it can send a @scala[`SuspendReading` message]@java[message by the `TcpMessage.suspendReading` method] 
+incoming data as soon as available as @apidoc[akka.io.Tcp.Received] events. Whenever the reader actor
+wants to signal back-pressure to the remote TCP endpoint it can send a @scala[@scaladoc[SuspendReading](akka.io.Tcp.SuspendReading$) message]@java[message by the @javadoc[TcpMessage.suspendReading](akka.io.TcpMessage#suspendReading()) method] 
 to the connection actor to indicate that it wants to suspend the
 reception of new data. No `Received` events will arrive until a corresponding
-`ResumeReading` is sent indicating that the receiver actor is ready again.
+@scaladoc[ResumeReading](akka.io.Tcp.ResumeReading$) is sent indicating that the receiver actor is ready again.
  * *Pull-reading:* after sending a `Received` event the connection
 actor automatically suspends accepting data from the socket until the reader actor signals
 with a `ResumeReading` message that it is ready to process more input data. Hence
@@ -256,7 +256,7 @@ For proper function of the following example it is important to configure the
 connection to remain half-open when the remote side closed its writing end:
 this allows the example `EchoHandler` to write all outstanding data back
 to the client before fully closing the connection. This is enabled using a flag
-upon connection activation (observe the @scala[`Register` message]@java[`TcpMessage.register` method]):
+upon connection activation (observe the @scala[@scaladoc[Register](akka.io.Tcp.Register) message]@java[@javadoc[TcpMessage.register](akka.io.TcpMessage#register(akka.actor.ActorRef,boolean,boolean)) method]):
 
 Scala
 :  @@snip [EchoServer.scala](/akka-docs/src/test/scala/docs/io/EchoServer.scala) { #echo-manager }
@@ -290,7 +290,7 @@ behavior; otherwise we send the next buffered chunk and stay waiting for
 the next `Ack`.
 
 Back-pressure can be propagated also across the reading side back to the writer
-on the other end of the connection by sending the @scala[`SuspendReading` command]@java[message by the `TcpMessage.suspendReading` method]
+on the other end of the connection by sending the @scala[@scaladoc[SuspendReading](akka.io.Tcp.SuspendReading$) command]@java[message by the @javadoc[TcpMessage.suspendReading](akka.io.TcpMessage#suspendReading()) method]
 to the connection actor. This will lead to no data being read from the
 socket anymore (although this does happen after a delay because it takes some
 time until the connection actor processes this command, hence appropriate
@@ -308,7 +308,7 @@ Scala
 Java
 :  @@snip [EchoHandler.java](/akka-docs/src/test/java/jdocs/io/japi/EchoHandler.java) { #echo-handler }
 
-The principle here is to keep writing until a `CommandFailed` is
+The principle here is to keep writing until a @apidoc[akka.io.Tcp.CommandFailed] is
 received, using acknowledgements only to prune the resend buffer. When a such a
 failure was received, transition into a different state for handling and handle
 resending of all queued data:
@@ -321,7 +321,7 @@ Java
 
 It should be noted that all writes which are currently buffered have also been
 sent to the connection actor upon entering this state, which means that the
-@scala[`ResumeWriting` message]@java[message by the `TcpMessage.resumeWriting` method] is enqueued after those writes, leading to the
+@scala[@scaladoc[ResumeWriting](akka.io.Tcp.ResumeWriting$) message]@java[message by the @javadoc[TcpMessage.resumeWriting](akka.io.TcpMessage#resumeWriting()) method] is enqueued after those writes, leading to the
 reception of all outstanding `CommandFailed` messages (which are ignored
 in this state) before receiving the `WritingResumed` signal. That latter
 message is sent by the connection actor only once the internally queued write
@@ -368,13 +368,13 @@ Java
 The idea here is that reading is not resumed until the previous write has been
 completely acknowledged by the connection actor. Every pull mode connection
 actor starts from suspended state. To start the flow of data we send a
-@scala[`ResumeReading`]@java[message by the `TcpMessage.resumeReading` method] in the `preStart` method to tell the connection actor that
+@scala[@scaladoc[ResumeReading](akka.io.Tcp.ResumeReading$)]@java[message by the @javadoc[TcpMessage.resumeReading](akka.io.TcpMessage#resumeReading()) method] in the `preStart` method to tell the connection actor that
 we are ready to receive the first chunk of data. Since we only resume reading when
 the previous data chunk has been completely written there is no need for maintaining
 a buffer.
 
 To enable pull reading on an outbound connection the `pullMode` parameter of
-the @scala[`Connect`]@java[`TcpMessage.connect` method] should be set to `true`:
+the @scala[@scaladoc[Connect](akka.io.Tcp.Connect)]@java[@javadoc[TcpMessage.connect](akka.io.TcpMessage#connect(java.net.InetSocketAddress,java.net.InetSocketAddress,java.lang.Iterable,scala.concurrent.duration.FiniteDuration,boolean)) method] should be set to `true`:
 
 Scala
 :  @@snip [ReadBackPressure.scala](/akka-docs/src/test/scala/docs/io/ReadBackPressure.scala) { #pull-mode-connect }
@@ -386,7 +386,7 @@ Java
 
 The previous section demonstrated how to enable pull reading mode for outbound
 connections but it is possible to create a listener actor with this mode of reading
-by setting the `pullMode` parameter of the @scala[`Bind` command]@java[`TcpMessage.bind` method] to `true`:
+by setting the `pullMode` parameter of the @scala[@scaladoc[Bind](akka.io.Tcp.Bind) command]@java[message by the @javadoc[TcpMessage.bind](akka.io.TcpMessage#bind(akka.actor.ActorRef,java.net.InetSocketAddress,int,java.lang.Iterable,boolean)) method] to `true`:
 
 Scala
 :  @@snip [ReadBackPressure.scala](/akka-docs/src/test/scala/docs/io/ReadBackPressure.scala) { #pull-mode-bind }
@@ -403,7 +403,7 @@ one (or more) `Connected` events the listener actor has to be resumed by sending
 it a @scala[`ResumeAccepting` message]@java[message by the `TcpMessage.resumeAccepting` method].
 
 Listener actors with pull mode start suspended so to start accepting connections
-a @scala[`ResumeAccepting` command]@java[message by the `TcpMessage.resumeAccepting` method] has to be sent to the listener actor after binding was successful:
+a @scala[@scaladoc[ResumeAccepting](akka.io.Tcp.ResumeAccepting) command]@java[message by the @javadoc[TcpMessage.resumeAccepting](akka.io.TcpMessage#resumeAccepting(int)) method] has to be sent to the listener actor after binding was successful:
 
 Scala
 :  @@snip [ReadBackPressure.scala](/akka-docs/src/test/scala/docs/io/ReadBackPressure.scala) { #pull-accepting #pull-accepting-cont }
