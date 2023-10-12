@@ -4,7 +4,6 @@
 
 package akka.remote.artery
 
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -36,9 +35,8 @@ import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
-import akka.remote.artery.compress._
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
-import akka.remote.internal.Hash128
+import akka.remote.artery.compress._
 import akka.remote.testkit.Blackhole
 import akka.remote.testkit.SetThrottle
 import akka.remote.testkit.Unthrottled
@@ -395,7 +393,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     val (port, boundPort) = bindInboundStreams()
 
-    val uid = generateSystemUid(settings.Bind.Hostname, port)
+    val uid =
+      if (provider.settings.config.hasPath("akka.test-only-uid"))
+        provider.settings.config.getLong("akka.test-only-uid") // to be able to test uid collisions
+      else
+        generateSystemUid(settings.Bind.Hostname, port, provider.systemUidTimestamp1)
 
     _localAddress =
       UniqueAddress(Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port), uid)
@@ -993,12 +995,18 @@ private[remote] object ArteryTransport {
       case _               => "message"
     }
 
-  def generateSystemUid(hostname: String, port: Int): Long = {
-    val sb = new StringBuilder
-    sb.append(hostname).append(port).append(System.currentTimeMillis()).append(System.nanoTime())
-    val data = sb.toString().getBytes(StandardCharsets.UTF_8)
+  def generateSystemUid(hostname: String, port: Int, timestamp1: Long): Long = {
+    var hash1 = 23
+    hash1 = 31 * hash1 + hostname.hashCode
+    hash1 = 31 * hash1 + java.lang.Long.hashCode(timestamp1)
+    hash1 = 31 * hash1 + java.lang.Long.hashCode(System.currentTimeMillis())
 
-    Hash128.hash128x64(data)._2
+    var hash2 = 23
+    hash2 = 31 * hash2 + port
+    hash2 = 31 * hash2 + java.lang.Long.hashCode(System.nanoTime())
+    hash2 = 31 * hash2 + java.lang.Long.hashCode(System.currentTimeMillis())
+
+    (hash1.toLong << 32) | (hash2 & 0XFFFFFFFFL)
   }
 
 }

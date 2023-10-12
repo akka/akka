@@ -147,6 +147,10 @@ private[akka] class RemoteActorRefProvider(
     extends ActorRefProvider {
   import RemoteActorRefProvider._
 
+  // One part of the system uid generation. Taking this early to allow for some execution randomness until later
+  // when actually generating the uid.
+  val systemUidTimestamp1: Long = System.nanoTime()
+
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config)
 
   private[akka] final val hasClusterOrUseUnsafe = settings.HasCluster || remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
