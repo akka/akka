@@ -4,8 +4,6 @@
 
 package akka.remote
 
-import java.nio.charset.StandardCharsets
-
 import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.util.Failure
@@ -14,10 +12,10 @@ import scala.util.control.NonFatal
 
 import akka.ConfigurationException
 import akka.Done
-import akka.actor._
 import akka.actor.SystemGuardian.RegisterTerminationHook
 import akka.actor.SystemGuardian.TerminationHook
 import akka.actor.SystemGuardian.TerminationHookDone
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
@@ -34,7 +32,6 @@ import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.remote.artery.tcp.ArteryTcpTransport
-import akka.remote.internal.Hash128
 import akka.remote.serialization.ActorRefResolveThreadLocalCache
 import akka.serialization.Serialization
 import akka.util.ErrorMessages
@@ -624,18 +621,8 @@ private[akka] class RemoteActorRefProvider(
     }
   }
 
-  override lazy val systemUid: Long = {
-    val address = getDefaultAddress
-
-    val sb = new StringBuilder
-    sb.append(address.host.getOrElse(""))
-      .append(address.port.getOrElse(0))
-      .append(System.currentTimeMillis())
-      .append(System.nanoTime())
-    val data = sb.toString().getBytes(StandardCharsets.UTF_8)
-
-    Hash128.hash128x64(data)._2
-  }
+  override def systemUid: Long =
+    transport.systemUid
 
 }
 
