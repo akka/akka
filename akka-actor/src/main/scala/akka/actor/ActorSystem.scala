@@ -832,7 +832,7 @@ private[akka] class ActorSystemImpl(
     new Settings(classLoader, config, name, setup)
   }
 
-  override lazy val uid: Long = {
+  override def uid: Long = {
     try {
       provider.systemUid
     } catch {
