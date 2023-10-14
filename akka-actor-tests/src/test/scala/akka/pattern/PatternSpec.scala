@@ -52,7 +52,7 @@ class PatternSpec extends AkkaSpec {
 
   "pattern.after" must {
     "be completed successfully eventually" in {
-      // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
+      // after is unfortunately shadowed by ScalaTest, fix as part of #3759
       val f = akka.pattern.after(1 second, using = system.scheduler)(Future.successful(5))
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
@@ -60,7 +60,7 @@ class PatternSpec extends AkkaSpec {
     }
 
     "be completed abnormally eventually" in {
-      // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
+      // after is unfortunately shadowed by ScalaTest, fix as part of #3759
       val f = akka.pattern.after(1 second, using = system.scheduler)(Future.failed(new IllegalStateException("Mexico")))
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
