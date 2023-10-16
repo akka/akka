@@ -65,10 +65,10 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
         remoteSystem2.actorSelection(s"akka://${localSystem.name}@localhost:$localPort/user/$echoName")
 
       selectionFromLocalToRemote1.tell("ping1a", localProbe.ref)
-      localProbe.expectMsg(500.millis, "ping1a")
+      localProbe.expectMsg("ping1a")
 
       selectionFromRemote1ToLocal.tell("ping1b", remote1Probe.ref)
-      remote1Probe.expectMsg(500.millis, "ping1b")
+      remote1Probe.expectMsg("ping1b")
 
       EventFilter[UidCollisionException]().intercept {
         selectionFromLocalToRemote2.tell("ping2a", localProbe.ref)
@@ -101,11 +101,11 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
       // still works
       selectionFromLocalToRemote1.tell("ping1a again", localProbe.ref)
-      localProbe.expectMsg(500.millis, "ping1a again")
+      localProbe.expectMsg("ping1a again")
 
       // still works in other direction
       selectionFromRemote1ToLocal.tell("ping1b again", remote1Probe.ref)
-      remote1Probe.expectMsg(500.millis, "ping1b again")
+      remote1Probe.expectMsg("ping1b again")
     }
 
     "handle uid collision when connection FROM two systems with same uid" in {
@@ -148,10 +148,10 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
         remoteSystem2.actorSelection(s"akka://${localSystem.name}@localhost:$localPort/user/$echoName")
 
       selectionFromRemote1ToLocal.tell("ping1b", remote1Probe.ref)
-      remote1Probe.expectMsg(500.millis, "ping1b")
+      remote1Probe.expectMsg("ping1b")
 
       selectionFromLocalToRemote1.tell("ping1a", localProbe.ref)
-      localProbe.expectMsg(500.millis, "ping1a")
+      localProbe.expectMsg("ping1a")
 
       EventFilter[UidCollisionException]().intercept {
         selectionFromRemote2ToLocal.tell("ping2b", remote2Probe.ref)
@@ -184,11 +184,11 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
       // still works
       selectionFromRemote1ToLocal.tell("ping1b again", remote1Probe.ref)
-      remote1Probe.expectMsg(500.millis, "ping1b again")
+      remote1Probe.expectMsg("ping1b again")
 
       // still works in other direction
       selectionFromLocalToRemote1.tell("ping1a again", localProbe.ref)
-      localProbe.expectMsg(500.millis, "ping1a again")
+      localProbe.expectMsg("ping1a again")
     }
 
     "be able to connect to system even if it's not there at first" in {
