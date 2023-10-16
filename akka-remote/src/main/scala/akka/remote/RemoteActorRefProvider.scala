@@ -12,10 +12,10 @@ import scala.util.control.NonFatal
 
 import akka.ConfigurationException
 import akka.Done
-import akka.actor._
 import akka.actor.SystemGuardian.RegisterTerminationHook
 import akka.actor.SystemGuardian.TerminationHook
 import akka.actor.SystemGuardian.TerminationHookDone
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
@@ -146,6 +146,10 @@ private[akka] class RemoteActorRefProvider(
     val dynamicAccess: DynamicAccess)
     extends ActorRefProvider {
   import RemoteActorRefProvider._
+
+  // One part of the system uid generation. Taking this early to allow for some execution randomness until later
+  // when actually generating the uid.
+  val systemUidTimestamp1: Long = System.nanoTime()
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config)
 
@@ -620,6 +624,10 @@ private[akka] class RemoteActorRefProvider(
         local.addressString
     }
   }
+
+  override def systemUid: Long =
+    transport.systemUid
+
 }
 
 private[akka] trait RemoteRef extends ActorRefScope {

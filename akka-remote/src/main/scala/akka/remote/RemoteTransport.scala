@@ -99,4 +99,5 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
   @InternalStableApi
   def quarantine(address: Address, uid: Option[Long], reason: String): Unit
 
+  def systemUid: Long
 }

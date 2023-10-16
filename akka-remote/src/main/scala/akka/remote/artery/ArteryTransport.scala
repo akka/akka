@@ -35,8 +35,8 @@ import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
-import akka.remote.artery.compress._
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
+import akka.remote.artery.compress._
 import akka.remote.testkit.Blackhole
 import akka.remote.testkit.SetThrottle
 import akka.remote.testkit.Unthrottled
@@ -312,6 +312,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
 
+  /**
+   * Must not be accessed before `start()`, will throw NullPointerException otherwise.
+   */
+  override def systemUid: Long = _localAddress.uid
+
   protected val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
 
   // keyed by the streamId
@@ -388,12 +393,18 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     val (port, boundPort) = bindInboundStreams()
 
+    val uid =
+      if (provider.settings.config.hasPath("akka.test-only-uid"))
+        provider.settings.config.getLong("akka.test-only-uid") // to be able to test uid collisions
+      else
+        generateSystemUid(settings.Bind.Hostname, port, provider.systemUidTimestamp1)
+
     _localAddress =
-      UniqueAddress(Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port), system.uid)
+      UniqueAddress(Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port), uid)
     _addresses = Set(_localAddress.address)
 
     _bindAddress =
-      UniqueAddress(Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort), system.uid)
+      UniqueAddress(Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort), uid)
 
     flightRecorder.transportUniqueAddressSet(_localAddress)
 
@@ -983,5 +994,19 @@ private[remote] object ArteryTransport {
       case LargeStreamId   => "large message"
       case _               => "message"
     }
+
+  def generateSystemUid(hostname: String, port: Int, timestamp1: Long): Long = {
+    var hash1 = 23
+    hash1 = 31 * hash1 + hostname.hashCode
+    hash1 = 31 * hash1 + java.lang.Long.hashCode(timestamp1)
+    hash1 = 31 * hash1 + java.lang.Long.hashCode(System.currentTimeMillis())
+
+    var hash2 = 23
+    hash2 = 31 * hash2 + port
+    hash2 = 31 * hash2 + java.lang.Long.hashCode(System.nanoTime())
+    hash2 = 31 * hash2 + java.lang.Long.hashCode(System.currentTimeMillis())
+
+    (hash1.toLong << 32) | (hash2 & 0XFFFFFFFFL)
+  }
 
 }

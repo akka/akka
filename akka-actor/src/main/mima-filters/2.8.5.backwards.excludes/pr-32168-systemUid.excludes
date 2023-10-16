@@ -1,0 +1,2 @@
+# Additional method in ActorRefProvider, which is "do not extend"
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorRefProvider.systemUid")
