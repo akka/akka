@@ -135,9 +135,12 @@ public final class ClusterShardingMessages {
     }
     private CoordinatorState() {
       shards_ = java.util.Collections.emptyList();
-      regions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-      regionProxies_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-      unallocatedShards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      regions_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+      regionProxies_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+      unallocatedShards_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -147,11 +150,6 @@ public final class ClusterShardingMessages {
       return new CoordinatorState();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_descriptor;
@@ -227,11 +225,6 @@ public final class ClusterShardingMessages {
         return new ShardEntry();
       }
 
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
-        return this.unknownFields;
-      }
       public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_ShardEntry_descriptor;
@@ -480,11 +473,13 @@ public final class ClusterShardingMessages {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
+
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
+
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseDelimitedFrom(
           java.io.InputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -986,7 +981,8 @@ public final class ClusterShardingMessages {
 
     public static final int REGIONS_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList regions_;
+    private akka.protobufv3.internal.LazyStringArrayList regions_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string regions = 2;</code>
      * @return A list containing the regions.
@@ -1022,7 +1018,8 @@ public final class ClusterShardingMessages {
 
     public static final int REGIONPROXIES_FIELD_NUMBER = 3;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList regionProxies_;
+    private akka.protobufv3.internal.LazyStringArrayList regionProxies_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string regionProxies = 3;</code>
      * @return A list containing the regionProxies.
@@ -1058,7 +1055,8 @@ public final class ClusterShardingMessages {
 
     public static final int UNALLOCATEDSHARDS_FIELD_NUMBER = 4;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList unallocatedShards_;
+    private akka.protobufv3.internal.LazyStringArrayList unallocatedShards_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string unallocatedShards = 4;</code>
      * @return A list containing the unallocatedShards.
@@ -1260,11 +1258,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -1347,12 +1347,12 @@ public final class ClusterShardingMessages {
           shardsBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
-        regions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        regionProxies_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        unallocatedShards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000008);
+        regions_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        regionProxies_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        unallocatedShards_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -1395,25 +1395,22 @@ public final class ClusterShardingMessages {
         } else {
           result.shards_ = shardsBuilder_.build();
         }
-        if (((bitField0_ & 0x00000002) != 0)) {
-          regions_ = regions_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.regions_ = regions_;
-        if (((bitField0_ & 0x00000004) != 0)) {
-          regionProxies_ = regionProxies_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000004);
-        }
-        result.regionProxies_ = regionProxies_;
-        if (((bitField0_ & 0x00000008) != 0)) {
-          unallocatedShards_ = unallocatedShards_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000008);
-        }
-        result.unallocatedShards_ = unallocatedShards_;
       }
 
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          regions_.makeImmutable();
+          result.regions_ = regions_;
+        }
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          regionProxies_.makeImmutable();
+          result.regionProxies_ = regionProxies_;
+        }
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          unallocatedShards_.makeImmutable();
+          result.unallocatedShards_ = unallocatedShards_;
+        }
       }
 
       @java.lang.Override
@@ -1489,7 +1486,7 @@ public final class ClusterShardingMessages {
         if (!other.regions_.isEmpty()) {
           if (regions_.isEmpty()) {
             regions_ = other.regions_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureRegionsIsMutable();
             regions_.addAll(other.regions_);
@@ -1499,7 +1496,7 @@ public final class ClusterShardingMessages {
         if (!other.regionProxies_.isEmpty()) {
           if (regionProxies_.isEmpty()) {
             regionProxies_ = other.regionProxies_;
-            bitField0_ = (bitField0_ & ~0x00000004);
+            bitField0_ |= 0x00000004;
           } else {
             ensureRegionProxiesIsMutable();
             regionProxies_.addAll(other.regionProxies_);
@@ -1509,7 +1506,7 @@ public final class ClusterShardingMessages {
         if (!other.unallocatedShards_.isEmpty()) {
           if (unallocatedShards_.isEmpty()) {
             unallocatedShards_ = other.unallocatedShards_;
-            bitField0_ = (bitField0_ & ~0x00000008);
+            bitField0_ |= 0x00000008;
           } else {
             ensureUnallocatedShardsIsMutable();
             unallocatedShards_.addAll(other.unallocatedShards_);
@@ -1835,12 +1832,13 @@ public final class ClusterShardingMessages {
         return shardsBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList regions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList regions_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureRegionsIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!regions_.isModifiable()) {
           regions_ = new akka.protobufv3.internal.LazyStringArrayList(regions_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string regions = 2;</code>
@@ -1848,7 +1846,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getRegionsList() {
-        return regions_.getUnmodifiableView();
+        regions_.makeImmutable();
+        return regions_;
       }
       /**
        * <code>repeated string regions = 2;</code>
@@ -1885,6 +1884,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRegionsIsMutable();
         regions_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1898,6 +1898,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRegionsIsMutable();
         regions_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1911,6 +1912,7 @@ public final class ClusterShardingMessages {
         ensureRegionsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, regions_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1919,8 +1921,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearRegions() {
-        regions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        regions_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -1934,16 +1937,18 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRegionsIsMutable();
         regions_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList regionProxies_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList regionProxies_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureRegionProxiesIsMutable() {
-        if (!((bitField0_ & 0x00000004) != 0)) {
+        if (!regionProxies_.isModifiable()) {
           regionProxies_ = new akka.protobufv3.internal.LazyStringArrayList(regionProxies_);
-          bitField0_ |= 0x00000004;
-         }
+        }
+        bitField0_ |= 0x00000004;
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
@@ -1951,7 +1956,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getRegionProxiesList() {
-        return regionProxies_.getUnmodifiableView();
+        regionProxies_.makeImmutable();
+        return regionProxies_;
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
@@ -1988,6 +1994,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRegionProxiesIsMutable();
         regionProxies_.set(index, value);
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -2001,6 +2008,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRegionProxiesIsMutable();
         regionProxies_.add(value);
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -2014,6 +2022,7 @@ public final class ClusterShardingMessages {
         ensureRegionProxiesIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, regionProxies_);
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -2022,8 +2031,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearRegionProxies() {
-        regionProxies_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000004);
+        regionProxies_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000004);;
         onChanged();
         return this;
       }
@@ -2037,16 +2047,18 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRegionProxiesIsMutable();
         regionProxies_.add(value);
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList unallocatedShards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList unallocatedShards_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureUnallocatedShardsIsMutable() {
-        if (!((bitField0_ & 0x00000008) != 0)) {
+        if (!unallocatedShards_.isModifiable()) {
           unallocatedShards_ = new akka.protobufv3.internal.LazyStringArrayList(unallocatedShards_);
-          bitField0_ |= 0x00000008;
-         }
+        }
+        bitField0_ |= 0x00000008;
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
@@ -2054,7 +2066,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getUnallocatedShardsList() {
-        return unallocatedShards_.getUnmodifiableView();
+        unallocatedShards_.makeImmutable();
+        return unallocatedShards_;
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
@@ -2091,6 +2104,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureUnallocatedShardsIsMutable();
         unallocatedShards_.set(index, value);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -2104,6 +2118,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureUnallocatedShardsIsMutable();
         unallocatedShards_.add(value);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -2117,6 +2132,7 @@ public final class ClusterShardingMessages {
         ensureUnallocatedShardsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, unallocatedShards_);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -2125,8 +2141,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearUnallocatedShards() {
-        unallocatedShards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000008);
+        unallocatedShards_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000008);;
         onChanged();
         return this;
       }
@@ -2140,6 +2157,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureUnallocatedShardsIsMutable();
         unallocatedShards_.add(value);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -2251,11 +2269,6 @@ public final class ClusterShardingMessages {
       return new ActorRefMessage();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ActorRefMessage_descriptor;
@@ -2436,11 +2449,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2845,11 +2860,6 @@ public final class ClusterShardingMessages {
       return new ShardIdMessage();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardIdMessage_descriptor;
@@ -3030,11 +3040,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3457,11 +3469,6 @@ public final class ClusterShardingMessages {
       return new ShardHomeAllocated();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHomeAllocated_descriptor;
@@ -3710,11 +3717,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -4235,11 +4244,6 @@ public final class ClusterShardingMessages {
       return new ShardHome();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHome_descriptor;
@@ -4488,11 +4492,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5015,7 +5021,8 @@ public final class ClusterShardingMessages {
     }
     private ShardHomesEntry() {
       region_ = "";
-      shard_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      shard_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -5025,11 +5032,6 @@ public final class ClusterShardingMessages {
       return new ShardHomesEntry();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHomesEntry_descriptor;
@@ -5095,7 +5097,8 @@ public final class ClusterShardingMessages {
 
     public static final int SHARD_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList shard_;
+    private akka.protobufv3.internal.LazyStringArrayList shard_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string shard = 2;</code>
      * @return A list containing the shard.
@@ -5263,11 +5266,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomesEntry parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomesEntry parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5348,8 +5353,8 @@ public final class ClusterShardingMessages {
         super.clear();
         bitField0_ = 0;
         region_ = "";
-        shard_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        shard_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -5376,18 +5381,9 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomesEntry buildPartial() {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomesEntry result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomesEntry(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
-      }
-
-      private void buildPartialRepeatedFields(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomesEntry result) {
-        if (((bitField0_ & 0x00000002) != 0)) {
-          shard_ = shard_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.shard_ = shard_;
       }
 
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomesEntry result) {
@@ -5396,6 +5392,10 @@ public final class ClusterShardingMessages {
         if (((from_bitField0_ & 0x00000001) != 0)) {
           result.region_ = region_;
           to_bitField0_ |= 0x00000001;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          shard_.makeImmutable();
+          result.shard_ = shard_;
         }
         result.bitField0_ |= to_bitField0_;
       }
@@ -5452,7 +5452,7 @@ public final class ClusterShardingMessages {
         if (!other.shard_.isEmpty()) {
           if (shard_.isEmpty()) {
             shard_ = other.shard_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureShardIsMutable();
             shard_.addAll(other.shard_);
@@ -5596,12 +5596,13 @@ public final class ClusterShardingMessages {
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList shard_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList shard_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureShardIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!shard_.isModifiable()) {
           shard_ = new akka.protobufv3.internal.LazyStringArrayList(shard_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string shard = 2;</code>
@@ -5609,7 +5610,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getShardList() {
-        return shard_.getUnmodifiableView();
+        shard_.makeImmutable();
+        return shard_;
       }
       /**
        * <code>repeated string shard = 2;</code>
@@ -5646,6 +5648,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardIsMutable();
         shard_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -5659,6 +5662,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardIsMutable();
         shard_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -5672,6 +5676,7 @@ public final class ClusterShardingMessages {
         ensureShardIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, shard_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -5680,8 +5685,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearShard() {
-        shard_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        shard_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -5695,6 +5701,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardIsMutable();
         shard_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -5813,11 +5820,6 @@ public final class ClusterShardingMessages {
       return new ShardHomes();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHomes_descriptor;
@@ -5989,11 +5991,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomes parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomes parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -6600,7 +6604,8 @@ public final class ClusterShardingMessages {
       super(builder);
     }
     private EntityState() {
-      entities_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      entities_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -6610,11 +6615,6 @@ public final class ClusterShardingMessages {
       return new EntityState();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityState_descriptor;
@@ -6630,7 +6630,8 @@ public final class ClusterShardingMessages {
 
     public static final int ENTITIES_FIELD_NUMBER = 1;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList entities_;
+    private akka.protobufv3.internal.LazyStringArrayList entities_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string entities = 1;</code>
      * @return A list containing the entities.
@@ -6779,11 +6780,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -6859,8 +6862,8 @@ public final class ClusterShardingMessages {
       public Builder clear() {
         super.clear();
         bitField0_ = 0;
-        entities_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        entities_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -6887,22 +6890,17 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState buildPartial() {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState result) {
-        if (((bitField0_ & 0x00000001) != 0)) {
-          entities_ = entities_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000001);
-        }
-        result.entities_ = entities_;
-      }
-
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          entities_.makeImmutable();
+          result.entities_ = entities_;
+        }
       }
 
       @java.lang.Override
@@ -6952,7 +6950,7 @@ public final class ClusterShardingMessages {
         if (!other.entities_.isEmpty()) {
           if (entities_.isEmpty()) {
             entities_ = other.entities_;
-            bitField0_ = (bitField0_ & ~0x00000001);
+            bitField0_ |= 0x00000001;
           } else {
             ensureEntitiesIsMutable();
             entities_.addAll(other.entities_);
@@ -7008,12 +7006,13 @@ public final class ClusterShardingMessages {
       }
       private int bitField0_;
 
-      private akka.protobufv3.internal.LazyStringList entities_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList entities_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureEntitiesIsMutable() {
-        if (!((bitField0_ & 0x00000001) != 0)) {
+        if (!entities_.isModifiable()) {
           entities_ = new akka.protobufv3.internal.LazyStringArrayList(entities_);
-          bitField0_ |= 0x00000001;
-         }
+        }
+        bitField0_ |= 0x00000001;
       }
       /**
        * <code>repeated string entities = 1;</code>
@@ -7021,7 +7020,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getEntitiesList() {
-        return entities_.getUnmodifiableView();
+        entities_.makeImmutable();
+        return entities_;
       }
       /**
        * <code>repeated string entities = 1;</code>
@@ -7058,6 +7058,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntitiesIsMutable();
         entities_.set(index, value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -7071,6 +7072,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntitiesIsMutable();
         entities_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -7084,6 +7086,7 @@ public final class ClusterShardingMessages {
         ensureEntitiesIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, entities_);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -7092,8 +7095,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearEntities() {
-        entities_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        entities_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);;
         onChanged();
         return this;
       }
@@ -7107,6 +7111,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntitiesIsMutable();
         entities_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -7222,11 +7227,6 @@ public final class ClusterShardingMessages {
       return new EntityStarted();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStarted_descriptor;
@@ -7407,11 +7407,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -7818,7 +7820,8 @@ public final class ClusterShardingMessages {
       super(builder);
     }
     private EntitiesStarted() {
-      entityId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      entityId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -7828,11 +7831,6 @@ public final class ClusterShardingMessages {
       return new EntitiesStarted();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntitiesStarted_descriptor;
@@ -7848,7 +7846,8 @@ public final class ClusterShardingMessages {
 
     public static final int ENTITYID_FIELD_NUMBER = 1;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList entityId_;
+    private akka.protobufv3.internal.LazyStringArrayList entityId_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string entityId = 1;</code>
      * @return A list containing the entityId.
@@ -7997,11 +7996,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStarted parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStarted parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -8077,8 +8078,8 @@ public final class ClusterShardingMessages {
       public Builder clear() {
         super.clear();
         bitField0_ = 0;
-        entityId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        entityId_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -8105,22 +8106,17 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStarted buildPartial() {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStarted result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStarted(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStarted result) {
-        if (((bitField0_ & 0x00000001) != 0)) {
-          entityId_ = entityId_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000001);
-        }
-        result.entityId_ = entityId_;
-      }
-
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStarted result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          entityId_.makeImmutable();
+          result.entityId_ = entityId_;
+        }
       }
 
       @java.lang.Override
@@ -8170,7 +8166,7 @@ public final class ClusterShardingMessages {
         if (!other.entityId_.isEmpty()) {
           if (entityId_.isEmpty()) {
             entityId_ = other.entityId_;
-            bitField0_ = (bitField0_ & ~0x00000001);
+            bitField0_ |= 0x00000001;
           } else {
             ensureEntityIdIsMutable();
             entityId_.addAll(other.entityId_);
@@ -8226,12 +8222,13 @@ public final class ClusterShardingMessages {
       }
       private int bitField0_;
 
-      private akka.protobufv3.internal.LazyStringList entityId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList entityId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureEntityIdIsMutable() {
-        if (!((bitField0_ & 0x00000001) != 0)) {
+        if (!entityId_.isModifiable()) {
           entityId_ = new akka.protobufv3.internal.LazyStringArrayList(entityId_);
-          bitField0_ |= 0x00000001;
-         }
+        }
+        bitField0_ |= 0x00000001;
       }
       /**
        * <code>repeated string entityId = 1;</code>
@@ -8239,7 +8236,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getEntityIdList() {
-        return entityId_.getUnmodifiableView();
+        entityId_.makeImmutable();
+        return entityId_;
       }
       /**
        * <code>repeated string entityId = 1;</code>
@@ -8276,6 +8274,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdIsMutable();
         entityId_.set(index, value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -8289,6 +8288,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdIsMutable();
         entityId_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -8302,6 +8302,7 @@ public final class ClusterShardingMessages {
         ensureEntityIdIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, entityId_);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -8310,8 +8311,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearEntityId() {
-        entityId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        entityId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);;
         onChanged();
         return this;
       }
@@ -8325,6 +8327,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdIsMutable();
         entityId_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -8440,11 +8443,6 @@ public final class ClusterShardingMessages {
       return new EntityStopped();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStopped_descriptor;
@@ -8625,11 +8623,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -9036,7 +9036,8 @@ public final class ClusterShardingMessages {
       super(builder);
     }
     private EntitiesStopped() {
-      entityId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      entityId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -9046,11 +9047,6 @@ public final class ClusterShardingMessages {
       return new EntitiesStopped();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntitiesStopped_descriptor;
@@ -9066,7 +9062,8 @@ public final class ClusterShardingMessages {
 
     public static final int ENTITYID_FIELD_NUMBER = 1;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList entityId_;
+    private akka.protobufv3.internal.LazyStringArrayList entityId_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string entityId = 1;</code>
      * @return A list containing the entityId.
@@ -9215,11 +9212,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStopped parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStopped parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -9295,8 +9294,8 @@ public final class ClusterShardingMessages {
       public Builder clear() {
         super.clear();
         bitField0_ = 0;
-        entityId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        entityId_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -9323,22 +9322,17 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStopped buildPartial() {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStopped result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStopped(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStopped result) {
-        if (((bitField0_ & 0x00000001) != 0)) {
-          entityId_ = entityId_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000001);
-        }
-        result.entityId_ = entityId_;
-      }
-
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntitiesStopped result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          entityId_.makeImmutable();
+          result.entityId_ = entityId_;
+        }
       }
 
       @java.lang.Override
@@ -9388,7 +9382,7 @@ public final class ClusterShardingMessages {
         if (!other.entityId_.isEmpty()) {
           if (entityId_.isEmpty()) {
             entityId_ = other.entityId_;
-            bitField0_ = (bitField0_ & ~0x00000001);
+            bitField0_ |= 0x00000001;
           } else {
             ensureEntityIdIsMutable();
             entityId_.addAll(other.entityId_);
@@ -9444,12 +9438,13 @@ public final class ClusterShardingMessages {
       }
       private int bitField0_;
 
-      private akka.protobufv3.internal.LazyStringList entityId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList entityId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureEntityIdIsMutable() {
-        if (!((bitField0_ & 0x00000001) != 0)) {
+        if (!entityId_.isModifiable()) {
           entityId_ = new akka.protobufv3.internal.LazyStringArrayList(entityId_);
-          bitField0_ |= 0x00000001;
-         }
+        }
+        bitField0_ |= 0x00000001;
       }
       /**
        * <code>repeated string entityId = 1;</code>
@@ -9457,7 +9452,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getEntityIdList() {
-        return entityId_.getUnmodifiableView();
+        entityId_.makeImmutable();
+        return entityId_;
       }
       /**
        * <code>repeated string entityId = 1;</code>
@@ -9494,6 +9490,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdIsMutable();
         entityId_.set(index, value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -9507,6 +9504,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdIsMutable();
         entityId_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -9520,6 +9518,7 @@ public final class ClusterShardingMessages {
         ensureEntityIdIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, entityId_);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -9528,8 +9527,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearEntityId() {
-        entityId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        entityId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);;
         onChanged();
         return this;
       }
@@ -9543,6 +9543,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdIsMutable();
         entityId_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -9665,11 +9666,6 @@ public final class ClusterShardingMessages {
       return new ShardStats();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardStats_descriptor;
@@ -9889,11 +9885,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardStats parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardStats parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -10230,7 +10228,7 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setEntityCount(int value) {
-        
+
         entityCount_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -10377,7 +10375,8 @@ public final class ClusterShardingMessages {
     }
     private ShardRegionStats() {
       stats_ = java.util.Collections.emptyList();
-      failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      failed_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -10387,11 +10386,6 @@ public final class ClusterShardingMessages {
       return new ShardRegionStats();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardRegionStats_descriptor;
@@ -10448,7 +10442,8 @@ public final class ClusterShardingMessages {
 
     public static final int FAILED_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList failed_;
+    private akka.protobufv3.internal.LazyStringArrayList failed_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string failed = 2;</code>
      * @return A list containing the failed.
@@ -10610,11 +10605,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -10697,8 +10694,8 @@ public final class ClusterShardingMessages {
           statsBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
-        failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        failed_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -10741,15 +10738,14 @@ public final class ClusterShardingMessages {
         } else {
           result.stats_ = statsBuilder_.build();
         }
-        if (((bitField0_ & 0x00000002) != 0)) {
-          failed_ = failed_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.failed_ = failed_;
       }
 
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          failed_.makeImmutable();
+          result.failed_ = failed_;
+        }
       }
 
       @java.lang.Override
@@ -10825,7 +10821,7 @@ public final class ClusterShardingMessages {
         if (!other.failed_.isEmpty()) {
           if (failed_.isEmpty()) {
             failed_ = other.failed_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureFailedIsMutable();
             failed_.addAll(other.failed_);
@@ -11134,12 +11130,13 @@ public final class ClusterShardingMessages {
         return statsBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList failed_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureFailedIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!failed_.isModifiable()) {
           failed_ = new akka.protobufv3.internal.LazyStringArrayList(failed_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string failed = 2;</code>
@@ -11147,7 +11144,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getFailedList() {
-        return failed_.getUnmodifiableView();
+        failed_.makeImmutable();
+        return failed_;
       }
       /**
        * <code>repeated string failed = 2;</code>
@@ -11184,6 +11182,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureFailedIsMutable();
         failed_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -11197,6 +11196,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureFailedIsMutable();
         failed_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -11210,6 +11210,7 @@ public final class ClusterShardingMessages {
         ensureFailedIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, failed_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -11218,8 +11219,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearFailed() {
-        failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        failed_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -11233,6 +11235,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureFailedIsMutable();
         failed_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -11355,11 +11358,6 @@ public final class ClusterShardingMessages {
       return new MapFieldEntry();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_MapFieldEntry_descriptor;
@@ -11571,11 +11569,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -11906,7 +11906,7 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setValue(int value) {
-        
+
         value_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -12023,11 +12023,6 @@ public final class ClusterShardingMessages {
       return new GetClusterShardingStats();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_GetClusterShardingStats_descriptor;
@@ -12180,11 +12175,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.GetClusterShardingStats parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.GetClusterShardingStats parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -12423,7 +12420,7 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setTimeoutNanos(long value) {
-        
+
         timeoutNanos_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -12554,11 +12551,6 @@ public final class ClusterShardingMessages {
       return new ClusterShardingStats();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ClusterShardingStats_descriptor;
@@ -12730,11 +12722,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ClusterShardingStats parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ClusterShardingStats parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -13355,11 +13349,6 @@ public final class ClusterShardingMessages {
       return new ClusterShardingStatsEntry();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ClusterShardingStatsEntry_descriptor;
@@ -13568,11 +13557,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ClusterShardingStatsEntry parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ClusterShardingStatsEntry parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -13896,8 +13887,10 @@ public final class ClusterShardingMessages {
         } else {
           addressBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (address_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -14015,8 +14008,10 @@ public final class ClusterShardingMessages {
         } else {
           statsBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (stats_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -14182,11 +14177,6 @@ public final class ClusterShardingMessages {
       return new CurrentRegions();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CurrentRegions_descriptor;
@@ -14358,11 +14348,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentRegions parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentRegions parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -14969,7 +14961,8 @@ public final class ClusterShardingMessages {
       super(builder);
     }
     private StopShards() {
-      shards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      shards_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -14979,11 +14972,6 @@ public final class ClusterShardingMessages {
       return new StopShards();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_StopShards_descriptor;
@@ -14999,7 +14987,8 @@ public final class ClusterShardingMessages {
 
     public static final int SHARDS_FIELD_NUMBER = 1;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList shards_;
+    private akka.protobufv3.internal.LazyStringArrayList shards_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string shards = 1;</code>
      * @return A list containing the shards.
@@ -15148,11 +15137,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StopShards parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StopShards parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -15228,8 +15219,8 @@ public final class ClusterShardingMessages {
       public Builder clear() {
         super.clear();
         bitField0_ = 0;
-        shards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        shards_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -15256,22 +15247,17 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StopShards buildPartial() {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StopShards result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StopShards(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StopShards result) {
-        if (((bitField0_ & 0x00000001) != 0)) {
-          shards_ = shards_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000001);
-        }
-        result.shards_ = shards_;
-      }
-
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StopShards result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          shards_.makeImmutable();
+          result.shards_ = shards_;
+        }
       }
 
       @java.lang.Override
@@ -15321,7 +15307,7 @@ public final class ClusterShardingMessages {
         if (!other.shards_.isEmpty()) {
           if (shards_.isEmpty()) {
             shards_ = other.shards_;
-            bitField0_ = (bitField0_ & ~0x00000001);
+            bitField0_ |= 0x00000001;
           } else {
             ensureShardsIsMutable();
             shards_.addAll(other.shards_);
@@ -15377,12 +15363,13 @@ public final class ClusterShardingMessages {
       }
       private int bitField0_;
 
-      private akka.protobufv3.internal.LazyStringList shards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList shards_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureShardsIsMutable() {
-        if (!((bitField0_ & 0x00000001) != 0)) {
+        if (!shards_.isModifiable()) {
           shards_ = new akka.protobufv3.internal.LazyStringArrayList(shards_);
-          bitField0_ |= 0x00000001;
-         }
+        }
+        bitField0_ |= 0x00000001;
       }
       /**
        * <code>repeated string shards = 1;</code>
@@ -15390,7 +15377,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getShardsList() {
-        return shards_.getUnmodifiableView();
+        shards_.makeImmutable();
+        return shards_;
       }
       /**
        * <code>repeated string shards = 1;</code>
@@ -15427,6 +15415,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardsIsMutable();
         shards_.set(index, value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -15440,6 +15429,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardsIsMutable();
         shards_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -15453,6 +15443,7 @@ public final class ClusterShardingMessages {
         ensureShardsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, shards_);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -15461,8 +15452,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearShards() {
-        shards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        shards_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);;
         onChanged();
         return this;
       }
@@ -15476,6 +15468,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardsIsMutable();
         shards_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -15639,11 +15632,6 @@ public final class ClusterShardingMessages {
       return new Address();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_Address_descriptor;
@@ -15999,11 +15987,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -16541,7 +16531,7 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setPort(int value) {
-        
+
         port_ = value;
         bitField0_ |= 0x00000008;
         onChanged();
@@ -16665,11 +16655,6 @@ public final class ClusterShardingMessages {
       return new StartEntity();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_StartEntity_descriptor;
@@ -16850,11 +16835,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StartEntity parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StartEntity parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -17277,11 +17264,6 @@ public final class ClusterShardingMessages {
       return new StartEntityAck();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_StartEntityAck_descriptor;
@@ -17530,11 +17512,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StartEntityAck parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.StartEntityAck parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -18053,7 +18037,8 @@ public final class ClusterShardingMessages {
     }
     private CurrentShardState() {
       shardId_ = "";
-      entityIds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      entityIds_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -18063,11 +18048,6 @@ public final class ClusterShardingMessages {
       return new CurrentShardState();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CurrentShardState_descriptor;
@@ -18133,7 +18113,8 @@ public final class ClusterShardingMessages {
 
     public static final int ENTITYIDS_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList entityIds_;
+    private akka.protobufv3.internal.LazyStringArrayList entityIds_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string entityIds = 2;</code>
      * @return A list containing the entityIds.
@@ -18301,11 +18282,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardState parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardState parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -18382,8 +18365,8 @@ public final class ClusterShardingMessages {
         super.clear();
         bitField0_ = 0;
         shardId_ = "";
-        entityIds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        entityIds_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -18410,18 +18393,9 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardState buildPartial() {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardState result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardState(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
-      }
-
-      private void buildPartialRepeatedFields(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardState result) {
-        if (((bitField0_ & 0x00000002) != 0)) {
-          entityIds_ = entityIds_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.entityIds_ = entityIds_;
       }
 
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardState result) {
@@ -18430,6 +18404,10 @@ public final class ClusterShardingMessages {
         if (((from_bitField0_ & 0x00000001) != 0)) {
           result.shardId_ = shardId_;
           to_bitField0_ |= 0x00000001;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          entityIds_.makeImmutable();
+          result.entityIds_ = entityIds_;
         }
         result.bitField0_ |= to_bitField0_;
       }
@@ -18486,7 +18464,7 @@ public final class ClusterShardingMessages {
         if (!other.entityIds_.isEmpty()) {
           if (entityIds_.isEmpty()) {
             entityIds_ = other.entityIds_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureEntityIdsIsMutable();
             entityIds_.addAll(other.entityIds_);
@@ -18630,12 +18608,13 @@ public final class ClusterShardingMessages {
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList entityIds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList entityIds_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureEntityIdsIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!entityIds_.isModifiable()) {
           entityIds_ = new akka.protobufv3.internal.LazyStringArrayList(entityIds_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string entityIds = 2;</code>
@@ -18643,7 +18622,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getEntityIdsList() {
-        return entityIds_.getUnmodifiableView();
+        entityIds_.makeImmutable();
+        return entityIds_;
       }
       /**
        * <code>repeated string entityIds = 2;</code>
@@ -18680,6 +18660,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdsIsMutable();
         entityIds_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -18693,6 +18674,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdsIsMutable();
         entityIds_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -18706,6 +18688,7 @@ public final class ClusterShardingMessages {
         ensureEntityIdsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, entityIds_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -18714,8 +18697,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearEntityIds() {
-        entityIds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        entityIds_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -18729,6 +18713,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdsIsMutable();
         entityIds_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -18856,7 +18841,8 @@ public final class ClusterShardingMessages {
     }
     private ShardState() {
       shardId_ = "";
-      entityIds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      entityIds_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -18866,11 +18852,6 @@ public final class ClusterShardingMessages {
       return new ShardState();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardState_descriptor;
@@ -18936,7 +18917,8 @@ public final class ClusterShardingMessages {
 
     public static final int ENTITYIDS_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList entityIds_;
+    private akka.protobufv3.internal.LazyStringArrayList entityIds_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string entityIds = 2;</code>
      * @return A list containing the entityIds.
@@ -19104,11 +19086,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardState parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardState parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -19185,8 +19169,8 @@ public final class ClusterShardingMessages {
         super.clear();
         bitField0_ = 0;
         shardId_ = "";
-        entityIds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        entityIds_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -19213,18 +19197,9 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardState buildPartial() {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardState result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardState(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
-      }
-
-      private void buildPartialRepeatedFields(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardState result) {
-        if (((bitField0_ & 0x00000002) != 0)) {
-          entityIds_ = entityIds_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.entityIds_ = entityIds_;
       }
 
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardState result) {
@@ -19233,6 +19208,10 @@ public final class ClusterShardingMessages {
         if (((from_bitField0_ & 0x00000001) != 0)) {
           result.shardId_ = shardId_;
           to_bitField0_ |= 0x00000001;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          entityIds_.makeImmutable();
+          result.entityIds_ = entityIds_;
         }
         result.bitField0_ |= to_bitField0_;
       }
@@ -19289,7 +19268,7 @@ public final class ClusterShardingMessages {
         if (!other.entityIds_.isEmpty()) {
           if (entityIds_.isEmpty()) {
             entityIds_ = other.entityIds_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureEntityIdsIsMutable();
             entityIds_.addAll(other.entityIds_);
@@ -19433,12 +19412,13 @@ public final class ClusterShardingMessages {
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList entityIds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList entityIds_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureEntityIdsIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!entityIds_.isModifiable()) {
           entityIds_ = new akka.protobufv3.internal.LazyStringArrayList(entityIds_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string entityIds = 2;</code>
@@ -19446,7 +19426,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getEntityIdsList() {
-        return entityIds_.getUnmodifiableView();
+        entityIds_.makeImmutable();
+        return entityIds_;
       }
       /**
        * <code>repeated string entityIds = 2;</code>
@@ -19483,6 +19464,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdsIsMutable();
         entityIds_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -19496,6 +19478,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdsIsMutable();
         entityIds_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -19509,6 +19492,7 @@ public final class ClusterShardingMessages {
         ensureEntityIdsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, entityIds_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -19517,8 +19501,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearEntityIds() {
-        entityIds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        entityIds_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -19532,6 +19517,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureEntityIdsIsMutable();
         entityIds_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -19666,7 +19652,8 @@ public final class ClusterShardingMessages {
     }
     private CurrentShardRegionState() {
       shards_ = java.util.Collections.emptyList();
-      failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      failed_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -19676,11 +19663,6 @@ public final class ClusterShardingMessages {
       return new CurrentShardRegionState();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CurrentShardRegionState_descriptor;
@@ -19737,7 +19719,8 @@ public final class ClusterShardingMessages {
 
     public static final int FAILED_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList failed_;
+    private akka.protobufv3.internal.LazyStringArrayList failed_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string failed = 2;</code>
      * @return A list containing the failed.
@@ -19905,11 +19888,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardRegionState parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardRegionState parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -19992,8 +19977,8 @@ public final class ClusterShardingMessages {
           shardsBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
-        failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        failed_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -20036,15 +20021,14 @@ public final class ClusterShardingMessages {
         } else {
           result.shards_ = shardsBuilder_.build();
         }
-        if (((bitField0_ & 0x00000002) != 0)) {
-          failed_ = failed_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.failed_ = failed_;
       }
 
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CurrentShardRegionState result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          failed_.makeImmutable();
+          result.failed_ = failed_;
+        }
       }
 
       @java.lang.Override
@@ -20120,7 +20104,7 @@ public final class ClusterShardingMessages {
         if (!other.failed_.isEmpty()) {
           if (failed_.isEmpty()) {
             failed_ = other.failed_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureFailedIsMutable();
             failed_.addAll(other.failed_);
@@ -20434,12 +20418,13 @@ public final class ClusterShardingMessages {
         return shardsBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList failed_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureFailedIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!failed_.isModifiable()) {
           failed_ = new akka.protobufv3.internal.LazyStringArrayList(failed_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string failed = 2;</code>
@@ -20447,7 +20432,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getFailedList() {
-        return failed_.getUnmodifiableView();
+        failed_.makeImmutable();
+        return failed_;
       }
       /**
        * <code>repeated string failed = 2;</code>
@@ -20484,6 +20470,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureFailedIsMutable();
         failed_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -20497,6 +20484,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureFailedIsMutable();
         failed_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -20510,6 +20498,7 @@ public final class ClusterShardingMessages {
         ensureFailedIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, failed_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -20518,8 +20507,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearFailed() {
-        failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        failed_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -20533,6 +20523,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureFailedIsMutable();
         failed_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -20653,7 +20644,8 @@ public final class ClusterShardingMessages {
       super(builder);
     }
     private RememberedShardState() {
-      shardId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      shardId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -20663,11 +20655,6 @@ public final class ClusterShardingMessages {
       return new RememberedShardState();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_RememberedShardState_descriptor;
@@ -20684,7 +20671,8 @@ public final class ClusterShardingMessages {
     private int bitField0_;
     public static final int SHARDID_FIELD_NUMBER = 1;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList shardId_;
+    private akka.protobufv3.internal.LazyStringArrayList shardId_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string shardId = 1;</code>
      * @return A list containing the shardId.
@@ -20869,11 +20857,13 @@ public final class ClusterShardingMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.RememberedShardState parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.RememberedShardState parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -20949,8 +20939,8 @@ public final class ClusterShardingMessages {
       public Builder clear() {
         super.clear();
         bitField0_ = 0;
-        shardId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        shardId_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         marker_ = false;
         return this;
       }
@@ -20978,22 +20968,17 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.RememberedShardState buildPartial() {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.RememberedShardState result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.RememberedShardState(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.RememberedShardState result) {
-        if (((bitField0_ & 0x00000001) != 0)) {
-          shardId_ = shardId_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000001);
-        }
-        result.shardId_ = shardId_;
-      }
-
       private void buildPartial0(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.RememberedShardState result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          shardId_.makeImmutable();
+          result.shardId_ = shardId_;
+        }
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000002) != 0)) {
           result.marker_ = marker_;
@@ -21049,7 +21034,7 @@ public final class ClusterShardingMessages {
         if (!other.shardId_.isEmpty()) {
           if (shardId_.isEmpty()) {
             shardId_ = other.shardId_;
-            bitField0_ = (bitField0_ & ~0x00000001);
+            bitField0_ |= 0x00000001;
           } else {
             ensureShardIdIsMutable();
             shardId_.addAll(other.shardId_);
@@ -21113,12 +21098,13 @@ public final class ClusterShardingMessages {
       }
       private int bitField0_;
 
-      private akka.protobufv3.internal.LazyStringList shardId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList shardId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureShardIdIsMutable() {
-        if (!((bitField0_ & 0x00000001) != 0)) {
+        if (!shardId_.isModifiable()) {
           shardId_ = new akka.protobufv3.internal.LazyStringArrayList(shardId_);
-          bitField0_ |= 0x00000001;
-         }
+        }
+        bitField0_ |= 0x00000001;
       }
       /**
        * <code>repeated string shardId = 1;</code>
@@ -21126,7 +21112,8 @@ public final class ClusterShardingMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getShardIdList() {
-        return shardId_.getUnmodifiableView();
+        shardId_.makeImmutable();
+        return shardId_;
       }
       /**
        * <code>repeated string shardId = 1;</code>
@@ -21163,6 +21150,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardIdIsMutable();
         shardId_.set(index, value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -21176,6 +21164,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardIdIsMutable();
         shardId_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -21189,6 +21178,7 @@ public final class ClusterShardingMessages {
         ensureShardIdIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, shardId_);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -21197,8 +21187,9 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder clearShardId() {
-        shardId_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        shardId_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);;
         onChanged();
         return this;
       }
@@ -21212,6 +21203,7 @@ public final class ClusterShardingMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureShardIdIsMutable();
         shardId_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -21239,7 +21231,7 @@ public final class ClusterShardingMessages {
        * @return This builder for chaining.
        */
       public Builder setMarker(boolean value) {
-        
+
         marker_ = value;
         bitField0_ |= 0x00000002;
         onChanged();

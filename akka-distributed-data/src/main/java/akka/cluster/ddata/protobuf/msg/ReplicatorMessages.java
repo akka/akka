@@ -118,11 +118,6 @@ public final class ReplicatorMessages {
       return new Get();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Get_descriptor;
@@ -481,11 +476,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -869,8 +866,10 @@ public final class ReplicatorMessages {
         } else {
           keyBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (key_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -945,7 +944,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setConsistency(int value) {
-        
+
         consistency_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -985,7 +984,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setTimeout(int value) {
-        
+
         timeout_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -1068,8 +1067,10 @@ public final class ReplicatorMessages {
         } else {
           requestBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000008;
-        onChanged();
+        if (request_ != null) {
+          bitField0_ |= 0x00000008;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1144,7 +1145,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setConsistencyMinCap(int value) {
-        
+
         consistencyMinCap_ = value;
         bitField0_ |= 0x00000010;
         onChanged();
@@ -1184,7 +1185,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setConsistencyAdditional(int value) {
-        
+
         consistencyAdditional_ = value;
         bitField0_ |= 0x00000020;
         onChanged();
@@ -1335,11 +1336,6 @@ public final class ReplicatorMessages {
       return new GetSuccess();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetSuccess_descriptor;
@@ -1600,11 +1596,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -1958,8 +1956,10 @@ public final class ReplicatorMessages {
         } else {
           keyBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (key_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2077,8 +2077,10 @@ public final class ReplicatorMessages {
         } else {
           dataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (data_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2196,8 +2198,10 @@ public final class ReplicatorMessages {
         } else {
           requestBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (request_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2368,11 +2372,6 @@ public final class ReplicatorMessages {
       return new NotFound();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_NotFound_descriptor;
@@ -2583,11 +2582,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2913,8 +2914,10 @@ public final class ReplicatorMessages {
         } else {
           keyBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (key_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3032,8 +3035,10 @@ public final class ReplicatorMessages {
         } else {
           requestBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (request_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3204,11 +3209,6 @@ public final class ReplicatorMessages {
       return new GetFailure();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetFailure_descriptor;
@@ -3419,11 +3419,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3749,8 +3751,10 @@ public final class ReplicatorMessages {
         } else {
           keyBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (key_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3868,8 +3872,10 @@ public final class ReplicatorMessages {
         } else {
           requestBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (request_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -4043,11 +4049,6 @@ public final class ReplicatorMessages {
       return new Subscribe();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Subscribe_descriptor;
@@ -4278,11 +4279,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -4599,8 +4602,10 @@ public final class ReplicatorMessages {
         } else {
           keyBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (key_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -4854,11 +4859,6 @@ public final class ReplicatorMessages {
       return new Unsubscribe();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Unsubscribe_descriptor;
@@ -5089,11 +5089,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5410,8 +5412,10 @@ public final class ReplicatorMessages {
         } else {
           keyBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (key_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -5662,11 +5666,6 @@ public final class ReplicatorMessages {
       return new Changed();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Changed_descriptor;
@@ -5879,11 +5878,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -6210,8 +6211,10 @@ public final class ReplicatorMessages {
         } else {
           keyBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (key_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -6329,8 +6332,10 @@ public final class ReplicatorMessages {
         } else {
           dataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (data_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -6519,11 +6524,6 @@ public final class ReplicatorMessages {
       return new Write();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Write_descriptor;
@@ -6802,11 +6802,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -7230,8 +7232,10 @@ public final class ReplicatorMessages {
         } else {
           envelopeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (envelope_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -7349,8 +7353,10 @@ public final class ReplicatorMessages {
         } else {
           fromNodeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (fromNode_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -7491,11 +7497,6 @@ public final class ReplicatorMessages {
       return new Empty();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Empty_descriptor;
@@ -7607,11 +7608,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -7924,11 +7927,6 @@ public final class ReplicatorMessages {
       return new Read();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Read_descriptor;
@@ -8157,11 +8155,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -8557,8 +8557,10 @@ public final class ReplicatorMessages {
         } else {
           fromNodeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (fromNode_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -8714,11 +8716,6 @@ public final class ReplicatorMessages {
       return new ReadResult();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_ReadResult_descriptor;
@@ -8879,11 +8876,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -9181,8 +9180,10 @@ public final class ReplicatorMessages {
         } else {
           envelopeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (envelope_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -9378,11 +9379,6 @@ public final class ReplicatorMessages {
       return new DataEnvelope();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_descriptor;
@@ -9499,11 +9495,6 @@ public final class ReplicatorMessages {
         return new PruningEntry();
       }
 
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
-        return this.unknownFields;
-      }
       public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_descriptor;
@@ -9852,11 +9843,13 @@ public final class ReplicatorMessages {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseDelimitedFrom(
           java.io.InputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -10277,8 +10270,10 @@ public final class ReplicatorMessages {
           } else {
             removedAddressBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000001;
-          onChanged();
+          if (removedAddress_ != null) {
+            bitField0_ |= 0x00000001;
+            onChanged();
+          }
           return this;
         }
         /**
@@ -10396,8 +10391,10 @@ public final class ReplicatorMessages {
           } else {
             ownerAddressBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+          if (ownerAddress_ != null) {
+            bitField0_ |= 0x00000002;
+            onChanged();
+          }
           return this;
         }
         /**
@@ -10472,7 +10469,7 @@ public final class ReplicatorMessages {
          * @return This builder for chaining.
          */
         public Builder setPerformed(boolean value) {
-          
+
           performed_ = value;
           bitField0_ |= 0x00000004;
           onChanged();
@@ -10752,7 +10749,7 @@ public final class ReplicatorMessages {
          * @return This builder for chaining.
          */
         public Builder setObsoleteTime(long value) {
-          
+
           obsoleteTime_ = value;
           bitField0_ |= 0x00000010;
           onChanged();
@@ -11089,11 +11086,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -11484,8 +11483,10 @@ public final class ReplicatorMessages {
         } else {
           dataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (data_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -11843,8 +11844,10 @@ public final class ReplicatorMessages {
         } else {
           deltaVersionsBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (deltaVersions_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -12054,11 +12057,6 @@ public final class ReplicatorMessages {
       return new Status();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_descriptor;
@@ -12139,11 +12137,6 @@ public final class ReplicatorMessages {
         return new Entry();
       }
 
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
-        return this.unknownFields;
-      }
       public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_Entry_descriptor;
@@ -12399,11 +12392,13 @@ public final class ReplicatorMessages {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseDelimitedFrom(
           java.io.InputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -12793,7 +12788,7 @@ public final class ReplicatorMessages {
          * @return This builder for chaining.
          */
         public Builder setUsedTimestamp(long value) {
-          
+
           usedTimestamp_ = value;
           bitField0_ |= 0x00000004;
           onChanged();
@@ -13182,11 +13177,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -13531,7 +13528,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setChunk(int value) {
-        
+
         chunk_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -13571,7 +13568,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setTotChunks(int value) {
-        
+
         totChunks_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -13851,7 +13848,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setToSystemUid(long value) {
-        
+
         toSystemUid_ = value;
         bitField0_ |= 0x00000008;
         onChanged();
@@ -13891,7 +13888,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setFromSystemUid(long value) {
-        
+
         fromSystemUid_ = value;
         bitField0_ |= 0x00000010;
         onChanged();
@@ -14055,11 +14052,6 @@ public final class ReplicatorMessages {
       return new Gossip();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_descriptor;
@@ -14143,11 +14135,6 @@ public final class ReplicatorMessages {
         return new Entry();
       }
 
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
-        return this.unknownFields;
-      }
       public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_Entry_descriptor;
@@ -14414,11 +14401,13 @@ public final class ReplicatorMessages {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseDelimitedFrom(
           java.io.InputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -14828,8 +14817,10 @@ public final class ReplicatorMessages {
           } else {
             envelopeBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+          if (envelope_ != null) {
+            bitField0_ |= 0x00000002;
+            onChanged();
+          }
           return this;
         }
         /**
@@ -14904,7 +14895,7 @@ public final class ReplicatorMessages {
          * @return This builder for chaining.
          */
         public Builder setUsedTimestamp(long value) {
-          
+
           usedTimestamp_ = value;
           bitField0_ |= 0x00000004;
           onChanged();
@@ -15255,11 +15246,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -15588,7 +15581,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setSendBack(boolean value) {
-        
+
         sendBack_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -15868,7 +15861,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setToSystemUid(long value) {
-        
+
         toSystemUid_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -15908,7 +15901,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setFromSystemUid(long value) {
-        
+
         fromSystemUid_ = value;
         bitField0_ |= 0x00000008;
         onChanged();
@@ -16073,11 +16066,6 @@ public final class ReplicatorMessages {
       return new DeltaPropagation();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DeltaPropagation_descriptor;
@@ -16180,11 +16168,6 @@ public final class ReplicatorMessages {
         return new Entry();
       }
 
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
-        return this.unknownFields;
-      }
       public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DeltaPropagation_Entry_descriptor;
@@ -16499,11 +16482,13 @@ public final class ReplicatorMessages {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DeltaPropagation.Entry parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DeltaPropagation.Entry parseDelimitedFrom(
           java.io.InputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -16929,8 +16914,10 @@ public final class ReplicatorMessages {
           } else {
             envelopeBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+          if (envelope_ != null) {
+            bitField0_ |= 0x00000002;
+            onChanged();
+          }
           return this;
         }
         /**
@@ -17005,7 +16992,7 @@ public final class ReplicatorMessages {
          * @return This builder for chaining.
          */
         public Builder setFromSeqNr(long value) {
-          
+
           fromSeqNr_ = value;
           bitField0_ |= 0x00000004;
           onChanged();
@@ -17057,7 +17044,7 @@ public final class ReplicatorMessages {
          * @return This builder for chaining.
          */
         public Builder setToSeqNr(long value) {
-          
+
           toSeqNr_ = value;
           bitField0_ |= 0x00000008;
           onChanged();
@@ -17394,11 +17381,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DeltaPropagation parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DeltaPropagation parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -17775,8 +17764,10 @@ public final class ReplicatorMessages {
         } else {
           fromNodeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (fromNode_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -18103,7 +18094,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setReply(boolean value) {
-        
+
         reply_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -18258,11 +18249,6 @@ public final class ReplicatorMessages {
       return new UniqueAddress();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_UniqueAddress_descriptor;
@@ -18507,11 +18493,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -18839,8 +18827,10 @@ public final class ReplicatorMessages {
         } else {
           addressBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (address_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -18915,7 +18905,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setUid(int value) {
-        
+
         uid_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -18967,7 +18957,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setUid2(int value) {
-        
+
         uid2_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -19106,11 +19096,6 @@ public final class ReplicatorMessages {
       return new Address();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Address_descriptor;
@@ -19330,11 +19315,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -19671,7 +19658,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setPort(int value) {
-        
+
         port_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -19802,11 +19789,6 @@ public final class ReplicatorMessages {
       return new VersionVector();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_VersionVector_descriptor;
@@ -19872,11 +19854,6 @@ public final class ReplicatorMessages {
         return new Entry();
       }
 
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
-        return this.unknownFields;
-      }
       public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_VersionVector_Entry_descriptor;
@@ -20079,11 +20056,13 @@ public final class ReplicatorMessages {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector.Entry parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
+
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector.Entry parseDelimitedFrom(
           java.io.InputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -20398,8 +20377,10 @@ public final class ReplicatorMessages {
           } else {
             nodeBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000001;
-          onChanged();
+          if (node_ != null) {
+            bitField0_ |= 0x00000001;
+            onChanged();
+          }
           return this;
         }
         /**
@@ -20474,7 +20455,7 @@ public final class ReplicatorMessages {
          * @return This builder for chaining.
          */
         public Builder setVersion(long value) {
-          
+
           version_ = value;
           bitField0_ |= 0x00000002;
           onChanged();
@@ -20712,11 +20693,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -21342,11 +21325,6 @@ public final class ReplicatorMessages {
       return new OtherMessage();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_OtherMessage_descriptor;
@@ -21572,11 +21550,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -21884,7 +21864,7 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
-        
+
         serializerId_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -22046,7 +22026,8 @@ public final class ReplicatorMessages {
       super(builder);
     }
     private StringGSet() {
-      elements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      elements_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -22056,11 +22037,6 @@ public final class ReplicatorMessages {
       return new StringGSet();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_StringGSet_descriptor;
@@ -22076,7 +22052,8 @@ public final class ReplicatorMessages {
 
     public static final int ELEMENTS_FIELD_NUMBER = 1;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList elements_;
+    private akka.protobufv3.internal.LazyStringArrayList elements_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string elements = 1;</code>
      * @return A list containing the elements.
@@ -22225,11 +22202,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -22305,8 +22284,8 @@ public final class ReplicatorMessages {
       public Builder clear() {
         super.clear();
         bitField0_ = 0;
-        elements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        elements_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -22333,22 +22312,17 @@ public final class ReplicatorMessages {
       @java.lang.Override
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet buildPartial() {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet result = new akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
       }
 
-      private void buildPartialRepeatedFields(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet result) {
-        if (((bitField0_ & 0x00000001) != 0)) {
-          elements_ = elements_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000001);
-        }
-        result.elements_ = elements_;
-      }
-
       private void buildPartial0(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          elements_.makeImmutable();
+          result.elements_ = elements_;
+        }
       }
 
       @java.lang.Override
@@ -22398,7 +22372,7 @@ public final class ReplicatorMessages {
         if (!other.elements_.isEmpty()) {
           if (elements_.isEmpty()) {
             elements_ = other.elements_;
-            bitField0_ = (bitField0_ & ~0x00000001);
+            bitField0_ |= 0x00000001;
           } else {
             ensureElementsIsMutable();
             elements_.addAll(other.elements_);
@@ -22454,12 +22428,13 @@ public final class ReplicatorMessages {
       }
       private int bitField0_;
 
-      private akka.protobufv3.internal.LazyStringList elements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList elements_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureElementsIsMutable() {
-        if (!((bitField0_ & 0x00000001) != 0)) {
+        if (!elements_.isModifiable()) {
           elements_ = new akka.protobufv3.internal.LazyStringArrayList(elements_);
-          bitField0_ |= 0x00000001;
-         }
+        }
+        bitField0_ |= 0x00000001;
       }
       /**
        * <code>repeated string elements = 1;</code>
@@ -22467,7 +22442,8 @@ public final class ReplicatorMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getElementsList() {
-        return elements_.getUnmodifiableView();
+        elements_.makeImmutable();
+        return elements_;
       }
       /**
        * <code>repeated string elements = 1;</code>
@@ -22504,6 +22480,7 @@ public final class ReplicatorMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureElementsIsMutable();
         elements_.set(index, value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -22517,6 +22494,7 @@ public final class ReplicatorMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureElementsIsMutable();
         elements_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -22530,6 +22508,7 @@ public final class ReplicatorMessages {
         ensureElementsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, elements_);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -22538,8 +22517,9 @@ public final class ReplicatorMessages {
        * @return This builder for chaining.
        */
       public Builder clearElements() {
-        elements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+        elements_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);;
         onChanged();
         return this;
       }
@@ -22553,6 +22533,7 @@ public final class ReplicatorMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureElementsIsMutable();
         elements_.add(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -22686,11 +22667,6 @@ public final class ReplicatorMessages {
       return new DurableDataEnvelope();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DurableDataEnvelope_descriptor;
@@ -22913,11 +22889,13 @@ public final class ReplicatorMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DurableDataEnvelope parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DurableDataEnvelope parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -23281,8 +23259,10 @@ public final class ReplicatorMessages {
         } else {
           dataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (data_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**

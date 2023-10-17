@@ -211,11 +211,6 @@ public final class MessageFormats {
       return new PersistentMessage();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessage_descriptor;
@@ -820,11 +815,13 @@ public final class MessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -1248,8 +1245,10 @@ public final class MessageFormats {
         } else {
           payloadBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (payload_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1324,7 +1323,7 @@ public final class MessageFormats {
        * @return This builder for chaining.
        */
       public Builder setSequenceNr(long value) {
-        
+
         sequenceNr_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -1456,7 +1455,7 @@ public final class MessageFormats {
        * @return This builder for chaining.
        */
       public Builder setDeleted(boolean value) {
-        
+
         deleted_ = value;
         bitField0_ |= 0x00000008;
         onChanged();
@@ -1788,7 +1787,7 @@ public final class MessageFormats {
        * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
-        
+
         timestamp_ = value;
         bitField0_ |= 0x00000080;
         onChanged();
@@ -1871,8 +1870,10 @@ public final class MessageFormats {
         } else {
           metadataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000100;
-        onChanged();
+        if (metadata_ != null) {
+          bitField0_ |= 0x00000100;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2048,11 +2049,6 @@ public final class MessageFormats {
       return new PersistentPayload();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentPayload_descriptor;
@@ -2278,11 +2274,13 @@ public final class MessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2550,7 +2548,7 @@ public final class MessageFormats {
        * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
-        
+
         serializerId_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -2761,11 +2759,6 @@ public final class MessageFormats {
       return new AtomicWrite();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_AtomicWrite_descriptor;
@@ -2937,11 +2930,13 @@ public final class MessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3568,11 +3563,6 @@ public final class MessageFormats {
       return new AtLeastOnceDeliverySnapshot();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_descriptor;
@@ -3656,11 +3646,6 @@ public final class MessageFormats {
         return new UnconfirmedDelivery();
       }
 
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
-        return this.unknownFields;
-      }
       public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor;
@@ -3931,11 +3916,13 @@ public final class MessageFormats {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
+
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
+
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseDelimitedFrom(
           java.io.InputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -4225,7 +4212,7 @@ public final class MessageFormats {
          * @return This builder for chaining.
          */
         public Builder setDeliveryId(long value) {
-          
+
           deliveryId_ = value;
           bitField0_ |= 0x00000001;
           onChanged();
@@ -4388,8 +4375,10 @@ public final class MessageFormats {
           } else {
             payloadBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000004;
-          onChanged();
+          if (payload_ != null) {
+            bitField0_ |= 0x00000004;
+            onChanged();
+          }
           return this;
         }
         /**
@@ -4703,11 +4692,13 @@ public final class MessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5010,7 +5001,7 @@ public final class MessageFormats {
        * @return This builder for chaining.
        */
       public Builder setCurrentDeliveryId(long value) {
-        
+
         currentDeliveryId_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -5419,11 +5410,6 @@ public final class MessageFormats {
       return new PersistentStateChangeEvent();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentStateChangeEvent_descriptor;
@@ -5716,11 +5702,13 @@ public final class MessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -6177,7 +6165,7 @@ public final class MessageFormats {
        * @return This builder for chaining.
        */
       public Builder setTimeoutNanos(long value) {
-        
+
         timeoutNanos_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -6327,11 +6315,6 @@ public final class MessageFormats {
       return new PersistentFSMSnapshot();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_descriptor;
@@ -6598,11 +6581,13 @@ public final class MessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -7012,8 +6997,10 @@ public final class MessageFormats {
         } else {
           dataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (data_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -7088,7 +7075,7 @@ public final class MessageFormats {
        * @return This builder for chaining.
        */
       public Builder setTimeoutNanos(long value) {
-        
+
         timeoutNanos_ = value;
         bitField0_ |= 0x00000004;
         onChanged();

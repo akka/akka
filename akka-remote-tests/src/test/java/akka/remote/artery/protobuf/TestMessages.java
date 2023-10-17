@@ -139,11 +139,6 @@ public final class TestMessages {
       return new TestMessage();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.artery.protobuf.TestMessages.internal_static_TestMessage_descriptor;
@@ -563,11 +558,13 @@ public final class TestMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.artery.protobuf.TestMessages.TestMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.artery.protobuf.TestMessages.TestMessage parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -932,7 +929,7 @@ public final class TestMessages {
        * @return This builder for chaining.
        */
       public Builder setId(long value) {
-        
+
         id_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -1052,7 +1049,7 @@ public final class TestMessages {
        * @return This builder for chaining.
        */
       public Builder setStatus(boolean value) {
-        
+
         status_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -1547,11 +1544,6 @@ public final class TestMessages {
       return new Item();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.artery.protobuf.TestMessages.internal_static_Item_descriptor;
@@ -1772,11 +1764,13 @@ public final class TestMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.artery.protobuf.TestMessages.Item parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.artery.protobuf.TestMessages.Item parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2033,7 +2027,7 @@ public final class TestMessages {
        * @return This builder for chaining.
        */
       public Builder setId(long value) {
-        
+
         id_ = value;
         bitField0_ |= 0x00000001;
         onChanged();

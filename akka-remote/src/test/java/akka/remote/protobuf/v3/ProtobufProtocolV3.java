@@ -71,11 +71,6 @@ public final class ProtobufProtocolV3 {
       return new MyMessageV3();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
-    }
-
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
       return akka.remote.protobuf.v3.ProtobufProtocolV3.internal_static_MyMessageV3_descriptor;
     }

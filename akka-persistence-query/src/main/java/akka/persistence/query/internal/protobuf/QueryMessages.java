@@ -251,7 +251,7 @@ public final class QueryMessages {
       offset_ = "";
       offsetManifest_ = "";
       source_ = "";
-      tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      tags_ = akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -259,11 +259,6 @@ public final class QueryMessages {
     protected java.lang.Object newInstance(
         akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new EventEnvelope();
-    }
-
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
     }
 
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
@@ -675,7 +670,8 @@ public final class QueryMessages {
     public static final int TAGS_FIELD_NUMBER = 12;
 
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList tags_;
+    private akka.protobufv3.internal.LazyStringArrayList tags_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string tags = 12;</code>
      *
@@ -1147,8 +1143,7 @@ public final class QueryMessages {
         }
         filtered_ = false;
         source_ = "";
-        tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000800);
+        tags_ = akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -1179,21 +1174,11 @@ public final class QueryMessages {
       public akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope buildPartial() {
         akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope result =
             new akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) {
           buildPartial0(result);
         }
         onBuilt();
         return result;
-      }
-
-      private void buildPartialRepeatedFields(
-          akka.persistence.query.internal.protobuf.QueryMessages.EventEnvelope result) {
-        if (((bitField0_ & 0x00000800) != 0)) {
-          tags_ = tags_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000800);
-        }
-        result.tags_ = tags_;
       }
 
       private void buildPartial0(
@@ -1243,6 +1228,10 @@ public final class QueryMessages {
         if (((from_bitField0_ & 0x00000400) != 0)) {
           result.source_ = source_;
           to_bitField0_ |= 0x00000400;
+        }
+        if (((from_bitField0_ & 0x00000800) != 0)) {
+          tags_.makeImmutable();
+          result.tags_ = tags_;
         }
         result.bitField0_ |= to_bitField0_;
       }
@@ -1344,7 +1333,7 @@ public final class QueryMessages {
         if (!other.tags_.isEmpty()) {
           if (tags_.isEmpty()) {
             tags_ = other.tags_;
-            bitField0_ = (bitField0_ & ~0x00000800);
+            bitField0_ |= 0x00000800;
           } else {
             ensureTagsIsMutable();
             tags_.addAll(other.tags_);
@@ -2038,8 +2027,10 @@ public final class QueryMessages {
         } else {
           eventBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000080;
-        onChanged();
+        if (event_ != null) {
+          bitField0_ |= 0x00000080;
+          onChanged();
+        }
         return this;
       }
       /** <code>optional .Payload event = 8;</code> */
@@ -2153,8 +2144,10 @@ public final class QueryMessages {
         } else {
           metadataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000100;
-        onChanged();
+        if (metadata_ != null) {
+          bitField0_ |= 0x00000100;
+          onChanged();
+        }
         return this;
       }
       /** <code>optional .Payload metadata = 9;</code> */
@@ -2331,14 +2324,14 @@ public final class QueryMessages {
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList tags_ =
-          akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList tags_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
 
       private void ensureTagsIsMutable() {
-        if (!((bitField0_ & 0x00000800) != 0)) {
+        if (!tags_.isModifiable()) {
           tags_ = new akka.protobufv3.internal.LazyStringArrayList(tags_);
-          bitField0_ |= 0x00000800;
         }
+        bitField0_ |= 0x00000800;
       }
       /**
        * <code>repeated string tags = 12;</code>
@@ -2346,7 +2339,8 @@ public final class QueryMessages {
        * @return A list containing the tags.
        */
       public akka.protobufv3.internal.ProtocolStringList getTagsList() {
-        return tags_.getUnmodifiableView();
+        tags_.makeImmutable();
+        return tags_;
       }
       /**
        * <code>repeated string tags = 12;</code>
@@ -2387,6 +2381,7 @@ public final class QueryMessages {
         }
         ensureTagsIsMutable();
         tags_.set(index, value);
+        bitField0_ |= 0x00000800;
         onChanged();
         return this;
       }
@@ -2402,6 +2397,7 @@ public final class QueryMessages {
         }
         ensureTagsIsMutable();
         tags_.add(value);
+        bitField0_ |= 0x00000800;
         onChanged();
         return this;
       }
@@ -2414,6 +2410,7 @@ public final class QueryMessages {
       public Builder addAllTags(java.lang.Iterable<java.lang.String> values) {
         ensureTagsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, tags_);
+        bitField0_ |= 0x00000800;
         onChanged();
         return this;
       }
@@ -2423,8 +2420,9 @@ public final class QueryMessages {
        * @return This builder for chaining.
        */
       public Builder clearTags() {
-        tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+        tags_ = akka.protobufv3.internal.LazyStringArrayList.emptyList();
         bitField0_ = (bitField0_ & ~0x00000800);
+        ;
         onChanged();
         return this;
       }
@@ -2440,6 +2438,7 @@ public final class QueryMessages {
         }
         ensureTagsIsMutable();
         tags_.add(value);
+        bitField0_ |= 0x00000800;
         onChanged();
         return this;
       }

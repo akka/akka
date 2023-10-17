@@ -228,11 +228,6 @@ public final class ContainerFormats {
       return new SelectionEnvelope();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_SelectionEnvelope_descriptor;
@@ -562,11 +557,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.SelectionEnvelope parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.SelectionEnvelope parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -951,7 +948,7 @@ public final class ContainerFormats {
        * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
-        
+
         serializerId_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -1283,7 +1280,7 @@ public final class ContainerFormats {
        * @return This builder for chaining.
        */
       public Builder setWildcardFanOut(boolean value) {
-        
+
         wildcardFanOut_ = value;
         bitField0_ |= 0x00000010;
         onChanged();
@@ -1423,11 +1420,6 @@ public final class ContainerFormats {
       return new Selection();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_Selection_descriptor;
@@ -1641,11 +1633,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.Selection parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.Selection parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2109,11 +2103,6 @@ public final class ContainerFormats {
       return new Identify();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_Identify_descriptor;
@@ -2276,11 +2265,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.Identify parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.Identify parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2579,8 +2570,10 @@ public final class ContainerFormats {
         } else {
           messageIdBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (messageId_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2751,11 +2744,6 @@ public final class ContainerFormats {
       return new ActorIdentity();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_ActorIdentity_descriptor;
@@ -2966,11 +2954,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.ActorIdentity parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.ActorIdentity parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3296,8 +3286,10 @@ public final class ContainerFormats {
         } else {
           correlationIdBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (correlationId_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3415,8 +3407,10 @@ public final class ContainerFormats {
         } else {
           refBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (ref_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3575,11 +3569,6 @@ public final class ContainerFormats {
       return new ActorRef();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_ActorRef_descriptor;
@@ -3760,11 +3749,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.ActorRef parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.ActorRef parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -4166,11 +4157,6 @@ public final class ContainerFormats {
       return new Option();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_Option_descriptor;
@@ -4331,11 +4317,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.Option parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.Option parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -4633,8 +4621,10 @@ public final class ContainerFormats {
         } else {
           valueBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (value_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -4810,11 +4800,6 @@ public final class ContainerFormats {
       return new Payload();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_Payload_descriptor;
@@ -5040,11 +5025,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.Payload parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.Payload parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5352,7 +5339,7 @@ public final class ContainerFormats {
        * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
-        
+
         serializerId_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -5509,11 +5496,6 @@ public final class ContainerFormats {
       return new WatcherHeartbeatResponse();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_WatcherHeartbeatResponse_descriptor;
@@ -5666,11 +5648,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5909,7 +5893,7 @@ public final class ContainerFormats {
        * @return This builder for chaining.
        */
       public Builder setUid(long value) {
-        
+
         uid_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -6091,11 +6075,6 @@ public final class ContainerFormats {
       return new Throwable();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_Throwable_descriptor;
@@ -6448,11 +6427,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.Throwable parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.Throwable parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -7008,8 +6989,10 @@ public final class ContainerFormats {
         } else {
           causeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (cause_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -7444,11 +7427,6 @@ public final class ContainerFormats {
       return new ThrowableNotSerializable();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_ThrowableNotSerializable_descriptor;
@@ -7765,11 +7743,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.ThrowableNotSerializable parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.ThrowableNotSerializable parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -8400,11 +8380,6 @@ public final class ContainerFormats {
       return new ActorInitializationException();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_ActorInitializationException_descriptor;
@@ -8683,11 +8658,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.ActorInitializationException parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.ActorInitializationException parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -9031,8 +9008,10 @@ public final class ContainerFormats {
         } else {
           actorBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (actor_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -9230,8 +9209,10 @@ public final class ContainerFormats {
         } else {
           causeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (cause_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -9437,11 +9418,6 @@ public final class ContainerFormats {
       return new StackTraceElement();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_StackTraceElement_descriptor;
@@ -9797,11 +9773,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.StackTraceElement parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.StackTraceElement parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -10334,7 +10312,7 @@ public final class ContainerFormats {
        * @return This builder for chaining.
        */
       public Builder setLineNumber(int value) {
-        
+
         lineNumber_ = value;
         bitField0_ |= 0x00000008;
         onChanged();
@@ -10462,11 +10440,6 @@ public final class ContainerFormats {
       return new StatusReplyErrorMessage();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_StatusReplyErrorMessage_descriptor;
@@ -10647,11 +10620,13 @@ public final class ContainerFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ContainerFormats.StatusReplyErrorMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ContainerFormats.StatusReplyErrorMessage parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)

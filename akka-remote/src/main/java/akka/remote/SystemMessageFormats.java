@@ -131,11 +131,6 @@ public final class SystemMessageFormats {
       return new SystemMessage();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_SystemMessage_descriptor;
@@ -693,11 +688,13 @@ public final class SystemMessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.SystemMessageFormats.SystemMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.SystemMessageFormats.SystemMessage parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -1168,8 +1165,10 @@ public final class SystemMessageFormats {
         } else {
           watchDataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (watchData_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1287,8 +1286,10 @@ public final class SystemMessageFormats {
         } else {
           causeDataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (causeData_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1406,8 +1407,10 @@ public final class SystemMessageFormats {
         } else {
           superviseDataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000008;
-        onChanged();
+        if (superviseData_ != null) {
+          bitField0_ |= 0x00000008;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1525,8 +1528,10 @@ public final class SystemMessageFormats {
         } else {
           failedDataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000010;
-        onChanged();
+        if (failedData_ != null) {
+          bitField0_ |= 0x00000010;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1644,8 +1649,10 @@ public final class SystemMessageFormats {
         } else {
           dwNotificationDataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000020;
-        onChanged();
+        if (dwNotificationData_ != null) {
+          bitField0_ |= 0x00000020;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1816,11 +1823,6 @@ public final class SystemMessageFormats {
       return new WatchData();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_WatchData_descriptor;
@@ -2033,11 +2035,13 @@ public final class SystemMessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.SystemMessageFormats.WatchData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.SystemMessageFormats.WatchData parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2364,8 +2368,10 @@ public final class SystemMessageFormats {
         } else {
           watcheeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (watchee_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2483,8 +2489,10 @@ public final class SystemMessageFormats {
         } else {
           watcherBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (watcher_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2651,11 +2659,6 @@ public final class SystemMessageFormats {
       return new SuperviseData();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_SuperviseData_descriptor;
@@ -2858,11 +2861,13 @@ public final class SystemMessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.SystemMessageFormats.SuperviseData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.SystemMessageFormats.SuperviseData parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3177,8 +3182,10 @@ public final class SystemMessageFormats {
         } else {
           childBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (child_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3253,7 +3260,7 @@ public final class SystemMessageFormats {
        * @return This builder for chaining.
        */
       public Builder setAsync(boolean value) {
-        
+
         async_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -3385,11 +3392,6 @@ public final class SystemMessageFormats {
       return new FailedData();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_FailedData_descriptor;
@@ -3592,11 +3594,13 @@ public final class SystemMessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.SystemMessageFormats.FailedData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.SystemMessageFormats.FailedData parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3911,8 +3915,10 @@ public final class SystemMessageFormats {
         } else {
           childBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (child_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3987,7 +3993,7 @@ public final class SystemMessageFormats {
        * @return This builder for chaining.
        */
       public Builder setUid(long value) {
-        
+
         uid_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -4130,11 +4136,6 @@ public final class SystemMessageFormats {
       return new DeathWatchNotificationData();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_DeathWatchNotificationData_descriptor;
@@ -4377,11 +4378,13 @@ public final class SystemMessageFormats {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -4712,8 +4715,10 @@ public final class SystemMessageFormats {
         } else {
           actorBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (actor_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -4788,7 +4793,7 @@ public final class SystemMessageFormats {
        * @return This builder for chaining.
        */
       public Builder setExistenceConfirmed(boolean value) {
-        
+
         existenceConfirmed_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -4828,7 +4833,7 @@ public final class SystemMessageFormats {
        * @return This builder for chaining.
        */
       public Builder setAddressTerminated(boolean value) {
-        
+
         addressTerminated_ = value;
         bitField0_ |= 0x00000004;
         onChanged();

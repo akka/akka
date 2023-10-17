@@ -84,11 +84,6 @@ public final class ProtobufProtocol {
       return new MyMessage();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ProtobufProtocol.internal_static_MyMessage_descriptor;
@@ -349,11 +344,13 @@ public final class ProtobufProtocol {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -626,7 +623,7 @@ public final class ProtobufProtocol {
        * @return This builder for chaining.
        */
       public Builder setId(long value) {
-        
+
         id_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -746,7 +743,7 @@ public final class ProtobufProtocol {
        * @return This builder for chaining.
        */
       public Builder setStatus(boolean value) {
-        
+
         status_ = value;
         bitField0_ |= 0x00000004;
         onChanged();

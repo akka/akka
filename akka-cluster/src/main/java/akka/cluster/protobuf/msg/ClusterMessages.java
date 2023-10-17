@@ -371,7 +371,8 @@ public final class ClusterMessages {
       super(builder);
     }
     private Join() {
-      roles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      roles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       appVersion_ = "";
     }
 
@@ -382,11 +383,6 @@ public final class ClusterMessages {
       return new Join();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Join_descriptor;
@@ -429,7 +425,8 @@ public final class ClusterMessages {
 
     public static final int ROLES_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList roles_;
+    private akka.protobufv3.internal.LazyStringArrayList roles_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string roles = 2;</code>
      * @return A list containing the roles.
@@ -666,11 +663,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Join parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Join parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -762,8 +761,8 @@ public final class ClusterMessages {
           nodeBuilder_.dispose();
           nodeBuilder_ = null;
         }
-        roles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        roles_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         appVersion_ = "";
         return this;
       }
@@ -791,18 +790,9 @@ public final class ClusterMessages {
       @java.lang.Override
       public akka.cluster.protobuf.msg.ClusterMessages.Join buildPartial() {
         akka.cluster.protobuf.msg.ClusterMessages.Join result = new akka.cluster.protobuf.msg.ClusterMessages.Join(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
-      }
-
-      private void buildPartialRepeatedFields(akka.cluster.protobuf.msg.ClusterMessages.Join result) {
-        if (((bitField0_ & 0x00000002) != 0)) {
-          roles_ = roles_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.roles_ = roles_;
       }
 
       private void buildPartial0(akka.cluster.protobuf.msg.ClusterMessages.Join result) {
@@ -813,6 +803,10 @@ public final class ClusterMessages {
               ? node_
               : nodeBuilder_.build();
           to_bitField0_ |= 0x00000001;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          roles_.makeImmutable();
+          result.roles_ = roles_;
         }
         if (((from_bitField0_ & 0x00000004) != 0)) {
           result.appVersion_ = appVersion_;
@@ -871,7 +865,7 @@ public final class ClusterMessages {
         if (!other.roles_.isEmpty()) {
           if (roles_.isEmpty()) {
             roles_ = other.roles_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureRolesIsMutable();
             roles_.addAll(other.roles_);
@@ -1016,8 +1010,10 @@ public final class ClusterMessages {
         } else {
           nodeBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (node_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1069,12 +1065,13 @@ public final class ClusterMessages {
         return nodeBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList roles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList roles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureRolesIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!roles_.isModifiable()) {
           roles_ = new akka.protobufv3.internal.LazyStringArrayList(roles_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string roles = 2;</code>
@@ -1082,7 +1079,8 @@ public final class ClusterMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getRolesList() {
-        return roles_.getUnmodifiableView();
+        roles_.makeImmutable();
+        return roles_;
       }
       /**
        * <code>repeated string roles = 2;</code>
@@ -1119,6 +1117,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRolesIsMutable();
         roles_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1132,6 +1131,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRolesIsMutable();
         roles_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1145,6 +1145,7 @@ public final class ClusterMessages {
         ensureRolesIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, roles_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1153,8 +1154,9 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder clearRoles() {
-        roles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        roles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -1168,6 +1170,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureRolesIsMutable();
         roles_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1376,11 +1379,6 @@ public final class ClusterMessages {
       return new Welcome();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Welcome_descriptor;
@@ -1593,11 +1591,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Welcome parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Welcome parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -1929,8 +1929,10 @@ public final class ClusterMessages {
         } else {
           fromBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (from_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2048,8 +2050,10 @@ public final class ClusterMessages {
         } else {
           gossipBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (gossip_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -2213,11 +2217,6 @@ public final class ClusterMessages {
       return new InitJoin();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_InitJoin_descriptor;
@@ -2394,11 +2393,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.InitJoin parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.InitJoin parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2822,11 +2823,6 @@ public final class ClusterMessages {
       return new InitJoinAck();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_InitJoinAck_descriptor;
@@ -3039,11 +3035,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.InitJoinAck parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.InitJoinAck parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3375,8 +3373,10 @@ public final class ClusterMessages {
         } else {
           addressBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (address_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3494,8 +3494,10 @@ public final class ClusterMessages {
         } else {
           configCheckBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (configCheck_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3666,11 +3668,6 @@ public final class ClusterMessages {
       return new ConfigCheck();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_ConfigCheck_descriptor;
@@ -3989,11 +3986,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -4486,11 +4485,6 @@ public final class ClusterMessages {
       return new Heartbeat();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Heartbeat_descriptor;
@@ -4725,11 +4719,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Heartbeat parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Heartbeat parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5061,8 +5057,10 @@ public final class ClusterMessages {
         } else {
           fromBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (from_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -5137,7 +5135,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setSequenceNr(long value) {
-        
+
         sequenceNr_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -5177,7 +5175,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setCreationTime(long value) {
-        
+
         creationTime_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -5327,11 +5325,6 @@ public final class ClusterMessages {
       return new HeartBeatResponse();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_HeartBeatResponse_descriptor;
@@ -5566,11 +5559,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.HeartBeatResponse parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.HeartBeatResponse parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5902,8 +5897,10 @@ public final class ClusterMessages {
         } else {
           fromBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (from_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -5978,7 +5975,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setSequenceNr(long value) {
-        
+
         sequenceNr_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -6018,7 +6015,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setCreationTime(long value) {
-        
+
         creationTime_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -6171,11 +6168,6 @@ public final class ClusterMessages {
       return new GossipEnvelope();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_GossipEnvelope_descriptor;
@@ -6427,11 +6419,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.GossipEnvelope parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.GossipEnvelope parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -6779,8 +6773,10 @@ public final class ClusterMessages {
         } else {
           fromBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (from_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -6898,8 +6894,10 @@ public final class ClusterMessages {
         } else {
           toBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (to_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -7142,7 +7140,8 @@ public final class ClusterMessages {
       super(builder);
     }
     private GossipStatus() {
-      allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      allHashes_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       seenDigest_ = akka.protobufv3.internal.ByteString.EMPTY;
     }
 
@@ -7153,11 +7152,6 @@ public final class ClusterMessages {
       return new GossipStatus();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_GossipStatus_descriptor;
@@ -7200,7 +7194,8 @@ public final class ClusterMessages {
 
     public static final int ALLHASHES_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList allHashes_;
+    private akka.protobufv3.internal.LazyStringArrayList allHashes_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string allHashes = 2;</code>
      * @return A list containing the allHashes.
@@ -7458,11 +7453,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.GossipStatus parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.GossipStatus parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -7555,8 +7552,8 @@ public final class ClusterMessages {
           fromBuilder_.dispose();
           fromBuilder_ = null;
         }
-        allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        allHashes_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         version_ = null;
         if (versionBuilder_ != null) {
           versionBuilder_.dispose();
@@ -7589,18 +7586,9 @@ public final class ClusterMessages {
       @java.lang.Override
       public akka.cluster.protobuf.msg.ClusterMessages.GossipStatus buildPartial() {
         akka.cluster.protobuf.msg.ClusterMessages.GossipStatus result = new akka.cluster.protobuf.msg.ClusterMessages.GossipStatus(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
-      }
-
-      private void buildPartialRepeatedFields(akka.cluster.protobuf.msg.ClusterMessages.GossipStatus result) {
-        if (((bitField0_ & 0x00000002) != 0)) {
-          allHashes_ = allHashes_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.allHashes_ = allHashes_;
       }
 
       private void buildPartial0(akka.cluster.protobuf.msg.ClusterMessages.GossipStatus result) {
@@ -7611,6 +7599,10 @@ public final class ClusterMessages {
               ? from_
               : fromBuilder_.build();
           to_bitField0_ |= 0x00000001;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          allHashes_.makeImmutable();
+          result.allHashes_ = allHashes_;
         }
         if (((from_bitField0_ & 0x00000004) != 0)) {
           result.version_ = versionBuilder_ == null
@@ -7675,7 +7667,7 @@ public final class ClusterMessages {
         if (!other.allHashes_.isEmpty()) {
           if (allHashes_.isEmpty()) {
             allHashes_ = other.allHashes_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureAllHashesIsMutable();
             allHashes_.addAll(other.allHashes_);
@@ -7834,8 +7826,10 @@ public final class ClusterMessages {
         } else {
           fromBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (from_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -7887,12 +7881,13 @@ public final class ClusterMessages {
         return fromBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList allHashes_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureAllHashesIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!allHashes_.isModifiable()) {
           allHashes_ = new akka.protobufv3.internal.LazyStringArrayList(allHashes_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string allHashes = 2;</code>
@@ -7900,7 +7895,8 @@ public final class ClusterMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAllHashesList() {
-        return allHashes_.getUnmodifiableView();
+        allHashes_.makeImmutable();
+        return allHashes_;
       }
       /**
        * <code>repeated string allHashes = 2;</code>
@@ -7937,6 +7933,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllHashesIsMutable();
         allHashes_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -7950,6 +7947,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllHashesIsMutable();
         allHashes_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -7963,6 +7961,7 @@ public final class ClusterMessages {
         ensureAllHashesIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, allHashes_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -7971,8 +7970,9 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder clearAllHashes() {
-        allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        allHashes_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -7986,6 +7986,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllHashesIsMutable();
         allHashes_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -8056,8 +8057,10 @@ public final class ClusterMessages {
         } else {
           versionBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (version_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -8412,11 +8415,14 @@ public final class ClusterMessages {
     }
     private Gossip() {
       allAddresses_ = java.util.Collections.emptyList();
-      allRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-      allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      allRoles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+      allHashes_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       members_ = java.util.Collections.emptyList();
       tombstones_ = java.util.Collections.emptyList();
-      allAppVersions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      allAppVersions_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -8426,11 +8432,6 @@ public final class ClusterMessages {
       return new Gossip();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Gossip_descriptor;
@@ -8488,7 +8489,8 @@ public final class ClusterMessages {
 
     public static final int ALLROLES_FIELD_NUMBER = 2;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList allRoles_;
+    private akka.protobufv3.internal.LazyStringArrayList allRoles_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string allRoles = 2;</code>
      * @return A list containing the allRoles.
@@ -8524,7 +8526,8 @@ public final class ClusterMessages {
 
     public static final int ALLHASHES_FIELD_NUMBER = 3;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList allHashes_;
+    private akka.protobufv3.internal.LazyStringArrayList allHashes_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string allHashes = 3;</code>
      * @return A list containing the allHashes.
@@ -8694,7 +8697,8 @@ public final class ClusterMessages {
 
     public static final int ALLAPPVERSIONS_FIELD_NUMBER = 8;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList allAppVersions_;
+    private akka.protobufv3.internal.LazyStringArrayList allAppVersions_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string allAppVersions = 8;</code>
      * @return A list containing the allAppVersions.
@@ -8982,11 +8986,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Gossip parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Gossip parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -9084,10 +9090,10 @@ public final class ClusterMessages {
           allAddressesBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
-        allRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000004);
+        allRoles_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        allHashes_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         if (membersBuilder_ == null) {
           members_ = java.util.Collections.emptyList();
         } else {
@@ -9112,8 +9118,8 @@ public final class ClusterMessages {
           tombstonesBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000040);
-        allAppVersions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000080);
+        allAppVersions_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -9156,16 +9162,6 @@ public final class ClusterMessages {
         } else {
           result.allAddresses_ = allAddressesBuilder_.build();
         }
-        if (((bitField0_ & 0x00000002) != 0)) {
-          allRoles_ = allRoles_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.allRoles_ = allRoles_;
-        if (((bitField0_ & 0x00000004) != 0)) {
-          allHashes_ = allHashes_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000004);
-        }
-        result.allHashes_ = allHashes_;
         if (membersBuilder_ == null) {
           if (((bitField0_ & 0x00000008) != 0)) {
             members_ = java.util.Collections.unmodifiableList(members_);
@@ -9184,15 +9180,18 @@ public final class ClusterMessages {
         } else {
           result.tombstones_ = tombstonesBuilder_.build();
         }
-        if (((bitField0_ & 0x00000080) != 0)) {
-          allAppVersions_ = allAppVersions_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000080);
-        }
-        result.allAppVersions_ = allAppVersions_;
       }
 
       private void buildPartial0(akka.cluster.protobuf.msg.ClusterMessages.Gossip result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          allRoles_.makeImmutable();
+          result.allRoles_ = allRoles_;
+        }
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          allHashes_.makeImmutable();
+          result.allHashes_ = allHashes_;
+        }
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000010) != 0)) {
           result.overview_ = overviewBuilder_ == null
@@ -9205,6 +9204,10 @@ public final class ClusterMessages {
               ? version_
               : versionBuilder_.build();
           to_bitField0_ |= 0x00000002;
+        }
+        if (((from_bitField0_ & 0x00000080) != 0)) {
+          allAppVersions_.makeImmutable();
+          result.allAppVersions_ = allAppVersions_;
         }
         result.bitField0_ |= to_bitField0_;
       }
@@ -9282,7 +9285,7 @@ public final class ClusterMessages {
         if (!other.allRoles_.isEmpty()) {
           if (allRoles_.isEmpty()) {
             allRoles_ = other.allRoles_;
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ |= 0x00000002;
           } else {
             ensureAllRolesIsMutable();
             allRoles_.addAll(other.allRoles_);
@@ -9292,7 +9295,7 @@ public final class ClusterMessages {
         if (!other.allHashes_.isEmpty()) {
           if (allHashes_.isEmpty()) {
             allHashes_ = other.allHashes_;
-            bitField0_ = (bitField0_ & ~0x00000004);
+            bitField0_ |= 0x00000004;
           } else {
             ensureAllHashesIsMutable();
             allHashes_.addAll(other.allHashes_);
@@ -9360,7 +9363,7 @@ public final class ClusterMessages {
         if (!other.allAppVersions_.isEmpty()) {
           if (allAppVersions_.isEmpty()) {
             allAppVersions_ = other.allAppVersions_;
-            bitField0_ = (bitField0_ & ~0x00000080);
+            bitField0_ |= 0x00000080;
           } else {
             ensureAllAppVersionsIsMutable();
             allAppVersions_.addAll(other.allAppVersions_);
@@ -9748,12 +9751,13 @@ public final class ClusterMessages {
         return allAddressesBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList allRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList allRoles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureAllRolesIsMutable() {
-        if (!((bitField0_ & 0x00000002) != 0)) {
+        if (!allRoles_.isModifiable()) {
           allRoles_ = new akka.protobufv3.internal.LazyStringArrayList(allRoles_);
-          bitField0_ |= 0x00000002;
-         }
+        }
+        bitField0_ |= 0x00000002;
       }
       /**
        * <code>repeated string allRoles = 2;</code>
@@ -9761,7 +9765,8 @@ public final class ClusterMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAllRolesList() {
-        return allRoles_.getUnmodifiableView();
+        allRoles_.makeImmutable();
+        return allRoles_;
       }
       /**
        * <code>repeated string allRoles = 2;</code>
@@ -9798,6 +9803,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllRolesIsMutable();
         allRoles_.set(index, value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -9811,6 +9817,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllRolesIsMutable();
         allRoles_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -9824,6 +9831,7 @@ public final class ClusterMessages {
         ensureAllRolesIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, allRoles_);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -9832,8 +9840,9 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder clearAllRoles() {
-        allRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
+        allRoles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);;
         onChanged();
         return this;
       }
@@ -9847,16 +9856,18 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllRolesIsMutable();
         allRoles_.add(value);
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList allHashes_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureAllHashesIsMutable() {
-        if (!((bitField0_ & 0x00000004) != 0)) {
+        if (!allHashes_.isModifiable()) {
           allHashes_ = new akka.protobufv3.internal.LazyStringArrayList(allHashes_);
-          bitField0_ |= 0x00000004;
-         }
+        }
+        bitField0_ |= 0x00000004;
       }
       /**
        * <code>repeated string allHashes = 3;</code>
@@ -9864,7 +9875,8 @@ public final class ClusterMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAllHashesList() {
-        return allHashes_.getUnmodifiableView();
+        allHashes_.makeImmutable();
+        return allHashes_;
       }
       /**
        * <code>repeated string allHashes = 3;</code>
@@ -9901,6 +9913,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllHashesIsMutable();
         allHashes_.set(index, value);
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -9914,6 +9927,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllHashesIsMutable();
         allHashes_.add(value);
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -9927,6 +9941,7 @@ public final class ClusterMessages {
         ensureAllHashesIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, allHashes_);
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -9935,8 +9950,9 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder clearAllHashes() {
-        allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000004);
+        allHashes_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000004);;
         onChanged();
         return this;
       }
@@ -9950,6 +9966,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllHashesIsMutable();
         allHashes_.add(value);
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
@@ -10260,8 +10277,10 @@ public final class ClusterMessages {
         } else {
           overviewBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000010;
-        onChanged();
+        if (overview_ != null) {
+          bitField0_ |= 0x00000010;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -10379,8 +10398,10 @@ public final class ClusterMessages {
         } else {
           versionBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000020;
-        onChanged();
+        if (version_ != null) {
+          bitField0_ |= 0x00000020;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -10672,12 +10693,13 @@ public final class ClusterMessages {
         return tombstonesBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList allAppVersions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList allAppVersions_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureAllAppVersionsIsMutable() {
-        if (!((bitField0_ & 0x00000080) != 0)) {
+        if (!allAppVersions_.isModifiable()) {
           allAppVersions_ = new akka.protobufv3.internal.LazyStringArrayList(allAppVersions_);
-          bitField0_ |= 0x00000080;
-         }
+        }
+        bitField0_ |= 0x00000080;
       }
       /**
        * <code>repeated string allAppVersions = 8;</code>
@@ -10685,7 +10707,8 @@ public final class ClusterMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAllAppVersionsList() {
-        return allAppVersions_.getUnmodifiableView();
+        allAppVersions_.makeImmutable();
+        return allAppVersions_;
       }
       /**
        * <code>repeated string allAppVersions = 8;</code>
@@ -10722,6 +10745,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllAppVersionsIsMutable();
         allAppVersions_.set(index, value);
+        bitField0_ |= 0x00000080;
         onChanged();
         return this;
       }
@@ -10735,6 +10759,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllAppVersionsIsMutable();
         allAppVersions_.add(value);
+        bitField0_ |= 0x00000080;
         onChanged();
         return this;
       }
@@ -10748,6 +10773,7 @@ public final class ClusterMessages {
         ensureAllAppVersionsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, allAppVersions_);
+        bitField0_ |= 0x00000080;
         onChanged();
         return this;
       }
@@ -10756,8 +10782,9 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder clearAllAppVersions() {
-        allAppVersions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000080);
+        allAppVersions_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000080);;
         onChanged();
         return this;
       }
@@ -10771,6 +10798,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureAllAppVersionsIsMutable();
         allAppVersions_.add(value);
+        bitField0_ |= 0x00000080;
         onChanged();
         return this;
       }
@@ -10924,11 +10952,6 @@ public final class ClusterMessages {
       return new GossipOverview();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_GossipOverview_descriptor;
@@ -10944,7 +10967,8 @@ public final class ClusterMessages {
 
     public static final int SEEN_FIELD_NUMBER = 1;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.Internal.IntList seen_;
+    private akka.protobufv3.internal.Internal.IntList seen_ =
+        emptyIntList();
     /**
      * <pre>
      * This is the address indexes for the nodes that have seen this gossip 
@@ -11158,11 +11182,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.GossipOverview parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.GossipOverview parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -11284,11 +11310,6 @@ public final class ClusterMessages {
       }
 
       private void buildPartialRepeatedFields(akka.cluster.protobuf.msg.ClusterMessages.GossipOverview result) {
-        if (((bitField0_ & 0x00000001) != 0)) {
-          seen_.makeImmutable();
-          bitField0_ = (bitField0_ & ~0x00000001);
-        }
-        result.seen_ = seen_;
         if (observerReachabilityBuilder_ == null) {
           if (((bitField0_ & 0x00000002) != 0)) {
             observerReachability_ = java.util.Collections.unmodifiableList(observerReachability_);
@@ -11302,6 +11323,10 @@ public final class ClusterMessages {
 
       private void buildPartial0(akka.cluster.protobuf.msg.ClusterMessages.GossipOverview result) {
         int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          seen_.makeImmutable();
+          result.seen_ = seen_;
+        }
       }
 
       @java.lang.Override
@@ -11351,7 +11376,8 @@ public final class ClusterMessages {
         if (!other.seen_.isEmpty()) {
           if (seen_.isEmpty()) {
             seen_ = other.seen_;
-            bitField0_ = (bitField0_ & ~0x00000001);
+            seen_.makeImmutable();
+            bitField0_ |= 0x00000001;
           } else {
             ensureSeenIsMutable();
             seen_.addAll(other.seen_);
@@ -11463,10 +11489,10 @@ public final class ClusterMessages {
 
       private akka.protobufv3.internal.Internal.IntList seen_ = emptyIntList();
       private void ensureSeenIsMutable() {
-        if (!((bitField0_ & 0x00000001) != 0)) {
-          seen_ = mutableCopy(seen_);
-          bitField0_ |= 0x00000001;
+        if (!seen_.isModifiable()) {
+          seen_ = makeMutableCopy(seen_);
         }
+        bitField0_ |= 0x00000001;
       }
       /**
        * <pre>
@@ -11478,8 +11504,8 @@ public final class ClusterMessages {
        */
       public java.util.List<java.lang.Integer>
           getSeenList() {
-        return ((bitField0_ & 0x00000001) != 0) ?
-                 java.util.Collections.unmodifiableList(seen_) : seen_;
+        seen_.makeImmutable();
+        return seen_;
       }
       /**
        * <pre>
@@ -11516,9 +11542,10 @@ public final class ClusterMessages {
        */
       public Builder setSeen(
           int index, int value) {
-        
+
         ensureSeenIsMutable();
         seen_.setInt(index, value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -11532,9 +11559,10 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder addSeen(int value) {
-        
+
         ensureSeenIsMutable();
         seen_.addInt(value);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -11552,6 +11580,7 @@ public final class ClusterMessages {
         ensureSeenIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, seen_);
+        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -11951,11 +11980,6 @@ public final class ClusterMessages {
       return new ObserverReachability();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_ObserverReachability_descriptor;
@@ -12207,11 +12231,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.ObserverReachability parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.ObserverReachability parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -12535,7 +12561,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
-        
+
         addressIndex_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -12575,7 +12601,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setVersion(long value) {
-        
+
         version_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -12955,11 +12981,6 @@ public final class ClusterMessages {
       return new SubjectReachability();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_SubjectReachability_descriptor;
@@ -13188,11 +13209,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.SubjectReachability parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.SubjectReachability parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -13470,7 +13493,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
-        
+
         addressIndex_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -13552,7 +13575,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setVersion(long value) {
-        
+
         version_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -13680,11 +13703,6 @@ public final class ClusterMessages {
       return new Tombstone();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Tombstone_descriptor;
@@ -13876,11 +13894,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -14135,7 +14155,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
-        
+
         addressIndex_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -14175,7 +14195,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
-        
+
         timestamp_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -14349,11 +14369,6 @@ public final class ClusterMessages {
       return new Member();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Member_descriptor;
@@ -14426,7 +14441,8 @@ public final class ClusterMessages {
 
     public static final int ROLESINDEXES_FIELD_NUMBER = 4;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.Internal.IntList rolesIndexes_;
+    private akka.protobufv3.internal.Internal.IntList rolesIndexes_ =
+        emptyIntList();
     /**
      * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
      * @return A list containing the rolesIndexes.
@@ -14673,11 +14689,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Member parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Member parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -14789,18 +14807,9 @@ public final class ClusterMessages {
       @java.lang.Override
       public akka.cluster.protobuf.msg.ClusterMessages.Member buildPartial() {
         akka.cluster.protobuf.msg.ClusterMessages.Member result = new akka.cluster.protobuf.msg.ClusterMessages.Member(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
-      }
-
-      private void buildPartialRepeatedFields(akka.cluster.protobuf.msg.ClusterMessages.Member result) {
-        if (((bitField0_ & 0x00000008) != 0)) {
-          rolesIndexes_.makeImmutable();
-          bitField0_ = (bitField0_ & ~0x00000008);
-        }
-        result.rolesIndexes_ = rolesIndexes_;
       }
 
       private void buildPartial0(akka.cluster.protobuf.msg.ClusterMessages.Member result) {
@@ -14817,6 +14826,10 @@ public final class ClusterMessages {
         if (((from_bitField0_ & 0x00000004) != 0)) {
           result.status_ = status_;
           to_bitField0_ |= 0x00000004;
+        }
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          rolesIndexes_.makeImmutable();
+          result.rolesIndexes_ = rolesIndexes_;
         }
         if (((from_bitField0_ & 0x00000010) != 0)) {
           result.appVersionIndex_ = appVersionIndex_;
@@ -14881,7 +14894,8 @@ public final class ClusterMessages {
         if (!other.rolesIndexes_.isEmpty()) {
           if (rolesIndexes_.isEmpty()) {
             rolesIndexes_ = other.rolesIndexes_;
-            bitField0_ = (bitField0_ & ~0x00000008);
+            rolesIndexes_.makeImmutable();
+            bitField0_ |= 0x00000008;
           } else {
             ensureRolesIndexesIsMutable();
             rolesIndexes_.addAll(other.rolesIndexes_);
@@ -15009,7 +15023,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
-        
+
         addressIndex_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -15049,7 +15063,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setUpNumber(int value) {
-        
+
         upNumber_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -15110,10 +15124,10 @@ public final class ClusterMessages {
 
       private akka.protobufv3.internal.Internal.IntList rolesIndexes_ = emptyIntList();
       private void ensureRolesIndexesIsMutable() {
-        if (!((bitField0_ & 0x00000008) != 0)) {
-          rolesIndexes_ = mutableCopy(rolesIndexes_);
-          bitField0_ |= 0x00000008;
+        if (!rolesIndexes_.isModifiable()) {
+          rolesIndexes_ = makeMutableCopy(rolesIndexes_);
         }
+        bitField0_ |= 0x00000008;
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
@@ -15121,8 +15135,8 @@ public final class ClusterMessages {
        */
       public java.util.List<java.lang.Integer>
           getRolesIndexesList() {
-        return ((bitField0_ & 0x00000008) != 0) ?
-                 java.util.Collections.unmodifiableList(rolesIndexes_) : rolesIndexes_;
+        rolesIndexes_.makeImmutable();
+        return rolesIndexes_;
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
@@ -15147,9 +15161,10 @@ public final class ClusterMessages {
        */
       public Builder setRolesIndexes(
           int index, int value) {
-        
+
         ensureRolesIndexesIsMutable();
         rolesIndexes_.setInt(index, value);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -15159,9 +15174,10 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder addRolesIndexes(int value) {
-        
+
         ensureRolesIndexesIsMutable();
         rolesIndexes_.addInt(value);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -15175,6 +15191,7 @@ public final class ClusterMessages {
         ensureRolesIndexesIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, rolesIndexes_);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -15212,7 +15229,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setAppVersionIndex(int value) {
-        
+
         appVersionIndex_ = value;
         bitField0_ |= 0x00000010;
         onChanged();
@@ -15367,11 +15384,6 @@ public final class ClusterMessages {
       return new VectorClock();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_VectorClock_descriptor;
@@ -15433,11 +15445,6 @@ public final class ClusterMessages {
         return new Version();
       }
 
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet
-      getUnknownFields() {
-        return this.unknownFields;
-      }
       public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.protobuf.msg.ClusterMessages.internal_static_VectorClock_Version_descriptor;
@@ -15629,11 +15636,13 @@ public final class ClusterMessages {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
+
       public static akka.cluster.protobuf.msg.ClusterMessages.VectorClock.Version parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return akka.protobufv3.internal.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
+
       public static akka.cluster.protobuf.msg.ClusterMessages.VectorClock.Version parseDelimitedFrom(
           java.io.InputStream input,
           akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -15888,7 +15897,7 @@ public final class ClusterMessages {
          * @return This builder for chaining.
          */
         public Builder setHashIndex(int value) {
-          
+
           hashIndex_ = value;
           bitField0_ |= 0x00000001;
           onChanged();
@@ -15928,7 +15937,7 @@ public final class ClusterMessages {
          * @return This builder for chaining.
          */
         public Builder setTimestamp(long value) {
-          
+
           timestamp_ = value;
           bitField0_ |= 0x00000002;
           onChanged();
@@ -16211,11 +16220,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.VectorClock parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.VectorClock parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -16532,7 +16543,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
-        
+
         timestamp_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -16887,11 +16898,6 @@ public final class ClusterMessages {
       return new Empty();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Empty_descriptor;
@@ -17003,11 +17009,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Empty parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Empty parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -17362,11 +17370,6 @@ public final class ClusterMessages {
       return new Address();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Address_descriptor;
@@ -17718,11 +17721,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Address parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Address parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -18177,7 +18182,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setPort(int value) {
-        
+
         port_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -18413,11 +18418,6 @@ public final class ClusterMessages {
       return new UniqueAddress();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_UniqueAddress_descriptor;
@@ -18662,11 +18662,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -18999,8 +19001,10 @@ public final class ClusterMessages {
         } else {
           addressBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (address_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -19075,7 +19079,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setUid(int value) {
-        
+
         uid_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -19127,7 +19131,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setUid2(int value) {
-        
+
         uid2_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -19267,11 +19271,6 @@ public final class ClusterMessages {
       return new ClusterRouterPool();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_ClusterRouterPool_descriptor;
@@ -19484,11 +19483,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPool parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPool parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -19815,8 +19816,10 @@ public final class ClusterMessages {
         } else {
           poolBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (pool_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -19934,8 +19937,10 @@ public final class ClusterMessages {
         } else {
           settingsBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (settings_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -20117,11 +20122,6 @@ public final class ClusterMessages {
       return new Pool();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Pool_descriptor;
@@ -20380,11 +20380,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Pool parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.Pool parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -20657,7 +20659,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
-        
+
         serializerId_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -20950,7 +20952,8 @@ public final class ClusterMessages {
     }
     private ClusterRouterPoolSettings() {
       useRole_ = "";
-      useRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      useRoles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
     }
 
     @java.lang.Override
@@ -20960,11 +20963,6 @@ public final class ClusterMessages {
       return new ClusterRouterPoolSettings();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.protobuf.msg.ClusterMessages.internal_static_ClusterRouterPoolSettings_descriptor;
@@ -21087,7 +21085,8 @@ public final class ClusterMessages {
 
     public static final int USEROLES_FIELD_NUMBER = 5;
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList useRoles_;
+    private akka.protobufv3.internal.LazyStringArrayList useRoles_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string useRoles = 5;</code>
      * @return A list containing the useRoles.
@@ -21312,11 +21311,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -21396,8 +21397,8 @@ public final class ClusterMessages {
         maxInstancesPerNode_ = 0;
         allowLocalRoutees_ = false;
         useRole_ = "";
-        useRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000010);
+        useRoles_ =
+            akka.protobufv3.internal.LazyStringArrayList.emptyList();
         return this;
       }
 
@@ -21424,18 +21425,9 @@ public final class ClusterMessages {
       @java.lang.Override
       public akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings buildPartial() {
         akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings result = new akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings(this);
-        buildPartialRepeatedFields(result);
         if (bitField0_ != 0) { buildPartial0(result); }
         onBuilt();
         return result;
-      }
-
-      private void buildPartialRepeatedFields(akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings result) {
-        if (((bitField0_ & 0x00000010) != 0)) {
-          useRoles_ = useRoles_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000010);
-        }
-        result.useRoles_ = useRoles_;
       }
 
       private void buildPartial0(akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings result) {
@@ -21456,6 +21448,10 @@ public final class ClusterMessages {
         if (((from_bitField0_ & 0x00000008) != 0)) {
           result.useRole_ = useRole_;
           to_bitField0_ |= 0x00000008;
+        }
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          useRoles_.makeImmutable();
+          result.useRoles_ = useRoles_;
         }
         result.bitField0_ |= to_bitField0_;
       }
@@ -21521,7 +21517,7 @@ public final class ClusterMessages {
         if (!other.useRoles_.isEmpty()) {
           if (useRoles_.isEmpty()) {
             useRoles_ = other.useRoles_;
-            bitField0_ = (bitField0_ & ~0x00000010);
+            bitField0_ |= 0x00000010;
           } else {
             ensureUseRolesIsMutable();
             useRoles_.addAll(other.useRoles_);
@@ -21629,7 +21625,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setTotalInstances(int value) {
-        
+
         totalInstances_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -21669,7 +21665,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setMaxInstancesPerNode(int value) {
-        
+
         maxInstancesPerNode_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -21709,7 +21705,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setAllowLocalRoutees(boolean value) {
-        
+
         allowLocalRoutees_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -21806,12 +21802,13 @@ public final class ClusterMessages {
         return this;
       }
 
-      private akka.protobufv3.internal.LazyStringList useRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList useRoles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
       private void ensureUseRolesIsMutable() {
-        if (!((bitField0_ & 0x00000010) != 0)) {
+        if (!useRoles_.isModifiable()) {
           useRoles_ = new akka.protobufv3.internal.LazyStringArrayList(useRoles_);
-          bitField0_ |= 0x00000010;
-         }
+        }
+        bitField0_ |= 0x00000010;
       }
       /**
        * <code>repeated string useRoles = 5;</code>
@@ -21819,7 +21816,8 @@ public final class ClusterMessages {
        */
       public akka.protobufv3.internal.ProtocolStringList
           getUseRolesList() {
-        return useRoles_.getUnmodifiableView();
+        useRoles_.makeImmutable();
+        return useRoles_;
       }
       /**
        * <code>repeated string useRoles = 5;</code>
@@ -21856,6 +21854,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureUseRolesIsMutable();
         useRoles_.set(index, value);
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
@@ -21869,6 +21868,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureUseRolesIsMutable();
         useRoles_.add(value);
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
@@ -21882,6 +21882,7 @@ public final class ClusterMessages {
         ensureUseRolesIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
             values, useRoles_);
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
@@ -21890,8 +21891,9 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder clearUseRoles() {
-        useRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000010);
+        useRoles_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000010);;
         onChanged();
         return this;
       }
@@ -21905,6 +21907,7 @@ public final class ClusterMessages {
         if (value == null) { throw new NullPointerException(); }
         ensureUseRolesIsMutable();
         useRoles_.add(value);
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
