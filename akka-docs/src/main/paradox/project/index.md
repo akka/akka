@@ -5,7 +5,6 @@
 @@@ index
 
 * [../common/binary-compatibility-rules](../common/binary-compatibility-rules.md)
-* [scala3](scala3.md)
 * [downstream-upgrade-strategy](downstream-upgrade-strategy.md)
 * [../common/may-change](../common/may-change.md)
 * [ide] (../additional/ide.md)
