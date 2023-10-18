@@ -249,7 +249,7 @@ e.g. `allCluster`, `allTyped`.
 ### Binary compatibility
 
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
-](https://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
+](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html) section of the documentation.
 
 Akka uses [MiMa](https://github.com/lightbend/mima) to
 validate the binary compatibility of incoming pull requests. If your PR fails due to binary compatibility issues, you may see

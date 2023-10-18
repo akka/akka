@@ -37,7 +37,7 @@ url="https://repo.akka.io/maven"
 
 ## Snapshots Repository
 
-Snapshot builds are available at [https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/](https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/). All Akka modules that belong to the same build have the same version.
+Snapshot builds are available at https://repo.akka.io/snapshots. All Akka modules that belong to the same build have the same version.
 
 @@@ warning
 
@@ -50,14 +50,14 @@ The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unles
 Make sure that you add the repository to the sbt resolvers:
 
 ```
-resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+resolvers += "Akka library snapshot repository".at("https://repo.akka.io/snapshots")
 ```
 
 Define the library dependencies with the complete version. For example:
 
 @@@vars
 ```
-libraryDependencies += "com.typesafe.akka" % "akka-remote_$scala.binary.version$" % "2.6.14+72-53943d99-SNAPSHOT"
+libraryDependencies += "com.typesafe.akka" % "akka-cluster_$scala.binary.version$" % "2.9.0+72-53943d99-SNAPSHOT"
 ```
 @@@
 
@@ -67,26 +67,25 @@ Make sure that you add the repository to the Maven repositories in pom.xml:
 
 ```
 <repositories>
-  <repository>
-    <id>oss-sonatype</id>
-    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    <layout>default</layout>
-    <snapshots>
-      <enabled>true</enabled>
-    </snapshots>
-  </repository>
+  <repositories>
+    <repository>
+      <id>akka-repository</id>
+      <name>Akka library snapshot repository</name>
+      <url>https://repo.akka.io/snapshots</url>
+    </repository>
+  </repositories>
 </repositories>
 ```
 
-Define the library dependencies with the timestamp as version. For example:
+Define the library dependencies with the complete version. For example:
 
 @@@vars
 ```
 <dependencies>
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-remote_$scala.binary.version$</artifactId>
-    <version>2.6.14+72-53943d99-SNAPSHOT</version>
+    <artifactId>akka-cluster_$scala.binary.version$</artifactId>
+    <version>2.9.0+72-53943d99-SNAPSHOT</version>
   </dependency>
 </dependencies>
 ```
