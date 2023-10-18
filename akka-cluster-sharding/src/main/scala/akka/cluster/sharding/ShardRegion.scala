@@ -526,8 +526,9 @@ object ShardRegion {
     import HandOffStopper._
     import ShardCoordinator.Internal.ShardStopped
 
+    val entityHandOffTimeout = (handoffTimeout - 5.seconds).max(1.seconds)
     timers.startSingleTimer(StopTimeoutWarning, StopTimeoutWarning, StopTimeoutWarningAfter)
-    timers.startSingleTimer(StopTimeout, StopTimeout, handoffTimeout)
+    timers.startSingleTimer(StopTimeout, StopTimeout, entityHandOffTimeout)
 
     entities.foreach { a =>
       context.watch(a)
@@ -554,7 +555,7 @@ object ShardRegion {
           if (CoordinatedShutdown(context.system).getShutdownReason().isPresent)
             "" // the region will be shutdown earlier so would be confusing to say more
           else
-            s"Waiting additional [${handoffTimeout.toCoarsest}] before stopping the remaining entities.")
+            s"Waiting additional [${(entityHandOffTimeout - StopTimeoutWarningAfter).toCoarsest}] before stopping the remaining entities.")
 
       case StopTimeout =>
         log.warning(
@@ -562,8 +563,9 @@ object ShardRegion {
           "stopping the remaining [{}] entities.",
           stopMessage.getClass.getName,
           shard,
-          handoffTimeout.toCoarsest,
+          entityHandOffTimeout.toCoarsest,
           remaining.size)
+        timers.cancel(StopTimeoutWarning)
 
         remaining.foreach { ref =>
           context.stop(ref)

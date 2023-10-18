@@ -873,7 +873,6 @@ private[akka] class Shard(
         replyTo ! ShardStopped(shardId)
         context.stop(self)
       } else if (activeEntities.nonEmpty && !preparingForShutdown) {
-        val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
         log.debug(
           "{}: Starting HandOffStopper for shard [{}] to terminate [{}] entities.",
           typeName,
@@ -881,9 +880,16 @@ private[akka] class Shard(
           activeEntities.size)
         activeEntities.foreach(context.unwatch)
         handOffStopper = Some(
-          context.watch(context.actorOf(
-            HandOffStopper.props(typeName, shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout),
-            "HandOffStopper")))
+          context.watch(
+            context.actorOf(
+              HandOffStopper.props(
+                typeName,
+                shardId,
+                replyTo,
+                activeEntities,
+                handOffStopMessage,
+                settings.tuningParameters.handOffTimeout),
+              "HandOffStopper")))
 
         //During hand off we only care about watching for termination of the hand off stopper
         context.become {
