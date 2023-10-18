@@ -41,4 +41,4 @@ RedirectMatch 301 ^(.*)/stream/stream-integrations\.html$ $1/stream/actor-intero
 
 RedirectMatch 301 ^(.*)/additional/deploy\.html$ $1/additional/deploying.html
 
-RedirectMatch 301 ^(.*)/remoting\.html$ $1/remoting-artery.html
+RedirectMatch 301 ^(.*/akka/[^/]+)/remoting\.html$ $1/remoting-artery.html
