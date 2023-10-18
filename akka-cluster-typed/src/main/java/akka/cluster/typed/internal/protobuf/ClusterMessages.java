@@ -84,11 +84,6 @@ public final class ClusterMessages {
       return new ReceptionistEntry();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.typed.internal.protobuf.ClusterMessages.internal_static_akka_cluster_typed_ReceptionistEntry_descriptor;
@@ -345,11 +340,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -699,7 +696,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setSystemUid(long value) {
-        
+
         systemUid_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -739,7 +736,7 @@ public final class ClusterMessages {
        * @return This builder for chaining.
        */
       public Builder setCreatedTimestamp(long value) {
-        
+
         createdTimestamp_ = value;
         bitField0_ |= 0x00000004;
         onChanged();
@@ -860,11 +857,6 @@ public final class ClusterMessages {
       return new PubSubMessagePublished();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.typed.internal.protobuf.ClusterMessages.internal_static_akka_cluster_typed_PubSubMessagePublished_descriptor;
@@ -1027,11 +1019,13 @@ public final class ClusterMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.PubSubMessagePublished parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.PubSubMessagePublished parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -1330,8 +1324,10 @@ public final class ClusterMessages {
         } else {
           messageBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (message_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**

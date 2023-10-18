@@ -33,7 +33,7 @@ object Protobuf {
     // this keeps intellij happy for files that use the shaded protobuf
     Compile / unmanagedJars += (LocalProject("akka-protobuf-v3") / assembly).value,
     protoc := "protoc",
-    protocVersion := "3.21.12", // also sync with protobufJavaVersion in Dependencies.scala
+    protocVersion := "24.0", // 3.24.0, also sync with protobufJavaVersion in Dependencies.scala
     generate := {
       val sourceDirs = paths.value
       val targetDirs = outputPaths.value

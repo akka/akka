@@ -150,11 +150,6 @@ public final class ReplicatedEventSourcing {
       return new Counter();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
-    }
-
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
       return akka.persistence.typed.serialization.ReplicatedEventSourcing
           .internal_static_Counter_descriptor;
@@ -709,11 +704,6 @@ public final class ReplicatedEventSourcing {
     protected java.lang.Object newInstance(
         akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new CounterUpdate();
-    }
-
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
     }
 
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
@@ -1394,7 +1384,7 @@ public final class ReplicatedEventSourcing {
     private ORSet() {
       originDc_ = "";
       dots_ = java.util.Collections.emptyList();
-      stringElements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      stringElements_ = akka.protobufv3.internal.LazyStringArrayList.emptyList();
       intElements_ = emptyIntList();
       longElements_ = emptyLongList();
       otherElements_ = java.util.Collections.emptyList();
@@ -1405,11 +1395,6 @@ public final class ReplicatedEventSourcing {
     protected java.lang.Object newInstance(
         akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ORSet();
-    }
-
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
     }
 
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
@@ -1553,7 +1538,8 @@ public final class ReplicatedEventSourcing {
     public static final int STRINGELEMENTS_FIELD_NUMBER = 4;
 
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.LazyStringList stringElements_;
+    private akka.protobufv3.internal.LazyStringArrayList stringElements_ =
+        akka.protobufv3.internal.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string stringElements = 4;</code>
      *
@@ -1592,7 +1578,7 @@ public final class ReplicatedEventSourcing {
     public static final int INTELEMENTS_FIELD_NUMBER = 5;
 
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.Internal.IntList intElements_;
+    private akka.protobufv3.internal.Internal.IntList intElements_ = emptyIntList();
     /**
      * <code>repeated sint32 intElements = 5 [packed = true];</code>
      *
@@ -1625,7 +1611,7 @@ public final class ReplicatedEventSourcing {
     public static final int LONGELEMENTS_FIELD_NUMBER = 6;
 
     @SuppressWarnings("serial")
-    private akka.protobufv3.internal.Internal.LongList longElements_;
+    private akka.protobufv3.internal.Internal.LongList longElements_ = emptyLongList();
     /**
      * <code>repeated sint64 longElements = 6 [packed = true];</code>
      *
@@ -2044,8 +2030,7 @@ public final class ReplicatedEventSourcing {
           dotsBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000004);
-        stringElements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000008);
+        stringElements_ = akka.protobufv3.internal.LazyStringArrayList.emptyList();
         intElements_ = emptyIntList();
         longElements_ = emptyLongList();
         if (otherElementsBuilder_ == null) {
@@ -2103,21 +2088,6 @@ public final class ReplicatedEventSourcing {
         } else {
           result.dots_ = dotsBuilder_.build();
         }
-        if (((bitField0_ & 0x00000008) != 0)) {
-          stringElements_ = stringElements_.getUnmodifiableView();
-          bitField0_ = (bitField0_ & ~0x00000008);
-        }
-        result.stringElements_ = stringElements_;
-        if (((bitField0_ & 0x00000010) != 0)) {
-          intElements_.makeImmutable();
-          bitField0_ = (bitField0_ & ~0x00000010);
-        }
-        result.intElements_ = intElements_;
-        if (((bitField0_ & 0x00000020) != 0)) {
-          longElements_.makeImmutable();
-          bitField0_ = (bitField0_ & ~0x00000020);
-        }
-        result.longElements_ = longElements_;
         if (otherElementsBuilder_ == null) {
           if (((bitField0_ & 0x00000040) != 0)) {
             otherElements_ = java.util.Collections.unmodifiableList(otherElements_);
@@ -2140,6 +2110,18 @@ public final class ReplicatedEventSourcing {
         if (((from_bitField0_ & 0x00000002) != 0)) {
           result.vvector_ = vvectorBuilder_ == null ? vvector_ : vvectorBuilder_.build();
           to_bitField0_ |= 0x00000002;
+        }
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          stringElements_.makeImmutable();
+          result.stringElements_ = stringElements_;
+        }
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          intElements_.makeImmutable();
+          result.intElements_ = intElements_;
+        }
+        if (((from_bitField0_ & 0x00000020) != 0)) {
+          longElements_.makeImmutable();
+          result.longElements_ = longElements_;
         }
         result.bitField0_ |= to_bitField0_;
       }
@@ -2233,7 +2215,7 @@ public final class ReplicatedEventSourcing {
         if (!other.stringElements_.isEmpty()) {
           if (stringElements_.isEmpty()) {
             stringElements_ = other.stringElements_;
-            bitField0_ = (bitField0_ & ~0x00000008);
+            bitField0_ |= 0x00000008;
           } else {
             ensureStringElementsIsMutable();
             stringElements_.addAll(other.stringElements_);
@@ -2243,7 +2225,8 @@ public final class ReplicatedEventSourcing {
         if (!other.intElements_.isEmpty()) {
           if (intElements_.isEmpty()) {
             intElements_ = other.intElements_;
-            bitField0_ = (bitField0_ & ~0x00000010);
+            intElements_.makeImmutable();
+            bitField0_ |= 0x00000010;
           } else {
             ensureIntElementsIsMutable();
             intElements_.addAll(other.intElements_);
@@ -2253,7 +2236,8 @@ public final class ReplicatedEventSourcing {
         if (!other.longElements_.isEmpty()) {
           if (longElements_.isEmpty()) {
             longElements_ = other.longElements_;
-            bitField0_ = (bitField0_ & ~0x00000020);
+            longElements_.makeImmutable();
+            bitField0_ |= 0x00000020;
           } else {
             ensureLongElementsIsMutable();
             longElements_.addAll(other.longElements_);
@@ -2593,8 +2577,10 @@ public final class ReplicatedEventSourcing {
         } else {
           vvectorBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (vvector_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /** <code>required .VersionVector vvector = 2;</code> */
@@ -2887,14 +2873,14 @@ public final class ReplicatedEventSourcing {
         return dotsBuilder_;
       }
 
-      private akka.protobufv3.internal.LazyStringList stringElements_ =
-          akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringArrayList stringElements_ =
+          akka.protobufv3.internal.LazyStringArrayList.emptyList();
 
       private void ensureStringElementsIsMutable() {
-        if (!((bitField0_ & 0x00000008) != 0)) {
+        if (!stringElements_.isModifiable()) {
           stringElements_ = new akka.protobufv3.internal.LazyStringArrayList(stringElements_);
-          bitField0_ |= 0x00000008;
         }
+        bitField0_ |= 0x00000008;
       }
       /**
        * <code>repeated string stringElements = 4;</code>
@@ -2902,7 +2888,8 @@ public final class ReplicatedEventSourcing {
        * @return A list containing the stringElements.
        */
       public akka.protobufv3.internal.ProtocolStringList getStringElementsList() {
-        return stringElements_.getUnmodifiableView();
+        stringElements_.makeImmutable();
+        return stringElements_;
       }
       /**
        * <code>repeated string stringElements = 4;</code>
@@ -2943,6 +2930,7 @@ public final class ReplicatedEventSourcing {
         }
         ensureStringElementsIsMutable();
         stringElements_.set(index, value);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -2958,6 +2946,7 @@ public final class ReplicatedEventSourcing {
         }
         ensureStringElementsIsMutable();
         stringElements_.add(value);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -2970,6 +2959,7 @@ public final class ReplicatedEventSourcing {
       public Builder addAllStringElements(java.lang.Iterable<java.lang.String> values) {
         ensureStringElementsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, stringElements_);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -2979,8 +2969,9 @@ public final class ReplicatedEventSourcing {
        * @return This builder for chaining.
        */
       public Builder clearStringElements() {
-        stringElements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+        stringElements_ = akka.protobufv3.internal.LazyStringArrayList.emptyList();
         bitField0_ = (bitField0_ & ~0x00000008);
+        ;
         onChanged();
         return this;
       }
@@ -2996,6 +2987,7 @@ public final class ReplicatedEventSourcing {
         }
         ensureStringElementsIsMutable();
         stringElements_.add(value);
+        bitField0_ |= 0x00000008;
         onChanged();
         return this;
       }
@@ -3003,10 +2995,10 @@ public final class ReplicatedEventSourcing {
       private akka.protobufv3.internal.Internal.IntList intElements_ = emptyIntList();
 
       private void ensureIntElementsIsMutable() {
-        if (!((bitField0_ & 0x00000010) != 0)) {
-          intElements_ = mutableCopy(intElements_);
-          bitField0_ |= 0x00000010;
+        if (!intElements_.isModifiable()) {
+          intElements_ = makeMutableCopy(intElements_);
         }
+        bitField0_ |= 0x00000010;
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
@@ -3014,9 +3006,8 @@ public final class ReplicatedEventSourcing {
        * @return A list containing the intElements.
        */
       public java.util.List<java.lang.Integer> getIntElementsList() {
-        return ((bitField0_ & 0x00000010) != 0)
-            ? java.util.Collections.unmodifiableList(intElements_)
-            : intElements_;
+        intElements_.makeImmutable();
+        return intElements_;
       }
       /**
        * <code>repeated sint32 intElements = 5 [packed = true];</code>
@@ -3046,6 +3037,7 @@ public final class ReplicatedEventSourcing {
 
         ensureIntElementsIsMutable();
         intElements_.setInt(index, value);
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
@@ -3059,6 +3051,7 @@ public final class ReplicatedEventSourcing {
 
         ensureIntElementsIsMutable();
         intElements_.addInt(value);
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
@@ -3071,6 +3064,7 @@ public final class ReplicatedEventSourcing {
       public Builder addAllIntElements(java.lang.Iterable<? extends java.lang.Integer> values) {
         ensureIntElementsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, intElements_);
+        bitField0_ |= 0x00000010;
         onChanged();
         return this;
       }
@@ -3089,10 +3083,10 @@ public final class ReplicatedEventSourcing {
       private akka.protobufv3.internal.Internal.LongList longElements_ = emptyLongList();
 
       private void ensureLongElementsIsMutable() {
-        if (!((bitField0_ & 0x00000020) != 0)) {
-          longElements_ = mutableCopy(longElements_);
-          bitField0_ |= 0x00000020;
+        if (!longElements_.isModifiable()) {
+          longElements_ = makeMutableCopy(longElements_);
         }
+        bitField0_ |= 0x00000020;
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
@@ -3100,9 +3094,8 @@ public final class ReplicatedEventSourcing {
        * @return A list containing the longElements.
        */
       public java.util.List<java.lang.Long> getLongElementsList() {
-        return ((bitField0_ & 0x00000020) != 0)
-            ? java.util.Collections.unmodifiableList(longElements_)
-            : longElements_;
+        longElements_.makeImmutable();
+        return longElements_;
       }
       /**
        * <code>repeated sint64 longElements = 6 [packed = true];</code>
@@ -3132,6 +3125,7 @@ public final class ReplicatedEventSourcing {
 
         ensureLongElementsIsMutable();
         longElements_.setLong(index, value);
+        bitField0_ |= 0x00000020;
         onChanged();
         return this;
       }
@@ -3145,6 +3139,7 @@ public final class ReplicatedEventSourcing {
 
         ensureLongElementsIsMutable();
         longElements_.addLong(value);
+        bitField0_ |= 0x00000020;
         onChanged();
         return this;
       }
@@ -3157,6 +3152,7 @@ public final class ReplicatedEventSourcing {
       public Builder addAllLongElements(java.lang.Iterable<? extends java.lang.Long> values) {
         ensureLongElementsIsMutable();
         akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(values, longElements_);
+        bitField0_ |= 0x00000020;
         onChanged();
         return this;
       }
@@ -3496,11 +3492,6 @@ public final class ReplicatedEventSourcing {
       return new ORSetDeltaGroup();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
-    }
-
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
       return akka.persistence.typed.serialization.ReplicatedEventSourcing
           .internal_static_ORSetDeltaGroup_descriptor;
@@ -3571,11 +3562,6 @@ public final class ReplicatedEventSourcing {
       protected java.lang.Object newInstance(
           akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Entry();
-      }
-
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-        return this.unknownFields;
       }
 
       public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
@@ -4246,8 +4232,10 @@ public final class ReplicatedEventSourcing {
           } else {
             underlyingBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+          if (underlying_ != null) {
+            bitField0_ |= 0x00000002;
+            onChanged();
+          }
           return this;
         }
         /** <code>required .ORSet underlying = 2;</code> */
@@ -5207,11 +5195,6 @@ public final class ReplicatedEventSourcing {
       return new VersionVector();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
-    }
-
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
       return akka.persistence.typed.serialization.ReplicatedEventSourcing
           .internal_static_VersionVector_descriptor;
@@ -5285,11 +5268,6 @@ public final class ReplicatedEventSourcing {
       protected java.lang.Object newInstance(
           akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Entry();
-      }
-
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-        return this.unknownFields;
       }
 
       public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
@@ -6876,11 +6854,6 @@ public final class ReplicatedEventSourcing {
       return new ReplicatedEventMetadata();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
-    }
-
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
       return akka.persistence.typed.serialization.ReplicatedEventSourcing
           .internal_static_ReplicatedEventMetadata_descriptor;
@@ -7758,8 +7731,10 @@ public final class ReplicatedEventSourcing {
         } else {
           versionVectorBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (versionVector_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /** <code>required .VersionVector versionVector = 3;</code> */
@@ -7994,11 +7969,6 @@ public final class ReplicatedEventSourcing {
       return new ReplicatedSnapshotMetadata();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
-    }
-
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
       return akka.persistence.typed.serialization.ReplicatedEventSourcing
           .internal_static_ReplicatedSnapshotMetadata_descriptor;
@@ -8073,11 +8043,6 @@ public final class ReplicatedEventSourcing {
       protected java.lang.Object newInstance(
           akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Seen();
-      }
-
-      @java.lang.Override
-      public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-        return this.unknownFields;
       }
 
       public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
@@ -9487,8 +9452,10 @@ public final class ReplicatedEventSourcing {
         } else {
           versionBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (version_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /** <code>required .VersionVector version = 1;</code> */
@@ -9943,11 +9910,6 @@ public final class ReplicatedEventSourcing {
     protected java.lang.Object newInstance(
         akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ReplicatedPublishedEventMetaData();
-    }
-
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
     }
 
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
@@ -10674,8 +10636,10 @@ public final class ReplicatedEventSourcing {
         } else {
           versionVectorBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (versionVector_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /** <code>optional .VersionVector versionVector = 2;</code> */
@@ -10924,11 +10888,6 @@ public final class ReplicatedEventSourcing {
     protected java.lang.Object newInstance(
         akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new PublishedEvent();
-    }
-
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
-      return this.unknownFields;
     }
 
     public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
@@ -11906,8 +11865,10 @@ public final class ReplicatedEventSourcing {
         } else {
           payloadBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
-        onChanged();
+        if (payload_ != null) {
+          bitField0_ |= 0x00000004;
+          onChanged();
+        }
         return this;
       }
       /** <code>optional .Payload payload = 3;</code> */
@@ -12084,8 +12045,10 @@ public final class ReplicatedEventSourcing {
         } else {
           metadataBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000010;
-        onChanged();
+        if (metadata_ != null) {
+          bitField0_ |= 0x00000010;
+          onChanged();
+        }
         return this;
       }
       /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */

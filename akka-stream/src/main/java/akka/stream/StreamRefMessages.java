@@ -59,11 +59,6 @@ public final class StreamRefMessages {
       return new SinkRef();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_SinkRef_descriptor;
@@ -226,11 +221,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.SinkRef parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.SinkRef parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -529,8 +526,10 @@ public final class StreamRefMessages {
         } else {
           targetRefBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (targetRef_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -686,11 +685,6 @@ public final class StreamRefMessages {
       return new SourceRef();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_SourceRef_descriptor;
@@ -853,11 +847,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.SourceRef parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.SourceRef parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -1156,8 +1152,10 @@ public final class StreamRefMessages {
         } else {
           originRefBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (originRef_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -1316,11 +1314,6 @@ public final class StreamRefMessages {
       return new ActorRef();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_ActorRef_descriptor;
@@ -1501,11 +1494,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.ActorRef parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.ActorRef parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -1927,11 +1922,6 @@ public final class StreamRefMessages {
       return new Payload();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_Payload_descriptor;
@@ -2157,11 +2147,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.Payload parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.Payload parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -2469,7 +2461,7 @@ public final class StreamRefMessages {
        * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
-        
+
         serializerId_ = value;
         bitField0_ |= 0x00000002;
         onChanged();
@@ -2630,11 +2622,6 @@ public final class StreamRefMessages {
       return new OnSubscribeHandshake();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_OnSubscribeHandshake_descriptor;
@@ -2797,11 +2784,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.OnSubscribeHandshake parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.OnSubscribeHandshake parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3100,8 +3089,10 @@ public final class StreamRefMessages {
         } else {
           targetRefBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000001;
-        onChanged();
+        if (targetRef_ != null) {
+          bitField0_ |= 0x00000001;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -3253,11 +3244,6 @@ public final class StreamRefMessages {
       return new CumulativeDemand();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_CumulativeDemand_descriptor;
@@ -3410,11 +3396,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.CumulativeDemand parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.CumulativeDemand parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -3653,7 +3641,7 @@ public final class StreamRefMessages {
        * @return This builder for chaining.
        */
       public Builder setSeqNr(long value) {
-        
+
         seqNr_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -3785,11 +3773,6 @@ public final class StreamRefMessages {
       return new SequencedOnNext();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_SequencedOnNext_descriptor;
@@ -3992,11 +3975,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.SequencedOnNext parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.SequencedOnNext parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -4268,7 +4253,7 @@ public final class StreamRefMessages {
        * @return This builder for chaining.
        */
       public Builder setSeqNr(long value) {
-        
+
         seqNr_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
@@ -4351,8 +4336,10 @@ public final class StreamRefMessages {
         } else {
           payloadBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
-        onChanged();
+        if (payload_ != null) {
+          bitField0_ |= 0x00000002;
+          onChanged();
+        }
         return this;
       }
       /**
@@ -4505,11 +4492,6 @@ public final class StreamRefMessages {
       return new RemoteStreamFailure();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_RemoteStreamFailure_descriptor;
@@ -4657,11 +4639,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.RemoteStreamFailure parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.RemoteStreamFailure parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5014,11 +4998,6 @@ public final class StreamRefMessages {
       return new RemoteStreamCompleted();
     }
 
-    @java.lang.Override
-    public final akka.protobufv3.internal.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
     public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.stream.StreamRefMessages.internal_static_RemoteStreamCompleted_descriptor;
@@ -5171,11 +5150,13 @@ public final class StreamRefMessages {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
+
     public static akka.stream.StreamRefMessages.RemoteStreamCompleted parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return akka.protobufv3.internal.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
+
     public static akka.stream.StreamRefMessages.RemoteStreamCompleted parseDelimitedFrom(
         java.io.InputStream input,
         akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
@@ -5414,7 +5395,7 @@ public final class StreamRefMessages {
        * @return This builder for chaining.
        */
       public Builder setSeqNr(long value) {
-        
+
         seqNr_ = value;
         bitField0_ |= 0x00000001;
         onChanged();
