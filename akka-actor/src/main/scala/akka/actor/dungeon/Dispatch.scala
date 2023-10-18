@@ -35,8 +35,11 @@ final case class SerializationCheckFailedException private[dungeon] (msg: Object
 @InternalApi
 private[akka] trait Dispatch { this: ActorCell =>
 
+  // scalafmt breaks this by moving the _ to its own line which doesn't compile
+  // format: off
   @nowarn @volatile private var _mailboxDoNotCallMeDirectly
       : Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
+  // format: on
 
   @nowarn private def _preventPrivateUnusedErasure = {
     _mailboxDoNotCallMeDirectly
