@@ -25,16 +25,15 @@ Community
 You can join these groups and chats to discuss and ask Akka related questions:
 
 - Forums: [discuss.akka.io](https://discuss.akka.io)
-- Chat room about *using* Akka: [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka)
 - Issue tracker: [![github: akka/akka](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/akka/issues)
 
 In addition to that, you may enjoy following:
 
 - The [news](https://akka.io/blog/news-archive.html) section of the page, which is updated whenever a new version is released
 - The [Akka Team Blog](https://akka.io/blog/article-archive.html)
+- The [Akka articles in the Lightbend Blog](https://www.lightbend.com/blog/akka)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
 - Questions tagged [#akka on StackOverflow](https://stackoverflow.com/questions/tagged/akka)
-- Projects built with Akka: [![akka-dependency-badge]][akka-dependency-scaladex]
 
 Contributing
 ------------
@@ -45,19 +44,11 @@ the best way to make it happen is to help out by submitting a pull request imple
 We welcome contributions from all, even you are not yet familiar with this project,
 We are happy to get you started, and will guide you through the process once you've submitted your PR.
 
-[![akka-dependency-badge]][akka-dependency-scaladex]
-
 Refer to the [CONTRIBUTING.md](https://github.com/akka/akka/blob/main/CONTRIBUTING.md) file for more details about the workflow,
 and general hints on how to prepare your pull request. You can also ask for clarifications or guidance in GitHub issues directly,
 or in the akka/dev chat if a more real time communication would be of benefit.
-
-A chat room is available for all questions related to *developing and contributing* to Akka:
-[![gitter: akka/dev](https://img.shields.io/badge/gitter%3A-akka%2Fdev-blue.svg?style=flat-square)](https://gitter.im/akka/dev)
 
 License
 -------
 
 Akka is licensed under the Business Source License 1.1, see LICENSE.
-
-[akka-dependency-badge]: https://index.scala-lang.org/count.svg?q=dependencies:akka/*&subject=scaladex:&color=blue&style=flat-square "Built with Akka"
-[akka-dependency-scaladex]: https://index.scala-lang.org/search?q=dependencies:akka/*

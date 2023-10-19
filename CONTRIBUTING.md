@@ -6,8 +6,7 @@ You're always welcome to submit your PR straight away and start the discussion (
 
 ## The Akka Community
 
-If you have questions about the contribution process or discuss specific issues, please visit the [akka/dev Gitter chat](https://gitter.im/akka/dev).
-
+Reach out with questions via the forum at [discuss.akka.io](https://discuss.akka.io). 
 You may also check out these [other resources](https://akka.io/get-involved/).
 
 ## Navigating around the project & codebase
@@ -16,8 +15,8 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `main` – active development branch of Akka 2.8.x
-* `release-2.7` – maintenance branch of Akka 2.7.x
+* `main` – active development branch of Akka 2.9.x
+* `release-2.8` – maintenance branch of Akka 2.8.x
 * similarly `release-2.#` branches contain legacy versions of Akka
 
 ### Tags
@@ -395,7 +394,7 @@ Each project must also create and maintain a list of all dependencies and their 
 
 Follow these guidelines when creating public commits and writing commit messages.
 
-1. While working working in a feature branch or a PR branch for a long time it's useful that the work spans multiple commits, for safe points and simplify reviewing partial changes. When a PR is done it should be squashed into a single big commit which you write a good commit message for (like discussed in the following sections). For more info read this article: [Git Workflow](https://sandofsky.com/workflow/git-workflow/). Every commit should be able to be used in isolation, cherry picked etc.
+1. While working in a feature branch or a PR branch for a long time it's useful that the work spans multiple commits, for safe points and simplify reviewing partial changes. When a PR is done it should be squashed into a single big commit which you write a good commit message for (like discussed in the following sections). For more info read this article: [Git Workflow](https://sandofsky.com/workflow/git-workflow/). Every commit should be able to be used in isolation, cherry picked etc.
 
 3. The first line should be a descriptive sentence what the commit is doing, including the ticket number (if any). It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the "imperative present tense" style for commit messages ([more info here](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)). It's encouraged to use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) prefixes, such as `feat:`, `fix:`, `perf:`, `build:`, `chore:`, `docs:`, but no need to use the scope syntax.
 
