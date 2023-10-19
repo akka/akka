@@ -6,6 +6,7 @@ You're always welcome to submit your PR straight away and start the discussion (
 
 ## The Akka Community
 
+Reach out with questions via the forum at [discuss.akka.io](https://discuss.akka.io). 
 You may also check out these [other resources](https://akka.io/get-involved/).
 
 ## Navigating around the project & codebase
