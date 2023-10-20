@@ -485,41 +485,6 @@ private[akka] object EventWriter {
             handleWrite(reprWithMeta, replyTo, isSnapshotEvent, calledAfterMaxSeqNr = false)
             Behaviors.same
 
-          case MaxSeqNrForPid(pid, maxSeqNr, AskMaxSeqNrReason.FillGaps) =>
-            bypassCircuitBreaker = true
-            perPidWriteState.get(pid) match {
-              case None =>
-                context.log.debug("Got max seq nr with no waiting previous state for pid, ignoring (pid [{}])", pid)
-              case Some(state) =>
-                context.log.debug("Retrieved max seq nr [{}] for pid [{}]", maxSeqNr, pid)
-                val waiting = state.waitingForSeqNrLookup
-                perPidWriteState = perPidWriteState.updated(
-                  pid,
-                  state.copy(latestSeqNr = maxSeqNr, waitingForSeqNrLookup = Vector.empty))
-                waiting.foreach {
-                  case (repr, replyTo) =>
-                    handleWrite(repr, replyTo, isSnapshotEvent = false, calledAfterMaxSeqNr = true)
-                }
-            }
-            Behaviors.same
-
-          case MaxSeqNrForPid(pid, maxSeqNr, AskMaxSeqNrReason.SnapshotEvent) =>
-            bypassCircuitBreaker = true
-            perPidWriteState.get(pid) match {
-              case None =>
-                context.log.debug("Got max seq nr with no waiting previous state for pid, ignoring (pid [{}])", pid)
-              case Some(state) =>
-                context.log.debug("Retrieved max seq nr [{}] for pid [{}]", maxSeqNr, pid)
-                val waiting = state.waitingForSeqNrLookup
-                perPidWriteState = perPidWriteState.updated(
-                  pid,
-                  state.copy(latestSeqNr = maxSeqNr, waitingForSeqNrLookup = Vector.empty))
-                waiting.foreach {
-                  case (repr, replyTo) => handleWrite(repr, replyTo, isSnapshotEvent = true, calledAfterMaxSeqNr = true)
-                }
-            }
-            Behaviors.same
-
           case MaxSeqNrForPid(pid, maxSeqNr, AskMaxSeqNrReason.WriteFailure(errorDesc)) =>
             bypassCircuitBreaker = true
             // write failed, so we looked up the maxSeqNr to detect if it was duplicate events, already in journal
@@ -577,6 +542,28 @@ private[akka] object EventWriter {
 
                 }
 
+            }
+            Behaviors.same
+
+          case MaxSeqNrForPid(pid, maxSeqNr, reason @ (AskMaxSeqNrReason.FillGaps | AskMaxSeqNrReason.SnapshotEvent)) =>
+            bypassCircuitBreaker = true
+            perPidWriteState.get(pid) match {
+              case None =>
+                context.log.debug("Got max seq nr with no waiting previous state for pid, ignoring (pid [{}])", pid)
+              case Some(state) =>
+                context.log.debug("Retrieved max seq nr [{}] for pid [{}]", maxSeqNr, pid)
+                val waiting = state.waitingForSeqNrLookup
+                perPidWriteState = perPidWriteState.updated(
+                  pid,
+                  state.copy(latestSeqNr = maxSeqNr, waitingForSeqNrLookup = Vector.empty))
+                waiting.foreach {
+                  case (repr, replyTo) =>
+                    handleWrite(
+                      repr,
+                      replyTo,
+                      isSnapshotEvent = reason == AskMaxSeqNrReason.SnapshotEvent,
+                      calledAfterMaxSeqNr = true)
+                }
             }
             Behaviors.same
 
