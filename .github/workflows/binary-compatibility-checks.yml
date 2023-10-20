@@ -58,6 +58,8 @@ jobs:
         with:
           server_address: smtp.gmail.com
           server_port: 465
+          # Using port 465 already sets `secure: true`
+          secure: true
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"

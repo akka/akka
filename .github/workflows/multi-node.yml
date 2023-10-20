@@ -98,15 +98,14 @@ jobs:
         with:
           server_address: smtp.gmail.com
           server_port: 465
-          # Using port 465 already sets `secure: true`
           secure: true
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
-          subject: Multi node test (Akka)
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
           to: ${{secrets.MAIL_SEND_TO}}
-          from: Akka CI (GHActions)
+          from: Akka CI
           body: |
-            Multi node test of ${{github.repository}} failed!
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
       
       - name: Cleanup the environment
@@ -194,15 +193,14 @@ jobs:
         with:
           server_address: smtp.gmail.com
           server_port: 465
-          # Using port 465 already sets `secure: true`
           secure: true
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
-          subject: Multi node test with Aeron (Akka)
+          subject: "Failed: ${{ github.workflow }} / ${{ github.job }}"
           to: ${{secrets.MAIL_SEND_TO}}
-          from: Akka CI (GHActions)
+          from: Akka CI
           body: |
-            Multi node test of ${{github.repository}} failed!
+            Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
       
       - name: Cleanup the environment
