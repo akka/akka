@@ -112,6 +112,9 @@ final class TimestampOffset private (val timestamp: Instant, val readTimestamp: 
       case other: TimestampOffset => timestamp == other.timestamp && seen == other.seen
       case _                      => false
     }
+
+  override def toString: String =
+    s"TimestampOffset($timestamp, $readTimestamp, $seen)"
 }
 
 /**
