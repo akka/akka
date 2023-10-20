@@ -29,7 +29,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
     "handle uid collision when connection TO two systems with same uid" in {
       // FIXME temporary disabled check until #32182 is fixed
-      if (!RARP(localSystem).provider.transport.isInstanceOf[ArteryAeronUdpTransport])
+      if (RARP(localSystem).provider.transport.isInstanceOf[ArteryAeronUdpTransport])
         pending
 
       val localProbe = new TestProbe(localSystem)
@@ -115,7 +115,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
     "handle uid collision when connection FROM two systems with same uid" in {
       // FIXME temporary disabled check until #32182 is fixed
-      if (!RARP(localSystem).provider.transport.isInstanceOf[ArteryAeronUdpTransport])
+      if (RARP(localSystem).provider.transport.isInstanceOf[ArteryAeronUdpTransport])
         pending
 
       // same kind of test as above, but connection is first established from the other remote systems
