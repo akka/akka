@@ -19,7 +19,9 @@ import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ ControlThrowable, NonFatal }
 
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 
 import akka.ConfigurationException
 import akka.actor.dungeon.ChildrenContainer
@@ -479,7 +481,8 @@ object ActorSystem {
     /**
      * Returns the String representation of the Config that this Settings is backed by
      */
-    override def toString: String = config.root.render
+    override def toString: String =
+      config.root.render(ConfigRenderOptions.defaults().setShowEnvVariableValues(false))
 
   }
 
