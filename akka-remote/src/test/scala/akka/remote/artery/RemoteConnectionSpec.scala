@@ -12,7 +12,6 @@ import akka.remote.RARP
 import akka.remote.artery.Association.UidCollisionException
 import akka.remote.artery.AssociationState.UidKnown
 import akka.remote.artery.AssociationState.UidUnknown
-import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent, TestProbe }
 
 class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
@@ -28,10 +27,6 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
   "Remoting between systems" should {
 
     "handle uid collision when connection TO two systems with same uid" in {
-      // FIXME temporary disabled check until #32182 is fixed
-      if (RARP(localSystem).provider.transport.isInstanceOf[ArteryAeronUdpTransport])
-        pending
-
       val localProbe = new TestProbe(localSystem)
       val localPort = RARP(localSystem).provider.getDefaultAddress.getPort().get
 
@@ -92,11 +87,13 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
         remote2Probe.expectNoMessage()
       }(localSystem)
 
-      RARP(remoteSystem2).provider.transport
-        .asInstanceOf[ArteryTransport]
-        .association(RARP(localSystem).provider.getDefaultAddress)
-        .associationState
-        .uniqueRemoteAddressState() shouldBe UidKnown // handshake was completed in other direction
+      awaitAssert {
+        RARP(remoteSystem2).provider.transport
+          .asInstanceOf[ArteryTransport]
+          .association(RARP(localSystem).provider.getDefaultAddress)
+          .associationState
+          .uniqueRemoteAddressState() shouldBe UidKnown // handshake was completed in other direction
+      }
 
       RARP(localSystem).provider.transport
         .asInstanceOf[ArteryTransport]
@@ -114,10 +111,6 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
     }
 
     "handle uid collision when connection FROM two systems with same uid" in {
-      // FIXME temporary disabled check until #32182 is fixed
-      if (RARP(localSystem).provider.transport.isInstanceOf[ArteryAeronUdpTransport])
-        pending
-
       // same kind of test as above, but connection is first established from the other remote systems
       val localProbe = new TestProbe(localSystem)
       val localPort = RARP(localSystem).provider.getDefaultAddress.getPort().get
@@ -179,11 +172,13 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
         remote2Probe.expectNoMessage()
       }(localSystem)
 
-      RARP(remoteSystem2).provider.transport
-        .asInstanceOf[ArteryTransport]
-        .association(RARP(localSystem).provider.getDefaultAddress)
-        .associationState
-        .uniqueRemoteAddressState() shouldBe UidKnown // handshake was completed in other direction
+      awaitAssert {
+        RARP(remoteSystem2).provider.transport
+          .asInstanceOf[ArteryTransport]
+          .association(RARP(localSystem).provider.getDefaultAddress)
+          .associationState
+          .uniqueRemoteAddressState() shouldBe UidKnown // handshake was completed in other direction
+      }
 
       RARP(localSystem).provider.transport
         .asInstanceOf[ArteryTransport]
