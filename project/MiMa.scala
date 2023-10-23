@@ -19,6 +19,8 @@ object MiMa extends AutoPlugin {
   private val latestPatchOf27 = 0
   private val firstPatchOf28 = 0
   private val latestPatchOf28 = 5
+  private val firstPatchOf29 = 0
+  private val latestPatchOf29 = 0
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
@@ -32,10 +34,10 @@ object MiMa extends AutoPlugin {
     checkMimaFilterDirectories := checkFilterDirectories(baseDirectory.value))
 
   def checkFilterDirectories(moduleRoot: File): Unit = {
-    val nextVersionFilterDir = moduleRoot / "src" / "main" / "mima-filters" / s"2.8.${latestPatchOf28 + 1}.backwards.excludes"
+    val nextVersionFilterDir = moduleRoot / "src" / "main" / "mima-filters" / s"2.9.${latestPatchOf29 + 1}.backwards.excludes"
     if (nextVersionFilterDir.exists()) {
       throw new IllegalArgumentException(s"Incorrect mima filter directory exists: '$nextVersionFilterDir' " +
-      s"should be with number from current release '${moduleRoot / "src" / "main" / "mima-filters" / s"2.8.$latestPatchOf28.backwards.excludes"}")
+      s"should be with number from current release '${moduleRoot / "src" / "main" / "mima-filters" / s"2.9.$latestPatchOf29.backwards.excludes"}")
     }
   }
 
@@ -44,14 +46,15 @@ object MiMa extends AutoPlugin {
       organization: String,
       scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val akka28Previous = expandVersions(2, 8, firstPatchOf28 to latestPatchOf28) :+ "2.7.0"
+    val akka29Previous = expandVersions(2, 9, firstPatchOf29 to latestPatchOf29)
     val versions: Seq[String] =
       if (scalaBinaryVersion.startsWith("3")) {
         // was experimental before 2.7.0
-        akka28Previous
+        akka28Previous ++ akka29Previous
       } else {
         val akka26Previous = expandVersions(2, 6, firstPatchOf26 to latestPatchOf26)
         val akka27Previous = expandVersions(2, 7, firstPatchOf27 to latestPatchOf27)
-        akka26Previous ++ akka27Previous ++ akka28Previous
+        akka26Previous ++ akka27Previous ++ akka28Previous ++ akka29Previous
       }
 
     // check against all binary compatible artifacts
