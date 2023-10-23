@@ -54,7 +54,7 @@ object MiMa extends AutoPlugin {
       } else {
         val akka26Previous = expandVersions(2, 6, firstPatchOf26 to latestPatchOf26)
         val akka27Previous = expandVersions(2, 7, firstPatchOf27 to latestPatchOf27)
-        akka26Previous ++ akka27Previous ++ akka28Previous  ++ akka29Previous
+        akka26Previous ++ akka27Previous ++ akka28Previous ++ akka29Previous
       }
 
     // check against all binary compatible artifacts
