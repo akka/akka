@@ -51,21 +51,11 @@ An Akka Persistence journal and snapshot store for use with R2DBC-compatible dat
 * [Akka Thread Starvation Detector](https://doc.akka.io/docs/akka-diagnostics/current/starvation-detector.html)
 * [Akka Configuration Checker](https://doc.akka.io/docs/akka-diagnostics/current/config-checker.html)
 
+## Akka Insights
+
+Intelligent monitoring and observability purpose-built for Akka: [Lightbend Telemetry](https://developer.lightbend.com/docs/telemetry/current/home.html)
+
 ## Community Projects
 
 Akka has a vibrant and passionate user community, the members of which have created many independent projects using Akka as well as extensions to it. See [Community Projects](https://akka.io/community/).
 
-## Related Projects Sponsored by Lightbend
-
-### [Play Framework](https://www.playframework.com)
-
-Play Framework provides a complete framework to build modern web applications, including tools for front end pipeline integration,
-a HTML template language etc. It is built on top of Akka HTTP, and integrates well with Akka and Actors.
-
-### [Lagom](https://www.lagomframework.com)
-
-Lagom is a microservice framework which strives to be opinionated and encode best practices for building microservice systems with Akka and Play.
-
-### [Lightbend Telemetry](https://developer.lightbend.com/docs/telemetry/current/home.html)
-
-Distributed tracing, metrics and monitoring for Akka Actors, Cluster, HTTP and more.
