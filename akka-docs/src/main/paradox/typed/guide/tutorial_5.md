@@ -236,5 +236,4 @@ To get from this guide to a complete application you would likely need to provid
 
  * @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) illustrates how to implement an Event Sourced CQRS application with Akka Persistence and Akka Projections 
  * [Akka HTTP](https://doc.akka.io/docs/akka-http/current/introduction.html) is a HTTP server and client library, making it possible to publish and consume HTTP endpoints
- * [Play Framework](https://www.playframework.com) is a full fledged web framework that is built on top of Akka HTTP, it integrates well with Akka and can be used to create a complete modern web UI
- * [Lagom](https://www.lagomframework.com) is an opinionated microservice framework built on top of Akka, encoding many best practices around Akka and Play
+ * [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/) supports fully typed, streaming gRPC servers and clients.
