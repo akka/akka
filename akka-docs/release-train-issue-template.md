@@ -59,7 +59,6 @@ For important patch releases, and only if critical issues have been fixed:
 
 - [ ] Send a release notification to [Lightbend discuss](https://discuss.akka.io)
 - [ ] Tweet using the [@akkateam](https://twitter.com/akkateam/) account (or ask someone to) about the new release
-- [ ] Announce on [Gitter akka/akka](https://gitter.im/akka/akka)
 - [ ] Announce internally (with links to Tweet, discuss)
 
 For minor or major releases:
@@ -71,7 +70,7 @@ For minor or major releases:
 - [ ] Update `MiMa.latestPatchOf` and PR that change (`project/MiMa.scala`)
 - [ ] Update version for [Lightbend Supported Modules](https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html) in [private project](https://github.com/lightbend/lightbend-technology-intro-doc/blob/master/docs/modules/getting-help/examples/build.sbt)
 - [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies)
-- [ ] Update [Akka Guide samples](https://github.com/akka/akka-platform-guide)
+- [ ] Update [Akka Guide samples](https://github.com/akka/akka-guide)
 - [ ] Update [akka-samples](https://github.com/akka/akka-samples)
 - These are autoupdated by latest stable on maven central:
   - https://github.com/akka/akka-quickstart-java.g8

@@ -17,7 +17,7 @@ Individual public APIs can be annotated with @javadoc[ApiMayChange](akka.annotat
 guarantees than the rest of the module it lives in. For example, when while introducing "new" Java 8 APIs into
 existing stable modules, these APIs may be marked with this annotation to signal that they are not frozen yet.
 Please use such methods and classes with care, however if you see such APIs that is the best point in time to try them
-out and provide feedback (e.g. using the akka-user mailing list, GitHub issues or Gitter) before they are frozen as
+out and provide feedback (e.g. using the pull request comments or issues) before they are frozen as
 fully stable API.
 
 Best effort migration guides may be provided, but this is decided on a case-by-case basis for **may change** modules.

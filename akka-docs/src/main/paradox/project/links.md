@@ -3,7 +3,6 @@
 ## Commercial Support
 
 Commercial support is provided by [Lightbend](https://www.lightbend.com).
-Akka is part of the [Akka Platform](https://www.lightbend.com/akka-platform).
 
 ## Sponsors
 
@@ -14,12 +13,6 @@ It also provides the Lightbend Reactive Platform, which is powered by a source a
 ## Akka Discuss Forums
 
 [Akka Discuss Forums](https://discuss.akka.io)
-
-## Gitter
-
-Chat room about *using* Akka: [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka)
-
-A chat room is available for all questions related to developing and contributing to Akka: [![gitter: akka/dev](https://img.shields.io/badge/gitter%3A-akka%2Fdev-blue.svg?style=flat-square)](https://gitter.im/akka/dev)
 
 ## Source Code
 
