@@ -93,14 +93,6 @@ see @ref:[Become/Unbecome](#become-unbecome) for
 further information on changing the behavior of an actor after its
 construction.
 
-@@@ div { .group-scala }
-
-#### Here is another example that you can edit and run in the browser:
-
-@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template="Akka" layout="v75" minheight="400px" }
-
-@@@
-
 ### Props
 
 @apidoc[akka.actor.Props] is a configuration class to specify options for the creation

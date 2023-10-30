@@ -27,7 +27,6 @@ object ClassicSample {
 
     override def receive: Receive = {
       case Greet(whom) =>
-        //#fiddle_code
         log.info("Hello {}!", whom)
         sender() ! Greeted(whom)
     }

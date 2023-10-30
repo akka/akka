@@ -4,13 +4,11 @@
 
 package docs.akka.typed
 
-//#fiddle_code
 //#imports
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 //#imports
-//#fiddle_code
 
 import akka.NotUsed
 import akka.Done
@@ -24,8 +22,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 object IntroSpec {
-  //format: OFF
-  //#fiddle_code
 
   //#hello-world-actor
   object HelloWorld {
@@ -33,9 +29,7 @@ object IntroSpec {
     final case class Greeted(whom: String, from: ActorRef[Greet])
 
     def apply(): Behavior[Greet] = Behaviors.receive { (context, message) =>
-      //#fiddle_code
       context.log.info("Hello {}!", message.whom)
-      //#fiddle_code
       //#hello-world-actor
       println(s"Hello ${message.whom}!")
       //#hello-world-actor
@@ -55,9 +49,7 @@ object IntroSpec {
     private def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
       Behaviors.receive { (context, message) =>
         val n = greetingCounter + 1
-        //#fiddle_code
         context.log.info2("Greeting {} for {}", n, message.whom)
-        //#fiddle_code
         //#hello-world-bot
         println(s"Greeting $n for ${message.whom}")
         //#hello-world-bot
@@ -98,11 +90,6 @@ object IntroSpec {
     //#hello-world-main
   }
   //#hello-world-main
-
-  // This is run by ScalaFiddle
-  HelloWorldMain.main(Array.empty)
-  //#fiddle_code
-  //format: ON
 
   object CustomDispatchersExample {
     object HelloWorldMain {
