@@ -30,6 +30,11 @@ jobs:
         with:
           jvm: temurin:1.11
           apps: cs
+          
+      - name: Add additional CA certs
+        run: |
+          JAVA_HOME=$(cs java-home --jvm adopt:11)
+          keytool -importcert -trustcacerts -storepass changeit -alias sectigo -keystore $JAVA_HOME/lib/security/cacerts -file .additional-certs/Sectigo_RSA_Domain_Validation_Secure_server_CA.cer
 
       - name: create the Akka site
         run: sbt -Dakka.genjavadoc.enabled=true "Javaunidoc/doc; Compile/unidoc; akka-docs/paradox"
