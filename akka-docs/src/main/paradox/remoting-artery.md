@@ -685,11 +685,6 @@ akka {
 }
 ```
 
-You can look at the
-@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
-to see what this looks like in practice.
-
 ### Running in Docker/Kubernetes
 
 When using `aeron-udp` in a containerized environment special care must be taken that the media driver runs on a ram disk.
