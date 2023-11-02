@@ -65,13 +65,6 @@ to other services.
 Illustrates how to use @ref:[Replicated Event Sourcing](../typed/replicated-eventsourcing.md) that supports
 active-active persistent entities across data centers.
 
-## Cluster with Docker
-
-@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
-
-Illustrates how to use Akka Cluster with Docker compose.
-
 ## Cluster with Kubernetes
 
 @extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
