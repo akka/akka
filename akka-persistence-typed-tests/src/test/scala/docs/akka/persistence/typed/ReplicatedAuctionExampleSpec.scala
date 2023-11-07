@@ -199,7 +199,6 @@ object ReplicatedAuctionExampleSpec {
             case Close =>
               context.log.info("Close")
               require(shouldClose(state))
-              // TODO send email (before or after persisting)
               Effect.persist(WinnerDecided(replicationContext.replicaId, state.highestBid, state.highestCounterOffer))
             case _: OfferBid =>
               // auction finished, no more bids accepted
