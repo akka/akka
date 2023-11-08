@@ -130,10 +130,12 @@ object WorkPullingDocExample {
 
   }
 
+  //#ask
+
   final class ImageWorkManager(
       context: ActorContext[ImageWorkManager.Command],
       stashBuffer: StashBuffer[ImageWorkManager.Command]) {
-
+    //#ask
     import ImageWorkManager._
 
     private def waitForNext(): Behavior[Command] = {
@@ -227,7 +229,9 @@ object WorkPullingDocExample {
       //#ask
     }
     //#producer
+    //#ask
   }
+  //#ask
   //#producer
 
 }
