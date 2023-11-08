@@ -88,7 +88,7 @@ jobs:
           # leaving out some combinations (note that `build-test-prValidations.yml` doesn't run all test
           - { scalaVersion: "2.13", jdkVersion: "1.11.0", jvmName: "temurin:1.11.0", extraOpts: '' }
           - { scalaVersion: "2.13", jdkVersion: "1.17.0", jvmName: "temurin:1.17.0", extraOpts: '' }
-          - { scalaVersion: "2.13", jdkVersion: "1.21.0", jvmName: "temurin:1.21.0.1", extraOpts: '' }
+          - { scalaVersion: "2.13", jdkVersion: "1.21.0", jvmName: "temurin:1.21", extraOpts: '' }
 
           # { scalaVersion: "3.3",  jdkVersion: "1.11.0", jvmName: "temurin:1.11.0", extraOpts: '' }
           - { scalaVersion: "3.3",  jdkVersion: "1.17.0", jvmName: "temurin:1.17.0", extraOpts: '' }
@@ -105,6 +105,7 @@ jobs:
         uses: coursier/setup-action@v1.3.4
         with:
           jvm: ${{ matrix.jvmName }}
+          jvm-index: https://raw.githubusercontent.com/coursier/jvm-index/master/indices/linux-amd64.json
 
       - name: Compile and Test
         # note that this is not running any multi-jvm tests because multi-in-test=false
