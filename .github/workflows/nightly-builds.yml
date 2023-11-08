@@ -88,7 +88,7 @@ jobs:
           # leaving out some combinations (note that `build-test-prValidations.yml` doesn't run all test
           - { scalaVersion: "2.13", jdkVersion: "1.11.0", jvmName: "temurin:1.11.0", extraOpts: '' }
           - { scalaVersion: "2.13", jdkVersion: "1.17.0", jvmName: "temurin:1.17.0", extraOpts: '' }
-          - { scalaVersion: "2.13", jdkVersion: "1.21.0", jvmName: "temurin:21.0.1", extraOpts: '' }
+          - { scalaVersion: "2.13", jdkVersion: "1.21.0", jvmName: "temurin:1.21.0.1", extraOpts: '' }
 
           # { scalaVersion: "3.3",  jdkVersion: "1.11.0", jvmName: "temurin:1.11.0", extraOpts: '' }
           - { scalaVersion: "3.3",  jdkVersion: "1.17.0", jvmName: "temurin:1.17.0", extraOpts: '' }
