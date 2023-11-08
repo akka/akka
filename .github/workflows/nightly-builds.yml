@@ -105,7 +105,7 @@ jobs:
         uses: coursier/setup-action@v1.3.4
         with:
           jvm: ${{ matrix.jvmName }}
-          jvm-index: https://raw.githubusercontent.com/coursier/jvm-index/master/indices/linux-amd64.json
+          jvm-index: https://raw.githubusercontent.com/coursier/jvm-index/master/index.json
 
       - name: Compile and Test
         # note that this is not running any multi-jvm tests because multi-in-test=false
