@@ -102,7 +102,7 @@ jobs:
         uses: coursier/cache-action@v6.4.0
 
       - name: Set up JDK ${{ matrix.jdkVersion }}
-        uses: coursier/setup-action@v1.3.0
+        uses: coursier/setup-action@v1.3.4
         with:
           jvm: ${{ matrix.jvmName }}
 
