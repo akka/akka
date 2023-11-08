@@ -7,7 +7,6 @@
 -XX:+AlwaysActAsServerClassMachine
 -XX:ReservedCodeCacheSize=256m
 -XX:MaxGCPauseMillis=750
--XX:-UseBiasedLocking
 -XX:+UseCompressedOops
 -XX:MetaspaceSize=512M
 -XX:-ClassUnloadingWithConcurrentMark
