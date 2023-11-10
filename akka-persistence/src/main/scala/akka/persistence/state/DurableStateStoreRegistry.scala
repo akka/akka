@@ -85,9 +85,7 @@ class DurableStateStoreRegistry(system: ExtendedActorSystem)
    * Java API: Returns the [[akka.persistence.state.javadsl.DurableStateStore]] specified by the given
    * configuration entry.
    */
-  final def getDurableStateStoreFor[T <: javadsl.DurableStateStore[_]](
-      @unused clazz: Class[T], // FIXME generic Class could be problematic in Java
-      pluginId: String): T = {
+  final def getDurableStateStoreFor[T <: javadsl.DurableStateStore[_]](@unused clazz: Class[T], pluginId: String): T = {
     pluginFor(pluginIdOrDefault(pluginId), pluginConfig(pluginId)).javadslPlugin.asInstanceOf[T]
   }
 
