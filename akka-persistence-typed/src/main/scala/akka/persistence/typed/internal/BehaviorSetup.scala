@@ -81,7 +81,7 @@ private[akka] final class BehaviorSetup[C, E, S](
         case _                                              => false
       })) {
     throw new IllegalArgumentException(
-      "Retention criteria with delete events can't be used together with snapshot-is-optional=false. " +
+      "Retention criteria with delete events can't be used together with snapshot-is-optional=true. " +
       "That can result in wrong recovered state if snapshot load fails.")
   }
 
