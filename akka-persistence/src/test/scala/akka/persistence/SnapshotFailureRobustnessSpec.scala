@@ -39,7 +39,6 @@ object SnapshotFailureRobustnessSpec {
 
   class DeleteSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
 
-    // TODO do we call it "snapshot store" or "snapshot plugin", small inconsistency here
     override def snapshotPluginId: String =
       "akka.persistence.snapshot-store.local-delete-fail"
 
