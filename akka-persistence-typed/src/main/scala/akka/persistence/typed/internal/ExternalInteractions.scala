@@ -161,7 +161,7 @@ private[akka] trait JournalInteractions[C, E, S] {
   protected def internalDeleteEvents(lastSequenceNr: Long, toSequenceNr: Long): Unit = {
     if (setup.isSnapshotOptional) {
       setup.internalLogger.warn(
-        "Delete events shouldn't be used together with snapshot-is-optional=false. " +
+        "Delete events shouldn't be used together with snapshot-is-optional=true. " +
         "That can result in wrong recovered state if snapshot load fails.")
     }
     if (toSequenceNr > 0) {
