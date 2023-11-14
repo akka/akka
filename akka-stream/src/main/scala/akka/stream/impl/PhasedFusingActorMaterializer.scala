@@ -686,7 +686,7 @@ private final case class SavedIslandData(
     islandName: String,
     subflowFuser: OptionVal[GraphInterpreterShell => ActorRef])
     extends PhaseIsland[GraphStageLogic] {
-  // TODO: remove these
+
   private val logicArrayType = Array.empty[GraphStageLogic]
   private[this] val logics = new util.ArrayList[GraphStageLogic](16)
 
