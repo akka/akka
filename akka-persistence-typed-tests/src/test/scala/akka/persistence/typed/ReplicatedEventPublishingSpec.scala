@@ -205,7 +205,7 @@ class ReplicatedEventPublishingSpec
       probe.expectMessage(Set("one", "two", "three"))
     }
 
-    "ignore a published event from an unknown replica" in {
+    "accept a published event from an unknown replica" in {
       val id = nextEntityId()
       val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
@@ -224,7 +224,7 @@ class ReplicatedEventPublishingSpec
       probe.expectMessage(Done)
 
       actor ! MyReplicatedBehavior.Get(probe.ref)
-      probe.expectMessage(Set("one", "three"))
+      probe.expectMessage(Set("one", "two", "three"))
     }
 
     "ignore an already seen event from a replica" in {
