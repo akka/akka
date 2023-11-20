@@ -163,11 +163,11 @@ private final case class SavedIslandData(
     phase: PhaseIsland[Any])
 
 @InternalApi private[akka] class IslandTracking(
-    val phases: Map[IslandTag, Phase[Any]],
-    val settings: ActorMaterializerSettings,
+    phases: Map[IslandTag, Phase[Any]],
+    settings: ActorMaterializerSettings,
     attributes: Attributes,
     defaultPhase: Phase[Any],
-    val materializer: PhasedFusingActorMaterializer,
+    materializer: PhasedFusingActorMaterializer,
     islandNamePrefix: String) {
 
   import PhasedFusingActorMaterializer.Debug
@@ -680,6 +680,13 @@ private final case class SavedIslandData(
 /**
  * INTERNAL API
  */
+@InternalApi private[akka] object GraphStageIsland {
+  private val logicArrayType = Array.empty[GraphStageLogic]
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi private[akka] final class GraphStageIsland(
     effectiveAttributes: Attributes,
     materializer: PhasedFusingActorMaterializer,
@@ -687,7 +694,6 @@ private final case class SavedIslandData(
     subflowFuser: OptionVal[GraphInterpreterShell => ActorRef])
     extends PhaseIsland[GraphStageLogic] {
 
-  private val logicArrayType = Array.empty[GraphStageLogic]
   private[this] val logics = new util.ArrayList[GraphStageLogic](16)
 
   private var connections = new Array[Connection](16)
@@ -806,7 +812,7 @@ private final case class SavedIslandData(
     }
 
     shell.connections = finalConnections
-    shell.logics = logics.toArray(logicArrayType)
+    shell.logics = logics.toArray(GraphStageIsland.logicArrayType)
 
     subflowFuser match {
       case OptionVal.Some(fuseIntoExistingInterpreter) =>
@@ -860,7 +866,7 @@ private final case class SavedIslandData(
     materializer: PhasedFusingActorMaterializer,
     islandName: String)
     extends PhaseIsland[Publisher[Any]] {
-  override def name: String = s"SourceModule phase"
+  override def name: String = "SourceModule phase"
 
   override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (Publisher[Any], Any) = {
     mod
@@ -890,8 +896,8 @@ private final case class SavedIslandData(
  */
 @InternalApi private[akka] final class SinkModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String)
     extends PhaseIsland[AnyRef] {
-  override def name: String = s"SinkModule phase"
-  var subscriberOrVirtualPublisher: AnyRef = _
+  override def name: String = "SinkModule phase"
+  private var subscriberOrVirtualPublisher: AnyRef = _
 
   override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (AnyRef, Any) = {
     val subAndMat =
